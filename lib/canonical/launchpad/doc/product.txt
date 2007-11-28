@@ -1,14 +1,14 @@
-Product
-=======
+= Product =
 
 Launchpad keeps track of the "upstream" world as well as the "distro" world.
 The anchorpiece of the "upstream" world is the Product, which is a piece of
 software. It can be part of a Project or it can be standalone.
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, IProduct, IPersonSet, NotFoundError)
+    ...     IHasTranslationImports, IProductSet, IProduct, IPersonSet,
+    ...     NotFoundError)
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.database.sqlbase import flush_database_updates
 
@@ -27,9 +27,19 @@ Verify that p (a Product object) correctly implements IProduct.
     >>> verifyObject(IProduct, p)
     True
 
+and IHasTranslationImports.
+
+    >>> verifyObject(IHasTranslationImports, p)
+    True
+
 Make sure that a product provides the IProduct interface.
 
     >>> IProduct.providedBy(p)
+    True
+
+and the IHasTranslationImports.
+
+    >>> IHasTranslationImports.providedBy(p)
     True
 
 Let's get a product from the sample data. We happen to know that product
@@ -44,7 +54,7 @@ Let's call that evo from now onwards just so the tests can be clearer.
 
 We'll also fetch the a52dec product from the database.
 
-    >>> a52dec = productset.get(12)
+    >>> a52dec = productset.getByName('a52dec')
 
 Since we have some POTemplates for evolution, we should have a primary
 translatable for that product:
@@ -54,7 +64,10 @@ translatable for that product:
 
 We can also see how many translatables it has:
 
-But for a52dec, where we have no translatable release or Ubuntu package, the
+    >>> print [series.displayname for series in evo.translatable_series]
+    [u'trunk']
+
+But for a52dec, where we have no translatable series or Ubuntu package, the
 primary_translatable is nonexistent:
 
     >>> print a52dec.primary_translatable
@@ -83,26 +96,49 @@ getByName() also accepts an argument to ignore inactive products.
     None
 
 You can also use the IProductSet to see some statistics on products.
+The methods use ILaunchpadStatisticSet to get the values. The
+ILaunchpadStatisticSet is stored in the 'stats' attribute.
 
-    >>> print productset.count_translatable()
-    2
-    >>> print productset.count_bounties()
-    2
-    >>> print productset.count_buggy()
-    4
-    >>> print productset.count_reviewed()
-    1
+    >>> class FakeStatistics:
+    ...     stats = {
+    ...         'products_with_translations': 1000,
+    ...         'projects_with_bugs': 2000,
+    ...         'reviewed_products': 3000}
+    ...     def value(self, name):
+    ...         return self.stats[name]
+
+    >>> from canonical.launchpad.database import ProductSet
+    >>> class FakeStatsProductSet(ProductSet):
+    ...     """Provide fake statistics, not to depend on sample data."""
+    ...     stats = FakeStatistics()
+
+    >>> print FakeStatsProductSet().count_translatable()
+    1000
+    >>> print FakeStatsProductSet().count_buggy()
+    2000
+    >>> print FakeStatsProductSet().count_reviewed()
+    3000
 
 It provides information on all the translatables available, too:
 
-    >>> for product in productset.translatables():
+    >>> for product in productset.getTranslatables():
     ...    print product.name
+    alsa-utils
     evolution
-    netapplet
 
 
-External Bug Tracker
---------------------
+== Package links ==
+
+The packaging table allows us to list source and distro source packages
+related to a certain upstream:
+
+   >>> alsa = productset.getByName('alsa-utils')
+   >>> [(sp.name, sp.distroseries.name) for sp in alsa.sourcepackages]
+   [(u'alsa-utils', u'sid'), (u'alsa-utils', u'warty')]
+   >>> [(sp.name, sp.distribution.name) for sp in alsa.distrosourcepackages]
+   [(u'alsa-utils', u'debian'), (u'alsa-utils', u'ubuntu')]
+
+== External Bug Tracker ==
 
 If a product doesn't use Malone, it can specify that it uses an
 external bug tracker. It can either use its own bug tracker, or use its
@@ -157,11 +193,25 @@ None will of course be returned.
     True
 
 
-Product Creation
-================
+== Answer Tracking ==
+
+Firefox uses the Answer Tracker as the official application to provide
+answers to questions.
+
+    >>> firefox.official_answers
+    True
+    
+Alsa does not use Launchpad to track answers.
+
+    >>> alsa.official_answers
+    False
+
+
+== Product Creation ==
 
 We can create new products with the createProduct() method:
 
+    >>> from canonical.launchpad.interfaces.product import License
     >>> owner = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> product = productset.createProduct(
     ...     owner=owner,
@@ -169,15 +219,27 @@ We can create new products with the createProduct() method:
     ...     displayname='Test Product',
     ...     title='Test Product',
     ...     summary='A test product',
-    ...     description='A description of the test product')
+    ...     description='A description of the test product',
+    ...     licenses=(License.GPL,))
 
 When creating a product, a default product series is created for it:
 
-    >>> product.serieslist.count()
+    >>> product.serieses.count()
     1
-    >>> trunk = product.serieslist[0]
+    >>> trunk = product.serieses[0]
     >>> print trunk.name
     trunk
+
+A product's licenses is now being tracked. Previously registered products 
+may not have a license set, so an empty tuple is valid.
+
+    >>> productset.getByName('jokosher').licenses == ()
+    True
+    >>> product.licenses
+    (<...License.GPL...>,)
+    >>> product.licenses = (License.GPL, License.LGPL)
+    >>> product.licenses
+    (<...License.GPL...>, <...License.LGPL...>)
 
 This series is set as the development focus for the product:
 
@@ -185,8 +247,7 @@ This series is set as the development focus for the product:
     True
 
 
-Specification Listings
-======================
+== Specification Listings ==
 
 We should be able to get lists of specifications in different states
 related to a product.
@@ -195,7 +256,7 @@ Basically, we can filter by completeness, and by whether or not the spec is
 informational.
 
  >>> firefox = productset.getByName('firefox')
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be only one informational spec for firefox:
 
@@ -226,3 +287,186 @@ We can filter for specifications that contain specific text:
  e4x
 
 
+== Milestones ==
+
+We can use IProduct.milestones to get all milestones associated with any
+ProductSeries of a product.
+
+    >>> from datetime import datetime
+    >>> [milestone.name for milestone in firefox.milestones]
+    [u'1.0']
+
+    >>> firefox_one_zero = firefox.getSeries('1.0')
+    >>> firefox_milestone = firefox_one_zero.newMilestone(
+    ...     name='1.0-rc1', dateexpected=datetime(2018, 10, 1))
+
+They're ordered by dateexpected.
+
+    >>> [(milestone.name, milestone.dateexpected.strftime('%Y-%m-%d'))
+    ...  for milestone in firefox.milestones]
+    [(u'1.0-rc1', '2018-10-01'), (u'1.0', '2056-10-16')]
+
+Only milestones which have visible=True are returned by the .milestones
+property.
+
+    >>> firefox_milestone.visible = False
+    >>> flush_database_updates()
+    >>> [milestone.name for milestone in firefox.milestones]
+    [u'1.0']
+
+To get all milestones of a given product we have the .all_milestones property.
+
+    >>> [milestone.name for milestone in firefox.all_milestones]
+    [u'1.0-rc1', u'1.0']
+
+== Products With Branches ==
+
+We can also find all the products that have branches.
+
+    >>> productset.getProductsWithBranches().count()
+    6
+    >>> for product in productset.getProductsWithBranches():
+    ...     print product.name
+    evolution
+    firefox
+    gnome-terminal
+    iso-codes
+    landscape
+    thunderbird
+
+Only products that have "active" branches are returned in the query.
+Branches that are either Merged or Abandoned are not considered active.
+
+By marking all of Thunderbird's branches as Abandoned, thunderbird will
+no longer appear in the result set.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchLifecycleStatus, IBranchSet)
+    >>> thunderbird_branches = getUtility(IBranchSet).getBranchesForProduct(
+    ...     product=productset.getByName('thunderbird'),
+    ...     lifecycle_statuses=None)
+    >>> for branch_view in thunderbird_branches:
+    ...     # XXX: MichaelHudson 2007-10-12 bug=154016: getBranchesForProduct
+    ...     # returns objects from BranchWithSortKeys, which is a view and so
+    ...     # can't be modified.  Get the branch with the same id.  This can
+    ...     # go away when BranchWithSortKeys goes away, i.e. when we get
+    ...     # away from SQLObject.
+    ...     branch = getUtility(IBranchSet).get(branch_view.id)
+    ...     branch.lifecycle_status = BranchLifecycleStatus.ABANDONED
+    >>> flush_database_updates()
+
+    >>> for product in productset.getProductsWithBranches():
+    ...     print product.name
+    evolution
+    firefox
+    gnome-terminal
+    iso-codes
+    landscape
+
+The getProductsWithBranches method takes an optional parameter that limits
+the number of products returned.
+
+    >>> for product in productset.getProductsWithBranches(3):
+    ...     print product.name
+    evolution
+    firefox
+    gnome-terminal
+
+== Primary translatable ==
+
+Primary translatable series in a product should follow series where
+development is focused on.  To be able to do changes to facilitate
+testing this, we need to log in as a translations administrator.
+
+    >>> login('carlos@canonical.com')
+    >>> translations_admin = getUtility(IPersonSet).getByEmail(
+    ...     'carlos@canonical.com')
+
+We'll also create new templates, so we need IPOTemplateSet:
+
+    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> potemplate_set = getUtility(IPOTemplateSet)
+
+Firefox has two series, but no translatable series either:
+
+    >>> firefox = productset.getByName('firefox')
+    >>> for firefoxseries in firefox.serieses:
+    ...     print '%s %s' % (firefoxseries.displayname,
+    ...                      firefoxseries.getCurrentTranslationTemplates())
+    1.0 []
+    trunk []
+    >>> print firefox.primary_translatable
+    None
+
+Development focus series for Firefox is trunk.
+
+    >>> firefox_trunk = firefox.development_focus
+    >>> print firefox_trunk.displayname
+    trunk
+
+But, there's also a 1.0 series for Firefox.
+
+    >>> firefox_10 = firefox.getSeries('1.0')
+
+We can create and associate a new potemplate with Firefox 1.0.
+
+    >>> potemplatesubset = potemplate_set.getSubset(
+    ...     productseries=firefox_10)
+    >>> firefox_10_pot = potemplatesubset.new('firefox',
+    ...                                       'firefox',
+    ...                                       'firefox.pot',
+    ...                                       translations_admin)
+
+And set that product as using translations officially. We need it so
+translations are available.
+
+    >>> firefox.official_rosetta = True
+    >>> flush_database_updates()
+
+The primary_translatable now points at firefox 1.0:
+
+    >>> print firefox.primary_translatable.displayname
+    1.0
+
+If we associate a potemplate with Firefox trunk, it will become the primary
+translatable because it's a series with development focus.
+
+    >>> potemplatesubset = potemplate_set.getSubset(
+    ...     productseries=firefox_trunk)
+    >>> firefox_trunk_pot = potemplatesubset.new('firefox',
+    ...                                          'firefox',
+    ...                                          'firefox.pot',
+    ...                                          translations_admin)
+    >>> print firefox.primary_translatable.displayname
+    trunk
+
+If we change the development_focus, primary_translatable changes as well.
+
+    >>> firefox.development_focus = firefox_10
+    >>> print firefox.primary_translatable.displayname
+    1.0
+
+
+= Series list = 
+
+The series for a product are returned as a sorted list, with the
+exception that the current development focus is first.
+
+    >>> from zope.component import getView
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest()
+    >>> firefox_view = getView(firefox, "+index", request)
+    >>> sorted_series = firefox_view.sorted_series_list
+    >>> for series in sorted_series:
+    ...     print series.name
+    1.0
+    trunk
+
+Change the development focus and the sort order changes.
+
+    >>> firefox.development_focus = sorted_series[-1]
+    >>> sorted_series = firefox_view.sorted_series_list
+    >>> for series in sorted_series:
+    ...     print series.name
+    trunk
+    1.0

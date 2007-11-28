@@ -1,12 +1,19 @@
-<div class="portlet">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-details">
   <h2>Further information</h2>
   <div class="portletBody portletContent">
 
     <img src="/@@/info" />
-    When you register a product in Launchpad, you get the ability to manage
-    the product. Later on, you can pass that permission on to someone else
-    if, for example, the leader of the product development effort wants to
+    When you register a project in Launchpad, you get the ability to manage
+    the project. Later on, you can pass that permission on to someone else
+    if, for example, the leader of the project development effort wants to
     manage it personally.
-    
+
   </div>
 </div>
+</tal:root>

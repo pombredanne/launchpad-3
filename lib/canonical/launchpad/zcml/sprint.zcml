@@ -1,7 +1,6 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:lp="http://launchpad.canonical.com"
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
@@ -15,8 +14,9 @@
 
   <browser:menus
       module="canonical.launchpad.browser.sprint"
-      classes="SprintFacets SprintOverviewMenu 
-               SprintSpecificationsMenu SprintSetContextMenu"
+      classes="SprintFacets SprintOverviewMenu
+               SprintSpecificationsMenu SprintSetContextMenu
+               SprintSetFacets"
       />
 
   <browser:navigation
@@ -50,6 +50,9 @@
       name="+listing-detailed"
       template="../templates/sprint-listing-detailed.pt" />
     <browser:page
+      name="+listing-simple"
+      template="../templates/sprint-listing-simple.pt" />
+    <browser:page
       name="+portlet-details"
       template="../templates/sprint-portlet-details.pt" />
     <browser:page
@@ -67,7 +70,7 @@
       attribute="mdzCsv" />
     <browser:page
       name="+specs"
-      template="../templates/sprint-specs.pt" />
+      template="../templates/hasspecifications-specs.pt" />
     <browser:page
       name="+categorized"
       template="../templates/specificationtarget-categorized.pt" />
@@ -89,6 +92,14 @@
       permission="launchpad.Edit"
       facet="overview"
       template="../templates/sprint-edit.pt" />
+
+  <browser:page
+      name="+branding"
+      for="canonical.launchpad.interfaces.ISprint"
+      class="canonical.launchpad.browser.SprintBrandingView"
+      permission="launchpad.Edit"
+      facet="overview"
+      template="../templates/object-branding.pt" />
 
   <browser:page
       name="+attend"
@@ -126,6 +137,35 @@
     template="../templates/sprint-meeting-export.pt"
     />
 
+  <browser:page
+    name="+addspec"
+    for="canonical.launchpad.interfaces.ISprint"
+    class="canonical.launchpad.browser.NewSpecificationFromSprintView"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
+
+  <browser:page
+    name="+register-a-blueprint-button"
+    for="canonical.launchpad.interfaces.ISprint"
+    class="canonical.launchpad.browser.RegisterABlueprintButtonView"
+    permission="zope.Public"
+  />
+
+  <!-- IHasSprints -->
+  <browser:pages
+    for="canonical.launchpad.interfaces.IHasSprints"
+    facet="overview"
+    permission="zope.Public">
+    <browser:page
+      name="+portlet-coming-sprints"
+      template="../templates/hassprints-portlet-coming-sprints.pt" />
+    <browser:page
+      name="+sprints"
+      template="../templates/hassprints-sprints.pt" />
+  </browser:pages>
+
+
   <!-- SprintSet -->
   <content class="canonical.launchpad.database.SprintSet">
     <allow interface="canonical.launchpad.interfaces.ISprintSet" />
@@ -143,6 +183,13 @@
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.ISprintSet"
+    factory="canonical.launchpad.browser.SprintSetSOP"
+    permission="zope.Public"
+    />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISprintSet"
     name="+index" />
@@ -154,20 +201,34 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISprintSet"
+    class="canonical.launchpad.browser.SprintSetView"
+    facet="overview"
     permission="zope.Public">
     <browser:page
       name="+index"
       template="../templates/sprints-index.pt" />
+    <browser:page
+      name="+all"
+      template="../templates/sprints-all.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/sprints-portlet-details.pt" />
   </browser:pages>
 
   <browser:page
-      name="+new"
-      for="canonical.launchpad.interfaces.ISprintSet"
-      class="canonical.launchpad.browser.SprintAddView"
-      permission="launchpad.AnyPerson"
-      template="../templates/sprint-new.pt" />
+    name="+new"
+    for="canonical.launchpad.interfaces.ISprintSet"
+    facet="overview"
+    class="canonical.launchpad.browser.SprintAddView"
+    permission="launchpad.AnyPerson"
+    template="../templates/sprint-new.pt" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ISprint"
+    name="+attendees-csv"
+    class="canonical.launchpad.browser.sprint.SprintAttendeesCsvExportView"
+    permission="launchpad.AnyPerson"
+    attribute="__call__"
+    />
 
 </configure>

@@ -1,0 +1,85 @@
+= Editing a Question Posted in a non-English Language =
+
+Register a new answer contact to change the list of supported languages.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPersonSet)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> login('salgado@ubuntu.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> salgado = getUtility(IPersonSet).getByEmail('salgado@ubuntu.com')
+    >>> ubuntu.addAnswerContact(salgado)
+    True
+    >>> flush_database_updates()
+    >>> logout()
+
+A user can change the language a question was written, either because
+the language was wrongly set, or because he decided to rewrite the
+question in a language he speaks better.
+
+The language can be changed on the regular 'Edit Question' screen.
+
+    >>> browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
+    >>> browser.open('http://launchpad.dev/ubuntu/+question/5')
+    >>> browser.getLink('Edit question').click()
+    >>> print browser.url
+    http://answers.launchpad.dev/ubuntu/+question/5/+edit
+
+That screen contains a selection field to allow changing the question
+language. The list of available languages is determined by the user's
+preferred language. There is a link to allow changing this list:
+
+    >>> browser.getLink('Change your preferred languages').click()
+    >>> print browser.title
+    Dafydd Harries's preferred languages
+
+If he choose a language that is not spoken by any of the registered
+answer contacts, a warning is displayed:
+
+    # We should use goBack() here but can't because of bug #98372
+    >>> browser.open('http://answers.launchpad.dev/ubuntu/+question/5/+edit')
+    >>> browser.getControl('Welsh').selected = True
+    >>> browser.getControl('Summary').value = 'Gofyn cymorth'
+    >>> browser.getControl('Continue').click()
+
+    >>> browser.url
+    'http://answers.launchpad.dev/ubuntu/+question/5/+edit'
+
+    >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
+    ...     print tag.renderContents()
+    <strong>Welsh (cy)</strong> doesn't seem to be
+    a language spoken by any answer contacts in this community. If you
+    go ahead and ask a question in that language, no answer
+    contacts will be able to read it. Currently, the languages spoken
+    by at least one answer contact are: English, Portuguese (Brazil).
+
+If he changes the language to another unsupported language, he will
+get another warning.
+
+    >>> browser.getControl('Language').value = ['ja']
+    >>> browser.getControl('Summary').value = (
+    ...     u'\u52a9\u3051\u306e\u8981\u6c42'.encode('utf-8'))
+    >>> browser.getControl('Continue').click()
+
+    >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
+    ...     print tag.renderContents()
+    <strong>Japanese (ja)</strong> doesn't seem to be
+    a language spoken by any answer contacts in this community. If you
+    go ahead and ask a question in that language, no answer
+    contacts will be able to read it. Currently, the languages spoken
+    by at least one answer contact are: English, Portuguese (Brazil).
+
+If even after the warning he decides to go ahead, the unsupported
+language is accepted.
+
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
+    '.../ubuntu/+question/5'
+    >>> browser.title.decode('utf-8')
+    u'Ubuntu question #...\u52a9\u3051\u306e\u8981\u6c42...'
+    >>> details_portlet = find_tag_by_id(browser.contents, 'portlet-details')
+    >>> print details_portlet.find('b', text='Language:').next.strip()
+    Japanese
+

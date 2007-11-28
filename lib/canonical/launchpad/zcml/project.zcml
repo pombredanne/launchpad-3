@@ -2,13 +2,13 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
-    xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
-    
+
     <!-- Project -->
     <content class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
-        <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
+        <allow interface="canonical.launchpad.interfaces.IFAQCollection" />
+        <allow interface="canonical.launchpad.interfaces.IQuestionCollection" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProject"
@@ -20,18 +20,55 @@
         classes="ProjectNavigation"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProject"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProjectDynMenu"
+        attribute="__call__"
+        name="+menudata"
+        />
+
+    <adapter
+        provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+        for="canonical.launchpad.interfaces.IProject"
+        factory="canonical.launchpad.browser.ProjectSOP"
+        permission="zope.Public"
+        />
+
     <browser:menus
         module="canonical.launchpad.browser.project"
         classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu
-                 ProjectSpecificationsMenu ProjectSetContextMenu" />
-
+                 ProjectSpecificationsMenu ProjectSetContextMenu
+                 ProjectAnswersMenu ProjectTranslationsMenu"
+        />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
-        name="+index" />
+        name="+index"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        name="+branches"
+        layer="canonical.launchpad.layers.CodeLayer"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        name="+bugs"
+        layer="canonical.launchpad.layers.BugsLayer"
+        />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
         name="+specs"
         layer="canonical.launchpad.layers.BlueprintLayer"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        name="+questions"
+        layer="canonical.launchpad.layers.AnswersLayer"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:pages
@@ -41,32 +78,52 @@
             name="+index"
             facet="overview"
             template="../templates/project-index.pt"
-            lp:url="/projects/$Project.name/" />
-        <browser:page
-            name="+branches"
-            facet="overview"
-            template="../templates/project-branches.pt"
-            lp:url="/projects/$Project.name/+branches" />
+            />
         <browser:page
             name="+bounties"
             facet="bounties"
             template="../templates/related-bounties.pt"
-            lp:url="/projects/$Project.name/+bounties/" />
+            />
         <browser:page
             name="+listing-detailed"
-            template="../templates/project-listing-detailed.pt"
+            template="../templates/project-listing-detailed.pt" />
+       <browser:page
+            name="+milestones"
+            facet="overview"
+            template="../templates/object-milestones.pt"
             />
 
        <!-- Projects portlets -->
        <browser:page
             name="+portlet-bounties"
             facet="bounties"
-            template="../templates/object-portlet-bounties.pt" />
+            template="../templates/object-portlet-bounties.pt"
+            />
        <browser:page
             name="+portlet-details"
             facet="overview"
-            template="../templates/project-portlet-details.pt" />
+            template="../templates/project-portlet-details.pt"
+            />
+       <browser:page
+            name="+portlet-lifecycle"
+            facet="overview"
+            template="../templates/project-portlet-lifecycle.pt"
+            />
+       <browser:page
+            name="+portlet-milestones"
+            facet="overview"
+            template="../templates/object-portlet-milestones.pt"
+            />
     </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectBranchesView"
+        facet="branches"
+        permission="zope.Public"
+        name="+branches"
+        template="../templates/project-branches.pt"
+    />
 
     <browser:page
         for="canonical.launchpad.interfaces.IProject"
@@ -74,18 +131,41 @@
         facet="overview"
         permission="zope.Public"
         name="+rdf"
-        lp:url="/projects/$Project.name/+rdf"
         attribute="__call__"
+        />
+
+    <browser:page
+        name="+translations"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.TranslationsRedirectView"
+        permission="zope.Public"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProject"
+        permission="zope.Public"
+        name="+translations"
+        facet="translations"
+        template="../templates/project-translations.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <browser:page
+        name="+help-translate-button"
+        facet="translations"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.HelpTranslateButtonView"
+        permission="zope.Public"
         />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IProject"
-    class="canonical.launchpad.browser.SpecificationTargetView"
+    class="canonical.launchpad.browser.HasSpecificationsView"
     facet="specifications"
     permission="zope.Public">
     <browser:page
       name="+specs"
-      template="../templates/project-specs.pt" />
+      template="../templates/hasspecifications-specs.pt" />
     <browser:page
       name="+assignments"
       template="../templates/specificationtarget-assignments.pt" />
@@ -105,17 +185,24 @@
           <browser:page
               name="+reassign"
               template="../templates/object-reassignment.pt"
-              lp:url="/project/$project.id/+reassign" />
+              />
     </browser:pages>
 
     <browser:page
-        name="+new"
-        for="canonical.launchpad.interfaces.IProjectSet"
-        class="canonical.launchpad.browser.ProjectAddView"
-        facet="overview"
-        permission="launchpad.Admin"
-        template="../templates/project-add.pt"
-        lp:url="/projects/+new" />
+      name="+addspec"
+      for="canonical.launchpad.interfaces.IProject"
+      class="canonical.launchpad.browser.NewSpecificationFromProjectView"
+      facet="specifications"
+      permission="launchpad.AnyPerson"
+      template="../templates/specification-add.pt"
+    />
+
+    <browser:page
+        name="+register-a-blueprint-button"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.RegisterABlueprintButtonView"
+        permission="zope.Public"
+        />
 
     <browser:page
         name="+edit"
@@ -124,45 +211,37 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/project-edit.pt"
-        lp:url="/projects/$Project.name/+edit" />
+        />
 
-    <browser:editform
+    <browser:page
+        name="+branding"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectBrandingView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/object-branding.pt"
+        />
+
+    <browser:page
         name="+review"
         for="canonical.launchpad.interfaces.IProject"
-        schema="canonical.launchpad.interfaces.IProject"
-        class="canonical.launchpad.browser.ProjectEditView"
+        class="canonical.launchpad.browser.ProjectReviewView"
         facet="overview"
-        label="Review upstream project details"
-        fields="name displayname title summary description homepageurl
-                wikiurl sourceforgeproject freshmeatproject owner active
-                reviewed"
         permission="launchpad.Admin"
-        template="../templates/launchpad-editform.pt"
-        lp:url="/projects/$Project.name/+review">
-    </browser:editform>
+        template="../templates/project-edit.pt"
+        />
 
     <browser:editform
         name="+changetranslators"
         for="canonical.launchpad.interfaces.IProject"
-        facet="overview"
+        facet="translations"
         schema="canonical.launchpad.interfaces.IProject"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
         label="Select a new translation group"
-        template="../templates/launchpad-editform.pt"
-        lp:url="/projects/$Project.name/+changetranslators" />
-
-    <browser:editform
-        name="+driver"
-        for="canonical.launchpad.interfaces.IProject"
-        schema="canonical.launchpad.interfaces.IProject"
-        fields="driver"
-        class="canonical.launchpad.browser.ProjectEditView"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/object-driver.pt"
-        lp:url="/$Project.name/+driver">
-    </browser:editform>
+        template="../templates/project-translators.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:page
         name="+newproduct"
@@ -171,7 +250,7 @@
         class="canonical.launchpad.browser.ProjectAddProductView"
         permission="launchpad.AnyPerson"
         template="../templates/product-add.pt"
-        lp:url="/projects/$Project.name/+newproduct" />
+        />
 
     <browser:addform
       name="+linkbounty"
@@ -184,7 +263,7 @@
       keyword_arguments="project bounty"
       permission="launchpad.AnyPerson"
       template="../templates/bounty-link.pt"
-      lp:url="/projects/$Project.name/+linkbounty">
+      >
       <browser:widget
         field="project"
         class="canonical.widgets.ContextWidget" />
@@ -201,6 +280,42 @@
       permission="launchpad.AnyPerson"
       template="../templates/bounty-add.pt"
       />
+
+    <facet facet="answers">
+        <browser:page
+            name="+addquestion"
+            for="canonical.launchpad.interfaces.IProject"
+            class="canonical.launchpad.browser.ProjectAddQuestionView"
+            permission="launchpad.AnyPerson"
+            />
+        <browser:renamed-page
+            name="+addticket"
+            for="canonical.launchpad.interfaces.IProject"
+            new_name="+addquestion"
+            rootsite="answers"
+            />
+        <browser:page
+            name="+ask-a-question-button"
+            for="canonical.launchpad.interfaces.IProject"
+            class="canonical.launchpad.browser.AskAQuestionButtonView"
+            permission="zope.Public"
+            />
+    </facet>
+
+    <browser:page
+        name="+filebug"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectFileBugGuidedView"
+        facet="bugs"
+        permission="launchpad.AnyPerson" />
+
+    <browser:page
+        name="+filebug-advanced"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectFileBugAdvancedView"
+        facet="bugs"
+        permission="launchpad.AnyPerson" />
+
 
     <!-- ProjectSet-->
     <content class="canonical.launchpad.database.ProjectSet">
@@ -230,28 +345,37 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IProjectSet"
         facet="overview"
-        permission="zope.Public"
+        permission="launchpad.Admin"
         class="canonical.launchpad.browser.ProjectSetView"
-        lp:url="/projects/">
+        >
         <browser:page
-            name="+all" 
+            name="+all"
             template="../templates/projects-all.pt"
-            lp:url="/projects/+all" />
+            />
         <browser:page
-            name="+index" 
+            name="+index"
             template="../templates/projects-index.pt"
-            lp:url="/projects/+index" />
+            />
     </browser:pages>
+
+    <browser:page
+      name="+new"
+      for="canonical.launchpad.interfaces.IProjectSet"
+      class="canonical.launchpad.browser.ProjectAddView"
+      facet="overview"
+      permission="launchpad.Admin"
+      template="../templates/project-add.pt"
+      />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProjectSet"
         facet="overview"
         class="canonical.launchpad.browser.ProjectSetView"
-        permission="launchpad.AnyPerson">
+        permission="launchpad.Admin">
         <browser:page
             name="+review"
             template="../templates/registry-review.pt"
-            lp:url="/projects/+review" />
+            />
     </browser:pages>
 
 </configure>

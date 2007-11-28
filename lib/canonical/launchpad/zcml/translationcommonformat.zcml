@@ -1,0 +1,13 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <content
+        class="canonical.launchpad.translationformat.translation_common_format.TranslationMessageData">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationMessageData" />
+    </content>
+
+</configure>

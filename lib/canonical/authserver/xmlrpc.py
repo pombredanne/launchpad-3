@@ -11,7 +11,7 @@ class UserDetailsResource(xmlrpc.XMLRPC):
 
     def xmlrpc_getUser(self, loginID):
         """Get a user
-        
+
         :returns: user dict if loginID exists, otherwise empty dict
         """
         if self.debug:
@@ -20,7 +20,7 @@ class UserDetailsResource(xmlrpc.XMLRPC):
 
     def xmlrpc_authUser(self, loginID, sshaDigestedPassword):
         """Authenticate a user
-        
+
         :returns: user dict if authenticated, otherwise empty dict
         """
         if self.debug:
@@ -30,11 +30,11 @@ class UserDetailsResource(xmlrpc.XMLRPC):
 
     def xmlrpc_getSSHKeys(self, loginID):
         """Retrieve SSH public keys for a given user
-        
+
         :param loginID: a login ID.
         :returns: list of 2-tuples of (key type, key text).  This list will be
             empty if the user has no keys or does not exist.
-        
+
         :returns: user dict if loginID exists, otherwise empty dict
         """
         if self.debug:
@@ -51,7 +51,7 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
 
     def xmlrpc_getUser(self, loginID):
         """Get a user
-        
+
         :returns: user dict if loginID exists, otherwise empty dict
         """
         if self.debug:
@@ -60,16 +60,16 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
 
     def xmlrpc_authUser(self, loginID, password):
         """Authenticate a user
-        
+
         :returns: user dict if authenticated, otherwise empty dict
         """
         if self.debug:
             print 'authUser(%r, %r)' % (loginID, password)
         return self.storage.authUser(loginID, password)
-        
+
     def xmlrpc_getSSHKeys(self, loginID):
         """Retrieve SSH public keys for a given user
-        
+
         :param loginID: a login ID.
         :returns: list of 2-tuples of (key type, key text).  This list will be
             empty if the user has no keys or does not exist.
@@ -79,22 +79,42 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
         return self.storage.getSSHKeys(loginID)
 
     def xmlrpc_getBranchesForUser(self, personID):
-        # XXX: docstring
+        """See IHostedBranchStorage."""
         if self.debug:
             print 'getBranchesForUser(%r)' % (personID,)
         return self.storage.getBranchesForUser(personID)
 
     def xmlrpc_fetchProductID(self, productName):
-        # XXX: docstring
+        """See IHostedBranchStorage."""
         if self.debug:
             print 'fetchProductID(%r)' % (productName,)
         return self.storage.fetchProductID(productName)
 
-    def xmlrpc_createBranch(self, personID, productID, branchName):
-        # XXX: docstring
+    def xmlrpc_createBranch(self, loginID, personName, productName,
+                            branchName):
+        """See IHostedBranchStorage."""
         if self.debug:
-            print 'createBranch(%r, %r, %r)' % (personID, productID, branchName)
-        return self.storage.createBranch(personID, productID, branchName)
+            print 'createBranch(%r, %r, %r, %r)' % (loginID, personName,
+                                                    productName, branchName)
+        return self.storage.createBranch(
+            loginID, personName, productName, branchName)
+
+    def xmlrpc_requestMirror(self, branchID):
+        """See IHostedBranchStorage."""
+        if self.debug:
+            print 'requestMirror(%r)' % (branchID,)
+        return self.storage.requestMirror(branchID)
+
+    def xmlrpc_getBranchInformation(self, loginID, userName, productName,
+                                    branchName):
+        """See IHostedBranchStorage."""
+        if self.debug:
+            print 'getBranchInformation(%r, %r, %r, %r)' % (loginID,
+                                                            userName,
+                                                            productName,
+                                                            branchName)
+        return self.storage.getBranchInformation(
+            loginID, userName, productName, branchName)
 
 
 class BranchDetailsResource(xmlrpc.XMLRPC):
@@ -104,14 +124,14 @@ class BranchDetailsResource(xmlrpc.XMLRPC):
         self.storage = storage
         self.debug = debug
 
-    def xmlrpc_getBranchPullQueue(self):
+    def xmlrpc_getBranchPullQueue(self, branch_type):
         if self.debug:
-            print 'getBranchPullQueue()'
-        d = self.storage.getBranchPullQueue()
+            print 'getBranchPullQueue(%r)' % (branch_type,)
+        d = self.storage.getBranchPullQueue(branch_type)
         if self.debug:
             def printresult(result):
-                for (branch_id, pull_url) in result:
-                    print branch_id, pull_url
+                for (branch_id, pull_url, unique_name) in result:
+                    print branch_id, pull_url, unique_name
                 return result
             d.addCallback(printresult)
         return d
@@ -137,4 +157,10 @@ class BranchDetailsResource(xmlrpc.XMLRPC):
             print 'mirrorFailed(%r, %r)' % (branchID, reason)
         return self.storage.mirrorFailed(branchID, reason)
 
-        
+    def xmlrpc_recordSuccess(self, name, hostname,
+                             date_started, date_completed):
+        if self.debug:
+            print 'recordSuccess(%r, %r, %r, %r)' % (
+                name, hostname, date_started, date_completed)
+        return self.storage.recordSuccess(
+            name, hostname, date_started, date_completed)

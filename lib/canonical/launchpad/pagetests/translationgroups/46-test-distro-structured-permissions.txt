@@ -1,78 +1,84 @@
-First, we set the 'structured' permission for the netapplet product
-translations.
+First, we state that netapplet is using Launchpad Translations.
 
-  >>> print http(r"""
-  ... POST /netapplet/+changetranslators HTTP/1.1
-  ... Content-Length: 766
-  ... Content-Type: multipart/form-data; boundary=---------------------------13732029051312745333834570722
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/netapplet/+changetranslators
-  ... 
-  ... -----------------------------13732029051312745333834570722
-  ... Content-Disposition: form-data; name="field.translationgroup"
-  ... 
-  ... testing-translation-team
-  ... -----------------------------13732029051312745333834570722
-  ... Content-Disposition: form-data; name="field.translationgroup-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------13732029051312745333834570722
-  ... Content-Disposition: form-data; name="field.translationpermission"
-  ... 
-  ... Structured
-  ... -----------------------------13732029051312745333834570722
-  ... Content-Disposition: form-data; name="field.translationpermission-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------13732029051312745333834570722
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------13732029051312745333834570722--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://localhost:9000/netapplet
+
+    >>> admin_browser.open('http://launchpad.dev/netapplet')
+    >>> admin_browser.getLink('Change details').click()
+    >>> admin_browser.getControl(
+    ...     'Translations for this project are done in Launchpad'
+    ...     ).selected = True
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.title
+    Network Applet in Launchpad
+
+We set the 'Structured' permission and select the 'Just a testing team'
+as the translation group for the netapplet product...
+
+    >>> admin_browser.getLink('Translations').click()
+    >>> admin_browser.getLink('Change translators').click()
+    >>> admin_browser.getControl('Translation group').displayOptions
+    ['(no value)', 'Single-language Translators',
+     'The PolyGlot Translation Group', 'Just a testing team']
+    >>> admin_browser.getControl('Translation group').displayValue = [
+    ...     'Just a testing team']
+    >>> admin_browser.getControl(
+    ...     'Translation Permission System').displayValue = ['Structured']
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.title
+    Translations of Network Applet in Launchpad
+
+... and its associated project, GNOME.
+
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/gnome/+changetranslators')
+    >>> admin_browser.getControl('Translation group').displayValue = [
+    ...     'Just a testing team']
+    >>> admin_browser.getControl(
+    ...     'Translation Permission System').displayValue = ['Structured']
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.title
+    Set translation group for The GNOME Project
+    >>> for tag in find_tags_by_class(
+    ...     admin_browser.contents, 'informational message'):
+    ...     print tag.renderContents()
+    Updated on ...
 
 Now, we test that a member of a translation team is able to translate
 directly, in this example, we are using 'tsukimi' account.
 
-  >>> print http(r"""
-  ... GET /netapplet/trunk/+pots/netapplet/es/+translate HTTP/1.1
-  ... Authorization: Basic dHN1a2ltaUBxdWFxdWEubmV0OnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...You are translating...
-  ...
-  ...Dial-up connection...
-  ...
+    >>> tsukimi_browser = setupBrowser(auth='Basic tsukimi@quaqua.net:test')
+    >>> tsukimi_browser.open(
+    ...     'http://translations.launchpad.dev/netapplet/trunk/+pots/' +
+    ...         'netapplet/es/+translate')
+    >>> content = find_main_content(tsukimi_browser.contents)
+    >>> print content
+    <...
+    ...Translating into Spanish...
+    ...Dial-up connection...
 
 Next test is with a non member of that translation team, the 'No Privileges'
 account. We check that we get the warning that we are not members of the team.
 
-  >>> print http(r"""
-  ... GET /netapplet/trunk/+pots/netapplet/es/+translate HTTP/1.1
-  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...You are translating...
-  ...Your translations will be held for review...
-  ...
+    >>> no_priv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> no_priv_browser.open(
+    ...     'http://translations.launchpad.dev/netapplet/trunk/+pots/' +
+    ...         'netapplet/es/+translate')
+    >>> content = find_main_content(no_priv_browser.contents)
+    >>> print content
+    <...
+    ...Translating into Spanish...
+    ...Your translations will be held for review...
 
 And finally, we test that a language without a team lets to anyone (in this
 case, the 'No Privileges' account) to translate directly.
 
-  >>> print http(r"""
-  ... GET /netapplet/trunk/+pots/netapplet/fr/+translate HTTP/1.1
-  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...You are translating...
-  ...
-  ...French...
-  ...translators...
-  ...No translators currently designated for this PO file...
-  ...
+    >>> no_priv_browser.open(
+    ...     'http://translations.launchpad.dev/netapplet/trunk/+pots/' +
+    ...         'netapplet/fr/+translate')
+    >>> content = find_main_content(no_priv_browser.contents)
+    >>> print content
+    <...
+    ...Translating into French...
+
+    >>> portlet = find_portlet(no_priv_browser.contents, 'French translators')
+    >>> print portlet.renderContents()
+    <...No translators currently designated for this PO file...

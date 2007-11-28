@@ -5,8 +5,8 @@ import os.path
 
 from twisted.internet import reactor
 from twisted.python import log
+from twisted.python.failure import Failure
 
-from buildbot.process.base import BasicBuildFactory
 from buildbot.process.step import ShellCommand,BuildStep
 from buildbot.process.base import ConfigurableBuildFactory, ConfigurableBuild
 from buildbot.status.progress import Expectations
@@ -14,12 +14,15 @@ from buildbot.status.event import Event
 
 from importd.Job import CopyJob
 
+from zope.component import getUtility
+
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import ProductSeries
+from canonical.launchpad.interfaces import IProductSeriesSet, ImportStatus
+from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.webapp import canonical_url, errorlog
 from canonical.lp import initZopeless
-
-from canonical.lp.dbschema import ImportStatus
 
 
 def _interval_to_seconds(interval):
@@ -50,18 +53,24 @@ class LoggingLogAdaptor(logging.Handler):
         self.logger.msg(record.getMessage())
 
 
-### Former jobstuff.py. Beware, here be cruft! ###
-
-# job import logic
 def getTxnManager():
-    """get a current ZopelessTransactionManager"""
+    """Get a current ZopelessTransactionManager, execute zcml if needed.
+
+    We do not have a convenient hook to run initZopeless and
+    execute_zcml_for_scripts at botmaster start-up. This function should be
+    used when database access in needed, it return a transaction manager that
+    can be used to open a transaction. It will call initZopeless and
+    execute_zcml_for_scripts if necessary.
+    """
     # FIXME: That uses a protected attribute in ZopelessTransactionManager
     # -- David Allouche 2005-02-16
     from canonical.database.sqlbase import ZopelessTransactionManager
     if ZopelessTransactionManager._installed is None:
+        execute_zcml_for_scripts()
         return initZopeless(implicitBegin=False)
     else:
         return ZopelessTransactionManager._installed
+
 
 def tryToAbortTransaction():
     """Try to abort the transaction, ignore psycopg.Error.
@@ -87,7 +96,38 @@ def tryToAbortTransaction():
         pass
 
 
-def jobsFromDB(slave_home, archive_mirror_dir, autotest, push_prefix=None):
+def buildersFromDatabase(config):
+    """Create the list of Builder instances from ProductSeries in the database.
+
+    This is called by from botmaster/master.cfg. That file is executed by
+    Buildbot on initialization and when reloading the builders.
+
+    :param config: botmaster configuration module.
+    :return: list of buildbot Builder instances for active bazaar imports.
+    """
+    try:
+        jobs = jobsFromDB(
+            slave_home = config.slavehome,
+            archive_mirror_dir = config.baz_mirrors,
+            autotest = config.autotest,
+            push_prefix=config.bzr_mirrors)
+        slaves = config.private.bot_passwords.keys()
+        builders = jobsBuilders(
+            jobs, slaves,
+            importd_path=config.importd_path,
+            push_prefix=config.bzr_mirrors,
+            source_repo=config.source_repository,
+            blacklist_path=config.blacklist_path,
+            autotest = config.autotest)
+        return builders
+    except:
+        # Bare except, log OOPSes for all exceptions. Although we should only
+        # get database-related exceptions from here.
+        reportOops(config.autotest)
+        raise
+
+
+def jobsFromDB(slave_home, archive_mirror_dir, autotest, push_prefix):
     if autotest:
         importstatus = [ImportStatus.TESTING,
                         ImportStatus.TESTFAILED,
@@ -102,22 +142,30 @@ def jobsFromDB(slave_home, archive_mirror_dir, autotest, push_prefix=None):
         jobseries = ProductSeries.select(clause)
         jobs = list(jobsFromSeries(
             jobseries=jobseries,
-            slave_home = slave_home,
+            slave_home=slave_home,
             archive_mirror_dir=archive_mirror_dir,
-            push_prefix = push_prefix))
+            push_prefix=push_prefix,
+            autotest=autotest))
         getTxnManager().abort()
     except:
         tryToAbortTransaction()
         raise
     return jobs
 
-def jobsFromSeries(jobseries, slave_home, archive_mirror_dir, push_prefix):
+def jobsFromSeries(jobseries, slave_home, archive_mirror_dir, push_prefix,
+                   autotest):
     for series in jobseries:
         job = CopyJob()
         job.from_series(series)
         job.slave_home = slave_home
         job.archive_mirror_dir = archive_mirror_dir
         job.push_prefix = push_prefix
+        job.autotest = autotest
+        # Record the canonical url of the series now, althought it is only
+        # needed for oops reporting, so we can record BuildFailure OOPSes even
+        # without database access. To use canonical_url we need to have run
+        # execute_zcml_for_scripts, which is done in getTxnManager.
+        job.series_url = canonical_url(series)
         yield job
 
 def jobsBuilders(jobs, slavenames, importd_path, push_prefix,
@@ -125,12 +173,6 @@ def jobsBuilders(jobs, slavenames, importd_path, push_prefix,
                  autotest=False):
     builders = []
     for job in jobs:
-
-        # XXX: Transitional. This line allows getting the push_prefix from the
-        # job even if we do not upgrade the bostmaster right now to give
-        # push_prefix to jobsFromDB. -- David Allouche 2006-07-25
-        job.push_prefix = push_prefix
-
         factory = ImportDShellBuildFactory(
             job, job.slave_home, importd_path, push_prefix,
             blacklist_path, source_repo, autotest)
@@ -142,8 +184,33 @@ def jobsBuilders(jobs, slavenames, importd_path, push_prefix,
     return builders
 
 
+class BuildFailure(Exception):
+    """Exception recorded in OOPS for failed importd jobs."""
 
-from twisted.python.failure import Failure
+
+def reportOops(autotest, info=None, request=None):
+    """Record an OOPS and log the OOPS id.
+
+    Since we do not have a good hooking place to configure the OOPS reporting
+    system on botmaster startup, we do the configuration whenever we need to
+    report an OOPS. It is a bit ugly, but it should not be a problem.
+    """
+    if info is None:
+        info = sys.exc_info()
+    if request is None:
+        request = errorlog.ScriptRequest([])
+    if autotest:
+        errorreports = config.importd.autotest_errorreports
+    else:
+        errorreports = config.importd.production_errorreports
+    config.launchpad.errorreports = errorreports
+    # Instanciating ErrorReportingUtility every time is not thread safe,
+    # but it's not important because botmaster is single-threaded. And it
+    # ensure that the modified configuration is used.
+    error_reporting_utility = errorlog.ErrorReportingUtility()
+    error_reporting_utility.raising(info, request)
+    log.msg(" Recorded", request.oopsid)
+
 
 class NotifyingBuild(ConfigurableBuild):
     """Build that notifies of starts and finishes and can refresh itself.
@@ -157,9 +224,10 @@ class NotifyingBuild(ConfigurableBuild):
         try:
             self.getObserver().startBuild()
         except:
-            # Catch any exception, safely abort the transaction, convert the
-            # exception into a Twisted failure and pass it. Leaving the
-            # exception bubble up breaks Buildbot.
+            # Catch any exception, log an OOPS, safely abort the transaction,
+            # convert the exception into a Twisted failure and pass it. Leaving
+            # the exception bubble up breaks Buildbot.
+            self.importdReportException()
             f = Failure()
             tryToAbortTransaction()
             return self.buildException(f, "startBuild")
@@ -170,11 +238,17 @@ class NotifyingBuild(ConfigurableBuild):
             # catch recursive calls caused by a failure in observer
             self.__finished = True
             try:
+                if not successful:
+                    # Log a build failure OOPS before trying to update the
+                    # database, because the database access may raise an
+                    # exception, that will be logged separately.
+                    self.importdReportBuildFailure()
                 self.getObserver().buildFinished(successful)
             except:
-                # Catch any exception, safely abort the transaction, convert
-                # the exception into a Twisted failure and pass it. Leaving the
-                # exception bubble up breaks Buildbot.
+                # Catch any exception, log an OOPS, safely abort the
+                # transaction, convert the exception into a Twisted failure and
+                # pass it. Leaving the exception bubble up breaks Buildbot.
+                self.importdReportException()
                 f = Failure()
                 tryToAbortTransaction()
                 # that will cause buildFinished to be called recursively
@@ -207,6 +281,33 @@ class NotifyingBuild(ConfigurableBuild):
         if rerun:
             self.builder.forceBuild("botmaster", "import completed",
                                     periodic=False)
+
+    def importdReportException(self):
+        """Record an OOPS for the current exception.
+
+        Usually, exceptions are caused by database connection problems. So we
+        just log an OOPS for the exception and we do not try to give additional
+        details.
+        """
+        reportOops(self.importd_autotest)
+
+    def importdReportBuildFailure(self):
+        """Record an OOPS for the current failed job."""
+        # This method should not use the database, so we can accurately record
+        # build failures even without database access.
+        request = errorlog.ScriptRequest([
+            ('series.id', self.importDJob.seriesID)],
+            # XXX: DavidAllouche 2007-04-05:
+            # It would be nice to show step.words() and the step log here
+            # when recording a build failure. But I do not know how to retrieve
+            # this data. I tried looking at the buildbot code, but then the
+            # magic smoke started to escape out of my ears.
+            URL=self.importDJob.series_url)
+        # XXX: DavidAllouche 2007-04-05:
+        # We should be using step.words() as the BuildFailure argument to
+        # produce good oops summaries, but we do not have this data.
+        reportOops(self.importd_autotest,
+            (BuildFailure, BuildFailure(), None), request)
 
 
 class ImportDBuild(NotifyingBuild):
@@ -246,12 +347,16 @@ class ImportDBImplementor(object):
     def buildFinished(self, successful):
         getTxnManager().begin()
         self.setDateFinished()
-        if self.getSeries().importstatus in [ImportStatus.TESTING,
-                                             ImportStatus.AUTOTESTED,
-                                             ImportStatus.TESTFAILED]:
+        importstatus = self.getSeries().importstatus
+        if importstatus in [ImportStatus.TESTING,
+                            ImportStatus.AUTOTESTED,
+                            ImportStatus.TESTFAILED]:
             self.setAutotested(successful)
-        elif self.getSeries().importstatus == ImportStatus.PROCESSING:
+        if importstatus == ImportStatus.PROCESSING:
             self.processingComplete(successful)
+        if successful and importstatus in [ImportStatus.PROCESSING,
+                                           ImportStatus.SYNCING]:
+            self.getSeries().importUpdated()
         getTxnManager().commit()
 
     def setDateFinished(self):
@@ -273,7 +378,7 @@ class ImportDBImplementor(object):
         self.refreshBuilder(rerun=False)
 
     def processingComplete(self, successful):
-        """Import or sync run is complete, update database and buildbot.
+        """Import run is complete, update database and buildbot.
 
         If the job was an import, make it a sync and rerun it immediately.
         """
@@ -294,7 +399,7 @@ class ImportDBuildFactory(ConfigurableBuildFactory):
 
     buildClass = ImportDBuild
 
-    def __init__(self, job, jobfile, autotest=False):
+    def __init__(self, job, jobfile, autotest):
         self.steps = []
         self.job = job
         self.jobfile = jobfile
@@ -320,10 +425,11 @@ class ImportDBuildFactory(ConfigurableBuildFactory):
         raise NotImplementedError
 
     def newBuild(self):
-        # Save the job inside the build, so the startBuild and buildFinished
-        # handlers can use it
+        # Save the job and the autotest flag inside the build, so the
+        # startBuild and buildFinished handlers can use them.
         result = ConfigurableBuildFactory.newBuild(self)
         result.importDJob = self.job
+        result.importd_autotest = self.autotest
         return result
 
 

@@ -1,0 +1,33 @@
+= Appointing a Distribution Driver =
+
+Appoint Sample Person as the driver of the Ubuntu distribution.
+
+  >>> browser = setupBrowser(
+  ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> browser.open('http://launchpad.dev/ubuntu')
+  >>> browser.getLink('Appoint driver').click()
+
+  >>> browser.url
+  'http://launchpad.dev/ubuntu/+driver'
+  >>> browser.title
+  'Appoint the driver for Ubuntu Linux'
+
+  >>> browser.getControl('Driver').value = 'name12'
+  >>> browser.getControl('Change').click()
+
+After changing the driver, the user is redirected to the overview page where a
+message inform him of the driver change.
+
+  >>> browser.url
+  'http://launchpad.dev/ubuntu'
+
+  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+  ...     tag.renderContents()
+  'Successfully changed the driver to test@canonical.com'
+
+Sample Person is listed as the driver of the distribution.
+
+  >>> for tag in find_tags_by_class(browser.contents, 'summary'):
+  ...     'Sample Person' in tag.find(text='Driver:').findNext('a').renderContents()
+  True
+

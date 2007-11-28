@@ -1,14 +1,22 @@
-<div class="portlet">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 
-  <h2>Details</h2>
+<div class="portlet" id="portlet-details">
+
+  <h2>About these meetings</h2>
 
   <div class="portletBody portletContent">
 
     <img src="/@@/info" />
-    This is the Launchpad Meeting Tracker. You can register a meeting, and
-    then keep tight control over the agenda of the meeting. Only the meeting
+    You can register a meeting, and
+    then easily manage the agenda of the meeting. Anybody can propose a
+    blueprint for discussion at the meeting, but only the meeting
     organisers (the "drivers") can approve a topic on the meeting agenda.
 
   </div>
 
 </div>
+</tal:root>

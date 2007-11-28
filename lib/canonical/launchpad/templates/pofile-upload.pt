@@ -1,13 +1,31 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
 <div metal:fill-slot="main">
-
-        <h1>Upload a new version of <span tal:replace="context/title" /></h1>
+        <div>
+          <a tal:attributes="href context/potemplate/fmt:url"
+             tal:content="context/potemplate/title">
+            evolution 2.10 template
+          </a>
+        </div>
+        <h1>
+          Upload
+          <tal:language replace="context/language/englishname">
+            Spanish
+          </tal:language>
+          translation
+        </h1>
 
         <form action="+upload" method="POST" enctype="multipart/form-data">
             <table>

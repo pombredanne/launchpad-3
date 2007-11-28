@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>3
 <body>
 
   <div metal:fill-slot="body">
@@ -11,7 +18,7 @@
   <table>
   <tbody>
   <tr>
-  <td width="80%">
+  <td width="80%" id="main-content">
 
   <p tal:condition="not: view/reports">
     No reports were generated yet
@@ -27,9 +34,17 @@
     </thead>
     <tbody>
       <tr tal:repeat="report view/reports">
-        <td tal:content="report/datecreated/fmt:date" />
+        <td>
+          <span class="sortkey"
+            tal:content="report/datecreated/fmt:datetime" />
+          <span
+            tal:attributes="title report/datecreated/fmt:datetime"
+            tal:content="report/datecreated/fmt:approximatedate">
+            2005-11-14
+          </span>
+        </td>
         <td><a tal:content="report/csvfile/filename"
-               tal:attributes="href report/csvfile/url" />
+               tal:attributes="href report/csvfile/http_url" />
         </td>
       </tr>
     </tbody>
@@ -38,12 +53,13 @@
 
   </td>
   <td
-    width="20%"
+    width="20%" id="navigation"
     style="vertical-align: top;"
     tal:content="structure context/@@+portlet-navigation"
   />
   </tr>
-  </table>  
+  </tbody>
+  </table>
   
 </div>
 

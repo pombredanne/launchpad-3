@@ -1,9 +1,10 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Cve Reference interfaces. A CVE Reference is not an old-style cveref,
 it's part of the CVE database structure we get from cve.mitre.org, and
 describes a link between the CVE and another vulnerability tracking system.
-It is to CVE what a Watch is to Malone.
+It is to CVE what a Watch is to Launchpad Bugs.
 """
 
 __metaclass__ = type

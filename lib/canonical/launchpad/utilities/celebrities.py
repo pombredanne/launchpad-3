@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+"""Classes that implement ICelebrity interfaces."""
 
 __metaclass__ = type
 __all__ = ['LaunchpadCelebrities']
@@ -7,7 +8,7 @@ from zope.interface import implements
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPersonSet, IDistributionSet, IBugTrackerSet,
-    IProductSet, NotFoundError)
+    IProductSet, NotFoundError, IDistributionMirrorSet)
 
 class MutatedCelebrityError(Exception):
     """A celebrity has had its id or name changed in the database.
@@ -78,7 +79,7 @@ class CelebrityDescriptor:
 
 
 class LaunchpadCelebrities:
-    """See ILaunchpadCelebrities"""
+    """See `ILaunchpadCelebrities`."""
     implements(ILaunchpadCelebrities)
 
     admin = CelebrityDescriptor(IPersonSet, 'admins')
@@ -96,7 +97,30 @@ class LaunchpadCelebrities:
     registry = CelebrityDescriptor(IPersonSet, 'registry')
     bug_watch_updater = CelebrityDescriptor(IPersonSet, 'bug-watch-updater')
     bug_importer = CelebrityDescriptor(IPersonSet, 'bug-importer')
-    landscape = CelebrityDescriptor(IProductSet, 'landscape')
     launchpad = CelebrityDescriptor(IProductSet, 'launchpad')
-    support_tracker_janitor = CelebrityDescriptor(IPersonSet,
-                                                  'support-tracker-janitor')
+    launchpad_beta_testers = CelebrityDescriptor(
+        IPersonSet, 'launchpad-beta-testers')
+    janitor = CelebrityDescriptor(IPersonSet, 'janitor')
+    mailing_list_experts = CelebrityDescriptor(
+        IPersonSet, 'mailing-list-experts')
+
+    @property
+    def ubuntu_archive_mirror(self):
+        """See `ILaunchpadCelebrities`."""
+        mirror = getUtility(IDistributionMirrorSet).getByHttpUrl(
+            'http://archive.ubuntu.com/ubuntu/')
+        if mirror is None:
+            raise MissingCelebrityError('http://archive.ubuntu.com/ubuntu/')
+        assert mirror.isOfficial(), "Main mirror must be an official one."
+        return mirror
+
+    @property
+    def ubuntu_cdimage_mirror(self):
+        """See `ILaunchpadCelebrities`."""
+        mirror = getUtility(IDistributionMirrorSet).getByHttpUrl(
+            'http://releases.ubuntu.com/')
+        if mirror is None:
+            raise MissingCelebrityError('http://releases.ubuntu.com/')
+        assert mirror.isOfficial(), "Main mirror must be an official one."
+        return mirror
+

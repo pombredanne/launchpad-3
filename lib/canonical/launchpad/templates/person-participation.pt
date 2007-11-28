@@ -1,0 +1,83 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="help">
+  <p>
+    Launchpad has a sophisticated system for managing teams, including the
+    ability to create teams-of-teams. This page shows the teams that
+    <span tal:replace="context/title">Foo Bar</span> is a member of. You can
+    see the teams in which they are directly a member, and also the teams in
+    which they have indirect membership.
+  </p>
+  <p>
+    Indirect membership describes the case where a person is a member of a
+    team, which is in turn a member of another team. The person will then be
+    an indirect member of the other team.
+  </p>
+</div>
+
+<metal:heading fill-slot="pageheading">
+  <h1>Team participation</h1>
+</metal:heading>
+
+<div metal:fill-slot="main" tal:define="
+    direct context/myactivememberships;
+    indirect context/teams_indirectly_participated_in">
+
+  <p tal:condition="direct/count">
+    <span tal:replace="context/title">Foo Bar</span>
+    is a member of the following teams:
+  </p>
+  <p tal:condition="not: direct/count">
+    <span tal:replace="context/title">Foo Bar</span>
+    has not yet joined any teams.
+  </p>
+
+  <div class="left" tal:condition="direct/count">
+    <div class="portlet">
+      <h2>Direct membership</h2>
+      <table>
+        <tr tal:repeat="membership context/myactivememberships"
+            tal:replace="structure membership/@@+listing-simple" />
+      </table>
+    </div>
+  </div>
+
+  <div class="right" tal:condition="indirect/count">
+    <div class="portlet">
+      <h2>Indirect membership</h2>
+      <table>
+        <tr tal:repeat="team_via view/indirect_teams_via">
+          <td><img src="/@@/team"
+                   tal:replace="structure team_via/team/image:icon" />
+          </td>
+          <td>
+            <div>
+              <a tal:attributes="href team_via/team/fmt:url"
+                 tal:content="team_via/team/browsername"
+                 >Team name</a>
+            </div>
+            <div>
+              Via
+              <span tal:replace="team_via/via">guadamen</span>.
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

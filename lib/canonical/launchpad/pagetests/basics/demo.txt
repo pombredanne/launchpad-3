@@ -1,0 +1,29 @@
+Launchpad can brand instances as 'demo' instances to make it obvious to
+users that they are working in a playpen and changes they make do not
+affect the production systems.
+
+This is controlled by a config variable.
+
+    >>> from canonical.config import config
+    >>> config.launchpad.is_demo
+    False
+
+    >>> config.launchpad.is_demo = True
+    >>> browser.open('http://launchpad.dev/')
+    >>> print browser.contents
+    <...
+    <style...url(/@@/demo)...</style>
+    ...
+    <div id="copyright">...DEMO...</div>
+    ...
+
+    >>> config.launchpad.is_demo = False
+    >>> browser.open('http://launchpad.dev')
+    >>> 'demo' in browser.contents.lower()
+    False
+
+We could hard code this behavior for certain database names, as was done
+in the past, but using an explicit config option future proofs us against
+future changes, such as using multiple launchpad databases, and makes it
+easier to test the feature and see the styling.
+ 

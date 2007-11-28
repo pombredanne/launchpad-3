@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Bug notifications."""
 
@@ -66,3 +67,4 @@ class BugNotificationSet:
             ]
         pending_notifications.reverse()
         return pending_notifications
+

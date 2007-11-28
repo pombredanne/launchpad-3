@@ -1,0 +1,28 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-answer-contacts">
+
+  <h2>Answer contacts for <span tal:replace="context/displayname"/></h2>
+
+  <div class="portletBody portletContent"
+       tal:define="answer_contacts context/direct_answer_contacts">
+
+    <ul class="person" tal:condition="answer_contacts">
+      <li tal:repeat="answer_contact answer_contacts">
+        <a href="#"
+           tal:content="answer_contact/browsername"
+           tal:attributes="href answer_contact/fmt:url">Ubuntu Team</a>
+      </li>
+    </ul>
+
+    <p tal:condition="not: answer_contacts">
+      <i>There are no answer contacts.</i>
+    </p>
+
+  </div>
+</div>
+</tal:root>

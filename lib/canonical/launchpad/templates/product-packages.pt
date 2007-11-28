@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -14,41 +21,33 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Product Title</h3>
   <h1>Distribution packages</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
 
-      <p>
-        In Launchpad, distribution packages are associated with release series.
-      </p>
-
-  <tal:series repeat="series context/serieslist">
+  <tal:series repeat="series context/serieses">
     
-        <h2>
-          Release series
-          &#8220;<span tal:replace="series/name">main</span>&#8221;
-        </h2>
+    <h2>Series &#8220;<span tal:replace="series/name">main</span>&#8221;</h2>
 
     <table class="listing" tal:condition="series/packagings">
       <thead>
         <tr>
           <th>Distribution</th>
-          <th>Release</th>
+          <th>Series</th>
           <th>Source Package</th>
           <th>Version</th>
         </tr>
       </thead>
       <tbody>
         <tr tal:repeat="pkging series/packagings">
-          <td tal:content="pkging/distrorelease/distribution/displayname">Ubuntu</td>
-          <td><span tal:replace="pkging/distrorelease/version">4.05</span>
-              (<span tal:replace="pkging/distrorelease/name">hoary</span>)</td>
+          <td tal:content="pkging/distroseries/distribution/displayname">Ubuntu</td>
+          <td><span tal:replace="pkging/distroseries/version">4.05</span>
+              (<span tal:replace="pkging/distroseries/name">hoary</span>)</td>
               
             <td>
               <a
-                tal:attributes="href string:${pkging/distrorelease/fmt:url}/+source/${pkging/sourcepackagename/name}"
+                tal:attributes="href string:${pkging/distroseries/fmt:url}/+source/${pkging/sourcepackagename/name}"
                 tal:content="pkging/sourcepackagename/name"
               >Apache</a>
             </td>

@@ -1,31 +1,97 @@
+== Legend and headers display ==
 
-The PO Template Views
----------------------
+On template overview page, when user is not logged in (and there is no
+sufficient GeoIP data), or user has not set his preferred languages,
+legend should be hidden from him since he's looking only at the list
+of templates.
+
+We are pretending to be coming from 192.168.0.1 so no GeoIP data will
+match (otherwise, we'll get a couple of African languages as preferred
+languages, and we are testing behaviour when no languages are wanted).
+192.168.0.1 is just a random choice of an IP address for which we hold
+no GeoIP mappings.
+
+    >>> anon_browser.addHeader('X-Forwarded-For', '192.168.0.1')
+    >>> anon_browser.open(
+    ...     'http://translations.launchpad.dev/evolution/trunk/+translations')
+    >>> find_tag_by_id(anon_browser.contents, 'legend') is None
+    True
+
+When looking at a specific template with at least one translation, he
+will again see the legend.
+
+    >>> anon_browser.open(
+    ...    'http://translations.launchpad.dev/evolution/trunk/+pots/'
+    ...    'evolution-2.2')
+    >>> find_tag_by_id(anon_browser.contents, 'legend') is None
+    False
+
+The same happens for template overview page for packages.
+
+    >>> anon_browser.open(
+    ...    'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+    ...    '+translations')
+    >>> find_tag_by_id(anon_browser.contents, 'legend') is None
+    True
+
+And with at least one translation, legend is shown.
+
+    >>> anon_browser.open(
+    ...    'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+    ...    '+pots/man')
+    >>> find_tag_by_id(anon_browser.contents, 'legend') is None
+    False
+
+When there are no translations in a single template, legend and
+headers will not be shown.
+
+    # To check this, we need to state that this project uses Launchpad for
+    # translations.
+    >>> admin_browser.open('http://launchpad.dev/netapplet/+edit')
+    >>> admin_browser.getControl(
+    ...     'Translations for this project are done in Launchpad'
+    ...     ).selected = True
+    >>> admin_browser.getControl('Change').click()
+    >>> anon_browser.open(
+    ...     'http://translations.launchpad.dev/netapplet/trunk/+pots/'
+    ...     'netapplet')
+    >>> find_tag_by_id(anon_browser.contents, 'legend') is None
+    True
+
+And likewise for PO template pages for templates without translations
+in packages:
+
+    >>> anon_browser.open(
+    ...    'http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/'
+    ...    '+pots/man')
+    >>> find_tag_by_id(anon_browser.contents, 'legend') is None
+    True
+
+
+= The PO Template Views =
 
 Carlos is a translator who translates things into Spanish and Catalan.
 When he looks at available translations for Evolution in Hoary, he
 should see Catalan in the list.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution/+translations')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+translations'
-  >>> 'Catalan' in browser.contents
-  True
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
+    ...     'evolution/+translations')
+    >>> 'Catalan' in browser.contents
+    True
 
 But also, he doesn't want to see other languages in the list.  So, he
 shouldn't see eg. Japanese.
 
-  >>> 'Japanese' in browser.contents
-  False
+    >>> 'Japanese' in browser.contents
+    False
 
 Next, if he chooses to view all the languages, he should see Japanese
 among the languages on the page.
 
-  >>> browser.getLink('View Template & All Languages...').click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
-  >>> 'Japanese' in browser.contents
-  True
+    >>> browser.getLink('View Template & All Languages...').click()
+    >>> 'Japanese' in browser.contents
+    True
 
 So, everything is fine, and Carlos can sleep calmly.

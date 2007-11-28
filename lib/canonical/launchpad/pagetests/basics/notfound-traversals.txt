@@ -4,10 +4,6 @@ zope.interfaces.NotFound. This means they generate a System Error page
 instead of a correct 404 page. So we test them to ensure the correct HTTP
 status is returned.
 
-XXX: This test may be better done using a tweaked LinkChecker or other
-spider -- StuartBishop 20050822
-
-
 >>> def check_url(valid_url, auth=False, host='launchpad.dev'):
 ...     get_cmd = """
 ... GET %s HTTP/1.1
@@ -34,8 +30,8 @@ spider -- StuartBishop 20050822
 ...         return "%s returned status %s instead of 404\n\n%s" % (
 ...             invalid_url, invalid_rc, str(invalid_output))
 
->>> def check_not_found(url):
-...     output = http("GET %s HTTP/1.1\n" % url)
+>>> def check_not_found(url, host='launchpad.dev'):
+...     output = http("GET %s HTTP/1.1\nHost: %s" % (url, host))
 ...     status = output.getStatus()
 ...     if status != 404:
 ...         return "%s returned status %s instead of 404\n\n%s" % (
@@ -59,11 +55,41 @@ spider -- StuartBishop 20050822
 
 >>> check("/")
 >>> check("/rdf")
->>> check("/legal")
->>> check("/feedback")
+>>> check_redirect("/legal", status=301)
+>>> check_redirect("/faq", status=301)
+>>> check_redirect("/feedback", status=301)
+>>> check_redirect("/", host='feeds.launchpad.dev', status=301)
+>>> check_redirect("/+index", host='feeds.launchpad.dev', status=301)
 >>> check("/+graphics")
 
 >>> check("/translations/+about")
+
+>>> check("/+imports", host='translations.launchpad.dev')
+>>> check("/+imports/1/+index", auth=True, host='translations.launchpad.dev')
+>>> check_not_found("/+imports/foo", host='translations.launchpad.dev')
+
+>>> check("/+languages", host='translations.launchpad.dev')
+>>> check("/+languages/+add", auth=True, host='translations.launchpad.dev')
+>>> check("/+languages/es", host='translations.launchpad.dev')
+>>> check("/+languages/es/+admin", auth=True, host='translations.launchpad.dev')
+>>> check_not_found("/+languages/es/foos", host='translations.launchpad.dev')
+>>> check_not_found("/+languages/foos", host='translations.launchpad.dev')
+
+>>> check("/+groups", host='translations.launchpad.dev')
+>>> check("/+groups/+new", auth=True,
+...       host='translations.launchpad.dev')
+>>> check("/+groups/testing-translation-team",
+...       host='translations.launchpad.dev')
+>>> check("/+groups/testing-translation-team/+edit",
+...       auth=True, host='translations.launchpad.dev')
+>>> check("/+groups/testing-translation-team/+appoint",
+...       auth=True, host='translations.launchpad.dev')
+>>> check("/+groups/testing-translation-team/es",
+...       auth=True, host='translations.launchpad.dev')
+>>> check_not_found("/+groups/testing-translation-team/pt_br",
+...                 host='translations.launchpad.dev')
+>>> check_not_found("/+groups/foos",
+...                 host='translations.launchpad.dev')
 
 >>> check("robots.txt", host="shipit.ubuntu.dev")
 
@@ -75,17 +101,21 @@ spider -- StuartBishop 20050822
 >>> check("/codeofconduct/1.0/+sign", auth=True)
 >>> check("/codeofconduct/1.0/+download")
 
->>> check("/projects")
->>> check("/projects/+all")
->>> check("/projects/+review", auth=True)
+>>> check("/projectgroups", auth=True)
+>>> check("/projectgroups/+all", auth=True)
+>>> check("/projectgroups/+review", auth=True)
 >>> check("/mozilla")
 >>> check("/mozilla/firefox")
 >>> check("/mozilla/+branches")
+>>> check_redirect("/mozilla/+translations", status=301)
+>>> check("/mozilla/+translations", host='translations.launchpad.dev')
 
->>> check("/products")
->>> check("/products/+all")
+>>> check_redirect("/products", status=301)
+>>> check("/projects")
+>>> check("/projects/+all")
+>>> check("/projects/+review", auth=True)
 >>> check("/firefox")
->>> check_not_found("/firefox/+series")
+>>> check("/firefox/+series")
 >>> check("/firefox/1.0")
 >>> check("/firefox/1.0/+addpackage", auth=True)
 >>> check("/firefox/1.0/+ubuntupkg", auth=True)
@@ -93,10 +123,21 @@ spider -- StuartBishop 20050822
 >>> check("/firefox/1.0/+edit", auth=True)
 >>> check("/firefox/1.0/+specs")
 >>> check("/firefox/1.0/+addrelease", auth=True)
+>>> check_redirect("/firefox/1.0/+translations", status=301)
+>>> check("/firefox/1.0/+translations", host='translations.launchpad.dev')
+>>> check("/firefox/1.0/+imports", host='translations.launchpad.dev')
+>>> check("/firefox/1.0/1.0.0")
+>>> check("/firefox/1.0/1.0.0/+edit", auth=True)
+>>> check("/firefox/1.0/1.0.0/+adddownloadfile", auth=True)
+>>> check("/firefox/1.0/1.0.0/+review", auth=True)
+>>> check("/firefox/1.0/1.0.0/+rdf")
 >>> check("/firefox/+rdf")
 >>> check("/firefox/1.0/+rdf")
 >>> check("/firefox/+bugs")
 >>> check("/firefox/+cve")
+>>> check_redirect("/firefox/+translations", status=301)
+>>> check("/firefox/+translations", host='translations.launchpad.dev')
+>>> check_redirect("/projects/firefox", status=301)
 
 >>> check_not_found("/firefox/+milestone")
 >>> check("/firefox/+milestone/1.0")
@@ -110,20 +151,31 @@ spider -- StuartBishop 20050822
 >>> check("/ubuntu/+specs")
 >>> check("/ubuntu/+cve")
 >>> check("/ubuntu/+roadmap")
+>>> check_redirect("/ubuntu/+translations", status=301)
+>>> check("/ubuntu/+translations", host='translations.launchpad.dev')
 >>> check("/ubuntu/+edit", auth=True)
 >>> check("/ubuntu/+reassign", auth=True)
 >>> check("/ubuntu/+selectmemberteam", auth=True)
->>> check("/ubuntu/+changetranslators", auth=True)
+>>> check("/ubuntu/+changetranslators", host='translations.launchpad.dev',
+...       auth=True)
 >>> check("/ubuntu/hoary/+addmilestone", auth=True)
 >>> check("/ubuntu/+linkbounty", auth=True)
 >>> check("/ubuntu/+addbounty", auth=True)
 >>> check("/ubuntu/+addspec", auth=True)
+>>> check("/ubuntu/+imports", host='translations.launchpad.dev')
 >>> check("/debian/+milestone/3.1")
 >>> check("/ubuntu/+source/evolution/+subscribe", auth=True)
 >>> check_redirect("/ubuntu/+source/evolution/+editbugcontact")
 
 >>> check("/ubuntu/hoary/+cve")
+>>> check_redirect("/ubuntu/hoary/+translations", status=301)
+>>> check("/ubuntu/hoary/+translations", host='translations.launchpad.dev')
+>>> check_redirect("/ubuntu/hoary/+latest-full-language-pack",
+...       host="translations.launchpad.dev")
+>>> check("/ubuntu/hoary/+imports", host='translations.launchpad.dev')
 >>> check("/ubuntu/hoary/+source/pmount")
+>>> check("/ubuntu/hoary/+source/pmount/+imports",
+...       host='translations.launchpad.dev')
 >>> check("/ubuntu/hoary/+source/libstdc++")
 >>> check("/ubuntu/hoary/+package/pmount")
 >>> check("/ubuntu/hoary/i386/pmount/0.1-1")
@@ -143,17 +195,34 @@ Test the DARBPR page for a REMOVED package:
 >>> check("/ubuntu/hoary/+source/evolution/+bugs")
 >>> check("/ubuntu/+source/evolution/+bugs")
 >>> check("/ubuntu/+source/evolution/+portlet-bugfilters")
->>> check_not_found("/ubuntu/+source/evolution/+translations")
+>>> check_not_found("/ubuntu/+source/evolution/+translations",
+...                 host='translations.launchpad.dev')
 
 >>> check("/ubuntu/hoary/+source/evolution/+changelog")
->>> check("/ubuntu/hoary/+source/evolution/+packaging", auth=True)
+>>> check("/ubuntu/hoary/+source/evolution/+packaging")
+>>> check("/ubuntu/hoary/+source/evolution/+edit-packaging", auth=True)
 >>> check("/ubuntu/hoary/+source/evolution/+gethelp")
->>> check("/ubuntu/hoary/+source/evolution/+translate")
->>> check_redirect("/ubuntu/hoary/+source/mozilla-firefox/+pots")
+
+The +translate page in the main host is obsolete so it's now a redirect to the
+translations site. This way, we don't break existing links to it. Before
+removing this, you must be completely sure that no supported Ubuntu release
+is still pointing to this old URL (see bug #138090).
+
+>>> check_redirect("/ubuntu/hoary/+source/evolution/+translate",
+...     host="launchpad.dev", status=301)
+>>> check("/ubuntu/hoary/+source/evolution/+translate",
+...       host='translations.launchpad.dev' )
+>>> check_redirect("/ubuntu/hoary/+source/evolution/+translations", status=301)
+>>> check("/ubuntu/hoary/+source/evolution/+translations",
+...       host='translations.launchpad.dev')
+>>> check_redirect("/ubuntu/hoary/+source/mozilla-firefox/+pots",
+...                host='translations.launchpad.dev')
 >>> check("/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export",
-...       auth=True)
+...       host='translations.launchpad.dev', auth=True)
+>>> check_redirect("/ubuntu/hoary/+source/pmount/+pots/pmount/apa/+translate",
+...                status=301)
 >>> check("/ubuntu/hoary/+source/pmount/+pots/pmount/apa/+translate",
-...       auth=True)
+...       host='translations.launchpad.dev', auth=True)
 >>> check_not_found("/ubuntu/hoary/+source/evolution/+buildlog")
 >>> check_not_found(
 ...     '/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/xxxx')
@@ -170,21 +239,17 @@ Test the DARBPR page for a REMOVED package:
 >>> check("/ubuntu/hoary/+edit", auth=True)
 >>> check("/ubuntu/hoary/+specs")
 >>> check("/ubuntu/hoary/+reassign", auth=True)
->>> check("/ubuntu/hoary/+translations")
 >>> check("/ubuntu/hoary/+packaging")
 >>> check("/ubuntu/hoary/+bugs")
 
 >>> check("/ubuntu/hoary/i386")
 >>> check("/ubuntu/hoary/i386/+search")
 
-# FIXME: disable while HCT transitions to bzr. See bug #4117. -- RobertCollins.
-#>>> check("/ubuntu/hoary/+source/evolution/+hctstatus")
-
 >>> check("/bugs")
 >>> check_redirect("/bugs/assigned")
 >>> check_not_found("/bugs/bugs/assigned")
 >>> check_not_found("/bugs/bugs")
->>> check_redirect("/bugs/bugs/1")
+>>> check_not_found("/bugs/bugs/1")
 >>> check_redirect("/bugs/1")
 >>> check("/bugs/bugtrackers")
 >>> check("/bugs/cve/1999-8979")
@@ -202,8 +267,19 @@ one.)
 >>> check("/firefox/+bug/1/+subscribe", auth=True)
 >>> check("/firefox/+bug/1/+addsubscriber", auth=True)
 >>> check("/firefox/+bug/1/+addcomment", auth=True)
->>> check("/firefox/+bug/1/+addurl", auth=True)
 >>> check("/firefox/+bug/1/+activity", auth=True)
+
+Viewing a bug in a distribution context where the current development
+release is targeted.
+
+>>> check("/ubuntu/+bug/2", auth=True)
+>>> check("/ubuntu/+bug/2/+edit", auth=True)
+>>> check("/ubuntu/+bug/2/+secrecy", auth=True)
+>>> check("/ubuntu/+bug/2/+duplicate", auth=True)
+>>> check("/ubuntu/+bug/2/+subscribe", auth=True)
+>>> check("/ubuntu/+bug/2/+addsubscriber", auth=True)
+>>> check("/ubuntu/+bug/2/+addcomment", auth=True)
+>>> check("/ubuntu/+bug/2/+activity", auth=True)
 
 Viewing a bug comment.
 
@@ -216,13 +292,12 @@ been reported.
 >>> check("/netapplet/+bug/1")
 >>> check_not_found("/netapplet/+bug/1/+viewstatus")
 >>> check_not_found("/netapplet/+bug/1/+editstatus")
->>> check_not_found("/netapplet/+bug/1/+nominate")
 
 Check a bug is traversable by nickname:
 
 >>> check_redirect("/bugs/blackhole")
 >>> check_redirect("/bugs/blackhole")
->>> check("/ubuntu-product/+bug/blackhole")
+>>> check("/tomcat/+bug/blackhole")
 >>> check_not_found("/bugs/invalid-nickname")
 >>> check_not_found("bugs/invalid-nickname")
 
@@ -232,7 +307,6 @@ yet been reported.
 >>> check_redirect("/ubuntu/+bug")
 >>> check_not_found("/ubuntu/+bug/3/+viewstatus")
 >>> check_not_found("/ubuntu/+bug/3/+editstatus")
->>> check_not_found("/ubuntu/+bug/3/+nominate")
 
 Viewing a bug in the context of a distorelease where the bug has not
 yet been reported.
@@ -255,19 +329,19 @@ not yet been reported.
 >>> check_not_found("/ubuntu/+source/thunderbird/+bug/1/+viewstatus")
 >>> check_not_found("/ubuntu/+source/thunderbird/+bug/1/+editstatus")
 
-Viewing the bug in the context of a distro release source package in
+Viewing the bug in the context of a distro series source package in
 which the bug has already been reported.
 
 >>> check("/ubuntu/warty/+source/mozilla-firefox/+bug/5")
 
-Viewing the bug in the context of a distro release source package in
+Viewing the bug in the context of a distro series source package in
 which the bug has not yet been reported.
 
 >>> check("/ubuntu/warty/+source/mozilla-firefox/+bug/1")
 >>> check_not_found("/ubuntu/warty/+source/mozilla-firefox/+bug/1/+viewstatus")
 >>> check_not_found("/ubuntu/warty/+source/mozilla-firefox/+bug/1/+editstatus")
 
-Viewing a bug in a distribution that doesn't use Malone officially, where the
+Viewing a bug in a distribution that doesn't use Bugs officially, where the
 bugtask is also assigned to a milestone (a corner case, but one that was causing
 OOPS's all the same!):
 
@@ -284,14 +358,19 @@ The bug filing pages.
 >>> check("/ubuntu/+source/mozilla-firefox/+filebug-advanced", auth=True)
 
 Note that you should not be able to directly file a bug on a
-distrorelease or sourcepackage; an IBugTask reported against a
-distrorelease or sourcepackage is *targeted* to be fixed in that
+distroseries or sourcepackage; an IBugTask reported against a
+distroseries or sourcepackage is *targeted* to be fixed in that
 specific release. Instead, you get redirected to the appropriate distro
 or distrosourcepackage filebug page.
 
 >>> check_redirect("/ubuntu/warty/+filebug", auth=True)
 >>> check_redirect(
 ...     "/ubuntu/warty/+source/mozilla-firefox/+filebug", auth=True)
+
+Approving/declining a bug nomination.
+
+>>> check("/firefox/+bug/1/nominations/2/+editstatus", auth=True)
+
 
 Test /people traversals.
 
@@ -307,16 +386,16 @@ This is for a team:
 
 >>> check("/~name18/+teamhierarchy")
 >>> check("/~name18/+edit", auth=True)
->>> check("/~name18/+editemail", auth=True)
 >>> check("/~name18/+members")
 >>> check("/~name18/+packages")
 >>> check("/~name18/+leave", auth=True)
 >>> check("/~name18/+reassign", auth=True)
 >>> check("/~name18/+review", auth=True)
 >>> check("/~name18/+specs")
->>> check_not_found("/~name18/+calendar")
 >>> check("/~name18/+bounties")
->>> check("/~name18/+translations")
+>>> check_redirect("/~name18/+translations", status=301)
+>>> check("/~name18/+translations", host='translations.launchpad.dev')
+>>> check("/~name18/+imports", host='translations.launchpad.dev')
 >>> check("/~name18/+teamlist")
 >>> check("/~name18/+polls")
 >>> check("/~name18/+newpoll", auth=True)
@@ -327,9 +406,12 @@ And this is for a person:
 
 >>> check("/~name16/+edit", auth=True)
 >>> check("/~name16/+branches")
->>> check("/~name12/+branch/gnome-terminal/pushed/")
->>> check("/~name12/+branch/gnome-terminal/pushed/+edit", auth=True)
->>> check_redirect("/~name16/+bugs")
+>>> check_redirect("/~name12/+branch/gnome-terminal/pushed/", status=301)
+>>> check_redirect("/~name12/+branch/gnome-terminal/pushed/+edit", auth=True, status=301)
+>>> check("/~name12/gnome-terminal/pushed/")
+>>> check_not_found("/~name12/+branch/gnome-terminal/fubared/")
+>>> check_not_found("/~name12/gnome-terminal/fubared/")
+>>> check("/~name12/gnome-terminal/pushed/+edit", auth=True)
 >>> check_not_found("/~name16/+bugs/1")
 >>> check("/~name16/+reportedbugs")
 >>> check("/~name16/+assignedbugs")
@@ -341,14 +423,12 @@ And this is for a person:
 >>> check("/~name16/+editjabberids", auth=True)
 >>> check("/~name16/+codesofconduct", auth=True)
 >>> check("/~name16/+edithomepage", auth=True)
->>> check("/~name16/+edithackergotchi", auth=True)
 >>> check("/~name16/+review", auth=True)
 >>> check("/~name16/+portlet-emails")
 >>> check("/~name16/+portlet-details")
 >>> check("/~name16/+portlet-team-assignedbugs")
->>> check("/~name16/+calendar")
->>> check("/~name16/+calendar/+subscribe", auth=True)
 >>> check("/~name16/+specworkload")
+>>> check("/~name16/+imports", host='translations.launchpad.dev')
 
 sabdfl owns many packages, so he's a better test for some pages:
 
@@ -356,15 +436,14 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/~sabdfl/+packages")
 
 >>> check("/+code")
->>> check("/+code/+portlet-importstats")
 >>> check("/+code/series", auth=True)
 >>> check("/+code/series/+bazaar-index", auth=True)
 
 >>> check("/+builds/bob/")
->>> check("/+builds/+build/7/")
->>> check("/+builds/+build/7/pmount/")
+>>> check("/ubuntu/+source/pmount/0.1-1/+build/7/")
+>>> check("/ubuntu/+source/pmount/0.1-1/+build/7/pmount/")
 
->>> check("/support/")
+>>> check_redirect("/support/", status=301)
 
 >>> check("/sprints")
 >>> check("/sprints/ubz")
@@ -373,12 +452,12 @@ sabdfl owns many packages, so he's a better test for some pages:
 
 >>> check("/@@")
 >>> check("//@@")
->>> check("/translations/@@")
->>> check("//translations/@@")
->>> check_not_found("/translations/groups/testing-translation-team/pt_br")
+>>> check_redirect("/translations/groups/", status=301)
+>>> check_redirect("/translations/imports/", status=301)
 
 >>> check_not_found("/@@/launchpad_brokenlink.png")
 >>> check_not_found("//@@/launchpad_brokenlink.png")
+>>> check_not_found("/@@popup-window")
 
 >>> check_not_found("/sourcepackagenames")
 >>> check_not_found("/binarypackagenames")
@@ -388,6 +467,10 @@ Check legacy URL redirects
 
 >>> check_redirect("/distros/ubuntu", status=301)
 >>> check_redirect("/products/ubuntu-product", status=301)
->>> check_redirect("/projects/ubuntu-project", status=301)
 >>> check_redirect("/people/stub", status=301)
+
+
+Check redirects of Unicode URLs works
+
+>>> check_not_found("/ubuntu/foo%C3%A9")
 

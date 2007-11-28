@@ -1,6 +1,12 @@
-<div class="portlet">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 
-    <h2>Project bug trackers</h2>
+<div class="portlet" id="portlet-bugtrackers">
+
+    <h2>Project group bug trackers</h2>
 
     <div class="portletBody portletContent">
 
@@ -13,10 +19,11 @@
 
         <ul><li class="add">
         <a href="+newbugtracker"
-            title="Add a project bugtracker">
+            title="Add a project group bugtracker">
             Add a bug tracker...
         </a>
         </li></ul>
 
     </div>
 </div>
+</tal:root>

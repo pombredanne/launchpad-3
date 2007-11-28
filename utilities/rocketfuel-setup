@@ -1,0 +1,443 @@
+#! /bin/bash
+
+#
+# This script will setup a brand new Ubuntu machine as a LP developer
+# workstation, from scratch. The script lives in the LP codebase itself,
+# as utilities/rocketfuel-setup
+#
+
+# load up Ubuntu release details so we know which repos to enable
+source /etc/lsb-release
+
+# Establish Canonical username
+whoami=`whoami`
+printf "What is your username on Canonical servers? [$whoami] "
+read canusrname
+if [ ! -z ${canusrname} ]; then
+  whoami=${canusrname};
+fi
+
+# Test that we can access Canonical servers
+ssh ${whoami}@chinstrap.canonical.com pwd > /dev/null
+if [ $? -ne 0 ]; then
+  echo "
+ERROR: Unable to login to chinstrap, please check your Canonical account
+details.
+"
+  exit 1
+fi
+
+# Make sure you have all the needed virtual hosts
+
+dev_host() {
+  grep -q "^127.0.0.88.*${hostname}" /etc/hosts
+  if [ $? -ne 0 ]; then
+    sudo sed -i "s/^127.0.0.88.*$/&\ ${hostname}/" /etc/hosts
+    echo "${hostname} added to /etc/hosts"
+  fi
+  }
+
+grep -q "^127.0.0.88" /etc/hosts
+if [ $? -ne 0 ]; then
+  echo "Adding development hosts on local machine"
+  echo "
+# Launchpad virtual domains. This should be on one line.
+127.0.0.88      launchpad.dev
+" | sudo tee -a /etc/hosts > /dev/null
+  echo "launchpad.dev added to /etc/hosts"
+fi
+
+for hostname in code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev bazaar.launchpad.dev shipit.ubuntu.dev shipit.kubuntu.dev shipit.edubuntu.dev feeds.launchpad.dev; do
+  dev_host;
+done
+
+# Enable relevant Ubuntu package repositories
+grep -q "^deb http:.* ${DISTRIB_CODENAME} .*universe" /etc/apt/sources.list
+if [ $? -ne 0 ]; then
+    echo "Please enable the 'universe' component in /etc/apt/source.list'"
+    exit 1
+fi
+grep -q "^deb http:.* ${DISTRIB_CODENAME} .*multiverse" /etc/apt/sources.list
+if [ $? -ne 0 ]; then
+    echo "Please enable the 'multiverse' component in /etc/apt/source.list'"
+    exit 1
+fi
+
+if [ ! -e ~/.ssh/config ]; then
+    touch ~/.ssh/config
+fi
+
+grep -q "^GSSAPIAuthentication" ~/.ssh/config
+if [ $? -ne 0 ]; then
+  echo "Please add the following directive to your ~/.ssh/config:
+------------------------------------------------------------
+GSSAPIAuthentication no
+------------------------------------------------------------
+"
+  read
+fi
+
+grep -q "^Host .*chinstrap" ~/.ssh/config
+if [ $? -ne 0 ]; then
+  echo "Please add the following directives to your ~/.ssh/config:
+------------------------------------------------------------
+Host chinstrap chinstrap.canonical.com chinstrap.ubuntu.com
+    ForwardAgent yes
+    Hostname chinstrap.canonical.com
+    ProxyCommand none
+    User ${whoami}
+------------------------------------------------------------
+"
+  read
+fi
+
+grep -q "^Host.*\*\.canonical.com" ~/.ssh/config
+if [ $? -ne 0 ]; then
+  echo "Please add the following directives to your ~/.ssh/config:
+------------------------------------------------------------
+Host *.canonical.com *.ubuntu.com
+    ForwardAgent yes
+    ProxyCommand ssh chinstrap.canonical.com nc -q0 %h %p
+    User ${whoami}
+------------------------------------------------------------
+"
+  read
+fi
+
+grep -q "^Host .*devpad" ~/.ssh/config
+if [ $? -ne 0 ]; then
+  echo "Please add the following directives to your ~/.ssh/config:
+------------------------------------------------------------
+Host devpad devpad.canonical.com
+    ForwardAgent yes
+    Hostname devpad.canonical.com
+    ProxyCommand ssh chinstrap.canonical.com nc -q0 %h %p
+    User ${whoami}
+------------------------------------------------------------
+"
+  read
+fi
+
+grep -q "^Host .*bazaar.launchpad.dev" ~/.ssh/config
+if [ $? -ne 0 ]; then
+  echo "Please add the following directives to your ~/.ssh/config:
+------------------------------------------------------------
+Host bazaar.launchpad.dev
+    Hostname localhost
+    HostKeyAlias bazaar.launchpad.dev
+    User sabdfl
+    Port 5022
+    IdentityFile ~/.ssh/launchpad_id_dsa
+------------------------------------------------------------
+"
+  read
+fi
+
+echo "Testing ssh to devpad..."
+ssh devpad.canonical.com pwd > /dev/null
+if [ $? -ne 0 ]; then
+  echo "
+ERROR: Unable to verify capability to ssh to devpad. Please check
+~/.ssh/config and check the User configuration item.  ['${whoami}']"
+  exit 1
+fi
+
+sudo apt-key list | grep -q "2048g/CA6E8A17"
+if [ $? -ne 0 ]; then
+  echo "Retrieving signing-key for LP package repository."
+  scp devpad.canonical.com:/code/lp-maintainers.pub /tmp/
+  if [ $? -ne 0 ]; then
+    echo "Unable to fetch key for LP package repository"
+    exit 1
+  fi
+  [ `sha1sum /tmp/lp-maintainers.pub | cut -d " " -f 1` = \
+     f1714a57bd8c481f45b2a64e2eb9131176c8922e ] \
+  && sudo apt-key add /tmp/lp-maintainers.pub
+  if [ $? -ne 0 ]; then
+    echo "Unable to add key for LP package repository"
+    exit 1
+  fi
+fi
+
+
+grep -q "^deb http://lpdebs.canonical.com/" /etc/apt/sources.list
+if [ $? -ne 0 ]; then
+  echo "Adding LP package respository to package source list."
+  echo "deb http://lpdebs.canonical.com/${DISTRIB_CODENAME} ./" | sudo tee -a /etc/apt/sources.list > /dev/null
+  sudo aptitude update
+fi
+
+
+dpkg -s launchpad-developer-dependencies | grep -q "^Status:.*installed"
+if [ $? -ne 0 ]; then
+  echo "Installing launchpad-developer-dependencies package..."
+  sudo aptitude install launchpad-developer-dependencies
+  if [ $? -ne 0 ]; then
+    echo "Unable to install LP developer dependencies"
+    exit 1
+  fi
+fi
+
+echo "
+NameVirtualHost 127.0.0.88:80
+
+<VirtualHost 127.0.0.88:80>
+  ServerName launchpad.dev
+  ServerAlias code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev feeds.launchpad.dev
+  <Proxy *>
+    Order deny,allow
+    Allow from 127.0.0.0/255.0.0.0
+  </Proxy>
+  ProxyPreserveHost on
+  ProxyPass / http://localhost:8086/ retry=1
+</VirtualHost>
+" | sudo tee /etc/apache2/sites-available/launchpad.dev > /dev/null
+
+echo "
+<VirtualHost 127.0.0.88:80>
+  ServerName bazaar.launchpad.dev
+
+  ProxyRequests off
+  <Proxy *>
+    Order deny,allow
+    Allow from localhost 127.0.0.0/255.0.0.0
+  </Proxy>
+  ProxyTimeout 20
+
+  # The ACLs here are... complex:
+
+  # (1) People hitting the frontpage (i.e. /) are redirected to the Launchpad frontpage
+  # (2) Anything mapped in the launchpad-lookup.txt file is public, so we proxy it
+  # (3) Anything of the form /+branches/nnnnnnnn/ is only allowed from the branch scanner and proxied
+  # (4) Anything of the form /nn/nn/nn/nn/ is only allowed from ourselves (i.e. via a proxy from the above 2 rules)
+  # (5) The /robots.txt file is served normally.
+  # (6) Everything else is redirected to a non-existent page to give the user a 404
+
+  RewriteEngine On
+
+  # Generate this file using 'make rewritemap'.
+  RewriteMap branch-list txt:/var/tmp/sm-ng/config/launchpad-lookup.txt
+
+  # (1) / -> Launchpad frontpage
+  RewriteRule ^/$ http://launchpad.dev [L]
+
+  # (2) This turns things like ~mdz/branches/branchname into the actual dir
+  RewriteRule ^/(~[^/]+/[^/]+/[^/]+)(|/.*)$ /${branch-list:$1|notfound}$2 [L,P]
+
+  # (3) This is for e.g. http://bazaar.launchpad.net/+branches/0000f22a from the branch scanner
+  RewriteRule ^/\+branches/([[:xdigit:]]{2})([[:xdigit:]]{2})([[:xdigit:]]{2})([[:xdigit:]]{2})/(.*) /$1/$2/$3/$4/$5 [L,P]
+
+  # (4) Proxied access to the directory structure (4 levels of 2 digit hex directories)
+  RewriteRule ^/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/.*$ - [L]
+
+  # (5) The /robots.txt file is served normally.
+  RewriteRule ^/robots.txt$ - [L]
+
+  # (6) Anything else is not allowed
+  RewriteRule ^.*$ /notfound [L]
+
+  DocumentRoot /var/tmp/sm-ng/mirrors
+  <Directory /var/tmp/sm-ng/mirrors/>
+    Options SymLinksIfOwnerMatch
+    AllowOverride None
+    Options Indexes
+  </Directory>
+
+</VirtualHost>
+" | sudo tee /etc/apache2/sites-available/bazaar.launchpad.dev > /dev/null
+
+# Create the document root to avoid Apache warnings
+mkdir -p /var/tmp/sm-ng/mirrors
+
+# Create an empty rewritemap file so that Apache will start.
+mkdir -p /var/tmp/sm-ng/config
+touch /var/tmp/sm-ng/config/launchpad-lookup.txt
+
+sudo a2enmod proxy > /dev/null
+if [ $? -ne 0 ]; then
+  echo "ERROR: Unable to enable proxy module in Apache2"
+  exit 1
+fi
+
+sudo a2enmod proxy_http > /dev/null
+if [ $? -ne 0 ]; then
+  echo "ERROR: Unable to enable proxy_http module in Apache2"
+  exit 1
+fi
+
+sudo a2enmod rewrite > /dev/null
+if [ $? -ne 0 ]; then
+  echo "ERROR: Unable to enable rewrite module in Apache2"
+  exit 1
+fi
+
+sudo a2ensite launchpad.dev > /dev/null
+if [ $? -ne 0 ]; then
+  echo "ERROR: Unable to enable launchpad.dev"
+  exit 1
+fi
+
+sudo a2ensite bazaar.launchpad.dev > /dev/null
+if [ $? -ne 0 ]; then
+  echo "ERROR: Unable to enable bazaar.launchpad.dev"
+  exit 1
+fi
+
+sudo apache2ctl restart > /dev/null
+if [ $? -ne 0 ]; then
+  echo "ERROR: Unable to restart Apache2"
+  exit 1
+fi
+
+
+echo "Setting up devpad repository..."
+ssh devpad.canonical.com /code/rocketfuel-built/launchpad/utilities/devpad-setup
+
+
+# Create the local branch structure we will use for managing Launchpad code
+mkdir -p ~/canonical
+cd ~/canonical
+if [ ! -d lp-branches ]; then
+  bzr init-repo --trees lp-branches
+  if [ $? -ne 0 ]; then
+    echo "ERROR: Unable to setup local LP repository"
+    exit 1
+  fi
+fi
+if [ ! -d lp-branches/.bzr -a -d lp-branches/.bzr/repository ]; then
+  echo "ERROR: LP repository not found in ~/canonical/lp-branches/"
+  exit 1
+fi
+
+cd lp-branches
+if [ ! -d trunk ]; then
+  echo "Making local branch of Launchpad trunk, this will take a while..."
+  bzr branch bzr+ssh://devpad.canonical.com/code/rocketfuel/launchpad/devel trunk
+  if [ $? -ne 0 ]; then
+    echo "ERROR: Unable to create local copy of Rocketfuel trunk"
+    exit 1
+  fi
+fi
+
+cd trunk
+if [ ! `bzr info | grep -i "parent branch" | cut -d: -f3` = \
+  "//devpad.canonical.com/code/rocketfuel/launchpad/devel/" ]; then
+  echo "ERROR: Your trunk branch in ~/canonical/lp-branches/trunk has an
+       incorrect pull location, correcting now..."
+  bzr pull --remember bzr+ssh://devpad.canonical.com/code/rocketfuel/launchpad/devel
+  if [ $? -ne 0 ]; then
+    echo "ERROR: Unable to set trunk pull location to
+       bzr+ssh://devpad.canonical.com/code/rocketfuel/launchpad/devel"
+    exit 1
+  fi
+fi
+
+# Setup Bazaar locations configuration
+if [ ! -d ~/.bazaar ]; then
+  mkdir ~/.bazaar
+  if [ $? -ne 0 ]; then
+    echo "Unable to create ~/.bazaar/ directory"
+    exit 1
+  fi
+fi
+if [ ! -e ~/.bazaar/locations.conf ]; then
+  touch ~/.bazaar/locations.conf
+fi
+grep -q "canonical\/lp-branches" ~/.bazaar/locations.conf
+if [ $? -ne 0 ]; then
+  branchloc=$(eval echo "~/canonical/lp-branches")
+  echo "
+[${branchloc}]
+pqm_email = Launchpad PQM <launchpad@pqm.canonical.com>
+pqm_branch = sftp://devpad.canonical.com/code/rocketfuel/launchpad/devel
+public_branch = bzr+ssh://devpad.canonical.com/code/${whoami}/launchpad
+public_branch:policy = appendpath
+smtp_server = localhost
+push_location = bzr+ssh://devpad.canonical.com/code/${whoami}/launchpad
+push_location:policy = appendpath
+" | tee -a ~/.bazaar/locations.conf > /dev/null
+  echo "Bazaar branch configuration updated. You may need to set smtp_server
+in ~/.bazaar/locations.conf to something other than localhost"
+fi
+
+# Setup access to the local supermirror
+if [ ! -e ~/.ssh/launchpad_id_dsa ]; then
+  cp ~/canonical/lp-branches/trunk/lib/canonical/codehosting/tests/id_dsa ~/.ssh/launchpad_id_dsa
+  chmod 600 ~/.ssh/launchpad_id_dsa
+  echo "Setup ssh key for local supermirror ssh access."
+fi
+
+# Setup scripts in /usr/local/bin
+cd /usr/local/bin
+if [ ! -e rocketfuel-get ]; then
+  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-get
+fi
+ls -l rocketfuel-get | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+if [ $? -ne 0 ]; then
+  echo "WARNING: /usr/local/bin/rocketfuel-get should be deleted so I can
+         recreate it."
+fi
+if [ ! -e rocketfuel-branch ]; then
+  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-branch
+fi
+ls -l rocketfuel-branch | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+if [ $? -ne 0 ]; then
+  echo "WARNING: /usr/local/bin/rocketfuel-branch should be deleted so I can
+         recreate it."
+fi
+if [ ! -e rocketfuel-setup ]; then
+  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-setup
+fi
+ls -l rocketfuel-setup | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+if [ $? -ne 0 ]; then
+  echo "WARNING: /usr/local/bin/rocketfuel-setup should be deleted so I can
+         recreate it."
+fi
+if [ ! -e rocketfuel-status ]; then
+  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-status
+fi
+ls -l rocketfuel-status | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+if [ $? -ne 0 ]; then
+  echo "WARNING: /usr/local/bin/rocketfuel-status should be deleted so I can
+         recreate it."
+fi
+if [ ! -e rocketfuel-push ]; then
+  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-push
+fi
+ls -l rocketfuel-push | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+if [ $? -ne 0 ]; then
+  echo "WARNING: /usr/local/bin/rocketfuel-push should be deleted so I can
+         recreate it."
+fi
+
+
+# Make sure we have all the right code in place for source dependencies
+/usr/local/bin/rocketfuel-get
+
+echo "
+Thank you for using this script. You can improve it for everyone by
+committing changes to LP in utilities/rocketfuel-setup.
+
+You should use the following commands to manage your Rocketfuel:
+
+ rocketfuel-branch foo
+    Create a new branch of LP called "foo" in ~/canonical/lp-branches/foo,
+    with all the source dependencies properly linked in.
+
+ rocketfuel-get
+    Update your copy of trunk and the necessary source dependencies, and
+    make sure all source dependencies are properly linked in to all the
+    branches you are working on.
+
+ rocketfuel-status
+    Check each of the branches in ~/canonical/lp-branches/ and show which of
+    them have uncommitted changes, also check which ones have revisions that
+    have not yet landed on trunk.
+
+ rocketfuel-push
+    Push all of your branches to devpad, so that you have a server-side
+    backup of everything.
+
+Happy hacking!
+"
+

@@ -4,7 +4,7 @@ the Debian task on bug #1.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open(
-    ...     'http://localhost/debian/+source/mozilla-firefox/'
+    ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
 
 There's currently a bug watch linked to the task.
@@ -44,39 +44,39 @@ Of course we can't edit the importance or assignee either.
     LookupError: name 'debian_mozilla-firefox.assignee'
 
 If we remove the bug watch, we'll be able to edit the status, which has
-been reset to Unconfirmed.
+been reset to New.
 
     >>> bugwatch_control.displayValue = []
     >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()
 
     >>> browser.open(
-    ...     'http://localhost/debian/+source/mozilla-firefox/'
+    ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
     >>> status_control = browser.getControl(name='debian_mozilla-firefox.status')
     >>> status_control.displayValue
-    ['Unconfirmed']
+    ['New']
 
     >>> browser.getControl(name='debian_mozilla-firefox.assignee') is not None
     True
 
 Let's try to actually edit the status to see that it works:
 
-    >>> status_control.displayValue = ['Rejected']
+    >>> status_control.displayValue = ['Invalid']
     >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()
 
     >>> browser.open(
-    ...     'http://localhost/debian/+source/mozilla-firefox/'
+    ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
     >>> status_control = browser.getControl(name='debian_mozilla-firefox.status')
     >>> status_control.displayValue
-    ['Rejected']
+    ['Invalid']
 
 From the edit page we can also create a new bug watch:
 
     >>> browser.open(
-    ...     'http://localhost/debian/+source/mozilla-firefox/'
+    ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
     >>> bugwatch_control = browser.getControl(
     ...     name='debian_mozilla-firefox.bugwatch')
@@ -92,27 +92,25 @@ From the edit page we can also create a new bug watch:
     >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()
     >>> browser.url
-    'http://localhost/debian/+source/mozilla-firefox/+bug/1'
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1'
 
 The Debian task is linked to the newly created bug watch.
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> debian_link = soup.first(
     ...     'a',
-    ...     {'href': 'http://localhost/debian/+source/mozilla-firefox/+bug/1/+editstatus'})
-    >>> debian_tr = debian_link.parent.parent.parent
-    >>> for td_tag in debian_tr('td'):
-    ...     print td_tag
-    <td...>...<a...>mozilla-firefox (Debian)</a>...</td>
-    ...
-    <td...> <a...> debbugs #1 </a> </td>
+    ...     {'href': 'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1/+editstatus'})
+    >>> debian_tr = debian_link.parent.parent
+    >>> td_tags = debian_tr.findAll('td')
+    >>> target, bugwatch = td_tags[0], td_tags[-2]
+    >>> print "%s -> %s" % (extract_text(target), extract_text(bugwatch))
+    mozilla-firefox (Debian) -> debbugs #1
 
 If we try to add an already existing bug watch, a new one won't be
 created, instead the old one will be used.
 
     >>> browser.open(
-    ...     'http://localhost/debian/+source/mozilla-firefox/'
+    ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/'
     ...     '+bug/1/+editstatus')
     >>> bugwatch_control = browser.getControl(
     ...     name='debian_mozilla-firefox.bugwatch')
@@ -128,11 +126,11 @@ created, instead the old one will be used.
     >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()
     >>> browser.url
-    'http://localhost/debian/+source/mozilla-firefox/+bug/1'
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1'
 
     >>> bugwatch_portlet = find_portlet(browser.contents, 'Remote bug watches')
     >>> for li_tag in bugwatch_portlet.fetch('li'):
-    ...     print li_tag.a.string
+    ...     print li_tag.findAll('a')[1].string
     mozilla.org #123543
     mozilla.org #2000
     mozilla.org #42

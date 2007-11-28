@@ -1,29 +1,22 @@
-<div class="portlet" tal:condition="view/latestBugTasks">
-  <h2>Latest bugs in <span tal:replace="context/displayname" /></h2>
-  <div class="portletBody">
-    <div class="portletContent">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-latest-bugs"
+  tal:condition="view/latestBugTasks">
+  <h2>Latest bugs reported</h2>
+
+    <div class="portletBody portletContent">
       <p tal:condition="not: view/latestBugTasks">
         No bugs have been reported for <span tal:replace="context/displayname" />.
       </p>
       <table tal:condition="view/latestBugTasks">
         <tbody>
-          <tr tal:repeat="bugtask view/latestBugTasks">
-            <td class="icon left" tal:content="structure bugtask/fmt:icon" />
-            <td>
-
-          <a tal:attributes="href bugtask/fmt:url"
-             tal:content="string: #${bugtask/bug/id}" />:
-             <span tal:replace="bugtask/bug/title">bug
-             title</span>
-
-              (<span
-                tal:attributes="class string:status${bugtask/status/name}"
-                tal:content="bugtask/status/title"
-              />)
-            </td>
-          </tr>
+          <tal:per_task repeat="bugtask view/latestBugTasks"
+                        replace="structure bugtask/@@+listing-detailed"
+                        />
         </tbody>
       </table>
-    </div>
+
   </div>
 </div>

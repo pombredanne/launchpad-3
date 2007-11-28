@@ -1,0 +1,92 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+<facet facet="answers">
+  <content class="canonical.launchpad.database.FAQ">
+    <!-- IFAQ-->
+    <allow interface="canonical.launchpad.interfaces.IFAQ" />
+    <require
+        permission="launchpad.Edit"
+        set_attributes="title keywords content
+                        last_updated_by date_last_updated"
+        />
+  </content>
+  <adapter
+    for="canonical.launchpad.interfaces.IFAQ"
+    provides="canonical.launchpad.interfaces.IFAQTarget"
+    factory="canonical.launchpad.components.answertracker.faq_to_faqtarget"
+    />
+  <subscriber
+    for="canonical.launchpad.interfaces.IFAQ
+         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+    handler="canonical.launchpad.subscribers.faq.update_last_updated"
+    />
+  <subscriber
+    for="canonical.launchpad.interfaces.IFAQ
+         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+    handler="canonical.launchpad.subscribers.karma.faq_created"
+    />
+  <subscriber
+    for="canonical.launchpad.interfaces.IFAQ
+         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+    handler="canonical.launchpad.subscribers.karma.faq_edited"
+    />
+  <browser:url
+    for="canonical.launchpad.interfaces.IFAQ"
+    path_expression="string:+faq/${id}"
+    attribute_to_parent="target"
+    rootsite="answers"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IFAQ"
+    name="+index"
+    />
+  <browser:page
+    name="+index"
+    for="canonical.launchpad.interfaces.IFAQ"
+    permission="zope.Public"
+    template="../templates/faq-index.pt"
+    />
+  <browser:page
+    name="+portlet-lifecycle"
+    for="canonical.launchpad.interfaces.IFAQ"
+    permission="zope.Public"
+    template="../templates/faq-portlet-lifecycle.pt"
+    />
+  <browser:page
+    name="+portlet-related-questions"
+    for="canonical.launchpad.interfaces.IFAQ"
+    class="canonical.launchpad.webapp.LaunchpadView"
+    permission="zope.Public"
+    template="../templates/faq-portlet-related-questions.pt"
+    />
+  <browser:page
+    name="+edit"
+    for="canonical.launchpad.interfaces.IFAQ"
+    class="canonical.launchpad.browser.FAQEditView"
+    permission="launchpad.Edit"
+    template="../templates/faq-edit.pt"
+    />
+  <adapter
+    for="canonical.launchpad.interfaces.IFAQ"
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    factory="canonical.launchpad.browser.FAQStructuralObjectPresentation"
+    />
+  <browser:menus
+    module="canonical.launchpad.browser"
+    classes="FAQContextMenu"
+    />
+
+  <!-- IFAQSet -->
+  <securedutility
+    class="canonical.launchpad.database.FAQSet"
+    provides="canonical.launchpad.interfaces.IFAQSet"
+    >
+    <allow interface="canonical.launchpad.interfaces.IFAQSet" />
+  </securedutility>
+</facet>
+
+</configure>

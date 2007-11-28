@@ -1,0 +1,95 @@
+= Changing branch privacy =
+
+Which users can have private branches is controlled by
+the branch visibility policy (see doc/branch-visibility-policy.txt).
+This controls the initial visibility of branches created by users
+in particular namespaces, either their own or teams that the user is
+a member of.
+
+Once the branch is created, the user is able to change a public branch
+to private or a private branch to public in certain circumstances.
+
+
+== Branches with no visibility policy ==
+
+If there is no policy set, then the user is not able to change the visiblity
+of the branch.
+
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://code.launchpad.dev/~name12/firefox/main')
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Keep branch confidential')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Keep branch confidential'
+
+
+== Private branches allowed ==
+
+Allow the Warty Security Team to have private firefox branches.
+
+    >>> admin_browser.open('http://launchpad.dev/firefox/+branchvisibility')
+    >>> admin_browser.getLink('Customise policy for Mozilla Firefox').click()
+    >>> admin_browser.getControl('Team').value = 'name20'
+    >>> admin_browser.getControl('Rule').value = ['PRIVATE']
+    >>> admin_browser.getControl('Set team policy').click()
+
+Now Sample Person, who is a member of the Warty Security Team should be
+able to mark the branch as private.
+
+    >>> browser.open('http://code.launchpad.dev/~name12/firefox/main')
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Keep branch confidential').selected = True
+    >>> browser.getControl('Change Branch').click()
+
+Since the branch is now private, it will have the standard Launchpad
+presentation for private things.
+
+    >>> print find_tag_by_id(browser.contents, 'container')
+    <div...class="private"...</div>
+    >>> print find_tag_by_id(browser.contents, 'privatebadge')
+    <img...private...>
+
+If Sample Person changes the branch from private back to public, the page
+reverts to its normal presentation.
+
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Keep branch confidential').selected = False
+    >>> browser.getControl('Change Branch').click()
+    >>> print find_tag_by_id(browser.contents, 'container')
+    <div id="container">...</div>
+    >>> print find_tag_by_id(browser.contents, 'privatebadge')
+    None
+
+
+== Private Only branches ==
+
+If the policy specifies private only, then the user is able to make
+a public branch private, but not vice versa.
+
+    >>> admin_browser.getLink('Set policy for a team').click()
+    >>> admin_browser.getControl('Team').value = 'name20'
+    >>> admin_browser.getControl('Rule').value = ['PRIVATE_ONLY']
+    >>> admin_browser.getControl('Set team policy').click()
+
+Mark the public branch private.
+
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Keep branch confidential').selected = True
+    >>> browser.getControl('Change Branch').click()
+
+The branch is now private, so it assumes the standard private presentation.
+
+    >>> print find_tag_by_id(browser.contents, 'container')
+    <div...class="private"...</div>
+    >>> print find_tag_by_id(browser.contents, 'privatebadge')
+    <img...private...>
+
+However when the user now looks to edit the branch details, there
+is no option to mark the branch as public.
+
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Keep branch confidential')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Keep branch confidential'

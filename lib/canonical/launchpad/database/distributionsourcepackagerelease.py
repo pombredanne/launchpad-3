@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Classes to represent source package releases in a distribution."""
 
@@ -9,20 +10,22 @@ __all__ = [
     ]
 
 from zope.interface import implements
-from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IDistributionSourcePackageRelease
+from canonical.launchpad.interfaces import(
+    IDistributionSourcePackageRelease, ISourcePackageRelease)
 
 from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
-from canonical.launchpad.database.distroreleasebinarypackage import (
-    DistroReleaseBinaryPackage)
+from canonical.launchpad.database.distroseriesbinarypackage import (
+    DistroSeriesBinaryPackage)
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory)
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import \
     SourcePackagePublishingHistory
+
+from canonical.lp import decorates
 
 
 class DistributionSourcePackageRelease:
@@ -33,6 +36,7 @@ class DistributionSourcePackageRelease:
     """
 
     implements(IDistributionSourcePackageRelease)
+    decorates(ISourcePackageRelease, context='sourcepackagerelease')
 
     def __init__(self, distribution, sourcepackagerelease):
         self.distribution = distribution
@@ -43,11 +47,6 @@ class DistributionSourcePackageRelease:
         """See IDistributionSourcePackageRelease"""
         return self.distribution.getSourcePackage(
             self.sourcepackagerelease.sourcepackagename)
-
-    @property
-    def name(self):
-        """See IDistributionSourcePackageRelease."""
-        return '%s' % self.sourcepackagerelease.sourcepackagename.name
 
     @property
     def displayname(self):
@@ -61,21 +60,18 @@ class DistributionSourcePackageRelease:
             self.name, self.version, self.distribution.displayname)
 
     @property
-    def version(self):
-        """See IDistributionSourcePackageRelease."""
-        return self.sourcepackagerelease.version
-
-    @property
     def publishing_history(self):
         """See IDistributionSourcePackageRelease."""
         return SourcePackagePublishingHistory.select("""
-            DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.distrorelease = 
-                DistroRelease.id AND
+            DistroSeries.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease = %s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagerelease.id),
-            clauseTables=['DistroRelease'],
+            """ % sqlvalues(self.distribution,
+                            self.distribution.all_distro_archive_ids,
+                            self.sourcepackagerelease),
+            clauseTables=['DistroSeries'],
             orderBy='-datecreated')
 
     @property
@@ -83,13 +79,13 @@ class DistributionSourcePackageRelease:
         """See IDistributionSourcePackageRelease."""
         return Build.select("""
             Build.sourcepackagerelease = %s AND
-            Build.distroarchrelease = DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = DistroRelease.id AND
-            DistroRelease.distribution = %s
+            Build.distroarchseries = DistroArchSeries.id AND
+            DistroArchSeries.distroseries = DistroSeries.id AND
+            DistroSeries.distribution = %s
             """ % sqlvalues(self.sourcepackagerelease.id,
                             self.distribution.id),
             orderBy='-datecreated',
-            clauseTables=['distroarchrelease', 'distrorelease'])
+            clauseTables=['distroarchseries', 'distroseries'])
 
     @property
     def binary_package_names(self):
@@ -100,7 +96,7 @@ class DistributionSourcePackageRelease:
             BinaryPackageRelease.build = Build.id AND
             Build.sourcepackagerelease = %s
             """ % sqlvalues(self.sourcepackagerelease.id),
-            clauseTable=['BinaryPackageRelease', 'Build'],
+            clauseTables=['BinaryPackageRelease', 'Build'],
             orderBy='name',
             distinct=True)
 
@@ -108,19 +104,21 @@ class DistributionSourcePackageRelease:
     def sample_binary_packages(self):
         """See IDistributionSourcePackageRelease."""
         all_published = BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchrelease =
-                DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = DistroRelease.id AND
-            DistroRelease.distribution = %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease = 
+            BinaryPackagePublishingHistory.distroarchseries =
+                DistroArchSeries.id AND
+            DistroArchSeries.distroseries = DistroSeries.id AND
+            DistroSeries.distribution = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
+            BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.build = Build.id AND
             Build.sourcepackagerelease = %s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagerelease.id),
+            """ % sqlvalues(self.distribution,
+                            self.distribution.all_distro_archive_ids,
+                            self.sourcepackagerelease),
             distinct=True,
             orderBy=['-datecreated'],
-            clauseTables=['DistroArchRelease', 'DistroRelease', 
+            clauseTables=['DistroArchSeries', 'DistroSeries',
                           'BinaryPackageRelease', 'Build'])
         samples = []
         names = set()
@@ -128,8 +126,8 @@ class DistributionSourcePackageRelease:
             if publishing.binarypackagerelease.binarypackagename not in names:
                 names.add(publishing.binarypackagerelease.binarypackagename)
                 samples.append(
-                    DistroReleaseBinaryPackage(
-                        publishing.distroarchrelease.distrorelease,
+                    DistroSeriesBinaryPackage(
+                        publishing.distroarchseries.distroseries,
                         publishing.binarypackagerelease.binarypackagename))
         return samples
 

@@ -11,7 +11,7 @@
 
       <p>
         Launchpad provides <abbr title="Resource Description Framework">RDF</abbr>
-        exports of project, product, branch, and release metadata,
+        exports of project, project, branch, and release metadata,
         using <a href="/@@/rdf/launchpad.owl">an ontology defined in
         <abbr title="Web Ontology Language">OWL</abbr></a>.
       </p>

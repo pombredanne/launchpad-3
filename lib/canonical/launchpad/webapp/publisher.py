@@ -1,17 +1,29 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 """Publisher of objects as web pages.
 
-XXX: Much stuff from canonical.publication needs to move here.
 """
 
 __metaclass__ = type
-__all__ = ['UserAttributeCache', 'LaunchpadView', 'LaunchpadXMLRPCView',
-           'canonical_url', 'nearest', 'get_current_browser_request',
-           'canonical_url_iterator', 'rootObject', 'Navigation',
-           'stepthrough', 'redirection', 'stepto', 'RedirectionView']
+__all__ = [
+    'LaunchpadView',
+    'LaunchpadXMLRPCView',
+    'canonical_name',
+    'canonical_url',
+    'canonical_url_iterator',
+    'get_current_browser_request',
+    'nearest',
+    'Navigation',
+    'rootObject',
+    'stepthrough',
+    'redirection',
+    'stepto',
+    'RedirectionView',
+    'RenamedView',
+    'UserAttributeCache',
+    ]
 
 from zope.interface import implements
-from zope.component import getUtility
+from zope.component import getUtility, queryMultiAdapter
 from zope.app import zapi
 from zope.interface.advice import addClassAdvisor
 import zope.security.management
@@ -24,10 +36,11 @@ from zope.publisher.interfaces import NotFound
 
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
     ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError)
-from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.webapp.url import urlappend
 
 
 class DecoratorAdvisor:
@@ -178,7 +191,7 @@ class LaunchpadView(UserAttributeCache):
 
         If the mime type of request.response starts with text/, then
         the result of this method is encoded to the charset of
-        request.response. If there is no charset, it is encoded to 
+        request.response. If there is no charset, it is encoded to
         utf8. Otherwise, the result of this method is treated as bytes.
 
         XXX: Steve Alexander says this is a convenient lie. That is, its
@@ -186,9 +199,16 @@ class LaunchpadView(UserAttributeCache):
         """
         return self.template()
 
+    def _isRedirected(self):
+        """Return True if a redirect was requested.
+
+        Check if the response status is one of 301, 302, 303 or 307.
+        """
+        return self.request.response.getStatus() in [301, 302, 303, 307]
+
     def __call__(self):
         self.initialize()
-        if self.request.response.getStatus() in [301, 302, 303, 307]:
+        if self._isRedirected():
             # Don't render the page on redirects.
             return u''
         else:
@@ -248,7 +268,8 @@ def canonical_url_iterator(obj):
             yield urldata.inside
 
 
-def canonical_url(obj, request=None):
+def canonical_url(
+    obj, request=None, rootsite=None, path_only_if_possible=False):
     """Return the canonical URL string for the object.
 
     If the canonical url configuration for the given object binds it to a
@@ -266,8 +287,8 @@ def canonical_url(obj, request=None):
     the request.  If a request is not provided, but a web-request is in
     progress, the protocol, host and port are taken from the current request.
 
-    If there is no request available, the protocol, host and port are taken from
-    the root_url given in launchpad.conf.
+    If there is no request available, the protocol, host and port are taken
+    from the root_url given in launchpad.conf.
 
     Raises NoCanonicalUrl if a canonical url is not available.
     """
@@ -275,10 +296,11 @@ def canonical_url(obj, request=None):
                 for urldata in canonical_urldata_iterator(obj)
                 if urldata.path]
 
-    obj_urldata = ICanonicalUrlData(obj, None)
-    if obj_urldata is None:
-        raise NoCanonicalUrl(obj, obj)
-    rootsite = obj_urldata.rootsite
+    if rootsite is None:
+        obj_urldata = ICanonicalUrlData(obj, None)
+        if obj_urldata is None:
+            raise NoCanonicalUrl(obj, obj)
+        rootsite = obj_urldata.rootsite
 
     # The request is needed when there's no rootsite specified and when
     # handling the different shipit sites.
@@ -318,10 +340,31 @@ def canonical_url(obj, request=None):
                     "Shipit canonical urls must be used only with request "
                     "== None or a request providing one of the ShipIt Layers")
         else:
-            raise AssertionError(
-                "rootsite is %s.  Must be 'launchpad', 'blueprint' or 'shipit'."
-                % rootsite)
-    return unicode(root_url + u'/'.join(reversed(urlparts)))
+            raise AssertionError("rootsite is %s.  Must be in %r." % (
+                    rootsite, sorted(allvhosts.configs.keys())
+                    ))
+    path = u'/'.join(reversed(urlparts))
+    if (path_only_if_possible and
+        request is not None and
+        root_url.startswith(request.getApplicationURL())
+        ):
+        return unicode('/' + path)
+    return unicode(root_url + path)
+
+
+def canonical_name(name):
+    """Return the canonical form of a name used in a URL.
+
+    This helps us to deal with common mistypings of URLs.
+    Currently only accounts for uppercase letters.
+
+    >>> canonical_name('ubuntu')
+    'ubuntu'
+    >>> canonical_name('UbUntU')
+    'ubuntu'
+
+    """
+    return name.lower()
 
 
 def get_current_browser_request():
@@ -374,9 +417,10 @@ rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))
 class Breadcrumb:
     implements(IBreadcrumb)
 
-    def __init__(self, url, text):
+    def __init__(self, url, text, has_menu=False):
         self.url = url
         self.text = text
+        self.has_menu = has_menu
 
 
 class Navigation:
@@ -407,6 +451,20 @@ class Navigation:
         Raise NotFoundError if the name cannot be traversed.
         """
         raise NotFoundError(name)
+
+    def redirectSubTree(self, target, status=301):
+        """Redirect the subtree to the given target URL."""
+        while True:
+            nextstep = self.request.stepstogo.consume()
+            if nextstep is None:
+                break
+            target = urlappend(target, nextstep)
+
+        query_string = self.request.get('QUERY_STRING')
+        if query_string:
+            target = target + '?' + query_string
+
+        return RedirectionView(target, self.request, status)
 
     # The next methods are for use by the Zope machinery.
 
@@ -442,8 +500,15 @@ class Navigation:
         request.getURL(1) represents the path traversed so far, but without
         the step we're currently working out how to traverse.
         """
+        # If self.context has a view called +menudata, it has a menu.
+        menuview = queryMultiAdapter(
+            (self.context, self.request), name="+menudata")
+        if menuview is None:
+            has_menu = False
+        else:
+            has_menu = menuview.submenuHasItems('')
         self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1), text))
+            Breadcrumb(self.request.getURL(1, path_only=False), text, has_menu))
 
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.
@@ -554,8 +619,46 @@ class RedirectionView:
 
     def __call__(self):
         self.request.response.redirect(self.target, status=self.status)
-        return ''
+        return u''
 
     def browserDefault(self, request):
         return self, ()
 
+
+class RenamedView:
+    """Redirect permanently to the new name of the view.
+
+    This view should be used when pages are renamed.
+
+    :param new_name: the new page name.
+    :param rootsite: (optional) the virtual host to redirect to,
+            e.g. 'answers'.
+    """
+    implements(IBrowserPublisher)
+
+    def __init__(self, context, request, new_name, rootsite=None):
+        self.context = context
+        self.request = request
+        self.new_name = new_name
+        self.rootsite = rootsite
+
+    def __call__(self):
+        target_url = "%s/%s" % (
+            canonical_url(self.context, rootsite=self.rootsite),
+            self.new_name)
+
+        query_string = self.request.get('QUERY_STRING', '')
+        if query_string:
+            target_url += '?' + query_string
+
+        self.request.response.redirect(target_url, status=301)
+
+        return u''
+
+    def publishTraverse(self, request, name):
+        """See zope.publisher.interfaces.browser.IBrowserPublisher."""
+        raise NotFound(name)
+
+    def browserDefault(self, request):
+        """See zope.publisher.interfaces.browser.IBrowserPublisher."""
+        return self, ()

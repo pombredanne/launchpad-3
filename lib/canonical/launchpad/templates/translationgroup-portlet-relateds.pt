@@ -1,4 +1,10 @@
-<div class="portlet">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-related">
     <h2>This group translates for</h2>
 
     <div class="portletBody">
@@ -14,7 +20,7 @@
                 </li>
             </ul>
 
-            <h5 tal:condition="context/products">Products:</h5>
+            <h5 tal:condition="context/products">Projects:</h5>
             <ul>
                 <li tal:repeat="product context/products">
                   <a href="#"
@@ -24,7 +30,7 @@
                 </li>
             </ul>
 
-            <h5 tal:condition="context/projects">Projects:</h5>
+            <h5 tal:condition="context/projects">Project Groups:</h5>
             <ul>
                 <li tal:repeat="project context/projects">
                   <a href="#"
@@ -38,3 +44,4 @@
 
     </div>
 </div>
+</tal:root>

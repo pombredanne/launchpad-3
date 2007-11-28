@@ -1,0 +1,88 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@marketing_template/master"
+  i18n:domain="launchpad"
+>
+  <ul metal:fill-slot="breadcrumbs">
+    <li><a href="/">Home</a></li>
+    <li class="current">About</li>
+  </ul>
+
+  <div id="home" metal:fill-slot="contents">
+    <h2>Collaboration, project management and code hosting for free software</h2>
+    <ul id="tools">
+      <li id="liCode"><a href="#"
+                         tal:attributes="href string:${vhosts/code/rooturl}+about"
+                         >Code</a>
+        <p>Make all your project's code accessible, wherever it's hosted on
+           the internet.
+        </p>
+      </li>
+      <li id="liBugs"><a href="#"
+                         tal:attributes="href string:${vhosts/bugs/rooturl}+about"
+                         >Bugs</a>
+        <p>Track and solve bugs, whether they occur upstream, downstream or
+           directly in your code.
+        </p>
+      </li>
+      <li id="liBlueprints"><a href="#"
+                         tal:attributes="href string:${vhosts/blueprints/rooturl}+about"
+                         >Blueprints</a>
+        <p>Develop, implement and track the progress of your software's
+           features.
+        </p>
+      </li>
+      <li id="liTranslations"><a href="#"
+                         tal:attributes="href string:${vhosts/translations/rooturl}+about"
+                         >Translations</a>
+        <p>Cut the time it takes to translate your software.</p>
+      </li>
+      <li id="liAnswers"><a href="#"
+                         tal:attributes="href string:${vhosts/answers/rooturl}+about"
+                         >Answers</a>
+        <p>Build a community support team and turn their answers
+           into a searchable knowledge-base.
+        </p>
+      </li>
+    </ul>
+
+    <div id="content">
+      <div class="intro">
+        <h3>About Launchpad</h3>
+
+        <p>Launchpad takes a new approach to free software project management
+           and hosting. It helps you to work more effectively with other
+           communities to solve common problems, such as shared bugs.</p>
+
+        <p>Such conversations have traditionally been difficult between
+           communities using different tools. Launchpad brings those
+           communities closer together by linking information from
+           project-specific sources and presenting it through a common
+           interface.</p>
+
+        <p>Launchpad also helps you to build your project's community.
+           Spontaneous team formation allows rich community structures to
+           develop quickly and lowers the barriers for new participants.</p>
+
+        <p>Created for Ubuntu, and now also used by Zope, Creative Commons
+          and Silva CMS, Launchpad is secure, reliable and managed by a
+          dedicated team of experienced developers and administrators. It
+          takes just a few minutes to add your project and there's free
+          migration support for open source projects.</p>
+
+        <h3>Migrating to Launchpad</h3>
+
+        <p>The Launchpad team offers a managed migration service for open
+          source projects using any Launchpad tool -
+          <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#104;&#101;&#108;&#112;&#64;&#108;&#97;&#117;&#110;&#99;&#104;&#112;&#97;&#100;&#46;&#110;&#101;&#116;">contact us for
+            more details</a></p>
+      </div>
+    </div> <!-- content -->
+  </div>
+</html>

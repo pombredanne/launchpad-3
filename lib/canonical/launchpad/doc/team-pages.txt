@@ -1,0 +1,56 @@
+= Team pages =
+
+== Home page ==
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, ITeamMembershipSet)
+    >>> from zope.component import getView
+    >>> from zope.publisher.browser import TestRequest
+    >>> personset = getUtility(IPersonSet)
+    >>> def create_view(context, name, form=None):
+    ...     view = getView(context, name, TestRequest(form=form))
+    ...     view.initialize()
+    ...     return view
+
+On a team home page, we show up to the latest five members who were approved
+as well as the up to five latest members who proposed themselves.
+
+    >>> ubuntu_team = personset.getByName('name18')
+    >>> team_home = create_view(ubuntu_team, '+index')
+    >>> membershipset = getUtility(ITeamMembershipSet)
+    >>> for member in team_home.recently_approved_members:
+    ...     membership = membershipset.getByPersonAndTeam(member, ubuntu_team)
+    ...     print "%s: %s" % (member.name, membership.status.title)
+    ...            
+    name20: Approved
+    spiv: Approved
+    limi: Approved
+
+    >>> for member in team_home.recently_proposed_members:
+    ...     membership = membershipset.getByPersonAndTeam(member, ubuntu_team)
+    ...     print "%s: %s" % (member.name, membership.status.title)
+    justdave: Proposed
+
+If new members are added/proposed, they'll show up at the top of the lists.
+
+    >>> sample_person = personset.getByName('name12')
+    >>> sample_person.join(ubuntu_team)
+    >>> salgado = personset.getByName('salgado')
+    >>> sabdfl = personset.getByName('sabdfl')
+    >>> ubuntu_team.addMember(salgado, reviewer=sabdfl)
+
+    >>> team_home = create_view(ubuntu_team, '+index')
+    >>> for member in team_home.recently_approved_members:
+    ...     membership = membershipset.getByPersonAndTeam(member, ubuntu_team)
+    ...     print "%s: %s" % (member.name, membership.status.title)
+    salgado: Approved
+    name20: Approved
+    spiv: Approved
+    limi: Approved
+
+    >>> for member in team_home.recently_proposed_members:
+    ...     membership = membershipset.getByPersonAndTeam(member, ubuntu_team)
+    ...     print "%s: %s" % (member.name, membership.status.title)
+    name12: Proposed
+    justdave: Proposed
+

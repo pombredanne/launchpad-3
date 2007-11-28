@@ -1,13 +1,15 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-details">
 
   <h2><span tal:replace="context/title">Name</span> mirror details</h2>
 
   <div class="portletBody portletContent">
 
     <b>Registrant:</b>
-    <img alt="" src="/@@/user" />
-    <a tal:attributes="href context/owner/fmt:url"
-       tal:content="context/owner/browsername">owner name</a> <br />
+    <a tal:replace="structure context/owner/fmt:link" /><br />
 
     <b>Speed:</b>
     <span tal:content="context/speed/title" /><br />

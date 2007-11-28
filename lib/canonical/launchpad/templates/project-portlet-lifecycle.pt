@@ -1,0 +1,33 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-lifecycle">
+  <h2>Lifecycle</h2>
+  <table class="portletBody">
+    <tbody>
+      <tr>
+        <th>Registered by:</th>
+        <td>
+          <a
+            tal:content="context/owner/browsername"
+            tal:attributes="href context/owner/fmt:url"
+          >Foo Bar</a>
+        </td>
+      </tr>
+      <tr>
+        <th>When:</th>
+        <td>
+          <span
+            tal:attributes="title context/datecreated/fmt:datetime"
+            tal:content="context/datecreated/fmt:approximatedate">
+            2006-07-21
+          </span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</tal:root>

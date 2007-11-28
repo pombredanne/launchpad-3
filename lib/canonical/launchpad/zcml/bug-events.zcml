@@ -19,11 +19,6 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
-        canonical.launchpad.event.interfaces.ISQLObjectToBeModifiedEvent"
-   handler="canonical.launchpad.subscribers.bugprivacy.make_subscriptions_explicit_on_private_bug" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBug
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
    handler="canonical.launchpad.mailnotification.notify_bug_modified" />
 
@@ -41,6 +36,11 @@
    for="canonical.launchpad.interfaces.IBugAttachment
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.mailnotification.notify_bug_attachment_added" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBugAttachment
+        canonical.launchpad.event.interfaces.ISQLObjectDeletedEvent"
+   handler="canonical.launchpad.mailnotification.notify_bug_attachment_removed" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugAttachment
@@ -81,21 +81,6 @@
    for="canonical.launchpad.interfaces.IBugCve
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.karma.cve_added" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugExternalRef
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.subscribers.karma.extref_added" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugExternalRef
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bug_external_ref_added" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugExternalRef
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bug_external_ref_edited" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugMessage

@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<tour next="translations">
+  <title>Blueprints</title>
+  <screen>
+    <title>Capturing ideas</title>
+    <headline>Capturing and tracking ideas</headline>
+    <summary>Launchpad's Blueprint Tracker helps you to manage ideas and
+      proposals for your project. A blueprint can be anything from a single
+      sentence to a full specification, with information about who is involved
+      and where it fits into your project's roadmap.
+    </summary>
+    <screenshot>/+icing/blueprints-tour-screenshot1.png</screenshot>
+    <callout top="" left="">Anyone can create a blueprint for your project,
+      helping you to make the most of your community's creativity. As a
+      project leader, you set the priority of each blueprint.
+    </callout>
+    <callout top="" left="">Ideas and proposals within free software projects
+      range from an initial concept, through to a full specification. You can
+      track how well-defined a blueprint is and the progress of work on its
+      implementation.
+    </callout>
+    <callout top="" left="">You can target blueprints to specific releases of
+      your software.
+    </callout>
+  </screen>
+  <screen>
+    <title>Blueprint detail</title>
+    <screenshot>/+icing/blueprints-tour-screenshot2.png</screenshot>
+    <callout top="" left="">At a glance, you can see who is involved in the
+      blueprint, its current status and any meetings at which it has been
+      discussed.
+    </callout>
+    <callout top="" left="">By telling Launchpad where a blueprint fits into
+      your project, and what other blueprints must be completed first, you can
+      create a roadmap for your software.
+    </callout>
+    <callout top="" left="">If a blueprint arises from a bug report, or a
+      branch of code implements a blueprint, you can link them enabling
+      everyone to see how they relate.
+    </callout>
+  </screen>
+
+  <screen>
+    <title>Planning meetings</title>
+    <summary>
+      <p>Many software projects find that face to face team meetings
+        are an invaluable way to build community and to work together on
+        specific goals.
+      </p>
+      <p>Launchpad makes it easy for anyone in the community to organise
+        meetings and development sprints. Each meeting's agenda consists of
+        blueprints. Anyone can suggest a blueprint for discussion, while you
+        approve each proposal.
+      </p>
+    </summary>
+    <screenshot>/+icing/blueprints-tour-screenshot3.png</screenshot>
+    <transition>For the next stop on our tour, let's look at how Launchpad
+      helps your translation community work online.
+    </transition>
+  </screen>
+
+</tour>

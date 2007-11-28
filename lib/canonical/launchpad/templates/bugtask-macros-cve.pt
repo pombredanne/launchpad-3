@@ -1,4 +1,7 @@
-<metal:header define-macro="table-listing">
+<metal:header
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  define-macro="table-listing">
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
       :bugtasks: A list of IBugTasks's to be listed
@@ -30,8 +33,9 @@
           <tal:bugtask tal:repeat="bugtask bugtaskcve/bugtasks">
             <tr>
               <td style="padding-left: 3em">
-                  <span tal:replace="structure bugtask/fmt:icon" />
-                  <span tal:replace="bugtask/targetname" />
+                  <span tal:replace="structure bugtask/image:icon" />
+                  <span tal:replace="bugtask/bugtargetdisplayname" />
+                  <tal:badges replace="structure bugtask/image:badges" />
               </td>
               <td>
                  <span tal:replace="structure bugtask/@@+listing-view/status" />

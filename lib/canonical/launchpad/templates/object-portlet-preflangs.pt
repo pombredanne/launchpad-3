@@ -1,15 +1,19 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-preferred-langs">
 
-  <h2>Your preferred languages</h2>
+  <h2>Your languages</h2>
 
   <div class="portletBody">
 
     <div class="portletContent">
 
-      <ul tal:condition="view/languages">
-          <li class="languages"
+      <ul tal:condition="view/translatable_languages">
+          <li class="language"
               tal:content="lang/englishname"
-              tal:repeat="lang view/languages">
+              tal:repeat="lang view/translatable_languages">
             A Language</li>
       </ul>
 

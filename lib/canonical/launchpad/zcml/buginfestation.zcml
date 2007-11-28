@@ -1,7 +1,6 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:lp="http://launchpad.canonical.com"
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
@@ -27,18 +26,6 @@
     keyword_arguments="productrelease infestationstatus"
     permission="launchpad.AnyPerson"
     template="../templates/launchpad-addform.pt"
-    lp:url="malone/bugs/$Bug.id/productinfestations/+new" />
-
-  <browser:editform
-    name="+edit"
-    for="canonical.launchpad.interfaces.IBugProductInfestation"
-    class="canonical.launchpad.browser.editview.SQLObjectEditView"
-    schema="canonical.launchpad.interfaces.IBugProductInfestation"
-    fields="productrelease infestationstatus"
-    label="Edit infested product release"
-    permission="launchpad.AnyPerson"
-    template="../templates/default-editform.pt"
-    lp:url="malone/bugs/$Bug.id/productinfestations/$BugProductInfestation.id/+edit"
     />
 
   <!-- BugProductInfestationSet -->
@@ -72,7 +59,7 @@
     permission="zope.Public">
     <browser:page name="+index"
       template="../templates/bugproductinfestations-index.pt"
-      lp:url="malone/bugs/$Bug.id/productinfestations/+index" />
+      />
   </browser:pages>
 </facet>
 </configure>

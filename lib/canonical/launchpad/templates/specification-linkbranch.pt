@@ -1,18 +1,15 @@
 <html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
-
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
-
-  <h3 metal:fill-slot="pageheading"
-      tal:content="context/title">Spec Title</h3>
 
   <div metal:fill-slot="main">
 
@@ -22,8 +19,8 @@
   </div>
 
   <div metal:fill-slot="help">
-    <p>If you have a branch related to a specification (implementing
-    the feature, or fixing the problem the specification outlines),
+    <p>If you have a branch related to a blueprint (implementing
+    the feature, or fixing the problem the blueprint outlines),
     you can create a link between them.  The summary field can be used
     to leave a note about the relationship.</p>
   </div>

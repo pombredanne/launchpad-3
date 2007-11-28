@@ -1,3 +1,5 @@
+= No Rendering On Redirects =
+
 We don't want edit and add pages render after a POST when they redirect
 to another page, since it doesn't make any sense. For this we have a
 mix-in class we can use, NoRenderingOnRedirect, which defines a
@@ -19,7 +21,13 @@ __call__ method.
     >>> class StubRequest:
     ...     def __init__(self, response): self.response = response
 
-When the response status is not 302 or 303, the page is rendered
+    >>> REDIRECTS = {
+    ...     301: 'Moved Permanently',
+    ...     302: 'Found',
+    ...     303: 'See Other',
+    ... }
+
+When the response status is not 301, 302 or 303, the page is rendered
 normally:
 
     >>> request = StubRequest(StubResponse())
@@ -33,11 +41,21 @@ returned:
 
     >>> class RedirectPage(TestPage):
     ...     def update(self):
-    ...         self.request.response._status = 302
-    >>> request = StubRequest(StubResponse())
-    >>> page = RedirectPage(None, request)
-    >>> page()
-    u''
+    ...         self.request.response._status = self.status
+
+    >>> def exercise_redirecting_page(page_factory):
+    ...     for status in sorted(REDIRECTS):
+    ...         request = StubRequest(StubResponse())
+    ...         page = page_factory(None, request)
+    ...         page.status = status
+    ...         rendered_page = page()
+    ...         print '%d, %s --> %r' % (
+    ...             status, REDIRECTS[status], rendered_page)
+
+    >>> exercise_redirecting_page(RedirectPage)
+    301, Moved Permanently --> u''
+    302, Found             --> u''
+    303, See Other         --> u''
 
 If you don't specify a template for the page in ZCML, but specify an
 attribute, __page_attribute__ is used to render the page.
@@ -53,12 +71,13 @@ attribute, __page_attribute__ is used to render the page.
     u'render_page'
 
 Of course, redirecting this page will result in an empty page being
-returned. Let's set the status to 303 this time:
+returned:
 
     >>> class RedirectAttributePage(AttributePage):
     ...     def update(self):
-    ...         self.request.response._status = 303
-    >>> request = StubRequest(StubResponse())
-    >>> page = RedirectPage(None, request)
-    >>> page()
-    u''
+    ...         self.request.response._status = self.status
+
+    >>> exercise_redirecting_page(RedirectAttributePage)
+    301, Moved Permanently --> u''
+    302, Found             --> u''
+    303, See Other         --> u''

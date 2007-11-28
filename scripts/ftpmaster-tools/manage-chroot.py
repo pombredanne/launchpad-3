@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 
 """Copyright Canonical Limited 2005
  Author: Matt Zimmerman <matt.zimmerman@canonical.com>
@@ -15,7 +15,7 @@ import sys
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+    IDistributionSet, NotFoundError, PackagePublishingPocket)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.scripts.ftpmaster import (
@@ -23,7 +23,6 @@ from canonical.launchpad.scripts.ftpmaster import (
 
 from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
-from canonical.lp.dbschema import PackagePublishingPocket
 
 def main():
     parser = OptionParser()
@@ -31,19 +30,19 @@ def main():
 
     parser.add_option("-d", "--distribution",
                       dest="distribution", metavar="DISTRIBUTION",
-                      default="ubuntu", help="distribution name")
+                      default="ubuntu", help="Distribution name")
 
-    parser.add_option("-s", "--suite",
-                      dest="suite", metavar="SUITE", default=None,
-                      help="suite name")
+    parser.add_option("-s", "--series",
+                      dest="series", metavar="SERIES", default=None,
+                      help="Series name")
 
     parser.add_option("-a", "--architecture",
                       dest="architecture", metavar="ARCH", default=None,
-                      help="architecture tag")
+                      help="Architecture tag")
 
     parser.add_option("-f", "--filepath",
                       dest="filepath", metavar="FILEPATH", default=None,
-                      help="chroot file path")
+                      help="Chroot file path")
 
     (options, args) = parser.parse_args()
 
@@ -66,25 +65,23 @@ def main():
         return 1
 
     try:
-        if options.suite is not None:
-            release, pocket = distribution.getDistroReleaseAndPocket(
-                options.suite)
+        if options.series is not None:
+            series, dummypocket = distribution.getDistroSeriesAndPocket(
+                options.series)
         else:
-            release = distribution.currentrelease
-            pocket = PackagePublishingPocket.RELEASE
+            series = distribution.currentseries
     except NotFoundError, info:
-        log.error("Suite not found: %s" % info)
+        log.error("Series not found: %s" % info)
         return 1
 
     try:
-        dar = release[options.architecture]
+        dar = series[options.architecture]
     except NotFoundError, info:
         log.error(info)
         return 1
 
-    log.debug("Initialising ChrootManager for '%s/%s'"
-              % (dar.title, pocket.name))
-    chroot_manager = ChrootManager(dar, pocket, filepath=options.filepath)
+    log.debug("Initialising ChrootManager for '%s'" % (dar.title))
+    chroot_manager = ChrootManager(dar, filepath=options.filepath)
 
     if action in chroot_manager.allowed_actions:
         chroot_action = getattr(chroot_manager, action)

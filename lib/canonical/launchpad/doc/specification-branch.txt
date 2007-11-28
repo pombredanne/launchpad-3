@@ -1,66 +1,78 @@
 = Specification Branch Links =
 
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import ISpecificationBranch
+    >>> from canonical.launchpad.database import SpecificationBranch
+    >>> verifyObject(ISpecificationBranch, SpecificationBranch.get(1))
+    True
+
 A specification can be linked to a number of branches.  For example,
 the Ubuntu media-integrity-check specifcation has a branch link:
 
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import (
-  ...     IBranchSet, ILaunchpadCelebrities)
-  >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-  >>> spec = ubuntu.getSpecification('media-integrity-check')
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBranchSet, ILaunchpadCelebrities, IPersonSet)
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> spec = ubuntu.getSpecification('media-integrity-check')
 
-  >>> for branchlink in spec.branch_links:
-  ...     print branchlink.branch.unique_name
-  ~name12/+junk/junk.dev
+    >>> for branchlink in spec.branch_links:
+    ...     print branchlink.branch.unique_name
+    ~name12/+junk/junk.dev
 
 A spec link has a summary attached to it:
 
-  >>> branchlink = spec.branch_links[0]
-  >>> branchlink.summary
-  u'This branch should fix the issue'
+    >>> branchlink = spec.branch_links[0]
+    >>> branchlink.summary
+    u'This branch should fix the issue'
 
 The summary can only be changed by non-anonymous users:
 
-  >>> branchlink.summary = 'New summary'
-  Traceback (most recent call last):
-    ...
-  Unauthorized: (... 'launchpad.AnyPerson')
-  >>> login('test@canonical.com')
-  >>> branchlink.summary = 'New summary'
+    >>> branchlink.summary = 'New summary'
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (... 'launchpad.AnyPerson')
+    >>> login('test@canonical.com')
+    >>> branchlink.summary = 'New summary'
 
 We can create a new branch link with the linkBranch() method:
 
-  >>> branch = getUtility(IBranchSet).getByUniqueName(
-  ...     '~name12/+junk/junk.contrib')
-  >>> branchlink = spec.linkBranch(branch, 'A summary')
+    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    ...     '~name12/+junk/junk.contrib')
+    >>> user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> branchlink = spec.linkBranch(branch, user, 'A summary')
+
+The branch link records the person who created the link as the registrant.
+
+    >>> print branchlink.registrant.displayname
+    Sample Person
 
 Now the branch has two branch links:
 
-  >>> for branchlink in spec.branch_links:
-  ...     print branchlink.branch.unique_name
-  ~name12/+junk/junk.dev
-  ~name12/+junk/junk.contrib
+    >>> for branchlink in spec.branch_links:
+    ...     print branchlink.branch.unique_name
+    ~name12/+junk/junk.dev
+    ~name12/+junk/junk.contrib
 
 Similarly, the branch has a list of attached specifications:
 
-  >>> for speclink in branch.spec_links:
-  ...     print speclink.specification.name
-  media-integrity-check
+    >>> for speclink in branch.spec_links:
+    ...     print speclink.specification.name
+    media-integrity-check
 
 We can also look up a branch link with the getBranchLink() method:
 
-  >>> branchlink = spec.getBranchLink(branch)
-  >>> branchlink.specification == spec
-  True
-  >>> branchlink.branch == branch
-  True
-  >>> branchlink.summary
-  u'A summary'
+    >>> branchlink = spec.getBranchLink(branch)
+    >>> branchlink.specification == spec
+    True
+    >>> branchlink.branch == branch
+    True
+    >>> branchlink.summary
+    u'A summary'
 
 Finally, the branch link can be removed using its destroySelf()
 method:
 
-  >>> branchlink.destroySelf()
-  >>> for branchlink in spec.branch_links:
-  ...     print branchlink.branch.unique_name
-  ~name12/+junk/junk.dev
+    >>> branchlink.destroySelf()
+    >>> for branchlink in spec.branch_links:
+    ...     print branchlink.branch.unique_name
+    ~name12/+junk/junk.dev

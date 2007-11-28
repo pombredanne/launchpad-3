@@ -12,17 +12,19 @@ from zope.interface import implements
 from zope.component import getUtility
 import zope.security.management
 import zope.thread
-from zope.app.session.interfaces import ISession
+
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchpadApplication)
 
 from canonical.launchpad.interfaces import (
-        IOpenLaunchBag, ILaunchBag,
-        ILaunchpadApplication, IPerson, IProject, IProduct, IDistribution,
-        IDistroRelease, ISourcePackage, IBug, IDistroArchRelease,
-        ISpecification, IBugTask)
-from canonical.launchpad.webapp.interfaces import ILoggedInEvent
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+        IPerson, IProject, IProduct, IDistribution,
+        IDistroSeries, ISourcePackage, IBug, IDistroArchSeries,
+        ISpecification, IBugTask, ILaunchpadCelebrities)
+from canonical.launchpad.webapp.interfaces import (
+    ILoggedInEvent, IOpenLaunchBag, ILaunchBag)
 
 _utc_tz = pytz.timezone('UTC')
+
 
 class LaunchBag:
 
@@ -35,8 +37,8 @@ class LaunchBag:
         IProject: 'project',
         IProduct: 'product',
         IDistribution: 'distribution',
-        IDistroRelease: 'distrorelease',
-        IDistroArchRelease: 'distroarchrelease',
+        IDistroSeries: 'distroseries',
+        IDistroArchSeries: 'distroarchseries',
         ISourcePackage: 'sourcepackage',
         ISpecification: 'specification',
         IBug: 'bug',
@@ -52,7 +54,7 @@ class LaunchBag:
     @property
     def login(self):
         return getattr(self._store, 'login', None)
-    
+
     def setDeveloper(self, is_developer):
         '''See IOpenLaunchBag.'''
         self._store.developer = is_developer
@@ -64,6 +66,8 @@ class LaunchBag:
     @property
     def user(self):
         interaction = zope.security.management.queryInteraction()
+        if interaction is None:
+            return None
         principals = [
             participation.principal
             for participation in list(interaction.participations)
@@ -119,12 +123,12 @@ class LaunchBag:
         return getattr(self._store, "distribution", None)
 
     @property
-    def distrorelease(self):
-        return self._store.distrorelease
+    def distroseries(self):
+        return self._store.distroseries
 
     @property
-    def distroarchrelease(self):
-        return self._store.distroarchrelease
+    def distroarchseries(self):
+        return self._store.distroarchseries
 
     @property
     def sourcepackage(self):

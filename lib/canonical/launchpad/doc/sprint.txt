@@ -1,20 +1,100 @@
-Sprints / Meetings
-==================
+= Sprints / Meetings =
 
 Sprints or meetings can be coordinated using Launchpad.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     ISprintSet, IPersonSet)
+    ...     ISprint, ISprintSet, IPersonSet)
     >>> sprintset = getUtility(ISprintSet)
 
 To find a sprint by name, use:
 
-    >>> ubz = sprintset["gentoo"]
+    >>> gentoo = sprintset["gentoo"]
+
+The major pillars, product, distribution and project, have some properties
+which give us the sprints relevant to them.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProductSet, IProjectSet, IDistributionSet)
+    >>> productset = getUtility(IProductSet)
+    >>> projectset = getUtility(IProjectSet)
+    >>> distroset = getUtility(IDistributionSet)
+    >>> firefox = productset.getByName('firefox')
+    >>> ubuntu = distroset.getByName('ubuntu')
+    >>> mozilla = projectset.getByName('mozilla')
+
+We have coming_sprints, giving us up to 5 relevant events that are
+up-and-coming (sorted by the starting date):
+
+    >>> for sprint in firefox.coming_sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    futurista 2015-08-16
+    >>> for sprint in ubuntu.coming_sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    futurista 2015-08-16
+    >>> for sprint in mozilla.coming_sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    futurista 2015-08-16
+
+And we have sprints, giving us all sprints relevant to that pillar (sorted
+descending by the starting date):
+
+    >>> for sprint in firefox.sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    futurista 2015-08-16
+    ubz 2005-10-07
+    >>> for sprint in ubuntu.sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    futurista 2015-08-16
+    >>> for sprint in mozilla.sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    futurista 2015-08-16
+    ubz 2005-10-07
+
+We also have past_sprints, giving all sprints relevant to that pillar
+that are not coming sprints.
+
+    >>> for sprint in firefox.past_sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    ubz 2005-10-07
+    >>> for sprint in ubuntu.past_sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+
+    >>> for sprint in mozilla.past_sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    ubz 2005-10-07
+
+Now, these sprint APIs show only sprints with specifications that are
+approved, not ones where the only specs are proposed.  So, we'll change
+the specs related to the Ubuntu "futurista" sprint to "proposed", and
+then check the coming sprints and all sprints.
+
+    >>> from canonical.launchpad.interfaces import SprintSpecificationStatus
+
+We're directly using the database classes here, bypassing the security
+proxies because this is just set-up for the next step, it's not the exact
+functionality we're testing.
+
+    >>> from canonical.launchpad.database import SprintSet
+    >>> futurista = SprintSet()["futurista"]
+    >>> for sprintspec in futurista.specificationLinks():
+    ...     sprintspec.status = SprintSpecificationStatus.PROPOSED
+
+Flush the updates to the database so we'll see them.
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+See, there are no ubuntu sprints.
+
+    >>> for sprint in ubuntu.sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+
+    >>> for sprint in ubuntu.coming_sprints:
+    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
 
 
-Specification Listings
-======================
+== Specification Listings ==
 
 We should be able to get lists of specifications in different states
 related to a sprint.
@@ -24,7 +104,7 @@ informational.
 
  >>> ubz = sprintset["ubz"]
 
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 
 First, there should be no informational specs for ubz:
@@ -72,7 +152,6 @@ And if we ask just for specs, we get them all
 
 Inactive products are excluded from the listings.
 
- >>> from canonical.database.sqlbase import flush_database_updates
  >>> from canonical.launchpad.interfaces import IProductSet
  >>> from canonical.launchpad.ftests import login
  >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -87,3 +166,36 @@ Reset firefox so we don't mess up later tests.
  >>> firefox.active = True
  >>> flush_database_updates()
 
+
+== Sprint Driver ==
+
+Each sprint had a driver - the person (or team) that can decide on the
+list of blueprints for discussion. The driver is stored in the `driver`
+attribute.
+
+    >>> person_set = getUtility(IPersonSet)
+    >>> paris = sprintset["paris"]
+    >>> sample_person = person_set.getByEmail('test@canonical.com')
+    >>> nopriv_person = person_set.getByEmail('no-priv@canonical.com')
+    >>> admin_person = person_set.getByEmail('foo.bar@canonical.com')
+
+We can use the `isDriver` method on sprint objects to determine whether
+a user is considered a driver for a sprint.
+
+    >>> paris.isDriver(nopriv_person)
+    False
+
+sample_person is the driver for the paris sprint.
+
+    >>> paris.driver == sample_person
+    True
+
+Obviously, we'd expect isDriver to return true for her.
+
+    >>> paris.isDriver(sample_person)
+    True
+
+Administrators are always considered drivers for any sprint.
+
+    >>> paris.isDriver(admin_person)
+    True

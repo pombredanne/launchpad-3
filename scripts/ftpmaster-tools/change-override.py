@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 
 """Change the component of a package.
 
@@ -12,6 +12,7 @@ import sys
 
 from contrib.glock import GlobalLock
 
+from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.ftpmaster import (
@@ -41,7 +42,7 @@ def main():
     # control options
     parser.add_option("-S", "--source-and-binary", dest="sourceandchildren",
                       default=False, action="store_true",
-                      help="select source and binaries with the same name")
+                      help="select source and all binaries from this source")
     parser.add_option("-B", "--binary-and-source", dest="binaryandsource",
                       default=False, action="store_true",
                       help="select source and binary (of the same name)")
@@ -62,8 +63,7 @@ def main():
     lock.acquire(blocking=True)
 
     log.debug("Initialising connection.")
-    # XXX cprov 20060417: retrieve dbuser from config file
-    ztm = initZopeless(dbuser="lucille")
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
     execute_zcml_for_scripts()
 
     # instatiate and initialize changer object

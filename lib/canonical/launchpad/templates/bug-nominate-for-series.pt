@@ -1,0 +1,89 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+
+    <div metal:fill-slot="heading">
+      <div>
+        <img alt="" src="/@@/bug" />
+        <a tal:attributes="href context/fmt:url"
+          >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
+        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
+      </div>
+      <h1 tal:content="view/label">The nominate heading</h1>
+    </div>
+
+    <div metal:fill-slot="extra_info">
+      <style type="text/css">
+        label {font-weight: normal}
+      </style>
+
+      <tal:targeting-mode condition="view/userIsReleaseManager">
+        <p>
+        Release targeting allows you to track the status, assignee, and
+        importance of a bug in one or more official releases.
+        </p>
+      </tal:targeting-mode>
+
+      <tal:nomination-mode condition="not:view/userIsReleaseManager">
+        <p>
+        Bug nominations are evaluated by release managers and accepted
+        or declined for fixing in a release.
+        </p>
+      </tal:nomination-mode>
+      
+      <p tal:condition="view/getReleaseManager"
+         tal:define="release_context view/getReleaseContext;
+                     release_manager view/getReleaseManager">
+        The
+        <a href="#"
+           tal:condition="view/userCanChangeDriver"
+           tal:content="string:${release_context/displayname} release manager"
+           tal:attributes="href string:${release_context/fmt:url}/+driver">
+           Ubuntu release manager
+        </a>
+        <span tal:condition="not:view/userCanChangeDriver"
+              tal:content="string:${release_context/displayname} release manager">
+           Ubuntu release manager
+        </span>
+        is
+        <a href="#"
+           tal:content="release_manager/displayname"
+           tal:attributes="href release_manager/fmt:url">
+           Foo Bar
+        </a>.
+      </p>
+  
+      <p tal:condition="not:view/getReleaseManager"
+         tal:define="release_context view/getReleaseContext">
+        There is no
+        <span tal:condition="not:view/userCanChangeDriver"
+              tal:content="string:release manager for ${release_context/displayname}"
+        /><a tal:condition="view/userCanChangeDriver"
+           tal:attributes="href string:${release_context/fmt:url}/+driver"
+           tal:content="string:release manager for ${release_context/displayname}"/>.
+      </p>
+
+      <h3 tal:condition="view/userIsReleaseManager">Release Targets</h3>
+      <h3 tal:condition="not:view/userIsReleaseManager">Nominate</h3>      
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

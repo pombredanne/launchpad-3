@@ -1,4 +1,5 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces for objects that can be linked to bugs."""
 
@@ -36,7 +37,7 @@ class IBugLink(IHasBug):
 class IBugLinkTarget(Interface):
     """An entity which can be linked to a bug.
 
-    Examples include an ITicket, and an ICve.
+    Examples include an IQuestion, and an ICve.
     """
 
     bugs = List(title=_("Bugs related to this object."),
@@ -68,12 +69,10 @@ class IBugLinkForm(Interface):
     """Schema for the unlink bugs form."""
 
     bug = BugField(
-        title=_('Bug ID'), required=True,
-        description=_("Enter the Malone bug ID or nickname that "
-                      "you want to link to."))
+        title=_('Bug ID'), required=True)
 
 
-# XXX flacoste 2006/08/29 To remain consistent with the existing source
+# XXX flacoste 2006-08-29: To remain consistent with the existing source
 # code layout policy, this should really be in vocabularies.buglinks but this
 # is not possible because of dependencies on interfaces in some vocabularies
 # modules.

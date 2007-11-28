@@ -1,0 +1,176 @@
+<html xmlns="http://www.w3.org/1999/xhtml" 
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      xml:lang="en"
+      lang="en"
+      dir="ltr"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad"
+      tal:attributes="xml:lang view/lang; lang view/lang; dir view/lang"
+>
+  <head>
+    <style metal:fill-slot="head_epilogue"
+           type="text/css" media="screen">
+  div.confirmBox {
+    margin: 0;
+    padding-right: 0.5em;
+    padding-bottom: 0.5em;
+    text-align: right;
+    font-size: smaller;
+  }
+    </style>
+  </head>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div xml:lang="en" lang="en" dir="ltr">
+        <img alt="Open" title="Open" src="/@@/question"
+          tal:attributes="alt context/status/title;
+                          title context/status/title;" />
+        <span class="questionstatusOPEN"
+          tal:attributes="class string:questionstatus${context/status/name}"
+          tal:content="context/status/title">Open</span>
+        Question #<span tal:replace="context/id">4</span>,
+        asked
+        <span
+          tal:attributes="title context/datecreated/fmt:datetime"
+          tal:content="context/datecreated/fmt:displaydate">2005-10-05</span>
+        by
+        <a
+          tal:attributes="href context/owner/fmt:url"
+          tal:content="context/owner/browsername">Foo Bar</a>
+      </div>
+      <h1 tal:content="context/title">Bar doesn't work</h1>
+    </metal:heading>
+
+    <metal:leftportlets fill-slot="portlets_one">
+      <div tal:condition="context/reopenings"
+           tal:replace="structure context/@@+portlet-reopenings" />
+      <div tal:replace="structure context/@@+portlet-subscribers" />
+    </metal:leftportlets>
+
+    <metal:rightportlets fill-slot="portlets_two">
+      <div tal:replace="structure context/@@+portlet-details" />
+      <div tal:replace="structure context/@@+portlet-bugs" />
+    </metal:rightportlets>
+
+    <div metal:fill-slot="main">
+
+      <table class="listing" xml:lang="en" lang="en" dir="ltr"
+        tal:condition="context/whiteboard">
+        <tbody>
+          <tr>
+            <td><b>Whiteboard:</b></td>
+            <td tal:content="context/whiteboard">
+              whiteboard contents
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <tal:user condition="view/user">
+        <tal:description
+          define="global description context/description/fmt:text-to-html" />
+      </tal:user>
+      <tal:not-user condition="not:view/user">
+        <tal:description
+          define="global description context/description/fmt:obfuscate-email/fmt:text-to-html" />
+      </tal:not-user>
+
+      <div
+        class="report"
+        tal:content="structure description"
+        />
+
+      <div id="related-faq" tal:condition="context/faq">
+        <b>Related FAQ:</b>
+        <a href="#"
+           tal:attributes="href context/faq/fmt:url"
+           tal:content="context/faq/title">FAQ Title</a>
+      </div>
+
+      <tal:message repeat="message context/messages">
+        <div tal:replace="structure message/@@+display" />
+      </tal:message>
+
+      <div xml:lang="en" lang="en" dir="ltr">
+        <div id="can-you-help-with-this-problem"
+          tal:condition="view/show_call_to_answer">
+          <h2>
+            Can you help with this problem?
+          </h2>
+
+          <p>
+            Provide an answer of your own, or ask 
+            <span tal:replace="context/owner/browsername"></span>
+            for more information if necessary.
+          </p>
+        </div>
+        
+        <div tal:condition="view/hasActions">
+          <div metal:use-macro="context/@@launchpad_form/form">
+            <metal:no-heading fill-slot="heading" />
+            <tal:comment replace="nothing">
+              We control here the order of the action buttons and we omit
+              the confirmation action which is rendered using the 
+              QuestionMessage view.
+            </tal:comment>
+            <div class="actions" metal:fill-slot="buttons">
+              <div>
+                <input tal:replace="structure view/comment_action/render" />
+                <input tal:replace="structure view/answer_action/render" />
+                <input tal:replace="structure view/selfanswer_action/render" />
+                <input tal:replace="structure view/requestinfo_action/render" />
+                <input tal:replace="structure view/giveinfo_action/render" />
+                <input tal:replace="structure view/reopen_action/render" />
+              </div>
+              <p id="answer-button-hint" 
+                tal:condition="view/confirm_action/available">
+                To confirm an answer, use the 
+                <strong>'This Solved My Problem'</strong> button located at
+                the bottom of the answer.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <tal:not-logged-in condition="not: request/lp:person">
+          <div align="center">
+            To post a message you must <a href="+login">log in</a>.
+          </div>
+        </tal:not-logged-in>
+      </div>
+
+      <div
+        class="related"
+        id="ask-your-own-question"
+        xml:lang="en" lang="en" dir="ltr"
+        tal:condition="not: view/is_question_owner"
+      >
+        <h2>Got a question of your own?</h2>
+
+        <p>For best results,
+          <a href="+addquestion"
+            tal:attributes="href view/new_question_url">ask your own question
+            separately</a>.
+        </p>
+      </div>
+    </div>
+
+    <metal:help fill-slot="help">
+      <p>The question and the following discussion is displayed on this
+        page.
+      </p>
+      <p>If you are the person who posted that question, consult the
+        <a href="https://help.launchpad.net/GettingSupportInLaunchpad">Getting
+        Support in Launchpad</a> document for help on how to follow-up on
+        your question.
+      </p>
+      <p>If you want to help the user, consult the
+        <a href="https://help.launchpad.net/ProvidingSupportThroughLaunchpad">
+          Providing Support Through Launchpad</a> document.
+      </p>
+    </metal:help>
+  </body>
+</html>
+

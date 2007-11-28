@@ -1,0 +1,62 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <securedutility
+        class="canonical.launchpad.translationformat.TranslationImporter"
+        provides="canonical.launchpad.interfaces.ITranslationImporter">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationImporter" />
+    </securedutility>
+
+    <content
+        class="canonical.launchpad.translationformat.gettext_po_parser.POHeader">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationHeaderData" />
+        <require
+            permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.ITranslationHeaderData" />
+    </content>
+
+    <content
+        class="canonical.launchpad.translationformat.gettext_po_importer.GettextPOImporter">
+        <allow
+          interface="canonical.launchpad.interfaces.ITranslationFormatImporter" />
+    </content>
+
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
+        provides="canonical.launchpad.interfaces.ITranslationFormatImporter"
+        factory="canonical.launchpad.translationformat.gettext_po_importer.GettextPOImporter"
+        />
+
+    <content
+        class="canonical.launchpad.translationformat.mozilla_xpi_importer.MozillaHeader">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationHeaderData" />
+        <require
+            permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.ITranslationHeaderData" />
+    </content>
+
+    <content
+        class="canonical.launchpad.translationformat.kde_po_importer.KdePOImporter">
+        <allow
+          interface="canonical.launchpad.interfaces.ITranslationFormatImporter" />
+    </content>
+
+    <content
+        class="canonical.launchpad.translationformat.mozilla_xpi_importer.MozillaXpiImporter">
+        <allow
+          interface="canonical.launchpad.interfaces.ITranslationFormatImporter" />
+    </content>
+
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
+        provides="canonical.launchpad.interfaces.ITranslationFormatImporter"
+        factory="canonical.launchpad.translationformat.mozilla_xpi_importer.MozillaXpiImporter"
+        />
+
+</configure>

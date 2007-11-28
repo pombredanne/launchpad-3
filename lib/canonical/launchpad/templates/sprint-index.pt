@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -14,52 +21,91 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
+  <tal:mugshot replace="structure context/image:mugshot" />
   <h1>Meeting overview</h1>
 </metal:heading>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+     tal:define="specs view/specs;
+                 has_any_specs view/has_any_specifications">
 
-  <p class="highlighted">
+  <p>
     <span tal:replace="context/summary">
       Sprint Summary Goes Here
     </span>
     <tal:has_homepage condition="context/home_page">
-      <img src="/@@/sprint" />
+      <img src="/@@/meeting" />
       <a tal:attributes="href context/home_page">
         View the Meeting Home Page
       </a>
     </tal:has_homepage>
   </p>
 
-  <p class="informational message" tal:condition="not:context/specifications">
-    No specifications are yet registered for discussion at
-    <span tal:replace="context/title">Ubuntu Below Zero</span>.
-  </p>
+  <tal:no_specifications_at_all condition="not: has_any_specs">
+    <p>
+      Nobody has yet proposed any blueprints for discussion at this sprint.
+      If you will be attending the sprint you should make sure that the
+      blueprints you are interested in discussing get nominated for the
+      agenda. You can do this using the "Propose for meeting agenda" action
+      link on the blueprint page.
+    </p>
 
-  <h2>Latest <span tal:replace="view/latest_specs_limit">5</span> additions to
-      the meeting agenda</h2>
+    <p>
+      Each meeting has a person, or team, responsible for deciding which
+      items are accepted for the agenda. This team is called the "meeting
+      driver" and for <tal:meeting replace="context/title" /> they are:
+    </p>
 
-  <div tal:repeat="spec view/latest_approved"
-       tal:replace="structure spec/@@+listing-simple"
-       />
+    <ul>
+      <li class="person" tal:repeat="driver context/drivers">
+        <a tal:attributes="href driver/fmt:url"
+           tal:content="driver/browsername" />
+      </li>
+    </ul>
 
-  <p class="discreet">
-    There are a total of <span tal:replace="view/count">5</span>
-    specifications on the meeting agenda.
-    <tal:proposed define="proposed view/proposed_count"
-                  condition="proposed">
-      There are <span tal:replace="proposed">7</span>
-      specifications 
-      <a tal:omit-tag="not: context/required:launchpad.Driver" href="+settopics">
-        proposed
-      </a> which the organisers will review.
-    </tal:proposed>
-    You can view the <a href="+specs">full current agenda here</a>.
-  </p>
+    <p>
+      You should contact the meeting driver if you have any additional
+      questions about the structure or agenda of the meeting.
+    </p>
 
-  <div tal:condition="view/count"
-       tal:replace="structure context/@@+blueprint-legend" />
+  </tal:no_specifications_at_all>
+
+  <tal:some_specs_nominated condition="has_any_specs">
+
+    <p tal:condition="not:specs">
+      No blueprints are yet approved for discussion at
+      <span tal:replace="context/title">Ubuntu Below Zero</span>.
+      If you are one of the meeting drivers you should review the proposed
+      blueprint list and accept those topics you wish to show up on the
+      agenda for the meeting.
+    </p>
+
+    <tal:approved_specs condition="specs">
+
+      <h2>Latest <span tal:replace="view/latest_specs_limit">5</span>
+          additions to the meeting agenda</h2>
+
+      <table>
+        <div tal:repeat="spec view/latest_approved"
+             tal:replace="structure spec/@@+listing-simple"
+             />
+      </table>
+
+      <p>
+        There are a total of <span tal:replace="view/count">5</span>
+        specifications on the meeting agenda.
+        <tal:proposed define="proposed view/proposed_count"
+                      condition="proposed">
+          There are <span tal:replace="proposed">7</span>
+          specifications 
+          <a tal:omit-tag="not: context/required:launchpad.Driver" href="+settopics">
+            proposed
+          </a> which the organisers will review.
+        </tal:proposed>
+        You can view the <a href="+specs">full current agenda here</a>.
+      </p>
+    </tal:approved_specs>
+  </tal:some_specs_nominated>
 
 </div>
 </body>

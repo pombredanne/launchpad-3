@@ -1,0 +1,31 @@
+= Appointing a Product Driver =
+
+Appoint Sample Person as the driver of Firefox product.
+
+  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/firefox')
+  >>> browser.getLink('Appoint driver').click()
+
+  >>> browser.url
+  'http://launchpad.dev/firefox/+driver'
+  >>> browser.title
+  'Appoint the driver for Mozilla Firefox'
+
+  >>> browser.getControl('Driver').value = 'name12'
+  >>> browser.getControl('Change').click()
+
+After changing the driver, the user is redirected to the overview page where a
+message inform him of the driver change.
+
+  >>> browser.url
+  'http://launchpad.dev/firefox'
+
+  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+  ...     tag.renderContents()
+  'Successfully changed the driver to test@canonical.com'
+
+Sample Person is listed as the driver of the product.
+
+  >>> for tag in find_tags_by_class(browser.contents, 'summary'):
+  ...     tag.find(text='Driver:').findNext('a').string
+  u'Sample Person'

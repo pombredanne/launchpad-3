@@ -1,0 +1,90 @@
+= Things a person is working on =
+
+Any person page contains the bugs/blueprints a person is working on.
+
+Sample Person is not working on any bugs/blueprints right now, so the section
+won't be displayed.
+
+    >>> browser.open('http://launchpad.dev/~name12/')  
+    >>> print find_tag_by_id(browser.contents, 'working-on')
+    None
+
+We'll then change the statuses of some bugs that are already assigned to
+Sample Person.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskStatus, BugTaskSearchParams, IBugTaskSet,
+    ...     ILaunchBag, IPersonSet)
+    >>> login('test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> params = BugTaskSearchParams(user=None, assignee=sample_person)
+    >>> for task in getUtility(IBugTaskSet).search(params):
+    ...     task.transitionToStatus(
+    ...         BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
+
+And the same for some blueprints.
+
+    >>> from canonical.launchpad.interfaces import (
+    ... SpecificationImplementationStatus)
+    >>> from canonical.launchpad.database import Specification
+    >>> spec = Specification.selectOneBy(name='media-integrity-check')
+    >>> spec.assignee = sample_person
+    >>> spec.implementation_status = SpecificationImplementationStatus.STARTED
+    >>> newstate = spec.updateLifecycleStatus(sample_person)
+    >>> logout()
+    >>> flush_database_updates()
+
+Let's see what we got on his page now.
+
+    >>> browser.open('http://launchpad.dev/~name12/')
+    >>> div = find_tag_by_id(browser.contents, 'working-on')
+    >>> for tag in div.findAll('tr'):
+    ...     print tag.find('a').renderContents()
+    Firefox install instructions should be complete
+    Blackhole Trash folder
+    CD Media Integrity Check
+
+We even have a link for us to see all bugs that Sample Person is working on.
+
+    >>> browser.getLink('Show all bugs in progress').click()
+    >>> browser.url
+    'http://launchpad.dev/...In+Progress'
+
+Which obviously contains only the above two bugs we changed statuses.
+
+    >>> table = find_tag_by_id(browser.contents, 'buglisting')
+    >>> for link in table.findAll('a'):
+    ...     print link.renderContents()
+    Firefox install instructions should be complete
+    Blackhole Trash folder
+
+For the specs, though, we don't have a page where it's possible to list only
+the specs that have started but were not yet concluded, so for now we'll have
+to link to the page which shows the whole list of specs assigned to the
+person.
+
+    >>> browser.open('http://launchpad.dev/~name12/')
+    >>> browser.getLink('Show all assigned blueprints').click()
+    >>> browser.url
+    'http://launchpad.dev/.../+specs?role=assignee'
+
+If one of the bugs that Sample Person is working on gets marked as a dupe of
+another one, it'll be removed from the list of bugs he's working on.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bugset = getUtility(IBugSet)
+    >>> login('test@canonical.com')
+    >>> bugset.get(5).duplicateof = bugset.get(4)
+    >>> logout()
+    >>> flush_database_updates()
+
+    >>> browser.open('http://launchpad.dev/~name12/')
+    >>> div = find_tag_by_id(browser.contents, 'working-on')
+    >>> for tag in div.findAll('tr'):
+    ...     print tag.find('a').renderContents()
+    Blackhole Trash folder
+    CD Media Integrity Check
+

@@ -1,11 +1,16 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:Make_sure_we_process_the_authorization_challenge_first
   condition="view/issueChallenge" />
-<tal:layout define="columns1 default">
 <html metal:use-macro="context/@@standard_macros/page">
 
-<div xmetal:fill-slot="main">
+<div>
     <h1 i18n:translate="">Unauthorized</h1>
     <p tal:content="context"/>
 </div>
 </html>
-</tal:layout>
+</tal:root>

@@ -1,111 +1,105 @@
-<div class="portlet">
-  <h2 tal:content="context/title">product title</h2>
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 
-  <div class="portletBody">
-    <div class="portletContent">
-
-      <tal:has-homepage condition="context/homepageurl">
-          <b>External links:</b><br />
-          <img src="/@@/link" alt="" />
-          <a tal:attributes="href context/homepageurl"
-             class="link">Home page</a><br />
-      </tal:has-homepage>
-
-      <b>Registrant:</b><br />
-      <img alt="" src="/@@/user" />
-      <a tal:attributes="href context/owner/fmt:url"
-         tal:content="context/owner/browsername"
-         class="link">ownername
-      </a>
-      <br />
-
-      <b>Bug contact:</b><br />
-      <span tal:condition="context/bugcontact">
-        <img alt="" src="/@@/user" />
+<table class="summary" id="table-details">
+  <tbody>
+    <tr>
+      <th>Status:</th>
+      <td>
+        <ul>
+          <li tal:condition="context/reviewed">Reviewed</li>
+          <li tal:condition="context/active">Active</li>
+          <li tal:condition="not: context/active">Disabled</li>
+          <li tal:condition="context/official_malone">Uses Bugs</li>
+          <li tal:condition="not: context/official_malone"
+          >Doesn&rsquo;t use Bugs</li>
+          <li tal:condition="context/official_rosetta"
+          >Uses Translations</li>
+          <li tal:condition="not: context/official_rosetta"
+          >Doesn&rsquo;t use Translations</li>
+          <li tal:condition="context/official_answers"
+          >Uses Answers</li>
+          <li tal:condition="not: context/official_answers"
+          >Doesn&rsquo;t use Answers</li>
+          <li tal:condition="context/icon">Branded
+            <tal:icon replace="structure context/image:icon" />
+          </li>
+        </ul>
+      </td>
+      <td tal:condition="not:context/active">Not active</td>
+    </tr>
+    <tr tal:condition="context/project">
+      <th>Part of:</th>
+      <td>
+        <a
+          tal:attributes="href context/project/fmt:url"
+          tal:content="context/project/title"
+        >Project name</a>
+      </td>
+    </tr>
+    <tr>
+      <th>Driver:</th>
+      <td tal:condition="context/driver">
+        <a
+          tal:attributes="href context/driver/fmt:url"
+          tal:content="context/driver/displayname"
+        >Hubert Humphry</a>
+      </td>
+      <td tal:condition="not:context/driver">Not yet assigned</td>
+    </tr>
+    <tr>
+      <th>Bug contact:</th>
+      <td tal:condition="context/bugcontact">
         <a
           tal:attributes="href context/bugcontact/fmt:url"
           tal:content="context/bugcontact/browsername"
         >foo bar</a>
-      </span>
-      <span tal:condition="not:context/bugcontact">
-        <i>Not yet assigned</i>
-      </span>
-      <br />
-
-      <b>Security contact:</b><br />
-      <span tal:condition="context/security_contact">
-        <img alt="" src="/@@/user" />
-        <a tal:attributes="href context/security_contact/fmt:url"
-           tal:content="context/security_contact/browsername">sample person</a>
-      </span>
-      <span tal:condition="not:context/security_contact">
-        <i>Not yet assigned</i>
-      </span>
-      <br />
-
-      <b>Driver:</b><br />
-      <i tal:condition="not:context/driver">Not yet assigned</i>
-      <tal:has_driver condition="context/driver">
-        <img alt="" src="/@@/user" />
-        <a tal:content="context/driver/browsername"
-           tal:attributes="href context/driver/fmt:url">Carlos Perello</a>
-      </tal:has_driver>
-      <br />
-
-      <b>Translation group:</b><br />
-      <img alt="" src="/@@/languages" />
-      <tal:block condition="context/translationgroup">
-      <a tal:attributes="href
-               string:/translations/groups/${context/translationgroup/name}/"
-         tal:content="context/translationgroup/title"
-      >Group</a><br />
-      </tal:block>
-      <tal:block condition="not: context/translationgroup">
-      <i>Not assigned</i><br />
-      </tal:block>
-      <b>Translation contributions:</b><br />
-      <span tal:replace="context/translationpermission/title">Open</span><br />
-
-      <tal:bugtracker
-           tal:define="bugtracker context/getExternalBugTracker"
-           tal:condition="not:context/official_malone">
-
-        <b>Bug Tracker:</b><br />
-        <a tal:condition="bugtracker" tal:content="bugtracker/title"
-           tal:attributes="href bugtracker/fmt:url">Tracker</a>
-        <i tal:condition="not: bugtracker">None specified</i>
-        <br />
-
-      </tal:bugtracker>
-
-
-      <b>Product status:</b>
-      <ul>
-        <li tal:condition="context/reviewed">Reviewed</li>
-        <li tal:condition="context/active">Active</li>
-        <li tal:condition="not: context/active">Disabled</li>
-        <li tal:condition="not: context/official_rosetta"
-        ><i>Doesn&rsquo;t use Rosetta</i></li>
-        <li tal:condition="not: context/official_malone"
-        ><i>Doesn&rsquo;t use Malone</i></li>
-      </ul>
-      <tal:has-project condition="context/project">
-        <b>Part of:</b><br />
-        <img src="/@@/project" alt="" />
-        <a tal:attributes="href context/project/fmt:url"
-           tal:content="context/project/title"
-           class="link">Project name</a><br />
-      </tal:has-project>
-      <b>Registered series:</b>
-      <ul>
-        <li tal:repeat="series context/serieslist">
-          <a tal:attributes="href series/fmt:url"
-             tal:content="series/name">1.0</a>
-          <small tal:condition="python:series == context.development_focus"
-            >(development focus)</small>
-        </li>
-      </ul>
-
-    </div>
-  </div>
-</div>
+      </td>
+      <td tal:condition="not:context/bugcontact">Not yet assigned</td>
+    </tr>
+    <tr>
+      <th>Security contact:</th>
+      <td tal:condition="context/security_contact">
+        <a
+          tal:attributes="href context/security_contact/fmt:url"
+          tal:content="context/security_contact/browsername"
+        >foo bar</a>
+      </td>
+      <td tal:condition="not:context/security_contact">Not yet assigned</td>
+    </tr>
+    <tr>
+      <th>Bug tracker:</th>
+      <td tal:condition="context/official_malone">Launchpad</td>
+      <td
+        tal:condition="not:context/official_malone"
+        tal:define="bugtracker context/getExternalBugTracker"
+      >
+        <a
+          tal:condition="bugtracker"
+          tal:attributes="href bugtracker/fmt:url"
+          tal:content="bugtracker/title"
+        >BugzApp</a>
+        <tal:none condition="not:bugtracker">None specified</tal:none>
+      </td>
+    </tr>
+    <tr>
+      <th>Licenses:</th>
+      <td>
+        <ul tal:repeat="license context/licenses">
+          <li tal:content="license/title">GPL</li>
+        </ul>
+        <tal:none condition="not:context/licenses">None specified</tal:none>
+        <div class="description" 
+             tal:content="structure context/license_info/fmt:text-to-html" />
+      </td>
+    </tr>
+    <tr tal:condition="context/programminglang">
+      <th>Languages:</th>
+      <td id="product-languages" tal:content="context/programminglang" />
+    </tr>
+  </tbody>
+</table>
+</tal:root>

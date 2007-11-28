@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -32,5 +31,12 @@
         template="../templates/specificationbranch-status.pt" />
 
   </facet>
+
+  <!-- SpecificationBranchSet -->
+  <securedutility
+    class="canonical.launchpad.database.SpecificationBranchSet"
+    provides="canonical.launchpad.interfaces.ISpecificationBranchSet" >
+      <allow interface="canonical.launchpad.interfaces.ISpecificationBranchSet" />
+  </securedutility>
 
 </configure>

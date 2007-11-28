@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -11,13 +18,12 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
-  <h1>Roadmap</h1>
+  <h1>Implementation roadmap</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
 
-  <p class="documentDescription">
+  <p>
     Launchpad recommends the following sequence of feature implementations.
   </p>
 
@@ -28,15 +34,17 @@
   </p>
 
   <tal:block condition="view/specPlan">
-    <div tal:repeat="spec view/specPlan"
-         tal:replace="structure spec/@@+listing-simple" />
+    <table>
+      <tr tal:repeat="spec view/specPlan"
+          tal:replace="structure spec/@@+listing-simple" />
+    </table>
   </tal:block>
 
   <tal:block condition="view/danglingSpecs">
-    <h2>Dangling specifications</h2>
+    <h2>Dangling blueprints</h2>
 
     <p>
-      These specifications are "dangling", in that they are currently
+      These blueprints are &#8220;dangling&#8221;, in that they are currently
       in a state which cannot be scheduled. For example, they may have
       circular dependencies.
     </p>
@@ -48,9 +56,9 @@
 </div>
 
     <p metal:fill-slot="help">
-      Specifications should be implemented in the order given.
-      This will ensure that the most important specifications are implemented
-      first, and that specification dependencies are respected.
+      Blueprints should be implemented in the order given.
+      This will ensure that the most important blueprints are implemented
+      first, and that blueprint dependencies are respected.
     </p>
   </body>
 </html>

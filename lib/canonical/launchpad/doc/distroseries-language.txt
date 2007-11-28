@@ -1,0 +1,180 @@
+= DistroSeriesLanguage = 
+
+This is a special class which encapsulates the information associated with a
+particular language and distroseries.
+
+First we need to know which distroserieslanguage we are working with. We
+will work with spanish in Hoary first.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistroSeriesSet, IDistributionSet, ILanguageSet,
+    ...     IDistroSeriesLanguage)
+    >>> distroseriesset = getUtility(IDistroSeriesSet)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> hoary = distroseriesset.queryByName(ubuntu, "hoary")
+    >>> hoary.name
+    u'hoary'
+    >>> spanish = getUtility(ILanguageSet)['es']
+    >>> hoary_spanish = hoary.getDistroSeriesLanguage(spanish)
+
+Now lets get the list of real pofiles. By this we mean the ones where there
+is actually a translation or two:
+
+    >>> for po in hoary_spanish.pofiles: print po.potemplate.name
+    evolution-2.2
+    pmount
+    pkgconf-mozilla
+    man
+
+Now lets include the dummies:
+
+    >>> for po in hoary_spanish.po_files_or_dummies: print po.potemplate.name
+    evolution-2.2
+    man
+    man
+    pkgconf-mozilla
+    pmount
+
+Note that the sorting is by template name, and there are two 'man'
+dummy po files.
+
+The list that include dummies should be the same as the current potemplates
+for Hoary
+
+    >>> for potemplate in hoary.getCurrentTranslationTemplates():
+    ...     print potemplate.name
+    evolution-2.2
+    man
+    man
+    pkgconf-mozilla
+    pmount
+
+But if we get the whole list of templates, even non current ones, we can see
+that there is one extra template that was not shown in distroserieslanguage
+listing.
+
+    >>> for potemplate in hoary.getTranslationTemplates():
+    ...     print potemplate.name
+    evolution-2.2
+    disabled-template
+    man
+    man
+    pkgconf-mozilla
+    pmount
+
+Which is exactly the one that is obsolete.
+
+    >>> for potemplate in hoary.getObsoleteTranslationTemplates():
+    ...     print potemplate.name
+    disabled-template
+
+Also, we can see that the template has an Spanish translation that
+hoary_spanish.pofiles is hidding as expected.
+
+    >>> for potemplate in hoary.getTranslationTemplates():
+    ...     if potemplate.name == 'disabled-template':
+    ...         print potemplate.getPOFileByLang('es').title
+    Spanish (es) translation of disabled-template in Ubuntu Hoary package "evolution"
+
+We also have DummyDistroSeriesLanguages.
+
+    >>> from canonical.launchpad.database import DummyDistroSeriesLanguage
+    >>> amharic = getUtility(ILanguageSet)['am']
+    >>> hoary_amharic = hoary.getDistroSeriesLanguageOrDummy(amharic)
+    >>> print hoary_amharic.__class__
+    <class 'canonical.launchpad.database.distroserieslanguage.DummyDistroSeriesLanguage'>
+
+English is not a translatable language because we store the source messages
+as English. Thus English cannot be a DummyDistroSeriesLanguage.
+
+    >>> english = getUtility(ILanguageSet)['en']
+    >>> hoary_english = hoary.getDistroSeriesLanguageOrDummy(english)
+    Traceback (most recent call last):
+    ...
+    AssertionError: English is not a translatable language.    
+
+It should give you the same set of templates to translate.
+
+    >>> for po in hoary_amharic.po_files_or_dummies: print po.potemplate.name
+    evolution-2.2
+    man
+    man
+    pkgconf-mozilla
+    pmount
+
+Now, we should test that a DummyDistroSeriesLanguage implements the full
+interface of a normal DistroSeriesLanguage.
+
+NB IF THIS FAILS then it means that the DistroSeriesLanguage object has
+been extended, and the DummyDistroSeriesLanguage has not been similarly
+extended.
+
+   >>> print IDistroSeriesLanguage.providedBy(hoary_amharic)
+   True
+
+
+= POTemplate Sorting =
+
+In general, potemplates should be sorted by priority (descending) then name.
+The sample data all has priority 0. So it's all sorted by name (the above
+tests show that).
+
+Now we will show that the priority can dominate the sort order.
+
+    >>> potemplates = hoary.getCurrentTranslationTemplates()
+    >>> evo = potemplates[0]
+    >>> print evo.name
+    evolution-2.2
+    >>> man1 = potemplates[1]
+    >>> print man1.name
+    man
+    >>> man2 = potemplates[2]
+    >>> print man2.name
+    man
+    >>> mozconf = potemplates[3]
+    >>> print mozconf.name
+    pkgconf-mozilla
+    >>> pm = potemplates[4]
+    >>> print pm.name
+    pmount
+
+OK, so we have the five templates. Let's set their priorities and see if
+that changes the default sort order.
+
+We need to login so we can poke at the potemplates.
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('foo.bar@canonical.com')
+
+We set their priorities so that the lowest alpha-sort one has the highest
+priority.
+
+    >>> evo.priority = 5
+    >>> man1.priority = 6
+    >>> man2.priority = 7
+    >>> mozconf.priority = 8
+    >>> pm.priority = 9
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+And now we can confirm that priority does in fact dominate
+
+    >>> for pot in hoary.getCurrentTranslationTemplates():
+    ...     print pot.priority, pot.name
+    9 pmount
+    8 pkgconf-mozilla
+    7 man
+    6 man
+    5 evolution-2.2
+
+And now this priority should also dominate the distroseries language pofile
+sort order:
+
+    >>> for po in hoary_amharic.po_files_or_dummies: print po.potemplate.name
+    pmount
+    pkgconf-mozilla
+    man
+    man
+    evolution-2.2
+

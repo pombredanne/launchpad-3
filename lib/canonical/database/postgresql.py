@@ -8,14 +8,14 @@ __metaclass__ = type
 
 import re
 
-from sqlbase import quote, quoteIdentifier, cursor
+from sqlbase import quote, quoteIdentifier, sqlvalues
 
 def listReferences(cur, table, column, _state=None):
     """Return a list of all foreign key references to the given table column
 
     `table` and `column` are both case sensitive strings (so they should
     usually be lowercase strings as per PostgreSQL default behavior).
-    
+
     `cur` is an open DB-API cursor
 
     returns `[(from_table, from_column, to_table, to_column, update, delete)]`
@@ -148,7 +148,7 @@ def listUniques(cur, table, column):
     # Initialize our return value
     rv = []
 
-    # Retrive the UNIQUE indexes. 
+    # Retrive the UNIQUE indexes.
     sql = '''
         SELECT
             i.indkey
@@ -229,7 +229,7 @@ def listSequences(cur):
 
 def resetSequences(cur):
     """Reset table sequences to match the data in them.
-    
+
     Goes through the database resetting the values of sequences to match
     what is in their corresponding tables, where corresponding tables are
     known.
@@ -291,11 +291,127 @@ def estimateRowCount(cur, query):
     return int(match.group(1))
 
 
+def have_table(cur, table):
+    """Is there a table of the given name?
+
+    Returns boolean answer.
+
+    >>> have_table(cur, 'thistabledoesnotexist_i_hope')
+    False
+    >>> cur.execute("CREATE TEMP TABLE atesttable (x integer)")
+    >>> have_table(cur, 'atesttable')
+    True
+    >>> drop_tables(cur, 'atesttable')
+    >>> have_table(cur, 'atesttable')
+    False
+    """
+    cur.execute('''
+        SELECT count(*) > 0
+        FROM pg_tables
+        WHERE tablename=%s
+    ''' % str(quote(table)))
+    return (cur.fetchall()[0][0] != 0)
+
+
+def table_has_column(cur, table, column):
+    """Does a table of the given name exist and have the given column?
+
+    Returns boolean answer.
+
+    >>> cur.execute("CREATE TEMP TABLE atesttable (x integer)")
+    >>> table_has_column(cur, 'atesttable', 'x')
+    True
+    >>> table_has_column(cur, 'atesttable', 'z')
+    False
+    >>> table_has_column(cur, 'thistabledoesnotexist_i_hope', 'pphwt')
+    False
+    >>> drop_tables(cur, 'atesttable')
+    >>> table_has_column(cur, 'atesttable', 'x')
+    False
+    """
+    cur.execute('''
+        SELECT count(*) > 0
+        FROM pg_attribute
+        JOIN pg_class ON pg_class.oid = attrelid
+        WHERE relname=%s
+            AND attname=%s
+    ''' % sqlvalues(table, column))
+    return (cur.fetchall()[0][0] != 0)
+
+
+def drop_tables(cur, tables):
+    """Drop given tables (a list, one name, or None), if they exist.
+
+    >>> cur.execute("CREATE TEMP TABLE foo (a integer)")
+    >>> have_table(cur, 'foo')
+    True
+    >>> table_has_column(cur, 'foo', 'a')
+    True
+    >>> cur.execute("CREATE TEMP TABLE bar (b varchar)")
+    >>> have_table(cur, 'bar')
+    True
+    >>> cur.execute("INSERT INTO foo values (1)")
+    >>> cur.execute("INSERT INTO bar values ('hi mom')")
+    >>> drop_tables(cur, ['thistabledoesnotexist_i_hope', 'foo', 'bar'])
+    >>> have_table(cur, 'foo')
+    False
+    >>> have_table(cur, 'bar')
+    False
+    >>> drop_tables(cur, [])    # No explosion
+    >>> drop_tables(cur, None)  # No wailing sirens
+    """
+    if tables is None or len(tables) == 0:
+        return
+    if isinstance(tables, basestring):
+        tables = [tables]
+
+    # This syntax requires postgres 8.2 or better
+    cur.execute("DROP TABLE IF EXISTS %s" % ','.join(tables))
+
+
+def allow_sequential_scans(cur, permission):
+    """Allow database to ignore indexes and scan sequentially when it wants?
+
+    DO NOT USE THIS WITHOUT REVIEW BY A DBA.  When you find yourself wanting
+    this function, chances are you're really hiding a bug in your code.
+
+    This is an unfortunate hack.  In some cases we have found that postgres
+    will resort to costly sequential scans when a perfectly good index is
+    available.  Specifically, this happened when we deleted one-third or so of
+    a table's rows without an ANALYZE (as done by autovacuum) on the indexed
+    column(s).  Telling the database to regenerate its statistics for one
+    primary-key indexed column costs almost nothing, but it will block for an
+    autovacuum to complete.  Autovacuums can take a long time, and currently
+    cannot be disabled temporarily or selectively.
+
+    Instead, this function lets us tell the database to ignore the index
+    degradation, and rely on autovacuum to restore it periodically.  Pass a
+    True or a False to change the setting for the ongoing database session.
+    Default in PostgreSQL is False, though we seem to have it set to True in
+    some of our databases.
+
+    >>> allow_sequential_scans(cur, True)
+    >>> cur.execute("SHOW enable_seqscan")
+    >>> print cur.fetchall()[0][0]
+    on
+
+    >>> allow_sequential_scans(cur, False)
+    >>> cur.execute("SHOW enable_seqscan")
+    >>> print cur.fetchall()[0][0]
+    off
+    """
+    permission_value = 'false'
+    if permission:
+        permission_value = 'true'
+
+    cur.execute("SET enable_seqscan=%s" % permission_value)
+
 
 if __name__ == '__main__':
     import psycopg
     con = psycopg.connect('dbname=launchpad_dev user=launchpad')
     cur = con.cursor()
-    
+
     for table, column in listReferences(cur, 'person', 'id'):
         print '%32s %32s' % (table, column)
+

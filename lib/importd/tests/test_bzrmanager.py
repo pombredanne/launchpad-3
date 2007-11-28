@@ -13,6 +13,7 @@ import unittest
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.branch import Branch
+from bzrlib.revision import NULL_REVISION
 from bzrlib.urlutils import local_path_to_url
 from zope.component import getUtility
 
@@ -110,9 +111,13 @@ class TestCreateImportTarget(BzrManagerTestCase):
         # the resulting repository must be empty
         self.assertEqual(repository.all_revision_ids(), [])
         # the branch must have no history
-        self.assertEqual(branch.last_revision(), None)
+        self.assertEqual(branch.last_revision(), NULL_REVISION)
         # and the working tree must be empty
-        self.assertEqual(list(workingtree.list_files()), [])
+        workingtree.lock_read()
+        try:
+            self.assertEqual(list(workingtree.list_files()), [])
+        finally:
+            workingtree.unlock()
 
 
 class ProductSeriesHelper:
@@ -193,7 +198,6 @@ class TestMirrorMethods(BzrManagerTestCase):
         assert self.series_helper.getSeries().import_branch is None
         # Call mirrorBranch to set the series.import_branch and create
         # the mirror
-        self.bzr_manager.silent = True
         self.bzr_manager.mirrorBranch(self.sandbox.path)
         # mirrorBranch sets the series.import_branch in a subprocess,
         # we need to rollback at this point to see this change in the
@@ -234,7 +238,6 @@ class TestMirrorMethods(BzrManagerTestCase):
         # Finally, call getSyncTarget to re-create the one-commit branch
         # in bzrworking.  We recreate it by branching the mirrored branch
         # we created just above.
-        self.bzr_manager.silent = True
         value = self.bzr_manager.getSyncTarget(self.sandbox.path)
         self.assertEqual(value, self.bzrworking)
         # Check that we actually have a non-empty branch here.

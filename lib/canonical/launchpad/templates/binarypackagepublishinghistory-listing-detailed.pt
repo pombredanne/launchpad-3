@@ -1,22 +1,38 @@
-<b>
-  <span tal:replace="context/distroarchrelease/distrorelease/name">hoary</span>
-  <span tal:replace="context/distroarchrelease/architecturetag">i386</span>
-  <span tal:replace="context/pocket/title">pocket</span></b>:
-<span tal:replace="context/status/title">Published</span>
-version <span tal:replace="context/binarypackagerelease/version">1.1-2</span>
-in component <span tal:replace="context/component/name">main</span>
-and section <span tal:replace="context/section/name">x11</span>
-<tal:has_datepublished condition="context/datepublished">
-  on <span tal:replace="context/datepublished/fmt:datetime" />
-</tal:has_datepublished>
-<tal:removal_requested condition="context/hasRemovalRequested">
-  - removal requested on <span
-    tal:replace="context/datesuperseded/fmt:datetime" />.
-</tal:removal_requested>
-<tal:not_removal_requested condition="not: context/hasRemovalRequested">
-  <tal:has_supersededby condition="context/supersededby">
-    and superseded on <span tal:replace="context/datesuperseded/fmt:datetime"
-      /> by <span tal:replace="context/supersededby/title" />
-  </tal:has_supersededby>
-</tal:not_removal_requested>
-<hr />
+<div class="boardComment">
+
+  <tal:comment condition="nothing">
+    <!-- XXX: cprov 20071018
+      The template should be kept in sync with its respective source
+      replacement (sourcepackagepublishinghistory-listing-detailed.pt).
+      In the future we should be able to refactor both in a single
+      template macro, see bug #153885.
+    -->
+  </tal:comment>
+
+  <div class="boardCommentDetails">
+    <strong>
+      <a tal:content="context/distroarchseriesbinarypackagerelease/version"
+         tal:attributes="href context/distroarchseriesbinarypackagerelease/fmt:url"
+      >2.0.39</a>
+    </strong>
+    <table>
+      <tbody>
+        <tr>
+         <td>
+           <strong tal:content="context/status/name">PUBLISHED</strong>:
+           <a tal:attributes="href context/distroarchseries/fmt:url"
+              tal:content="context/distroarchseries/displayname">warty i386</a>
+           pocket <strong tal:content="context/pocket/title">Release</strong>
+           in component <strong tal:content="context/component/name">main</strong>
+           and section <strong tal:content="context/section/name">x11</strong>
+         </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="boardCommentBody">
+     <tal:block replace="structure context/@@+record-details" />
+  </div>
+
+</div>

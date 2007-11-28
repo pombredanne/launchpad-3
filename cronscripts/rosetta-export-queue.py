@@ -1,43 +1,21 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 # Copyright 2005 Canonical Ltd. All rights reserved.
+# pylint: disable-msg=C0103,W0403
 
 import _pythonpath
 
-import logging
-import sys
-from optparse import OptionParser
-
-from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger_options, logger as logger_from_options)
-from canonical.launchpad.scripts.lockfile import LockFile
+from canonical.lp import READ_COMMITTED_ISOLATION
 from canonical.launchpad.scripts.po_export_queue import process_queue
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 
-def main(args):
-    parser = OptionParser()
-    logger_options(parser, logging.WARNING)
-    options, args = parser.parse_args()
-    logger = logger_from_options(options)
 
-    lockfile_path = '/var/lock/rosetta-export-queue.lock'
-    lockfile = LockFile(lockfile_path, logger=logger)
+class RosettaExportQueue(LaunchpadCronScript):
+    def main(self):
+        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
+        process_queue(self.txn, self.logger)
 
-    try:
-        lockfile.acquire()
-    except OSError:
-        logger.info('Lockfile %s already exists, exiting.' % lockfile_path)
-        return 0
-
-    try:
-        ztm = initZopeless(
-            dbuser='poexport', isolation=READ_COMMITTED_ISOLATION)
-        execute_zcml_for_scripts()
-        process_queue(ztm, logger)
-        logger.info('Done.')
-        return 0
-    finally:
-        lockfile.release()
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    script = RosettaExportQueue('rosetta-export-queue', dbuser='poexport')
+    script.lock_and_run()
 

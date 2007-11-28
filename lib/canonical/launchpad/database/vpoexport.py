@@ -1,19 +1,22 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
-"""Database class for Rosetta PO export view."""
+"""Database class to handle translation export view."""
 
 __metaclass__ = type
 
-__all__ = ['VPOExportSet', 'VPOExport']
+__all__ = [
+    'VPOExportSet',
+    'VPOExport'
+    ]
 
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues, cursor
-from canonical.lp.dbschema import PackagePublishingStatus
-
-from canonical.launchpad.database import POTemplate
-from canonical.launchpad.database import POFile
-from canonical.launchpad.database import Language
+from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.pofile import POFile
+from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.interfaces import IVPOExportSet, IVPOExport
 
 class VPOExportSet:
@@ -23,25 +26,29 @@ class VPOExportSet:
 
     column_names = [
         'potemplate',
+        'template_header',
         'pofile',
         'language',
         'variant',
-        'potsequence',
-        'posequence',
-        'potheader',
-        'poheader',
-        'potopcomment',
-        'pofuzzyheader',
-        'isfuzzy',
-        'activesubmission',
-        'msgidpluralform',
-        'translationpluralform',
-        'msgid',
-        'translation',
-        'pocommenttext',
-        'sourcecomment',
-        'filereferences',
-        'flagscomment',
+        'translation_file_comment',
+        'translation_header',
+        'is_translation_header_fuzzy',
+        'potmsgset',
+        'sequence',
+        'comment',
+        'source_comment',
+        'file_references',
+        'flags_comment',
+        'context',
+        'msgid_singular',
+        'msgid_plural',
+        'is_fuzzy',
+        'is_current',
+        'is_imported',
+        'translation0',
+        'translation1',
+        'translation2',
+        'translation3',
     ]
     columns = ', '.join(['POExport.' + name for name in column_names])
 
@@ -49,10 +56,8 @@ class VPOExportSet:
         'potemplate',
         'language',
         'variant',
-        'potsequence',
-        'posequence',
-        'msgidpluralform',
-        'translationpluralform',
+        'sequence',
+        'id',
     ]
     sort_columns = ', '.join(
         ['POExport.' + name for name in sort_column_names])
@@ -79,19 +84,16 @@ class VPOExportSet:
             else:
                 break
 
-    def get_pofile_rows(self, potemplate, language, variant=None,
-                        included_obsolete=True):
+    def get_pofile_rows(self, pofile):
         """See IVPOExportSet."""
         where = ('potemplate = %s AND language = %s' %
-            sqlvalues(potemplate.id, language.id))
+            sqlvalues(pofile.potemplate, pofile.language))
 
-        if variant:
-            where += ' AND variant = %s' % sqlvalues(variant.encode('UTF-8'))
+        if pofile.variant:
+            where += ' AND variant = %s' % sqlvalues(
+                pofile.variant.encode('UTF-8'))
         else:
             where += ' AND variant is NULL'
-
-        if not included_obsolete:
-            where += ' AND potsequence > 0'
 
         return self._select(where=where)
 
@@ -101,40 +103,36 @@ class VPOExportSet:
 
         return self._select(where=where)
 
-    def _get_distrorelease_pofiles(self, release, date=None, component=None,
+    def _get_distroseries_pofiles(self, series, date=None, component=None,
         languagepack=None):
         """Return a SQL query of PO files which would be contained in an
-        export of a distribtuion release.
+        export of a distribution series.
 
-        The filtering is done based on the 'release', last modified 'date',
+        The filtering is done based on the 'series', last modified 'date',
         archive 'component' and if it belongs to a 'languagepack'
         """
         join = '''
             FROM POFile
               JOIN POTemplate ON POTemplate.id = POFile.potemplate
-              JOIN DistroRelease ON
-                DistroRelease.id = POTemplate.distrorelease'''
+              JOIN DistroSeries ON
+                DistroSeries.id = POTemplate.distroseries'''
 
         where = '''
             WHERE
-              DistroRelease.id = %s
-              ''' % sqlvalues(release)
+              DistroSeries.id = %s
+              ''' % sqlvalues(series)
 
         if date is not None:
             join += '''
-                  JOIN POMsgSet ON POMsgSet.pofile = POFile.id
-                  JOIN POSelection ON POSelection.pomsgset = POMsgSet.id
-                  JOIN POSubmission ON
-                    POSubmission.id = POSelection.activesubmission'''
-
-            where += ''' AND
-                  POSubmission.datecreated > %s
-                ''' % sqlvalues(date)
+                  JOIN TranslationMessage ON
+                    TranslationMessage.pofile = POFile.id AND
+                    TranslationMessage.date_reviewed > %s AND
+                    TranslationMessage.is_current IS TRUE''' % sqlvalues(date)
 
         if component is not None:
             join += '''
             JOIN SourcePackagePublishingHistory ON
-                SourcePackagePublishingHistory.distrorelease=DistroRelease.id
+                SourcePackagePublishingHistory.distroseries=DistroSeries.id
             JOIN SourcePackageRelease ON
                 SourcePackagePublishingHistory.sourcepackagerelease=
                      SourcePackageRelease.id
@@ -146,20 +144,20 @@ class VPOExportSet:
             AND SourcePackageRelease.sourcepackagename =
                 POTemplate.sourcepackagename AND
             Component.name = %s AND
-            SourcePackagePublishingHistory.status != %s
-            ''' % sqlvalues(component, PackagePublishingStatus.REMOVED)
+            SourcePackagePublishingHistory.dateremoved is NULL AND
+            SourcePackagePublishingHistory.archive = %s
+            ''' % sqlvalues(component, series.main_archive)
 
-        if languagepack is not None:
-            where += ''' AND
-                POTemplate.languagepack = %s''' % sqlvalues(languagepack)
+        if languagepack:
+            where += ' AND POTemplate.languagepack'
 
         return join + where
 
-    def get_distrorelease_pofiles(self, release, date=None, component=None,
+    def get_distroseries_pofiles(self, series, date=None, component=None,
         languagepack=None):
         """See IVPOExport."""
-        query = self._get_distrorelease_pofiles(
-            release, date, component, languagepack)
+        query = self._get_distroseries_pofiles(
+            series, date, component, languagepack)
 
         final_query = 'SELECT DISTINCT POFile.id\n' + query
         cur = cursor()
@@ -167,32 +165,32 @@ class VPOExportSet:
         for (id,) in cur.fetchall():
             yield POFile.get(id)
 
-    def get_distrorelease_potemplates(self, release, component=None,
+    def get_distroseries_potemplates(self, series, component=None,
         languagepack=None):
         """Return a SQL query of PO files which would be contained in an
-        export of a distribtuion release.
+        export of a distribtuion series.
 
-        The filtering is done based on the 'release', last modified 'date',
+        The filtering is done based on the 'series', last modified 'date',
         archive 'component' and if it belongs to a 'languagepack'
         """
         join = '''
             SELECT DISTINCT POTemplate.id
             FROM POTemplate
-              JOIN DistroRelease ON
-                DistroRelease.id = POTemplate.distrorelease'''
+              JOIN DistroSeries ON
+                DistroSeries.id = POTemplate.distroseries'''
 
         where = '''
             WHERE
-              DistroRelease.id = %s
-              ''' % sqlvalues(release)
+              DistroSeries.id = %s
+              ''' % sqlvalues(series)
 
         if component is not None:
             join += '''
             JOIN SourcePackagePublishingHistory ON
-                SourcePackagePublishingHistory.distrorelease=
-                    DistroRelease.id
+                SourcePackagePublishingHistory.distroseries =
+                    DistroSeries.id
             JOIN SourcePackageRelease ON
-                SourcePackagePublishingHistory.sourcepackagerelease=
+                SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id
             JOIN Component ON
                 SourcePackagePublishingHistory.component=Component.id
@@ -202,23 +200,23 @@ class VPOExportSet:
                 SourcePackageRelease.sourcepackagename =
                     POTemplate.sourcepackagename AND
                 Component.name = %s AND
-                SourcePackagePublishingHistory.status != %s
-                ''' % sqlvalues(component, PackagePublishingStatus.REMOVED)
+                SourcePackagePublishingHistory.dateremoved is NULL AND
+                SourcePackagePublishingHistory.archive = %s
+                ''' % sqlvalues(component, series.main_archive)
 
-        if languagepack is not None:
-            where += ''' AND
-                POTemplate.languagepack = %s''' % sqlvalues(languagepack)
+        if languagepack:
+            where += ' AND POTemplate.languagepack'
 
         cur = cursor()
         cur.execute(join + where)
         for (id,) in cur.fetchall():
             yield POTemplate.get(id)
 
-    def get_distrorelease_pofiles_count(self, release, date=None,
+    def get_distroseries_pofiles_count(self, series, date=None,
                                         component=None, languagepack=None):
         """See IVPOExport."""
-        query = self._get_distrorelease_pofiles(
-            release, date, component, languagepack)
+        query = self._get_distroseries_pofiles(
+            series, date, component, languagepack)
 
         final_query = 'SELECT COUNT(DISTINCT POFile.id)\n' + query
         cur = cursor()
@@ -226,26 +224,23 @@ class VPOExportSet:
         value = cur.fetchone()
         return value[0]
 
-    def get_distrorelease_rows(self, release, date=None):
+    def get_distroseries_rows(self, series, date=None):
         """See IVPOExportSet."""
 
         if date is None:
             join = None
-            where = ('distrorelease = %s AND languagepack = True' %
-                    sqlvalues(release.id))
+            where = ('distroseries = %s AND languagepack' %
+                    sqlvalues(series.id))
         else:
             join = [
                 'POFile ON POFile.id = POExport.pofile',
                 'POTemplate ON POFile.potemplate = POTemplate.id',
-                'POMsgSet ON POMsgSet.pofile = POFile.id',
-                'POSelection ON POMsgSet.id = POSelection.pomsgset',
-                'POSubmission ON '
-                    'POSubmission.id = POSelection.activesubmission',
+                'TranslationMessage ON '
+                    'TranslationMessage.pofile = POFile.id AND '
+                    'TranslationMessage.date_reviewed > %s AND '
+                    'TranslationMessage.is_current IS TRUE' % sqlvalues(date),
             ]
-            where = '''
-                 POSubmission.datecreated > %s AND
-                 POTemplate.distrorelease = %s
-            ''' % sqlvalues(date, release.id)
+            where = 'POTemplate.distroseries = %s' % sqlvalues(series)
 
         return self._select(join=join, where=where)
 
@@ -259,30 +254,39 @@ class VPOExport:
 
     def __init__(self, *args):
         (potemplate,
+         self.template_header,
          pofile,
          language,
          self.variant,
-         self.potsequence,
-         self.posequence,
-         self.potheader,
-         self.poheader,
-         self.potopcomment,
-         self.pofuzzyheader,
-         self.isfuzzy,
-         self.activesubmission,
-         self.msgidpluralform,
-         self.translationpluralform,
-         self.msgid,
-         self.translation,
-         self.pocommenttext,
-         self.sourcecomment,
-         self.filereferences,
-         self.flagscomment) = args
+         self.translation_file_comment,
+         self.translation_header,
+         self.is_translation_header_fuzzy,
+         potmsgset,
+         self.sequence,
+         self.comment,
+         self.source_comment,
+         self.file_references,
+         self.flags_comment,
+         self.context,
+         self.msgid_singular,
+         self.msgid_plural,
+         self.is_fuzzy,
+         self.is_current,
+         self.is_imported,
+         self.translation0,
+         self.translation1,
+         self.translation2,
+         self.translation3) = args
 
+        self.potemplate = POTemplate.get(potemplate)
+        self.potmsgset = POTMsgSet.get(potmsgset)
         self.language = Language.get(language)
         if pofile is None:
             self.pofile = None
         else:
             self.pofile = POFile.get(pofile)
-        self.potemplate = POTemplate.get(potemplate)
-
+            if self.potmsgset.is_translation_credit:
+                # Translation credits doesn't have plural forms so we only
+                # update the singular one.
+                self.translation0 = self.pofile.prepareTranslationCredits(
+                    self.potmsgset)

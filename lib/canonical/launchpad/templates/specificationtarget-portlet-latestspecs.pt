@@ -1,21 +1,22 @@
-<tal:defspecs define="specs view/getLatestSpecifications">
-  <div tal:condition="specs" class="portlet">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 
-    <h2>Latest specifications</h2>
+<div class="portlet" id="portlet-blueprints"
+  tal:define="specs view/getLatestSpecifications" tal:condition="specs">
+  <h2>Latest blueprints</h2>
+  <div class="portletBody">
 
-    <div class="portletBody portletContent">
-
-      <ul>
-        <li class="spec" tal:repeat="spec specs">
-          <a tal:content="spec/title"
-             tal:attributes="href spec/fmt:url">spec title</a>
-        </li>
-        <li class="info" tal:condition="not: specs">
-          No specifications registered.
-        </li>
-      </ul>
-	
-    </div>
+  <table>
+    <tbody>
+      <tr tal:repeat="spec specs"
+          tal:replace="structure spec/@@+listing-compact">
+      </tr>
+    </tbody>
+  </table>
 
   </div>
-</tal:defspecs>
+</div>
+</tal:root>

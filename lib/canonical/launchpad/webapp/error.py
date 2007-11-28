@@ -13,7 +13,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
 import canonical.launchpad.layers
-from canonical.launchpad.interfaces import ILaunchBag, ILaunchpadCelebrities
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 
 class SystemErrorView:
@@ -130,9 +130,45 @@ class SystemErrorView:
             return self.index()
 
 
+class ProtocolErrorView(SystemErrorView):
+    """View for protocol errors.
+
+    Problems to do with an HTTP request that need to be handled more
+    subtly than with a 500 response code. Used to handle a
+    `ProtocolErrorException`.
+    """
+
+    def __call__(self):
+        """Set the appropriate status code and headers."""
+        exception = self.context
+        self.request.response.setStatus(exception.status)
+        for header, value in exception.headers.items():
+            self.request.response.setHeader(header, value)
+        return self.index()
+
 class NotFoundView(SystemErrorView):
 
     response_code = 404
+
+    def __call__(self):
+        return self.index()
+
+
+class RequestExpiredView(SystemErrorView):
+
+    response_code = 503
+
+    def __init__(self, context, request):
+        SystemErrorView.__init__(self, context, request)
+        # Set Retry-After header to 15 minutes. Hard coded because this
+        # is really just a guess and I don't think any clients actually
+        # pay attention to it - it is just a hint.
+        request.response.setHeader('Retry-After', 900)
+
+
+class TranslationUnavailableView(SystemErrorView):
+
+    response_code = 503
 
     def __call__(self):
         return self.index()

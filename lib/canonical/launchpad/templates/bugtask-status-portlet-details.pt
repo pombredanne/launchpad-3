@@ -1,4 +1,8 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-details">
 
   <h2>Details</h2>
 
@@ -7,17 +11,16 @@
     <div class="portletContent">
 
       <b>Reported by:</b><br />
-      <img src="/@@/user" />
-      <a tal:attributes="href context/owner/fmt:url"
-        tal:content="context/owner/browsername"
-        style="text-decoration: underline"></a><br />
+      <a tal:replace="structure context/owner/fmt:link" /><br />
 
-      <b>On:</b>
-      <a tal:content="context/targetname"
+      <b>In:</b>
+      <a tal:content="context/bugtargetname"
          tal:attributes="href string:${context/target/fmt:url}/+bugs">ubuntu</a><br />
 
-      <b>Date:</b>
-      <tal:block content="context/datecreated/fmt:date" />
+      <b>When:</b>
+      <span
+        tal:attributes="title context/datecreated/fmt:datetime"
+        tal:content="context/datecreated/fmt:displaydate" />
 
     </div>
   </div>

@@ -1,0 +1,141 @@
+= Launchpad Single-Signon Workflow: Registration =
+
+If a user wants to use a Launchpad-SSO web site, but does not have a
+Launchpad account, they can register directly from the login page.
+
+First we will set up the helper view that lets us test the final
+portion of the authentication process:
+
+    >>> from canonical.launchpad.ftests.openid import (
+    ...     install_consumer, uninstall_consumer)
+    >>> install_consumer()
+
+The authentication process is started by the relying party issuing a
+checkid_setup request, sending the user to Launchpad:
+
+    >>> from urllib import urlencode
+    >>> trust_root = 'http://launchpad.dev/+openid-consumer'
+    >>> args = urlencode({
+    ...     'openid.mode': 'checkid_setup',
+    ...     'openid.identity':
+    ...         'http://specs.openid.net/auth/2.0/identifier_select',
+    ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
+    ...     'openid.trust_root': trust_root,
+    ...     })
+    >>> setup_url = 'http://openid.launchpad.dev/+openid?%s' % args
+    >>> browser.open(setup_url)
+
+When a new account is created we'll use the creation rationale specified for
+the trust_root given by the relying party.  We will set up an RP
+configuration that uses the UBUNTU_SHOP creation rationale:
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     IOpenIDRPConfigSet, PersonCreationRationale)
+
+    >>> login('foo.bar@canonical.com')
+    >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(
+    ...     trust_root=trust_root,
+    ...     displayname='The Ubuntu Store from Canonical',
+    ...     description="For the Ubuntu Store, you need a Launchpad account "
+    ...                 "so  we can remember your order details and keep in "
+    ...                 "touch with you about your orders.",
+    ...     creation_rationale=PersonCreationRationale.OWNER_CREATED_UBUNTU_SHOP)
+    >>> logout()
+
+At this point, we are at the login page.  Lets try to create a new
+account for an email address that has already been registered:
+
+    >>> print browser.title
+    Launchpad Login Service
+    >>> browser.getControl(name='field.email').value = 'test@canonical.com'
+    >>> browser.getControl('No, I want to create an account now').click()
+    >>> browser.getControl('Continue').click()
+
+    >>> print browser.title
+    Launchpad Login Service
+    >>> for tag in find_tags_by_class(browser.contents, 'error'):
+    ...     print extract_text(tag)
+    Sorry, someone has already registered the test@canonical.com email
+    address.  If this is you and you've forgotten your password,
+    just choose the 'I've forgotten my password' option below and
+    we'll allow you to change it.
+
+If we instead pick a new email address, we can register an account:
+
+    >>> browser.getControl(name='field.email').value = 'new-user@example.com'
+    >>> browser.getControl('Continue').click()
+    >>> soup = find_main_content(browser.contents)
+    >>> print soup.find('h1').renderContents()
+    Registration mail sent
+
+The user would then check their email, and find a message:
+
+    >>> import email, re
+    >>> from canonical.launchpad.mail import stub
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> len(stub.test_emails)
+    0
+    >>> msg = email.message_from_string(raw_msg)
+    >>> print from_addr
+    bounces@canonical.com
+    >>> print to_addrs
+    ['new-user@example.com']
+    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
+    Hello
+    <BLANKLINE>
+    Thank you for registering with the Launchpad Login Service.
+    <BLANKLINE>
+    To complete your registration:
+    <BLANKLINE>
+        http://openid.launchpad.dev/token/...
+    <BLANKLINE>
+    If you don't know what this is about, then someone has probably
+    entered your e-mail address by mistake at the Launchpad Login Service
+    Web site. Sorry about that. You don't need to do anything further,
+    just delete this message.
+    <BLANKLINE>
+    Regards,
+    The Launchpad Login Service team
+    <BLANKLINE>
+
+Let's extract the URL from the email and follow the link:
+
+    >>> link = re.findall(r'http.*/token/.*', msg.get_payload())[0]
+    >>> browser.open(link)
+    >>> print browser.url
+    http://openid.launchpad.dev/token/.../+newaccount
+
+The user can enter their full name and password, to complete the
+registration:
+
+    >>> browser.getControl('Name').value = 'New User'
+    >>> browser.getControl('Password').value = 'test'
+    >>> browser.getControl(name='field.password_dupe').value = 'test'
+    >>> browser.getControl('Continue').click()
+
+Now the user is logged in with their new account, and has been
+directed back to the original site:
+
+    >>> print browser.url
+    http://launchpad.dev/+openid-consumer?...
+    >>> print browser.contents
+    Consumer received GET
+    ...
+    openid.identity:http://openid.launchpad.dev/+id/...
+    openid.mode:id_res
+    openid.return_to:http://launchpad.dev/+openid-consumer
+    ...
+
+And the creation rationale for the new account has been set.
+
+    >>> from canonical.launchpad.database import Person
+    >>> print Person.selectOneBy(name='new-user').creation_rationale.title
+    Created by the owner himself, coming from the Ubuntu Shop.
+
+
+== Cleanup ==
+
+    >>> uninstall_consumer()
+

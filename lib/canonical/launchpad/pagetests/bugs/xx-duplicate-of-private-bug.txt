@@ -1,0 +1,59 @@
+= Showing a duplicate of a private bug =
+
+When showing a duplicate of a private bug, the title of the private
+bug is not included in the page if the user does not have permission
+to view the private bug.
+
+First we mark a bug as private:
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/'
+    ...         'debian/+source/mozilla-firefox/+bug/8/+secrecy')
+    >>> admin_browser.getControl(
+    ...     'This bug report should be private').selected = True
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.url
+    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/8
+
+    >>> print admin_browser.title
+    Bug #8 ...Printing doesn't work...
+
+    >>> print find_tag_by_id(
+    ...     admin_browser.contents, 'bug-properties').img['title']
+    This bug report was made private by Foo Bar ... ago
+
+Next we mark another bug as a duplicate of the private bug:
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/'
+    ...         'ubuntu/+source/linux-source-2.6.15/+bug/10/+duplicate')
+    >>> admin_browser.getControl('Duplicate Of').value = '8'
+    >>> admin_browser.getControl('Change').click()
+
+As a privileged user the title of the private bug can be found in the
+duplicate bug page:
+
+    >>> def print_messages(browser):
+    ...     for tag in find_tags_by_class(browser.contents, 'message'):
+    ...         print tag.renderContents()
+
+    >>> print_messages(admin_browser)
+    This report is a duplicate of
+      <a href="/bugs/8" title="Printing doesn't work">bug #8</a>
+    Remember, this bug report is a duplicate. Comment here only if you
+    think the duplicate status is wrong.
+
+But when accessing it as an unprivileged user the title of the private
+bug cannot be found in the messages on the duplicate bug page:
+
+    >>> user_browser.open(admin_browser.url)
+    >>> print_messages(user_browser)
+    This report is a duplicate of bug #8
+    Remember, this bug report is a duplicate. Comment here only if you
+    think the duplicate status is wrong.
+
+The same is true when viewing the duplicate bug anonymously:
+
+    >>> anon_browser.open(admin_browser.url)
+    >>> print_messages(anon_browser)
+    This report is a duplicate of bug #8

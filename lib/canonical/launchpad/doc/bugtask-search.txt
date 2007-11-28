@@ -1,0 +1,542 @@
+= Searching BugTasks =
+
+BugTasks are usually searched through an IBugTarget's searchTasks()
+method, but they all delegate the search to IBugTaskSet.search(). That
+method accepts a single parameter; an BugTaskSearchParams instance.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskSearchParams, IBugTaskSet)
+    >>> bugtask_set = getUtility(IBugTaskSet)
+    >>> all_public = BugTaskSearchParams(user=None)
+    >>> found_bugtasks = bugtask_set.search(all_public)
+
+    >>> from canonical.launchpad.database import BugTask
+    >>> all_public_bugtasks = BugTask.select(
+    ...     "BugTask.bug = Bug.id AND Bug.private = false",
+    ...     clauseTables=['Bug'])
+    >>> found_bugtasks.count() == all_public_bugtasks.count()
+    True
+
+
+== Searching by bug contact ==
+
+The 'bug_contact' parameter allows you to search bugtasks that a certain
+person is responsible for. A person can be a bug contact for a product,
+a distribution, or a distribution source package. No Privileges Person
+isn't a bug contact, so no bugs are found for him:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv_bug_contact = BugTaskSearchParams(
+    ...     user=None, bug_contact=no_priv)
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
+    >>> found_bugtasks.count()
+    0
+
+== Product bugs ==
+
+Firefox has a few bugs:
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_bugs = firefox.searchTasks(all_public)
+    >>> firefox_public_bugs = firefox_bugs.count()
+    >>> firefox_public_bugs > 0
+    True
+
+== Distribution and package bugs ==
+
+Ubuntu does too:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IDistributionSourcePackage)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> all_public = BugTaskSearchParams(user=None)
+    >>> ubuntu_bugs = ubuntu.searchTasks(all_public)
+    >>> ubuntu_bugs.count() > 0
+    True
+
+and in particular, mozilla-firefox in Ubuntu has 'em:
+
+    >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+    >>> ubuntu_firefox_bugs = ubuntu_firefox.searchTasks(all_public)
+    >>> ubuntu_firefox_bugs.count() > 0
+    True
+
+== Dupes and Conjoined tasks ==
+
+You can set flags to omit duplicates:
+
+    >>> no_dupes = BugTaskSearchParams(user=None, omit_dupes=True)
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> sans_dupes = firefox.searchTasks(no_dupes)
+    >>> sans_dupes.count() < firefox_public_bugs
+    True
+
+and also series-targeted bugs:
+
+    >>> no_targeted = BugTaskSearchParams(user=None, omit_targeted=True)
+    >>> sans_targeted = ubuntu.searchTasks(no_targeted)
+    >>> sans_targeted.count() < ubuntu_bugs
+    True
+
+=== Product bug contact ===
+
+If No Privileges is specified as Firefox' bug contact, searching for his
+bugs return all of Firefox' bugs.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> firefox.bugcontact = no_priv
+    >>> syncUpdate(firefox)
+
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
+    >>> found_bugtasks.count() == firefox_bugs.count()
+    True
+
+    >>> found_targets = set(
+    ...     bugtask.target.bugtargetdisplayname for bugtask in found_bugtasks)
+    >>> for target_name in sorted(found_targets):
+    ...     print target_name
+    Mozilla Firefox
+
+
+=== Package bug contact ===
+
+If No Privileges Person is added as a bug contact for mozilla-firefox,
+searching for his bugs returns all bugs in this package, as well as the
+previous bugs (since he is also a bug contact for the Firefox product).
+
+    >>> ubuntu_firefox.addBugContact(no_priv)
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
+    >>> found_bugtasks.count() == (
+    ...     firefox_bugs.count() + ubuntu_firefox_bugs.count())
+    True
+
+    >>> found_targets = set(
+    ...     bugtask.target.bugtargetdisplayname for bugtask in found_bugtasks)
+    >>> for target_name in sorted(found_targets):
+    ...     print target_name
+    Mozilla Firefox
+    mozilla-firefox (Ubuntu)
+
+
+=== Distribution bug contact ===
+
+If someone is bug contact for Firefox, Firefox in Ubuntu, and Ubuntu,
+all bugs in Firefox and Ubuntu are returned. Bugs in the Ubuntu Firefox
+package are included in the Ubuntu bugs, so they won't be returned
+twice.
+
+    >>> all_public = BugTaskSearchParams(user=None)
+    >>> ubuntu_bugs = ubuntu.searchTasks(all_public)
+    >>> ubuntu_bugs.count() > 0
+    True
+
+    >>> ubuntu.bugcontact = no_priv
+    >>> syncUpdate(ubuntu)
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
+    >>> found_bugtasks.count() == firefox_bugs.count() + ubuntu_bugs.count()
+    True
+
+
+== Searching in comments ==
+
+Comments can be searched when specifying a search text in the bugtask
+search. Whether comments are searched is controlled by the
+search_comments config option.
+
+    >>> from canonical.config import config
+    >>> OLD_SEARCH_COMMENTS = config.malone.search_comments
+
+For example, no Firefox bugs are found when searching for
+'wordincomment'.
+
+    >>> comment_search = BugTaskSearchParams(
+    ...     user=None, searchtext='wordincomment')
+    >>> found_bugtasks = firefox.searchTasks(comment_search)
+    >>> found_bugtasks.count()
+    0
+
+If we add a comment containg the the search string to bug one, that bug
+will be returned by the search if search_comments is True.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bug_one.newMessage(no_priv, 'No subject', 'some wordincomment')
+    <Message at ...>
+
+    # Add another comment to make sure that it won't cause the same
+    # bugtask to be returned twice.
+    >>> bug_one.newMessage(no_priv, 'No subject', 'another wordincomment')
+    <Message at ...>
+
+    >>> config.malone.search_comments = True
+    >>> found_bugtasks = firefox.searchTasks(comment_search)
+    >>> for bugtask in found_bugtasks:
+    ...     print "#%s" % bugtask.bug.id
+    #1
+
+If the search_comments config option is False, no bugs are found.
+
+    >>> config.malone.search_comments = False
+    >>> found_bugtasks = firefox.searchTasks(comment_search)
+    >>> [bugtask.bug.id for bugtask in found_bugtasks]
+    []
+
+    >>> config.malone.search_comments = True
+
+    # Of course, searching in a project not containing bug #1 doesn't
+    # return any matches.
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> found_bugtasks = evolution.searchTasks(comment_search)
+    >>> found_bugtasks.count()
+    0
+
+    >>> config.malone.search_comments = OLD_SEARCH_COMMENTS 
+
+== Searching using bug full-text index ==
+
+The searchtext parameter does an extensive and expensive search (it
+looks through the bug's full text index, bug comments, bugtask
+target name, etc.) For some use cases, it is often easier and cheaper
+to simply search on the bug's full text index and omit the more
+expensive search on other related information.
+
+For example, there are no bugs with the word 'Fnord' in Firefox.
+
+    >>> text_search = BugTaskSearchParams(user=None, fast_searchtext='Fnord')
+    >>> found_bugtasks = firefox.searchTasks(text_search)
+    >>> found_bugtasks.count()
+    0
+
+But if we put that word in the bug #4 description, it will be found.
+
+    >>> bug_four = getUtility(IBugSet).get(4)
+    >>> bug_four.description += (
+    ...     '\nThat happens pretty often with the Fnord Highlighter '
+    ...     'extension installed.')
+    >>> syncUpdate(bug_four)
+
+    >>> found_bugtasks = firefox.searchTasks(text_search)
+    >>> for bugtask in found_bugtasks:
+    ...     print "#%s" % bugtask.bug.id
+    #4
+
+
+== Searching by bug reporter ==
+
+The 'bug_reporter' parameter allows you to search for bugs reported by a
+certain person.
+
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> reported_by_foo_bar = BugTaskSearchParams(
+    ...     user=None, bug_reporter=foo_bar)
+    >>> reported_by_foo_bar.setDistribution(ubuntu)
+    >>> found_bugtasks = bugtask_set.search(reported_by_foo_bar)
+    >>> for bugtask in found_bugtasks:
+    ...     print "#%s in %s reported by %s" % (
+    ...         bugtask.bug.id, bugtask.bugtargetname,
+    ...         bugtask.bug.owner.displayname)
+    #9 in thunderbird (Ubuntu) reported by Foo Bar
+    #10 in linux-source-2.6.15 (Ubuntu) reported by Foo Bar
+
+
+== Searching for nominated bugs ==
+
+We can search for bugs nominated to a distribution series by using the
+nominated_for parameter.
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> warty = ubuntu.getSeries('warty')
+
+    >>> from canonical.launchpad.database import BugNomination
+    >>> print list(BugNomination.selectBy(distroseries=warty))
+    []
+
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> nominated_for_warty = BugTaskSearchParams(
+    ...     user=None, nominated_for=warty)
+    >>> list(ubuntu.searchTasks(nominated_for_warty))
+    []
+
+    >>> nominated_bug = ubuntu.createBug(
+    ...     CreateBugParams(owner=no_priv, title='Test nominated bug',
+    ...                     comment='Something'))
+    >>> BugNomination(
+    ...     owner=no_priv, distroseries=warty, bug=nominated_bug)
+    <BugNomination at ...>
+
+    >>> for bugtask in ubuntu.searchTasks(nominated_for_warty):
+    ...     print bugtask.bug.title
+    Test nominated bug
+
+The same parameter is used to search for bugs nominated to a product
+series.
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_trunk = firefox.getSeries('trunk')
+    >>> print list(BugNomination.selectBy(productseries=firefox_trunk))
+    []
+    >>> nominated_for_trunk = BugTaskSearchParams(
+    ...     user=None, nominated_for=firefox_trunk)
+    >>> list(firefox.searchTasks(nominated_for_trunk))
+    []
+
+    >>> nominated_bug = firefox.createBug(
+    ...     CreateBugParams(owner=no_priv, title='Bug to be fixed in trunk',
+    ...                     comment='Something'))
+    >>> BugNomination(
+    ...     owner=no_priv, productseries=firefox_trunk, bug=nominated_bug)
+    <BugNomination at ...>
+
+    >>> for bugtask in firefox.searchTasks(nominated_for_trunk):
+    ...     print bugtask.bug.title
+    Bug to be fixed in trunk
+
+== Filter by Upstream Status ==
+
+Add an Ubuntu bugtask for a bug that is confirmed upstream.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskImportance, BugTaskStatus)
+    >>> from canonical.launchpad.ftests.test_bugtask import (
+    ...     BugTaskSearchBugsElsewhereTest)
+    >>> def bugTaskInfo(bugtask):
+    ...     return '%i %i %s %s' % (
+    ...         bugtask.id, bugtask.bug.id, bugtask.bugtargetdisplayname,
+    ...         bugtask.bug.title)
+    >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
+    >>> bug_twelve =  getUtility(IBugSet).get(12)
+    >>> task_open_upstream = bugtask_set.createTask(
+    ...     bug=bug_twelve, distribution=ubuntu, owner=foo_bar,
+    ...     status=BugTaskStatus.NEW,
+    ...     importance=BugTaskImportance.MEDIUM)
+    >>> test_helper.assertBugTaskIsOpenUpstream(task_open_upstream)
+
+Pass the resolved_upstream flag to include only bugtasks linked to
+watches that are rejected, fixed committed or fix released, or bugtasks
+related to upstream bugtasks (i.e. filed on the same bug) that are fix
+committed or fix released.
+
+    >>> test_helper.setUpBugsResolvedUpstreamTests()
+    >>> params = BugTaskSearchParams(
+    ...     resolved_upstream=True, orderby='id', user=None)
+    >>> closed_elsewhere_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in closed_elsewhere_tasks:
+    ...     test_helper.assertBugTaskIsResolvedUpstream(bugtask)
+    ...     print bugTaskInfo(bugtask)
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    26 2 Ubuntu Blackhole Trash folder
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+
+
+Pass the open_upstream flag to include only bugtasks linked to those
+watches or those upstream bugtasks that have the status "unconfirmed",
+"needs info", "confirmed", "in progress" or "unknown". Note that a bug
+may be associated with three or more bugtasks. If one upstream task
+has a state associated with "open upstream", and another upstream task
+has a state associated with "resolved upstream", the bug is included
+in the results of the "open upstream" filter as well as the "resolved
+upstream" filter.
+
+(In the examples below, the last bugtask is ellipsized because its ID
+ is generated here and therefore sampledata-dependent.)
+
+    >>> params = BugTaskSearchParams(
+    ...     open_upstream=True, orderby='id', user=None)
+    >>> open_elsewhere_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in open_elsewhere_tasks:
+    ...     test_helper.assertBugTaskIsOpenUpstream(bugtask)
+    ...     print bugTaskInfo(bugtask)
+    17  1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    26  2 Ubuntu Blackhole Trash folder
+    ... ... Ubuntu Copy, Cut and Delete operations should work on selections
+
+
+We can also filter our search to include only bugs that are not known to
+affect upstream, i.e., bugs that don't have an IUpstreamBugTask.
+
+    >>> params = BugTaskSearchParams(
+    ...     has_no_upstream_bugtask=True, orderby='id', user=None)
+    >>> tasks_with_no_upstreams = ubuntu.searchTasks(params)
+    >>> for bugtask in tasks_with_no_upstreams:
+    ...     test_helper.assertShouldBeShownOnNoUpstreamTaskSearch(bugtask)
+    ...     print bugTaskInfo(bugtask)
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    ... ... Ubuntu Test nominated bug
+
+If we combine upstream-related filters, we get the union of the results
+of the single filters.
+
+    >>> params = BugTaskSearchParams(
+    ...     has_no_upstream_bugtask=True, resolved_upstream=True,
+    ...     orderby='id', user=None)
+    >>> tasks_with_no_upstreams = ubuntu.searchTasks(params)
+    >>> for bugtask in tasks_with_no_upstreams:
+    ...     print bugTaskInfo(bugtask)
+    17  1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    26  2 Ubuntu Blackhole Trash folder
+    23  9 thunderbird (Ubuntu) Thunderbird crashes
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    ... ... Ubuntu Test nominated bug
+
+
+    >>> test_helper.tearDownBugsElsewhereTests()
+
+The search filter can also return bugs that are related to CVE reports:
+
+    >>> from canonical.launchpad.interfaces import ICveSet
+    >>> def getCves(bugtask):
+    ...     bugcve = getUtility(ICveSet).getBugCvesForBugTasks([bugtask])[0]
+    ...     return bugcve.cve.sequence
+    >>> params = BugTaskSearchParams(
+    ...     has_cve=True, orderby='id', user=None)
+    >>> tasks_with_cves = ubuntu.searchTasks(params)
+    >>> for bugtask in tasks_with_cves:
+    ...     print bugTaskInfo(bugtask), getCves(bugtask)
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG 1999-8979
+    26 2 Ubuntu Blackhole Trash folder 1999-2345
+
+
+== Searching by bug commenter ==
+
+The 'bug_commenter' parameter allows you to search bugtasks on which a certain
+person has commented. No Privileges Person hasn't commented on any bugs, so no
+bugs are found for him:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> import transaction
+    >>> transaction.abort()
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv_bug_commenter = BugTaskSearchParams(
+    ...     user=None, bug_commenter=no_priv)
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_commenter)
+    >>> found_bugtasks.count()
+    0
+
+If No Privileges Person comments on some bugs, those bugs can then be found by
+a bug commenter search. There will be one bug task instance returned for each
+bug target that the task is registered against, so in the test below three
+comments will produce eight found bug tasks (three for bug 1, five for bug 2).
+
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bug_one.newMessage(no_priv, 'No subject', 'some comment')
+    <Message at ...>
+
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> bug_two.newMessage(no_priv, 'No subject', 'another comment')
+    <Message at ...>
+
+    >>> bug_two.newMessage(no_priv, 'No subject', 'yet another comment')
+    <Message at ...>
+
+    >>> for (bug_id, target) in sorted((bugtask.bug.id, bugtask.bugtargetname)
+    ...                                for bugtask in found_bugtasks):
+    ...     print bug_id, target
+    1 firefox
+    1 mozilla-firefox (Debian)
+    1 mozilla-firefox (Ubuntu)
+    2 Ubuntu Hoary
+    2 mozilla-firefox (Debian Woody)
+    2 mozilla-firefox (Debian)
+    2 tomcat
+    2 ubuntu
+
+If No Privileges Person reports a bug and does not comment on it, that bug
+will not be included in the results returned by the bug commenter search.
+
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from canonical.launchpad.interfaces import IProductSet
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox.createBug(
+    ...     CreateBugParams(no_priv, "Some bug", "Some comment"))
+    <Bug at ...>
+
+    >>> for (bug_id, target) in sorted((bugtask.bug.id, bugtask.bugtargetname)
+    ...                                for bugtask in found_bugtasks):
+    ...     print bug_id, target
+    1 firefox
+    1 mozilla-firefox (Debian)
+    1 mozilla-firefox (Ubuntu)
+    2 Ubuntu Hoary
+    2 mozilla-firefox (Debian Woody)
+    2 mozilla-firefox (Debian)
+    2 tomcat
+    2 ubuntu
+
+
+== Search for BugTasks assigned to milestones ==
+
+BugTaskSet.search() can return bugtasks associated with milestones. 
+No BugTask is associated yet with firefox milestone 1.0.
+
+    >>> product_milestone = firefox.getMilestone('1.0')
+    >>> params = BugTaskSearchParams(milestone=product_milestone, user=None)
+    >>> milestone_tasks = bugtask_set.search(params)
+    >>> print milestone_tasks.count()
+    0
+
+Similary, no BugTasks are associated with the project firexfox belongs to.
+
+    >>> mozilla = firefox.project
+    >>> project_milestone = mozilla.getMilestone('1.0')
+    >>> params = BugTaskSearchParams(milestone=project_milestone, user=None)
+    >>> milestone_tasks = bugtask_set.search(params)
+    >>> print milestone_tasks.count()
+    0
+
+When a BugTask is associated with a milestone, it is returned in a search
+for bugs of this milestone.
+
+    >>> bugtask = firefox.searchTasks(BugTaskSearchParams(user=None))[0]
+    >>> print bugTaskInfo(bugtask)
+    2 1 Mozilla Firefox Firefox does not support SVG
+    >>> bugtask.milestone = product_milestone
+    >>> syncUpdate(bugtask)
+    >>> params = BugTaskSearchParams(milestone=product_milestone, user=None)
+    >>> milestone_tasks = bugtask_set.search(params)
+    >>> for bugtask in milestone_tasks:
+    ...     print bugTaskInfo(bugtask)
+    2 1 Mozilla Firefox Firefox does not support SVG
+
+This BugTask is also a BugTask of the milestone of the mozilla project.
+
+    >>> params = BugTaskSearchParams(milestone=project_milestone, user=None)
+    >>> milestone_tasks = bugtask_set.search(params)
+    >>> for bugtask in milestone_tasks:
+    ...     print bugTaskInfo(bugtask)
+    2 1 Mozilla Firefox Firefox does not support SVG
+
+
+== Bugs with partner packages ==
+
+Bugs may also be targeted to partner packages.  First turn "cdrkit" into
+a partner package:
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> proxied_cdrkit = ubuntu.getSourcePackage("cdrkit")
+    >>> cdrkit = removeSecurityProxy(proxied_cdrkit)
+    >>> cdrkit.component = getUtility(IComponentSet)['partner']
+    >>> cdrkit.archive = ubuntu.getArchiveByComponent('partner')
+    >>> transaction.commit()
+
+It starts off with no bugs:
+
+    >>> cdrkit_bugs = cdrkit.searchTasks(all_public)
+    >>> cdrkit_bugs.count()
+    0
+
+We can file a bug against it and see that show up in a search:
+
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> bug = cdrkit.createBug(
+    ...     CreateBugParams(owner=no_priv, title='Bug to be fixed in trunk',
+    ...                     comment='Something'))
+    >>> cdrkit_bugs = cdrkit.searchTasks(all_public)
+    >>> cdrkit_bugs.count()
+    1
+

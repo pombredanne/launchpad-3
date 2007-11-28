@@ -1,0 +1,102 @@
+= Recently Touched Bugs for a IBugTarget =
+
+Every IBugTarget has a portlet for showing the most recently touched
+bugs (i.e bugs that have been recently modified/created).
+
+    >>> from zope.component import getView
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> portlet_view = getView(
+    ...     bugtarget, '+portlet-recently-touched-bugs',
+    ...     LaunchpadTestRequest())
+    >>> portlet_view.initialize()
+
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> def set_date_updated(bug, minutes_in_future):
+    ...     bug.date_last_updated = now + timedelta(minutes=minutes_in_future)
+    ...     syncUpdate(bug)
+
+If we have three bugs with a recent date_last_updated set, they will
+appear in the top of the list.
+
+    >>> login('test@canonical.com')
+    >>> sample_person = getUtility(ILaunchBag).user
+    >>> bug_a = filebug(bugtarget, 'Bug A')
+    >>> set_date_updated(bug_a, 1)
+    >>> bug_b = filebug(bugtarget, 'Bug B')
+    >>> set_date_updated(bug_b, 2)
+    >>> bug_c = filebug(bugtarget, 'Bug C')
+    >>> set_date_updated(bug_c, 3)
+
+    >>> for bugtask in portlet_view.getMostRecentlyUpdatedBugTasks()[:3]:
+    ...     print bugtask.bug.title
+    Bug C
+    Bug B
+    Bug A
+
+If one of the bug's date_last_updated gets updated to a newer value, it
+will be first in the list.
+
+    >>> set_date_updated(bug_b, 4)
+    >>> for bugtask in portlet_view.getMostRecentlyUpdatedBugTasks()[:3]:
+    ...     print bugtask.bug.title
+    Bug B
+    Bug C
+    Bug A
+
+== Private bugs ==
+
+Only bugs that the user is allowed to see will be present in the list.
+
+    >>> bug_c.setPrivate(True, getUtility(ILaunchBag).user)
+    True
+    >>> syncUpdate(bug_c)
+
+    >>> login('no-priv@canonical.com')
+    >>> portlet_view = getView(
+    ...     bugtarget, '+portlet-recently-touched-bugs',
+    ...     LaunchpadTestRequest())
+    >>> portlet_view.initialize()
+    >>> for bugtask in portlet_view.getMostRecentlyUpdatedBugTasks()[:2]:
+    ...     print bugtask.bug.title
+    Bug B
+    Bug A
+
+    >>> login('test@canonical.com')
+    >>> portlet_view = getView(
+    ...     bugtarget, '+portlet-recently-touched-bugs',
+    ...     LaunchpadTestRequest())
+    >>> portlet_view.initialize()
+    >>> for bugtask in portlet_view.getMostRecentlyUpdatedBugTasks()[:3]:
+    ...     print bugtask.bug.title
+    Bug B
+    Bug C
+    Bug A
+
+== Duplicate bugs ==
+
+Bugs that are duplicates of other bugs will be omitted from the list as
+well.
+
+    >>> bug_b.duplicateof = bug_c
+    >>> syncUpdate(bug_b)
+
+    >>> for bugtask in portlet_view.getMostRecentlyUpdatedBugTasks()[:2]:
+    ...     print bugtask.bug.title
+    Bug C
+    Bug A
+
+== Limit ==
+
+By default only five bugs will be returned, but it's possible to specify
+a custom limit.
+
+    >>> for index in range(6):
+    ...     bug = filebug(bugtarget, 'Bug %s' % index)
+    >>> portlet_view.getMostRecentlyUpdatedBugTasks().count()
+    5
+
+    >>> portlet_view.getMostRecentlyUpdatedBugTasks(limit=2).count()
+    2

@@ -1,0 +1,73 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Linking to upstream</h1>
+    </metal:heading>
+
+<div metal:fill-slot="main"
+     tal:define="packagings view/cached_packagings;
+                 unlinked_translatables view/unlinked_translatables">
+
+  <p>Links from distribution packages to upstream project series let
+    distribution and upstream maintainers share bugs, patches, and translations
+    efficiently.</p>
+
+  <p tal:condition="not: packagings" class="informational message">
+    There are no links between packages in <span
+    tal:replace="context/displayname">Hoary</span> and upstream. By adding
+    information for specific packages, you can help the distribution developers
+    collaborate with upstream.
+  </p>
+
+  <tal:unlinked_translatables condition="unlinked_translatables">
+    <h2>Unlinked translatable packages</h2>
+
+      <a tal:repeat="sp unlinked_translatables"
+            tal:content="sp/sourcepackagename/name"
+            tal:attributes="href string:${sp/fmt:url}/+packaging">evolution</a>
+
+  </tal:unlinked_translatables>
+
+  <tal:known_links condition="packagings">
+    <h2>Upstream links</h2>
+    <table class="listing">
+      <caption>
+        Upstream links for all source packages in
+        <span tal:replace="context/title">Ubuntu Hoary</span>
+      </caption>
+      <thead>
+        <tr>
+          <th>Source Package</th>
+          <th>Upstream Project Series</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr tal:repeat="packaging packagings">
+          <td><a tal:attributes="href
+                     string:${packaging/sourcepackage/fmt:url}/+packaging"
+                 tal:content="packaging/sourcepackagename/name">
+            evolution</a>
+          </td>
+          <td tal:content="packaging/productseries/title">
+            evolution main
+          </td>
+        </tr>
+      </tbody>
+
+    </table>
+  </tal:known_links>
+
+</div>
+</body>
+</html>

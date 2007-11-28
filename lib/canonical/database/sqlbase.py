@@ -32,7 +32,9 @@ __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
 AUTOCOMMIT_ISOLATION=0
 READ_COMMITTED_ISOLATION=1
 SERIALIZABLE_ISOLATION=3
-DEFAULT_ISOLATION=SERIALIZABLE_ISOLATION
+# Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
+# use SERIALIZABLE unless we override, but psycopg2 will not.
+DEFAULT_ISOLATION=READ_COMMITTED_ISOLATION
 
 # First, let's monkey-patch SQLObject a little:
 import zope.security.proxy
@@ -195,7 +197,12 @@ class _ZopelessConnectionDescriptor(object):
 
     def _deactivate(self):
         """Deactivate SQLBase._connection for the current thread."""
-        del self.transactions[thread.get_ident()]
+        tid = thread.get_ident()
+        assert tid in self.transactions, (
+            "Deactivating a non-active connection descriptor for this thread.")
+        self.transactions[tid]._connection.close()
+        self.transactions[tid]._makeObsolete()
+        del self.transactions[tid]
 
     def __get__(self, inst, cls=None):
         """Return Transaction object for this thread (if it exists) or None."""
@@ -264,6 +271,12 @@ class ZopelessTransactionManager(object):
     _installed = None
     alreadyInited = False
 
+    # Reset database connection at end of every transaction?  We do this by
+    # default to protect us against leaks and accidentally carrying over
+    # state between logically unconnected requests, but sometimes we do need
+    # to carry over state such as temporary tables.
+    reset_after_transaction = True
+
     def __new__(cls, connectionURI, sqlClass=SQLBase, debug=False,
                 implicitBegin=True, isolation=DEFAULT_ISOLATION):
         if cls._installed is not None:
@@ -292,7 +305,8 @@ class ZopelessTransactionManager(object):
             return
         self.alreadyInited = True
 
-        # XXX: Importing a module-global and assigning it as an instance
+        # XXX: spiv 2004-10-25:
+        #      Importing a module-global and assigning it as an instance
         #      attribute smells funny.  Why not just use transaction.manager
         #      instead of self.manager?
         from transaction import manager
@@ -308,6 +322,38 @@ class ZopelessTransactionManager(object):
         self.implicitBegin = implicitBegin
         if self.implicitBegin:
             self.begin()
+
+    def set_isolation_level(self, level):
+        """Set the transaction isolation level.
+
+        Level can be one of AUTOCOMMIT_ISOLATION, READ_COMMITTED_ISOLATION
+        or SERIALIZABLE_ISOLATION. As changing the isolation level must be
+        done before any other queries are issued in the current transaction,
+        this method automatically issues a rollback to ensure this is the
+        case.
+        """
+        con = self.conn()
+        # Changing the isolation level must be done before any other queries
+        # in the transaction. To ensure this is the case, we rollback.
+        con.rollback()
+        con.set_isolation_level(level)
+        # Make the isolation level stick
+        self.desc.isolation = level
+        cur = con.cursor()
+        cur.execute('SHOW transaction_isolation')
+        isolation_str = cur.fetchone()[0]
+        if level == AUTOCOMMIT_ISOLATION:
+            # psycopg implements autocommit using read committed and commits.
+            assert isolation_str == 'read committed', 'Got ' + isolation_str
+        elif level == READ_COMMITTED_ISOLATION:
+            assert isolation_str == 'read committed', 'Got ' + isolation_str
+        elif level == SERIALIZABLE_ISOLATION:
+            assert isolation_str == 'serializable', 'Got ' + isolation_str
+        else:
+            raise AssertionError("Unknown transaction isolation level")
+
+    def conn(self):
+        return self.sqlClass._connection._connection
 
     def uninstall(self):
         _ZopelessConnectionDescriptor.uninstall()
@@ -327,18 +373,17 @@ class ZopelessTransactionManager(object):
         clear_current_connection_cache()
         txn = self.manager.begin()
         txn.join(self._dm())
-        self.sqlClass._connection._connection.set_isolation_level(
-                self.desc.isolation
-                )
+        self.set_isolation_level(self.desc.isolation)
 
     def commit(self):
         self.manager.get().commit()
 
-        # We always remove the existing transaction & connection, for
-        # simplicity.  SQLObject does connection pooling, and we don't have any
-        # indication that reconnecting every transaction would be a performance
-        # problem anyway.
-        self.desc._deactivate()
+        # By default we close the connection after completing a transaction,
+        # to safeguard against cached SQLObject data and SQL session state
+        # spilling out of their transactions.  Connection pooling keeps the
+        # performance penalty acceptably low.
+        if self.reset_after_transaction:
+            self.desc._deactivate()
 
         if self.implicitBegin:
             self.begin()
@@ -349,17 +394,18 @@ class ZopelessTransactionManager(object):
         for obj in objects:
             obj.reset()
             obj.expire()
-        self.desc._deactivate()
+        if self.reset_after_transaction:
+            self.desc._deactivate()
         if self.implicitBegin:
             self.begin()
 
 
 def clear_current_connection_cache():
     """Clear SQLObject's object cache for the current connection."""
-    # XXX: There is a different hack for (I think?) similar reasons in
+    # XXX: Andrew Bennetts 2005-02-01:
+    #      There is a different hack for (I think?) similar reasons in
     #      canonical.launchpad.webapp.publication.  This should probably
     #      share code with that one.
-    #        - Andrew Bennetts, 2005-02-01
 
     # Don't break if _connection is a FakeZopelessConnectionDescriptor
     if getattr(SQLBase._connection, 'cache', None) is not None:
@@ -434,8 +480,8 @@ def quote(x):
 def quote_like(x):
     r"""Quote a variable ready for inclusion in a SQL statement's LIKE clause
 
-    TODO: Including the single quotes was a stupid decision.
-    -- StuartBishop 2004/11/24
+    XXX: StuartBishop 2004-11-24:
+    Including the single quotes was a stupid decision.
 
     To correctly generate a SELECT using a LIKE comparision, we need
     to make use of the SQL string concatination operator '||' and the
@@ -554,10 +600,8 @@ def flush_database_updates():
         assert Beer.select("name LIKE 'Vic%'").count() == 0  # This will pass
 
     """
-    # XXX: turn that comment into a doctest
-    #        - Andrew Bennetts, 2005-02-16
-    # https://launchpad.ubuntu.com/malone/bugs/452
-    #        - Brad Bollenbach, 2005-04-20
+    # XXX: Andrew Bennetts 2005-02-16 bug=452:
+    # Turn that bug into a doctest
     for object in list(SQLBase._connection._dm.objects):
         object.syncUpdate()
 
@@ -593,8 +637,8 @@ def flush_database_caches():
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid
 # passing the transaction manager all through your code.
-# XXX: Make these use and work with Zope 3's transaction machinery instead!
-#        - Andrew Bennetts, 2005-02-11
+# XXX Andrew Bennetts 2005-02-11:
+# Make these use and work with Zope 3's transaction machinery instead!
 
 def begin():
     """Begins a transaction."""
@@ -606,7 +650,7 @@ def rollback():
 def commit():
     ZopelessTransactionManager._installed.commit()
 
-def connect(user, dbname=None):
+def connect(user, dbname=None, isolation=DEFAULT_ISOLATION):
     """Return a fresh DB-API connecction to the database.
 
     Use None for the user to connect as the default PostgreSQL user.
@@ -619,7 +663,10 @@ def connect(user, dbname=None):
         con_str += ' user=%s' % user
     if config.dbhost:
         con_str += ' host=%s' % config.dbhost
-    return psycopg.connect(con_str)
+    con = psycopg.connect(con_str)
+    con.set_isolation_level(isolation)
+    return con
+
 
 def cursor():
     '''Return a cursor from the current database connection.
@@ -631,9 +678,9 @@ def cursor():
 
 
 class FakeZopelessTransactionManager:
-    # XXX: There really should be a formal interface that both this and
+    # XXX Andrew Bennetts 2005-07-12:
+    # There really should be a formal interface that both this and
     # ZopelessTransactionManager implement.
-    #   -- Andrew Bennetts, 2005-07-12
 
     def __init__(self, implicitBegin=False, isolation=DEFAULT_ISOLATION):
         assert ZopelessTransactionManager._installed is None
@@ -655,9 +702,9 @@ class FakeZopelessTransactionManager:
         FakeZopelessConnectionDescriptor.uninstall()
         ZopelessTransactionManager._installed = None
 
-    # XXX: Ideally I'd be able to re-use some of the ZopelessTransactionManager
+    # XXX Andrew Bennetts 2005-07-12:
+    #      Ideally I'd be able to re-use some of the ZopelessTransactionManager
     #      implementation of begin, commit and abort.
-    #   -- Andrew Bennetts, 2005-07-12
     def begin(self):
         if not self.implicitBegin:
             self.desc._activate()

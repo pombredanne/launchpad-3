@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
   <body>
 
@@ -18,22 +25,29 @@
 
     <div metal:fill-slot="main">
 
-      <div>You are translating</div>
-      <h1>
-        <tal:productseries
-          condition="exists:context/pofile/potemplate/productseries/displayname"
-          tal:replace="context/pofile/potemplate/productseries/displayname"
-        />
-        <tal:sourcepackage
-          condition="exists:context/pofile/potemplate/sourcepackagename"
-          replace="context/pofile/potemplate/sourcepackagename"
-        />
-        into
-        <tal:language replace="context/pofile/language/englishname" />
-      </h1>
-      <div class="discreet">
-        Template: <tal:template replace="context/pofile/title" />
+      <div>
+        <a tal:attributes="href context/pofile/potemplate/fmt:url"
+           tal:content="context/pofile/potemplate/title">
+          evolution 2.10 template
+        </a>
       </div>
+      <tal:form-not-writeable condition="not:view/form_is_writeable">
+        <h1>
+          Browsing
+          <tal:language replace="context/pofile/language/englishname">
+            Spanish
+          </tal:language>
+          translation
+        </h1>
+      </tal:form-not-writeable>
+      <tal:form-writeable condition="view/form_is_writeable">
+        <h1>
+          Translating into
+          <tal:language replace="context/pofile/language/englishname">
+            Spanish
+          </tal:language>
+        </h1>
+      </tal:form-writeable>
 
       <tal:havepluralforms condition="view/has_plural_form_information">
 
@@ -54,11 +68,10 @@
         </div>
 
         <!-- The translation form. -->
-        <form method="POST" action="+translate">
+        <form method="POST" action="">
           <!-- the hidden elements -->
-          <input tal:condition="view/second_lang_code"
-                 tal:replace="structure view/alternative_language_widget/hidden" />
           <input type="hidden" name="lock_timestamp" value=""
+                 tal:condition="view/form_is_writeable"
                  tal:attributes="value view/lock_timestamp/isoformat" />
           <table class="listing" style="margin-top: 0.5em;">
             <thead>
@@ -69,11 +82,11 @@
                 </td>
               </tr>
             </thead>
-            <tbody>
-              <div tal:replace="structure view/pomsgset_view" />
+            <tbody id="messages_to_translate">
+              <div tal:replace="structure view/translationmessage_view" />
             </tbody>
             <tfoot>
-              <tr>
+              <tr tal:condition="view/form_is_writeable">
                 <th colspan="5">
                   <tal:review
                     condition="not: view/user_is_official_translator"
@@ -91,6 +104,8 @@
           </table>
 
         </form>
+        <!-- Paging doodads. -->
+        <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
       </tal:havepluralforms>
     </div>
 

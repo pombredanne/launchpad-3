@@ -20,7 +20,7 @@ export LP_DBUSER=launchpad
 
 (PYTHONPATH=$LPL python -u $GINA/gina.py \
                            --distro=ubuntu \
-                           --distrorelease=hoary \
+                           --distroseries=hoary \
                            --arch=i386 \
                            --components=main \
                            --keyrings=/home/debonzi/Warthogs/keyring.ubuntu.com/keyrings \

@@ -1,0 +1,115 @@
+= IQuestionTarget for SourcePackage =
+
+The implementation of IQuestionTarget by SourcePackage and
+DistributionSourcePackage contain some small differences with
+the other ones. (See questiontarget.txt for the generic interface
+description.)
+
+=== ISourcePackage.target ===
+
+The target attribute of questions created on SourcePackage will be
+that of the DistributionSourcePackage (and not the SourcePackage):
+
+    >>> login('no-priv@canonical.com')
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, IDistributionSet)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> firefox = ubuntu.currentseries.getSourcePackage('mozilla-firefox')
+
+    >>> question = firefox.getQuestion(3)
+    >>> question.target == firefox
+    False
+    >>> question.target == ubuntu.getSourcePackage('mozilla-firefox')
+    True
+
+=== get() ===
+
+The question created on a SourcePackage or DistributionSourcePackage can
+also be retrieved via the distribution.
+
+    >>> ubuntu.getQuestion(3) == question
+    True
+    
+    # Create a new question on the evolution source package.
+    >>> sample_person = getUtility(IPersonSet).getByName('name16')
+    >>> evolution = ubuntu.getSourcePackage('evolution')
+    >>> evolution_question = evolution.newQuestion(
+    ...     sample_person, 'Evolution crashed',
+    ...     'Surprise, surprise! Evolution crashed... again...'
+    ...     'while clicking on a thread expander.')
+    
+    >>> ubuntu.getQuestion(evolution_question.id) == evolution_question
+        True
+
+=== Support Contacts ===
+
+The support contacts of a SourcePackage contain all the support contacts
+from its containing distribution.
+
+    >>> list(ubuntu.answer_contacts)
+    []
+    >>> list(evolution.answer_contacts)
+    []
+
+    >>> ubuntu.addAnswerContact(sample_person)
+    True
+    >>> [person.name for person in evolution.answer_contacts]
+    [u'name16']
+
+It is possible to obtain the list of IPerson registed as support
+contacts specifically for the source package through the
+direct_answer_contacts attributes.
+
+    >>> [person.name for person in evolution.direct_answer_contacts]
+    []
+
+A user can still subscribe as support contact for specific sourcepackage
+even if he's already a support contact for the distribution.
+
+    >>> evolution.addAnswerContact(sample_person)
+    True
+    >>> [person.name for person in evolution.direct_answer_contacts]
+    [u'name16']
+
+But he's only listed once in the support contacts list.
+
+    >>> [person.name for person in evolution.answer_contacts]
+    [u'name16']
+
+The removeAnswerContact() method can only be used to remove the user
+from the sourcepackage support contact list, not from the ubuntu
+distribution list:
+
+    >>> evolution.removeAnswerContact(sample_person)
+    True
+    >>> [person.name for person in evolution.direct_answer_contacts]
+    []
+    >>> [person.name for person in evolution.answer_contacts]
+    [u'name16']
+    >>> evolution.removeAnswerContact(sample_person)
+    False
+    >>> [person.name for person in evolution.answer_contacts]
+    [u'name16']
+
+The same principle applies to DistributionSourcePackage:
+
+    >>> [person.name for person in evolution.direct_answer_contacts]
+    []
+    >>> [person.name for person in evolution.answer_contacts]
+    [u'name16']
+    >>> evolution.addAnswerContact(sample_person)
+    True
+    >>> [person.name for person in evolution.direct_answer_contacts]
+    [u'name16']
+    >>> [person.name for person in evolution.answer_contacts]
+    [u'name16']
+    >>> evolution.removeAnswerContact(sample_person)
+    True
+    >>> [person.name for person in evolution.answer_contacts]
+    [u'name16']
+    >>> evolution.removeAnswerContact(sample_person)
+    False
+    >>> [person.name for person in evolution.direct_answer_contacts]
+    []
+    >>> [person.name for person in evolution.answer_contacts]
+    [u'name16']

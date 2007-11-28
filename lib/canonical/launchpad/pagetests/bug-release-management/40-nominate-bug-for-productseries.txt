@@ -1,40 +1,29 @@
-XXX, Brad Bollenbach, 2006-09-22: The tests that use no-priv below
-should be converted to user_browser, once it uses no-priv too. See
-https://launchpad.net/bugs/52077 .
+=Nominating a bug for a product series =
 
 A bug can be nominated for a product series.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> from canonical.launchpad.ftests.test_pages import find_tags_by_class
-
-    >>> nopriv_browser = Browser()
-    >>> nopriv_browser.handleErrors = False
-    >>> nopriv_browser.addHeader(
-    ...     "Authorization", "Basic no-priv@canonical.com:test")
-    >>> nopriv_browser.open(
-    ...     "http://launchpad.dev/products/firefox/+bug/5/+nominate")
+    >>> user_browser.open(
+    ...     "http://launchpad.dev/products/firefox/+bug/4/+nominate")
 
 Before we continue, we'll set up a second browser instance, to simulate
 no-priv accessing the site from another window. Working with the same
 form in different browser windows or tabs can sometimes trigger edge
 case errors, and we'll give an example of one shortly.
 
-    >>> nopriv_other_browser = Browser()
-    >>> nopriv_other_browser.handleErrors = False
-    >>> nopriv_other_browser.addHeader(
-    ...     "Authorization", "Basic no-priv@canonical.com:test")
+    >>> nopriv_other_browser = setupBrowser(
+    ...     auth="Basic no-priv@canonical.com:test")
     >>> nopriv_other_browser.open(
-    ...     "http://launchpad.dev/products/firefox/+bug/5/+nominate")
+    ...     "http://launchpad.dev/products/firefox/+bug/4/+nominate")
 
-    >>> nopriv_browser.getControl("1.0").selected = True
+    >>> user_browser.getControl("1.0").selected = True
     >>> nopriv_other_browser.getControl("1.0").selected = True
 
-    >>> nopriv_browser.getControl("Submit").click()
+    >>> user_browser.getControl("Submit").click()
 
     >>> for tag in find_tags_by_class(
-    ...     nopriv_browser.contents, 'informational message'):
+    ...     user_browser.contents, 'informational message'):
     ...     print tag
-    <div...Added nominations for: firefox 1.0 (upstream)...
+    <div...Added nominations for: Mozilla Firefox 1.0...
 
 Now, if no-priv, having the form open in another browser window,
 accidentally nominates the bug for firefox 1.0 a second time, an error
@@ -45,13 +34,13 @@ is raised.
     >>> for tag in find_tags_by_class(nopriv_other_browser.contents, 'message'):
     ...     print tag.renderContents()
     There is 1 error.
-    This bug has already been nominated for these releases: 1.0
+    This bug has already been nominated for these series: 1.0
 
 When a nomination is submitted by a privileged user, it is immediately
 approved and targeted to the release.
 
     >>> admin_browser.open(
-    ...     "http://launchpad.dev/products/firefox/+bug/5/+nominate")
+    ...     "http://launchpad.dev/products/firefox/+bug/4/+nominate")
 
     >>> admin_browser.getControl("Trunk").selected = True
     >>> admin_browser.getControl("Submit").click()
@@ -59,4 +48,4 @@ approved and targeted to the release.
     >>> for tag in find_tags_by_class(
     ...     admin_browser.contents, 'informational message'):
     ...     print tag
-    <div...Targeted bug to: firefox trunk (upstream)...
+    <div...Targeted bug to: Mozilla Firefox trunk...

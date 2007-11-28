@@ -1,0 +1,76 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@marketing_template/master"
+  i18n:domain="launchpad"
+>
+<body>
+<div id="faq" metal:fill-slot="contents">
+  <div id="primary">
+    <h2>Code</h2>
+    <h3 class="byline">FAQs</h3>
+
+    <img src="/+icing/app-code-wm.gif" alt="Code"/>
+
+    <blockquote>
+      <p>With Launchpad's code hosting, you can host or mirror all branches
+         associated with a project. You can even import Subversion and CVS
+         repositories.</p>
+    </blockquote>
+ </div>
+ <div id="secondary">
+    <h4>Attract new contributors by hosting your code publicly, on
+        Launchpad.net</h4>
+    <ul id="faqs">
+      <li><a href="#q1">What benefits do I get by using Bazaar with
+                        Launchpad?</a></li>
+      <li><a href="#q2">How much space do I get to host my branches?</a></li>
+      <li><a href="#q3">Where can I find out more about the Bazaar distributed
+                        revision control system?</a></li>
+      <li><a href="#q4">Can I host a Subversion repository on Launchpad?</a></li>
+    </ul>
+
+    <h5 id="q1">What benefits do I get by using Bazaar with Launchpad?</h5>
+    <ul>
+      <li>A registry giving people one place to find your project's code
+          branches.</li>
+      <li>Free hosting for your Bazaar branches.</li>
+      <li>Free backup for your and other people's Bazaar branches.</li>
+      <li><a href="https://help.launchpad.net/VcsImports">Daily imports</a>
+      from CVS and Subversion, allowing you to use Bazaar to work on projects
+          using other revision control systems.</li>
+      <li>Attach branches to bugs reported using Launchpad's Bug Tracker.</li>
+      <li>Attach branches to blueprints in Launchpad's Feature Tracker.</li>
+    </ul>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q2">How much space do I get to host my branches?</h5>
+    <p>Our aim is to host as much open source code as we can, so we don't put
+       artificial limits on how large a code-base you can host with us.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q3">Where can I find out more about the Bazaar distributed
+                revision control system?</h5>
+    <p>You can read more on the
+       <a href="http://www.bazaar-vcs.org/">Bazaar website.</a>
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q4">Can I host a Subversion repository on Launchpad?</h5>
+    <p>No. But you can use Bazaar with a centralized structure (one branch,
+       many committers). You can have
+       <a href="http://blogs.gnome.org/view/jamesh/2006/08/17/1">Shared
+        branches using Bazaar and Launchpad.</a>
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+  </div>
+</div>
+</body>
+</html>

@@ -84,6 +84,14 @@ It's necessary to specify the exact URL, differences in the schema
     >>> mozilla_bugzilla.baseurl
     u'https://bugzilla.mozilla.org/'
 
+If the exact bugtracker isn't found but a the url searched for
+is a substring of an existing bugtracker, we use the first match.
+
+    >>> mozilla_bugzilla = bugtracker_set.queryByBaseURL(
+    ...     u'zilla.mozilla.org')
+    >>> mozilla_bugzilla.baseurl
+    u'https://bugzilla.mozilla.org/'
+
 If no bug tracker can be found None is returned.
 
     >>> bugtracker_set.queryByBaseURL('http://no/such/bugtracker') is None
@@ -118,11 +126,66 @@ contact any external servers.
 
     >>> print err
     INFO    creating lockfile
-    ERROR   There's no debbugs db at /srv/bugs-mirror.debian.org/
     INFO    No watches to update on http://bugs.debian.org
     INFO    No watches to update on http://bugzilla.gnome.org/bugs
     INFO    ExternalBugtracker for BugTrackerType 'SOURCEFORGE' is not known.
     INFO    No watches to update on https://bugzilla.mozilla.org/
     INFO    Skipping updating Ubuntu Bugzilla watches.
+    INFO    Time for this run: ... seconds.
     <BLANKLINE>
 
+We set a default timeout on checkwatches to 30 seconds. In order to test
+this, we can monkey-patch urllib2.urlopen so that it always raises a
+timeout and call the checkwatches cronscript machinery directly.
+
+First, we create some bug watches to test with:
+
+    >>> from canonical.launchpad.database import BugTracker
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IBugSet, IPersonSet)
+    >>> from canonical.launchpad.scripts.checkwatches import (
+    ...     BugWatchUpdater)
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+
+    >>> example_bug_tracker = BugTracker(
+    ...     name="example-bugs",
+    ...     title="Example.com Roundup",
+    ...     bugtrackertype=BugTrackerType.ROUNDUP,
+    ...     baseurl="http://bugs.example.com",
+    ...     summary="Contains bugs for Example.com",
+    ...     contactdetails="foo.bar@example.com",
+    ...     owner=sample_person)
+
+    >>> login('test@canonical.com')
+
+    >>> example_bug = getUtility(IBugSet).get(10)
+    >>> example_bugwatch = example_bug.addWatch(
+    ...     example_bug_tracker, 1, sample_person)
+
+    >>> login('no-priv@canonical.com')
+
+Next, we monkey-patch urllib2.urlopen so that it always times out.
+
+    >>> import socket
+    >>> import urllib2
+    >>> urlopen = urllib2.urlopen
+
+    >>> def do_not_urlopen(url=None, data=None):
+    ...     raise socket.timeout("Connection timed out.")
+    >>> try:
+    ...     urllib2.urlopen = do_not_urlopen
+    ...     updater = BugWatchUpdater(transaction)
+    ...     updater._login()
+    ...     updater.updateBugTracker(example_bug_tracker)
+    ... finally:
+    ...     urllib2.urlopen = urlopen
+    ERROR:root:Connection timed out when updating http://bugs.example.com
+
+Errors that occur when updating a bug watch are recorded against that
+bug watch. The timeout will be recorded against the bug watch we just
+created in its last_error_type field.
+
+    >>> from canonical.launchpad.interfaces import BugWatchErrorType
+    >>> example_bugwatch.last_error_type == BugWatchErrorType.TIMEOUT
+    True

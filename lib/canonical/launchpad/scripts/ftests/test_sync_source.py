@@ -139,7 +139,7 @@ class TestSyncSource(TestCase):
             SyncSourceError,
             sync_source.checkDownloadedFiles)
 
-    def testSyncSourceMD5SUm(self):
+    def testSyncSourceMD5Sum(self):
         """Probe the classmethod provided by SyncSource."""
         test_file = open('foo', 'w')
         test_file.write('abcdefghijlmnop')

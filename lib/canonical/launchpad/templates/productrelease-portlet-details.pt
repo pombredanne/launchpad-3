@@ -1,20 +1,28 @@
-<div class="portlet">
-    <h2 tal:content="context/title">productrelease title</h2>
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-details">
+    <h2 tal:content="context/title">release series title</h2>
 
     <div class="portletBody">
         <div class="portletContent even">
 
             <b>Registrant:</b><br />
-            <img alt="" src="/@@/user" />
-            <a tal:attributes="href context/owner/fmt:url"
-               tal:content="context/owner/browsername"
-               class="link">ownername</a><br />
+            <tal:registrant replace="structure context/owner/fmt:link"/><br />
 
-            <b>Product:</b>
+            <b>When:</b>
+            <span
+              tal:attributes="title context/datecreated/fmt:datetime"
+              tal:content="context/datecreated/fmt:approximatedate" /><br />
+
+            <b>Project:</b>
             <a href="#"
                tal:attributes="href context/product/fmt:url"
                tal:content="context/product/displayname"
-               class="link">product displayname</a><br />
+               class="link">project displayname</a><br />
 
             <b>Series:</b>
             <span tal:replace="context/productseries/name" /><br />
@@ -23,11 +31,11 @@
             <span tal:replace="context/version" /><br />
 
             <b>Released:</b>
-            <span tal:replace="context/datereleased/fmt:date" /><br />
-
-            <b>Registered:</b>
-            <span tal:replace="context/datecreated/fmt:date" /><br />
+            <span
+              tal:attributes="title context/datereleased/fmt:datetime"
+              tal:content="context/datereleased/fmt:approximatedate" /><br />
 
         </div>
     </div>
 </div>
+</tal:root>

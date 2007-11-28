@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Bug message interfaces."""
 
@@ -57,14 +58,12 @@ class IBugMessageSet(Interface):
 class IBugMessageAddForm(Interface):
     """Schema used to build the add form for bug comment/attachment."""
 
-    include_attachment = Bool(
-        title=u"Include attachment", required=False, default=False)
     subject = Title(title=u"Subject", required=True)
     comment = Text(title=u"Comment", required=False)
     filecontent = Bytes(
         title=u"Attachment", required=False,
         constraint=bug_attachment_size_constraint)
-    patch = Bool(title=u"patch", required=False, default=False)
+    patch = Bool(title=u"This attachment is a patch", required=False, default=False)
     attachment_description = Title(title=u'Description', required=False)
     email_me = Bool(
         title=u"E-mail me about changes to this bug report",
@@ -86,4 +85,5 @@ class IBugComment(IMessage):
         readonly=True)
     text_for_display = Text(
         title=u'The comment text to be displayed in the UI.', readonly=True)
+    display_title = Attribute('Whether or not to show the title.')
 

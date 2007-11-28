@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@launchpad_template/master"
-    i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 <body>
   <metal:block fill-slot="titleheader">
   The Launchpad Registry
@@ -15,35 +22,35 @@
     We urge you to register your open source
     project with The Launchpad.</p>
 
-    <h2>Open source products</h2>
+    <h2>Open source projects</h2>
 
     <p>The Launchpad includes information on hundreds of applications that
     are part of the open source universe. For each of these applications it
     is usually possible to file bugs, help to translate the application and
     review the application's source code using Bazaar. These links allow you
-    to find or register an open source product in the Launchpad:</p>
+    to find or register an open source project in the Launchpad:</p>
 
 	<ul>
 
-      <li><a href="/products/">Find Product</a>: find your open source
-      product if it has been registered in The Launchpad.</li>
+      <li><a href="/projects/">Find Project</a>: find your open source
+      project if it has been registered in The Launchpad.</li>
 
-      <li><a href="/products/+new">Register Product</a>: register an open
-      source product with The Launchpad.</li>
+      <li><a href="/projects/+new">Register Project</a>: register an open
+      source project with The Launchpad.</li>
 
-      <li><a href="/products/+all">All Products</a>: see a complete list
-      of all open source products registered with The Launchpad.</li>
+      <li><a href="/projects/+all">All Projects</a>: see a complete list
+      of all open source projects registered with The Launchpad.</li>
 
 	</ul>
 
     <h2>Open source projects</h2>
 
     <p>The Registry also knows about broader open source projects which
-    might be responsible for multiple products. For example, the Mozilla
-    Project publishes several open source products, such as Thunderbird and
+    might be responsible for multiple projects. For example, the Mozilla
+    Project publishes several open source projects, such as Thunderbird and
     Firefox and Sunbird, not to mention Gecko and other libraries. A Project
-    is a distinct group of people who work together on a set of (usually
-    related) products.</p>
+    Group is a distinct group of people who work together on a set of (usually
+    related) projects.</p>
 
     <ul>
    

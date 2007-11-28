@@ -1,26 +1,38 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
 <div metal:fill-slot="main">
 
-    <h1><span tal:replace="context/title"/> changelog</h1>
+    <h1><span tal:replace="context/title"/> change logs</h1>
 
-    <tal:block condition="context/changelog">
-      <p>This is the latest changelog we have on file for this source
-      package:</p>
+    <tal:block condition="context/distinctreleases">
+      <p>Change logs for this package:</p>
 
-    <pre id="changelog">
-        <span tal:replace="structure view/linkified_changelog" />
-    </pre>
+    <div id="changelogs">
+      <ul tal:condition="context/distinctreleases">
+        <li tal:repeat="spr context/distinctreleases">
+          <div tal:replace="structure spr/@@+changelog"/>
+        </li>
+      </ul>
+      <p tal:condition="not: context/distinctreleases" 
+         class="informational message">
+        There are no change logs associated with this source package.
+      </p>
+    </div>
+
     </tal:block>
 
-    <p tal:condition="not: context/changelog" class="informational message">
-      There is no changelog associated with this source package.
-    </p>
 
     </div>
     <p metal:fill-slot="help">

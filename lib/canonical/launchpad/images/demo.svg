@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="744.09448819"
+   height="1052.3622047"
+   id="svg2"
+   sodipodi:version="0.32"
+   inkscape:version="0.44"
+   sodipodi:docbase="/home/mpt/hacking/lpsrc/2007-01-graphics/lib/canonical/launchpad/images"
+   sodipodi:docname="demo.svg"
+   inkscape:export-filename="/home/mpt/hacking/lpsrc/2007-01-graphics/lib/canonical/launchpad/images/demo.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="white"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     gridtolerance="10000"
+     guidetolerance="10"
+     objecttolerance="10"
+     inkscape:pageopacity="1"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1"
+     inkscape:cx="375"
+     inkscape:cy="929.03449"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     inkscape:window-width="916"
+     inkscape:window-height="622"
+     inkscape:window-x="5"
+     inkscape:window-y="73" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot1872"
+       transform="matrix(0.939693,-0.34202,0.34202,0.939693,-228.3281,-95.9909)"
+       inkscape:export-filename="/home/mpt/hacking/lpsrc/trivial/lib/canonical/launchpad/images/demo.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90"><flowRegion
+         id="flowRegion1874"><rect
+           id="rect1876"
+           width="565.71429"
+           height="348.57144"
+           x="157.14285"
+           y="209.50504" /></flowRegion><flowPara
+         id="flowPara1878"
+         style="font-size:72px;font-weight:bold;fill:#eee;fill-opacity:1">demo</flowPara></flowRoot>  </g>
+</svg>

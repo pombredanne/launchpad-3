@@ -1,16 +1,45 @@
-  <tr>
-     <td tal:content="context/datepublished/fmt:datetime">
-       2005-09-16 13:42:02 SAST
-     </td>
-     <td tal:content="context/status/title">PUBLISHED</td>
-     <td><a tal:content="context/meta_sourcepackage/distrorelease/name"
-            tal:attributes="href context/meta_sourcepackage/fmt:url">
-         alsa-utils
-         </a>
-     </td>
-     <td tal:content="context/pocket/title">RELEASE</td>
-     <td tal:content="context/component/name">main</td>
-     <td tal:content="context/section/name">base</td>
-     <td><a tal:attributes="href context/meta_sourcepackagerelease/fmt:url"
-            tal:content="context/meta_sourcepackagerelease/version"/></td>
-  </tr>
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="boardComment">
+
+  <tal:comment condition="nothing">
+    <!-- XXX: cprov 20071018
+      The template should be kept in sync with its respective binary
+      replacement (binarypackagepublishinghistory-listing-detailed.pt).
+      In the future we should be able to refactor both in a single
+      template macro, see bug #153885.
+    -->
+  </tal:comment>
+
+  <div class="boardCommentDetails">
+    <strong>
+      <a tal:content="context/meta_distroseriessourcepackagerelease/version"
+         tal:attributes="href context/meta_distroseriessourcepackagerelease/fmt:url"
+      >2.0.39</a>
+    </strong>
+    <table>
+      <tbody>
+        <tr>
+         <td>
+           <strong tal:content="context/status/name">PUBLISHED</strong>:
+           <a tal:attributes="href context/distroseries/fmt:url"
+              tal:content="context/distroseries/displayname">warty</a>
+           pocket <strong tal:content="context/pocket/title">Release</strong>
+           in component <strong tal:content="context/component/name">main</strong>
+           and section <strong tal:content="context/section/name">x11</strong>
+         </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="boardCommentBody">
+     <tal:block replace="structure context/@@+record-details" />
+  </div>
+
+</div>
+</tal:root>

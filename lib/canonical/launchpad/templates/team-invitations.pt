@@ -1,0 +1,71 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Invitations sent to this team</h1>
+
+  <tal:open-invitations condition="context/open_membership_invitations">
+
+    <p>These are invitations for this team to become a member of other
+    ones.</p>
+
+    <table class="listing sortable" id="invitations">
+      <thead>
+        <tr>
+          <th>Sent by</th>
+          <th>On behalf of</th>
+          <th>&nbsp;</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr tal:repeat="membership context/open_membership_invitations">
+          <tal:block tal:define="team membership/team">
+          <td>
+            <a tal:attributes="href membership/reviewer/fmt:url"
+               tal:content="membership/reviewer/browsername">Reviewer</a>
+          </td>
+          <td>
+            <a tal:attributes="href team/fmt:url"
+               tal:content="team/browsername">Team</a>
+          </td>
+          <td>
+            <a tal:attributes="
+                href string:${context/fmt:url}/+invitation/${team/name}"
+              ><img src="/@@/edit"
+                    title="Accept or decline this invitation" /></a>
+          </td>
+          </tal:block>
+        </tr>
+      </tbody>
+    </table>
+  </tal:open-invitations>
+
+  <tal:no-open-invitations condition="not: context/open_membership_invitations">
+    <p>There are no open invitations for this team to become a member of other
+    ones.</p>
+  </tal:no-open-invitations>
+
+</div>
+
+</body>
+</html>

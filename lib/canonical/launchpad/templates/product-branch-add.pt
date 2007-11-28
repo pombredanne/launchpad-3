@@ -1,9 +1,14 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -17,7 +22,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Product Title</h3>
   <h1>Register a branch</h1>
 </metal:heading>
 
@@ -25,6 +29,9 @@
 
   <div metal:use-macro="context/@@launchpad_form/form">
   </div>
+
+  <metal:javascript
+      metal:use-macro="context/@@branch-javascript-macros/branch-name-from-url" />
 
 </div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
 
@@ -34,27 +41,14 @@
     href="http://bazaar-vcs.org/">Bazaar</a> version control system. (<a
     href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>).</p>
 
-  <p>Use this page to register a mirror branch on this product. The branch must
-    be already available on the internet in a publicly accessible location.</p>
-
   <p>You can register a branch on behalf someone else by setting the author
-    field. (The URL of the branch mirror is based on the nickname of the
-    registrant, not the author.)</p>
+    field. The URL of the branch is based on the nickname of the
+    registrant, not the author.</p>
 
-  <p>Do not use this page to:</p>
-
-  <ul>
-    <li>Request a <em>VCS import</em>, that is a Bazaar mirror of a CVS or
-      Subversion branch. Instead, edit the source details of the trunk release
-      series of this product.</li>
-
-    <li>Create an <em>upload</em> branch, that is a branch that you upload
-      directly, to use Launchpad has a community hosting service. Instead, use
-      the <code>bzr push</code>.</li>
-
-    <tal:comment condition="nothing"><!-- XXX: Need a pointer to more detailed
-    documentation. - David Allouche 2006-12-05 --></tal:comment>
-  </ul>
+  <p>Do not use this page to request a <em>VCS import</em>, that is a
+    Bazaar mirror of a CVS or Subversion branch. See the
+    <a href="https://help.launchpad.net/VcsImports">VCS Imports</a> help page.
+  </p>
 
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 </body>

@@ -1,0 +1,71 @@
+= Project and the Answer Tracker =
+
+Although question cannot be filed directly against projects, IProject in
+Launchpad also provides the IQuestionCollection and
+ISearchableByQuestionOwner interfaces.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProjectSet, ISearchableByQuestionOwner, IQuestionCollection)
+
+    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
+    >>> verifyObject(IQuestionCollection, mozilla_project)
+    True
+    >>> verifyObject(ISearchableByQuestionOwner, mozilla_project)
+    True
+
+== searchQuestions() ==
+
+This means that it is possible to search for all questions filed against
+products in a project using the project searchQuestions() method.
+
+    # Add a question to thunderbird.
+    >>> from canonical.launchpad.interfaces import ILaunchBag, IProductSet
+    >>> login('test@canonical.com')
+    >>> thunderbird = getUtility(IProductSet).getByName('thunderbird')
+    >>> sample_person = getUtility(ILaunchBag).user
+    >>> question = thunderbird.newQuestion(
+    ...     sample_person, "SVG attachments aren't displayed",
+    ...     "It would be a nice feature if SVG attachments could be displayed"
+    ...     "inlined.")
+
+    >>> for question in mozilla_project.searchQuestions(search_text='svg'):
+    ...     print question.title, question.target.displayname
+    SVG attachments aren't displayed            Mozilla Thunderbird
+    Problem showing the SVG demo on W3C site    Mozilla Firefox
+
+In the case were a Project has no Products, then we can expect no 
+possible questions.
+
+    >>> aaa_project = getUtility(IProjectSet).getByName('aaa')
+    >>> [q for question in aaa_project.searchQuestions()]
+    []
+
+Questions can be searched by all the standard searchQuestions() parameters
+(consult questiontarget.txt for the full details.)
+
+    >>> from canonical.launchpad.interfaces import QuestionStatus, QuestionSort
+    >>> for question in mozilla_project.searchQuestions(
+    ...     owner=sample_person, status=QuestionStatus.OPEN,
+    ...     sort=QuestionSort.OLDEST_FIRST):
+    ...     print question.title, question.target.displayname
+    Problem showing the SVG demo on W3C site    Mozilla Firefox
+    SVG attachments aren't displayed            Mozilla Thunderbird
+
+== getQuestionLanguages() ==
+
+The getQuestionLanguages() returns the set of languages that is used by
+all the questions in the project products.
+
+    >>> sorted(language.code
+    ...        for language in mozilla_project.getQuestionLanguages())
+    [u'en', u'pt_BR']
+
+(The firefox product has one question created in Brazilian Portuguese.)
+
+In the case where a Project has no Products, language questions will 
+still return and empty set.
+
+    >>> [language.code for language in aaa_project.getQuestionLanguages()]
+    []
+

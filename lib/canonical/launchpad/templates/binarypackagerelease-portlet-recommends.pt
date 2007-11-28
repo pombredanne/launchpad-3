@@ -1,21 +1,18 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-recommends">
 
   <h2>Recommends</h2>
 
-  <div class="portletBody portletContent">
+  <div class="portletBody portletContent"
+       tal:define="relationships view/recommends">
 
-    <ul>
-      <li tal:repeat="binrecommends view/recommends">
+     <tal:has_dep condition="relationships/has_items">
+        <tal:block replace="structure relationships/@@+render-list"/>
+     </tal:has_dep>
 
-        <a tal:content="binrecommends/name"
-           tal:attributes="href string:../../${binrecommends/name}"/> 
-          <tal:dummy condition="binrecommends/signal">
-            (<span tal:replace="binrecommends/signal" /> 
-             <span tal:replace="binrecommends/version" />)
-          </tal:dummy>
-
-      </li>
-    </ul>
   </div>
 
 </div>

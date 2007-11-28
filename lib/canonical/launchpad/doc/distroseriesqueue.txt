@@ -1,0 +1,732 @@
+== Upload processing queue ==
+
+The upload processing queue (PackageUpload and friends) is where
+uploads go after they have been checked by process-upload.py and
+before they get published by publish-distro.py.
+
+Upload system stores syntactically corrects (see
+nascentupload.txt) uploads driven by a submitted changesfile.
+
+One PackageUpload ~ One upload ~ One changesfile.
+
+An upload can contain a combination of content types, organized by:
+
+ * Source (PackageUploadSource):
+   a SourcePackageRelease ([tar.gz +] diff)
+
+ * Build (PackageUploadBuild):
+   a Build result, one or more BinaryPackageReleases resulted from a
+   successfully build (deb).
+
+ * Custom (PackageUploadCustom):
+   a special file which will be processed in a specific way to publish
+   its contents in the archive  (tar.gz). Currently we support
+   translations, installer and  upgrader (see
+   distroseriesqueue-{translation, dist-upgrader}).
+
+Each of those instances points back to a PackageUpload entry
+(parent) and to its type target:
+
+ * PackageUploadSource -> SourcePackageRelease (SPR),
+ * PackageUploadBuild -> Build,
+ * PackageUploadCustom -> LibraryFileAlias (LFA).
+
+The combination is assured by the upload policy used (see
+nascentupload.txt), some of them allow source + binaries, other only
+binaries + custom, other only source.
+
+First up, we need to actually process an upload to get it into the
+queue. To do this we prepare an OpenPGP key, and then run the upload handler.
+
+  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> import_public_test_keys()
+
+We need some setup for the upload handler.
+
+  >>> from canonical.archiveuploader.nascentupload import NascentUpload
+  >>> from canonical.archiveuploader.tests import (
+  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+
+
+Since we landed correct security adapters for PackageUpload,
+we need to perform further actions logged in as an admins, which have
+launchpad.Edit on the records:
+
+  >>> from canonical.launchpad.ftests import login
+  >>> login("foo.bar@canonical.com")
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> hoary = ubuntu['hoary']
+
+Construct an upload.
+
+  >>> anything_policy = getPolicy(
+  ...     name='anything', distro='ubuntu', distroseries='hoary')
+  >>> anything_policy.can_upload_binaries = True
+  >>> anything_policy.can_upload_mixed = True
+
+  >>> ed_upload = NascentUpload(
+  ...     datadir('ed_0.2-20_i386.changes'),
+  ...     anything_policy, mock_logger_quiet)
+
+  >>> ed_upload.process()
+  >>> success = ed_upload.do_accept()
+  >>> success
+  True
+
+Now the upload is in the queue, it'll likely be there as NEW because that's
+what we expect the ed upload to produce. Let's find the queue item and
+convert it to an ACCEPTED item.
+
+  >>> from canonical.launchpad.interfaces import (
+  ...      IDistributionSet, QueueInconsistentStateError)
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+
+  >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
+
+Use state-machine method provided by PackageUpload to ACCEPT an
+upload. If some designed check according the request state do not
+pass, the state-machine methods will raise an exception indicating the
+upload can not have that state.
+
+XXX cprov 20051209: need to build a broken upload to test it properly
+
+  >>> for item in new_queue:
+  ...     try:
+  ...         item.setAccepted()
+  ...     except QueueInconsistentStateError, info:
+  ...         print info
+
+Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
+
+  >>> flush_database_updates()
+
+  >>> accepted_queue = hoary.getQueueItems(PackageUploadStatus.ACCEPTED)
+
+  >>> for item in accepted_queue:
+  ...     for source in item.sources:
+  ...         print source.sourcepackagerelease.name
+  ...     item.realiseUpload(mock_logger)
+  ed
+  DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary
+  DEBUG: Publishing build to ubuntu/hoary/i386
+  DEBUG: ... ed/0.2-20 (Arch Specific)
+
+
+Confirm we can now find ed published in hoary.
+
+  >>> from canonical.launchpad.database import SourcePackagePublishingHistory
+  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+  >>> for release in SourcePackagePublishingHistory.selectBy(
+  ...     distroseries=hoary, status=PackagePublishingStatus.PENDING):
+  ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
+  ...         print release.sourcepackagerelease.version
+  0.2-20
+
+
+Check IPackageUploadSet behaviour:
+
+  >>> from canonical.launchpad.interfaces import IPackageUploadSet
+  >>> from canonical.launchpad.webapp.testing import verifyObject
+
+Grab an utility:
+
+  >>> qset = getUtility(IPackageUploadSet)
+
+Check if it implements its interface completely:
+
+  >>> verifyObject(IPackageUploadSet, qset)
+  True
+
+Iterating over IPackageUploads via iPackageUploadSet:
+
+  >>> for item in qset:
+  ...     print item.id
+  1
+  2
+  3
+  4
+  5
+  6
+  7
+  8
+  9
+  10
+  11
+  12
+  13
+  14
+  15
+
+Retrieving an IPackageUpload by its id:
+
+  >>> qset[1].id
+  1
+
+  >>> qset.get(1).id
+  1
+
+Counter, optionally by status (informally named "queue") and or distroseries:
+
+  >>> qset.count()
+  15
+
+  >>> qset.count(PackageUploadStatus.ACCEPTED)
+  1
+
+  >>> qset.count(PackageUploadStatus.REJECTED)
+  0
+
+Retrieve some data from DB to play more with counter.
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+  >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
+  >>> breezy_autotest = distro['breezy-autotest']
+
+  >>> qset.count(distroseries=breezy_autotest)
+  13
+
+  >>> qset.count(status=PackageUploadStatus.ACCEPTED,
+  ...            distroseries=breezy_autotest)
+  0
+
+  >>> qset.count(status=PackageUploadStatus.ACCEPTED,
+  ...            distroseries=hoary)
+  1
+
+
+Check the behaviour of @cachedproperty  attributes:
+  >>> qitem = qset.get(1)
+
+  >>> qitem.datecreated
+  datetime.datetime(...)
+
+  >>> qitem.changesfile.filename
+  u'mozilla-firefox_0.9_i386.changes'
+
+  >>> qitem.sourcepackagerelease.name
+  u'mozilla-firefox'
+
+  >>> qitem.displayname
+  u'mozilla-firefox'
+
+  >>> qitem.displayversion
+  u'0.9'
+
+  >>> qitem.displayarchs
+  u'i386'
+
+  >>> qitem.sourcepackagerelease
+  <SourcePackageRelease at ...>
+
+
+Let's check the behaviour of @cachedproperty attributes in a custom upload:
+
+  >>> custom_item = qset.get(5)
+
+  >>> custom_item.datecreated
+  datetime.datetime(...)
+
+  >>> custom_item.changesfile.filename
+  u'netapplet-1.0.0.tar.gz'
+
+  >>> custom_item.displayname
+  u'netapplet-1.0.0.tar.gz'
+
+  >>> custom_item.displayversion
+  '-'
+
+  >>> custom_item.displayarchs
+  'raw-translations'
+
+  >>> custom_item.sourcepackagerelease
+  Traceback (most recent call last):
+  ...
+  AssertionError: No source available.
+
+
+== Upload Signing Key ==
+
+IPackageUpload.signing_key should store the IGPGKey reference to
+the key used to sign the changesfile when it applies (insecure policy
+uploads).
+
+It's mainly used to identify sponsored uploads, when someone with
+rights to upload to ubuntu (mostly MOTU) signed over package changes
+done by someone else.
+
+Let's process a new upload:
+
+  >>> insecure_policy = getPolicy(
+  ...     name='insecure', distro='ubuntu', distroseries='hoary')
+
+  >>> bar_ok = NascentUpload(
+  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+  ...     insecure_policy, mock_logger_quiet)
+  >>> bar_ok.process()
+  >>> success = bar_ok.do_accept()
+  >>> success
+  True
+
+  >>> signed_queue = bar_ok.queue_root
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     IPackageUpload, IGPGKey)
+
+  >>> verifyObject(IPackageUpload, signed_queue)
+  True
+
+  >>> verifyObject(IGPGKey, signed_queue.signing_key)
+  True
+
+Let's check the IPerson entities related to this source upload:
+
+  >>> signed_src = signed_queue.sources[0].sourcepackagerelease
+
+  >>> signed_src.creator.displayname
+  u'Daniel Silverstone'
+
+  >>> signed_src.maintainer.displayname
+  u'Launchpad team'
+
+  >>> signed_queue.signing_key.owner.displayname
+  u'Foo Bar'
+
+Based on this information we can conclude that source 'bar' is
+maintained by 'Launchpad Team', was modified by 'Daniel Silverstone'
+and sponsored by 'Foo Bar'.
+
+
+== IHasQueueItems ==
+
+Explore the queue features of a DistroSeries instance, let's check
+some usages of IHasQueueItems.getQueueItems, which returns a list
+of IPackageUpload entries.
+
+  >>> new_items = breezy_autotest.getQueueItems(
+  ...    PackageUploadStatus.NEW)
+  >>> new_items.count()
+  6
+
+Invetigate the queue entries type:
+
+  >>> for n in new_items:
+  ...     n.builds.count(), n.sources.count()
+  (0, 0)
+  (0, 0)
+  (0, 1)
+  (0, 1)
+  (1, 0)
+  (1, 0)
+
+Exercises build side of getQueueItems, Retrieve queue entry for a
+name like 'moz':
+
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
+  ...                                            name='moz')
+  >>> items.count()
+  1
+
+  >>> items[0].builds[0].build.binarypackages[0].name
+  u'mozilla-firefox'
+  >>> items[0].builds[0].build.binarypackages[0].version
+  u'0.9'
+
+Got a distroseries build queue entry for 'mozilla-firefox_0.9'
+
+Try with version:
+
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
+  ...                                            name='moz', version='0.9')
+  >>> items.count()
+  1
+
+  >>> items[0].builds[0].build.binarypackages[0].name
+  u'mozilla-firefox'
+  >>> items[0].builds[0].build.binarypackages[0].version
+  u'0.9'
+
+Got the same queue entry.
+
+Let's try another entry where binary package name is LIKE 'pmount'
+
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
+  ...                                            name='pmount')
+  >>> items.count()
+  1
+
+  >>> items[0].builds[0].build.binarypackages[0].name
+  u'pmount'
+  >>> items[0].builds[0].build.binarypackages[0].version
+  u'0.1-1'
+
+Got 'pmount_0.1-1'.
+
+Look for every queue entry which package name is like 'mo'
+
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
+  ...                                            name='mo')
+  >>> items.count()
+  2
+
+  >>> for item in items:
+  ...     (item.builds[0].build.binarypackages[0].name,
+  ...      item.builds[0].build.binarypackages[0].version)
+  (u'mozilla-firefox', u'0.9')
+  (u'pmount', u'0.1-1')
+
+Got both sampledata results 'p_mo_unt' & '_mo_zilla-firefox'
+
+Try 'exact_match' for 'mozil_0.0.1'
+
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
+  ...                 name='mozil', version='0.0.1', exact_match=True)
+  >>> items.count()
+  0
+
+There is no match on queue entries.
+
+Try to match custom uploads by filename, there is one sampledata
+custom upload in UNAPPROVED queue.
+
+  >>> items = breezy_autotest.getQueueItems(
+  ...      PackageUploadStatus.UNAPPROVED)
+  >>> items.count()
+  5
+
+We can't retrieve it with a 'what' substring:
+
+  >>> items = breezy_autotest.getQueueItems(
+  ...      PackageUploadStatus.UNAPPROVED, name='what')
+  >>> items.count()
+  0
+
+But it works with the right substring 'net' from 'netapplet.tar.gz'
+
+  >>> items = breezy_autotest.getQueueItems(
+  ...      PackageUploadStatus.UNAPPROVED, name='net')
+  >>> items.count()
+  2
+
+
+Also check the optional argument pocket:
+
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+
+  >>> breezy_autotest.getQueueItems(
+  ...      pocket=PackagePublishingPocket.RELEASE).count()
+  10
+
+  >>> breezy_autotest.getQueueItems(
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  1
+
+Ensure list of pockets is also valid:
+
+  >>> breezy_autotest.getQueueItems(
+  ...      pocket=[PackagePublishingPocket.UPDATES,
+  ...              PackagePublishingPocket.RELEASE]).count()
+  11
+
+
+Check if association of status and pocket arguments works well:
+
+  >>> breezy_autotest.getQueueItems(
+  ...      PackageUploadStatus.UNAPPROVED,
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  1
+
+  >>> breezy_autotest.getQueueItems(
+  ...      PackageUploadStatus.NEW,
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  0
+
+  >>> breezy_autotest.getQueueItems(
+  ...      [PackageUploadStatus.NEW, PackageUploadStatus.UNAPPROVED],
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  1
+
+Check State Machine over PackageUploadBuilds:
+
+Performing full acceptance:
+
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW)
+  >>> for item in items:
+  ...      try:
+  ...          item.setAccepted()
+  ...      except QueueInconsistentStateError, e:
+  ...          print item.displayname, e
+  ...      else:
+  ...          print item.displayname, 'ACCEPTED'
+  netapplet-1.0.0.tar.gz ACCEPTED
+  netapplet-1.0.0.tar.gz ACCEPTED
+  alsa-utils ACCEPTED
+  netapplet ACCEPTED
+  pmount ACCEPTED
+  mozilla-firefox ACCEPTED
+
+Move the PackageUpload items back to NEW
+
+  >>> for item in items:
+  ...     item.setNew()
+
+Check if the state machine methods raise when trying to set the same state:
+
+  >>> for item in items:
+  ...      try:
+  ...          item.setNew()
+  ...      except QueueInconsistentStateError, e:
+  ...          print item.displayname, e
+  ...      else:
+  ...          print item.displayname, 'BOGUS'
+  netapplet-1.0.0.tar.gz Queue item already new
+  netapplet-1.0.0.tar.gz Queue item already new
+  alsa-utils Queue item already new
+  netapplet Queue item already new
+  pmount Queue item already new
+  mozilla-firefox Queue item already new
+
+Check several available state machine methods on a NEW queue item
+(except setAccepted, it's already covered by other tests, check if they
+don't raise any exception):
+
+  >>> test_qitem = getUtility(IPackageUploadSet)[1]
+  >>> test_qitem.setUnapproved()
+  >>> test_qitem.setRejected()
+  >>> test_qitem.setDone()
+  >>> test_qitem.setNew()
+
+Check forbidden approval of not selected Section:
+
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> from canonical.launchpad.interfaces import (
+  ...     IComponentSet, ISectionSet)
+
+Retrieve mozilla-firefox Upload:
+
+  >>> item = breezy_autotest.getQueueItems(
+  ...     PackageUploadStatus.NEW, name='mozilla')[0]
+
+Override the mozilla-firefox component to fresh created 'hell' component.
+
+XXX cprov 20060118: remove proxy magic is required for BPR instances.
+
+  >>> naked_bin = removeSecurityProxy(
+  ...       item.builds[0].build.binarypackages[0])
+  >>> naked_bin.component = getUtility(IComponentSet).new('hell')
+  >>> try:
+  ...     item.setAccepted()
+  ... except QueueInconsistentStateError, e:
+  ...     print item.displayname, e
+  ... else:
+  ...     print item.displayname, 'ACCEPTED'
+  mozilla-firefox Component "hell" is not allowed in breezy-autotest
+
+Check how we treat source upload duplications in UNAPPROVED queue (NEW
+has a similar behaviour):
+
+  >>> dups = breezy_autotest.getQueueItems(
+  ...     PackageUploadStatus.UNAPPROVED, name='cnews')
+  >>> dups.count()
+  2
+  >>> dup_one, dup_two = list(dups)
+
+  >>> dup_one.displayname, dup_one.displayversion
+  (u'cnews', u'1.0')
+  >>> dup_two.displayname, dup_two.displayversion
+  (u'cnews', u'1.0')
+
+The upload admin can not accept both since we check unique
+(name, version) accross distribution:
+
+  >>> dup_one.setAccepted()
+  >>> dup_one.status == PackageUploadStatus.ACCEPTED
+  True
+
+The database modification needs to be realised in the DB, otherwise
+the look up code won't be able to identify any duplications:
+
+  >>> dup_one.syncUpdate()
+
+As expected the second item acceptance will fail and the item will
+remain in the original queue
+
+  >>> dup_two.setAccepted()
+  Traceback (most recent call last):
+  ...
+  QueueInconsistentStateError: This sourcepackagerelease is already accepted in breezy-autotest.
+
+  >>> dup_two.status.name
+  'UNAPPROVED'
+
+The only available action will be rejection:
+
+  >>> dup_two.setRejected()
+  >>> dup_one.syncUpdate()
+  >>> dup_two.status.name
+  'REJECTED'
+
+Move the second item back to its original queue to perform the same
+test after the former accepted item was published (DONE queue)
+
+  >>> dup_two.setUnapproved()
+  >>> dup_two.syncUpdate()
+  >>> dup_two.status.name
+  'UNAPPROVED'
+
+  >>> dup_one.setDone()
+  >>> dup_one.status == PackageUploadStatus.DONE
+  True
+  >>> dup_one.syncUpdate()
+
+The protection code should also identify dups with items in DONE queue
+
+  >>> dup_two.setAccepted()
+  Traceback (most recent call last):
+  ...
+  QueueInconsistentStateError: This sourcepackagerelease is already accepted in breezy-autotest.
+
+
+Check forbidden approval of not selected Section:
+
+Retrieve pmount:
+
+  >>> item = breezy_autotest.getQueueItems(
+  ...     PackageUploadStatus.NEW, name='pmount')[0]
+
+Override the pmount section to fresh created 'heaven' section.
+
+XXX cprov 20060118: remove proxy magic is required for BPR instances.
+
+  >>> naked_bin = removeSecurityProxy(
+  ...       item.builds[0].build.binarypackages[0])
+  >>> naked_bin.section = getUtility(ISectionSet).new('heaven')
+
+Try to perform single acceptance of pmount with not allowed section:
+
+  >>> try:
+  ...     item.setAccepted()
+  ... except QueueInconsistentStateError, e:
+  ...     print item.displayname, e
+  ... else:
+  ...     print item.displayname, 'ACCEPTED'
+  pmount Section "heaven" is not allowed in breezy-autotest
+
+Check how the security adapters work for PackageUpload:
+
+  >>> pub_qitem = getUtility(IPackageUploadSet)[1]
+
+UNAPPROVED queue items are expected to be private:
+
+  >>> priv_qitem = getUtility(IPackageUploadSet)[5]
+
+Anonymous don't have access any kind of access to both, private and
+public queue items:
+
+  >>> login(ANONYMOUS)
+
+  >>> pub_qitem.displayname
+  Traceback (most recent call last):
+  ...
+  Unauthorized: (<PackageUpload ..., 'displayname', 'launchpad.View')
+
+  >>> priv_qitem.displayname
+  Traceback (most recent call last):
+  ...
+  Unauthorized: (<PackageUpload ..., 'displayname', 'launchpad.View')
+
+A normal user may see the public, but not the private, and can't act
+in both of them:
+
+  >>> login('test@canonical.com')
+
+  >>> pub_qitem.displayname
+  u'mozilla-firefox'
+
+  >>> priv_qitem.displayname
+  Traceback (most recent call last):
+  ...
+  Unauthorized: (<PackageUpload ..., 'displayname', 'launchpad.View')
+
+  >>> pub_qitem.setDone()
+  Traceback (most recent call last):
+  ...
+  Unauthorized: (<PackageUpload ..., 'setDone', 'launchpad.Edit')
+
+  >>> priv_qitem.setDone()
+  Traceback (most recent call last):
+  ...
+  Unauthorized: (<PackageUpload ..., 'setDone', 'launchpad.Edit')
+
+
+Only the members of distroseries drivers in question have
+launchpad.Edit on a packageupload record.
+
+  >>> login('foo.bar@canonical.com')
+
+  >>> pub_qitem.displayname
+  u'mozilla-firefox'
+
+  >>> priv_qitem.displayname
+  u'netapplet-1.0.0.tar.gz'
+
+  >>> pub_qitem.setDone()
+
+  >>> priv_qitem.setDone()
+
+
+Roll back modified data:
+
+  >>> transaction.abort()
+
+
+Clear existing mail stack:
+
+  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+  >>> rubbish = pop_notifications()
+
+
+Two convenience methods exist, acceptFromQueue and rejectFromQueue that will
+accept or reject the item and send an email respectively.
+
+Let's accept something in the queue.  (We need to populate the librarian
+with fake changes files first so that emails can be generated.)
+
+  >>> from canonical.archiveuploader.tests import insertFakeChangesFile
+  >>> insertFakeChangesFile(items[2].changesfile.id)
+  >>> insertFakeChangesFile(items[3].changesfile.id)
+  >>> try:
+  ...    items[2].acceptFromQueue('announce@example.com')
+  ... except QueueInconsistentStateError, e:
+  ...    print 'FAILED'
+  ... else:
+  ...    print 'ACCEPTED'
+  ACCEPTED
+
+An email is generated.  We wont look what is inside it here, that is well
+shown in nascentupload-announcements.txt.
+
+  >>> [notification] = pop_notifications()
+
+Let's reject something in the queue:
+
+  >>> try:
+  ...     items[3].rejectFromQueue()
+  ... except QueueInconsistentStateError, e:
+  ...    print 'FAILED'
+  ... else:
+  ...    print 'REJECTED'
+  REJECTED
+
+One email is generated (see nascentupload-announcements.txt)
+
+  >>> [notification] = pop_notifications()
+
+
+Clean up the librarian files:
+
+   >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
+   >>> cleanupLibrarianFiles()
+

@@ -1,14 +1,23 @@
-  <div class="portlet">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+  <div class="portlet" id="portlet-translations">
     <h2>Translating applications</h2>
 
-    <div class="portletBody portletContent" i18n:translate="rosetta-blurb">
+    <div class="portletBody portletContent" i18n:translate="rosetta-blurb"
+      tal:define="vhosts
+        modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
       <p>
-      <img alt="" src="/@@/languages" />
-      <a i18n:attributes="title" title="Rosetta"
-         href="rosetta" i18n:translate="">Rosetta</a> is a
+      <img alt="" src="/@@/language" />
+      <a i18n:attributes="title" title="Launchpad Translations"
+          tal:attributes="href vhosts/translations/rooturl"
+          href="/translations" i18n:translate="">Launchpad Translations</a> is a
       <strong>Web-based translation system</strong>.
       You can easily collaborate with translators for your software
-      through Rosetta.
+      through Launchpad.
       </p>
       <b><span tal:replace="view/ubuntu_translationrelease/displayname">
         Ubuntu 5.04</span> Translations:</b><br />
@@ -20,3 +29,4 @@
       </tal:block>
     </div>
   </div>
+</tal:root>

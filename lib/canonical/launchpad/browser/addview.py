@@ -32,7 +32,7 @@ class SQLObjectAddView(AddView, NoRenderingOnRedirect):
         The data argument is a dictionary with the data entered in the form.
         """
 
-        # XXX: Brad Bollenbach, 2005-04-01: I'm doing the painful task of
+        # XXX: Brad Bollenbach 2005-04-01: I'm doing the painful task of
         # copying and pasting this method directly from AddView, changing
         # only the event that is published. By doing this, I'm able to
         # publish an ISQLObjectCreatedEvent that has the user as one of
@@ -75,7 +75,7 @@ class SQLObjectAddView(AddView, NoRenderingOnRedirect):
         content = self.add(content)
 
         if self._set_after_add:
-            # XXX: Brad Bollenbach, 2005-04-01: What's with publishing
+            # XXX: Brad Bollenbach 2005-04-01: What's with publishing
             # an ObjectModifiedEvent on an add? I don't understand this
             # code.
             adapted = self.schema(content)

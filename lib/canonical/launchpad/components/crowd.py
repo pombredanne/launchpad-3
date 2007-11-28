@@ -54,7 +54,7 @@ class CrowdsAddedTogether:
         return CrowdsAddedTogether(crowd, *self.crowds)
 
 
-# XXX this shouldn't be in components
+# XXX ddaa 2005-04-01: This shouldn't be in components
 class AnyPersonCrowd:
 
     implements(ICrowd)
@@ -65,7 +65,7 @@ class AnyPersonCrowd:
     def __add__(self, crowd):
         return CrowdsAddedTogether(crowd, self)
 
-# XXX this shouldn't be in components
+# XXX ddaa 2005-04-01: This shouldn't be in components
 class EmptyCrowd:
 
     implements(ICrowd)

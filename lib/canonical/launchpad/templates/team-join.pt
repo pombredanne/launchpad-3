@@ -1,8 +1,21 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:do-this-first tal:content="view/processForm" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -11,32 +24,36 @@
   <tal:block tal:condition="view/userCanRequestToJoin">
     <h1>Joining <span tal:replace="context/browsername" /></h1>
 
-    <p>Are you sure you want to join this team?</p>
-    <p>
-      (Subscription policy:
-      <span tal:replace="context/subscriptionpolicy/title">Open Team</span>)
-    </p>
+    <h2>Are you sure you want to join this team?</h2>
 
-    <p class="informational message" tal:condition="view/userHasMembershipEntry" 
-       tal:content="view/membershipStatusDesc" />
-    <form class="actions" name="join" action="" method="POST">
+    <p tal:condition="context/subscriptionpolicy/enumvalue:MODERATED">
+      Since this is a moderated team, one of its administrators will have to
+      approve your membership before you actually become a member of this
+      team.
+    </p>
+    <form class="actions" name="join" action="" method="post">
         <input type="submit" name="goback" value="Cancel" />
         <input type="submit" name="join" value="Join" />
     </form>
   </tal:block>
 
   <tal:block tal:condition="not: view/userCanRequestToJoin">
-    <p tal:condition="view/joinAllowed" class="error message">
-      <span tal:replace="view/membershipStatusDesc" />
-      You can't join this team.
+    <p tal:condition="view/joinAllowed" class="warning message">
+      <tal:active-member condition="view/userIsActiveMember">
+        You are an active member of this team already.
+      </tal:active-member>
+      <tal:proposed-member condition="view/userIsProposedMember">
+        Your membership is awaiting approval from one of this team's
+        administrators.
+      </tal:proposed-member>
     </p>
 
-    <p tal:condition="not: view/joinAllowed" class="error message">
+    <p tal:condition="not: view/joinAllowed" class="warning message">
       <span tal:replace="context/browsername" /> is a restricted team.
       Only a team administrator can add new members.
     </p>
 
-    <form name="join" action="" method="POST">
+    <form name="join" action="" method="post">
     <table width="100%">
       <tr><td>
         <input type="submit" name="goback" value="Back to team" />
@@ -49,4 +66,4 @@
 
 </body>
 </html>
-
+</tal:root>

@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -13,6 +12,13 @@
         name="+portlet-latestbugs"
         permission="zope.Public"
         template="../templates/bugtarget-portlet-latestbugs.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.BugTargetView"
+        name="+portlet-recently-touched-bugs"
+        permission="zope.Public"
+        template="../templates/bugtarget-portlet-recently-touched-bugs.pt" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
@@ -32,7 +38,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
-        class="canonical.launchpad.browser.BugTargetTextView"
+        class="canonical.launchpad.browser.TextualBugTaskSearchListingView"
         permission="zope.Public"
         name="+bugs-text"
         attribute="__call__" />

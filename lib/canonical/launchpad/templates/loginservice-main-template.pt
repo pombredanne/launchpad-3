@@ -1,0 +1,147 @@
+<metal:page
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:lpm="http://ns.launchpad.net/lpm"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  tal:attributes="lang default_language|default;
+                  xml:lang default_language|default;"
+  tal:define="is_demo modules/canonical.config/config/launchpad/is_demo">
+  <head>
+    <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad Login Service</title>
+    <tal:x condition="nothing">Style is inline for maximum reliability.</tal:x>
+    <style type="text/css">
+      html {
+        background: #fff;
+        color: #000;
+        font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
+      }
+      :link {background: none; color: #00c;}
+      html, body {height: 100%; margin: 0; padding: 0;} /* pushes footer down */
+      #nonfooter {position: relative; min-height: 100%;}
+      * html #nonfooter {height: 100%;}
+      #footer {
+        clear: both;
+        position: relative;
+        margin: -2em auto 0;
+        height: 2em;
+      }
+      address, #footer {
+        font-size: 14px;
+        font-style: normal;
+        text-align: center;
+      }
+      address {
+        background: #afdb1f;
+        border: solid #9bc11b;
+        border-width: 1px 0;
+        font-weight: bold;
+        margin: 0 0 24px;
+        padding: 4px 10px;
+      }
+      #maincontent {margin: 0 auto; padding: 0 2em; max-width: 60em;}
+      h2 {font-size: 1em;}
+      h1, h2 {color: #666;}
+      #rp {
+        width: 49%;
+        float: left;
+      }
+      #auth {
+        background: #eee;
+        border: 1px solid #aaa;
+        padding: 1em 2%;
+        width: 45%;
+        float: right;
+      }
+      #auth h2 {margin: 0 0 0.25em; padding: 0;}
+      #auth div {margin: 0 0 1em; width: 100%;}
+      #auth div div {margin: 0;}
+      #auth input[type="text"], #auth input[type="password"] {
+        display: block;
+        margin-left: 2em;
+        width: 80%;
+      }
+      input[type="radio"] {margin-left: 0; margin-top: 0.5em;}
+      #auth input[type="submit"] {margin-top: 1em;}
+      #auth label {display: inline-block; margin-bottom: 0.25em;}
+      code {font-weight: bold;}
+      #lpinfo {
+        clear: both;
+        width: 50%;
+        margin-left: 25%;
+      }
+      .message {
+        background: 5px 0.5em no-repeat;
+        font-weight: bold;
+        margin: 0 0 0.5em;
+        padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
+      }
+      .error.message {
+        color: #db1f22;
+        background-color: #ffffff;
+        background-image: url(/@@/error);
+        border: 1px solid #db1f22;
+      }
+    </style>
+    <style tal:condition="is_demo" type="text/css"
+    >html, body {background: #ddd url(/@@/demo) !important;}</style>
+  </head>
+
+  <body>
+    <div id="nonfooter">
+      <address>Launchpad Login Service</address>
+      <div id="maincontent"><metal:block define-slot="main">
+        <div id="rp"><metal:block define-slot="rp"
+                         tal:define="rpconfig view/rpconfig;
+                                     trust_root view/openid_request/trust_root;
+                                     displayname rpconfig/displayname|trust_root;
+                                     description rpconfig/description|nothing;
+                                     logo rpconfig/logo|nothing">
+
+          <p class="warning message" tal:condition="not:view/isSaneTrustRoot">
+            <strong>Warning:</strong>
+            <em tal:content="view/openid_request/trust_root" /> does not look
+            like a trustworthy URL.
+          </p>
+          <div tal:condition="logo">
+            <img tal:attributes="src logo/getURL" alt="" />
+          </div>
+          <h2 tal:content="displayname">Ubuntu Shop</h2>
+
+          <p>To continue with <tal:displayname replace="displayname" />, you
+          need to sign in to Launchpad.</p>
+
+          <p tal:condition="view/openid_parameters/openid.sreg.policy_url|nothing">
+            <a tal:attributes="href view/openid_parameters/openid.sreg.policy_url"
+               tal:content="string:Privacy information for ${displayname}" />
+          </p>
+
+          <tal:signin_reason condition="description">
+            <h2>Why do we ask you to sign in?</h2>
+            <p tal:content="description">Reason</p>
+          </tal:signin_reason>
+        </metal:block></div>
+        <div id="auth"><metal:block define-slot="auth">
+        </metal:block></div>
+
+        <div id="lpinfo">
+          <h2>What is Launchpad and a Launchpad Account?</h2>
+
+          <p>Launchpad is the central point where we gather all
+          sorts of interactions around Ubuntu, Canonical and free
+          software generally.  You can use your Launchpad account to
+          report bugs, to find or contribute translations, to find
+          specs, to contribute code, or to simply buy a t-shirt.</p>
+        </div>
+      </metal:block></div>
+      <div style="clear: both;">&nbsp;</div>
+    </div>
+    <div id="footer">Copyright &copy; 2007 Canonical Ltd.</div>
+  </body>
+</html>
+</metal:page>

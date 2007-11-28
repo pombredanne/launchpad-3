@@ -16,11 +16,12 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (IBugLinkForm, IUnlinkBugsForm)
+
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView)
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.authorization import check_permission
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -37,7 +38,7 @@ class BugLinkView(LaunchpadFormView):
     @action(_('Link'))
     def linkBug(self, action, data):
         """Link to the requested bug. Publish an SQLObjectModifiedEvent and
-        display a notification on the ticket page.
+        display a notification.
         """
         response = self.request.response
         target_unmodified = Snapshot(
@@ -46,7 +47,7 @@ class BugLinkView(LaunchpadFormView):
         try:
             self.context.linkBug(bug)
         except Unauthorized:
-            # XXX flacoste 2006-08-23 Use proper _() once bug 57470 is fixed.
+            # XXX flacoste 2006-08-23: Use proper _() once bug 57470 is fixed.
             self.setFieldError(
                 'bug',
                 'You are not allowed to link to private bug #%d.'% bug.id)

@@ -1,25 +1,53 @@
-Project
-=======
+= Projects =
 
 A Project is basically a group of Products, making it possible to for
 example see all bugs in the Project's Product, or make them share a
 common external bug tracker.
 
+    # Some basic imports
+    >>> from canonical.launchpad.interfaces import IProjectSet, IProject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> projectset = getUtility(IProjectSet)
+
+
+== Creating new projects ==
+
+When creating a new project there are a bunch of things we need to provide.
+While some of them (homepageurl, icon, logo and mugshot) are optional, others
+(name, displayname, title, summary, description and owner) are required).
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> test_project = projectset.new(
+    ...     name='project-test', displayname='Test Project', 
+    ...     title='Just a test project', homepageurl=None,
+    ...     summary='Mandatory summary', description='blah',
+    ...     owner=no_priv)
+    >>> test_project.name
+    u'project-test'
+
+
+== Looking up existing projects ==
+
 We can get a project using IProjectSet, by supplying the project's name.
 
-    >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import IProjectSet, IProject
-
-    >>> gnome = getUtility(IProjectSet)['gnome']
+    >>> gnome = projectset['gnome']
     >>> gnome.name
     u'gnome'
+
     >>> verifyObject(IProject, gnome)
     True
+
+Make sure that a project provides the IProject interface.
+
+    >>> IProject.providedBy(gnome)
+    True
+
 
 If there is no project with the specified name, a NotFoundError will be
 raised.
 
-    >>> getUtility(IProjectSet)['non-existant']
+    >>> projectset['non-existant']
     Traceback (most recent call last):
     ...
     NotFoundError:...
@@ -55,14 +83,32 @@ getByName() also accepts an argument to ignore inactive projects.
     >>> print getUtility(IProjectSet).getByName('gnome', ignore_inactive=True)
     None
 
+== Products which are part of a project ==
 
-Specification Listings
-======================
+The products which are part of a given project are given by a project's
+.products property. Note that only active products are included and they're
+ordered by their names.
+
+    >>> [product.name for product in gnome.products]
+    [u'applets', u'evolution', u'gnome-terminal', u'gnomebaker', u'netapplet']
+
+    >>> netapplet = gnome.getProduct('netapplet')
+    >>> netapplet.active = False
+    >>> flush_database_updates()
+    >>> [product.name for product in gnome.products]
+    [u'applets', u'evolution', u'gnome-terminal', u'gnomebaker']
+
+    # Re-activate netapplet so that we don't interfere in other tests below.
+    >>> netapplet.active = True
+    >>> flush_database_updates()
+
+
+== Specification Listings ==
 
 We should be able to generate filtered lists of specs on a project.
 
  >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be only one informational spec for mozilla:
 
@@ -129,3 +175,118 @@ and all valid specifications via the valid_specifications property:
  extension-manager-upgrades
  mergewin
  e4x
+
+
+== translatables ==
+
+A project would have IProduct objects that have resources to translate. This
+method return us the ones that are translatable and officially using Rosetta
+to handle translations.
+
+  # Revert any change done until now.
+  >>> import transaction
+  >>> transaction.abort()
+
+GNOME Project is a good example that has translations.
+It has one translatable product.
+
+  >>> gnome = getUtility(IProjectSet)['gnome']
+  >>> translatables = gnome.translatables()
+  >>> translatables.count()
+  1
+
+And that translatable product is 'Evolution'.
+
+  >>> evolution = translatables[0]
+  >>> print evolution.title
+  The Evolution Groupware Application
+
+With its 'trunk' series translatable.
+
+  >>> evo_series = evolution.translatable_series
+  >>> len(evo_series)
+  1
+  >>> evo_trunk = evo_series[0]
+  >>> print evo_trunk.name
+  trunk
+
+That is using Rosetta officially.
+
+  >>> evolution.official_rosetta
+  True
+
+GNOME project has also another product, netapplet.
+
+  >>> netapplet = gnome.getProduct('netapplet')
+  >>> print netapplet.title
+  Network Applet
+
+But it was not returned from 'translatables' method because it's not using
+Rosetta officially.
+
+  >>> netapplet.official_rosetta
+  False
+
+And thus, it doesn't have any translatable series.
+
+  >>> len(netapplet.translatable_series)
+  0
+
+Even if it has resources to translate.
+
+  >>> sum([len(series.getTranslationTemplates())
+  ...      for series in netapplet.serieses])
+  1
+
+
+== Milestones ==
+
+A project can have virtual milestones. If any of its products has milestones,
+these milestones are also associated with the project.
+
+Project.milestones is a list of all visible milestones associated with
+a project.
+
+    >>> from canonical.launchpad.ftests.test_project_milestone import (
+    ...     ProjectMilestoneTest)
+    >>> from canonical.launchpad.interfaces import (BugTaskSearchParams,
+    ...     IBugTaskSet, IProjectSet)
+    >>> def product_milestone_info(milestone_name, product_name):
+    ...     product = productset[product_name]
+    ...     milestone = milestoneset.getByNameAndProduct(
+    ...         milestone_name, product)
+    ...     if milestone:
+    ...         print 'product', product_name, 'visible:', milestone.visible,
+    ...         print 'expected:', milestone.dateexpected
+    >>> login('foo.bar@canonical.com')
+    >>> test_helper = ProjectMilestoneTest(helper_only=True)
+    >>> test_helper.setUpProjectMilestoneTests()
+    >>> gnome = getUtility(IProjectSet)['gnome']
+    >>> milestones = gnome.milestones
+    >>> for milestone in milestones:
+    ...     print milestone.name, 'visible:', milestone.visible
+    1.1  visible: True
+    1.1. visible: True
+    1.2  visible: True
+
+Project.all_milestones is a list of all milestones associated with a project.
+
+    >>> milestones = gnome.all_milestones
+    >>> for milestone in milestones:
+    ...     print milestone.name, 'visible:', milestone.visible
+    1.1  visible: True
+    1.1. visible: True
+    1.2  visible: True
+    1.3  visible: False
+
+Project.getMilestone(name) returns the project milestone with the name `name'
+or None, if no milestone with this name exists.
+
+    >>> milestone = gnome.getMilestone('1.1')
+    >>> print milestone.name
+    1.1
+    >>> milestone = gnome.getMilestone('invalid')
+    >>> print milestone
+    None
+
+For details see doc/milestone.txt and ftests/test_project_milestone.py.

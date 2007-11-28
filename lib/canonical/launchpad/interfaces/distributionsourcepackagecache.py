@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Source package in Distribution Cache interfaces."""
 
@@ -23,6 +24,8 @@ class IDistributionSourcePackageCache(Interface):
     binpkgdescriptions = Attribute("A concatenation of the descriptions "
         "of the binary packages from this source package name in the "
         "distro.")
+    changelog = Attribute("A concatenation of the source package release"
+        "changelogs for this source package, where the status is not REMOVED.")
 
     distributionsourcepackage = Attribute("The DistributionSourcePackage "
         "for which this is a cache.")

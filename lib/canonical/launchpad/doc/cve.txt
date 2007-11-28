@@ -1,5 +1,4 @@
-Common Vulnerabilities and Exposures (CVE)
-==========================================
+= Common Vulnerabilities and Exposures (CVE) =
 
 Malone supports attaching CVE references to bugs. From
 http://www.cve.mitre.org/about/ CVE is:
@@ -12,8 +11,11 @@ For more information, consult the CVE website:
 
     http://www.cve.mitre.org/
 
-Creating CVE entries
---------------------
+== CveSet ==
+
+The ICveSet utility is used to create and get CVEs and BugCves.
+
+=== Creating CVE entries ===
 
 CVE references can be created with the ICveSet utility.
 
@@ -21,8 +23,7 @@ CVE references can be created with the ICveSet utility.
     >>> login("test@canonical.com")
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import ICveSet
-    >>> from canonical.lp.dbschema import CveStatus
+    >>> from canonical.launchpad.interfaces import CveStatus, ICveSet
     >>> cveset = getUtility(ICveSet)
 
 To create a CVE, call ICveSet.new(sequence, description,
@@ -34,8 +35,34 @@ To create a CVE, call ICveSet.new(sequence, description,
     >>> cve.displayname
     u'CVE-2004-0276'
 
-Linking CVEs to Bugs
----------------------
+=== Number of CVE links ===
+
+We can get the number of CVE links to bugs in Launchpad using
+getBugCveCount.
+
+    >>> cveset.getBugCveCount()
+    2
+
+If we add another link, the count will of course increase by one.  The
+supplied user is the person linking the CVEs.
+
+    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bug_one.linkCVE(cve, user=no_priv)
+    <BugCve at ...>
+
+    >>> cveset.getBugCveCount()
+    3
+
+And if we unlink it, the count will decrease.
+
+    >>> bug_one.unlinkCVE(cve)
+
+    >>> cveset.getBugCveCount()
+    2
+
+== Linking CVEs to Bugs ==
 
 You can link a CVE to a bug. You can also see which CVEs are currently
 linked to a bug:
@@ -50,7 +77,7 @@ Let's add the new CVE:
 
     >>> b.cves.count()
     1
-    >>> b.linkCVE(cve)
+    >>> b.linkCVE(cve, no_priv)
     <BugCve at ...>
     >>> b.cves.count()
     2
@@ -62,17 +89,16 @@ Ah, but that was a bad idea. Let's unlink it.
     1
 
 Alternatively, we can link CVEs to bugs by looking for CVEs in a
-string of text:
+string of text. The supplied user is the person linking the CVEs.
 
     >>> b.findCvesInText('''
     ...     This bug is related to CVE-2004-0276
-    ... ''')
+    ... ''', user=no_priv)
     >>> cve in b.cves
     True
     >>> b.unlinkCVE(cve)
 
-CVE Reports
------------
+== CVE Reports ==
 
 Launchpad offers distributions, distribution releases and products with
 reports that inform on the status of bugs related to CVEs in the

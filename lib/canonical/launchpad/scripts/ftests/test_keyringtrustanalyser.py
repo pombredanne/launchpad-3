@@ -9,8 +9,7 @@ from canonical.launchpad.ftests.harness import (
         )
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.interfaces import (
-    IGPGHandler, IPersonSet, IEmailAddressSet)
-from canonical.lp.dbschema import EmailAddressStatus
+    IGPGHandler, IPersonSet, IEmailAddressSet, EmailAddressStatus)
 from canonical.launchpad.scripts.keyringtrustanalyser import *
 from zope.component import getUtility
 import gpgme
@@ -52,7 +51,8 @@ class TestKeyringTrustAnalyser(LaunchpadFunctionalTestCase):
         self.gpg_handler = getUtility(IGPGHandler)
 
     def tearDown(self):
-        #FIXME RBC: this should be a zope test cleanup thing per SteveA.
+        # XXX stub 2005-10-27: this should be a zope test cleanup
+        # thing per SteveA.
         self.gpg_handler.resetLocalState()
         LaunchpadFunctionalTestCase.tearDown(self)
 

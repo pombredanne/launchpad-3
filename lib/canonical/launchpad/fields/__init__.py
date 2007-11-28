@@ -1,13 +1,27 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,W0401
 
-from zope.schema import Choice, Field, Int, Text, TextLine, Password
-from zope.schema.interfaces import IPassword, IText, ITextLine, IField, IInt
-from zope.interface import implements, Attribute
+from StringIO import StringIO
+from textwrap import dedent
+
+from zope.component import getUtility
+from zope.schema import (
+    Bool, Bytes, Choice, Field, Int, Text, TextLine, Password, Tuple)
+from zope.schema.interfaces import (
+    IBytes, IField, IInt, IPassword, IText, ITextLine)
+from zope.interface import implements
+from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import valid_name, name_validator
+from canonical.foaf import nickname
+
+
+# Marker object to tell BaseImageUpload to keep the existing image.
+KEEP_SAME_IMAGE = object()
 
 
 # Field Interfaces
@@ -103,6 +117,44 @@ class ITag(ITextLine):
     """
 
 
+class IURIField(ITextLine):
+    """A URI.
+
+    A text line that holds a URI.
+    """
+    trailing_slash = Bool(
+        title=_('Whether a trailing slash is required for this field'),
+        required=False,
+        description=_('If set to True, then the path component of the URI '
+                      'must end in a slash.  If set to False, then the path '
+                      'component must not end in a slash.  If set to None, '
+                      'then no check is performed.'))
+
+
+class IBaseImageUpload(IBytes):
+    """Marker interface for ImageUpload fields."""
+
+    dimensions = Tuple(
+        title=_('Maximum dimensions'),
+        description=_('A two-tuple with the maximum width and height (in '
+                      'pixels) of this image.'))
+    max_size = Int(
+        title=_('Maximum size'),
+        description=_('The maximum size (in bytes) of this image.'))
+
+    default_image_resource = TextLine(
+        title=_('The default image'),
+        description=_(
+            'The URL of the zope3 resource of the default image that should '
+            'be used. Something of the form /@@/nyet-mugshot'))
+
+    def getCurrentImage():
+        """Return the value of the field for the object bound to it.
+
+        Raise FieldNotBoundError if the field is not bound to any object.
+        """
+
+
 class StrippedTextLine(TextLine):
     implements(IStrippedTextLine)
 
@@ -147,6 +199,41 @@ class BugField(Field):
     implements(IBugField)
 
 
+class DuplicateBug(BugField):
+    """A bug that the context is a duplicate of."""
+
+    def _validate(self, value):
+        """Prevent dups of dups.
+
+        Returns True if the dup target is not a duplicate /and/ if the
+        current bug doesn't have any duplicates referencing it /and/ if the
+        bug isn't a duplicate of itself, otherwise
+        return False.
+        """
+        from canonical.launchpad.interfaces.bug import IBugSet
+        bugset = getUtility(IBugSet)
+        current_bug = self.context
+        dup_target = value
+        current_bug_has_dup_refs = bool(bugset.searchAsUser(
+            user=getUtility(ILaunchBag).user, duplicateof=current_bug))
+        if current_bug == dup_target:
+            raise LaunchpadValidationError(_(dedent("""
+                You can't mark a bug as a duplicate of itself.""")))
+        elif dup_target.duplicateof is not None:
+            raise LaunchpadValidationError(_(dedent("""
+                Bug %i is already a duplicate of bug %i. You can only
+                duplicate to bugs that are not duplicates themselves.
+                """% (dup_target.id, dup_target.duplicateof.id))))
+        elif current_bug_has_dup_refs:
+            raise LaunchpadValidationError(_(dedent("""
+                There are other bugs already marked as duplicates of Bug %i.
+                These bugs should be changed to be duplicates of another bug
+                if you are certain you would like to perform this change."""
+                % current_bug.id)))
+        else:
+            return True
+
+
 class Tag(TextLine):
 
     implements(ITag)
@@ -176,7 +263,7 @@ class UniqueField(TextLine):
 
     @property
     def _content_iface(self):
-        """Return the content interface. 
+        """Return the content interface.
 
         Override this in subclasses.
         """
@@ -189,22 +276,32 @@ class UniqueField(TextLine):
         """
         raise NotImplementedError
 
+    def _isValueTaken(self, value):
+        """Returns true if and only if the specified value is already taken."""
+        return self._getByAttribute(value) is not None
+
     def _validate(self, input):
         """Raise a LaunchpadValidationError if the attribute is not available.
 
-        A attribute is not available if it's already in use by another object 
-        of this same context. The 'input' should be valid as per TextLine.
+        A attribute is not available if it's already in use by another
+        object of this same context. The 'input' should be valid as per
+        TextLine.
         """
         TextLine._validate(self, input)
         assert self._content_iface is not None
         _marker = object()
-        if (self._content_iface.providedBy(self.context) and 
+
+        # If we are editing an existing object and the attribute is
+        # unchanged...
+        if (self._content_iface.providedBy(self.context) and
             input == getattr(self.context, self.attribute, _marker)):
-            # The attribute wasn't changed.
+            # ...then do nothing: we already know the value is unique.
             return
 
-        contentobj = self._getByAttribute(input)
-        if contentobj is not None:
+        # Now we know we are dealing with either a new object, or an
+        # object whose attribute is going to be updated. We need to
+        # ensure the new value is unique.
+        if self._isValueTaken(input):
             raise LaunchpadValidationError(self.errormessage % input)
 
 
@@ -216,6 +313,11 @@ class ContentNameField(UniqueField):
     def _getByAttribute(self, name):
         """Return the content object with the given name."""
         return self._getByName(name)
+
+    def _validate(self, name):
+        """Check that the given name is valid (and by delegation, unique)."""
+        name_validator(name)
+        UniqueField._validate(self, name)
 
 
 class BlacklistableContentNameField(ContentNameField):
@@ -229,16 +331,12 @@ class BlacklistableContentNameField(ContentNameField):
         super(BlacklistableContentNameField, self)._validate(input)
 
         _marker = object()
-        if (self._content_iface.providedBy(self.context) and 
+        if (self._content_iface.providedBy(self.context) and
             input == getattr(self.context, self.attribute, _marker)):
             # The attribute wasn't changed.
             return
 
-        name = input.encode('UTF-8')
-        cur = cursor()
-        cur.execute("SELECT is_blacklisted_name(%(name)s)", vars())
-        blacklisted = cur.fetchone()[0]
-        if blacklisted:
+        if nickname.is_blacklisted(name=input):
             raise LaunchpadValidationError(
                     "The name '%(input)s' has been blocked by the "
                     "Launchpad administrators" % vars()
@@ -306,4 +404,154 @@ class ProductBugTracker(Choice):
         else:
             ob.official_malone = False
             ob.bugtracker = value
+
+
+class URIField(TextLine):
+    implements(IURIField)
+
+    def __init__(self, allowed_schemes=(), allow_userinfo=True,
+                 allow_port=True, allow_query=True, allow_fragment=True,
+                 trailing_slash=None, **kwargs):
+        super(URIField, self).__init__(**kwargs)
+        self.allowed_schemes = set(allowed_schemes)
+        self.allow_userinfo = allow_userinfo
+        self.allow_port = allow_port
+        self.allow_query = allow_query
+        self.allow_fragment = allow_fragment
+        self.trailing_slash = trailing_slash
+
+    def _validate(self, value):
+        super(URIField, self)._validate(value)
+
+        # Local import to avoid circular imports:
+        from canonical.launchpad.webapp.uri import URI, InvalidURIError
+        try:
+            uri = URI(value)
+        except InvalidURIError, e:
+            raise LaunchpadValidationError(str(e))
+
+        if self.allowed_schemes and uri.scheme not in self.allowed_schemes:
+            raise LaunchpadValidationError(
+                'The URI scheme "%s" is not allowed.  Only URIs with '
+                'the following schemes may be used: %s'
+                % (uri.scheme, ', '.join(sorted(self.allowed_schemes))))
+
+        if not self.allow_userinfo and uri.userinfo is not None:
+            raise LaunchpadValidationError(
+                'A username may not be specified in the URI.')
+
+        if not self.allow_port and uri.port is not None:
+            raise LaunchpadValidationError(
+                'Non-default ports are not allowed.')
+
+        if not self.allow_query and uri.query is not None:
+            raise LaunchpadValidationError(
+                'URIs with query strings are not allowed.')
+
+        if not self.allow_fragment and uri.fragment is not None:
+            raise LaunchpadValidationError(
+                'URIs with fragment identifiers are not allowed.')
+
+        if self.trailing_slash is not None:
+            has_slash = uri.path.endswith('/')
+            if self.trailing_slash:
+                if not has_slash:
+                    raise LaunchpadValidationError(
+                        'The URI must end with a slash.')
+            else:
+                # Empty paths are normalised to a single slash, so
+                # allow that.
+                if uri.path != '/' and has_slash:
+                    raise LaunchpadValidationError(
+                        'The URI must not end with a slash.')
+
+
+class FieldNotBoundError(Exception):
+    """The field is not bound to any object."""
+
+
+class BaseImageUpload(Bytes):
+    """Base class for ImageUpload fields.
+
+    Any subclass of this one must be used in conjunction with
+    ImageUploadWidget and must define the following attributes:
+    - dimensions: the exact dimensions of the image; a tuple of the
+      form (width, height).
+    - max_size: the maximum size of the image, in bytes.
+    """
+
+    implements(IBaseImageUpload)
+
+    dimensions = ()
+    max_size = 0
+
+    def __init__(self, default_image_resource='/@@/nyet-icon', **kw):
+        self.default_image_resource = default_image_resource
+        Bytes.__init__(self, **kw)
+
+    def getCurrentImage(self):
+        if self.context is None:
+            raise FieldNotBoundError("This field must be bound to an object.")
+        else:
+            try:
+                current = getattr(self.context, self.__name__)
+            except ForbiddenAttribute:
+                # When this field is used in add forms it gets bound to
+                # I*Set objects, which don't have the attribute represented
+                # by the field, so we need this hack here.
+                current = None
+            return current
+
+    def _valid_image(self, image):
+        """Check that the given image is under the given constraints."""
+        # No global import to avoid hard dependency on PIL being installed
+        import PIL.Image
+        if len(image) > self.max_size:
+            raise LaunchpadValidationError(_(dedent("""
+                This image exceeds the maximum allowed size in bytes.""")))
+        try:
+            pil_image = PIL.Image.open(StringIO(image))
+        except IOError:
+            raise LaunchpadValidationError(_(dedent("""
+                The file uploaded was not recognized as an image; please
+                check it and retry.""")))
+        width, height = pil_image.size
+        required_width, required_height = self.dimensions
+        if width != required_width or height != required_height:
+            raise LaunchpadValidationError(_(dedent("""
+                This image is not exactly %dx%d pixels in size.""" % (
+                required_width, required_height))))
+        return True
+
+    def validate(self, value):
+        value.seek(0)
+        content = value.read()
+        Bytes.validate(self, content)
+        self._valid_image(content)
+
+    def set(self, object, value):
+        if value is not KEEP_SAME_IMAGE:
+            Bytes.set(self, object, value)
+
+
+class IconImageUpload(BaseImageUpload):
+
+    dimensions = (14, 14)
+    max_size = 5*1024
+    default_image_resource = '/@@/nyet-icon'
+
+
+class LogoImageUpload(BaseImageUpload):
+
+    dimensions = (64, 64)
+    max_size = 50*1024
+    default_image_resource = '/@@/nyet-logo'
+
+
+class MugshotImageUpload(BaseImageUpload):
+
+    dimensions = (192, 192)
+    max_size = 100*1024
+    default_image_resource = '/@@/nyet-mugshot'
+
 

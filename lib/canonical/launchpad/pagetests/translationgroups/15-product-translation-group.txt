@@ -1,79 +1,81 @@
-
 We should also be able to set a translation group and translation
 permissions on a product. We'll use the Netapplet product for this test.
-First make sure it has no translation group and permissions.
 
-  >>> print http(r"""
-  ... GET /netapplet/ HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...Network Applet
-  ...Not assigned...
-  ...Open...
+First make sure it uses Launchpad for translations.
 
-Now let's make sure we can see the page to let us change translation group
-and permissions.
+    >>> netapplet_owner_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
+    >>> netapplet_owner_browser.open('http://launchpad.dev/netapplet')
+    >>> print extract_text(
+    ...     find_tag_by_id(netapplet_owner_browser.contents,
+    ...                    'table-details'))
+    Status: Active
+    ...
+    Doesn&rsquo;t use Translations
+    ...
+    >>> netapplet_owner_browser.getLink('Change details').click()
+    >>> print netapplet_owner_browser.title
+    Change project details
+    >>> netapplet_owner_browser.getControl(
+    ...     'Translations for this project are done in Launchpad'
+    ...     ).selected = True
+    >>> netapplet_owner_browser.getControl('Change').click()
+    >>> print netapplet_owner_browser.title
+    Network Applet in Launchpad
+    >>> print extract_text(
+    ...     find_tag_by_id(netapplet_owner_browser.contents,
+    ...                    'table-details'))
+    Status: Active
+    ...
+    Uses Translations
+    ...
 
-  >>> print http(r"""
-  ... GET /netapplet/+changetranslators HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...Select a new translation group...
+Netapplet doesn't have TranslationGroup and uses open permissions. We
+can see that from the translations page.
+
+    >>> netapplet_owner_browser.getLink('Translations').click()
+    >>> print netapplet_owner_browser.title
+    Translations of Network Applet in Launchpad
+    >>> print extract_text(
+    ...     find_tag_by_id(netapplet_owner_browser.contents,
+    ...                    'portlet-translation-permissions'))
+    Translation permissions
+    Translation group: Not assigned
+    Permissions: Open
+
+Now let's make sure we can see the page to let us change translation
+group and permissions.
+
+    >>> netapplet_owner_browser.getLink('Change translators').click()
+    >>> print netapplet_owner_browser.title
+    Set translation group for Network Applet
+    >>> print netapplet_owner_browser.getControl(
+    ...     'Translation group').displayOptions
+    ['(no value)', 'Single-language Translators',
+     'The PolyGlot Translation Group', 'Just a testing team']
+    >>> print netapplet_owner_browser.getControl(
+    ...     'Translation group').displayValue
+    ['(no value)']
 
 Now let's post to the form. We should be redirected to the product page.
 
-  >>> print http(r"""
-  ... POST /netapplet/+changetranslators HTTP/1.1
-  ... Content-Length: 738
-  ... Content-Type: multipart/form-data; boundary=---------------------------6923855761766169312285474874
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... -----------------------------6923855761766169312285474874
-  ... Content-Disposition: form-data; name="field.translationgroup"
-  ... 
-  ... polyglot
-  ... -----------------------------6923855761766169312285474874
-  ... Content-Disposition: form-data; name="field.translationgroup-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------6923855761766169312285474874
-  ... Content-Disposition: form-data; name="field.translationpermission"
-  ... 
-  ... Open
-  ... -----------------------------6923855761766169312285474874
-  ... Content-Disposition: form-data; name="field.translationpermission-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------6923855761766169312285474874
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------6923855761766169312285474874--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://.../netapplet
+    >>> netapplet_owner_browser.getControl(
+    ...     'Translation group').displayValue = [
+    ...         'The PolyGlot Translation Group']
+    >>> netapplet_owner_browser.getControl('Change').click()
+    >>> print netapplet_owner_browser.title
+    Translations of Network Applet in Launchpad
 
-Now these changes should show up in the product page.
+Now these changes show up in the product page.
+(XXX mpt 20070126: Launchpad should be fixed so that you can't set
+translation group/permissions without using Translations.)
 
-  >>> print http(r"""
-  ... GET /netapplet HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-  ...href="/translations/groups/polyglot/"...The PolyGlot Translation Group...
-  ...Open...
-  ...
-
+    >>> print extract_text(
+    ...     find_tag_by_id(netapplet_owner_browser.contents,
+    ...                    'portlet-translation-permissions'))
+    Translation permissions
+    Translation group: The PolyGlot Translation Group
+    Permissions: Open
+    >>> netapplet_owner_browser.getLink('The PolyGlot Translation Group').click()
+    >>> netapplet_owner_browser.title
+    '\xe2\x80\x9cThe PolyGlot Translation Group\xe2\x80\x9d Launchpad translation group'

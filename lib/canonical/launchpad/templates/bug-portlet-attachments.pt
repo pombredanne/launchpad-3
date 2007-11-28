@@ -1,6 +1,12 @@
-<div class="portlet" tal:condition="context/attachments"
-     tal:define="current_task view/currentBugTask;
-                 url current_task/fmt:url">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-attachments"
+  tal:condition="context/attachments"
+  tal:define="current_task view/currentBugTask;
+              url current_task/fmt:url"
+>
 
   <h2>Bug attachments</h2>
 
@@ -9,7 +15,7 @@
       <ul>
         <li class="download"
             tal:repeat="attachment context/attachments">
-          <a tal:attributes="href attachment/libraryfile/url"
+          <a tal:attributes="href attachment/libraryfile/http_url"
              tal:content="attachment/title">
             Attachment Title
           </a>

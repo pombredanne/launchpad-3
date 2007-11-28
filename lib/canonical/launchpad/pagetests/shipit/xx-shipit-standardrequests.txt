@@ -1,0 +1,63 @@
+= Standard request templates =
+
+The standard requests are just some templates with specific quantities of
+CDs that users can choose when making a new request. They are maintained by
+the shipit admins, and are flavour specific.
+
+All the standard requests can be seen at /shipit-ubuntu/standardoptions.
+
+    >>> browser.addHeader('Authorization', 'Basic marilize@hbd.com:test')
+    >>> browser.open('http://shipit.ubuntu.dev/standardoptions')
+    >>> browser.url
+    'http://shipit.ubuntu.dev/standardoptions'
+
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...Standard request options...
+    ...Ubuntu...
+    ...Kubuntu...
+    ...Edubuntu...
+    ...
+
+
+We can change any existing one.
+
+    >>> browser.open('http://shipit.ubuntu.dev/standardoptions/2')
+    >>> browser.url
+    'http://shipit.ubuntu.dev/standardoptions/2'
+    >>> browser.getControl(name='field.quantityx86').value
+    '5'
+
+    >>> browser.getControl(name='field.quantityx86').value = '5'
+    >>> browser.getControl(name='field.quantityamd64').value = '1'
+    >>> browser.getControl('Change').click()
+    >>> browser.getControl(name='field.quantityamd64').value
+    '1'
+
+    >>> browser.open('http://shipit.ubuntu.dev/standardoptions')
+    >>> browser.getLink('5 Ubuntu CDs (5 PC Edition)')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> browser.getLink('6 Ubuntu CDs (5 PC Edition, 1 64-bit PC Edition)')
+    <Link text='6 Ubuntu CDs (5 PC Edition, 1 64-bit PC Edition)' ...
+
+
+We can delete one of them, if we want.
+
+    >>> browser.getControl(name='5').click()
+
+
+And we can also create a new one.
+
+    >>> browser.open('http://shipit.ubuntu.dev/standardoptions/+new')
+    >>> browser.getControl('Distribution Flavour').displayValue = ['Edubuntu']
+    >>> browser.getControl(name='field.quantityx86').value = '20'
+    >>> browser.getControl(name='field.quantityamd64').value = '10'
+    >>> browser.getControl('Description').value = '30 CDs (20 PC, 10 64-bit)'
+    >>> browser.getControl('Add').click()
+
+    >>> browser.open('http://shipit.ubuntu.dev/standardoptions')
+    >>> browser.getLink('30 CDs (20 PC, 10 64-bit)')
+    <Link text=...

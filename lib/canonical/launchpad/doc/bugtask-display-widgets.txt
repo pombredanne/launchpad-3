@@ -24,7 +24,7 @@ person icon in front of the name.
     >>> assignee_widget = AssigneeDisplayWidget(assignee_field, None, None)
     >>> print assignee_widget()
     <a href="http://.../~sabdfl"><img
-        style="padding-bottom: 2px" alt="" src="/@@/user" />
+        style="padding-bottom: 2px" alt="" src="/@@/person" />
       Mark Shuttleworth</a>
 
 If we would want to display a different value than the real assignee,
@@ -35,7 +35,7 @@ we can use setRenderedValue()
     >>> assignee_widget.setRenderedValue(foo_bar)
     >>> print assignee_widget()
     <a href="http://.../~name16"><img
-        style="padding-bottom: 2px" alt="" src="/@@/user" />
+        style="padding-bottom: 2px" alt="" src="/@@/person" />
       Foo Bar</a>
 
 If the assignee is None, 'not assigned' will be displayed:
@@ -68,11 +68,11 @@ in a span with the appropriate css class:
 
     >>> from canonical.widgets.bugtask import DBItemDisplayWidget
     >>> firefox_bugtask.status.title
-    'Unconfirmed'
+    'New'
     >>> status_field = IBugTask['status'].bind(firefox_bugtask)
     >>> status_widget = DBItemDisplayWidget(status_field, None, None)
     >>> print status_widget()
-    <span class="statusUNCONFIRMED">Unconfirmed</span>
+    <span class="statusNEW">New</span>
 
 If the value is None, a dash is displayed:
 
@@ -86,7 +86,7 @@ If the value is None, a dash is displayed:
 
 We can set a specific value to be displayed using setRenderedValue():
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> status_widget.setRenderedValue(BugTaskStatus.CONFIRMED)
     >>> print status_widget()
     <span class="statusCONFIRMED">Confirmed</span>

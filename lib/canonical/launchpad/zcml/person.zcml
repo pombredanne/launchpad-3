@@ -1,190 +1,228 @@
 <configure
-    xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
-    xmlns:i18n="http://namespaces.zope.org/i18n"
-    i18n_domain="launchpad">
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
 
 <facet facet="overview">
 
   <!-- Person -->
 
   <browser:navigation
-      module="canonical.launchpad.browser"
-      classes="TeamNavigation PersonNavigation"
-      />
+    module="canonical.launchpad.browser"
+    classes="TeamNavigation PersonNavigation"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonDynMenu"
+    attribute="__call__"
+    name="+menudata"
+    />
+
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.IPerson"
+    factory="canonical.launchpad.browser.PersonSOP"
+    permission="zope.Public"
+    />
 
   <content class="canonical.launchpad.database.Person">
-      <allow interface="canonical.launchpad.interfaces.IPerson" />
-      <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
-      <require
-          permission="launchpad.Edit"
-          set_schema="canonical.launchpad.interfaces.IPerson" />
+    <allow interface="canonical.launchpad.interfaces.IPerson" />
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+    <require
+      permission="launchpad.Edit"
+      set_schema="canonical.launchpad.interfaces.IPerson"
+      />
+    <require
+      permission="launchpad.Special"
+      attributes="deactivateAccount"
+      />
+    <require
+      permission="launchpad.Edit"
+      attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf
+                  renewTeamMembership"
+      />
+    <require
+      permission="launchpad.Admin"
+      attributes="deactivateAllMembers"
+      />
   </content>
 
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IPerson"
-      name="+index" />
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IPerson"
-      name="+specs"
-      layer="canonical.launchpad.layers.BlueprintLayer"
-      />
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IPerson"
-      layer="canonical.launchpad.layers.AnswersLayer"
-      name="+tickets"
-      />
-
   <browser:menus
-      module="canonical.launchpad.browser.person"
-      classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
-          PersonSpecsMenu PeopleContextMenu TeamBugsMenu PersonBranchesMenu"
-      />
+    module="canonical.launchpad.browser.person"
+    classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
+        PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
+        PersonSetFacets PersonSetContextMenu PersonTranslationsMenu"
+    />
 
   <browser:url
-      for="canonical.launchpad.interfaces.IPerson"
-      path_expression="string:~${name}"
-      parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    for="canonical.launchpad.interfaces.IPerson"
+    path_expression="string:~${name}"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+index" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+specs"
+    layer="canonical.launchpad.layers.BlueprintLayer"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IPerson"
+    layer="canonical.launchpad.layers.AnswersLayer"
+    name="+questions"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IPerson"
+    layer="canonical.launchpad.layers.CodeLayer"
+    name="+branches"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IPerson"
+    layer="canonical.launchpad.layers.BugsLayer"
+    name="+bugs"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:editform
+    name="+review"
+    for="canonical.launchpad.interfaces.IPerson"
+    schema="canonical.launchpad.interfaces.IPerson"
+    label="Review person"
+    fields="name displayname password"
+    permission="launchpad.Admin"
+    template="../templates/person-review.pt"
+    >
+    <browser:widget
+      field="password"
+      class="canonical.widgets.PasswordChangeWidget"
       />
-
-  <browser:editform
-      name="+review"
-      for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IPerson"
-      label="Review person"
-      fields="name displayname password"
-      permission="launchpad.Admin"
-      template="../templates/person-review.pt"
-      lp:url="/~$person.id/+review">
-      <browser:widget
-          field="password"
-          class="canonical.widgets.PasswordChangeWidget"
-          />
   </browser:editform>
 
   <browser:page
-      name="+claim"
-      for="canonical.launchpad.interfaces.IPerson"
-      class="canonical.launchpad.browser.PersonClaimView"
-      permission="zope.Public"
-      template="../templates/person-claim.pt">
-  </browser:page>
-
-  <browser:page
-      name="+changepassword"
-      for="canonical.launchpad.interfaces.IPerson"
-      class="canonical.launchpad.browser.PersonChangePasswordView"
-      permission="launchpad.Edit"
-      template="../templates/person-changepassword.pt">
-  </browser:page>
-
-  <browser:page
-      name="+editlanguages"
-      for="canonical.launchpad.interfaces.IPerson"
-      class="canonical.launchpad.browser.PersonLanguagesView"
-      permission="launchpad.Edit"
-      template="../templates/person-editlanguages.pt">
-  </browser:page>
-
-  <browser:editform
-      name="+edit"
-      for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IPerson"
-      class="canonical.launchpad.browser.PersonEditView"
-      fields="name displayname hide_email_addresses timezone"
-      permission="launchpad.Edit"
-      template="../templates/person-edit.pt"
-      lp:url="/~$person.id/+edit">
-      <browser:widget
-          field="timezone"
-          class="zope.app.form.browser.itemswidgets.SelectWidget"
-          size="15" />
-  </browser:editform>
-
-  <browser:editform
-      name="+edithomepage"
-      for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IPerson"
-      class="canonical.launchpad.browser.PersonEditView"
-      fields="homepage_content"
-      permission="launchpad.Edit"
-      template="../templates/person-edithomepage.pt"
-      >
-      <browser:widget
-          field="homepage_content"
-          class="zope.app.form.browser.TextAreaWidget"
-          displayWidth="30"
-          height="30" />
-  </browser:editform>
-
-  <browser:generalform
-    name="+editemblem"
+    name="+claim"
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonEmblemView"
-    schema="canonical.launchpad.interfaces.IPerson"
-    fields="emblem"
-    keyword_arguments="emblem"
-    permission="launchpad.Edit"
-    template="../templates/person-images.pt"
-    >
-  </browser:generalform>
+    class="canonical.launchpad.browser.PersonClaimView"
+    permission="zope.Public"
+    template="../templates/person-claim.pt"
+    />
 
-  <browser:generalform
-    name="+edithackergotchi"
+  <browser:page
+    name="+changepassword"
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonHackergotchiView"
-    schema="canonical.launchpad.interfaces.IPerson"
-    fields="gotchi"
-    keyword_arguments="gotchi"
+    class="canonical.launchpad.browser.PersonChangePasswordView"
     permission="launchpad.Edit"
-    template="../templates/person-images.pt"
-    >
-  </browser:generalform>
+    template="../templates/person-changepassword.pt"
+    />
+
+  <browser:page
+    name="+editlanguages"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonLanguagesView"
+    permission="launchpad.Edit"
+    template="../templates/person-editlanguages.pt"
+    />
+
+  <browser:page
+    name="+edit"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonEditView"
+    permission="launchpad.Edit"
+    template="../templates/person-edit.pt"
+    />
+
+  <browser:page
+    name="+branding"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonBrandingView"
+    permission="launchpad.Edit"
+    template="../templates/object-branding.pt"
+    />
+
+  <browser:page
+    name="+edithomepage"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonEditHomePageView"
+    permission="launchpad.Edit"
+    template="../templates/person-edithomepage.pt"
+    />
 
   <browser:pages
-      for="canonical.launchpad.interfaces.IPerson"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.PersonView">
-      <browser:page
-          name="+index"
-          template="../templates/person-index.pt"
-          lp:url="/~$Person.name/" />
-      <browser:page
-          name="+packages"
-          template="../templates/person-packages.pt"
-          lp:url="/~$Person.name/+packages" />
-      <browser:page
-          name="+karma"
-          template="../templates/person-karma.pt"
-          lp:url="/~$Person.name/+karma" />
-      <browser:page
-          name="+sshkeys"
-          attribute="showSSHKeys"
-          lp:url="/~$Person.name/+sshkeys" />
-      <browser:page
-          name="+bounties"
-          facet="bounties"
-          template="../templates/person-bounties.pt"
-          lp:url="/~$Person.name/+bounties" />
-      <browser:page
-          name="+portlet-emails"
-          template="../templates/person-portlet-emails.pt"
-          lp:url="/~$Person.name/+portlet-emails" />
-      <browser:page
-          name="+portlet-team-assignedbugs"
-          template="../templates/person-portlet-team-assignedbugs.pt"
-          lp:url="/~$Person.name/+portlet-team-assignedbugs" />
-      <browser:page
-          name="+portlet-details"
-          template="../templates/person-portlet-details.pt"
-          lp:url="/~$Person.name/+portlet-details" />
-      <!-- this should be on IPerson because we don't always know if it is a
-      team or a person -->
-      <browser:page
-        name="+teamlist"
-        template="../templates/team-listing.pt" />
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonView">
+    <browser:page
+      name="+index"
+      template="../templates/person-index.pt"
+      />
+    <browser:page
+      name="+ask-a-question-button"
+      template="../templates/null.pt"
+      />
+    <browser:page
+      name="+packages"
+      template="../templates/person-packages.pt"
+      />
+    <browser:page
+      name="+participation"
+      template="../templates/person-participation.pt"
+      />
+    <browser:page
+      name="+karma"
+      template="../templates/person-karma.pt"
+      />
+    <browser:page
+      name="+sshkeys"
+      attribute="showSSHKeys"
+      />
+    <browser:page
+      name="+bounties"
+      facet="bounties"
+      template="../templates/person-bounties.pt"
+      />
+    <browser:page
+      name="+portlet-emails"
+      template="../templates/person-portlet-emails.pt"
+      />
+    <browser:page
+      name="+portlet-team-assignedbugs"
+      template="../templates/person-portlet-team-assignedbugs.pt"
+      />
+    <browser:page
+      name="+portlet-details"
+      template="../templates/person-portlet-details.pt"
+      />
+    <!-- this should be on IPerson because we don't always know if it is a
+    team or a person -->
+    <browser:page
+      name="+teamlist"
+      template="../templates/team-listing.pt"
+      />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+projects"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonRelatedProjectsView"
+    template="../templates/person-projects.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+portlet-related-projects"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonRelatedProjectsView"
+    template="../templates/person-portlet-related-projects.pt"
+    />
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
@@ -192,7 +230,14 @@
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonSpecWorkLoadView"
     template="../templates/person-table-specworkload.pt"
-    lp:url="/~$Person.name/+table-specworkload" />
+    />
+
+  <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
@@ -200,7 +245,19 @@
     facet="translations"
     class="canonical.launchpad.browser.PersonTranslationView"
     permission="zope.Public"
-    template="../templates/person-translations.pt" />
+    template="../templates/person-translations.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
@@ -209,7 +266,7 @@
     class="canonical.launchpad.browser.PersonSpecFeedbackView"
     permission="zope.Public"
     template="../templates/person-specfeedback.pt"
-    lp:url="/~$Person.name/+specfeedback" />
+    />
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
@@ -217,440 +274,508 @@
     facet="specifications"
     permission="zope.Public"
     template="../templates/person-specworkload.pt"
-    lp:url="/~$Person.name/+specworkload" />
+    />
 
   <!-- This portlet is a generalform because its view uses widgets to
   calculate the current distribution source package. This information
   is stored in the query, to avoid a complex URL scheme.
   -->
   <browser:generalform
-     for="canonical.launchpad.interfaces.IPerson"
-     schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
-     name="+portlet-otherpackages"
-     permission="zope.Public"
-     class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
-     fields="distribution sourcepackagename"
-     template="../templates/person-portlet-otherpackages.pt"
-     lp:url="/~$Person.name/+portlet-otherpackages" />
+    for="canonical.launchpad.interfaces.IPerson"
+    schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
+    name="+portlet-otherpackages"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+    fields="distribution sourcepackagename"
+    template="../templates/person-portlet-otherpackages.pt"
+    />
 
   <browser:page
-      for="canonical.launchpad.interfaces.IPerson"
-      name="+rdf"
-      lp:url="/person/$Person.name/+rdf"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.PersonRdfView"
-      attribute="__call__"
-      />
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+rdf"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonRdfView"
+    attribute="__call__"
+    />
 
   <browser:page
-      name="+bugs"
-      for="canonical.launchpad.interfaces.IPerson"
-      facet="bugs"
-      class="canonical.launchpad.browser.RedirectToAssignedBugsView"
-      permission="zope.Public"
-      attribute="__call__"
-      lp:url="/~$Person.name/+assignedbugs" />
+    name="+bugs"
+    for="canonical.launchpad.interfaces.IPerson"
+    facet="bugs"
+    class="canonical.launchpad.browser.PersonRelatedBugsView"
+    permission="zope.Public"
+    template="../templates/buglisting-embedded-advanced-search.pt"
+    />
 
-  <browser:generalform
-      name="+assignedbugs"
-      for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
-      facet="bugs"
-      class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
-      fields="status importance assignee owner milestone
-              omit_dupes has_patch component has_no_package"
-      permission="zope.Public"
-      template="../templates/person-bugs.pt"
-      lp:url="/~$Person.name/+assignedbugs" />
+  <browser:page
+    name="+assignedbugs"
+    for="canonical.launchpad.interfaces.IPerson"
+    facet="bugs"
+    class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
+    permission="zope.Public"
+    template="../templates/buglisting-embedded-advanced-search.pt"
+    />
 
-  <browser:generalform
-      name="+packagebugs-search"
-      for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IBugTaskSearch"
-      facet="bugs"
-      class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
-      fields="status importance assignee owner milestone
-              omit_dupes has_patch component has_no_package"
-      permission="zope.Public"
-      template="../templates/person-packagebugs-search.pt" />
+  <browser:page
+    name="+commentedbugs"
+    for="canonical.launchpad.interfaces.IPerson"
+    facet="bugs"
+    class="canonical.launchpad.browser.PersonCommentedBugTaskSearchListingView"
+    permission="zope.Public"
+    template="../templates/buglisting-embedded-advanced-search.pt"
+    />
+
+  <browser:page
+    name="+packagebugs-search"
+    for="canonical.launchpad.interfaces.IPerson"
+    facet="bugs"
+    class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+    permission="zope.Public"
+    template="../templates/person-packagebugs-search.pt"
+    />
 
   <!-- This page is a generalform because it uses widget values to
   figure out what the "current package" is. This information is stored
   in the URL rather than the context, to avoid a complex URL scheme.
   -->
-  <browser:generalform
-      name="+packagebugs"
-      for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
-      fields="distribution sourcepackagename"
-      facet="bugs"
-      class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
-      permission="zope.Public"
-      template="../templates/person-packagebugs-overview.pt" />
+  <browser:page
+    name="+packagebugs"
+    for="canonical.launchpad.interfaces.IPerson"
+    facet="bugs"
+    class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+    permission="zope.Public"
+    template="../templates/person-packagebugs-overview.pt"
+    />
 
-  <browser:generalform
-      name="+reportedbugs"
-      for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
-      facet="bugs"
-      class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
-      fields="status importance assignee owner milestone
-              omit_dupes has_patch component has_no_package"
-      permission="zope.Public"
-      template="../templates/person-bugs.pt"
-      lp:url="/~$Person.name/+reportedbugs" />
+  <browser:page
+    name="+reportedbugs"
+    for="canonical.launchpad.interfaces.IPerson"
+    facet="bugs"
+    class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
+    permission="zope.Public"
+    template="../templates/buglisting-embedded-advanced-search.pt"
+    />
 
-  <browser:generalform
-      name="+subscribedbugs"
-      for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
-      facet="bugs"
-      class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
-      fields="status importance assignee owner milestone
-              omit_dupes has_patch component has_no_package"
-      permission="zope.Public"
-      template="../templates/person-bugs.pt"
-      lp:url="/~$Person.name/+subscribedbugs" />
+  <browser:page
+    name="+subscribedbugs"
+    for="canonical.launchpad.interfaces.IPerson"
+    facet="bugs"
+    class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
+    permission="zope.Public"
+    template="../templates/buglisting-embedded-advanced-search.pt"
+    />
 
-
+  <browser:page
+    name="+activate-ppa"
+    for="canonical.launchpad.interfaces.IPerson"
+    facet="overview"
+    class="canonical.launchpad.browser.ArchiveActivateView"
+    permission="launchpad.Edit"
+    template="../templates/archive-activate.pt"
+    />
 
   <!-- Adding SSH keys is the only possibly harmful thing that can be done
   without the user's password, so we use a special permission here to make
   sure only the user (and not launchpad admins) will be able to edit her own
   ssh keys. Another option would be to require the user's password on this
   page. GuilhermeSalgado 25/08/2005 -->
-  <browser:pages
-      for="canonical.launchpad.interfaces.IPerson"
-      permission="launchpad.Special"
-      class="canonical.launchpad.browser.PersonView">
-      <browser:page
-          name="+editsshkeys"
-          template="../templates/person-editsshkeys.pt"
-          lp:url="/~$Person.id/+editsshkeys" />
-  </browser:pages>
-
-  <browser:pages
-      for="canonical.launchpad.interfaces.IPerson"
-      permission="launchpad.Edit"
-      class="canonical.launchpad.browser.PersonView">
-      <browser:page
-          name="+codesofconduct"
-          template="../templates/person-codesofconduct.pt"
-          lp:url="/~$Person.name/+codesofconduct" />
-      <browser:page
-          name="+editwikinames"
-          template="../templates/person-editwikinames.pt"
-          lp:url="/~$person.id/+editwikinames" />
-      <browser:page
-          name="+editircnicknames"
-          template="../templates/person-editircnicknames.pt"
-          lp:url="/~$person.id/+editircnicknames" />
-      <browser:page
-          name="+editjabberids"
-          template="../templates/person-editjabberids.pt"
-          lp:url="/~$person.id/+editjabberids" />
-  </browser:pages>
-
+  <browser:page
+    name="+editsshkeys"
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="launchpad.Special"
+    class="canonical.launchpad.browser.PersonEditSSHKeysView"
+    template="../templates/person-editsshkeys.pt"
+    />
 
   <browser:page
-      for="canonical.launchpad.interfaces.IPerson"
-      permission="launchpad.Edit"
-      class="canonical.launchpad.browser.PersonGPGView"
-      name="+editpgpkeys"
-      template="../templates/person-editpgpkeys.pt"
-      lp:url="/~$person.id/+editpgpkeys">
-  </browser:page>
+    name="+deactivate-account"
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="launchpad.Special"
+    class="canonical.launchpad.browser.PersonDeactivateAccountView"
+    template="../templates/person-deactivate-account.pt"
+    />
+
+  <browser:page
+    name="+codesofconduct"
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.PersonCodeOfConductEditView"
+    template="../templates/person-codesofconduct.pt"
+    />
+
+  <browser:page
+    name="+editwikinames"
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.PersonEditWikiNamesView"
+    template="../templates/person-editwikinames.pt"
+    />
+
+  <browser:page
+    name="+editircnicknames"
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.PersonEditIRCNicknamesView"
+    template="../templates/person-editircnicknames.pt"
+    />
+
+  <browser:page
+    name="+editjabberids"
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.PersonEditJabberIDsView"
+    template="../templates/person-editjabberids.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.PersonGPGView"
+    name="+editpgpkeys"
+    template="../templates/person-editpgpkeys.pt"
+    />
 
   <browser:pages
-      for="canonical.launchpad.interfaces.IPerson"
-      permission="launchpad.Edit"
-      class="canonical.launchpad.browser.PersonEditEmailsView">
-      <browser:page
-          name="+editemails"
-          template="../templates/person-editemails.pt"
-          lp:url="/~$person.id/+editemails" />
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.PersonEditEmailsView">
+    <browser:page
+      name="+editemails"
+      template="../templates/person-editemails.pt"
+      />
   </browser:pages>
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonBranchesView"
     permission="zope.Public"
     facet="branches"
-    >
-    <browser:page
-        name="+branches"
-        template="../templates/person-branches.pt" />
-  </browser:pages>
+    name="+branches"
+    template="../templates/person-branches.pt"
+    />
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.BranchTargetView"
+    class="canonical.launchpad.browser.PersonAuthoredBranchesView"
     permission="zope.Public"
     facet="branches"
-    >
-    <!-- there is trickery here, in the view class, which detects the view
-    name and then gives the template a different set of branches to work
-    with.-->
-    <browser:page
-        name="+branchlisting"
-        template="../templates/branchtarget-branchlisting.pt" />
-    <browser:page
-        name="+authoredbranches"
-        template="../templates/branchtarget-branchlisting.pt" />
-    <browser:page
-        name="+registeredbranches"
-        template="../templates/branchtarget-branchlisting.pt" />
-    <browser:page
-        name="+subscribedbranches"
-        template="../templates/branchtarget-branchlisting.pt" />
-  </browser:pages>
+    name="+authoredbranches"
+    template="../templates/person-branches.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonSubscribedBranchesView"
+    permission="zope.Public"
+    facet="branches"
+    name="+subscribedbranches"
+    template="../templates/person-branches.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonRegisteredBranchesView"
+    permission="zope.Public"
+    facet="branches"
+    name="+registeredbranches"
+    template="../templates/person-branches.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonView"
+    name="+teamhierarchy"
+    template="../templates/person-teamhierarchy.pt"
+    />
 
   <!-- Team Views -->
 
   <browser:page
-      for="canonical.launchpad.interfaces.ITeam"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.PersonView"
-      name="+teamhierarchy"
-      template="../templates/person-teamhierarchy.pt"
-      lp:url="/~$Person.id/+teamhierarchy">
-  </browser:page>
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonView"
+    name="+teamhierarchy"
+    template="../templates/person-teamhierarchy.pt"
+    />
 
   <browser:page
-      for="canonical.launchpad.interfaces.ITeam"
-      permission="launchpad.Edit"
-      class="canonical.launchpad.browser.TeamEmailView"
-      name="+editemail"
-      template="../templates/team-editemail.pt"
-      lp:url="/~$Team.id/+editemail">
-  </browser:page>
-
-  <browser:editform
-      name="+edit"
-      for="canonical.launchpad.interfaces.ITeam"
-      class="canonical.launchpad.browser.TeamEditView"
-      schema="canonical.launchpad.interfaces.ITeam"
-      fields="name displayname teamdescription defaultmembershipperiod
-              defaultrenewalperiod subscriptionpolicy"
-      permission="launchpad.Edit"
-      template="../templates/team-edit.pt"
-      lp:url="/~$Person.id/+edit">
-  </browser:editform>
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    name="+listing-simple"
+    template="../templates/team-listing-simple.pt"
+    />
 
   <browser:page
-      for="canonical.launchpad.interfaces.ITeam"
-      permission="launchpad.Admin"
-      class="canonical.launchpad.browser.TeamReassignmentView"
-      name="+reassign"
-      template="../templates/object-reassignment.pt"
-      lp:url="/~$Team.id/+reassign">
-  </browser:page>
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    name="+mugshots"
+    template="../templates/team-mugshots.pt"
+    />
 
   <browser:page
-      for="canonical.launchpad.interfaces.ITeam"
-      permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.TeamJoinView"
-      name="+join"
-      template="../templates/team-join.pt"
-      lp:url="/~$Person.id/+join">
-  </browser:page>
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.TeamContactAddressView"
+    name="+contactaddress"
+    template="../templates/team-contactaddress.pt"
+    />
 
   <browser:page
-      for="canonical.launchpad.interfaces.ITeam"
-      permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.TeamLeaveView"
-      name="+leave"
-      template="../templates/team-leave.pt"
-      lp:url="/~$Team.id/+leave">
-  </browser:page>
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.TeamMailingListConfigurationView"
+    name="+mailinglist"
+    template="../templates/team-mailinglist.pt"
+    />
 
   <browser:page
-      for="canonical.launchpad.interfaces.ITeam"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.PersonView"
-      name="+polls"
-      template="../templates/team-polls.pt"
-      lp:url="/~$Team.id/+polls">
-  </browser:page>
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.PersonLanguagesView"
+    name="+editlanguages"
+    template="../templates/person-editlanguages.pt"
+    />
+
+  <browser:page
+    name="+edit"
+    for="canonical.launchpad.interfaces.ITeam"
+    class="canonical.launchpad.browser.TeamEditView"
+    permission="launchpad.Edit"
+    template="../templates/team-edit.pt"
+    />
+
+  <browser:page
+    name="+branding"
+    for="canonical.launchpad.interfaces.ITeam"
+    class="canonical.launchpad.browser.TeamBrandingView"
+    permission="launchpad.Edit"
+    template="../templates/team-edit.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Admin"
+    class="canonical.launchpad.browser.TeamReassignmentView"
+    name="+reassign"
+    template="../templates/object-reassignment.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.AnyPerson"
+    class="canonical.launchpad.browser.TeamJoinView"
+    name="+join"
+    template="../templates/team-join.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.AnyPerson"
+    class="canonical.launchpad.browser.TeamLeaveView"
+    name="+leave"
+    template="../templates/team-leave.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonView"
+    name="+polls"
+    template="../templates/team-polls.pt"
+    />
 
   <browser:generalform
-      name="+newpoll"
-      for="canonical.launchpad.interfaces.ITeam"
-      class="canonical.launchpad.browser.PollAddView"
-      schema="canonical.launchpad.interfaces.IPoll"
-      fields="name title proposition secrecy allowspoilt
-              dateopens datecloses"
-      keyword_arguments="name title proposition secrecy allowspoilt
-              dateopens datecloses"
-      label="Create a new poll"
-      permission="launchpad.Edit"
-      template="../templates/team-newpoll.pt"
-      lp:url="/~$Team.id/+newpoll">
-  </browser:generalform>
+    name="+newpoll"
+    for="canonical.launchpad.interfaces.ITeam"
+    class="canonical.launchpad.browser.PollAddView"
+    schema="canonical.launchpad.interfaces.IPoll"
+    fields="name title proposition secrecy allowspoilt
+            dateopens datecloses"
+    keyword_arguments="name title proposition secrecy allowspoilt
+            dateopens datecloses"
+    label="Create a new poll"
+    permission="launchpad.Edit"
+    template="../templates/team-newpoll.pt"
+    />
 
   <browser:page
-      name="+members"
-      for="canonical.launchpad.interfaces.ITeam"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.TeamMembersView"
-      template="../templates/team-members.pt"
-      lp:url="~$Team/+members">
-  </browser:page>
-
-  <browser:addform
-      name="+addmember"
-      for="canonical.launchpad.interfaces.ITeam"
-      schema="canonical.launchpad.interfaces.ITeamMember"
-      fields="newmember"
-      class="canonical.launchpad.browser.TeamMemberAddView"
-      permission="launchpad.Edit"
-      template="../templates/team-addmember.pt"
-      lp:url="~$Team/+addmember">
-  </browser:addform>
+    name="+members"
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    template="../templates/team-members.pt"
+    />
 
   <browser:page
-      name="+editproposedmembers"
-      for="canonical.launchpad.interfaces.ITeam"
-      permission="launchpad.Edit"
-      class="canonical.launchpad.browser.ProposedTeamMembersEditView"
-      template="../templates/team-editproposed.pt"
-      lp:url="~$Team/+editproposedmembers">
-  </browser:page>
+    name="+invitations"
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    template="../templates/team-invitations.pt"
+    />
 
   <browser:page
-      name="+addbranch"
-      for="canonical.launchpad.interfaces.IPerson"
-      class="canonical.launchpad.browser.PersonBranchAddView"
-      facet="branches"
-      permission="launchpad.AnyPerson"
-      template="../templates/person-branch-add.pt" />
+    name="+addmember"
+    for="canonical.launchpad.interfaces.ITeam"
+    class="canonical.launchpad.browser.TeamMemberAddView"
+    permission="launchpad.Edit"
+    template="../templates/team-addmember.pt"
+    />
+
+  <browser:page
+    name="+editproposedmembers"
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.ProposedTeamMembersEditView"
+    template="../templates/team-editproposed.pt"
+    />
+
+  <browser:page
+    name="+addbranch"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonBranchAddView"
+    facet="branches"
+    permission="launchpad.AnyPerson"
+    template="../templates/person-branch-add.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonTeamBranchesView"
+    name="+portlet-teambranches"
+    template="../templates/person-portlet-teambranches.pt"
+    permission="zope.Public"
+    />
 
   <!-- PersonSet -->
   <content class="canonical.launchpad.database.PersonSet">
-      <allow interface="canonical.launchpad.interfaces.IPersonSet" />
+     <allow interface="canonical.launchpad.interfaces.IPersonSet" />
   </content>
 
   <securedutility
-      class="canonical.launchpad.database.PersonSet"
-      provides="canonical.launchpad.interfaces.IPersonSet">
-      <allow interface="canonical.launchpad.interfaces.IPersonSet" />
+    class="canonical.launchpad.database.PersonSet"
+    provides="canonical.launchpad.interfaces.IPersonSet">
+    <allow interface="canonical.launchpad.interfaces.IPersonSet" />
   </securedutility>
 
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.IPersonSet"
+    factory="canonical.launchpad.browser.PersonSetSOP"
+    permission="zope.Public"
+    />
+
   <browser:defaultView
-      for="canonical.launchpad.interfaces.IPersonSet"
-      name="+index" />
+    for="canonical.launchpad.interfaces.IPersonSet"
+    name="+index"
+    />
 
   <browser:navigation
-      module="canonical.launchpad.browser"
-      classes="PersonSetNavigation"
-      />
+    module="canonical.launchpad.browser"
+    classes="PersonSetNavigation"
+    />
 
   <browser:page
-      name="+newperson"
-      for="canonical.launchpad.interfaces.IPersonSet"
-      class="canonical.launchpad.browser.PersonAddView"
-      permission="launchpad.Admin"
-      template="../templates/people-newperson.pt" />
+    name="+newperson"
+    for="canonical.launchpad.interfaces.IPersonSet"
+    class="canonical.launchpad.browser.PersonAddView"
+    permission="launchpad.Admin"
+    template="../templates/people-newperson.pt"
+    />
 
-  <browser:addform
-      name="+newteam"
-      for="canonical.launchpad.interfaces.IPersonSet"
-      schema="canonical.launchpad.interfaces.ITeamCreation"
-      fields="name displayname contactemail teamdescription
-              defaultmembershipperiod defaultrenewalperiod subscriptionpolicy"
-      class="canonical.launchpad.browser.TeamAddView"
-      permission="launchpad.AnyPerson"
-      template="../templates/people-newteam.pt"
-      lp:url="/people/+newteam">
-      <browser:widget
-          field="teamdescription"
-          class="zope.app.form.browser.TextAreaWidget"
-          displayWidth="30"
-          height="10" />
-  </browser:addform>
+  <browser:page
+    name="+newteam"
+    for="canonical.launchpad.interfaces.IPersonSet"
+    class="canonical.launchpad.browser.TeamAddView"
+    permission="launchpad.AnyPerson"
+    template="../templates/people-newteam.pt"
+    />
 
   <browser:pages
-      for="canonical.launchpad.interfaces.IPersonSet"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.PeopleListView">
-      <browser:page
-          name="+peoplelist"
-          template="../templates/people-list.pt"
-          lp:url="/people/+peoplelist" />
+    for="canonical.launchpad.interfaces.IPersonSet"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PeopleListView">
+    <browser:page
+      name="+peoplelist"
+      template="../templates/people-list.pt"
+      />
   </browser:pages>
 
   <browser:pages
-      for="canonical.launchpad.interfaces.IPersonSet"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.TeamListView">
-      <browser:page
-          name="+teamlist"
-          template="../templates/people-list.pt"
-          lp:url="/people/+teamlist" />
+    for="canonical.launchpad.interfaces.IPersonSet"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.TeamListView">
+    <browser:page
+      name="+teamlist"
+      template="../templates/people-list.pt"
+      />
   </browser:pages>
 
   <browser:pages
-      for="canonical.launchpad.interfaces.IPersonSet"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.UbunteroListView">
-      <browser:page
-          name="+ubunterolist"
-          template="../templates/people-list.pt"
-          lp:url="/people/+ubunterolist" />
+    for="canonical.launchpad.interfaces.IPersonSet"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.UbunteroListView">
+    <browser:page
+      name="+ubunterolist"
+      template="../templates/people-list.pt"
+      />
   </browser:pages>
 
   <browser:pages
-      for="canonical.launchpad.interfaces.IPersonSet"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.FOAFSearchView">
-      <browser:page
-          name="+index"
-          template="../templates/people-index.pt"
-          lp:url="/people" />
-      <browser:page
-        name="+portlet-stats"
-        template="../templates/people-portlet-stats.pt" />
+    for="canonical.launchpad.interfaces.IPersonSet"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.FOAFSearchView">
+    <browser:page
+      name="+index"
+      template="../templates/people-index.pt"
+      />
+    <browser:page
+      name="+portlet-stats"
+      template="../templates/people-portlet-stats.pt"
+      />
   </browser:pages>
 
   <browser:addform
-      name="+requestmerge"
-      for="canonical.launchpad.interfaces.IPersonSet"
-      schema="canonical.launchpad.interfaces.person.IRequestPeopleMerge"
-      fields="dupeaccount"
-      class="canonical.launchpad.browser.RequestPeopleMergeView"
-      permission="launchpad.AnyPerson"
-      template="../templates/people-requestmerge.pt"
-      lp:url="/people/+requestmerge">
-  </browser:addform>
+    name="+requestmerge"
+    for="canonical.launchpad.interfaces.IPersonSet"
+    schema="canonical.launchpad.interfaces.person.IRequestPeopleMerge"
+    fields="dupeaccount"
+    class="canonical.launchpad.browser.RequestPeopleMergeView"
+    permission="launchpad.AnyPerson"
+    template="../templates/people-requestmerge.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPersonSet"
+    permission="launchpad.Admin"
+    class="canonical.launchpad.browser.AdminPeopleMergeView"
+    name="+adminpeoplemerge"
+    template="../templates/people-adminrequestmerge.pt" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPersonSet"
+    permission="launchpad.Admin"
+    class="canonical.launchpad.browser.AdminTeamMergeView"
+    name="+adminteammerge"
+    template="../templates/people-adminrequestmerge.pt" />
 
   <browser:pages
-      for="canonical.launchpad.interfaces.IPersonSet"
-      permission="launchpad.Admin"
-      class="canonical.launchpad.browser.AdminRequestPeopleMergeView">
-      <browser:page
-          name="+adminrequestmerge"
-          template="../templates/people-adminrequestmerge.pt"
-          lp:url="/people/+adminrequestmerge" />
+    for="canonical.launchpad.interfaces.IPersonSet"
+    permission="launchpad.AnyPerson"
+    class="canonical.launchpad.browser.RequestPeopleMergeMultipleEmailsView">
+    <browser:page
+      name="+requestmerge-multiple"
+      template="../templates/people-requestmerge-multiple.pt"
+      />
   </browser:pages>
 
   <browser:pages
-      for="canonical.launchpad.interfaces.IPersonSet"
-      permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.RequestPeopleMergeMultipleEmailsView">
-      <browser:page
-          name="+requestmerge-multiple"
-          template="../templates/people-requestmerge-multiple.pt"
-          lp:url="/people/+requestmerge-multiple" />
-  </browser:pages>
-
-  <browser:pages
-      for="canonical.launchpad.interfaces.IPersonSet"
-      permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.FinishedPeopleMergeRequestView">
-      <browser:page
-          name="+mergerequest-sent"
-          template="../templates/people-mergerequest-sent.pt"
-          lp:url="/people/+mergerequest-sent" />
+    for="canonical.launchpad.interfaces.IPersonSet"
+    permission="launchpad.AnyPerson"
+    class="canonical.launchpad.browser.FinishedPeopleMergeRequestView">
+    <browser:page
+      name="+mergerequest-sent"
+      template="../templates/people-mergerequest-sent.pt"
+      />
   </browser:pages>
 
   <browser:pages
@@ -658,69 +783,120 @@
     permission="zope.Public">
       <browser:page
         name="+portlet-about"
-        template="../templates/people-portlet-about.pt" />
+        template="../templates/people-portlet-about.pt"
+        />
   </browser:pages>
 </facet>
 
-<facet facet="support">
-  <browser:page
-      for="canonical.launchpad.interfaces.IPerson"
-      class="canonical.launchpad.browser.PersonLatestTicketsView"
-      name="+portlet-latesttickets"
-      permission="zope.Public"
-      template="../templates/tickettarget-portlet-latesttickets.pt"
-      />
+<facet facet="answers">
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonSearchTicketsView"
+    class="canonical.launchpad.browser.PersonLatestQuestionsView"
+    name="+portlet-latestquestions"
+    permission="zope.Public"
+    template="../templates/questiontarget-portlet-latestquestions.pt"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonSearchQuestionsView"
+    name="+questions"
+    permission="zope.Public"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
     name="+tickets"
-    permission="zope.Public"
+    new_name="+questions"
+    rootsite="answers"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchAnsweredTicketsView"
+    class="canonical.launchpad.browser.SearchAnsweredQuestionsView"
+    name="+answeredquestions"
+    permission="zope.Public"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
     name="+answeredtickets"
-    permission="zope.Public"
+    new_name="+answeredquestions"
+    rootsite="answers"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchAssignedTicketsView"
+    class="canonical.launchpad.browser.SearchAssignedQuestionsView"
+    name="+assignedquestions"
+    permission="zope.Public"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
     name="+assignedtickets"
-    permission="zope.Public"
+    new_name="+assignedquestions"
+    rootsite="answers"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchCommentedTicketsView"
+    class="canonical.launchpad.browser.SearchCommentedQuestionsView"
+    name="+commentedquestions"
+    permission="zope.Public"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
     name="+commentedtickets"
-    permission="zope.Public"
+    new_name="+commentedquestions"
+    rootsite="answers"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchCreatedTicketsView"
+    class="canonical.launchpad.browser.SearchCreatedQuestionsView"
+    name="+createdquestions"
+    permission="zope.Public"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
     name="+createdtickets"
-    permission="zope.Public"
+    new_name="+createdquestions"
+    rootsite="answers"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchNeedAttentionTicketsView"
+    class="canonical.launchpad.browser.SearchNeedAttentionQuestionsView"
+    name="+needattentionquestions"
+    permission="zope.Public"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
     name="+needattentiontickets"
-    permission="zope.Public"
+    new_name="+needattentionquestions"
+    rootsite="answers"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SearchSubscribedTicketsView"
-    name="+subscribedtickets"
+    class="canonical.launchpad.browser.SearchSubscribedQuestionsView"
+    name="+subscribedquestions"
     permission="zope.Public"
     />
-
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+subscribedtickets"
+    new_name="+subscribedquestions"
+    rootsite="answers"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonAnswerContactForView"
+    name="+answer-contact-for"
+    permission="zope.Public"
+    template="../templates/person-answer-contact-for.pt"
+    />
   <browser:menus
     module="canonical.launchpad.browser"
-    classes="PersonSupportMenu"
+    classes="PersonAnswersMenu"
     />
 </facet>
 
-<adapter for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
-    provides="canonical.launchpad.interfaces.IPerson"
-    factory="canonical.launchpad.components.person.personFromPrincipal" />
+<adapter
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
+  provides="canonical.launchpad.interfaces.IPerson"
+  factory="canonical.launchpad.components.person.personFromPrincipal"
+  />
 
 </configure>

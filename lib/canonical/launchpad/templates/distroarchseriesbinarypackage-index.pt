@@ -1,0 +1,44 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1 tal:content="context/summary">Summary goes here</h1>
+    </metal:heading>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/distroarchseries/distroseries/@@+portlet-details" />
+    <div tal:replace="structure context/distroarchseries/@@+portlet-details" />
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-releases" />
+  </metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <tal:description replace="structure context/description/fmt:text-to-html">
+    Package description
+  </tal:description>
+
+  <h2>Publishing history</h2>
+
+  <div id="publishing_history">
+    <tal:publishing_history
+       repeat="publishing context/publishing_history"
+       replace="structure publishing/@@+listing-detailed" />
+  </div>
+
+</div>
+</body>
+</html>
+

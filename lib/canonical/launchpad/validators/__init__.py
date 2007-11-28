@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,W0401,W0231
 
 """Standard validators.
 
@@ -11,6 +12,7 @@ See README.txt for discussion
 __metaclass__ = type
 
 from zope.schema.interfaces import ValidationError
+from zope.app.form.interfaces import IWidgetInputError
 from zope.app.form.browser.interfaces import IWidgetInputErrorView
 from zope.interface import implements, Interface
 from zope.app.form.browser.exception import (
@@ -31,7 +33,7 @@ def _quote(txt):
     return cgi.escape(txt, quote=True)
 
 
-class ILaunchpadValidationError(Interface):
+class ILaunchpadValidationError(IWidgetInputError):
     def snippet():
         """Render as an HTML error message, as per IWidgetInputErrorView"""
 
@@ -58,10 +60,10 @@ class LaunchpadValidationError(ValidationError):
     u'<a title="&quot;Quoted&quot;">Oops</a>'
     """
     implements(ILaunchpadValidationError)
-    
+
     def __init__(self, message, *args, **kw):
         """Create a LaunchpadValidationError instance.
-   
+
         `message` should be an HTML quoted string. Extra arguments
         will be HTML quoted and merged into the message using standard
         Python string interpolation.
@@ -101,7 +103,7 @@ class WidgetInputErrorView(Z3WidgetInputErrorView):
     """Display an input error as a snippet of text.
 
     This is used to override the default Z3 one which blindly HTML encodes
-    error messages. 
+    error messages.
     """
     implements(ILaunchpadWidgetInputErrorView)
 

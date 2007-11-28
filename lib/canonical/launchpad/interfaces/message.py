@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
 
@@ -30,7 +31,7 @@ class IMessage(Interface):
     subject = TextLine(
             title=_('Subject'), required=True, readonly=True,
             )
-    # XXX flacoste 2006/09/08 This attribute is only used for the
+    # XXX flacoste 2006-09-08: This attribute is only used for the
     # add form used by MessageAddView.
     content = Text(title=_("Message"), required=True, readonly=True)
     owner = Int(
@@ -57,6 +58,8 @@ class IMessage(Interface):
     title = Attribute(_('The message title, usually just the subject.'))
     bugattachments = Attribute("A list of BugAttachments connected to this "
         "message.")
+    has_new_title = Attribute("Whether or not the title of this message "
+        "is different to that of its parent.")
 
     def __iter__():
         """Iterate over all the message chunks."""

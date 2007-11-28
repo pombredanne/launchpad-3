@@ -1,11 +1,10 @@
   Let's add a new option for the dpl-2080 poll we've just created.
 
-  >>> team_admin_browser = browser
-  >>> team_admin_browser.addHeader(
-  ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> team_admin_browser = setupBrowser(
+  ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
   >>> team_admin_browser.open(
   ...     'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080')
-  >>> team_admin_browser.getLink('Add New Option').click()
+  >>> team_admin_browser.getLink('Add new option').click()
   >>> team_admin_browser.url
   'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080/+newoption'
 
@@ -15,8 +14,8 @@
   And now, actually add the option.
 
   >>> bill_name = (
-  ...     'Bill amazingly-huge-middle-name-almost-impossible-to-read Graham')
-  >>> team_admin_browser.getControl('Option name').value = bill_name
+  ...     'bill-amazingly-huge-middle-name-almost-impossible-to-read-graham')
+  >>> team_admin_browser.getControl('Name').value = bill_name
   >>> team_admin_browser.getControl('Title').value = 'Bill Graham'
   >>> team_admin_browser.getControl('Add').click()
 
@@ -25,10 +24,11 @@
   >>> team_admin_browser.url
   'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080'
 
+
   And here we see the option listed as one of the active options for this
   poll.
-
-  >>> team_admin_browser.getLink('Show Option Details').click()
+q
+  >>> team_admin_browser.getLink('Show option details').click()
   >>> team_admin_browser.url
   'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080/+options'
 
@@ -40,13 +40,13 @@
   If we try to add a new option without providing a title, we'll get an error
   message because the title is required.
 
-  >>> team_admin_browser.getLink('Add New Option').click()
+  >>> team_admin_browser.getLink('Add new option').click()
   >>> team_admin_browser.url
   'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080/+newoption'
 
   >>> will_name = (
-  ...     'Will amazingly-huge-middle-name-almost-impossible-to-read Graham')
-  >>> team_admin_browser.getControl('Option name').value = will_name
+  ...     'will-amazingly-huge-middle-name-almost-impossible-to-read-graham')
+  >>> team_admin_browser.getControl('Name').value = will_name
   >>> team_admin_browser.getControl('Title').value = ''
   >>> team_admin_browser.getControl('Add').click()
 
@@ -56,7 +56,7 @@
   If we try to add a new option with the same name of a existing option, we
   should get a nice error message
 
-  >>> team_admin_browser.getControl('Option name').value = bill_name 
+  >>> team_admin_browser.getControl('Name').value = bill_name
   >>> team_admin_browser.getControl('Title').value = 'Bill Again'
   >>> team_admin_browser.getControl('Add').click()
 

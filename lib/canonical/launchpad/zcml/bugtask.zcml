@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -27,44 +26,54 @@
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
         <allow attributes="id bug bugID target date_assigned datecreated
-                           date_confirmed date_inprogress date_closed
-                           bug_subscribers" />
+                           date_confirmed date_incomplete date_inprogress
+                           date_closed bug_subscribers is_complete
+                           canTransitionToStatus isMentor canMentor
+                           isSubscribed getPackageComponent" />
         <require
             permission="launchpad.View"
-            attributes="product productseries sourcepackagename distribution
-                        distrorelease milestone status statusexplanation
+            attributes="bugtargetname bugtargetdisplayname
+                        product productseries sourcepackagename distribution
+                        distroseries milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
-                        title related_tasks asEmailHeaderValue
+                        title related_tasks other_affected_pillars
+                        asEmailHeaderValue getDelta pillar
                         target_uses_malone bugtask_branches
-                        conjoined_master conjoined_slave" />
+                        conjoined_master conjoined_slave subscribe" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs
                         updateTargetNameCache transitionToStatus
                         transitionToAssignee" />
 
-        <!-- XXX, Brad Bollenbach, 2006-09-29: The permission checking for
-        milestone and importance is further restricted in the browser view code
-        (BugTaskEditView). This is bad. See https://launchpad.net/bugs/63000 .
-        -->
+        <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
+        The permission checking for milestone and importance is further
+        restricted in the browser view code (BugTaskEditView). -->
         <require
             permission="launchpad.Edit"
             set_attributes="product productseries sourcepackagename distribution
-                            distrorelease milestone statusexplanation
+                            distroseries milestone statusexplanation
                             importance bugwatch datecreated
                             age owner targetname title related_tasks
                             statusdisplayhtml statuselsewhere
                             setStatusFromDebbugs setImportanceFromDebbugs" />
+        <require
+            permission="launchpad.AnyPerson"
+            attributes="offerMentoring retractMentoring"
+            />
     </content>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugTask"
-        name="+index" />
+        name="+index"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.IBugTask"
         path_expression="string:+bug/${bug/id}"
-        attribute_to_parent="target" />
+        attribute_to_parent="target"
+        rootsite="bugs"
+        />
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -72,9 +81,16 @@
         />
 
     <adapter
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      for="canonical.launchpad.interfaces.IBugTask"
+      factory="canonical.launchpad.browser.BugTaskSOP"
+      permission="zope.Public"
+      />
+
+    <adapter
         for="canonical.launchpad.interfaces.IBugTask"
         provides="canonical.launchpad.interfaces.IBug"
-        factory="canonical.launchpad.components.bugtask.BugTaskToBugAdapter" />
+        factory="canonical.launchpad.database.bugtask.BugTaskToBugAdapter" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBugTask"
@@ -101,55 +117,14 @@
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
       class="canonical.launchpad.browser.BugTaskTableRowView"
-      name="+bugtasks-and-nominations-table-row"
       permission="launchpad.View"
+      name="+bugtasks-and-nominations-table-row"
       template="../templates/bugtask-tasks-and-nominations-table-row.pt" />
-
-    <browser:pages
-      for="canonical.launchpad.interfaces.IBugTask"
-      class="canonical.launchpad.browser.BugView"
-      permission="zope.Public">
-
-      <!-- BugTask Portlets (Note: These are Bug portlets. These
-      registrations are duplicated in bug.zcml, so that they can work
-      on pages where IBug is the context.) -->
-      <browser:page
-          name="+portlet-watch"
-          template="../templates/bug-portlet-watch.pt" />
-      <browser:page
-          name="+portlet-details"
-          template="../templates/bug-portlet-details.pt" />
-      <browser:page
-          name="+portlet-specs"
-          template="../templates/bug-portlet-specs.pt" />
-      <browser:page
-          name="+portlet-tickets"
-          template="../templates/bug-portlet-tickets.pt" />
-      <browser:page
-          name="+portlet-reference"
-          template="../templates/bug-portlet-reference.pt" />
-      <browser:page
-          name="+portlet-duplicates"
-          template="../templates/bug-portlet-duplicates.pt" />
-      <browser:page
-          name="+portlet-cve"
-          template="../templates/bug-portlet-cve.pt" />
-      <browser:page
-          name="+portlet-attachments"
-          template="../templates/bug-portlet-attachments.pt" />
-    </browser:pages>
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTask"
         name="+listing-detailed"
         template="../templates/bugtask-listing-detailed.pt"
-        permission="zope.Public" />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTask"
-        name="+portlet-subscribers"
-        class="canonical.launchpad.browser.BugView"
-        template="../templates/bug-portlet-subscribers.pt"
         permission="zope.Public" />
 
     <browser:page
@@ -174,8 +149,16 @@
         permission="launchpad.AnyPerson"
         template="../templates/bug-mark-as-duplicate.pt" />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTask"
+        name="+text"
+        class="canonical.launchpad.browser.BugTaskTextView"
+        permission="zope.Public"
+        attribute="__call__"
+        />
+
     <!-- NullBugTask -->
-    <content class="canonical.launchpad.components.bugtask.NullBugTask">
+    <content class="canonical.launchpad.database.bugtask.NullBugTask">
         <require
             permission="launchpad.View"
             interface="canonical.launchpad.interfaces.IBugTask" />
@@ -206,15 +189,16 @@
         permission="zope.Public">
         <browser:page name="+index"
             template="../templates/bugtasks-index.pt"
-            lp:url="malone/tasks/index" />
+            />
     </browser:pages>
 
     <browser:page
         name="+addcomment"
         for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugView"
         permission="launchpad.Edit"
         template="../templates/bug-comment-add.pt"
-        lp:url="malone/bugs/$Bug.id/+addcomment" />
+        />
 
     <browser:page
         name="+addcomment-form"
@@ -227,20 +211,16 @@
         name="+nominate"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugNominationView"
-        permission="launchpad.View"
-        template="../templates/bug-nominate-for-release.pt" />
+        permission="launchpad.Edit"
+        template="../templates/bug-nominate-for-series.pt" />
 
-    <browser:generalform
+    <browser:page
         name="+addbranch"
-        schema="canonical.launchpad.interfaces.IBugBranch"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugBranchAddView"
-        label="Add a branch"
-        fields="branch whiteboard"
-        keyword_arguments="branch whiteboard"
         permission="launchpad.AnyPerson"
         template="../templates/bug-branch-add.pt"
-        lp:url="malone/bugs/$Bug.id/+addbranch" />
+        />
 
     <browser:page
         name="+index"
@@ -249,23 +229,6 @@
         permission="launchpad.View"
         template="../templates/bugtask-index.pt" />
 
-    <browser:addform
-        name="+addurl"
-        schema="canonical.launchpad.interfaces.IBugExternalRef"
-        for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.BugExtRefAddView"
-        fields="url title"
-        arguments=""
-        keyword_arguments="url title"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-extref-add.pt"
-        lp:url="malone/bugs/$Bugs.id/references/+new">
-        <browser:widget
-            field="url"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30" />
-    </browser:addform>
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         name="+index" />
@@ -273,86 +236,46 @@
     <browser:page
         name="+choose-affected-product"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.ChooseAffectedProductView"
-        permission="launchpad.AnyPerson"
-        template="../templates/bugtask-choose-affected-product.pt" />
-
-    <browser:page
-        name="+add-affected-product"
-        for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        permission="launchpad.AnyPerson"
-        attribute="render_upstreamtask">
-    </browser:page>
+        class="canonical.launchpad.browser.BugAlsoAffectsProductMetaView"
+        permission="launchpad.AnyPerson" />
 
     <browser:page
         name="+distrotask"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        permission="launchpad.AnyPerson"
-        attribute="render_distrotask"
-        lp:url="malone/bugs/$Bug.id/+distrotask"
-        />
+        class="canonical.launchpad.browser.BugAlsoAffectsDistroMetaView"
+        permission="launchpad.AnyPerson" />
 
-    <browser:generalform
+    <browser:page
         name="+editstatus-page"
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
-        schema="canonical.launchpad.interfaces.IUpstreamBugTask"
-        fields="product milestone status importance assignee
-                bugwatch statusexplanation"
-        label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt">
-        <browser:widget
-          field="assignee"
-          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:generalform>
+    </browser:page>
 
-    <browser:generalform
+    <browser:page
         name="+edit-form"
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
-        schema="canonical.launchpad.interfaces.IUpstreamBugTask"
-        fields="product milestone status importance assignee
-                bugwatch statusexplanation"
-        label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt">
-        <browser:widget
-          field="assignee"
-          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:generalform>
+    </browser:page>
 
-    <browser:generalform
+    <browser:page
         name="+editstatus-page"
         for="canonical.launchpad.interfaces.IProductSeriesBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
-        schema="canonical.launchpad.interfaces.IProductSeriesBugTask"
-        fields="milestone status importance assignee bugwatch
-                statusexplanation"
-        label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt">
-        <browser:widget
-          field="assignee"
-          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:generalform>
+    </browser:page>
 
-    <browser:generalform
+    <browser:page
         name="+edit-form"
         for="canonical.launchpad.interfaces.IProductSeriesBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
-        schema="canonical.launchpad.interfaces.IProductSeriesBugTask"
-        fields="milestone status importance assignee bugwatch
-                statusexplanation"
-        label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt">
-        <browser:widget
-          field="assignee"
-          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:generalform>
+    </browser:page>
 
     <browser:page
         name="+viewstatus-page"
@@ -360,8 +283,7 @@
         class="canonical.launchpad.browser.BugTaskStatusView"
         permission="launchpad.View"
         template="../templates/bugtask-view.pt"
-        lp:url="malone/tasks/$BugTask.id/+index">
-    </browser:page>
+        />
 
     <browser:page
         name="+listing-view"
@@ -374,89 +296,41 @@
         for="canonical.launchpad.interfaces.IDistroBugTask"
         name="+index" />
 
-    <browser:generalform
+    <browser:page
         name="+editstatus-page"
         for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
-        schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename milestone status importance assignee
-                bugwatch statusexplanation"
-        label="Edit fix request"
         permission="launchpad.Edit"
-        template="../templates/bugtask-edit.pt"
-        lp:url="malone/tasks/$BugTask.id/+edit">
-        <browser:widget
-          field="statusexplanation"
-          class="zope.app.form.browser.TextAreaWidget"
-          height="2" />
-        <browser:widget
-          field="assignee"
-          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:generalform>
+        template="../templates/bugtask-edit.pt">
+    </browser:page>
 
-    <browser:generalform
+    <browser:page
         name="+edit-form"
         for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
-        schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename milestone status importance assignee
-                bugwatch statusexplanation"
-        label="Edit fix request"
         permission="launchpad.Edit"
-        template="../templates/bugtask-edit-form.pt"
-        lp:url="malone/tasks/$BugTask.id/+edit">
-        <browser:widget
-          field="statusexplanation"
-          class="zope.app.form.browser.TextAreaWidget"
-          height="2" />
-        <browser:widget
-          field="assignee"
-          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:generalform>
+        template="../templates/bugtask-edit-form.pt">
+    </browser:page>
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+        for="canonical.launchpad.interfaces.IDistroSeriesBugTask"
         name="+index" />
 
-    <browser:generalform
+    <browser:page
         name="+editstatus-page"
-        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+        for="canonical.launchpad.interfaces.IDistroSeriesBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
-        schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename milestone status importance assignee
-                bugwatch statusexplanation"
-        label="Edit fix request"
         permission="launchpad.Edit"
-        template="../templates/bugtask-edit.pt"
-        lp:url="malone/tasks/$BugTask.id/+edit">
-        <browser:widget
-          field="statusexplanation"
-          class="zope.app.form.browser.TextAreaWidget"
-          height="2" />
-        <browser:widget
-          field="assignee"
-          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:generalform>
+        template="../templates/bugtask-edit.pt">
+    </browser:page>
 
-    <browser:generalform
+    <browser:page
         name="+edit-form"
-        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+        for="canonical.launchpad.interfaces.IDistroSeriesBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
-        schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename milestone status importance assignee
-                bugwatch statusexplanation"
-        label="Edit fix request"
         permission="launchpad.Edit"
-        template="../templates/bugtask-edit-form.pt"
-        lp:url="malone/tasks/$BugTask.id/+edit">
-        <browser:widget
-          field="statusexplanation"
-          class="zope.app.form.browser.TextAreaWidget"
-          height="2" />
-        <browser:widget
-          field="assignee"
-          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:generalform>
+        template="../templates/bugtask-edit-form.pt">
+    </browser:page>
 
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
@@ -499,15 +373,10 @@
       />
 
     <!-- BugTaskDelta -->
-    <content class="canonical.launchpad.components.bugtask.BugTaskDelta">
+    <content class="canonical.launchpad.database.bugtask.BugTaskDelta">
         <allow interface="canonical.launchpad.interfaces.IBugTaskDelta" />
     </content>
 
   </facet>
-
-  <vocabulary
-    name="AdvancedBugTaskUpstreamStatus"
-    factory="canonical.launchpad.browser.upstream_status_vocabulary_factory"
-    />
 
 </configure>

@@ -1,11 +1,15 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
-  metal:use-macro="context/@@main_template/master"
+  dir="ltr"
+  metal:use-macro="view/macro:page/pillarindex"
   i18n:domain="launchpad">
-
 <body>
+  <h1 metal:fill-slot="heading">Meetings and Sprints</h1>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />

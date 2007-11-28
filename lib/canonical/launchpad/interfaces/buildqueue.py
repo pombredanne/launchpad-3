@@ -1,4 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Build interfaces."""
 
@@ -10,8 +11,10 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
+from zope.schema import Bool
 
 from canonical.launchpad import _
+
 
 class IBuildQueue(Interface):
     """A Launchpad Auto Build queue entry.
@@ -37,8 +40,8 @@ class IBuildQueue(Interface):
     manual = Attribute("Whether or not the job was manually scored")
 
     # properties inherited from related Content classes.
-    archrelease = Attribute(
-        "DistroArchRelease target of the IBuild releated to this job.")
+    archseries = Attribute(
+        "DistroArchSeries target of the IBuild releated to this job.")
     name = Attribute(
         "Name of the ISourcePackageRelease releated to this job.")
     version = Attribute(
@@ -46,9 +49,6 @@ class IBuildQueue(Interface):
     files = Attribute(
         "Collection of files related to the ISourcePackageRelease "
         "releated to this job.")
-    component_name = Attribute(
-        "Component name where the ISourcePackageRelease releated to "
-        "this job got published in.")
     urgency = Attribute(
         "Urgency of the ISourcePackageRelease releated to this job.")
     archhintlist = Attribute(
@@ -58,13 +58,70 @@ class IBuildQueue(Interface):
         "builddependsindep of the ISourcePackageRelease releated to "
         "this job.")
     buildduration = Attribute(
-        "Durarion of the job, calculated on-the-fly based on buildstart.")
+        "Duration of the job, calculated on-the-fly based on buildstart.")
+    is_trusted = Attribute("See IBuild.is_trusted.")
+    is_last_version = Bool(
+        title=_("Whether or not the job source is the last version published "
+                "in the archive."),
+        required=False)
 
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
 
+    def score():
+        """Perform scoring based on heuristic values.
+
+        Creates a 'score' (priority) value based on:
+
+         * Component: main component gets higher values
+           (main, 1000, restricted, 750, universe, 250, multiverse, 0)
+
+         * Urgency: EMERGENCY sources gets higher values
+           (EMERGENCY, 20, HIGH, 15, MEDIUM, 10, LOW, 5)
+
+         * Queue time: old records gets a relative higher priority
+           (The rate against component is something like: a 'multiverse'
+           build will be as important as a 'main' after 40 hours in queue)
+
+        This method automatically updates IBuildQueue.lastscore value and
+        skips 'manually-scored' records.
+
+        This method use any logger available in the standard logging system.
+        """
+
     def destroySelf():
         """Delete this entry from the database."""
+
+    def getLogFileName():
+        """Get the preferred filename for the buildlog of this build."""
+
+    def markAsBuilding(builder):
+        """Set this queue item to a 'building' state."""
+
+    def updateBuild_IDLE(build_id, build_status, logtail,
+                         filemap, dependencies, logger):
+        """Somehow the builder forgot about the build job.
+
+        Log this and reset the record.
+        """
+
+    def updateBuild_BUILDING(build_id, build_status, logtail, filemap,
+                             dependencies, logger):
+        """Build still building, collect the logtail"""
+
+    def updateBuild_ABORTING(buildid, build_status, logtail, filemap,
+                             dependencies, logger):
+        """Build was ABORTED.
+
+        Master-side should wait until the slave finish the process correctly.
+        """
+
+    def updateBuild_ABORTED(buildid, build_status, logtail, filemap,
+                            dependencies, logger):
+        """ABORTING process has successfully terminated.
+
+        Clean the builder for another jobs.
+        """
 
 
 class IBuildQueueSet(Interface):
@@ -110,10 +167,10 @@ class IBuildQueueSet(Interface):
         is empty, but the result isn't might to be used in call site.
         """
 
-    def calculateCandidates(archreleases, state):
+    def calculateCandidates(archserieses, state):
         """Return the candidates for building
 
         The result is a unsorted list of BuildQueue items in a given state
-        within a given DistroArchRelease group.
+        within a given DistroArchSeries group.
         """
 

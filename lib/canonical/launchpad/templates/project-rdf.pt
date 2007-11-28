@@ -2,6 +2,7 @@
 <rdf:RDF xmlns:doaml="http://ns.balbinus.net/doaml#"
     xmlns:foaf="http://xmlns.com/foaf/0.1/"
     xmlns:lp="https://launchpad.net/rdf/launchpad#"
+    xmlns:wot="http://xmlns.com/wot/0.1/"
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:tal="http://xml.zope.org/namespaces/tal"
     xmlns:metal="http://xml.zope.org/namespaces/metal">

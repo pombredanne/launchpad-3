@@ -1,10 +1,15 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 
-<div class="portlet">
+<div class="portlet" id="pofile-portlet-about">
   <h2>What&#8217;s this all about?</h2>
   <div class="portletBody portletContent">
     <img src="/@@/info" />
-    Read <a href="/translations/+about">about Rosetta</a> and how you can
+    Read <a href="/translations/+about">about Translations</a> and how you can
     help translate open source software into your local language.
   </div>
 </div>
-
+</tal:root>

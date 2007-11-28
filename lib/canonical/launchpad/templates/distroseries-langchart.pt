@@ -1,0 +1,81 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+<tal:hide-translations condition="context/hide_all_translations">
+  <p>
+    Translation status for <tal:distroseries replace="context/displayname" />
+    is not available because we are updating translations in bulk. You will
+    be able to see the status once the update process is finished. Try again
+    in several hours.
+  </p>
+  <p>
+    We apologise for the inconvenience.
+  </p>
+</tal:hide-translations>
+<tal:no-hide-translations condition="not:context/hide_all_translations">
+  <table class="sortable listing" width="100%" id="languagestats">
+    <thead>
+      <tr>
+        <th>Language</th>
+        <th>Contributors</th>
+        <th>Status</th>
+        <th>Untranslated</th>
+        <th>Need review</th>
+        <th>Changed</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr tal:repeat="drlang view/distroserieslanguages">
+        <td>
+          <a tal:attributes="href string:${drlang/fmt:url}"
+             tal:content="drlang/language/englishname">
+             Language Name
+          </a>
+        </td>
+        <td>
+          <span class="sortkey" tal:content="drlang/contributor_count">0</span>
+          <tal:count
+            tal:condition="drlang/contributor_count"
+            tal:replace="drlang/contributor_count">0</tal:count>
+          <tal:count condition="not: drlang/contributor_count">
+            &mdash;
+          </tal:count>
+        </td>
+        <td style="white-space: nowrap">
+          <div tal:replace="structure drlang/@@+barchart" />
+        </td>
+        <td>
+          <span class="sortkey" tal:content="drlang/untranslatedCount">0</span>
+          <tal:count
+            tal:condition="drlang/untranslatedCount"
+            tal:replace="drlang/untranslatedCount">0</tal:count>
+          <tal:count condition="not: drlang/untranslatedCount">
+            &mdash;
+          </tal:count>
+        </td>
+        <td>
+          <span class="sortkey" tal:content="drlang/unreviewedCount">0</span>
+          <tal:count
+            tal:condition="drlang/unreviewedCount"
+            tal:replace="drlang/unreviewedCount">0</tal:count>
+          <tal:count condition="not: drlang/unreviewedCount">
+            &mdash;
+          </tal:count>
+        </td>
+        <td>
+          <span class="sortkey" tal:content="drlang/updatesCount">0</span>
+          <tal:count
+            tal:condition="drlang/updatesCount"
+            tal:replace="drlang/updatesCount">0</tal:count>
+          <tal:count condition="not: drlang/updatesCount">
+            &mdash;
+          </tal:count>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</tal:no-hide-translations>
+</tal:root>

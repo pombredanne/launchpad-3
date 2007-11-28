@@ -38,12 +38,13 @@ comment, of the bug report.
     >>> login("foo.bar@canonical.com")
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> request = LaunchpadTestRequest(form={
-    ...     'field.title': 'bug in bin pkg',
-    ...     'field.comment': 'a bug in a bin pkg',
-    ...     'packagename_option': 'choose',
-    ...     'field.packagename': 'linux-2.6.12',
-    ...     'field.actions.submit_bug': 'Submit Bug Report'})
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.title': 'bug in bin pkg',
+    ...           'field.comment': 'a bug in a bin pkg',
+    ...           'packagename_option': 'choose',
+    ...           'field.packagename': 'linux-2.6.12',
+    ...           'field.actions.submit_bug': 'Submit Bug Report'})
 
     >>> ubuntu_filebug = getView(ubuntu, "+filebug", request)
     >>> launchbag.clear()
@@ -51,15 +52,14 @@ comment, of the bug report.
 
     >>> ubuntu_filebug.initialize()
     SQLObjectCreatedEvent: <Bug at ...>
-    
+
     >>> launchbag.clear()
 
     >>> current_user = getUtility(ILaunchBag).user
     >>> search_params = BugTaskSearchParams(
     ...     searchtext="bin pkg", user=current_user)
 
-    >>> latest_ubuntu_bugtask = ubuntu.searchTasks(
-    ...     search_params)[0]
+    >>> latest_ubuntu_bugtask = ubuntu.searchTasks(search_params)[0]
 
 The user specified a binary package name, so that's been added to the
 bug description and the first comment:
@@ -79,10 +79,11 @@ the bugtask.
 2. Filing a bug on a product.
 
     >>> firefox = getUtility(IProductSet).getByName("firefox")
-    >>> request = LaunchpadTestRequest(form={
-    ...     'field.title': 'a firefox bug',
-    ...     'field.comment': 'a test bug',
-    ...     'field.actions.submit_bug': 'Submit Bug Report'})
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.title': 'a firefox bug',
+    ...           'field.comment': 'a test bug',
+    ...           'field.actions.submit_bug': 'Submit Bug Report'})
 
     >>> firefox_filebug = getView(firefox, "+filebug", request)
 
@@ -95,12 +96,13 @@ You can also access the +filebug page from a sourcepackage.
 
     >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     'field.title': 'a firefox bug',
-    ...     'field.comment': 'a test bug',
-    ...     'packagename_option': 'choose',
-    ...     'field.packagename': 'mozilla-firefox',
-    ...     'field.actions.submit_bug': 'Submit Bug Report'})
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.title': 'a firefox bug',
+    ...           'field.comment': 'a test bug',
+    ...           'packagename_option': 'choose',
+    ...           'field.packagename': 'mozilla-firefox',
+    ...           'field.actions.submit_bug': 'Submit Bug Report'})
 
     >>> ubuntu_firefox_filebug = getView(
     ...     ubuntu_firefox, "+filebug", request)
@@ -123,23 +125,23 @@ the database.
 
 To add new comments, users POST to the +addcomment page:
 
-    >>> request = LaunchpadTestRequest(form={
-    ...                 "field.subject": latest_ubuntu_bugtask.bug.title,
-    ...                 "field.comment": "I can reproduce this bug.",
-    ...                 'FORM_SUBMIT': 'Save Changes'})
-    ...             })
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': latest_ubuntu_bugtask.bug.title,
+    ...           'field.comment': 'I can reproduce this bug.',
+    ...           'field.actions.save': 'Save Changes'})
     >>> ubuntu_addcomment = getView(latest_ubuntu_bugtask, "+addcomment-form", request)
-    >>> ubuntu_addcomment.process_form()
+    >>> ubuntu_addcomment.initialize()
 
 They may even, by mistake, post the same comment twice:
 
-    >>> request = LaunchpadTestRequest(form={
-    ...                 "field.subject": latest_ubuntu_bugtask.bug.title,
-    ...                 "field.comment": "I can reproduce this bug.",
-    ...                 'FORM_SUBMIT': 'Save Changes'})
-    ...             })
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': latest_ubuntu_bugtask.bug.title,
+    ...           'field.comment': 'I can reproduce this bug.',
+    ...           'field.actions.save': 'Save Changes'})
     >>> ubuntu_addcomment = getView(latest_ubuntu_bugtask, "+addcomment-form", request)
-    >>> ubuntu_addcomment.process_form()
+    >>> ubuntu_addcomment.initialize()
 
 Comments are cached in the view, so we need to flush updates and then
 grab a new view to actually see them:
@@ -232,7 +234,7 @@ duplicate link remains in the current context.
 
 
     >>> bug_page_view = getView(
-    ...     bug_five_in_firefox, "+portlet-duplicates", request)
+    ...     bug_five_in_firefox.bug, "+portlet-duplicates", request)
 
     >>> bug_six = bugset.get(6)
 
@@ -248,7 +250,7 @@ and see how the returned link changes.
     >>> bug_two.duplicateof = 5
 
     >>> bug_page_view = getView(
-    ...     bug_five_in_firefox, "+portlet-duplicates", request)
+    ...     bug_five_in_firefox.bug, "+portlet-duplicates", request)
 
     >>> print bug_page_view.getDupeBugLink(bug_two)
     http://.../bugs/2
@@ -421,7 +423,7 @@ and nominations. This table is rendered with the
     ...     bug_one_bugtask.bug, "+bugtasks-and-nominations-table", request)
 
 The getBugTasksAndNominations method returns a list of bugtasks and
-nominations to render in the table, sorted by bugtargetname. Approved
+nominations to render in the table, sorted by bugtargetdisplayname. Approved
 nominations are not included in the returned results, because an
 approved nomination will have created a task anyway.
 
@@ -440,26 +442,27 @@ approved nomination will have created a task anyway.
     ...         print "%s, %s, %s" % (
     ...             get_object_type(task_or_nomination),
     ...             task_or_nomination.status.title,
-    ...             task_or_nomination.target.bugtargetname)
+    ...             task_or_nomination.target.bugtargetdisplayname)
 
     >>> tasks_and_nominations = (
     ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
 
     >>> print_tasks_and_nominations(tasks_and_nominations)
-    bugtask, Unconfirmed, firefox (upstream)
-    nomination, Nominated, firefox 1.0 (upstream)
+    bugtask, New, Mozilla Firefox
+    nomination, Nominated, Mozilla Firefox 1.0
     bugtask, Confirmed, mozilla-firefox (Debian)
-    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
+    bugtask, New, mozilla-firefox (Ubuntu)
     nomination, Nominated, Ubuntu Hoary
 
-Let's nominate the bug for upstream and an Ubuntu release and see how
+Let's nominate the bug for upstream and an Ubuntu series and see how
 the list changes.
 
 (Login as an unprivileged user to be able to nominate.)
 
     >>> login("no-priv@canonical.com")
 
-    >>> ubuntu_warty = ubuntu.getRelease("warty")
+    >>> current_user = getUtility(ILaunchBag).user
+    >>> ubuntu_warty = ubuntu.getSeries("warty")
     >>> firefox_trunk = firefox.getSeries("trunk")
 
     >>> bug_one.addNomination(current_user, target=ubuntu_warty)
@@ -471,11 +474,11 @@ the list changes.
     ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
 
     >>> print_tasks_and_nominations(tasks_and_nominations)
-    bugtask, Unconfirmed, firefox (upstream)
-    nomination, Nominated, firefox 1.0 (upstream)
-    nomination, Nominated, firefox trunk (upstream)
+    bugtask, New, Mozilla Firefox
+    nomination, Nominated, Mozilla Firefox 1.0
+    nomination, Nominated, Mozilla Firefox trunk
     bugtask, Confirmed, mozilla-firefox (Debian)
-    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
+    bugtask, New, mozilla-firefox (Ubuntu)
     nomination, Nominated, Ubuntu Hoary
     nomination, Nominated, Ubuntu Warty
 
@@ -497,14 +500,14 @@ A nomination row will be included for evolution now too.
     ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
 
     >>> print_tasks_and_nominations(tasks_and_nominations)
-    bugtask, Unconfirmed, firefox (upstream)
-    nomination, Nominated, firefox 1.0 (upstream)
-    nomination, Nominated, firefox trunk (upstream)
-    bugtask, Unconfirmed, evolution (Ubuntu)
+    bugtask, New, Mozilla Firefox
+    nomination, Nominated, Mozilla Firefox 1.0
+    nomination, Nominated, Mozilla Firefox trunk
+    bugtask, New, evolution (Ubuntu)
     nomination, Nominated, Ubuntu Hoary
     nomination, Nominated, Ubuntu Warty
     bugtask, Confirmed, mozilla-firefox (Debian)
-    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
+    bugtask, New, mozilla-firefox (Ubuntu)
     nomination, Nominated, Ubuntu Hoary
     nomination, Nominated, Ubuntu Warty
 
@@ -517,7 +520,7 @@ approve/decline nominations.)
     >>> login("foo.bar@canonical.com")
     >>> current_user = getUtility(ILaunchBag).user
 
-    >>> ubuntu_hoary = ubuntu.getRelease("hoary")
+    >>> ubuntu_hoary = ubuntu.getSeries("hoary")
     >>> hoary_nomination = bug_one.getNominationFor(ubuntu_hoary)
     >>> warty_nomination = bug_one.getNominationFor(ubuntu_warty)
 
@@ -528,16 +531,16 @@ approve/decline nominations.)
     ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
 
     >>> print_tasks_and_nominations(tasks_and_nominations)
-    bugtask, Unconfirmed, firefox (upstream)
-    nomination, Nominated, firefox 1.0 (upstream)
-    nomination, Nominated, firefox trunk (upstream)
-    bugtask, Unconfirmed, evolution (Ubuntu)
+    bugtask, New, Mozilla Firefox
+    nomination, Nominated, Mozilla Firefox 1.0
+    nomination, Nominated, Mozilla Firefox trunk
+    bugtask, New, evolution (Ubuntu)
     nomination, Declined, Ubuntu Warty
-    bugtask, Unconfirmed, evolution (Ubuntu Hoary)
+    bugtask, New, evolution (Ubuntu Hoary)
     bugtask, Confirmed, mozilla-firefox (Debian)
-    bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
+    bugtask, New, mozilla-firefox (Ubuntu)
     nomination, Declined, Ubuntu Warty
-    bugtask, Unconfirmed, mozilla-firefox (Ubuntu Hoary)
+    bugtask, New, mozilla-firefox (Ubuntu Hoary)
 
 Bug Edit Page
 =============
@@ -555,8 +558,8 @@ initialize the test harness.
     ...         print 'EDIT BUG'
 
     >>> firefox_task = bug_one.bugtasks[0]
-    >>> firefox_task.targetname
-    u'firefox (upstream)'
+    >>> firefox_task.bugtargetdisplayname
+    u'Mozilla Firefox'
     >>> from canonical.launchpad.ftests import LaunchpadFormHarness
     >>> bug_edit = LaunchpadFormHarness(firefox_task, BugEditViewTest)
 
@@ -593,10 +596,33 @@ and the bug will have been edited.
     [u'doc']
 
 
-The tag 'doc' has already been used for other Firefox bugs, let's try
-adding a tag that hasn't already been used.
+Emails are sent out by adding entries to the bugnotification table. We
+need to know how many messages are currently in that table.
 
-    >>> edit_values['field.tags'] = u'doc new-tag'
+    >>> from canonical.launchpad.database import BugNotification, Bug
+    >>> bn_set = BugNotification.select(BugNotification.q.bugID == bug_one.id)
+    >>> start_bugnotification_count = bn_set.count()
+
+Re-adding the same tag that already exists shouldn't notify anyone.
+
+    >>> edit_values['field.tags'] = u'doc doc'
+    >>> bug_edit.submit('change', edit_values)
+    >>> bug_edit.hasErrors()
+    False
+    >>> for message in bug_edit.view.notifications:
+    ...     print message
+
+    >>> bug_edit.wasRedirected()
+    True
+    >>> bn_set = BugNotification.select(BugNotification.q.bugID == bug_one.id)
+    >>> bn_set.count() == start_bugnotification_count
+    True
+
+The tag 'doc' has already been used for other Firefox bugs, let's try
+adding a tag that hasn't already been used. Add 'new-tag' multiple times
+so that we can verify that it will only be added once.
+
+    >>> edit_values['field.tags'] = u'new-tag doc new-tag'
     >>> bug_edit.submit('change', edit_values)
 
 Now the form will have a notification, asking us to confirm that we indeed
@@ -607,7 +633,7 @@ the user can confirm that he wants to add the tag.
     False
     >>> for message in bug_edit.view.notifications:
     ...     print message
-    The tag "new-tag" hasn't yet been used by firefox (upstream) before.
+    The tag "new-tag" hasn't yet been used by Mozilla Firefox before.
     Is this a new tag?...<input ...Yes, define new tag...>
 
     >>> bug_edit.wasRedirected()
@@ -632,3 +658,13 @@ the bug page, and the bug will have the new tag.
 
     >>> bug_one.tags
     [u'doc', u'new-tag']
+
+Since the 'new-tag' was added, a new entry in the bugnotification table
+should exist.
+
+    >>> bn_set = BugNotification.select(BugNotification.q.bugID == bug_one.id,
+    ...                                 orderBy = BugNotification.q.id)
+    >>> start_bugnotification_count == bn_set.count() - 1
+    True
+    >>> bn_set[-1].message.text_contents
+    u'** Tags added: new-tag'

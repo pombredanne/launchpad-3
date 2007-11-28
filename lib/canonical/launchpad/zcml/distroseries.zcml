@@ -1,0 +1,379 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+  <content class="canonical.launchpad.database.DistroSeries">
+    <allow interface="canonical.launchpad.interfaces.IDistroSeries"/>
+    <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+    <allow interface="canonical.launchpad.interfaces.IHasQueueItems"/>
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
+    <allow interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
+    <require
+        permission="launchpad.TranslationsAdmin"
+        set_attributes="hide_all_translations defer_translation_imports"
+        />
+    <require
+        permission="launchpad.LanguagePacksAdmin"
+        set_attributes="language_pack_base language_pack_delta
+                        language_pack_proposed
+                        language_pack_full_export_requested"
+        />
+    <!-- NB: check with SABDFL before modifying these, there is potential to
+         make a huge mess if these get changed and Soyuz has to republish
+         shedloads of data. -->
+    <require
+        permission="launchpad.Edit"
+        set_attributes="displayname title summary description driver"
+        />
+    <!-- NB: check with SABDFL before modifying these, there is potential to
+         make a huge mess if these get changed and Soyuz has to republish
+         shedloads of data. -->
+    <require
+        permission="launchpad.Admin"
+        set_attributes="version name status owner nominatedarchindep
+                        changeslist"
+        />
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.DistroSeriesSet"
+    provides="canonical.launchpad.interfaces.IDistroSeriesSet">
+    <allow interface="canonical.launchpad.interfaces.IDistroSeriesSet" />
+  </securedutility>
+
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    factory="canonical.launchpad.browser.DistroSeriesSOP"
+    permission="zope.Public"
+    />
+  <adapter
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    provides="canonical.launchpad.interfaces.IQuestionTarget"
+    factory="canonical.launchpad.components.answertracker.series_to_questiontarget"
+    />
+
+  <browser:navigation
+    module="canonical.launchpad.browser"
+    classes="DistroSeriesNavigation"
+    />
+
+  <browser:page
+    name="+addspec"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.NewSpecificationFromDistroSeriesView"
+    facet="specifications"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.IDistroSeries"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.DistroSeriesDynMenu"
+      attribute="__call__"
+      name="+menudata"
+      />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    path_expression="name"
+    attribute_to_parent="distribution"
+    />
+
+  <browser:menus
+    module="canonical.launchpad.browser.distroseries"
+    classes="DistroSeriesFacets DistroSeriesOverviewMenu
+             DistroSeriesBugsMenu DistroSeriesSpecificationsMenu
+             DistroSeriesTranslationsMenu"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    name="+index" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    name="+specs"
+    layer="canonical.launchpad.layers.BlueprintLayer"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    layer="canonical.launchpad.layers.BugsLayer"
+    name="+bugs-index" />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    name="+translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.BugTargetBugListingView"
+    facet="bugs"
+    permission="zope.Public">
+    <browser:page
+      name="+portlet-bugtasklist-seriesbugs"
+      template="../templates/bugtask-portlet-seriesbugs.pt"
+      />
+  </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    name="+nominations"
+    class="canonical.launchpad.browser.BugNominationsView"
+    permission="zope.Public"
+    facet="bugs"
+    template="../templates/series-bug-nominations.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    name="+bugs-index"
+    class="canonical.launchpad.browser.BugTargetBugsView"
+    permission="zope.Public"
+    facet="bugs"
+    template="../templates/bugtarget-bugs.pt"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesView"
+    permission="zope.Public">
+    <browser:page
+      name="+filebug"
+      facet="bugs"
+      attribute="redirectToDistroFileBug" />
+    <browser:page
+      name="+index"
+      facet="overview"
+      template="../templates/distroseries-index.pt" />
+    <browser:page
+      name="+packaging"
+      facet="overview"
+      template="../templates/distroseries-packaging.pt" />
+    <browser:page
+      name="+builds"
+      facet="overview"
+      template="../templates/distroseries-builds.pt"
+      />
+    <browser:page
+      name="+search"
+      facet="overview"
+      template="../templates/distroseries-search.pt"
+      />
+    <browser:page
+      name="+builds-list"
+      template="../templates/builds-list.pt"
+      />
+    <browser:page
+      name="+portlet-aboutcve"
+      template="../templates/portlet-aboutcve.pt"
+      />
+    <browser:page
+      name="+portlet-details"
+      facet="overview"
+      template="../templates/distroseries-portlet-details.pt"
+      />
+    <browser:page
+      name="+portlet-lifecycle"
+      facet="overview"
+      template="../templates/distroseries-portlet-lifecycle.pt"
+      />
+    <browser:page
+      name="+portlet-milestones"
+      template="../templates/object-portlet-milestones.pt"
+      />
+    <browser:page
+      name="+milestones"
+      template="../templates/object-milestones.pt"
+      />
+    <browser:page
+      name="+portlet-latestuploads"
+      template="../templates/distroseries-portlet-latestuploads.pt"
+      />
+  </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.CVEReportView"
+    permission="zope.Public"
+    name="+cve"
+    facet="bugs"
+    template="../templates/distroseries-cvereport.pt" />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesView"
+    permission="launchpad.AnyPerson">
+    <browser:page
+      name="+queue"
+      facet="overview"
+      template="../templates/distroseries-queue.pt"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    permission="launchpad.Admin"
+    facet="overview"
+    class="canonical.launchpad.browser.ObjectReassignmentView">
+    <browser:page
+      name="+reassign"
+      template="../templates/object-reassignment.pt"
+      />
+  </browser:pages>
+
+  <!-- NB DO NOT CHANGE WITHOUT THINKING
+       Do not allow people to change the details of the distro series that
+       will affect the way Soyuz publishes the distroseries. Check with
+       SABDFL before modifying this page. -->
+  <browser:editform
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    permission="launchpad.Edit"
+    label="Edit series details"
+    name="+edit"
+    schema="canonical.launchpad.interfaces.IDistroSeries"
+    facet="overview"
+    fields="displayname title summary description"
+    template="../templates/distroseries-edit.pt"
+    />
+
+  <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesView"
+    permission="zope.Public"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer">
+    <browser:page
+      name="+translations"
+      template="../templates/distroseries-translations.pt" />
+    <browser:page
+      name="+langchart"
+      template="../templates/distroseries-langchart.pt" />
+    <browser:page
+      name="+language-packs"
+      template="../templates/distroseries-language-packs.pt" />
+    <browser:page
+      name="+potlist"
+      template="../templates/object-pots.pt" />
+  </browser:pages>
+
+  <browser:page
+      name="+help-translate-button"
+      facet="translations"
+      for="canonical.launchpad.interfaces.IDistroSeries"
+      class="canonical.launchpad.browser.HelpTranslateButtonView"
+      permission="zope.Public"
+      />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    permission="launchpad.TranslationsAdmin"
+    class="canonical.launchpad.browser.DistroSeriesTranslationsAdminView"
+    name="+admin"
+    facet="translations"
+    template="../templates/distroseries-translationsadmin.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <!-- NB DO NOT CHANGE WITHOUT THINKING
+       Do not allow people to change the details of the distro series that
+       will affect the way Soyuz publishes the distroseries. Check with
+       SABDFL before modifying this page. -->
+  <browser:editform
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    permission="launchpad.Admin"
+    name="+admin"
+    schema="canonical.launchpad.interfaces.IDistroSeries"
+    facet="overview"
+    fields="name status version changeslist"
+    template="../templates/launchpad-editform.pt"
+    />
+
+  <browser:addform
+    name="+addmilestone"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    schema="canonical.launchpad.interfaces.IMilestone"
+    class="canonical.launchpad.browser.milestone.MilestoneAddView"
+    facet="overview"
+    fields="name dateexpected description"
+    keyword_arguments="name dateexpected description"
+    permission="launchpad.Edit"
+    template="../templates/milestone-add.pt"
+    >
+  </browser:addform>
+
+  <browser:addform
+    name="+addport"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    schema="canonical.launchpad.interfaces.IDistroArchSeries"
+    fields="architecturetag processorfamily official owner"
+    arguments="architecturetag processorfamily official owner"
+    class="canonical.launchpad.browser.DistroArchSeriesAddView"
+    facet="overview"
+    permission="launchpad.Admin"
+    template="../templates/distroseries-addport.pt"
+    >
+    <browser:widget
+      field="owner"
+      class="canonical.widgets.HiddenUserWidget" />
+  </browser:addform>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.HasSpecificationsView"
+    permission="zope.Public"
+    name="+mdz-specs.csv"
+    attribute="mdzCsv"
+    />
+
+  <browser:page
+    name="+ask-a-question-button"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.AskAQuestionButtonView"
+    permission="zope.Public"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesLanguagePackAdminView"
+    permission="launchpad.TranslationsAdmin"
+    template="../templates/distroseries-language-packs-editing.pt"
+    name="+admin-language-packs"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesFullLanguagePackRequestView"
+    permission="launchpad.LanguagePacksAdmin"
+    template="../templates/distroseries-language-packs-editing.pt"
+    name="+full-language-pack-request"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+</configure>

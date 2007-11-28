@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['Country', 'CountrySet', 'Continent']
@@ -29,7 +30,7 @@ class Country(SQLBase):
     iso3166code3 = StringCol(dbName='iso3166code3', unique=True,
                              notNull=True)
     title = StringCol(dbName='title', notNull=True)
-    description = StringCol(dbName='description', notNull=True)
+    description = StringCol(dbName='description')
     continent = ForeignKey(
         dbName='continent', foreignKey='Continent', default=None)
     languages = SQLRelatedJoin(

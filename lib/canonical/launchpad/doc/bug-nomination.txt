@@ -1,8 +1,7 @@
-Bug Nomination
-==============
+= Bug Nomination =
 
 Any logged-in user can nominate a bug to be fixed in a specific
-distribution release or product series. Nominations are created by
+distribution or product series. Nominations are created by
 calling IBug.addNomination.
 
     >>> from zope.component import getUtility
@@ -22,20 +21,20 @@ The BugNomination class implements IBugNomination.
     >>> bug_one = bugset.get(1)
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> ubuntu_grumpy = ubuntu.getRelease("grumpy")
+    >>> ubuntu_grumpy = ubuntu.getSeries("grumpy")
     >>> personset = getUtility(IPersonSet)
     >>> no_privs = personset.getByName("no-priv")
 
     >>> grumpy_nomination = bug_one.addNomination(
     ...     target=ubuntu_grumpy, owner=no_privs)
 
-The nomination records the distro release or series for which the bug
+The nomination records the distro series or series for which the bug
 was nominated and the user that submitted the nomination (the "owner".)
 
     >>> print grumpy_nomination.owner.name
     no-priv
 
-    >>> print grumpy_nomination.distrorelease.fullreleasename
+    >>> print grumpy_nomination.distroseries.fullseriesname
     Ubuntu Grumpy
 
 Let's create another nomination, this time on a product series.
@@ -60,20 +59,20 @@ Let's create another nomination, this time on a product series.
 The target of a nomination can also be accessed through its target
 attribute.
 
-    >>> print grumpy_nomination.target.bugtargetname
+    >>> print grumpy_nomination.target.bugtargetdisplayname
     Ubuntu Grumpy
 
-    >>> print firefox_ms_nomination.target.bugtargetname
-    firefox trunk (upstream)
+    >>> print firefox_ms_nomination.target.bugtargetdisplayname
+    Mozilla Firefox trunk
 
 Use IBug.canBeNominatedFor to see if a bug can be nominated for a
-particular distrorelease or productseries. This will consider whether
-the bug has already been nominated for that release, or even already
-targeted to that release without a nomination, which can happen for bugs
+particular distroseries or productseries. This will consider whether
+the bug has already been nominated for that series, or even already
+targeted to that series without a nomination, which can happen for bugs
 that were reported prior to the release management/nomination
 functionality existing.
 
-    >>> ubuntu_breezy_autotest = ubuntu.getRelease("breezy-autotest")
+    >>> ubuntu_breezy_autotest = ubuntu.getSeries("breezy-autotest")
 
     >>> bug_one.canBeNominatedFor(firefox_trunk)
     False
@@ -88,25 +87,24 @@ Bug five is already targeted to Ubuntu Warty, so even though it has no
 Warty nominations, it cannot be targeted to Warty.
 
     >>> bug_five = bugset.get(5)
-    >>> bug_five.getNominations()
-    []
 
-    >>> def by_bugtargetname(bugtask):
-    ...     return bugtask.target.bugtargetname
+    >>> def by_bugtargetdisplayname(bugtask):
+    ...     return bugtask.target.bugtargetdisplayname.lower()
 
-    >>> tasks = sorted(bug_five.bugtasks, key=by_bugtargetname)
+    >>> tasks = sorted(bug_five.bugtasks, key=by_bugtargetdisplayname)
 
     >>> for task in tasks:
-    ...     print task.target.bugtargetname
-    firefox (upstream)
+    ...     print task.target.bugtargetdisplayname
+    Mozilla Firefox
+    Mozilla Firefox 1.0
     mozilla-firefox (Ubuntu Warty)
 
-    >>> ubuntu_warty = ubuntu.getRelease("warty")
+    >>> ubuntu_warty = ubuntu.getSeries("warty")
     >>> bug_five.canBeNominatedFor(ubuntu_warty)
     False
 
 The getNominationFor() method returns a nomination for a specific
-productseries or distrorelease. If there is no nomination for the target
+productseries or distroseries. If there is no nomination for the target
 provided, a NotFoundError is raised.
 
     >>> bug_one.getNominationFor(firefox_trunk)
@@ -121,28 +119,28 @@ provided, a NotFoundError is raised.
     NotFoundError: ...
 
 IBug.getNominations() returns a list of all IBugNominations for a bug,
-ordered by IBugTarget.bugtargetname.
+ordered by IBugTarget.bugtargetdisplayname.
 
     >>> nominations = bug_one.getNominations()
 
-    >>> [nomination.target.bugtargetname for nomination in nominations]
-    [u'firefox 1.0 (upstream)', u'firefox trunk (upstream)',
+    >>> [nomination.target.bugtargetdisplayname for nomination in nominations]
+    [u'Mozilla Firefox 1.0', u'Mozilla Firefox trunk',
      u'Ubuntu Grumpy', u'Ubuntu Hoary']
 
 This method also accepts a target argument, for further filtering.
 
     >>> nominations = bug_one.getNominations(firefox)
 
-    >>> [nomination.target.bugtargetname for nomination in nominations]
-    [u'firefox 1.0 (upstream)', u'firefox trunk (upstream)']
+    >>> [nomination.target.bugtargetdisplayname for nomination in nominations]
+    [u'Mozilla Firefox 1.0', u'Mozilla Firefox trunk']
 
     >>> nominations = bug_one.getNominations(ubuntu)
 
-    >>> [nomination.target.bugtargetname for nomination in nominations]
+    >>> [nomination.target.bugtargetdisplayname for nomination in nominations]
     [u'Ubuntu Grumpy', u'Ubuntu Hoary']
 
-Nomination Status
------------------
+
+== Nomination Status ==
 
 A nomination is created with an initial status of "Nominated".
 Internally this state is called PROPOSED, but in the UI we display it
@@ -163,7 +161,7 @@ as "Nominated".
 Nomination status changes have an associated workflow. For this reason,
 setting status directly is not possible.
 
-    >>> from canonical.lp.dbschema import BugNominationStatus
+    >>> from canonical.launchpad.interfaces import BugNominationStatus
 
     >>> nomination.status = BugNominationStatus.APPROVED
     Traceback (most recent call last):
@@ -174,7 +172,7 @@ The status of a nomination is changed by calling either the approve() or
 decline() method. Only users with launchpad.Driver permission on the
 nomination can approve or decline it.
 
-    >>> from canonical.launchpad.helpers import check_permission
+    >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> from canonical.launchpad.interfaces import ILaunchBag
 
     >>> current_user = getUtility(ILaunchBag).user
@@ -202,8 +200,8 @@ nomination can approve or decline it.
 
     >>> login("no-priv@canonical.com")
 
-Approving a nomination
-----------------------
+
+== Approving a nomination ==
 
 When a nomination is approved, the appropriate bugtask(s) are created on
 the target of the nomination and the status is set to APPROVED.
@@ -253,18 +251,18 @@ bug #1 affects more than one Ubuntu package.
     <BugTask ...>
 
     >>> tasks = sorted(
-    ...     bug_one.bugtasks, key=by_bugtargetname)
+    ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
 
     >>> for task in tasks:
-    ...     print task.target.bugtargetname
-    firefox (upstream)
-    firefox trunk (upstream)
+    ...     print task.target.bugtargetdisplayname
+    Mozilla Firefox
+    Mozilla Firefox trunk
     mozilla-firefox (Debian)
     mozilla-firefox (Ubuntu)
     thunderbird (Ubuntu)
 
 When we approve the nomination, two more Ubuntu tasks are added for the
-Grumpy release. The user that made the decision is stored in the decider
+Grumpy series. The user that made the decision is stored in the decider
 attribute. The date on which the decision was made is stored in the
 date_decided attribute.
 
@@ -286,20 +284,173 @@ no_privs can actually approve the nomination.)
     datetime...
 
     >>> tasks = sorted(
-    ...     bug_one.bugtasks, key=by_bugtargetname)
+    ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
 
     >>> for task in tasks:
-    ...     print task.target.bugtargetname
-    firefox (upstream)
-    firefox trunk (upstream)
+    ...     print task.target.bugtargetdisplayname
+    Mozilla Firefox
+    Mozilla Firefox trunk
     mozilla-firefox (Debian)
     mozilla-firefox (Ubuntu Grumpy)
     mozilla-firefox (Ubuntu)
     thunderbird (Ubuntu Grumpy)
     thunderbird (Ubuntu)
 
-Declining a nomination
-----------------------
+If the one nominating a goal is a driver of the series, the
+nomination will be automatically approved.
+
+    >>> ubuntu_warty = ubuntu.getSeries("warty")
+    >>> login("foo.bar@canonical.com")
+    >>> ubuntu_warty.driver = no_privs
+    >>> login("no-priv@canonical.com")
+
+    >>> warty_nomination = bug_one.addNomination(
+    ...     target=ubuntu_warty, owner=no_privs)
+
+    >>> print warty_nomination.status.title
+    Approved
+    >>> print warty_nomination.decider.name
+    no-priv
+    >>> warty_nomination.date_decided
+    datetime...
+
+    >>> tasks = sorted(
+    ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
+
+    >>> for task in tasks:
+    ...     print task.target.bugtargetdisplayname
+    Mozilla Firefox
+    Mozilla Firefox trunk
+    mozilla-firefox (Debian)
+    mozilla-firefox (Ubuntu Grumpy)
+    mozilla-firefox (Ubuntu Warty)
+    mozilla-firefox (Ubuntu)
+    thunderbird (Ubuntu Grumpy)
+    thunderbird (Ubuntu Warty)
+    thunderbird (Ubuntu)
+
+    >>> login("foo.bar@canonical.com")
+    >>> ubuntu_warty.driver = None
+
+
+=== Permissions to approve a nomination ===
+
+Since approving a nomination can affect release planning, not everyone
+is allowed to do it. For large projects, like distributions, it's not
+suitable to restrict approving nominations to only release managers,
+instead anyone that can upload a package may approve a nomination.
+
+    >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
+    >>> from canonical.launchpad.database import (
+    ...     Component, DistroComponentUploader)
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> main_uploaders = getUtility(IPersonSet).newTeam(
+    ...     foo_bar, 'main-uploaders', 'main uploaders',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> main = Component.byName('main')
+    >>> distro_main_uploader_record = DistroComponentUploader.selectOneBy(
+    ...     distribution=ubuntu, component=main)
+    >>> distro_main_uploader_record.uploader = main_uploaders
+
+For a bug nominated to a package from the 'main' component in Ubuntu,
+only those people that are allowed to upload to 'main' are allowed to
+approve the nomination.
+
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
+    >>> hoary_evolution = ubuntu_hoary.getSourcePackage('evolution')
+    >>> hoary_evolution.latest_published_component.name
+    u'main'
+    >>> bug_params = CreateBugParams(
+    ...     owner=foo_bar, title='Test bug', comment='Test bug.')
+    >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
+    >>> main_bug = ubuntu_evolution.createBug(bug_params)
+    >>> hoary_main_nomination = main_bug.addNomination(no_priv, ubuntu_hoary)
+
+    >>> no_priv.inTeam(main_uploaders)
+    False
+    >>> hoary_main_nomination.canApprove(no_priv)
+    False
+
+    >>> no_priv.join(main_uploaders)
+    >>> no_priv.inTeam(main_uploaders)
+    True
+    >>> hoary_main_nomination.canApprove(no_priv)
+    True
+
+Only uploaders to the relevant component are allowed to approve it. For
+example, people who are allowed only to upload to 'universe' may not
+approve 'main' nominations.
+
+    >>> universe_uploaders = getUtility(IPersonSet).newTeam(
+    ...     foo_bar, 'universe-uploaders', 'universe uploaders',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> universe = Component.byName('universe')
+    >>> distro_universe_uploader_record = DistroComponentUploader.selectOneBy(
+    ...     distribution=ubuntu, component=universe)
+    >>> distro_universe_uploader_record.uploader = universe_uploaders
+
+    >>> no_priv.leave(main_uploaders)
+    >>> no_priv.join(universe_uploaders)
+    >>> no_priv.inTeam(main_uploaders)
+    False
+    >>> no_priv.inTeam(universe_uploaders)
+    True
+    >>> hoary_main_nomination.canApprove(no_priv)
+    False
+
+If the bug is targeted to source packages in more than one component,
+anyone that can upload to any of the components may approve the
+nomination. This is because a nomination is tied to a release only, not
+to source packages.
+
+    >>> hoary_cnews = ubuntu_hoary.getSourcePackage('cnews')
+    >>> hoary_cnews.latest_published_component.name
+    u'universe'
+    >>> universe_task = getUtility(IBugTaskSet).createTask(
+    ...     bug=main_bug, owner=foo_bar, distribution=ubuntu,
+    ...     sourcepackagename=hoary_cnews.sourcepackagename)
+    >>> hoary_main_nomination.canApprove(no_priv)
+    True
+
+Drivers may approve nominations as well.
+
+    >>> no_priv.leave(universe_uploaders)
+    >>> hoary_main_nomination.canApprove(no_priv)
+    False
+    >>> ubuntu_hoary.driver = no_priv
+    >>> hoary_main_nomination.canApprove(no_priv)
+    True
+    >>> ubuntu_hoary.driver = None
+
+    >>> hoary_main_nomination.canApprove(no_priv)
+    False
+    >>> ubuntu.driver = no_priv
+    >>> hoary_main_nomination.canApprove(no_priv)
+    True
+    >>> ubuntu.driver = None
+
+If a bug isn't targeted to a specific source package, any uploader can
+approve a nomination.
+
+    >>> bug = ubuntu.createBug(bug_params)
+    >>> hoary_nomination = bug.addNomination(no_priv, ubuntu_hoary)
+    >>> hoary_nomination.canApprove(no_priv)
+    False
+
+    # Flush database updates to ensure that no_priv's membership status
+    # isn't APPROVED.
+    >>> flush_database_updates()
+    >>> no_priv.join(universe_uploaders)
+    >>> no_priv.inTeam(universe_uploaders)
+    True
+    >>> hoary_nomination.canApprove(no_priv)
+    True
+
+
+== Declining a nomination ==
 
 Declining a nomination simply sets its status to DECLINED. No tasks are
 created.
@@ -329,28 +480,30 @@ created.
     >>> ubuntu_breezy_autotest_nomination.date_decided
     datetime...
 
-Automatic targeting of new source packages
-------------------------------------------
+
+== Automatic targeting of new source packages ==
 
 If a another distribution task is added, and nomination for that
-distribution's releases already exists, the nominations will be valid
+distribution's serieses already exists, the nominations will be valid
 for the new task as well, and bugtasks will be created for all accepted
 ones.
 
-The nominations are per distrorelease, they are not source package
+The nominations are per distroseries, they are not source package
 specific, so they are automatically valid for new bugtasks. What's
 important are the accepted nominations. Bug one has an accepted
-nomination for Grumpy:
+nomination for Grumpy and Warty:
 
     >>> accepted_nominations = [
     ...     nomination for nomination in bug_one.getNominations(ubuntu)
     ...     if nomination.isApproved()]
     >>> for nomination in accepted_nominations:
-    ...     print nomination.distrorelease.displayname
+    ...     print nomination.distroseries.displayname
     Grumpy
+    Warty
 
 So if we create a new bugtask on evolution (Ubuntu), a task for
-evolution (Ubuntu Grumpy) will be created automatically.
+evolution (Ubuntu Grumpy) and evolution (Ubuntu Warty) will be created
+automatically.
 
     >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
     >>> getUtility(IBugTaskSet).createTask(
@@ -360,85 +513,86 @@ evolution (Ubuntu Grumpy) will be created automatically.
     <BugTask at ...>
 
     >>> tasks = sorted(
-    ...     bug_one.bugtasks, key=by_bugtargetname)
+    ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
 
     >>> for task in tasks:
-    ...     print task.target.bugtargetname
+    ...     print task.target.bugtargetdisplayname
     evolution (Ubuntu Grumpy)
+    evolution (Ubuntu Warty)
     evolution (Ubuntu)
-    firefox (upstream)
-    firefox trunk (upstream)
-    mozilla-firefox (Debian)
-    mozilla-firefox (Ubuntu Grumpy)
-    mozilla-firefox (Ubuntu)
-    thunderbird (Ubuntu Grumpy)
-    thunderbird (Ubuntu)
+    ...
 
-Changing the Source Package of a Targeted Bugtask
--------------------------------------------------
+
+== Changing the Source Package of a Targeted Bugtask ==
 
 The nomination model requires that a generic distribution task exists
-for each distrorelease task. This causes some problem when renaming the
+for each distroseries task. This causes some problem when renaming the
 source package on an accepted nomination. For example, if we would
 change the thunderbird package on the Grumpy task, it won't have a
 corresponding generic distribution task.
 
-The way we tie nominations to distribution releases, and not to source
+The way we tie nominations to distribution serieses, and not to source
 packages, makes it hard to solve source package changes in a nice way.
 So what happens when a source package is changed is that we simply
 rename all other bugtasks which points to the same distribution and
 source package name.  This is not ideal, but hopefully package renames
-after the bug has been targeted to a release is rare enough for this to
+after the bug has been targeted to a series is rare enough for this to
 be acceptable.
 
-    >>> thunderbird_grumpy = tasks[-2]
-    >>> thunderbird_grumpy.targetname
+    >>> thunderbird_grumpy = tasks[-3]
+    >>> thunderbird_grumpy.bugtargetname
     u'thunderbird (Ubuntu Grumpy)'
 
     >>> ubuntu_pmount = ubuntu.getSourcePackage('pmount')
     >>> thunderbird_grumpy.sourcepackagename = ubuntu_pmount.sourcepackagename
 
     >>> tasks = sorted(
-    ...     bug_one.bugtasks, key=by_bugtargetname)
+    ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
 
     >>> for task in tasks:
-    ...     print task.target.bugtargetname
+    ...     print task.target.bugtargetdisplayname
     evolution (Ubuntu Grumpy)
+    evolution (Ubuntu Warty)
     evolution (Ubuntu)
-    firefox (upstream)
-    firefox trunk (upstream)
+    Mozilla Firefox
+    Mozilla Firefox trunk
     mozilla-firefox (Debian)
     mozilla-firefox (Ubuntu Grumpy)
+    mozilla-firefox (Ubuntu Warty)
     mozilla-firefox (Ubuntu)
     pmount (Ubuntu Grumpy)
+    pmount (Ubuntu Warty)
     pmount (Ubuntu)
 
 The same is done if the distribution task's source package is changed.
 
     >>> pmount_ubuntu = tasks[-1]
-    >>> pmount_ubuntu.targetname
+    >>> pmount_ubuntu.bugtargetname
     u'pmount (Ubuntu)'
 
     >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
     >>> pmount_ubuntu.sourcepackagename = ubuntu_thunderbird.sourcepackagename
 
     >>> tasks = sorted(
-    ...     bug_one.bugtasks, key=by_bugtargetname)
+    ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
 
     >>> for task in tasks:
-    ...     print task.target.bugtargetname
+    ...     print task.target.bugtargetdisplayname
     evolution (Ubuntu Grumpy)
+    evolution (Ubuntu Warty)
     evolution (Ubuntu)
-    firefox (upstream)
-    firefox trunk (upstream)
+    Mozilla Firefox
+    Mozilla Firefox trunk
     mozilla-firefox (Debian)
     mozilla-firefox (Ubuntu Grumpy)
+    mozilla-firefox (Ubuntu Warty)
     mozilla-firefox (Ubuntu)
     thunderbird (Ubuntu Grumpy)
+    thunderbird (Ubuntu Warty)
     thunderbird (Ubuntu)
 
-Bug Nomination Set
-------------------
+
+== Bug Nomination Set ==
 
 IBugNominationSet is used to fetch bug nominations by ID. This is useful
 mainly in traversal code.
@@ -455,10 +609,10 @@ If a nomination is not found, a NotFoundError is raised.
       ...
     NotFoundError: ...
 
-Error Handling
---------------
 
-Trying to nominate a bug for a release for which it's already nominated
+== Error Handling ==
+
+Trying to nominate a bug for a series for which it's already nominated
 or targeted raises a NominationError.
 
     >>> bug_one.addNomination(
@@ -473,21 +627,21 @@ or targeted raises a NominationError.
       ..
     NominationError: ...
 
-Nominating a bug for an obsolete distrorelease raises a
-NominationReleaseObsoleteError. Let's mark warty obsolete to
+Nominating a bug for an obsolete distroseries raises a
+NominationSeriesObsoleteError. Let's mark warty obsolete to
 demonstrate.
 
-    >>> from canonical.lp.dbschema import DistributionReleaseStatus
+    >>> from canonical.launchpad.interfaces import DistroSeriesStatus
 
-(Temporarily log in as an admin user to change the release status.)
+(Temporarily log in as an admin user to change the series status.)
 
     >>> login("foo.bar@canonical.com")
-    >>> ubuntu_warty.releasestatus = DistributionReleaseStatus.OBSOLETE
+    >>> ubuntu_warty.status = DistroSeriesStatus.OBSOLETE
     >>> login("no-priv@canonical.com")
 
     >>> bug_one.addNomination(target=ubuntu_warty, owner=no_privs)
     Traceback (most recent call last):
       ..
-    NominationReleaseObsoleteError: ...
+    NominationSeriesObsoleteError: ...
 
     >>> logout()

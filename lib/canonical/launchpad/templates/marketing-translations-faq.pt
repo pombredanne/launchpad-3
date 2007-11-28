@@ -1,0 +1,117 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@marketing_template/master"
+  i18n:domain="launchpad"
+>
+<body>
+<div id="faq" metal:fill-slot="contents">
+  <div id="primary">
+    <h2>Translations</h2>
+    <h3 class="byline">FAQs</h3>
+
+    <img src="/+icing/app-translations-wm.gif" alt="Translations"/>
+
+    <blockquote>
+      <p>Launchpad Translations shields translators from low-level
+         complexities, whilst working with standard .pot, .po and .mo files.
+      </p>
+    </blockquote>
+  </div>
+  <div id="secondary">
+    <h4>Cut the time it takes to translate your software</h4>
+    <ul id="faqs">
+      <li><a href="#q1">How do I get translations in and out of Launchpad?</a></li>
+      <li><a href="#q2">How can people help translate my software?</a></li>
+      <li><a href="#q3">Which languages does Launchpad support?</a></li>
+      <li><a href="#q4">How does Launchpad automatically suggest translations
+                        for my software?</a></li>
+      <li><a href="#q5">How can I maintain the quality of translations?</a></li>
+      <li><a href="#q6">How do I start using Launchpad for my project?</a></li>
+      <li><a href="#q7">How do I mark my project as an official Launchpad
+                        Translations user?</a></li>
+      <li><a href="#q8">Will translations from my software be suggested to
+                        other projects?</a></li>
+      <li><a href="#q9">Can I use suggested translations from projects that
+                        use a licence that is incompatible with my software?</a></li>
+    </ul>
+
+    <h5 id="q1">How do I get translations in and out of Launchpad? </h5>
+    <p>Launchpad supports standard GNU ?GetText files. To import existing
+       translations, simply upload your .po files. When you're to export your
+       translations, Launchpad will generate .po or .mo files.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q2">How can people help translate my software?</h5>
+    <p>Anyone can help translate your software: all they need is a web browser
+       and a free Launchpad account. To help organise and communicate with
+       your translators you can set up translation teams and groups.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q3">Which languages does Launchpad support?</h5>
+    <p>Launchpad already supports hundreds of languages and you can add any
+       other language that has an ISO 639 code (e.g. "en", "fr, "cy").
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q4">How does Launchpad automatically suggest translations for my
+                software?</h5>
+    <p>Similar text appears in all software. With more than 18,000 translators
+       working in almost 250 languages, all the most common strings have
+       already been translated. Launchpad checks translations in other
+       software to see if any of your strings have already been translated,
+       giving your localisation a head-start.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q5">How can I maintain the quality of translations?</h5>
+    <p>Most projects prefer to allow anyone to make a translation, while
+       tasking trusted team members with quality control. Alternatively, you
+       can choose to accept translations only from approved translators.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q6">How do I start using Launchpad for my project?</h5>
+    <p>Register your software in Launchpad, then upload your .pot translation
+       template files. You can find out more in our guide 
+      <a href="https://help.launchpad.net/FeatureHighlights/SoftwareTranslation">
+        Translating your software using Launchpad</a>. Contact the Launchpad team to
+       request official translation status.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q7">How do I mark my project as an official Launchpad Translations
+                user?</h5>
+    <p>Contact the Launchpad team using the Answers Tracker. Marking your
+       project as an official Translations user helps translators to see that
+       their work will be used.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q8">Will translations from my software be suggested to other
+                projects?</h5>
+    <p>Yes. Launchpad is designed to help open source software projects work
+       together. Suggested translations help the localisation of open source
+       software to take place far quicker than would otherwise be possible.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+    <h5 id="q9">Can I use suggested translations from projects that use a
+                licence that is incompatible with my software?</h5>
+    <p>Yes. We ask that all translations submitted through Launchpad use the
+       BSD licence. This makes the strings available to the widest number of
+       open source projects.
+    </p>
+    <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
+
+  </div>
+</div>
+</body>
+</html>

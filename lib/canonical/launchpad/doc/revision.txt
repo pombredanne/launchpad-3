@@ -4,6 +4,26 @@ Branches are collection of revisions, and a revision can exist independently
 from any branch. Revisions are created automatically by scanning branches, they
 have no creation interface and Launchpad cannot create or modify them.
 
+== Interfaces ==
+
+>>> from canonical.launchpad.webapp.testing import verifyObject
+>>> from canonical.launchpad.interfaces import (
+...     IRevision, IRevisionAuthor, IRevisionParent, IRevisionSet,
+...     IBranchRevision)
+>>> from canonical.launchpad.database import (
+...     Revision, RevisionAuthor, RevisionParent, RevisionSet,
+...     BranchRevision)
+>>> verifyObject(IRevision, Revision.get(1))
+True
+>>> verifyObject(IRevisionAuthor, RevisionAuthor.get(1))
+True
+>>> verifyObject(IRevisionParent, RevisionParent.get(1))
+True
+>>> verifyObject(IRevisionSet, RevisionSet())
+True
+>>> verifyObject(IBranchRevision, BranchRevision.get(1))
+True
+
 == Creating revisions ==
 
 XXX: Revisions have an owner attribute. As a convention, the owner of a
@@ -44,14 +64,14 @@ while the date_created is the time when the database record was created.
 >>> revision_1 = Revision(owner=admins, log_body=log_body_1,
 ...     revision_author=author, revision_id=revision_id_1, revision_date=date)
 
-== Ancestors ==
+== Parents ==
 
-Bazaar revisions can have multiple ancestors, the "leftmost" ancestor is the
-revision that was used as a base when committing, other ancestors are used to
-record merges. All revisions except initial imports have at least one ancestor.
+Bazaar revisions can have multiple parents, the "leftmost" parent is the
+revision that was used as a base when committing, other parents are used to
+record merges. All revisions except initial imports have at least one parent.
 
-Ancestors are accessed through their revision_id without using a foreign key so
-we can represent revision whose at least one ancestor is a ghost revision.
+Parents are accessed through their revision_id without using a foreign key so
+we can represent revisions whose at least one parent is a ghost revision.
 
 >>> revision_2 = Revision(owner=admins, log_body=log_body_2,
 ...     revision_author=author, revision_id=revision_id_2, revision_date=date)
@@ -60,41 +80,109 @@ we can represent revision whose at least one ancestor is a ghost revision.
 >>> rev2_parent = RevisionParent(sequence=0, revision=revision_2,
 ...                              parent_id=revision_1.revision_id)
 
-== Revision numbers ==
+== Branch ancestry ==
 
-Revisions are associated to branches through the RevisionNumber table. A given
+Revisions are associated to branches through the BranchRevision table. A given
 revision may appear in different positions in different branches thanks to
-Bazaar2 converge-on-pull logic.
+Bazaar converge-on-pull logic.
 
->>> from canonical.launchpad.database import Branch
->>> branch = Branch.get(1)
+>>> from canonical.launchpad.interfaces import IBranchSet
+>>> branch = getUtility(IBranchSet).get(1)
 >>> branch.revision_history.count()
 0
 
-RevisionNumber does not have a creation interface, like for Revision, new
-records are only created by a non-zope batch job.
+BranchRevision rows are created using `Branch.createBranchRevision`.
 
->>> from canonical.launchpad.database import RevisionNumber
->>> junkcode_sql = Branch.selectOneBy(name='junkcode')
->>> rev_no_1 = RevisionNumber(sequence=1, branch=branch, revision=revision_1)
->>> rev_no_2 = RevisionNumber(sequence=2, branch=branch, revision=revision_2)
+>>> rev_no_1 = branch.createBranchRevision(sequence=1, revision=revision_1)
+>>> rev_no_2 = branch.createBranchRevision(sequence=2, revision=revision_2)
 >>> rev_no_1.branch == rev_no_2.branch == branch
 True
 
-=== Deleting Revision Numbers ===
+=== Accessing BranchRevision ===
 
-If a branch gets overwritten or some revisions get uncommitted,
-Launchpad's view of the branch will differ from the actual state of
+  >>> from canonical.launchpad.interfaces import IBranchSet
+  >>> branch = getUtility(IBranchSet).getByUniqueName(
+  ...     '~name12/+junk/junk.contrib')
+
+The full ancestry of a branch is recorded. That includes the history commits on
+this branch, but also revisions that were merged into this branch. Such merged
+revisions are associated to the branch using BranchRevision whose sequence
+attribute is None.
+
+  >>> from canonical.launchpad.database import BranchRevision
+  >>> ancestry = BranchRevision.selectBy(branch=branch)
+  >>> for branch_revision in sorted(ancestry,
+  ...         key=lambda r:(r.sequence, r.revision.id), reverse=True):
+  ...     print branch_revision.sequence, branch_revision.revision.id
+  6 9
+  5 8
+  4 11
+  3 10
+  2 5
+  1 4
+  None 7
+  None 6
+
+If you need to operate on the ancestry of a branch, you should write a focused
+query to avoid creating the tens of thousands of objects necessary to represent
+the ancestry of a large branch.
+
+In particular, IBranch.getScannerData efficiently retrieves the BranchRevision
+data needed by the branch-scanner script.
+
+  >>> ancestry, history, mapping = branch.getScannerData()
+
+The first return value is a set of revision_id strings for the full ancestry of
 the branch.
 
-If the bzr branch now has fewer revisions than Launchpad's view of the
-branch, then some of RevisionNumber records will need to be removed.
-The branch scanner does this by calling destroySelf() on the excess
-records.
+  >>> for revision_id in sorted(ancestry):
+  ...     print revision_id
+  foo@localhost-20051031165758-48acedf2b6a2e898
+  foo@localhost-20051031170008-098959758bf79803
+  foo@localhost-20051031170239-5fce7d6bd3f01efc
+  foo@localhost-20051031170357-1301ad6d387feb23
+  test@canonical.com-20051031165248-6f1bb97973c2b4f4
+  test@canonical.com-20051031165338-5f2f3d6b10bb3bf0
+  test@canonical.com-20051031165532-3113df343e494daa
+  test@canonical.com-20051031165901-43b9644ec2eacc4e
 
-As the branch scanner manipulates branch information through the zope
-interfaces, the RevisionNumber objects in question will be security
-wrapped.  It is important that they be deletable in this state.
+The second return value is a sequence of revision_id strings for the revision
+history of the branch.
+
+  >>> for revision_id in history:
+  ...     print revision_id
+  test@canonical.com-20051031165248-6f1bb97973c2b4f4
+  test@canonical.com-20051031165338-5f2f3d6b10bb3bf0
+  foo@localhost-20051031165758-48acedf2b6a2e898
+  foo@localhost-20051031170008-098959758bf79803
+  foo@localhost-20051031170239-5fce7d6bd3f01efc
+  foo@localhost-20051031170357-1301ad6d387feb23
+
+The third return value is a mapping from revision_id strings to database ids
+integers of the corresponding BranchRevision rows for this branch.
+
+  >>> for revision_id, db_id in sorted(mapping.iteritems()):
+  ...     print revision_id, db_id
+  foo@localhost-20051031165758-48acedf2b6a2e898 12
+  foo@localhost-20051031170008-098959758bf79803 13
+  foo@localhost-20051031170239-5fce7d6bd3f01efc 14
+  foo@localhost-20051031170357-1301ad6d387feb23 15
+  test@canonical.com-20051031165248-6f1bb97973c2b4f4 10
+  test@canonical.com-20051031165338-5f2f3d6b10bb3bf0 11
+  test@canonical.com-20051031165532-3113df343e494daa 18
+  test@canonical.com-20051031165901-43b9644ec2eacc4e 19
+
+=== Deleting BranchRevisions ===
+
+If a branch gets overwritten or some revisions get uncommitted,
+Launchpad's view of the branch will differ from the actual state of the
+branch. If the bzr branch now has fewer revisions than Launchpad's view
+of the branch, then some of BranchRevision records will need to be
+removed.
+
+BranchRevision records are deleted using the `BranchRevisionSet.delete`
+method.
+
 
 First, get a branch via the IPersonSet utility:
 
@@ -103,16 +191,7 @@ First, get a branch via the IPersonSet utility:
   >>> person = getUtility(IPersonSet).getByEmail('test@canonical.com')
   >>> branch = person.getBranch(None, 'junk.dev')
 
-
-The branch in question is security proxied, and has 6 revisions:
-
-  >>> type(branch)
-  <type 'zope.security._proxy._Proxy'>
-  >>> branch.revision_count()
-  6
-
-
-We can get the last revision from the branch:
+The last commit on this branch has the revision number 6.
 
   >>> [revno_6] = branch.latest_revisions(1)
   >>> revno_6.sequence
@@ -122,32 +201,22 @@ We can get the last revision from the branch:
   >>> print revno_6.revision.revision_id
   foo@localhost-20051031170357-1301ad6d387feb23
 
+We remove the last revision from the branch. This is similar to what
+"bzr uncommit" does.
 
-The revision number object is security proxied, so that you can't
-access attributes not exposed in its interface:
+  >>> from canonical.launchpad.interfaces import IBranchRevisionSet
+  >>> getUtility(IBranchRevisionSet).delete(revno_6.id)
 
-  >>> type(revno_6)
-  <type 'zope.security._proxy._Proxy'>
-  >>> revno_6.forbidden_attribute
-  Traceback (most recent call last):
-    ...
-  ForbiddenAttribute: ('forbidden_attribute', <RevisionNumber at ...>)
+Afterwards, the last commit on the branch has revision number 5.
 
-
-This revision can then be deleted in the same way the branch scanner
-does, leaving only 5 revisions in the branch:
-
-  >>> branch.truncateHistory(6)
-  True
-  >>> branch.revision_count()
+  >>> branch.latest_revisions(1)[0].sequence
   5
 
-
-Note that while the RevisionNumber object linking the revision to the
+Note that while the BranchRevision object linking the revision to the
 branch has been destroyed, the associated revision object is not (it
 may be referenced by some other branch):
 
-  >>> from canonical.launchpad.interfaces import IRevisionSet
+  >>> from canonical.launchpad.interfaces import IBranchSet, IRevisionSet
   >>> revision = getUtility(IRevisionSet).getByRevisionId(
   ...     'foo@localhost-20051031170357-1301ad6d387feb23')
   >>> print revision.revision_id
@@ -166,7 +235,8 @@ as needed.
   ...     revision_date=date,
   ...     revision_author='ddaa@localhost',
   ...     owner=admins,
-  ...     parent_ids=['rev-1', 'rev-2'])
+  ...     parent_ids=['rev-1', 'rev-2'],
+  ...     properties={u'key': u'value'})
   >>> print revision.revision_id
   rev-3
   >>> print revision.log_body
@@ -179,3 +249,5 @@ as needed.
   ...     print parent_id
   rev-1
   rev-2
+  >>> print revision.getProperties()
+  {u'key': u'value'}

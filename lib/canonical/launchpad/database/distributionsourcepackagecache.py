@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['DistributionSourcePackageCache', ]
@@ -26,6 +27,7 @@ class DistributionSourcePackageCache(SQLBase):
     binpkgnames = StringCol(notNull=False, default=None)
     binpkgsummaries = StringCol(notNull=False, default=None)
     binpkgdescriptions = StringCol(notNull=False, default=None)
+    changelog = StringCol(notNull=False, default=None)
 
     @property
     def distributionsourcepackage(self):

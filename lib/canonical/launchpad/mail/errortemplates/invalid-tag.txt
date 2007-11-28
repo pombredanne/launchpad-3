@@ -1,0 +1,3 @@
+A tag you specified is invalid: %(tag)s
+
+Tags can only contain alphanumeric characters.

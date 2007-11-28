@@ -1,0 +1,65 @@
+= Referrer Checking on Form Posts =
+
+To help mitigate cross site request forgery attacks, we check that the
+referrer for a form post is either not present or is a URI from one of
+the Launchpad sites.
+
+
+First a helper to set up a browser object that doesn't handle the
+"Referer" header automatically.  We need to poke into the internal
+mechanize browser object here because Zope's test browser does not
+expose the required functionality:
+
+  >>> def setupBrowserWithReferrer(referrer):
+  ...      browser = setupBrowser("Basic no-priv@canonical.com:test")
+  ...      browser.mech_browser.set_handle_referer(False)
+  ...      if referrer is not None:
+  ...          browser.addHeader("Referer", referrer)
+  ...      return browser
+
+
+If we try to create a new team with with the referrer set to
+"evil.people.com", the post fails:
+
+  >>> browser = setupBrowserWithReferrer('http://evil.people.com/')
+  >>> browser.open('http://launchpad.dev/people/+newteam')
+  >>> browser.getControl('Name', index=0).value = 'team1'
+  >>> browser.getControl('Display Name').value = 'Team 1'
+  >>> browser.getControl('Create').click()
+  Traceback (most recent call last):
+    ...
+  OffsiteFormPostError: http://evil.people.com/
+
+
+Similarly, posting with a garbage referer fails:
+
+  >>> browser = setupBrowserWithReferrer('not a url')
+  >>> browser.open('http://launchpad.dev/people/+newteam')
+  >>> browser.getControl('Name', index=0).value = 'team2'
+  >>> browser.getControl('Display Name').value = 'Team 2'
+  >>> browser.getControl('Create').click()
+  Traceback (most recent call last):
+    ...
+  OffsiteFormPostError: not a url
+
+
+We do allow the post if there is no referrer:
+
+  >>> browser = setupBrowserWithReferrer(None)
+  >>> browser.open('http://launchpad.dev/people/+newteam')
+  >>> browser.getControl('Name', index=0).value = 'team3'
+  >>> browser.getControl('Display Name').value = 'Team 3'
+  >>> browser.getControl('Create').click()
+  >>> print browser.url
+  http://launchpad.dev/~team3
+
+
+Or if the referrer is from a site managed by launchpad:
+
+  >>> browser = setupBrowserWithReferrer('http://shipit.edubuntu.dev')
+  >>> browser.open('http://launchpad.dev/people/+newteam')
+  >>> browser.getControl('Name', index=0).value = 'team4'
+  >>> browser.getControl('Display Name').value = 'Team 4'
+  >>> browser.getControl('Create').click()
+  >>> print browser.url
+  http://launchpad.dev/~team4

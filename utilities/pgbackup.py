@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 """
 Backup one or more PostgreSQL databases.
 Suitable for use in crontab for daily backups.

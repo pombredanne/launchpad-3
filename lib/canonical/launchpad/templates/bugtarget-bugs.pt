@@ -1,0 +1,140 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
+>
+  <metal:block fill-slot="head_epilogue">
+    <script type="text/javascript" src="/+icing/FormatAndColor.js"></script>
+    <script type="text/javascript" src="/+icing/PlotKit_Packed.js"></script>
+  </metal:block>
+  <metal:portlets fill-slot="portlets">
+    <tal:block content="structure context/@@+portlet-bugfilters" />
+    <tal:block content="structure context/@@+portlet-bugtags" />
+    <tal:releasecriticalbugs
+      tal:condition="view/shouldShowReleaseCriticalPortlet"
+      tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
+  </metal:portlets>
+  <body>
+    <div metal:fill-slot="main" class="tab-bugs"
+         tal:define="search_url string:+bugs;
+                     advanced_search_url string:+bugs?advanced=1">
+      <h1>Bugs in <tal:context replace="context/title">Ubuntu</tal:context></h1>
+      <metal:search
+        use-macro="context/@@+bugtarget-macros-search/simple-search-form"
+      />
+
+      <div class="columns">
+          <script type="text/javascript"
+               tal:content="structure view/getChartJavascript">
+          </script>
+        <div class="two column left">
+          <div id="bugs-chart" height="200" width="200">
+            <noscript>
+            <ul>
+              <li tal:repeat="bug_count view/bug_count_items"
+                  tal:content="string:${bug_count/count} ${bug_count/label} bugs">
+                12 Unconfirmed bugs
+              </li>
+            </ul>
+            </noscript>
+          </div>
+        </div>
+        <div class="two column right">
+          <h2>Key contacts</h2>
+          <table class="summary" style="width: 100%;">
+            <tbody>
+              <tr>
+                <th>Driver:</th>
+                <td>
+                  <tal:none condition="not:context/driver">None set</tal:none>
+                  <a
+                    tal:condition="context/driver"
+                    tal:attributes="href context/driver/fmt:url"
+                    tal:content="context/driver/displayname"
+                  >John Smith</a>
+                </td>
+              </tr>
+              <tr tal:define="bugcontact context/bugcontact">
+                <th>Bug contact:</th>
+                <td>
+                  <tal:none condition="not:bugcontact"
+                  >None set</tal:none>
+                  <a
+                    tal:condition="bugcontact"
+                    tal:attributes="href bugcontact/fmt:url"
+                    tal:content="bugcontact/displayname"
+                  >Bob Johnson</a>
+                </td>
+              </tr>
+              <tr tal:define="securitycontact context/security_contact">
+                <th>Security contact:</th>
+                <td>
+                  <tal:none condition="not:securitycontact"
+                  >None set</tal:none>
+                  <a
+                    tal:condition="securitycontact"
+                    tal:attributes="href securitycontact/fmt:url"
+                    tal:content="securitycontact/displayname"
+                  >Billy Anderson</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <ul class="cross-reference">
+            <li tal:define="fixed_elsewhere view/getBugsFixedElsewhereInfo">
+              <a tal:attributes="href fixed_elsewhere/url">
+                <strong tal:content="fixed_elsewhere/count">42</strong>
+                <tal:label
+                  tal:replace="fixed_elsewhere/label">bugs</tal:label>
+                fixed elsewhere
+              </a>
+            </li>
+            <li tal:define="cve_bugs view/getOpenCVEBugsInfo">
+              <a tal:attributes="href cve_bugs/url">
+                <strong tal:content="cve_bugs/count"></strong>
+                open CVE
+                <tal:label tal:replace="cve_bugs/label">bugs</tal:label>
+              </a>
+            </li>
+            <li tal:define="pending_bugwatches view/getPendingBugWatches"
+                tal:condition="view/isUpstreamProduct">
+              <a tal:attributes="href pending_bugwatches/url">
+                <strong tal:content="pending_bugwatches/count"></strong>
+                <tal:label
+                  tal:replace="pending_bugwatches/label">bugs</tal:label>
+                need forwarding upstream
+              </a>
+            </li>
+            <li style="font-weight: bold;">
+              <a href="+bugs">List all open bugs</a>
+            </li>
+          </ul>
+          <ul class="rollover buttons">
+            <li>
+              <a href="+filebug">
+                <img
+                  alt="Report a bug"
+                  src="/+icing/but-sml-reportabug.gif"
+                />
+              </a>
+            </li>
+            <li tal:content="structure context/@@+ask-a-question-button" />
+          </ul>
+        </div><!-- two column right -->
+      </div><!-- columns -->
+      <div class="clear"></div>
+      <div class="left">
+        <tal:reported replace="structure context/@@+portlet-latestbugs" />
+      </div>
+      <div class="right">
+        <tal:touched replace="structure context/@@+portlet-recently-touched-bugs" />
+      </div>
+    </div><!-- main -->
+  </body>
+</html>

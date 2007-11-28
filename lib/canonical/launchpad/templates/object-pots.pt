@@ -1,31 +1,35 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:comment condition="nothing">
   Indicates if no templates are registered for this object, and
   redirects to the mailing lists in case that is incorrect.
 </tal:comment>
 
-<tal:content define="potemplates context/currentpotemplates">
+<tal:content define="potemplates context/getCurrentTranslationTemplates">
 
   <tal:block condition="not: potemplates">
 
     <h2 i18n:translate="">No translatable templates available</h2>
 
     <p i18n:translate=""><span tal:replace="context/displayname" />
-    does not have any strings to be translated through Rosetta. If
-    you think this is incorrect, please send an email to
-    <a href="mailto:rosetta-users@lists.ubuntu.com">the Rosetta
-    mailing list</a> or file a bug in our
-    <a href="/rosetta/+bugs">bug
-    tracking system</a> so we can look into the problem. Thanks.
+    does not have any strings to be translated through Launchpad.  If
+    you think this is incorrect, please see if the subject has already come up
+    in the <a href="https://answers.launchpad.net/rosetta/">Answers</a>
+    application.  If it hasn't, file a new question there.  Thank you.
     </p>
   </tal:block>
 
-  <tal:block condition="context/currentpotemplates">
+  <tal:block condition="potemplates">
 
-    <tal:block tal:condition="python:len(potemplates) > 5">
+    <tal:block tal:condition="python:len(potemplates) &gt; 5">
       <!-- Listing of MANY templates -->
 
       <p>
-        These templates can be translated using Rosetta.
+        These templates can be translated using Launchpad.
       </p>
 
       <table class="listing">
@@ -35,7 +39,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="potemplate context/currentpotemplates"
+          <tr tal:repeat="potemplate potemplates"
               tal:attributes="onclick
                  string:window.location='${potemplate/fmt:url}'">
             <td><a tal:attributes="href potemplate/fmt:url"
@@ -48,20 +52,20 @@
 
     </tal:block>
 
-    <tal:listing tal:condition="python:len(potemplates) <= 5">
+    <tal:listing tal:condition="python:len(potemplates) &lt;= 5">
       <!-- Listing of FEW templates -->
 
-      <div tal:condition="not: view/languages">
+      <div tal:condition="not: view/translatable_languages">
         <ul>
-          <li tal:repeat="potemplate context/currentpotemplates">
+          <li tal:repeat="potemplate potemplates">
             <a tal:attributes="href potemplate/fmt:url"
               tal:content="potemplate/title">template</a>
           </li>
         </ul>
       </div>
 
-      <div tal:condition="view/languages"
-           tal:repeat="potemplate context/currentpotemplates"
+      <div tal:condition="view/translatable_languages"
+           tal:repeat="potemplate potemplates"
            tal:omit-tag=""> <!-- PO Template Details -->
 
         <h2><span tal:replace="potemplate/title">Template Title</span></h2>
@@ -82,10 +86,12 @@
 
       </div>
 
-      <div tal:replace="structure context/@@+rosetta-status-legend" />
+      <div tal:condition="view/translatable_languages"
+      	   tal:replace="structure context/@@+rosetta-status-legend" />
 
     </tal:listing>
 
   </tal:block>
 
 </tal:content>
+</tal:root>

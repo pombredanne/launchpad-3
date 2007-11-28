@@ -1,32 +1,50 @@
-<div metal:define-macro="comment-box"
-     class="boardComment">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  metal:define-macro="comment-box"
+  class="boardComment">
 
   <div class="boardCommentDetails">
+    <tal:comment_has_owner>
+      <tal:comment_owner replace="structure comment/owner/fmt:link" />
+    </tal:comment_has_owner>
+    wrote
+    <span
+      tal:attributes="title comment/datecreated/fmt:datetime"
+      tal:content="comment/datecreated/fmt:displaydate">
+      7 minutes ago
+    </span>:
     <a tal:attributes="href comment/fmt:url">
-    <strong tal:content="comment/title">$Bugcomment.title</strong>
+      <strong tal:condition="comment/display_title"
+              tal:content="comment/title" />
+      (permalink)
     </a>
-
-    from <a href="#" tal:attributes="href comment/owner/fmt:url"
-                          tal:content="comment/owner/browsername|string:(none)">
-      $Person.browsername</a>
-    at <span tal:replace="comment/datecreated/fmt:datetime">Thursday
-    13:21</span>
   </div>
 
   <div class="boardCommentBody">
     <ul tal:condition="comment/bugattachments" style="margin-bottom: 1em">
       <li tal:repeat="attachment comment/bugattachments"
           class="download">
-        <a tal:attributes="href attachment/libraryfile/url"
+        <a tal:attributes="href attachment/libraryfile/http_url"
            tal:content="attachment/title">foo.txt</a>
+        (<span
+           tal:replace="attachment/libraryfile/content/filesize/fmt:bytes" />,
+        <span tal:replace="attachment/libraryfile/mimetype" />)
       </li>
     </ul>
 
     <div style="font-family: monospace;"
-      tal:content="structure comment/text_for_display/fmt:text-to-html">
+      tal:condition="view/user"
+      tal:content="structure comment/text_for_display/fmt:email-to-html">
       Comment text.
     </div>
 
+    <div style="font-family: monospace;"
+      tal:condition="not:view/user"
+      tal:content="structure
+        comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
+      Comment text.
+    </div>
     <p tal:condition="comment/was_truncated">
       <a tal:attributes="href comment/fmt:url">Read more...</a>
     </p>

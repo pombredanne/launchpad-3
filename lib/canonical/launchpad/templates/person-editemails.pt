@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -12,7 +18,6 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -28,7 +33,7 @@
 
   <tal:block condition="context/preferredemail">
     <p>Your preferred contact address for all Launchpad e-mail is:</p>
-    <ul>
+    <ul id="preferred-email">
       <li class="mail"><b tal:content="context/preferredemail/email" /></li>
     </ul>
   </tal:block>
@@ -41,7 +46,7 @@
   <tal:block tal:condition="context/validatedemails">
   <p>These other addresses are confirmed as being yours:</p>
 
-  <div style="padding: 0.7em 0em">
+  <div style="padding: 0.7em 0em" id="confirmed-emails">
     <div tal:repeat="email context/validatedemails" >
       <label tal:attributes="for email/email">
         <input type="radio" tal:attributes="value email/email; id email/email"
@@ -58,7 +63,7 @@
   <tal:block tal:condition="view/unvalidatedAndGuessedEmails">
   <p>These addresses may also be yours:</p>
 
-  <div style="padding: 0.7em 0em">
+  <div style="padding: 0.7em 0em" id="unconfirmed-emails">
     <div tal:repeat="email view/unvalidatedAndGuessedEmails">
       <label tal:attributes="for string:${email}_unvalidated">
         <input type="radio" name="UNVALIDATED_SELECTED"

@@ -34,7 +34,7 @@ class NoRenderingOnRedirect:
         # Call update() here instead of from the template to avoid
         # rendering the page on redirects.
         self.update()
-        if self.request.response.getStatus() in [302, 303]:
+        if self.request.response.getStatus() in [301, 302, 303]:
             # Don't render the page on redirects.
             return u''
         else:
@@ -219,11 +219,11 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
         transaction.abort()
 
     def __call__(self):
-        #XXX: BrowserView doesn't define __call__(), but somehow
+        #XXX: Bjorn Tillenius, 2006-02-22: 
+        #     BrowserView doesn't define __call__(), but somehow
         #     NoRenderingOnRedirect.__call__() won't be called unless
         #     we define this method and call it explicitly. It's
         #     probably due to some ZCML magic which should be removed.
-        #     -- Bjorn Tillenius, 2006-02-22
 
         # We call initialize explicitly here (it's normally called by
         # GeneralFormView.__call__), because of the hack Bjorn

@@ -452,8 +452,6 @@ The rank of a result is calculated using the tsearch2 rank() function.
     gnomebaker                0.28
     python-gnome2-dev         0.14
     evolution                 0.12
-    ubuntu-product            0.06
-
 
 You can also build complex multi table queries and mush all the
 ranked results together. This query does a full text search on
@@ -502,8 +500,7 @@ an arbitrary constant that seemed appropriate).
     Printing doesn't work     0.70
 
 
-Natural Language Phrase Query
------------------------------
+== Natural Language Phrase Query ==
 
 The standard boolean searches of tsearch2 are fine, but sometime you
 want more fuzzy searches.
@@ -539,6 +536,9 @@ of the words (in the case of rank_cd()). Both scoring functions can
 normalize based on document length. So the only part left to implement
 is the >50% filtering part.
 
+
+=== nl_term_candidates() ===
+
 To find the terms in a search phrase that are canditates for the search,
 we can use the nl_term_candidates() function. This function uses ftq()
 internally to removes stop words and other words that will be ignored
@@ -565,6 +565,9 @@ Except for the hyphenation character, all non-word caracters are ignored:
     ...     "Will the \'\'|\'\' character (inside a ''quoted'' string) work???")
     ['charact', 'insid', 'quot', 'string', 'work']
 
+
+=== nl_phrase_search() ===
+
 To get the actual tsearch2 query that should be run, you will use the
 nl_phrase_search() function. This one takes two mandatory parameters and
 two optional ones. You pass in the search phrase and a SQLObject class.
@@ -574,25 +577,28 @@ that is matched by each term. Term matching 50% or more of the total
 rows will be excluded from the final search.
 
     >>> from canonical.database.nl_search import nl_phrase_search
-    >>> from canonical.launchpad.database import Ticket
+    >>> from canonical.launchpad.database import Question
     >>> from canonical.database.sqlbase import quote
 
-More than 50% of the tickets matches firefox:
+More than 50% of the questions matches firefox:
 
-    >>> ticket_count = Ticket.select().count()
-    >>> firefox_tickets = Ticket.select(
+    >>> question_count = Question.select().count()
+    >>> firefox_questions = Question.select(
     ...     'fti @@ ftq(%s)' % quote('firefox')).count()
-    >>> float(firefox_tickets) / ticket_count > 0.50
+    >>> float(firefox_questions) / question_count > 0.50
     True
 
 So firefox will be removed from the final query:
 
-    >>> nl_phrase_search('system is slow when running firefox', Ticket)
+    >>> nl_phrase_search('system is slow when running firefox', Question)
     'system|slow|run'
+
+
+==== Using other constraints ====
 
 You can pass a third parameter to the function that will be use as
 an additional constraint to determine the total number of rows that
-could be matched. For example, when searching tickets on the firefox
+could be matched. For example, when searching questions on the firefox
 product more than 50% have the word 'get' in (which surprisingly isn't
 considered a stop word by tsearch2). If the constraint uses any
 additional tables, you can pass in list of names of these tables as a
@@ -601,30 +607,67 @@ forth parameter:
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> firefox_product = getUtility(IProductSet).getByName('firefox')
 
-    >>> firefox_count = Ticket.select(
+    >>> firefox_count = Question.select(
     ...     'product = %s' % firefox_product.id).count()
-    >>> get_tickets = Ticket.select(
+    >>> get_questions = Question.select(
     ...     'fti @@ ftq(%s)' % quote('get')).count()
-    >>> float(get_tickets) / firefox_count > 0.50
+    >>> float(get_questions) / firefox_count > 0.50
     True
 
     >>> nl_phrase_search(
-    ...     'firefox gets very slow on flickr', Ticket,
-    ...     "Ticket.product = %s AND Product.active = 't'" % firefox_product.id,
+    ...     'firefox gets very slow on flickr', Question,
+    ...     "Question.product = %s AND Product.active = 't'" % firefox_product.id,
     ...     ['Product'])
     'slow|flickr'
 
 When the query only has stop words or common words in it, the returned
 query will be the empty string:
 
-    >>> nl_phrase_search('firefox will not do it', Ticket)
+    >>> nl_phrase_search('firefox will not do it', Question)
     ''
 
 When there are no candidate rows, only stemming and stop words removal
 is done.
 
-    >>> Ticket.select('product = -1').count()
+    >>> Question.select('product = -1').count()
     0
-    >>> nl_phrase_search('firefox is very slow on flickr', Ticket,
+    >>> nl_phrase_search('firefox is very slow on flickr', Question,
     ...                  'product = -1')
     'firefox|slow|flickr'
+
+
+==== No keywords filtering with few rows ====
+
+The 50% rule is really useful only when there are many rows. When there
+only very few rows, that keyword elimination becomes a problem since
+keywords could be eliminated. For that reason, when there are less than
+5 candidates rows, keywords elimination is skipped.
+
+For example, there are less than 5 questions filed on the
+mozilla-firefox source package.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.database.sqlbase import sqlvalues
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> firefox_package = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> firefox_package_questions = Question.select(
+    ...     'distribution = %s AND sourcepackagename = %s' % sqlvalues(
+    ...     ubuntu, firefox_package.sourcepackagename))
+    >>> firefox_package_questions.count() < 5
+    True
+
+And more than half of these contain the keyword "firefox" in them:
+
+    >>> firefox_questions = Question.select(
+    ...     'fti @@ ftq(%s)' % quote('firefox')).count()
+    >>> float(get_questions) / firefox_package_questions.count() > 0.50
+    True
+
+But the keyword is still keep because there are only less than 5
+questions:
+
+    >>> nl_phrase_search(
+    ...     'firefox is slow', Question,
+    ...     'distribution = %s AND sourcepackagename = %s' % sqlvalues(
+    ...     ubuntu, firefox_package.sourcepackagename))
+    'firefox|slow'

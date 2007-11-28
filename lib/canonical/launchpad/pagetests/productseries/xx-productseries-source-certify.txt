@@ -1,0 +1,124 @@
+Check that we can approve an import for sync without having to review
+the Product.
+
+We use the david.allouche@canonical.com user for this test, because it is
+member of vcs-imports and not a member of admins.
+
+Check the the +source form loads and that the import status is the
+expected value.
+
+  >>> browser.addHeader('Authorization',
+  ...     'Basic david.allouche@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/a52dec/trunk/+source')
+  >>> print find_main_content(browser.contents)
+  <...
+  <h2>Import Status</h2>
+  <p>The current import status is: <b>Testing</b>. </p>
+  ...
+
+Since we are a VCS imports team member, there is an extra action
+button to allow us to approve imports.
+
+  >>> browser.getControl('Approve import for production and publication')
+  <SubmitControl ...>
+
+This button does not appear for normal users:
+
+  >>> user_browser.open('http://launchpad.dev/a52dec/trunk/+source')
+  >>> user_browser.getControl('Approve import for production and publication')
+  Traceback (most recent call last):
+    ...
+  LookupError: label 'Approve import for production and publication'
+
+
+If we remove the RCS details, we will get an error when trying to
+certify the import:
+
+  >>> browser.getControl('No revision control system, or Bazaar').click()
+  >>> browser.getControl(
+  ...     'Approve import for production and publication').click()
+  >>> print browser.url
+  http://launchpad.dev/a52dec/trunk/+source
+  >>> for tag in find_tags_by_class(browser.contents, 'error'):
+  ...     print tag
+  <p class="error message">There is 1 error.</p>
+  <p class="error message">Can not certify import without CVS or Subversion details.</p>
+
+
+If we have correct details, we can approve the build for production:
+
+  >>> browser.getControl('CVS').click()
+  >>> browser.getControl('Repository').value = (
+  ...     ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52')
+  >>> browser.getControl('Module').value = 'a52dec'
+  >>> browser.getControl(name='field.cvsbranch').value = 'MAIN'
+  >>> browser.getControl(
+  ...     'Approve import for production and publication').click()
+  >>> print browser.url
+  http://launchpad.dev/a52dec/trunk
+
+Check that that import status was indeed updated.
+
+  >>> extract_text(
+  ...     find_tag_by_id(browser.contents, 'import-status'))
+  u'Processing'
+
+On the edit page, there are buttons for changing the import status of a
+series and also for wiping out all details of an import.
+
+We set an import to TESTFAILED when the import did not complete for some
+"external" reason -- the most common reason being an unreliable server.
+
+  >>> browser.open('http://launchpad.dev/a52dec/trunk/+source')
+  >>> browser.getControl('Mark Import TESTFAILED').click()
+  >>> browser.url
+  'http://launchpad.dev/a52dec/trunk'
+  >>> extract_text(
+  ...     find_tag_by_id(browser.contents, 'import-status'))
+  u'Test Failed'
+
+We mark an import as DONTSYNC for two reasons.  One is that the import
+fails because of a problem at our end, such as a filename present in the
+upstream repository that bzr does not support.  When this happens, after
+marking the import, we add a note to
+http://help.launchpad.net/VcsImportRequests.  The other reason for
+applying DONTSYNC is an import that has bogus details supplied, or does
+not fit with our policy, such as a request to import a non-trunk branch.
+
+  >>> browser.open('http://launchpad.dev/a52dec/trunk/+source')
+  >>> browser.getControl('Mark Import DONTSYNC').click()
+  >>> browser.url
+  'http://launchpad.dev/a52dec/trunk'
+  >>> extract_text(
+  ...     find_tag_by_id(browser.contents, 'import-status'))
+  u'Do Not Import'
+
+Finally, sometimes we need to try as hard as we can to forget an import
+ever existed for this series.  We do this, for example, when the
+upstream project moves from CVS to Subversion.
+
+  >>> browser.open('http://launchpad.dev/a52dec/trunk/+source')
+  >>> browser.getControl('Delete Import').click()
+  >>> browser.url
+  'http://launchpad.dev/a52dec/trunk'
+  >>> extract_text(
+  ...     find_tag_by_id(browser.contents, 'no-rcs-details'))
+  u'No revision control details recorded for trunk.'
+
+These operations are only permitted for VCS operators and Launchpad
+admins, so a user will not see these buttons:
+
+  >>> user_browser.url
+  'http://launchpad.dev/a52dec/trunk/+source'
+  >>> user_browser.getControl('Mark Import TESTFAILED')
+  Traceback (most recent call last):
+    ...
+  LookupError: label 'Mark Import TESTFAILED'
+  >>> user_browser.getControl('Mark Import DONTSYNC')
+  Traceback (most recent call last):
+    ...
+  LookupError: label 'Mark Import DONTSYNC'
+  >>> user_browser.getControl('Delete Import')
+  Traceback (most recent call last):
+    ...
+  LookupError: label 'Delete Import'

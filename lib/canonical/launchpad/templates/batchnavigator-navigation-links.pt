@@ -1,4 +1,5 @@
 <table
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
   tal:define="
     first_page_url context/firstBatchURL;
     prev_page_url context/prevBatchURL;
@@ -10,7 +11,8 @@
 >
   <tbody>
     <tr>
-      <td style="white-space: nowrap">
+      <td style="white-space: nowrap" 
+          class="batch-navigation-index">
         <strong tal:content="context/batch/startNumber">1</strong>
         <tal:block condition="python: size > 1">
           &rarr;
@@ -20,7 +22,8 @@
         <span tal:replace="total">42</span> result<span
             tal:omit-tag="" tal:condition="python: total != 1">s</span>
       </td>
-      <td style="text-align: right; white-space: nowrap">
+      <td style="text-align: right; white-space: nowrap" 
+          class="batch-navigation-links">
         <tal:first condition="first_page_url">
           <a tal:attributes="href first_page_url" rel="first"
           >&laquo;&nbsp;First</a>

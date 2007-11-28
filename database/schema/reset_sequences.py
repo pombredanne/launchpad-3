@@ -1,3 +1,4 @@
+#!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 """
 The sampledata does not update the current values of all the sequences

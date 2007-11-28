@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Section interfaces."""
 
@@ -26,9 +27,9 @@ class ISection(Interface):
 
 
 class ISectionSelection(Interface):
-    """Represents the allowed section within a Distrorelease."""
+    """Represents the allowed section within a DistroSeries."""
     id = Attribute("The ID")
-    distrorelease = Attribute("Target DistroRelease")
+    distroseries = Attribute("Target DistroSeries")
     section = Attribute("Selected Section")
 
 

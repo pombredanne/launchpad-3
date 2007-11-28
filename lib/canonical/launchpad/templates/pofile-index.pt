@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="rosetta"
+>
 
 <body>
 
@@ -15,8 +22,19 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Translation of <span tal:replace="context/potemplate/potemplatename/name">PO Template</span>
-        into <span tal:replace="context/language/displayname">Language</span></h1>
+    <div>
+      <a tal:attributes="href context/potemplate/fmt:url"
+         tal:content="context/potemplate/title">
+        evolution 2.10 template
+      </a>
+    </div>
+    <h1>
+      Overview for
+      <tal:language replace="context/language/englishname">
+        Spanish
+      </tal:language>
+      translation
+    </h1>
 
     <h2>Contributors to this translation</h2>
 
@@ -25,15 +43,10 @@
       translation:
     </p>
 
-    <ul class="people" tal:condition="view/contributors">
+    <ul class="person" tal:condition="view/contributors">
       <li tal:repeat="contributor view/contributors">
         <a tal:content="contributor/browsername"
           tal:attributes="href contributor/fmt:url" />
-        <tal:comment condition="nothing">
-          XXX mpt 20050627: Change this to
-          string:/~${contributor/name}/+translations
-          once +translations is implemented (bug 1154)
-        </tal:comment>
       </li>
     </ul>
 

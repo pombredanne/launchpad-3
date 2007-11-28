@@ -1,0 +1,24 @@
+= Bugtask report bug in context =
+
+While seeing a bug in a context that it wasn't reported, No Privileges
+Person given a easy way to report it by clicking in the 'Also Needs
+Fixing Here' button.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/3')
+    >>> notice = find_tags_by_class(user_browser.contents, 'error message')
+    >>> extract_text(notice[0])
+    u'This bug is not recorded as needing to be fixed
+      in...mozilla-firefox (Ubuntu).'
+
+    >>> user_browser.getControl('Also Needs Fixing Here').click()
+    >>> get_feedback_messages(user_browser.contents)
+    [u'Thank you for your bug report.']
+
+If No Privileges Person tries to report it again, he sees a nice error
+message.
+
+    >>> user_browser.goBack(1)
+    >>> user_browser.getControl('Also Needs Fixing Here').click()
+    >>> get_feedback_messages(user_browser.contents)
+    [u'The bug is already reported in this context.']

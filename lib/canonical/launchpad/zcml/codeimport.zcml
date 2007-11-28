@@ -1,0 +1,78 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  xmlns:zope="http://namespaces.zope.org/zope"
+  i18n_domain="launchpad">
+
+  <!-- CodeImport -->
+
+  <content class="canonical.launchpad.database.CodeImport">
+    <implements interface="canonical.launchpad.interfaces.ICodeImport" />
+    <require
+      permission="launchpad.View"
+      attributes="id date_created branch registrant owner assignee
+                  product series review_status
+                  rcs_type cvs_root cvs_module svn_branch_url
+                  date_last_successful
+                  update_interval effective_update_interval" />
+    <require
+      permission="launchpad.Edit"
+      attributes="updateFromData" />
+
+    <!-- ICodeImport has no set_schema, because all modifications should be
+      done through methods that create CodeImportEvent objects when
+      appropriate. -->
+  </content>
+
+  <browser:url
+    for="canonical.launchpad.interfaces.ICodeImport"
+    path_expression="string:+code-import"
+    attribute_to_parent="branch"
+    rootsite="code" />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ICodeImport"
+    name="+index"
+    layer="canonical.launchpad.layers.CodeLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ICodeImport"
+    class="canonical.launchpad.browser.CodeImportView"
+    name="+index"
+    template="../templates/codeimport.pt"
+    permission="launchpad.View"
+    />
+
+  <!-- CodeImportSet -->
+
+  <securedutility
+    class="canonical.launchpad.database.CodeImportSet"
+    provides="canonical.launchpad.interfaces.ICodeImportSet" >
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.ICodeImportSet" />
+  </securedutility>
+
+  <browser:url
+    for="canonical.launchpad.interfaces.ICodeImportSet"
+    path_expression="string:+code-imports"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    rootsite="code" />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ICodeImportSet"
+    name="+index"
+    layer="canonical.launchpad.layers.CodeLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ICodeImportSet"
+    class="canonical.launchpad.browser.CodeImportSetView"
+    name="+index"
+    template="../templates/codeimport-list.pt"
+    permission="launchpad.View"
+    />
+
+</configure>

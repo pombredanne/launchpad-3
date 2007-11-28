@@ -1,0 +1,266 @@
+= Translation Export Queue =
+
+The Translation Export Queue is the functionality that allows us to export
+translation resources from the Launchpad portal.
+
+
+== ExportResult ==
+
+ExportResult class is used to control the list of exported files that succeed
+and the ones that failed with the error associated.
+
+  >>> import transaction
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> from canonical.launchpad.mail.stub import test_emails
+  >>> from canonical.launchpad.scripts.po_export_queue import ExportResult
+
+  # Function to print mail content without headers.
+  >>> def print_mail_body(body):
+  ...     lines = body[body.index('\n\n')+2:].split('\n')
+  ...     for line in lines:
+  ...         print ">", line
+
+When there is an error, the system will notify it.
+
+To note error messages with the failure file, it should happen inside an
+exception handling so we can get the exception error:
+
+    >>> from canonical.launchpad.database import POTemplate
+    >>> potemplate = POTemplate.get(1)
+    >>> pofile = potemplate.getPOFileByLang('es')
+
+    >>> result = ExportResult('testing export')
+    >>> result.object_names.append(potemplate.displayname)
+    >>> result.object_names.append(pofile.title)
+
+Record the error.
+
+  >>> try:
+  ...     raise AssertionError, "It's just an error for testing purposes"
+  ... except AssertionError:
+  ...     result.addFailure()
+
+In this case, there is an error, so there shouldn't be a URL to download
+anything, if we set it, the system will fail:
+
+  >>> result.url = 'http://someplace.com/somefile.tar.gz'
+
+Once we are done, we should notify the user that everything failed, but
+given that we set a URL, the notification will detect the programming error.
+In this example, 'carlos' will be the one that did the request.
+
+  >>> personset = getUtility(IPersonSet)
+  >>> carlos = personset.getByName('carlos')
+  >>> result.notify(carlos)
+  Traceback (most recent call last):
+  ...
+  AssertionError: We cannot have a URL for the export and a failure.
+
+In this case, it should be None, so the notify works.
+
+  >>> result.url = None
+  >>> result.notify(carlos)
+
+  # We need to commit the transaction to get the emails in the queue.
+  >>> transaction.commit()
+
+As usual, when there is an error, two emails should be sent:
+
+  >>> len(test_emails) == 2
+  True
+
+  >>> while len(test_emails) > 0:
+  ...     from_addrs, to_addrs, body = test_emails.pop()
+  ...     if 'carlos@canonical.com' in to_addrs:
+  ...         carlos_addrs = to_addrs
+  ...         carlos_body = body
+  ...     else:
+  ...         admins_addrs = to_addrs
+  ...         admins_body = body
+
+One is for the user with the error notification.
+
+  >>> print carlos_addrs
+  ['carlos@canonical.com']
+  >>> print_mail_body(carlos_body)
+  > 
+  > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
+  > 
+  > Rosetta encountered problems exporting the files you
+  > requested. The Rosetta team has been notified of this
+  > problem. Please reply to this email for further assistance.
+  >
+
+And the other to the admins.  This one lists the files that were being
+exported as context to help tracking down any bugs.
+
+  >>> print admins_addrs
+  ['launchpad-error-reports@lists.canonical.com']
+  >>> print_mail_body(admins_body)
+  > 
+  > Hello admins,
+  > 
+  > Rosetta encountered problems exporting some files requested by
+  > Carlos Perell=C3=B3 Mar=C3=ADn. This means we have a bug in
+  > Launchpad that needs to be fixed to be able to proceed with
+  > this export. You can see the list of failed files with the
+  > error we got:
+  > 
+  > Traceback (most recent call last):
+  ...
+  > AssertionError: It's just an error for testing purposes
+  >
+  > The failed request involved these objects:
+  > evolution-2.2 in Evolution trunk
+  > Spanish (es) translation of evolution-2.2 in Evolution trunk
+
+As a special case, some error messages are poisoned with non-ASCII characters
+and can't be reported without triggering an error themselves.  Those are
+specially handled and reported.
+
+  >>> try:
+  ...     raise AssertionError, "Really nasty \xc3 non-ASCII error!"
+  ... except AssertionError:
+  ...     result.addFailure()
+  >>> result.notify(carlos)
+  >>> transaction.commit()
+  >>> len(test_emails) == 2
+  True
+
+  >>> carlos_body = None
+  >>> admins_body = None
+  >>> while len(test_emails) > 0:
+  ...     from_addrs, to_addrs, body = test_emails.pop()
+  ...     if 'carlos@canonical.com' in to_addrs:
+  ...         carlos_body = body
+  ...     else:
+  ...         admins_body = body
+
+The user's notification looks no different from that for an ordinary error.
+
+  >>> print_mail_body(carlos_body)
+  > 
+  > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
+  > 
+  > Rosetta encountered problems exporting the files you
+  > requested. The Rosetta team has been notified of this
+  > problem. Please reply to this email for further assistance.
+  >
+
+The one for the administrators, however, does not include the unprintable
+exception text.
+
+  >>> print_mail_body(admins_body)
+  > 
+  > Hello admins,
+  > 
+  > A UnicodeDecodeError occurred while trying to notify you of a
+  > failure during a translation export requested by Carlos ...
+  >
+  > The failed request involved these objects:
+  > evolution-2.2 in Evolution trunk
+  > Spanish (es) translation of evolution-2.2 in Evolution trunk
+
+
+Finally, there is the case when there are no errors at all. This is the usual
+case.
+
+  >>> result = ExportResult('testing export')
+
+As noted before, result.url should be set to the URL where the user can
+download the requested files. If we don't set it, the export will fail:
+
+  >>> result.notify(carlos)
+  Traceback (most recent call last):
+  ...
+  AssertionError: On success, an exported URL is expected.
+
+So let's add it:
+
+  >>> result.url = 'http://someplace.com/somefile.tar.gz'
+
+And notify the user.
+
+  >>> result.notify(carlos)
+
+  # We need to commit the transaction to get the email in the queue.
+  >>> transaction.commit()
+
+In this case, there are no errors, so we should get just a single email
+
+  >>> len(test_emails) == 1
+  True
+
+  >>> from_addrs, to_addrs, body = test_emails.pop()
+
+  >>> print to_addrs
+  ['carlos@canonical.com']
+  >>> print_mail_body(body)
+  > 
+  > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
+  > 
+  > The files you requested from Rosetta are ready for download
+  > from the following location:
+  > 
+  >     http://someplace.com/somefile.tar.gz
+
+
+== process_queue() ==
+
+This method handles entries from the queue of entries to be exported.
+
+    >>> from canonical.launchpad.scripts.po_export_queue import process_queue
+
+First, fill the export queue with entries to be exported.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPOExportRequestSet
+    >>> from canonical.launchpad.interfaces import TranslationFileFormat
+    >>> export_request_set = getUtility(IPOExportRequestSet)
+
+The queue is empty by default.
+
+    >>> export_request_set.entry_count
+    0
+
+Once a new entry has been added, the queue has content.
+
+    >>> export_request_set.addRequest(
+    ...     carlos, potemplates=[potemplate], format=TranslationFileFormat.PO)
+    >>> export_request_set.entry_count
+    1
+
+Once the queue is processed, the queue is empty again.
+
+    >>> import logging
+    >>> process_queue(transaction, logging.getLogger())
+
+    >>> export_request_set.entry_count
+    0
+
+And a confirmation email was sent to carlos, the importer.
+
+    >>> len(test_emails)
+    1
+
+The confirmation email shows no errors at all.
+
+    >>> from_addrs, to_addrs, body = test_emails.pop()
+    >>> print to_addrs
+    ['carlos@canonical.com']
+    >>> print_mail_body(body)
+    > 
+    > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
+    > 
+    > The files you requested from Rosetta are ready for download
+    > from the following location:
+    > 
+    >     http://localhost:58000/.../po_evolution-2.2.pot
+
+Finally, if we try to do an export with an empty queue, we don't do
+anything:
+
+    >>> process_queue(transaction, logging.getLogger())
+    >>> len(test_emails)
+    0

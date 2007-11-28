@@ -1,5 +1,4 @@
-People karma
-============
+= People karma =
 
 In Launchpad, everytime a user performs an action, we give him some karma
 points. These karma points are stored in the KarmaAction table and the
@@ -17,7 +16,7 @@ product or a distribution), so that we know to what a user contributes to and
 what users are the top contributors for a given product/distribution.
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IPerson, IKarma, IKarmaCache, IProductSet,
     ...     ISourcePackageNameSet, IDistributionSet)
@@ -40,7 +39,6 @@ assigned to a given person.
     Karma added: action=specreviewed, product=firefox
 
     >>> karma_helper.unregister_listener()
-
 
 Salgado wrote the karma framework. Let's give him some karma points.
 
@@ -67,9 +65,45 @@ calculated daily. That's why it's still 0.
     >>> salgado.karma
     0
 
+Some Person's are not awarded karma: Teams, and the Launchpad Janitor,
+do not receive karma when assignKarma is called. There is no error
+or message to indicate nothing happed. The method assignKarma
+silently returns, so callsites do not need to know who may be awarded
+karma.
 
-Karma Updater
--------------
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> janitor = getUtility(ILaunchpadCelebrities).janitor
+    >>> dummy = janitor.assignKarma('specreviewed', product=firefox)
+    <BLANKLINE>
+
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> dummy = janitor.assignKarma('specreviewed', product=firefox)
+    <BLANKLINE>
+    
+== Projects a person is most active on ==
+
+Using our karma records we can also tell in which projects a person is most
+active on, including the type of work the person does on each project. We only show the 5 most active projects.
+
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> for contrib in foobar.getProjectsAndCategoriesContributedTo():
+    ...     categories = sorted(cat.name for cat in contrib['categories'])
+    ...     print contrib['project'].title, categories
+    The Evolution Groupware Application [u'bugs', u'translations']
+    Ubuntu Linux [u'bugs']
+    Gnome Baker [u'bugs']
+    Mozilla Thunderbird [u'bugs']
+    Mozilla Firefox [u'bugs']
+
+As we can see, the results are ordered descending by the karma of the person
+on that project.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> print removeSecurityProxy(foobar)._getProjectsWithTheMostKarma()
+    [[u'evolution', 175], [u'ubuntu', 26], [u'gnomebaker', 15],
+     [u'thunderbird', 15], [u'firefox', 8], [u'bazaar', 2]]
+
+== Karma Updater ==
 
 It would be a problem if every time we wanted to see a user's total karma we
 had to calculate it, so we decided to cache this total and update it
@@ -89,15 +123,12 @@ is updated by the foaf-update-karma-cache.py cronscript.
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
     >>> print err
-    INFO    Updating the karma cache of Launchpad users.
     INFO    creating lockfile
-    INFO    Calculating everyones karma
-    INFO    Got 27 (person, category) scores
-    INFO    Scaling bugs by a factor of 2.6667
-    INFO    Reducing bugs scaling to 2 to avoid spikes
-    INFO    Scaling specs by a factor of 1.0000
-    INFO    Rebuilding KarmaTotalCache
-    INFO    Finished updating the karma cache of Launchpad users.
+    INFO    Updating Launchpad karma caches
+    INFO    Step A: Calculating individual KarmaCache entries
+    INFO    Step B: Rebuilding KarmaTotalCache
+    INFO    Step C: Calculating KarmaCache sums
+    INFO    Finished updating Launchpad karma caches
     <BLANKLINE>
     >>> print out
     <BLANKLINE>

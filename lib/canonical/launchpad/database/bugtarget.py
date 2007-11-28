@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Components related to IBugTarget."""
 
@@ -7,14 +8,14 @@ __all__ = ['BugTargetBase']
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import cursor
-from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
+from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugtask import get_bug_privacy_filter
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import BugTaskStatus, ILaunchBag
 from canonical.launchpad.interfaces.bugtask import (
-    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES, BugTaskSearchParams)
+    BugTaskImportance, BugTaskSearchParams, RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES)
 
 class BugTargetBase:
     """Standard functionality for IBugTargets.
@@ -59,6 +60,16 @@ class BugTargetBase:
             Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids)))
 
     @property
+    def closed_bugtasks(self):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        closed_tasks_query = BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user,
+            status=any(*RESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
+
+        return self.searchTasks(closed_tasks_query)
+
+    @property
     def open_bugtasks(self):
         """See canonical.launchpad.interfaces.IBugTarget."""
         open_tasks_query = BugTaskSearchParams(
@@ -69,10 +80,10 @@ class BugTargetBase:
         return self.searchTasks(open_tasks_query)
 
     @property
-    def unconfirmed_bugtasks(self):
+    def new_bugtasks(self):
         """See canonical.launchpad.interfaces.IBugTarget."""
         open_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, status=BugTaskStatus.UNCONFIRMED,
+            user=getUtility(ILaunchBag).user, status=BugTaskStatus.NEW,
             omit_dupes=True)
 
         return self.searchTasks(open_tasks_query)
@@ -114,3 +125,35 @@ class BugTargetBase:
             status=not_equals(BugTaskStatus.UNKNOWN))
 
         return self.searchTasks(all_tasks_query)
+
+    def _getBugTaskContextClause(self):
+        """Return a SQL clause for selecting this target's bugtasks."""
+        raise NotImplementedError(self._getBugTaskContextClause)
+
+    def getBugCounts(self, user, statuses=None):
+        """See IBugTarget."""
+        if statuses is None:
+            statuses = BugTaskStatus.items
+
+        from_tables = ['BugTask', 'Bug']
+        count_column = """
+            COUNT (CASE WHEN BugTask.status = %s
+                        THEN BugTask.id ELSE NULL END) AS %s"""
+        select_columns = [
+            count_column % tuple(sqlvalues(status) + (status.name.lower(), ))
+            for status in statuses]
+        conditions = [
+            '(%s)' % self._getBugTaskContextClause(),
+            'BugTask.bug = Bug.id',
+            'Bug.duplicateof is NULL']
+        privacy_filter = get_bug_privacy_filter(user)
+        if privacy_filter:
+            conditions.append(privacy_filter)
+
+        cur = cursor()
+        cur.execute(
+            "SELECT %s FROM BugTask, Bug WHERE %s" % (
+                ', '.join(select_columns), ' AND '.join(conditions)))
+        [counts] = cur.dictfetchall()
+        return dict(
+            [(status, counts[status.name.lower()]) for status in statuses])

@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-"""Initialise a new distrorelease from its parent
+#!/usr/bin/python2.4
+"""Initialise a new distroseries from its parent
 
 It performs two additional tasks before call initialiseFromParent:
 
@@ -18,14 +18,13 @@ from optparse import OptionParser
 from zope.component import getUtility
 from contrib.glock import GlobalLock
 
+from canonical.config import config
 from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates, cursor, flush_database_caches)
-from canonical.lp import (
-    initZopeless, READ_COMMITTED_ISOLATION)
-from canonical.lp.dbschema import (
-    DistroReleaseQueueStatus, BuildStatus, PackagePublishingPocket)
+from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+    BuildStatus, IDistributionSet, NotFoundError, PackageUploadStatus,
+    PackagePublishingPocket)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 
@@ -49,10 +48,10 @@ def main():
 
     if len(args) != 1:
         log.error("Need to be given exactly one non-option argument. "
-                  "Namely the distrorelease to initialise.")
+                  "Namely the distroseries to initialise.")
         return 1
 
-    distrorelease_name = args[0]
+    distroseries_name = args[0]
 
     log.debug("Acquiring lock")
     lock = GlobalLock('/var/lock/launchpad-initialise.lock')
@@ -60,31 +59,31 @@ def main():
 
     log.debug("Initialising connection.")
 
-    ztm = initZopeless(dbuser='lucille', isolation=READ_COMMITTED_ISOLATION)
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
     execute_zcml_for_scripts()
 
     try:
         # 'ubuntu' is the default option.distribution value
         distribution = getUtility(IDistributionSet)[options.distribution]
-        distrorelease = distribution[distrorelease_name]
+        distroseries = distribution[distroseries_name]
     except NotFoundError, info:
         log.error(info)
         return 1
 
-    # XXX cprov 20060526: these two extra functions must be
-    # integrated in IDistroRelease.initialiseFromParent workflow.
-    log.debug('Check empty mutable queues in parentrelease')
-    check_queue(distrorelease)
+    # XXX cprov 2006-05-26: these two extra functions must be
+    # integrated in IDistroSeries.initialiseFromParent workflow.
+    log.debug('Check empty mutable queues in parentseries')
+    check_queue(distroseries)
 
-    log.debug('Check for no pending builds in parentrelease')
-    check_builds(distrorelease)
+    log.debug('Check for no pending builds in parentseries')
+    check_builds(distroseries)
 
-    log.debug('Copying distroarchreleases from parent '
+    log.debug('Copying distroarchserieses from parent '
               'and setting nominatedarchindep.')
-    copy_architectures(distrorelease)
+    copy_architectures(distroseries)
 
     log.debug('initialising from parent, copying publishing records.')
-    distrorelease.initialiseFromParent()
+    distroseries.initialiseFromParent()
 
     if options.dryrun:
         log.debug('Dry-Run mode, transaction aborted.')
@@ -98,40 +97,40 @@ def main():
     return 0
 
 
-def check_builds(distrorelease):
-    """Assert there are no pending builds for parent release.
+def check_builds(distroseries):
+    """Assert there are no pending builds for parent series.
 
     Only cares about the RELEASE pocket, which is the only one inherited
     via initialiseFromParent method.
     """
-    parentrelease = distrorelease.parentrelease
+    parentseries = distroseries.parent_series
 
     # only the RELEASE pocket is inherited, so we only check
     # pending build records for it.
-    pending_builds = parentrelease.getBuildRecords(
+    pending_builds = parentseries.getBuildRecords(
         BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
 
     assert (pending_builds.count() == 0,
             'Parent must not have PENDING builds')
 
-def check_queue(distrorelease):
-    """Assert upload queue is empty on parent release.
+def check_queue(distroseries):
+    """Assert upload queue is empty on parent series.
 
     Only cares about the RELEASE pocket, which is the only one inherited
     via initialiseFromParent method.
     """
-    parentrelease = distrorelease.parentrelease
+    parentseries = distroseries.parent_series
 
     # only the RELEASE pocket is inherited, so we only check
     # queue items for it.
-    new_items = parentrelease.getQueueItems(
-        DistroReleaseQueueStatus.NEW,
+    new_items = parentseries.getQueueItems(
+        PackageUploadStatus.NEW,
         pocket=PackagePublishingPocket.RELEASE)
-    accepted_items = parentrelease.getQueueItems(
-        DistroReleaseQueueStatus.ACCEPTED,
+    accepted_items = parentseries.getQueueItems(
+        PackageUploadStatus.ACCEPTED,
         pocket=PackagePublishingPocket.RELEASE)
-    unapproved_items = parentrelease.getQueueItems(
-        DistroReleaseQueueStatus.UNAPPROVED,
+    unapproved_items = parentseries.getQueueItems(
+        PackageUploadStatus.UNAPPROVED,
         pocket=PackagePublishingPocket.RELEASE)
 
     assert (new_items.count() == 0,
@@ -141,27 +140,27 @@ def check_queue(distrorelease):
     assert (unapproved_items.count() == 0,
             'Parent UNAPPROVED queue must be empty')
 
-def copy_architectures(distrorelease):
+def copy_architectures(distroseries):
     """Overlap SQLObject and copy architecture from the parent.
 
     Also set the nominatedarchindep properly in target.
     """
-    assert distrorelease.architectures.count() is 0, (
-        "Can not copy distroarchreleases from parent, there are already "
-        "distroarchrelease(s) initialised for this release.")
+    assert distroseries.architectures.count() is 0, (
+        "Can not copy distroarchseries from parent, there are already "
+        "distroarchseries(s) initialised for this series.")
     flush_database_updates()
     cur = cursor()
     cur.execute("""
-    INSERT INTO DistroArchRelease
-          (distrorelease, processorfamily, architecturetag, owner, official)
+    INSERT INTO DistroArchSeries
+          (distroseries, processorfamily, architecturetag, owner, official)
     SELECT %s, processorfamily, architecturetag, %s, official
-    FROM DistroArchRelease WHERE distrorelease = %s
-    """ % sqlvalues(distrorelease, distrorelease.owner,
-                    distrorelease.parentrelease))
+    FROM DistroArchSeries WHERE distroseries = %s
+    """ % sqlvalues(distroseries, distroseries.owner,
+                    distroseries.parent_series))
     flush_database_caches()
 
-    distrorelease.nominatedarchindep = distrorelease[
-        distrorelease.parentrelease.nominatedarchindep.architecturetag]
+    distroseries.nominatedarchindep = distroseries[
+        distroseries.parent_series.nominatedarchindep.architecturetag]
 
 
 if __name__ == '__main__':

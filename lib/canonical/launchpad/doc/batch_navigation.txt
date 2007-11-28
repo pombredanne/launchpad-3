@@ -178,7 +178,7 @@ the number of rows, and the first 10 rows:
   >>> len(CursorWrapper.last_executed_sql)
   2
   >>> print CursorWrapper.last_executed_sql[0]
-  /*...*/ SELECT COUNT(*) FROM EmailAddress WHERE 1 = 1
+  SELECT COUNT(*) FROM EmailAddress WHERE 1 = 1
   >>> CursorWrapper.last_executed_sql[1].endswith('LIMIT 10')
   True
 
@@ -193,3 +193,59 @@ COUNTs are issued:
   >>> CursorWrapper.last_executed_sql[0].endswith('LIMIT 10 OFFSET 10')
   True
 
+
+Adding callback functions
+-------------------------
+
+Sometimes it is useful to have a function called with the batched
+values once they have been determined.  This is the case when there
+are subsequent queries that are needed to be executed for each batch,
+and it is undesirable or overly expensive to execute the query for
+every value in the entire result set.
+
+The callback function must define two parameters.  The first is the 
+batch navigator object itself, and the second it the current batch.
+The callback function is called once and only once when the
+BatchNavigator is constructed, and the current batch is determined.
+
+  >>> def print_callback(context, batch):
+  ...     for item in batch:
+  ...         print item
+
+  >>> reindeer_batch_navigator = BatchNavigator(
+  ...     reindeer, build_request(), size=3, callback=print_callback)
+  Dasher
+  Dancer
+  Prancer
+
+  >>> request = build_request({"start": "3", "batch": "20"})
+  >>> last_reindeer_batch_navigator = BatchNavigator(
+  ...     reindeer, request=request, callback=print_callback)
+  Vixen
+  Comet
+  Cupid
+  Donner
+  Blitzen
+  Rudolph
+
+Most likely, the callback function will be bound to a view class.
+By providing the batch navigator itself as the context for the
+callback allows the addition of extra member variables.  This is
+useful as the BatchNavigator becomes the context in page templates
+that are batched.
+
+  >>> class ReindeerView:
+  ...     def constructReindeerFromAtoms(self, context, batch):
+  ...         # some significantly slow process
+  ...         view.built_reindeer = list(batch)
+  ...     def batchedReindeer(self):
+  ...         return BatchNavigator(
+  ...            reindeer, build_request(), size=3,
+  ...            callback=self.constructReindeerFromAtoms)
+
+  >>> view = ReindeerView()
+  >>> batch_navigator = view.batchedReindeer()
+  >>> print view.built_reindeer
+  ['Dasher', 'Dancer', 'Prancer']
+  >>> print list(batch_navigator.currentBatch())
+  ['Dasher', 'Dancer', 'Prancer']

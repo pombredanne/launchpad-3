@@ -1,7 +1,6 @@
-Poll Pages
-==========
+= Poll Pages =
 
-Test some poll-related pages.
+== Displaying results of condorcet polls ==
 
   >>> from zope.component import getUtility, getView
   >>> from canonical.launchpad.interfaces import IPollSet, IPersonSet
@@ -29,3 +28,22 @@ matrix as a python list, with the necessary headers (the option's names).
   [u'C', 1L, 1L, None, 1L]
   [u'D', 2L, 1L, 2L, None]
 
+== Voting on closed polls ==
+
+This is not allowed, and apart from not linking to the +vote page and not
+even displaying its content for a closed poll, we also have some lower
+level checks.
+
+    >>> request = TestRequest(form={'changevote': 'Change Vote'})
+    >>> request.method = 'POST'
+    >>> voting_page = getView(poll, "+vote-condorcet", request)
+    >>> form_processed = False
+    >>> def form_processing():
+    ...     form_processed = True
+    >>> voting_page.processCondorcetVotingForm = form_processing
+    >>> voting_page.processForm()
+
+    >>> form_processed
+    False
+    >>> voting_page.feedback
+    'This poll is not open.'

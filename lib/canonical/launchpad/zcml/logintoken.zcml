@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -9,8 +8,8 @@
 
     <!-- LoginToken -->
     <content class="canonical.launchpad.database.LoginToken">
-        <require 
-            permission="zope.Public" 
+        <require
+            permission="zope.Public"
             interface="canonical.launchpad.interfaces.ILoginToken" />
     </content>
 
@@ -27,10 +26,10 @@
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
         name="+index"
-        permission="zope.Public" 
+        permission="zope.Public"
         class="canonical.launchpad.browser.LoginTokenView"
         template="../templates/logintoken-index.pt"
-        lp:url="token/$token/+index" />
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -38,7 +37,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateEmailView"
         template="../templates/logintoken-validateemail.pt"
-        lp:url="token/$token/+validateemail" />
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -46,39 +45,31 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateEmailView"
         template="../templates/logintoken-validateteamemail.pt"
-        lp:url="token/$token/+validateteamemail" />
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
         name="+validategpg"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ValidateEmailView"
+        class="canonical.launchpad.browser.ValidateGPGKeyView"
         template="../templates/logintoken-validategpg.pt"
-        lp:url="token/$token/+validategpg" />
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
         name="+validatesignonlygpg"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ValidateEmailView"
+        class="canonical.launchpad.browser.ValidateGPGKeyView"
         template="../templates/logintoken-validatesignonlygpg.pt"
-        lp:url="token/$token/+validatesignonlygpg" />
+        />
 
-    <browser:generalform
+    <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
-        label="Reset password"
         name="+resetpassword"
         permission="zope.Public"
-        schema="canonical.launchpad.interfaces.ILoginToken"
-        fields="email password"
-        keyword_arguments="email password"
         class="canonical.launchpad.browser.ResetPasswordView"
         template="../templates/logintoken-resetpassword.pt"
-        lp:url="token/$token/+resetpassword" >
-        <browser:widget
-            field="password"
-            class="canonical.widgets.PasswordChangeWidget" />
-    </browser:generalform>
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -86,7 +77,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.MergePeopleView"
         template="../templates/logintoken-mergepeople.pt"
-        lp:url="token/$token/+accountmerge" />
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -95,21 +86,13 @@
         class="canonical.launchpad.browser.ClaimProfileView"
         template="../templates/logintoken-claimprofile.pt" />
 
-    <browser:generalform
+    <browser:page
         name="+newaccount"
-        label="Complete your registration"
         for="canonical.launchpad.interfaces.ILoginToken"
-        schema="canonical.launchpad.interfaces.IPerson"
-        fields="displayname hide_email_addresses password"
-        keyword_arguments="displayname hide_email_addresses password"
         class="canonical.launchpad.browser.NewAccountView"
         permission="zope.Public"
         template="../templates/logintoken-newaccount.pt"
-        lp:url="token/$token/+newaccount">
-        <browser:widget
-            field="password"
-            class="canonical.widgets.PasswordChangeWidget" />
-    </browser:generalform>
+        />
 
     <!-- LoginTokenSet -->
     <content class="canonical.launchpad.database.LoginTokenSet">

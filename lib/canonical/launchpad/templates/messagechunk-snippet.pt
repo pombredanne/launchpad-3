@@ -1,3 +1,8 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <tal:block condition="context/content">
     <div class="boardCommentContent"
         tal:content="structure context/content/fmt:nice_pre">
@@ -11,7 +16,7 @@
         This is currently disabled until we determine how to handle them.
         In particular, it is currently specified that we will accept
         comments from unknown users via email, but this could allow
-        Malone to be used to distribute porn.
+        Launchpad to be used to distribute porn.
 
         TODO: We probably need to simply bounce emails with attachments from
         unknown users and turn this back on. -- StuartBishop 20050203
@@ -26,3 +31,4 @@
     <div class="boardCommentContent">Message Attachment stripped</div>
 
 </tal:block>
+</tal:root>

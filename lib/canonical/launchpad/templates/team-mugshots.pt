@@ -1,0 +1,42 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h1>Who's in this team?</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+
+<tal:per_member repeat="member context/allmembers">
+  <a tal:condition="member/mugshot"
+     tal:attributes="
+       href member/fmt:url;
+       title member/browsername">
+    <img tal:attributes="src member/mugshot/http_url"/>
+  </a>
+  <span style="white-space: nowrap;" tal:condition="not: member/mugshot">
+    [<a tal:content="member/browsername"
+        tal:attributes="href member/fmt:url">Foo Bar</a>]</span>
+</tal:per_member>
+
+</div>
+</body>
+</html>

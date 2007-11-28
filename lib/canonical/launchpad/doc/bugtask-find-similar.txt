@@ -55,13 +55,12 @@ We can also search for distribution bugs:
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
-    ...     sample_person, "Thunderbird chrashes when displaying SVG",
+    ...     sample_person, "Thunderbird crashes when displaying SVG",
     ...     distribution=ubuntu)
     >>> for bugtask in similar_bugs:
     ...     print bugtask.bug.title
-    Firefox does not support SVG
     Thunderbird crashes
-
+    Firefox does not support SVG
 
 As well as limiting it to a specific source package:
 
@@ -74,6 +73,7 @@ As well as limiting it to a specific source package:
     >>> similar_bugs.count()
     0
 
+
 == Private bugs ==
 
 Only bugs that the user has access to view will be searched. If we set
@@ -84,10 +84,11 @@ allowed to view it, only the Thunderbird bug will be returned this time.
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> login('test@canonical.com')
     >>> firefox_svg_bug = getUtility(IBugSet).get(1)
-    >>> firefox_svg_bug.private = True
+    >>> firefox_svg_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(firefox_svg_bug)
 
-    >>> from canonical.launchpad.helpers import check_permission
+    >>> from canonical.launchpad.webapp.authorization import check_permission
     >>> login('no-priv@canonical.com')
     >>> check_permission('launchpad.View', firefox_svg_bug)
     False
@@ -100,8 +101,10 @@ allowed to view it, only the Thunderbird bug will be returned this time.
     Thunderbird crashes
 
     >>> login('test@canonical.com')
-    >>> firefox_svg_bug.private = False
+    >>> firefox_svg_bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(firefox_svg_bug)
+
 
 == Ordering of search results ==
 

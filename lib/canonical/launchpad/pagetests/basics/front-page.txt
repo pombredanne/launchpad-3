@@ -1,26 +1,46 @@
+== Launchpad front page ==
 
-We would like to test various features of the home page. This will prevent
-accidental regressions in the layout of the home page.
+The front page includes buttons for the main applications
 
-First, we should be seeing a translation box for Ubuntu Hoary into
-Afrikaans:
+  >>> browser.open('http://launchpad.dev/')
+  >>> browser.url
+  'http://launchpad.dev/'
 
-  >>> print http(r"""
-  ... GET / HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Afrikaans:...
-  .../ubuntu/hoary/+lang/af...
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...Register your project...
+  ...Publish your code...
+  ...
 
+  >>> register_link = browser.getLink(url='/projects')
+  >>> register_link.url
+  'http://launchpad.dev/projects/'
 
-Next, we also expect to see the top contributors (by Karma) listed on the
-home page.
+  >>> register_link.text
+  'register[IMG]'
 
-  >>> print http(r"""
-  ... GET / HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Sample Person...
+  >>> code_link = browser.getLink(url='code')
+  >>> code_link.url
+  'http://code.launchpad.dev/'
 
+  >>> code_link.text
+  'code[IMG]'
+
+a search form
+
+  >>> '<input type="submit" value="Search"' in browser.contents
+  True
+
+and lists of featured projects and marketing material.
+
+  >>> for tag in find_tags_by_class(browser.contents, 'three column right'):
+  ...     print extract_text(tag.renderContents())
+  Featured projects
+  Ubuntu
+  ...
+
+  >>> for tag in find_tags_by_class(browser.contents, 'three column left'):
+  ...     print extract_text(tag.renderContents())
+  What is Launchpad?
+  ...
 

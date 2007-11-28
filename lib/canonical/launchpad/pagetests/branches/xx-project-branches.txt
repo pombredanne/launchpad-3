@@ -1,0 +1,38 @@
+= Project Branches Overview =
+
+Projects link their branch listing page.
+
+   >>> browser.open('http://launchpad.dev/mozilla')
+   >>> browser.getLink('Code').click()
+   >>> print browser.title
+   The Mozilla Project's Bazaar branches registered in Launchpad
+
+
+== Default page for code site ==
+
+When going directly to a project on the code rootsite for launchpad,
+the branch listing is the default page shown.
+
+If there are branches, then they are displayed.
+
+   >>> browser.open('http://code.launchpad.dev/mozilla')
+   >>> print browser.title
+   The Mozilla Project's Bazaar branches registered in Launchpad
+   >>> table = find_tag_by_id(browser.contents, 'branchtable')
+   >>> for row in table.tbody.fetch('tr'):
+   ...     print extract_text(row)
+    main            Sample Person  5 New                                      firefox
+    release--0.9.1                 5 New  2005-03-09 15:45:00  ... weeks ago  firefox
+    release-0.8                    5 New                                      firefox
+    release-0.9                    5 New  2005-03-09 15:50:00  ... weeks ago  firefox
+    release-0.9.2                  5 New  2005-03-09 15:40:00  ... weeks ago  firefox
+    main            Mark Shuttleworth  5 New                              thunderbird
+
+If there are not any branches, a relevant message is shown.
+
+   >>> browser.open('http://code.launchpad.dev/aaa')
+   >>> print browser.title
+   The Test Project's Bazaar branches registered in Launchpad
+   >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
+   >>> print extract_text(message)
+   There are no branches registered for the Test Project in Launchpad...

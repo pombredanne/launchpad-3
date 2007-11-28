@@ -1,23 +1,21 @@
-Distro Source Package Bug Views
-===============================
+= Distro Source Package Bug Views =
 
-Searching
----------
+== Searching ==
 
 Simple searching is possible on the distro source package bug view page.
 
-  >>> from zope.component import getUtility
-  >>> from zope.component import getView
-  >>> from zope.publisher.browser import TestRequest
+  >>> from zope.component import getMultiAdapter, getUtility
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, ISourcePackageNameSet)
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
   >>> debian = getUtility(IDistributionSet).get(3)
   >>> mozilla_firefox = getUtility(ISourcePackageNameSet).get(1)
   >>> debian_mozilla_firefox = debian.getSourcePackage(mozilla_firefox)
-  >>> request = TestRequest(
+  >>> request = LaunchpadTestRequest(
   ...     form={'field.searchtext': 'svg', 'search': 'Search'})
-  >>> dsp_bugs_view = getView(debian_mozilla_firefox, '+bugs', request)
+  >>> dsp_bugs_view = getMultiAdapter(
+  ...     (debian_mozilla_firefox, request), name='+bugs')
   >>> dsp_bugs_view.initialize()
 
   >>> [task.bug.id for task in dsp_bugs_view.search().batch]
@@ -25,8 +23,9 @@ Simple searching is possible on the distro source package bug view page.
 
 The "search" parameter is optional, allowing more concise URLs.
 
-  >>> request = TestRequest(form={'field.searchtext': 'svg'})
-  >>> dsp_bugs_view = getView(debian_mozilla_firefox, '+bugs', request)
+  >>> request = LaunchpadTestRequest(form={'field.searchtext': 'svg'})
+  >>> dsp_bugs_view = getMultiAdapter(
+  ...     (debian_mozilla_firefox, request), name='+bugs')
   >>> dsp_bugs_view.initialize()
 
   >>> [task.bug.id for task in dsp_bugs_view.search().batch]

@@ -1,67 +1,56 @@
-<div class="portlet">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 
-  <h2><span tal:replace="context/title">project title</span></h2>
-
+<div class="portlet" id="portlet-details">
   <div class="portletBody portletContent">
-
-    <div tal:condition="context/homepageurl" tal:omit-tag>
-      <b>External links:</b><br />
-      <img src="/@@/link" alt="" />
-      <a tal:attributes="href context/homepageurl">Project
-          home page</a><br />
-    </div>
-
-    <b>Project Maintainer:</b><br />
-    <img alt="" src="/@@/user" />
-    <a tal:content="context/owner/browsername"
-       tal:attributes="href context/owner/fmt:url"
-       >ownername</a><br />
-
-    <b>Driver:</b><br />
-    <i tal:condition="not:context/driver">Not yet assigned</i>
-    <tal:has_driver condition="context/driver">
-      <img alt="" src="/@@/user" />
-      <a tal:content="context/driver/browsername"
-         tal:attributes="href context/driver/fmt:url">Carlos Perello</a>
-    </tal:has_driver>
-    <br />
-
-    <b>Translation Group:</b><br />
-    <img alt="" src="/@@/languages" />
-    <tal:block condition="context/translationgroup">
-    <a tal:attributes="href
-             string:/translations/groups/${context/translationgroup/name}/"
-       tal:content="context/translationgroup/title"
-    >Group</a><br />
-    </tal:block>
-    <tal:block condition="not: context/translationgroup">
-      <i>Not assigned</i><br />
-    </tal:block>
-    <b>Translation Perms:</b><br />
-    <span tal:replace="context/translationpermission/title">Open</span>
-    <br />
-
-    <b>Bug Tracker:</b><br />
-    <a tal:condition="context/bugtracker"
-        tal:content="context/bugtracker/title"
-       tal:attributes="href context/bugtracker/fmt:url">tracker title</a>
-    <i tal:condition="not: context/bugtracker">None specified</i>
-    <br />
-
-    <b>Products:</b><br />
-    <span tal:repeat="prod context/products" tal:omit-tag>
-        <img alt="" src="/@@/product" />
-        <a tal:content="prod/displayname"
-           tal:attributes="href prod/fmt:url">
-           product displayname</a><br />
-    </span>
-
-    <b>Project Status:</b><br />
-    <span tal:condition="context/reviewed"
-          tal:omit-tag>Reviewed<br /></span>
-    <span tal:condition="context/active"
-          tal:omit-tag>Active<br /></span>
-    <span tal:condition="not: context/active"
-          tal:omit-tag>Disabled<br /></span>
+    <table class="summary">
+      <tbody>
+        <tr>
+          <th>Project group status:</th>
+          <td>
+            <tal:block condition="context/active">Active</tal:block>
+            <tal:block condition="not: context/active">Disabled</tal:block>
+            <tal:block condition="context/reviewed"><br />Reviewed</tal:block>
+            <tal:block condition="context/icon"><br />Branded
+              <tal:icon replace="structure context/image:icon" />
+            </tal:block>
+          </td>
+        </tr>
+        <tr>
+          <th>Maintainer:</th>
+          <td>
+            <a
+              tal:content="context/owner/browsername"
+              tal:attributes="href context/owner/fmt:url"
+            >ownername</a>
+          </td>
+        </tr>
+        <tr>
+          <th>Driver:</th>
+          <td tal:condition="not:context/driver">Not yet appointed</td>
+          <td tal:condition="context/driver">
+            <a
+              tal:content="context/driver/browsername"
+              tal:attributes="href context/driver/fmt:url"
+            >Carlos Perello</a>
+          </td>
+        </tr>
+        <tr>
+          <th>Bug tracker:</th>
+          <td>
+            <a
+              tal:condition="context/bugtracker"
+              tal:content="context/bugtracker/title"
+              tal:attributes="href context/bugtracker/fmt:url"
+            >tracker title</a>
+            <tal:none condition="not:context/bugtracker">None specified</tal:none>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>
+</tal:root>

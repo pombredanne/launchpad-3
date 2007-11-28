@@ -1,0 +1,53 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+
+<metal:leftportlets fill-slot="portlets">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <tal:branch-link define="branch context">
+    <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
+  </tal:branch-link>
+  <h1>Propose branch for merging</h1>
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+  </div>
+
+</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+
+<metal:block fill-slot="help">
+
+  <p>
+    The purpose of a branch merge proposal is to indicate that one
+    branch is intending to be merged back into another branch.
+  </p>
+
+  <p>
+    The target branch is where the code will eventually be merged
+    into.
+  </p>
+
+  <p>
+    The dependent branch allows you to indicate that the branch
+    <em><tal:branch-name replace="context/displayname"/></em>
+    was branched of a different branch than the target branch.
+  </p>
+
+
+</metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
+
+</body>
+</html>
+<!-- 1-0 done -->

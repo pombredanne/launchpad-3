@@ -34,24 +34,24 @@ class ArchiveFilesystemInfo:
     to be used for other classes.
     """
 
-    def __init__(self, root, distrorelease, component, arch):
+    def __init__(self, root, distroseries, component, arch):
 
         # Holds the distribution informations
-        self.distrorelease = distrorelease
+        self.distroseries = distroseries
         self.component = component
         self.arch = arch
 
-        dist_dir = os.path.join(root, "dists", distrorelease, component)
+        dist_dir = os.path.join(root, "dists", distroseries, component)
         if not os.path.exists(dist_dir):
             raise MangledArchiveError("No archive directory for %s/%s" %
-                                      (distrorelease, component))
+                                      (distroseries, component))
 
         dist_bin_dir = os.path.join(dist_dir, "binary-%s" % arch)
         if not os.path.exists(dist_bin_dir):
             raise NoBinaryArchive
 
         # Search and get the files with full path
-        sources_zipped = os.path.join(root, "dists", distrorelease,
+        sources_zipped = os.path.join(root, "dists", distroseries,
                                       component, "source", "Sources.gz")
         if not os.path.exists(sources_zipped):
             raise MangledArchiveError("Archive mising Sources.gz at %s"
@@ -61,7 +61,7 @@ class ArchiveFilesystemInfo:
         if not os.path.exists(binaries_zipped):
             raise MangledArchiveError("Archive mising Packages.gz at %s"
                                       % binaries_zipped)
-        di_zipped = os.path.join(root, "dists", distrorelease, component,
+        di_zipped = os.path.join(root, "dists", distroseries, component,
                                  "debian-installer", "binary-%s" % arch,
                                  "Packages.gz")
 
@@ -99,7 +99,7 @@ class ArchiveComponentItems:
     This class holds ArchiveFilesystemInfo instances
     for each architecture/component pair that will be imported
     """
-    def __init__(self, archive_root, distrorelease, components, archs):
+    def __init__(self, archive_root, distroseries, components, archs):
 
         # Runs through architectures.
         archive_archs = []
@@ -109,11 +109,11 @@ class ArchiveComponentItems:
                 try:
                     # Create the ArchiveFilesystemInfo instance.
                     archive_info = ArchiveFilesystemInfo(archive_root,
-                                       distrorelease, component, arch)
+                                       distroseries, component, arch)
                 except NoBinaryArchive:
                     log.warn("The archive for %s/%s doesn't contain "
-                             "a directory for %s, skipping" % 
-                             (distrorelease, component, arch))
+                             "a directory for %s, skipping" %
+                             (distroseries, component, arch))
                 else:
                     # Hold it in a list.
                     archive_archs.append(archive_info)

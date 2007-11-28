@@ -2,10 +2,10 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
-    xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
 <facet facet="translations">
+
     <!-- TranslationImportQueue -->
     <content class="canonical.launchpad.database.TranslationImportQueueEntry">
         <allow
@@ -24,43 +24,33 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
-        name="+index" />
-
-    <browser:menus
-        module="canonical.launchpad.browser.translationimportqueue"
-        classes="TranslationImportQueueContextMenu
-                 TranslationImportQueueEntryContextMenu"
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
-        urldata="canonical.launchpad.browser.TranslationImportQueueEntryURL"
+        path_expression="string:${id}"
+        parent_utility="canonical.launchpad.interfaces.ITranslationImportQueue"
         />
 
-    <browser:generalform
+    <browser:page
         name="+index"
         for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
-        schema="canonical.launchpad.interfaces.IEditTranslationImportQueueEntry"
         class="canonical.launchpad.browser.TranslationImportQueueEntryView"
-        template="../templates/translationimportqueueentry-index.pt"
         permission="launchpad.Admin"
-        fields="sourcepackagename potemplatename path
-                language variant"
-        arguments="potemplatename"
-        keyword_arguments="sourcepackagename path language variant"
-        lp:url="/rosetta/imports/$TranslationImportQueueEntry.id/+index" />
+        template="../templates/translationimportqueueentry-index.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
-    <browser:pages
+    <browser:page
         for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
         facet="translations"
-        permission="zope.Public">
-        <!-- TranslationImportQueueEntry Portlets -->
-        <browser:page
-            name="+portlet-details"
-            template="../templates/translationimportqueueentry-portlet-details.pt"
-            lp:url="/rosetta/imports/1/+portlet-details"
-            />
-    </browser:pages>
+        permission="zope.Public"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        name="+portlet-details"
+        template="../templates/translationimportqueueentry-portlet-details.pt"
+        />
 
     <!-- TranslationImportQueue -->
     <securedutility
@@ -73,25 +63,25 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationImportQueue"
-        path_expression="string:imports"
-        parent_utility="canonical.launchpad.interfaces.IRosettaApplication"
+        path_expression="string:+imports"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslationImportQueue"
         name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
-    <browser:pages
+    <browser:page
         for="canonical.launchpad.interfaces.ITranslationImportQueue"
+        name="+index"
         class="canonical.launchpad.browser.TranslationImportQueueView"
         facet="translations"
-        permission="zope.Public">
-        <browser:page
-            name="+index"
-            template="../templates/translationimportqueue-index.pt" />
-            lp:url="/rosetta/imports/+index" />
-    </browser:pages>
+        permission="zope.Public"
+        template="../templates/translationimportqueue-index.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
 </facet>
 </configure>

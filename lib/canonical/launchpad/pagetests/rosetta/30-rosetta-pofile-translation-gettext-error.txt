@@ -4,57 +4,25 @@ translations with errors.
 First, we need to define a function to see that the message we are
 interested on doesn't have any translation.
 
-  >>> def getMessageValues(content, has_errors=False):
-  ...     """Return english strings and translations for the first message."""
-  ...
-  ...     from BeautifulSoup import BeautifulSoup
-  ...     translation_form_soup = BeautifulSoup(content)
-  ...     translation_tbody = translation_form_soup.findAll('tbody')[1]
-  ...     tr_list = translation_tbody.findAll('tr')
-  ...     tr_english_msgid = tr_list[0]
-  ...     td_ignore, td_id, td_ignore, td_msgid = (
-  ...         tr_english_msgid('td'))
-  ...
-  ...     if has_errors:
-  ...         # There is a 'tr' tag to show an error.
-  ...         tr_translation_singular_index = 3
-  ...         tr_translation_plural_index = 5
-  ...     else:
-  ...         tr_translation_singular_index = 2
-  ...         tr_translation_plural_index = 4
-  ...
-  ...     tr_translation_singular = tr_list[tr_translation_singular_index]
-  ...     td_ignore, td_translation_singular = tr_translation_singular('td')
-  ...
-  ...     tr_translation_plural = tr_list[tr_translation_plural_index]
-  ...     td_ignore, td_translation_plural = tr_translation_plural('td')
-  ...
-  ...     return (td_id.renderContents(), td_msgid.renderContents(),
-  ...             td_translation_singular.renderContents(),
-  ...             td_translation_plural.renderContents())
-
-
   >>> user_browser.open(
-  ...     "http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/"
-  ...     "evolution-2.2/es/+translate?start=20")
-  >>> user_browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
+  ...     "http://translations.launchpad.dev/ubuntu/hoary/+source/"
+  ...     "evolution/+pots/evolution-2.2/es/+translate?start=20")
 
 We are going to change message #21, but first, we see that this messages
 has no translations at all.
 
-  >>> (msgid_number, msgid, translation_singular, translation_plural) = (
-  ...     getMessageValues(user_browser.contents))
-  >>> print msgid_number
+  >>> print find_tag_by_id(
+  ...     user_browser.contents, 'msgset_150').renderContents()
   21.
-  <a name="21">
-    <input type="hidden" name="msgset_150" />
-  </a>
-  >>> print msgid
+  <input type="hidden" name="msgset_150" />
+  >>> print find_tag_by_id(
+  ...     user_browser.contents, 'msgset_150_singular').renderContents()
   Found <code>%i</code> invalid file.
-  >>> print translation_singular
+  >>> print find_tag_by_id(user_browser.contents,
+  ...                      'msgset_150_es_translation_0').renderContents()
   (no translation yet)
-  >>> print translation_plural
+  >>> print find_tag_by_id(user_browser.contents,
+  ...                      'msgset_150_es_translation_1').renderContents()
   (no translation yet)
 
 We are going to submit now translations for the singular and plural forms.
@@ -62,24 +30,23 @@ We also need to set the checkbox to True so the submit takes care of that
 submission and doesn't ignore it.
 
   >>> user_browser.getControl(
-  ...     name='msgset_150_es_translation_0_new_checkbox').value = True
+  ...     name='msgset_150_es_translation_0_radiobutton').value = [
+  ...         'msgset_150_es_translation_0_new']
   >>> user_browser.getControl(
   ...     name='msgset_150_es_translation_0_new').value = (
   ...         u'Found %s invalid file')
   >>> user_browser.getControl(
-  ...     name='msgset_150_es_translation_1_new_checkbox').value = True
+  ...     name='msgset_150_es_translation_1_radiobutton').value = [
+  ...         'msgset_150_es_translation_1_new']
   >>> user_browser.getControl(name='msgset_150_es_translation_1_new').value = (
   ...     u'Found %s invalid files')
   >>> user_browser.getControl(name='submit_translations').click()
 
 We got an error, that means the url should be the same.
 We are still in the same URL, because the system detected an error.
-XXX CarlosPerelloMarin 20061214: Disabled because we are using
-'action=+translate' in the form and that breaks the URL. For more info,
-see bug #75716
 
-  user_browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20'
+  >>> print user_browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20
 
 And we can see the error.
 
@@ -87,7 +54,7 @@ And we can see the error.
   ...     print tag
   <div class="error message">There is an error in a translation you provided.
     Please correct it before continuing.</div>
-  <tr class="error">
+  <tr class="error translation">
     <th colspan="3">
       <strong>Error in Translation:</strong>
     </th>
@@ -105,33 +72,23 @@ The translation form got an error with the translations we wanted to store,
 and thus we still have that text as part of translations input, otherwise, they
 will be empty waiting for new suggestions/translations.
 
-  >>> user_browser.getControl(name='msgset_150_es_translation_0_new_checkbox').value
-  True
-
-XXX: CarlosPerelloMarin 20061026: The extra '\n' char is there to workaroud bug #47511
-
   >>> user_browser.getControl(name='msgset_150_es_translation_0_new').value
-  '\nFound %s invalid file'
-  >>> user_browser.getControl(name='msgset_150_es_translation_1_new_checkbox').value
-  True
-
-XXX: CarlosPerelloMarin 20061026: The extra '\n' char is there to workaroud bug #47511
-
+  'Found %s invalid file'
   >>> user_browser.getControl(name='msgset_150_es_translation_1_new').value
-  '\nFound %s invalid files'
+  'Found %s invalid files'
 
 Also, we can see that the message has no active translation yet:
 
-  >>> (msgid_number, msgid, translation_singular, translation_plural) = (
-  ...     getMessageValues(user_browser.contents, has_errors=True))
-  >>> print msgid_number
+  >>> print find_tag_by_id(
+  ...     user_browser.contents, 'msgset_150').renderContents()
   21.
-  <a name="21">
-    <input type="hidden" name="msgset_150" />
-  </a>
-  >>> print msgid
+  <input type="hidden" name="msgset_150" />
+  >>> print find_tag_by_id(
+  ...     user_browser.contents, 'msgset_150_singular').renderContents()
   Found <code>%i</code> invalid file.
-  >>> print translation_singular
+  >>> print find_tag_by_id(user_browser.contents,
+  ...                      'msgset_150_es_translation_0').renderContents()
   (no translation yet)
-  >>> print translation_plural
+  >>> print find_tag_by_id(user_browser.contents,
+  ...                      'msgset_150_es_translation_1').renderContents()
   (no translation yet)

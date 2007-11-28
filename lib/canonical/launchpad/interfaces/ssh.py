@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """SSH key interfaces."""
 
@@ -7,18 +8,41 @@ __metaclass__ = type
 __all__ = [
     'ISSHKey',
     'ISSHKeySet',
+    'SSHKeyType',
     ]
 
-from zope.schema import Int, TextLine
+from zope.schema import Choice, Int, TextLine
 from zope.interface import Interface
+
+from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.launchpad import _
+
+
+class SSHKeyType(DBEnumeratedType):
+    """SSH key type
+
+    SSH (version 2) can use RSA or DSA keys for authentication.  See OpenSSH's
+    ssh-keygen(1) man page for details.
+    """
+
+    RSA = DBItem(1, """
+        RSA
+
+        RSA
+        """)
+
+    DSA = DBItem(2, """
+        DSA
+
+        DSA
+        """)
 
 
 class ISSHKey(Interface):
     """SSH public key"""
     id = Int(title=_("Database ID"), required=True, readonly=True)
     person = Int(title=_("Owner"), required=True, readonly=True)
-    keytype = TextLine(title=_("Key type"), required=True)
+    keytype = Choice(title=_("Key type"), required=True, vocabulary=SSHKeyType)
     keytext = TextLine(title=_("Key text"), required=True)
     comment = TextLine(title=_("Comment describing this key"), required=True)
 

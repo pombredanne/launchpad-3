@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Published package interfaces."""
 
@@ -19,10 +20,11 @@ class IPublishedPackage(Interface):
     been published in a distribution."""
 
     id = Attribute("The id of the packagepublishing record")
+    archive = Attribute("The archive where the package is published.")
     distribution = Attribute("The distribution id")
-    distroarchrelease = Attribute("The distroarchrelease.")
-    distrorelease = Attribute("The distribution release id")
-    distroreleasename = Attribute("The distribution release name")
+    distroarchseries = Attribute("The distroarchseries.")
+    distroseries = Attribute("The distribution series id")
+    distroseriesname = Attribute("The distribution series name")
     processorfamily = Attribute("The processor family id")
     processorfamilyname = Attribute("The processor family name")
     packagepublishingstatus = Attribute("The status of this published package")
@@ -46,13 +48,13 @@ class IPublishedPackageSet(Interface):
     def __iter__():
         """Iterate over all published packages."""
 
-    def query(name=None, text=None, distribution=None, distrorelease=None,
-              distroarchrelease=None, component=None):
+    def query(name=None, text=None, distribution=None, distroseries=None,
+              distroarchseries=None, component=None):
         """Search through published packages returning those that meet the
         given criteria"""
 
-    def findDepCandidate(name, distroarchrelease):
-        """Return the package candidate within the distroarchrelease context.
+    def findDepCandidate(name, distroarchseries):
+        """Return the package candidate within the distroarchseries context.
 
         Return the PublishedPackage record by bynarypackagename or None if
         not found.

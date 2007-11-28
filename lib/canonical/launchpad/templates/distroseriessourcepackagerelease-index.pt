@@ -1,0 +1,65 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+<metal:heading fill-slot="pageheading">
+  <h1>Source package overview</h1>
+</metal:heading>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/sourcepackagerelease/@@+portlet-distroseries" />
+  <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h2>Publishing history</h2>
+
+  <div id="publishing_history">
+    <tal:block repeat="publishing context/publishing_history"
+               replace="structure publishing/@@+listing-detailed">
+    </tal:block>
+  </div>
+
+  <h2>Download</h2>
+
+   <div id="files">
+     <ul class="download" tal:condition="context/files">
+        <li tal:repeat="file context/files">
+          <a tal:content="file/libraryfile/filename"
+             tal:attributes="href file/libraryfile/http_url" />
+          (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
+        </li>
+     </ul>
+     <p tal:condition="not:context/files">No files available for download.</p>
+   </div>
+
+  <h2>Changelog</h2>
+
+  <tal:pre
+       replace="structure context/sourcepackagerelease/@@+changelog" />
+
+   <div id="changesfile" tal:define="changesfile context/changesfile">
+     <p tal:condition="changesfile">
+        <a tal:attributes="href changesfile/http_url">
+           View changesfile
+        </a>
+     </p>
+     <p tal:condition="not: changesfile">No changesfile available.</p>
+   </div>
+
+</div>
+</body>
+</html>

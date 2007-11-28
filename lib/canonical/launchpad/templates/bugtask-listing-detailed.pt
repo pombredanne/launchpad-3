@@ -1,10 +1,28 @@
-<img src="/@@/bug" />
-<span tal:replace="context/status/title">High</span>:
-<a tal:attributes="href context/bug/fmt:url"
-   tal:content="context/bug/title">Bug Title Here</a>
-<tal:block condition="context/assignee">
-  (<img src="/@@/user" />&nbsp;<a
-      tal:attributes="href context/assignee/fmt:url"
-      tal:content="context/assignee/browsername">Foo Bar</a>)
-</tal:block>
-<hr />
+<tr xmlns:tal="http://xml.zope.org/namespaces/tal">
+  <td class="icon left" tal:content="structure context/image:icon" />
+  <td>
+    <div>
+      #<span tal:replace="context/bug/id">4</span>
+      <a tal:attributes="href context/fmt:url"
+         tal:content="context/bug/title">Bug Title Here
+      </a>
+      <tal:badges replace="structure context/image:badges" />
+    </div>
+    <div class="lesser">
+      <tal:affected_pillars define="also_in context/other_affected_pillars"
+                           condition="also_in">
+        also in 
+          <tal:per_pillar repeat="pillar also_in">
+            <b tal:content="pillar/displayname" />,
+          </tal:per_pillar>
+        </tal:affected_pillars>
+      reported
+      <span
+        tal:attributes="title context/datecreated/fmt:datetime"
+        tal:content="context/datecreated/fmt:displaydate">2005-10-05</span>
+      by
+      <a tal:attributes="href context/owner/fmt:url"
+         tal:content="context/owner/browsername">Foo Bar</a>
+    </div>
+  </td>
+</tr>

@@ -22,22 +22,23 @@ class ISQLObjectModifiedEvent(IObjectModifiedEvent):
 
     object_before_modification = Attribute("The object before modification.")
     edited_fields = Attribute(
-        "The list of fields that were edited. A field name may appear in this "
-        "list if it were shown on an edit form, but not actually changed.")
+        "The list of fields that were edited. A field name may appear in "
+        "this list if it were shown on an edit form, but not actually "
+        "changed.")
     user = Attribute("The user who modified the object.")
 
 
-class ISQLObjectToBeModifiedEvent(IObjectEvent):
-    """An SQLObject is about to be modified."""
+class IJoinTeamEvent(Interface):
+    """A person/team joined (or tried to join) a team."""
 
-    new_values = Attribute("A dict of fieldname -> newvalue pairs.")
-    user = Attribute("The user who will modify the object.")
+    person = Attribute("The person/team who joined the team.")
+    team = Attribute("The team.")
 
 
-class IJoinTeamRequestEvent(Interface):
-    """An user requested to join a team."""
+class ITeamInvitationEvent(Interface):
+    """A new person/team has been invited to a team."""
 
-    user = Attribute("The user who requested to join the team.")
+    member = Attribute("The person/team who was invited.")
     team = Attribute("The team.")
 
 

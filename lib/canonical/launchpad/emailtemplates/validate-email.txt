@@ -1,22 +1,21 @@
 
 Hello
 
-We received a request from %(requester)s using email address 
+We received a request from %(requester)s using email address
 %(requesteremail)s, trying to validate the email address
 %(toaddress)s for use in Launchpad.
 
 If you made this request, please click on the link below
-and complete the process to add %(toaddress)s 
+and complete the process to add %(toaddress)s
 to your existing Launchpad account.
 
    %(appurl)s/token/%(longstring)s
 
-If you did not make this request, in Rosetta or Malone or any
-other Launchpad system, then please ignore it or report it as
-a possible attempt at a security attack on your data.
+If you did not make this request, please ignore this message
+or report it as a possible attempt at a security attack on
+your data.
 
-Thanks,
+Thank you,
 
-The Launchpad Team 
-launchpad@ubuntu.com
+The Launchpad team
 

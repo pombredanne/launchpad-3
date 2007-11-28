@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -21,5 +20,10 @@
     <content class="canonical.launchpad.database.SourcePackageNameSet">
       <allow interface="canonical.launchpad.interfaces.ISourcePackageNameSet"/>
     </content>
+
+    <vocabulary
+      name="SourcePackageName"
+      factory="canonical.launchpad.database.sourcepackagename.SourcePackageNameVocabulary"
+      />
 
 </configure>

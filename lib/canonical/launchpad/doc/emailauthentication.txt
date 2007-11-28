@@ -1,3 +1,5 @@
+= Authentication of Emails =
+
 When an email arrives in Launchpad the user who sent it needs to be
 authenticated. This is done by authenticateEmail:
 
@@ -7,10 +9,15 @@ The only way of authenticating the user is by looking at the OpenPGP
 signature. First we have to import the OpenPGP keys we will use in the
 emails:
 
+    >>> from canonical.config import config
+    >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import import_public_test_keys
-    >>> import transaction
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> import_public_test_keys()
-    >>> transaction.commit()
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
 
 Now Sample Person and Foo Bar have one OpenPGP key each. Next, let's get
 a test email that's signed and try to authenticate the user who sent it:
@@ -110,7 +117,7 @@ message.
     ...     msg.signedContent, msg.signature)
     Traceback (most recent call last):
     ...
-    GPGVerificationError: Bad signature
+    GPGVerificationError: (7, 8, 'Bad signature')
 
     >>> getUtility(IGPGHandler).getVerifiedSignature(
     ...     msg.signedContent.replace('\n', '\r\n'), msg.signature)
@@ -151,8 +158,8 @@ signed.
     >>> print IPerson(principal).displayname
     Sample Person
 
-IWeaklyAuthenticatedPrinipal
-----------------------------
+
+== IWeaklyAuthenticatedPrinipal ==
 
 It's a huge difference to signing an email with a key that is associated
 with the authenticated Person, and signing it with a key that isn't

@@ -1,0 +1,62 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="rosetta" >
+
+  <body>
+    <metal:portlets fill-slot="portlets">
+      <tal:portlet
+        condition="context/distribution/official_rosetta"
+        replace="structure context/distribution/@@+portlet-translation-groups-and-permission"
+      />
+      <tal:portlet replace="structure context/@@+portlet-preflangs" />
+    </metal:portlets>
+
+<metal:heading fill-slot="pageheading">
+  <h1 i18n:translate="">Translation status by language</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+
+  <div tal:replace="structure context/@@+langchart" />
+  <div tal:replace="structure context/@@+rosetta-status-legend" />
+
+  <ul>
+    <li class="edit">
+      <a href="/+editmylanguages">Customize displayed languages</a>
+    </li>
+  </ul>
+
+</div>
+
+<div metal:fill-slot="help">
+  <p>
+    This page shows you all of the translations of the
+    "<span tal:replace="context/name">hoary</span>" release of
+    <span tal:replace="context/distribution/displayname">Ubuntu</span>.  Pick
+    a language to see the release's current application translation status for
+    that language.
+  </p>
+  <p>
+    Your preferred languages list reflects the languages we think you are
+    most interested in; only these languages are shown here.  Choose
+    "<a href="/+editmylanguages">Select languages...</a>" to ensure that all
+    languages you speak are included in translation pages like this one.
+  </p>
+  <ul class="info">
+    <li>
+      <a href="https://help.launchpad.net/RosettaFAQ"
+      >Frequently asked questions</a>
+    </li>
+  </ul>
+</div>
+
+</body>
+</html>
+

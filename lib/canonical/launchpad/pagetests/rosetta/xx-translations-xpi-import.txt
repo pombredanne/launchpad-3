@@ -1,0 +1,56 @@
+= Demonstrate import of Firefox XPI file =
+
+To import translations into Firefox product, we must first import en-US.xpi
+file, which is an equivalent of a PO Template.
+
+Lets start with Firefox product inside trunk revision.
+
+  >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+  >>> browser.open('http://translations.launchpad.dev/firefox/trunk')
+
+Since we still don't have any POTemplates assigned, we must use the general
+translations upload link.
+
+  >>> browser.getLink('Upload translations').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/firefox/trunk/+translations-upload
+
+Get the XPI file we are going to upload.
+
+  >>> from canonical.launchpad.translationformat.tests import test_xpi_import
+  >>> xpifile = test_xpi_import.get_en_US_xpi_file_to_import()
+
+Now, lets upload this file.
+
+  >>> browser.getControl('File:').add_file(
+  ...     xpifile, 'application/zip', 'en-US.xpi')
+  >>> browser.getControl('Request Upload').click()
+
+  >>> print browser.url
+  http://translations.launchpad.dev/firefox/trunk/+translations-upload
+  >>> for tag in find_tags_by_class(browser.contents, 'message'):
+  ...     print tag.renderContents()
+  Thank you for your upload. The file content will be reviewed soon by an
+  admin and then imported into Launchpad. You can track its status from the
+  <a href="http://translations.launchpad.dev/firefox/trunk/+imports">Translation
+  Import Queue</a>
+
+Lets check the import queue to edit this entry and set the name.
+
+  >>> browser.getLink('Translation Import Queue').click()
+  >>> print browser.getLink(url='en-US.xpi').url
+  http://localhost:58000/.../en-US.xpi
+  >>> browser.getLink(url='imports/3').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/+imports/3
+
+All new entries need to get a template name to identify them in the context
+where will be imported. In this case, it's 'firefox'.
+
+  >>> browser.getControl('Template name').value = 'firefox'
+  >>> browser.getControl('Translation domain').value = 'firefox'
+  >>> browser.getControl('Attach').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/+imports
+  >>> browser.getControl(name='field.status_3').value
+  ['APPROVED']

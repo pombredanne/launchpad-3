@@ -19,13 +19,15 @@ from zope.app.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 
 from canonical.config import config
-from canonical.launchpad.webapp.interfaces import (
-    IErrorReport, IErrorReportRequest)
+from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp.adapter import (
     RequestExpired, get_request_statements, get_request_duration,
     soft_timeout_expired)
+from canonical.launchpad.webapp.interfaces import (
+    IErrorReport, IErrorReportRequest)
+from canonical.launchpad.webapp.opstats import OpStats
 
-UTC = pytz.timezone('UTC')
+UTC = pytz.utc
 
 # the section of the OOPS ID before the instance identifier is the
 # days since the epoch, which is defined as the start of 2006.
@@ -72,28 +74,52 @@ def _safestr(obj):
                    lambda match: '\\x%02x' % ord(match.group(0)), value)
     return value
 
+def _is_sensitive(request, name):
+    """Return True if the given request variable name is sensitive.
+
+    Sensitive request variables should not be recorded in OOPS
+    reports.  Currently we consider the following to be sensitive:
+     * any name containing 'password' or 'passwd'
+     * cookies
+     * the HTTP_COOKIE header.
+    """
+    upper_name = name.upper()
+    # Block passwords
+    if ('PASSWORD' in upper_name or 'PASSWD' in upper_name):
+        return True
+
+    # Block HTTP_COOKIE
+    if name == 'HTTP_COOKIE':
+        return True
+
+    # Allow remaining UPPERCASE names and remaining form variables.  Note that
+    # XMLRPC requests won't have a form attribute.
+    form = getattr(request, 'form', [])
+    if name == upper_name or name in form:
+        return False
+
+    # Block everything else
+    return True
+
 
 class ErrorReport:
     implements(IErrorReport)
 
-    def __init__(self, id, type, value, time, tb_text, username,
+    def __init__(self, id, type, value, time, pageid, tb_text, username,
                  url, duration, req_vars, db_statements):
         self.id = id
         self.type = type
         self.value = value
         self.time = time
+        self.pageid = pageid
         self.tb_text = tb_text
         self.username = username
         self.url = url
         self.duration = duration
-        self.req_vars = []
-        # hide passwords that might be present in the request variables
-        for (name, value) in req_vars:
-            if ('password' in name.lower() or 'passwd' in name.lower()):
-                self.req_vars.append((name, '<hidden>'))
-            else:
-                self.req_vars.append((name, value))
+        self.req_vars = req_vars
         self.db_statements = db_statements
+        self.branch_nick = versioninfo.branch_nick
+        self.revno  = versioninfo.revno
 
     def __repr__(self):
         return '<ErrorReport %s>' % self.id
@@ -103,6 +129,9 @@ class ErrorReport:
         fp.write('Exception-Type: %s\n' % _normalise_whitespace(self.type))
         fp.write('Exception-Value: %s\n' % _normalise_whitespace(self.value))
         fp.write('Date: %s\n' % self.time.isoformat())
+        fp.write('Page-Id: %s\n' % _normalise_whitespace(self.pageid))
+        fp.write('Branch: %s\n' % self.branch_nick)
+        fp.write('Revision: %s\n' % self.revno)
         fp.write('User: %s\n' % _normalise_whitespace(self.username))
         fp.write('URL: %s\n' % _normalise_whitespace(self.url))
         fp.write('Duration: %s\n' % self.duration)
@@ -125,6 +154,7 @@ class ErrorReport:
         exc_type = msg.getheader('exception-type')
         exc_value = msg.getheader('exception-value')
         date = msg.getheader('date')
+        pageid = msg.getheader('page-id')
         username = msg.getheader('user')
         url = msg.getheader('url')
         duration = int(msg.getheader('duration', '-1'))
@@ -150,14 +180,14 @@ class ErrorReport:
 
         tb_text = ''.join(lines[linenum+1:])
 
-        return cls(id, exc_type, exc_value, date, tb_text,
+        return cls(id, exc_type, exc_value, date, pageid, tb_text,
                    username, url, duration, req_vars, statements)
 
 
 class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
-    _ignored_exceptions = set(['Unauthorized'])
+    _ignored_exceptions = set(['Unauthorized', 'TranslationUnavailable'])
     copy_to_zlog = False
 
     lasterrordate = None
@@ -271,14 +301,16 @@ class ErrorReportingUtility:
             url = None
             username = None
             req_vars = []
+            pageid = ''
 
             if request:
-                # XXX: Temporary fix, which Steve should undo. URL is
-                #      just too HTTPRequest-specific.
+                # XXX jamesh 2005-11-22: Temporary fix, which Steve should
+                #      undo. URL is just too HTTPRequest-specific.
                 if hasattr(request, 'URL'):
                     url = request.URL
                 try:
-                    # XXX: UnauthenticatedPrincipal does not have getLogin()
+                    # XXX jamesh 2005-11-22: UnauthenticatedPrincipal
+                    # does not have getLogin()
                     if hasattr(request.principal, 'getLogin'):
                         login = request.principal.getLogin()
                     else:
@@ -289,19 +321,28 @@ class ErrorReportingUtility:
                                                 request.principal.title,
                                                 request.principal.description
                                                 ))))
+                # XXX jamesh 2005-11-22:
                 # When there's an unauthorized access, request.principal is
-                # not set, so we get an AttributeError
-                # XXX is this right? Surely request.principal should be set!
-                # XXX Answer: Catching AttributeError is correct for the
-                #             simple reason that UnauthenticatedUser (which
-                #             I always use during coding), has no 'getLogin()'
-                #             method. However, for some reason this except
-                #             does **NOT** catch these errors.
+                # not set, so we get an AttributeError.
+                # Is this right? Surely request.principal should be set!
+                # Answer: Catching AttributeError is correct for the
+                #         simple reason that UnauthenticatedUser (which
+                #         I always use during coding), has no 'getLogin()'
+                #         method. However, for some reason this except
+                #         does **NOT** catch these errors.
                 except AttributeError:
                     pass
 
-                req_vars = sorted((_safestr(key), _safestr(value))
-                                  for (key, value) in request.items())
+                if getattr(request, '_orig_env', None):
+                    pageid = request._orig_env.get('launchpad.pageid', '')
+
+                req_vars = []
+                for key, value in request.items():
+                    if _is_sensitive(request, key):
+                        req_vars.append((_safestr(key), '<hidden>'))
+                    else:
+                        req_vars.append((_safestr(key), _safestr(value)))
+                req_vars.sort()
             strv = _safestr(info[1])
 
             strurl = _safestr(url)
@@ -314,7 +355,7 @@ class ErrorReportingUtility:
 
             oopsid, filename = self.newOopsId(now)
 
-            entry = ErrorReport(oopsid, strtype, strv, now, tb_text,
+            entry = ErrorReport(oopsid, strtype, strv, now, pageid, tb_text,
                                 username, strurl, duration,
                                 req_vars, statements)
             entry.write(open(filename, 'wb'))
@@ -354,6 +395,42 @@ class ErrorReportRequest:
     oopsid = None
 
 
+class ScriptRequest(ErrorReportRequest):
+    """Fake request that can be passed to ErrorReportingUtility.raising.
+
+    It can be used by scripts to enrich error reports with context information
+    and a representation of the resource on which the error occured. It also
+    gives access to the generated OOPS id.
+
+    The resource for which the error occured MAY be identified by an URL. This
+    URL should point to a human-readable representation of the model object,
+    such as a page on launchpad.net, even if this URL does not occur as part of
+    the normal operation of the script.
+
+    :param data: context information relevant to diagnosing the error. It is
+        recorded as request-variables in the OOPS.
+    :type data: iterable of (key, value) tuples. Keys need not be unique.
+    :param URL: initial value of the URL instance variable.
+
+    :ivar URL: pointer to a representation of the resource for which the error
+        occured. Defaults to None.
+    :ivar oopsid: the oopsid set by ErrorReportingUtility.raising. Initially
+        set to None.
+    """
+
+    def __init__(self, data, URL=None):
+        self._data = list(data)
+        self.oopsid = None
+        self.URL = URL
+
+    def items(self):
+        return self._data
+
+    @property
+    def form(self):
+        return dict(self.items())
+
+
 class SoftRequestTimeout(RequestExpired):
     """Soft request timeout expired"""
 
@@ -362,6 +439,8 @@ def end_request(event):
     # if no OOPS has been generated at the end of the request, but
     # the soft timeout has expired, log an OOPS.
     if event.request.oopsid is None and soft_timeout_expired():
+        OpStats.stats['soft timeouts'] += 1
         globalErrorUtility.raising(
             (SoftRequestTimeout, SoftRequestTimeout(event.object), None),
             event.request)
+

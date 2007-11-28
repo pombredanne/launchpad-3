@@ -7,25 +7,39 @@ import os
 import shutil
 import tempfile
 from unittest import TestCase, TestLoader
+from sha import sha
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.archiveuploader.tests import (
+    insertFakeChangesFileForAllPackageUploads)
 from canonical.config import config
+from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
+from canonical.launchpad.database import PackageUploadBuild
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistroReleaseQueueSet)
+    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
+    IPackageUploadSet, PackagePublishingStatus, PackagePublishingPocket,
+    PackageUploadStatus)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket,
-    DistroReleaseQueueStatus, DistributionReleaseStatus)
 from canonical.testing import LaunchpadZopelessLayer
+from canonical.librarian.utils import filechunks
 
 
 class TestQueueBase(TestCase):
     """Base methods for queue tool test classes."""
+
+    def setUp(self):
+        # Switch database user and set isolation level to READ COMMIITTED
+        # to avoid SERIALIZATION exceptions with the Librarian.
+        LaunchpadZopelessLayer.alterConnection(
+                dbuser=self.dbuser,
+                isolation=READ_COMMITTED_ISOLATION
+                )
 
     def _test_display(self, text):
         """Store output from queue tool for inspection."""
@@ -33,7 +47,9 @@ class TestQueueBase(TestCase):
 
     def execute_command(self, argument, queue_name='new', no_mail=True,
                         distribution_name='ubuntu',announcelist=None,
-                        suite_name='breezy-autotest', quiet=True):
+                        component_name=None, section_name=None,
+                        priority_name=None, suite_name='breezy-autotest',
+                        quiet=True):
         """Helper method to execute a queue command.
 
         Initialise output buffer and execute a command according
@@ -45,9 +61,15 @@ class TestQueueBase(TestCase):
         queue = name_queue_map[queue_name]
         runner = CommandRunner(
             queue, distribution_name, suite_name, announcelist, no_mail,
+            component_name, section_name, priority_name,
             display=self._test_display)
 
         return runner.execute(argument.split())
+
+    def assertEmail(self, expected_to_addrs):
+        """Pop an email from the stub queue and check its recipients."""
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertEqual(to_addrs, expected_to_addrs)
 
 
 class TestQueueTool(TestQueueBase):
@@ -56,7 +78,13 @@ class TestQueueTool(TestQueueBase):
 
     def setUp(self):
         """Create contents in disk for librarian sampledata."""
-        fillLibrarianFile(1)
+        # Packageupload.notify() needs real changes file data to send
+        # email, so this nice simple "ed" changes file will do.  It's
+        # the /wrong/ changes file for the package in the upload queue,
+        # but that doesn't matter as only email addresses are parsed out
+        # of it.
+        insertFakeChangesFileForAllPackageUploads()
+        TestQueueBase.setUp(self)
 
     def tearDown(self):
         """Remove test contents from disk."""
@@ -106,9 +134,9 @@ class TestQueueTool(TestQueueBase):
         # check if the considered queue size matches the existent number
         # of records in sampledata
         bat = getUtility(IDistributionSet)['ubuntu']['breezy-autotest']
-        queue_size = getUtility(IDistroReleaseQueueSet).count(
-            status=DistroReleaseQueueStatus.NEW,
-            distrorelease=bat, pocket= PackagePublishingPocket.RELEASE)
+        queue_size = getUtility(IPackageUploadSet).count(
+            status=PackageUploadStatus.NEW,
+            distroseries=bat, pocket= PackagePublishingPocket.RELEASE)
         self.assertEqual(queue_size, queue_action.size)
         # check if none of them was filtered, since not filter term
         # was passed.
@@ -130,22 +158,30 @@ class TestQueueTool(TestQueueBase):
          * specified ID doesn't match the queue name
         """
         queue_action = self.execute_command('info 1')
-        # check if only one item was retrieved
+        # Check if only one item was retrieved.
         self.assertEqual(1, queue_action.items_size)
 
         displaynames = [item.displayname for item in queue_action.items]
         self.assertEqual(['mozilla-firefox'], displaynames)
 
-        # not found ID
+        # Check passing multiple IDs.
+        queue_action = self.execute_command('info 1 3 4')
+        self.assertEqual(3, queue_action.items_size)
+        [mozilla, netapplet, alsa] = queue_action.items
+        self.assertEqual('mozilla-firefox', mozilla.displayname)
+        self.assertEqual('netapplet', netapplet.displayname)
+        self.assertEqual('alsa-utils', alsa.displayname)
+
+        # Check not found ID.
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'info 100')
 
-        # looking in the wrong suite
+        # Check looking in the wrong suite.
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'info 1',
             suite_name='breezy-autotest-backports')
 
-        # looking in the wrong queue
+        # Check looking in the wrong queue.
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'info 1',
             queue_name='done')
@@ -159,6 +195,47 @@ class TestQueueTool(TestQueueBase):
 
         displaynames = [item.displayname for item in queue_action.items]
         self.assertEqual(['pmount'], displaynames)
+
+        # Check looking for multiple names.
+        queue_action = self.execute_command('info pmount alsa-utils')
+        self.assertEqual(2, queue_action.items_size)
+        [pmount, alsa] = queue_action.items
+        self.assertEqual('pmount', pmount.displayname)
+        self.assertEqual('alsa-utils', alsa.displayname)
+
+    def testAcceptingSourceGeneratesEmail(self):
+        """Check if accepting a source package generates an email."""
+        queue_action = self.execute_command('accept alsa-utils', no_mail=False)
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(1, len(stub.test_emails))
+        # Email sent is the uploader's notification:
+        self.assertEmail(
+            ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
+
+    def testAcceptingBinaryDoesntGenerateEmail(self):
+        """Check if accepting a binary package does not generate email."""
+        queue_action = self.execute_command(
+            'accept mozilla-firefox', no_mail=False)
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(0, len(stub.test_emails))
+
+    def testAcceptActionWithMultipleIDs(self):
+        """Check if accepting multiple items at once works.
+
+        We can specify multiple items to accept, even mixing IDs and names.
+        e.g. queue accept alsa-utils 1 3
+        """
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+        queue_action = self.execute_command('accept 1 pmount 3')
+        self.assertEqual(3, queue_action.items_size)
+        self.assertQueueLength(1, breezy_autotest,
+            PackageUploadStatus.ACCEPTED, 'mozilla-firefox')
+        self.assertQueueLength(1, breezy_autotest,
+            PackageUploadStatus.ACCEPTED, 'pmount')
+        self.assertQueueLength(1, breezy_autotest,
+            PackageUploadStatus.ACCEPTED, 'netapplet')
+
 
     def testRemovedPublishRecordDoesNotAffectQueueNewness(self):
         """Check if REMOVED published record does not affect file NEWness.
@@ -180,7 +257,7 @@ class TestQueueTool(TestQueueBase):
         moz_publishing = bat_i386.getBinaryPackage('pmount').releases
 
         self.assertEqual(1, len(moz_publishing))
-        self.assertEqual(PackagePublishingStatus.REMOVED,
+        self.assertEqual(PackagePublishingStatus.DELETED,
                          moz_publishing[0].status)
 
         # invoke queue tool filtering by name
@@ -222,44 +299,87 @@ class TestQueueTool(TestQueueBase):
         """Check if BACKPORTS acceptance are not announced publicly.
 
         Queue tool normally announce acceptance in the specified changeslist
-        for the distrorelease in question, however BACKPORTS announce doesn't
+        for the distroseries in question, however BACKPORTS announce doesn't
         fit very well in that list, they cause unwanted noise.
 
         Further details in bug #59443
         """
-        # make breezy-autotest CURRENT in order to accept upload
-        # to BACKPORTS
+        # Make breezy-autotest CURRENT in order to accept upload
+        # to BACKPORTS.
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
-        breezy_autotest.releasestatus = DistributionReleaseStatus.CURRENT
+        breezy_autotest.status = DistroSeriesStatus.CURRENT
 
-        # ensure breezy-autotest is set
+        # Store the targeted queue item for future inspection.
+        # Ensure it is what we expect.
+        target_queue = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.UNAPPROVED,
+            pocket= PackagePublishingPocket.BACKPORTS)[0]
+        self.assertEqual(10, target_queue.id)
+
+        # Ensure breezy-autotest is set.
         self.assertEqual(
             u'autotest_changes@ubuntu.com', breezy_autotest.changeslist)
 
-        # create contents for the respective changesfile in librarian.
-        fillLibrarianFile(1)
-
-        # accept the sampledata item
+        # Accept the sampledata item.
         queue_action = self.execute_command(
             'accept', queue_name='unapproved',
             suite_name='breezy-autotest-backports', no_mail=False)
 
-        # only one item considered
+        # Only one item considered.
         self.assertEqual(1, queue_action.items_size)
 
-        # One email was sent
-        self.assertEqual(1, len(stub.test_emails))
+        # Previously stored reference should have new state now
+        self.assertEqual('ACCEPTED', target_queue.status.name)
 
-        # sent to the default recipient only, not the breezy-autotest
-        # announcelist.
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        self.assertEqual([queue_action.default_recipient], to_addrs)
+        # Only one email is sent to the changed-by email on the changes
+        # file.  No announcement email is sent.
+        self.assertEqual(len(stub.test_emails), 1)
+        self.assertEmail(
+            ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
 
-    def assertQueueLength(self, expected_length, distro_release, status, name):
+    def testQueueDoesNotSendAnyEmailsForTranslations(self):
+        """Check if no emails are sent when accepting translations.
+
+        Queue tool should not send any emails to source uploads targeted to
+        'translation' section.
+        They are the 'language-pack-*' and 'language-support-*' sources.
+
+        Further details in bug #57708
+        """
+        # Make breezy-autotest CURRENT in order to accept upload
+        # to PROPOSED.
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+        breezy_autotest.status = DistroSeriesStatus.CURRENT
+
+        # Store the targeted queue item for future inspection.
+        # Ensure it is what we expect.
+        target_queue = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.UNAPPROVED,
+            pocket=PackagePublishingPocket.PROPOSED)[0]
+        self.assertEqual(12, target_queue.id)
+        source = target_queue.sources[0].sourcepackagerelease
+        self.assertEqual('translations', source.section.name)
+
+        # Accept the sampledata item.
+        queue_action = self.execute_command(
+            'accept', queue_name='unapproved',
+            suite_name='breezy-autotest-proposed', no_mail=False)
+
+        # Only one item considered.
+        self.assertEqual(1, queue_action.items_size)
+
+        # Previously stored reference should have new state now
+        self.assertEqual('ACCEPTED', target_queue.status.name)
+
+        # No email was sent.
+        self.assertEqual(0, len(stub.test_emails))
+
+    def assertQueueLength(self, expected_length, distro_series, status, name):
         self.assertEqual(
             expected_length,
-            distro_release.getQueueItems(status=status, name=name).count())
+            distro_series.getQueueItems(status=status, name=name).count())
 
     def testAcceptanceWorkflowForDuplications(self):
         """Check how queue tool behaves dealing with duplicated entries.
@@ -287,7 +407,7 @@ class TestQueueTool(TestQueueBase):
 
         # certify we have a 'cnews' upload duplication in UNAPPROVED
         self.assertQueueLength(
-            2, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+            2, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # Step 1: try to accept both
         queue_action = self.execute_command(
@@ -296,7 +416,7 @@ class TestQueueTool(TestQueueBase):
 
         # the first is in accepted.
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.ACCEPTED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.ACCEPTED, "cnews")
 
         # the last can't be accepted and remains in UNAPPROVED
         self.assertTrue(
@@ -304,7 +424,7 @@ class TestQueueTool(TestQueueBase):
              'sourcepackagerelease is already accepted in breezy-autotest.')
             in self.test_output)
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # Step 2: try to accept the remaining item in UNAPPROVED.
         queue_action = self.execute_command(
@@ -315,16 +435,16 @@ class TestQueueTool(TestQueueBase):
              'sourcepackagerelease is already accepted in breezy-autotest.')
             in self.test_output)
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # simulate a publication of the accepted item, now it is in DONE
         accepted_item = breezy_autotest.getQueueItems(
-            status=DistroReleaseQueueStatus.ACCEPTED, name="cnews")[0]
+            status=PackageUploadStatus.ACCEPTED, name="cnews")[0]
 
         accepted_item.setDone()
         accepted_item.syncUpdate()
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.DONE, "cnews")
+            1, breezy_autotest, PackageUploadStatus.DONE, "cnews")
 
         # Step 3: try to accept the remaining item in UNAPPROVED with the
         # duplication already in DONE
@@ -337,16 +457,259 @@ class TestQueueTool(TestQueueBase):
              'sourcepackagerelease is already accepted in breezy-autotest.')
             in self.test_output)
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # Step 4: The only possible destiny for the remaining item it REJECT
         queue_action = self.execute_command(
             'reject cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
         self.assertQueueLength(
-            0, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+            0, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.REJECTED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.REJECTED, "cnews")
+
+    def testRejectSourceSendsEmail(self):
+        """Check that rejecting a source upload sends email."""
+        queue_action = self.execute_command(
+            'reject alsa-utils', no_mail=False)
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(1, len(stub.test_emails))
+        self.assertEmail(
+            ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
+
+    def testRejectBinarySendsEmail(self):
+        """Check that rejecting a binary upload sends email."""
+        queue_action = self.execute_command('reject 2', no_mail=False)
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(1, len(stub.test_emails))
+        self.assertEmail(
+            ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
+
+    def testRejectWithMultipleIDs(self):
+        """Check if rejecting multiple items at once works.
+
+        We can specify multiple items to reject, even mixing IDs and names.
+        e.g. queue reject alsa-utils 1 3
+        """
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+
+        # Run the command.
+        queue_action = self.execute_command('reject 1 pmount 3')
+
+        # Test what it did.  Since all the queue items came out of the
+        # NEW queue originally, the items processed should now be REJECTED.
+        self.assertEqual(3, queue_action.items_size)
+        self.assertQueueLength(1, breezy_autotest,
+            PackageUploadStatus.REJECTED, 'mozilla-firefox')
+        self.assertQueueLength(1, breezy_autotest,
+            PackageUploadStatus.REJECTED, 'pmount')
+        self.assertQueueLength(1, breezy_autotest,
+            PackageUploadStatus.REJECTED, 'netapplet')
+
+    def testOverrideSource(self):
+        """Check if overriding sources works.
+
+        We can specify multiple items to override, even mixing IDs and names.
+        e.g. queue override source -c restricted alsa-utils 1 3
+        """
+        # Set up.
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+
+        # Basic operation overriding a single source 'alsa-utils' that
+        # is currently main/base in the sample data.
+        queue_action = self.execute_command('override source 4',
+            component_name='restricted', section_name='web')
+        self.assertEqual(1, queue_action.items_size)
+        queue_item = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="alsa-utils")[0]
+        [source] = queue_item.sources
+        self.assertEqual('restricted',
+            source.sourcepackagerelease.component.name)
+        self.assertEqual('web',
+            source.sourcepackagerelease.section.name)
+
+        # Override multiple sources at once and mix ID with name.
+        queue_action = self.execute_command('override source 4 netapplet',
+            component_name='universe', section_name='editors')
+        # 'netapplet' appears 3 times, alsa-utils once.
+        self.assertEqual(4, queue_action.items_size)
+        # Check results.
+        queue_items = list(breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='alsa-utils'))
+        queue_items.extend(list(breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='netapplet')))
+        for queue_item in queue_items:
+            if queue_item.sources:
+                [source] = queue_item.sources
+                self.assertEqual('universe',
+                    source.sourcepackagerelease.component.name)
+                self.assertEqual('editors',
+                    source.sourcepackagerelease.section.name)
+
+    def testOverrideSourceWithArchiveChange(self):
+        """Check if the archive changes as necessary on a source override.
+
+        When overriding the component, the archive may change, so we check
+        that here.
+        """
+        # Set up.
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        breezy_autotest = ubuntu['breezy-autotest']
+
+        # Test that it changes to partner when required.
+        queue_action = self.execute_command('override source alsa-utils',
+            component_name='partner')
+        self.assertEqual(1, queue_action.items_size)
+        [queue_item] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="alsa-utils")
+        [source] = queue_item.sources
+        self.assertEqual(source.sourcepackagerelease.upload_archive.purpose,
+            ArchivePurpose.PARTNER)
+
+        # Test that it changes back to primary when required.
+        queue_action = self.execute_command('override source alsa-utils',
+            component_name='main')
+        self.assertEqual(1, queue_action.items_size)
+        [queue_item] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="alsa-utils")
+        [source] = queue_item.sources
+        self.assertEqual(source.sourcepackagerelease.upload_archive.purpose,
+            ArchivePurpose.PRIMARY)
+
+    def testOverrideSourceWithNonexistentArchiveChange(self):
+        """Check that overriding to a non-existent archive fails properly.
+
+        When overriding the component, the archive may change to a
+        non-existent one so ensure if fails.
+        """
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        proxied_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            ubuntu, ArchivePurpose.PARTNER)
+        comm_archive = removeSecurityProxy(proxied_archive)
+        comm_archive.purpose = ArchivePurpose.EMBARGOED
+        LaunchpadZopelessLayer.txn.commit()
+        self.assertRaises(CommandRunnerError,
+                          self.execute_command,
+                          'override source alsa-utils',
+                          component_name='partner')
+
+    def testOverrideBinary(self):
+        """Check if overriding binaries works.
+
+        We can specify multiple items to override, even mixing IDs and names.
+        e.g. queue override binary -c restricted alsa-utils 1 3
+        """
+        # Set up.
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+
+        # Override a binary, 'pmount', from its sample data of
+        # main/base/IMPORTANT to restricted/web/extra.
+        queue_action = self.execute_command('override binary pmount',
+            component_name='restricted', section_name='web',
+            priority_name='extra')
+        self.assertEqual(1, queue_action.items_size)
+        [queue_item] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="pmount")
+        [packagebuild] = queue_item.builds
+        for package in packagebuild.build.binarypackages:
+            self.assertEqual('restricted', package.component.name)
+            self.assertEqual('web', package.section.name)
+            self.assertEqual('EXTRA', package.priority.name)
+
+        # Override multiple binaries at once.
+        queue_action = self.execute_command(
+            'override binary pmount mozilla-firefox',
+            component_name='universe', section_name='editors',
+            priority_name='optional')
+        # Check results.
+        self.assertEqual(2, queue_action.items_size)
+        queue_items = list(breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='pmount'))
+        queue_items.extend(list(breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='mozilla-firefox')))
+        for queue_item in queue_items:
+            [packagebuild] = queue_item.builds
+            for package in packagebuild.build.binarypackages:
+                self.assertEqual('universe', package.component.name)
+                self.assertEqual('editors', package.section.name)
+                self.assertEqual('OPTIONAL', package.priority.name)
+
+        # Check that overriding by ID is warned to the user.
+        self.assertRaises(
+            CommandRunnerError, self.execute_command, 'override binary 1',
+            component_name='multiverse')
+
+    def testOverridingMulipleBinariesFromSameBuild(self):
+        """Check that multiple binary override works for the same build.
+
+        Overriding binary packages generated from the same build should
+        override each package individually.
+        """
+        # Start off by setting up a packageuploadbuild that points to
+        # a build with two binaries.
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+        [mozilla_queue_item] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='mozilla-firefox')
+
+        # The build with ID '2' is for mozilla-firefox, which produces
+        # binaries for 'mozilla-firefox' and 'mozilla-firefox-data'.
+        PackageUploadBuild(packageupload=mozilla_queue_item, build=2)
+        LaunchpadZopelessLayer.txn.commit()
+
+        # Switching db users starts a new transaction.  We must re-fetch
+        # breezy-autotest.
+        LaunchpadZopelessLayer.switchDbUser("queued")
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+
+        queue_action = self.execute_command(
+            'override binary mozilla-firefox-data mozilla-firefox',
+            component_name='restricted', section_name='editors',
+            priority_name='optional')
+
+        self.assertEqual(2, queue_action.items_size)
+        queue_items = list(breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='mozilla-firefox-data'))
+        queue_items.extend(list(breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='mozilla-firefox')))
+        for queue_item in queue_items:
+            for packagebuild in queue_item.builds:
+                for package in packagebuild.build.binarypackages:
+                    self.assertEqual(
+                        'restricted', package.component.name,
+                        "The component '%s' is not the expected 'restricted'"
+                        "for package %s" % (
+                            package.component.name, package.name))
+                    self.assertEqual(
+                        'editors', package.section.name,
+                        "The section '%s' is not the expected 'editors'"
+                        "for package %s" % (
+                            package.section.name, package.name))
+                    self.assertEqual(
+                        'OPTIONAL', package.priority.name,
+                        "The priority '%s' is not the expected 'OPTIONAL'"
+                        "for package %s" % (
+                            package.section.name, package.name))
+
+    def testOverrideBinaryWithArchiveChange(self):
+        """Check if archive changes are disallowed for binary overrides.
+
+        When overriding the component, the archive may change, so we check
+        that here and make sure it's disallowed.
+        """
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+        # Test that it changes to partner when required.
+        self.assertRaises(
+            CommandRunnerError, self.execute_command, 'override binary pmount',
+            component_name='partner')
 
 
 class TestQueueToolInJail(TestQueueBase):
@@ -364,6 +727,7 @@ class TestQueueToolInJail(TestQueueBase):
         self._home = os.path.abspath('')
         self._jail = tempfile.mkdtemp()
         os.chdir(self._jail)
+        TestQueueBase.setUp(self)
 
     def tearDown(self):
         """Remove test contents from disk.
@@ -379,6 +743,15 @@ class TestQueueToolInJail(TestQueueBase):
         """Return a list of files present in jail."""
         return os.listdir(self._jail)
 
+    def _getsha1(self, filename):
+        """Return a sha1 hex digest of a file"""
+        file_sha = sha()
+        opened_file = open(filename,"r")
+        for chunk in filechunks(opened_file):
+            file_sha.update(chunk)
+        opened_file.close()
+        return file_sha.hexdigest()
+
     def testFetchActionByIDDoNotOverwriteFilesystem(self):
         """Check if queue fetch action doesn't overwrite files.
 
@@ -388,20 +761,50 @@ class TestQueueToolInJail(TestQueueBase):
 
         Instead of overwrite a file in the working directory queue will
         fail, raising a CommandRunnerError.
+
+        bug 67014: Don't complain if files are the same
         """
         queue_action = self.execute_command('fetch 1')
         self.assertEqual(
             ['mozilla-firefox_0.9_i386.changes'], self._listfiles())
 
-        # acquire last modification time
-        mtime = os.stat(self._listfiles()[0]).st_mtime
+        # checksum the existing file
+        existing_sha1 = self._getsha1(self._listfiles()[0])
 
-        # fetch will raise and not overwrite the file in disk
+        # fetch will NOT raise and not overwrite the file in disk
+        self.execute_command('fetch 1')
+
+        # checksum file again
+        new_sha1 = self._getsha1(self._listfiles()[0])
+
+        # Check that the file has not changed (we don't care if it was
+        # re-written, just that it's not changed)
+        self.assertEqual(existing_sha1, new_sha1)
+
+    def testFetchActionRaisesErrorIfDifferentFileAlreadyFetched(self):
+        """Check that fetching a file that has already been fetched
+        raises an error if they are not the same file.  (bug 67014)
+        """
+        CLOBBERED = "you're clobbered"
+
+        queue_action = self.execute_command('fetch 1')
+        self.assertEqual(
+            ['mozilla-firefox_0.9_i386.changes'], self._listfiles())
+
+        # clobber the existing file, fetch it again and expect an exception
+        f = open(self._listfiles()[0],"w")
+        f.write(CLOBBERED)
+        f.close()
+
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'fetch 1')
 
-        # check if the file wasn't modified (mtime continues the same)
-        self.assertEqual(mtime, os.stat(self._listfiles()[0]).st_mtime)
+        # make sure the file has not changed
+        f = open(self._listfiles()[0],"r")
+        line = f.read()
+        f.close()
+
+        self.assertEqual(CLOBBERED, line)
 
     def testFetchActionByNameDoNotOverwriteFilesystem(self):
         """Same as testFetchActionByIDDoNotOverwriteFilesystem
@@ -416,6 +819,41 @@ class TestQueueToolInJail(TestQueueBase):
             queue_name='unapproved', suite_name='breezy-autotest')
 
         self.assertEqual(['netapplet-1.0.0.tar.gz'], self._listfiles())
+
+    def testQueueFetch(self):
+        """Check that a basic fetch operation works."""
+        FAKE_CHANGESFILE_CONTENT = "Fake Changesfile"
+        FAKE_DEB_CONTENT = "Fake DEB"
+        fillLibrarianFile(1, FAKE_CHANGESFILE_CONTENT)
+        fillLibrarianFile(37, FAKE_DEB_CONTENT)
+        queue_action = self.execute_command('fetch pmount')
+
+        # Check the files' names.
+        files = sorted(self._listfiles())
+        self.assertEqual(
+            ['netapplet-1.0.0.tar.gz', 'pmount_1.9-1_all.deb'],
+            files)
+
+        # Check the files' contents.
+        changes_file = open('netapplet-1.0.0.tar.gz')
+        self.assertEqual(changes_file.read(), FAKE_CHANGESFILE_CONTENT)
+        changes_file.close()
+        debfile = open('pmount_1.9-1_all.deb')
+        self.assertEqual(debfile.read(), FAKE_DEB_CONTENT)
+        debfile.close()
+
+    def testFetchMultipleItems(self):
+        """Check if fetching multiple items at once works.
+
+        We can specify multiple items to fetch, even mixing IDs and names.
+        e.g. queue fetch alsa-utils 1 3
+        """
+        queue_action = self.execute_command('fetch 3 mozilla-firefox')
+        files = self._listfiles()
+        files.sort()
+        self.assertEqual(
+            ['mozilla-firefox_0.9_i386.changes', 'netapplet-1.0.0.tar.gz'],
+            files)
 
 
 def test_suite():

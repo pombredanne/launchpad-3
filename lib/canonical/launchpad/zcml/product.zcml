@@ -1,449 +1,532 @@
 <configure
-    xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:i18n="http://namespaces.zope.org/i18n"
-    xmlns:zope="http://namespaces.zope.org/zope"
-    xmlns:lp="http://launchpad.canonical.com"
-    i18n:domain="launchpad">
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  xmlns:zope="http://namespaces.zope.org/zope"
+  i18n:domain="launchpad">
 
-    <!-- Product -->
-    <content class="canonical.launchpad.database.Product">
-        <allow interface="canonical.launchpad.interfaces.IProduct" />
-        <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
-        <require
-            permission="launchpad.Edit"
-            set_attributes="displayname title summary description driver
-                            owner project bugcontact security_contact
-                            homepageurl wikiurl screenshotsurl
-                            downloadurl programminglang
-                            sourceforgeproject freshmeatproject
-                            translationgroup translationpermission
-                            official_malone official_rosetta
-                            releaseroot development_focus bugtracker
-                            homepage_content emblem gotchi"
-        />
-        <!-- sabdfl 2006-04-10 I put "name" in the admin group because
-             with Bazaar now in place, lots of people can have personal
-             data published at product name-based locations (personal
-             branches) and these URL's will all be b0rked if the product
-             name has to change. It should require RegistryAdmin
-             intervention to rename a product now. -->
-        <require
-            permission="launchpad.Admin"
-            set_attributes="name active reviewed autoupdate"
-        />
-        <!-- ITicketTarget -->
-        <allow attributes="getTicket searchTickets findSimilarTickets
-            support_contacts direct_support_contacts getSupportedLanguages
-	    getTicketLanguages"
-	    />
-        <require permission="launchpad.AnyPerson"
-            attributes="newTicket addSupportContact removeSupportContact" />
-    </content>
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProduct"
-        name="+index" />
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProduct"
-        name="+specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"
-        />
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProduct"
-        name="+branches"
-        layer="canonical.launchpad.layers.CodeLayer"
-        />
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProduct"
-        layer="canonical.launchpad.layers.AnswersLayer"
-        name="+tickets"
-        />
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProduct"
-        layer="canonical.launchpad.layers.BugsLayer"
-        name="+bugs" />
-
-    <browser:menus
-        module="canonical.launchpad.browser"
-        classes="
-            ProductFacets ProductOverviewMenu ProductBountiesMenu
-            ProductBranchesMenu ProductSpecificationsMenu
-            ProductTranslationsMenu ProductBugsMenu ProductSetContextMenu
-            "
-            />
-
-    <!-- XXX ProductBugsMenu undeclared until layout bug is fixed -->
-
-    <browser:navigation
-        module="canonical.launchpad.browser"
-        classes="ProductNavigation"
-        />
-
-    <browser:url
-        for="canonical.launchpad.interfaces.IProduct"
-        path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-        />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ProductView" >
-        <browser:page
-            name="+index"
-            facet="overview"
-            template="../templates/product-index.pt"
-            lp:url="/$Product.name/" />
-        <browser:page
-            name="+translations"
-            facet="translations"
-            template="../templates/product-translations.pt"
-            lp:url="/$Product.name/+translations" />
-        <browser:page
-            name="+packages"
-            facet="overview"
-            template="../templates/product-packages.pt"
-            />
-        <browser:page
-            name="+distributions"
-            facet="overview"
-            template="../templates/product-distros.pt"
-            />
-        <browser:page
-            name="+listing-detailed"
-            template="../templates/product-listing-detailed.pt"
-            />
-        <!-- Products Portlets -->
-        <browser:page
-            name="+portlet-details"
-            facet="overview"
-            template="../templates/product-portlet-details.pt"
-            lp:url="/$Product.name/+portlet-details" />
-        <browser:page
-            name="+portlet-series"
-            facet="overview"
-            template="../templates/product-portlet-series.pt"
-            lp:url="/$Product.name/+portlet-series" />
-        <browser:page
-            name="+portlet-translations"
-            facet="translations"
-            template="../templates/product-portlet-translations.pt"
-            lp:url="/$Product.name/+portlet-translations" />
-        <browser:page
-            name="+portlet-milestones"
-            facet="overview"
-            template="../templates/object-portlet-milestones.pt"
-            lp:url="/$Product.name/+portlet-milestones" />
-        <browser:page
-            name="+portlet-bounties"
-            facet="bounties"
-            template="../templates/object-portlet-bounties.pt"
-            lp:url="/$Product.name/+portlet-bounties" />
-        <browser:page
-            name="+portlet-packages"
-            facet="overview"
-            template="../templates/product-portlet-packages.pt"
-            lp:url="/$Product.name/+portlet-packages" />
-        <browser:page
-            name="+portlet-releases"
-            facet="overview"
-            template="../templates/product-portlet-releases.pt"
-            lp:url="/$Product.name/+portlet-releases" />
-        <browser:page
-            name="+portlet-summary"
-            facet="overview"
-            template="../templates/object-portlet-summary.pt"
-            lp:url="/$Product.name/+portlet-summary" />
-        <browser:page
-            name="+portlet-translatables"
-            facet="translations"
-            template="../templates/product-portlet-translatables.pt"
-            lp:url="/$Product.name/+portlet-translatables" />
-        <browser:page
-            name="+portlet-aboutcve"
-            template="../templates/portlet-aboutcve.pt" />
-    </browser:pages>
-
-    <browser:pages
-      for="canonical.launchpad.interfaces.IProduct"
-      permission="zope.Public">
-      <browser:page
-         name="+portlet-latestbranches"
-         template="../templates/product-portlet-latestbranches.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.BranchTargetView"
-        facet="branches"
-        permission="zope.Public">
-        <browser:page
-            name="+branches"
-            template="../templates/product-branches.pt" />
-        <browser:page
-            name="+branchlisting"
-            template="../templates/branchtarget-branchlisting.pt" />
-    </browser:pages>
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IProduct"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ProductRdfView"
-        name="+rdf"
-        lp:url="/$Product.name/+rdf"
-        attribute="__call__"
-        />
-
-    <browser:page
-      for="canonical.launchpad.interfaces.IProduct"
-      class="canonical.launchpad.browser.CVEReportView"
-      permission="zope.Public"
-      name="+cve"
-      facet="bugs"
-      template="../templates/product-cvereport.pt" />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        permission="launchpad.Edit"
-        facet="overview"
-        class="canonical.launchpad.browser.ProductReassignmentView">
-        <browser:page
-            name="+reassign"
-            template="../templates/object-reassignment.pt"
-            lp:url="/$Product.name/+reassign" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        permission="launchpad.Admin"
-        class="canonical.launchpad.browser.ProductView" >
-        <browser:page
-            name="+potemplatenames"
-            facet="translations"
-            template="../templates/object-potemplatenames.pt"
-            lp:url="/$Product.name/+potemplatenames" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        permission="zope.Public" >
-        <browser:page
-            name="+bounties"
-            facet="bounties"
-            template="../templates/related-bounties.pt"
-            lp:url="/$Product.name/+bounties/" />
-    </browser:pages>
-
-    <browser:editform
-        name="+edit"
-        for="canonical.launchpad.interfaces.IProduct"
-        facet="overview"
-        schema="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductEditView"
-        label="Edit details"
-        fields="project displayname title summary description homepageurl
-                sourceforgeproject freshmeatproject wikiurl screenshotsurl
-                downloadurl programminglang development_focus"
-        permission="launchpad.Edit"
-        template="../templates/product-edit.pt"
-        lp:url="/$Product.name/+edit">
-        <browser:widget
-           field="homepageurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-        <browser:widget
-           field="screenshotsurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-        <browser:widget
-           field="wikiurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-        <browser:widget
-           field="downloadurl"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
-    </browser:editform>
-
-    <browser:editform
-        name="+bugcontact"
-        for="canonical.launchpad.interfaces.IProduct"
-        schema="canonical.launchpad.interfaces.IProduct"
-        facet="bugs"
-        class="canonical.launchpad.browser.ProductBugContactEditView"
-        fields="bugcontact"
-        permission="launchpad.Edit"
-        template="../templates/product-bugcontact.pt"
-        lp:url="/$Product.name/+bugcontact" />
-
-    <browser:editform
-        name="+driver"
-        for="canonical.launchpad.interfaces.IProduct"
-        schema="canonical.launchpad.interfaces.IProduct"
-        fields="driver"
-        class="canonical.launchpad.browser.ProductEditView"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/object-driver.pt"
-        lp:url="/$Project.name/+driver">
-    </browser:editform>
-
-    <browser:editform
-        name="+review"
-        for="canonical.launchpad.interfaces.IProduct"
-        facet="overview"
-        schema="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductEditView"
-        label="Administer product details"
-        fields="name owner active autoupdate reviewed "
-        permission="launchpad.Admin"
-        template="../templates/product-admin.pt"
-        lp:url="/$Product.name/+review">
-    </browser:editform>
-
-    <browser:editform
-        name="+changetranslators"
-        for="canonical.launchpad.interfaces.IProduct"
-        schema="canonical.launchpad.interfaces.IProduct"
-        facet="translations"
-        class="canonical.launchpad.browser.ProductEditView"
-        fields="translationgroup translationpermission"
-        permission="launchpad.Edit"
-        template="../templates/product-translators.pt"
-        lp:url="/$Product.name/+changetranslators" />
-
-    <browser:page
-        name="+launchpad"
-        for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductLaunchpadUsageEditView"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/object-launchpadusage.pt"
-        />
-
-    <browser:addform
-      name="+linkbounty"
-      for="canonical.launchpad.interfaces.IProduct"
-      schema="canonical.launchpad.interfaces.IProductBounty"
-      class="canonical.launchpad.browser.bounty.BountyLinkView"
-      facet="bounties"
-      label="Link an existing bounty"
-      fields="product bounty"
-      keyword_arguments="product bounty"
-      permission="launchpad.AnyPerson"
-      template="../templates/bounty-link.pt"
-      lp:url="/$Product.name/+linkbounty">
-      <browser:widget
-        field="product"
-        class="canonical.widgets.ContextWidget" />
-    </browser:addform>
-
-    <browser:addform
-      name="+addbounty"
-      for="canonical.launchpad.interfaces.IProduct"
-      schema="canonical.launchpad.interfaces.IBounty"
-      label="Register a bounty"
-      fields="name title summary usdvalue difficulty description"
-      class="canonical.launchpad.browser.BountyAddView"
-      facet="bounties"
-      permission="launchpad.AnyPerson"
-      template="../templates/bounty-add.pt"
+  <!-- Product -->
+  <content class="canonical.launchpad.database.Product">
+    <allow interface="canonical.launchpad.interfaces.IProduct" />
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+    <require
+      permission="launchpad.Edit"
+      set_attributes="displayname title summary description driver
+                      owner project bugcontact security_contact
+                      homepageurl wikiurl screenshotsurl
+                      downloadurl programminglang
+                      sourceforgeproject freshmeatproject
+                      translationgroup translationpermission
+                      official_malone official_answers
+                      releaseroot development_focus bugtracker
+                      homepage_content icon logo mugshot 
+                      license_info licenses"
       />
-
-    <browser:page
-        name="+addseries"
-        for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductAddSeriesView"
-        facet="overview"
-        permission="launchpad.AnyPerson"
-        template="../templates/productseries-new.pt"
-        lp:url="/$Product.name/+addseries"
+<!-- sabdfl 2006-04-10 I put "name" in the admin group because
+      with Bazaar now in place, lots of people can have personal
+      data published at product name-based locations (personal
+      branches) and these URL's will all be b0rked if the product
+      name has to change. It should require RegistryAdmin
+      intervention to rename a product now. -->
+<!-- https://lists.ubuntu.com/mailman/private/launchpad/2007-April/015189.html
+      for further discussion - stub 20070411 -->
+    <require
+      permission="launchpad.Admin"
+      set_attributes="name active reviewed autoupdate private_bugs"
       />
+    <!-- Changes to official_rosetta must be available to Launchpad
+         Translations admins so we need its own permission. -->
+    <require
+      permission="launchpad.TranslationsAdmin"
+      set_attributes="official_rosetta"
+      />
+    <!-- IQuestionTarget -->
+    <allow attributes="getQuestion searchQuestions findSimilarQuestions
+      answer_contacts direct_answer_contacts getSupportedLanguages
+      getQuestionLanguages getAnswerContactsForLanguage
+      getAnswerContactRecipients"
+      />
+    <require
+      permission="launchpad.AnyPerson"
+      attributes="newQuestion addAnswerContact removeAnswerContact"
+      />
+    <!-- IFAQTarget -->
+    <allow
+      interface="canonical.launchpad.interfaces.IFAQCollection"
+      attributes="findSimilarFAQs"
+      />
+    <require
+      permission="launchpad.Moderate"
+      attributes="newFAQ"
+      />
+  </content>
 
-    <browser:page
-        name="+addbranch"
-        for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductBranchAddView"
-        facet="branches"
-        permission="launchpad.AnyPerson"
-        template="../templates/product-branch-add.pt" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IProduct"
+    name="+index"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IProduct"
+    name="+specs"
+    layer="canonical.launchpad.layers.BlueprintLayer"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IProduct"
+    name="+branches"
+    layer="canonical.launchpad.layers.CodeLayer"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IProduct"
+    layer="canonical.launchpad.layers.AnswersLayer"
+    name="+questions"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IProduct"
+    layer="canonical.launchpad.layers.BugsLayer"
+    name="+bugs-index"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IProduct"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    name="+translations"
+    />
 
-    <!-- ProductSet-->
-    <content class="canonical.launchpad.database.ProductSet">
-        <allow interface="canonical.launchpad.interfaces.IProductSet" />
-    </content>
-
-    <securedutility
-        class="canonical.launchpad.database.ProductSet"
-        provides="canonical.launchpad.interfaces.IProductSet">
-        <allow interface="canonical.launchpad.interfaces.IProductSet" />
-    </securedutility>
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProductSet"
-        name="+index" />
-
-    <browser:navigation
-        module="canonical.launchpad.browser"
-        classes="ProductSetNavigation"
+  <browser:menus
+    module="canonical.launchpad.browser"
+    classes="
+        ProductFacets ProductOverviewMenu ProductBountiesMenu
+        ProductBranchesMenu ProductSpecificationsMenu
+        ProductTranslationsMenu ProductBugsMenu
+        ProductSetFacets ProductSetContextMenu
+        "
         />
 
-    <browser:url
-        for="canonical.launchpad.interfaces.IProductSet"
-        path_expression="string:products"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" />
+  <!-- XXX: Steve Alexander 2005-09-21:
+            ProductBugsMenu undeclared until layout bug is fixed -->
 
+  <browser:navigation
+    module="canonical.launchpad.browser"
+    classes="ProductNavigation"
+    />
+
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.IProduct"
+    factory="canonical.launchpad.browser.ProductSOP"
+    permission="zope.Public"
+    />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IProduct"
+    path_expression="name"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
+
+  <browser:page
+    name="+addspec"
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.NewSpecificationFromProductView"
+    facet="specifications"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    name="+bugs-index"
+    class="canonical.launchpad.browser.BugTargetBugsView"
+    permission="zope.Public"
+    facet="bugs"
+    template="../templates/bugtarget-bugs.pt"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.BugTargetBugListingView"
+    facet="bugs"
+    permission="zope.Public">
     <browser:page
-        for="canonical.launchpad.interfaces.IProductSet"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.product.ProductSetDynMenu"
-        attribute="__call__"
-        name="+menudata"
-        />
+      name="+portlet-bugtasklist-seriesbugs"
+      template="../templates/bugtask-portlet-seriesbugs.pt"
+      />
+  </browser:pages>
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    name="+download"
+    class="canonical.launchpad.browser.ProductDownloadFilesView"
+    permission="zope.Public"
+    facet="overview"
+    template="../templates/product-files.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    name="+help-translate-button"
+    facet="translations"
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.HelpTranslateButtonView"
+    permission="zope.Public"
+    />
+
+  <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProduct"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.ProductView"
+    layer="canonical.launchpad.layers.TranslationsLayer" >
     <browser:page
-        for="canonical.launchpad.interfaces.IProduct"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.product.ProductDynMenu"
-        attribute="__call__"
-        name="+menudata"
-        />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProductSet"
-        permission="zope.Public"
-        facet="overview"
-        class="canonical.launchpad.browser.ProductSetView" >
-        <browser:page
-            name="+index"
-            template="../templates/products-index.pt" />
-        <browser:page
-            name="+portlet-details"
-            template="../templates/products-portlet-details.pt" />
-        <browser:page
-            name="+all"
-            template="../templates/products-all.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProductSet"
-        class="canonical.launchpad.browser.ProductSetView"
-        facet="overview"
-        permission="launchpad.AnyPerson">
-        <browser:page
-            name="+review"
-            template="../templates/registry-review.pt"
-            lp:url="/products/+review" />
-    </browser:pages>
-
+      name="+translations"
+      facet="translations"
+      template="../templates/product-translations.pt"
+      />
     <browser:page
-        name="+new"
-        for="canonical.launchpad.interfaces.IProductSet"
-        facet="overview"
-        class="canonical.launchpad.browser.ProductAddView"
-        permission="launchpad.AnyPerson"
-        template="../templates/product-new.pt"
-        />
+      name="+portlet-translations"
+      facet="translations"
+      template="../templates/product-portlet-translations.pt"
+      />
+    <browser:page
+      name="+portlet-translatables"
+      facet="translations"
+      template="../templates/product-portlet-translatables.pt"
+      />
+    <browser:page
+      name="+portlet-obsolete-translatables"
+      facet="translations"
+      template="../templates/product-portlet-obsolete-translatables.pt"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProduct"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.ProductView" >
+    <browser:page
+      name="+index"
+      facet="overview"
+      template="../templates/product-index.pt"
+      />
+    <browser:page
+      name="+packages"
+      facet="overview"
+      template="../templates/product-packages.pt"
+      />
+    <browser:page
+      name="+series"
+      facet="overview"
+      template="../templates/product-series.pt"
+      />
+    <browser:page
+      name="+distributions"
+      facet="overview"
+      template="../templates/product-distros.pt"
+      />
+    <browser:page
+      name="+listing-detailed"
+      template="../templates/product-listing-detailed.pt"
+      />
+    <browser:page
+      name="+listing-simple"
+      template="../templates/pillar-listing-simple.pt"
+      />
+    <!-- Products Portlets -->
+    <browser:page
+      name="+portlet-details"
+      facet="overview"
+      template="../templates/product-portlet-details.pt"
+      />
+    <browser:page
+      name="+portlet-lifecycle"
+      facet="overview"
+      template="../templates/product-portlet-lifecycle.pt"
+      />
+    <browser:page
+      name="+portlet-series"
+      facet="overview"
+      template="../templates/product-portlet-series.pt"
+      />
+    <browser:page
+      name="+portlet-milestones"
+      facet="overview"
+      template="../templates/object-portlet-milestones.pt"
+      />
+    <browser:page
+      name="+milestones"
+      facet="overview"
+      template="../templates/object-milestones.pt"
+      />
+    <browser:page
+      name="+portlet-bounties"
+      facet="bounties"
+      template="../templates/object-portlet-bounties.pt"
+      />
+    <browser:page
+      name="+portlet-packages"
+      facet="overview"
+      template="../templates/product-portlet-packages.pt"
+      />
+    <browser:page
+      name="+portlet-releases"
+      facet="overview"
+      template="../templates/product-portlet-releases.pt"
+      />
+    <browser:page
+      name="+portlet-summary"
+      facet="overview"
+      template="../templates/object-portlet-summary.pt"
+      />
+    <browser:page
+      name="+portlet-aboutcve"
+      template="../templates/portlet-aboutcve.pt"
+      />
+    <browser:page
+      name="+portlet-latestbranches"
+      template="../templates/product-portlet-latestbranches.pt"
+      />
+  </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.ProductBranchesView"
+    facet="branches"
+    permission="zope.Public"
+    name="+branches"
+    template="../templates/product-branches.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.ProductRdfView"
+    name="+rdf"
+    attribute="__call__"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.CVEReportView"
+    permission="zope.Public"
+    name="+cve"
+    facet="bugs"
+    template="../templates/product-cvereport.pt"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProduct"
+    permission="launchpad.Edit"
+    facet="overview"
+    class="canonical.launchpad.browser.ProductReassignmentView">
+    <browser:page
+      name="+reassign"
+      template="../templates/object-reassignment.pt"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProduct"
+    permission="zope.Public" >
+    <browser:page
+      name="+bounties"
+      facet="bounties"
+      template="../templates/related-bounties.pt"
+      />
+  </browser:pages>
+
+  <browser:page
+    name="+edit"
+    for="canonical.launchpad.interfaces.IProduct"
+    facet="overview"
+    class="canonical.launchpad.browser.ProductEditView"
+    permission="launchpad.Edit"
+    template="../templates/product-edit.pt"
+    />
+
+  <browser:page
+    name="+branding"
+    for="canonical.launchpad.interfaces.IProduct"
+    facet="overview"
+    class="canonical.launchpad.browser.ProductBrandingView"
+    permission="launchpad.Edit"
+    template="../templates/object-branding.pt"
+    />
+
+  <browser:page
+    name="+bugcontact"
+    for="canonical.launchpad.interfaces.IProduct"
+    facet="bugs"
+    class="canonical.launchpad.browser.ProductBugContactEditView"
+    permission="launchpad.Edit"
+    template="../templates/product-bugcontact.pt"
+    />
+
+  <browser:page
+    name="+review"
+    for="canonical.launchpad.interfaces.IProduct"
+    facet="overview"
+    class="canonical.launchpad.browser.ProductReviewView"
+    permission="launchpad.Admin"
+    template="../templates/product-admin.pt"
+    />
+
+  <browser:page
+    name="+changetranslators"
+    for="canonical.launchpad.interfaces.IProduct"
+    facet="translations"
+    class="canonical.launchpad.browser.ProductChangeTranslatorsView"
+    permission="launchpad.Edit"
+    template="../templates/product-translators.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:addform
+    name="+linkbounty"
+    for="canonical.launchpad.interfaces.IProduct"
+    schema="canonical.launchpad.interfaces.IProductBounty"
+    class="canonical.launchpad.browser.bounty.BountyLinkView"
+    facet="bounties"
+    label="Link an existing bounty"
+    fields="product bounty"
+    keyword_arguments="product bounty"
+    permission="launchpad.AnyPerson"
+    template="../templates/bounty-link.pt" >
+    <browser:widget
+      field="product"
+      class="canonical.widgets.ContextWidget"
+      />
+  </browser:addform>
+
+  <browser:addform
+    name="+addbounty"
+    for="canonical.launchpad.interfaces.IProduct"
+    schema="canonical.launchpad.interfaces.IBounty"
+    label="Register a bounty"
+    fields="name title summary usdvalue difficulty description"
+    class="canonical.launchpad.browser.BountyAddView"
+    facet="bounties"
+    permission="launchpad.AnyPerson"
+    template="../templates/bounty-add.pt"
+    />
+
+  <browser:page
+    name="+addseries"
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.ProductAddSeriesView"
+    facet="overview"
+    permission="launchpad.AnyPerson"
+    template="../templates/productseries-new.pt"
+    />
+
+  <browser:page
+    name="+addbranch"
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.ProductBranchAddView"
+    facet="branches"
+    permission="launchpad.AnyPerson"
+    template="../templates/product-branch-add.pt"
+    />
+
+  <!-- ProductSet-->
+  <content class="canonical.launchpad.database.ProductSet">
+    <allow interface="canonical.launchpad.interfaces.IProductSet" />
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.ProductSet"
+    provides="canonical.launchpad.interfaces.IProductSet">
+    <allow interface="canonical.launchpad.interfaces.IProductSet" />
+  </securedutility>
+
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.IProductSet"
+    factory="canonical.launchpad.browser.ProductSetSOP"
+    permission="zope.Public"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IProductSet"
+    name="+index"
+    />
+
+  <browser:navigation
+    module="canonical.launchpad.browser"
+    classes="ProductSetNavigation"
+    />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IProductSet"
+    path_expression="string:projects"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.ProductDynMenu"
+    attribute="__call__"
+    name="+menudata"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProductSet"
+    permission="zope.Public"
+    facet="overview"
+    class="canonical.launchpad.browser.ProductSetView" >
+    <browser:page
+      name="+index"
+      template="../templates/products-index.pt"
+      />
+    <browser:page
+      name="+portlet-details"
+      template="../templates/products-portlet-details.pt"
+      />
+    <browser:page
+      name="+all"
+      template="../templates/products-all.pt"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProductSet"
+    class="canonical.launchpad.browser.ProductSetView"
+    facet="overview"
+    permission="launchpad.Admin">
+    <browser:page
+      name="+review"
+      template="../templates/registry-review.pt"
+      />
+  </browser:pages>
+
+  <browser:page
+    name="+new"
+    for="canonical.launchpad.interfaces.IProductSet"
+    facet="overview"
+    class="canonical.launchpad.browser.ProductAddView"
+    permission="launchpad.AnyPerson"
+    template="../templates/product-new.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    name="+shortlink"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.ProductShortLink"
+    attribute="__call__"
+    />
 
 </configure>

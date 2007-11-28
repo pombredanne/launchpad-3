@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.4
+#! /usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 """
 Run a command and suppress output unless it returns a non-zero exit status

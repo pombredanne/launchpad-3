@@ -1,0 +1,57 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+<tal:tag condition="view/update"/>
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/distribution/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_editform/editform">
+
+    <h1 tal:condition="view/label"
+        tal:content="view/label"
+        metal:fill-slot="heading">Form Label comes from ZCML label="xxx"</h1>
+
+    <div class="row" metal:fill-slot="extra_top" tal:replace="nothing">
+      <div>Extra top</div>
+      <div class="field"><input type="text" style="width:100%" /></div>
+      Put any additional widgets you want at the top of the form here,
+      or delete this section altogether, or just leave it and it will
+      be deleted by the tal:replace=nothing.
+    </div>
+
+    <div class="row" metal:fill-slot="extra_bottom" tal:replace="nothing">
+      <div>Extra bottom</div>
+      <div class="field"><input type="text" style="width:100%" /></div>
+      Put any additional widgets you want at the bottom of the form here,
+      or delete this section altogether, or just leave it and it will
+      be deleted by the tal:replace=nothing.
+    </div>
+
+    <div class="row" metal:fill-slot="extra_buttons" tal:replace="nothing">
+      Put any additional buttons you want on the form here and they
+      will be displayed at the bottom of the form. Watch the
+      tal:replace=nothing.
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>

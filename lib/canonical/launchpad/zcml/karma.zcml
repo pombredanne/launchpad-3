@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -17,12 +16,6 @@
         <allow interface="canonical.launchpad.interfaces.IKarmaCache" />
     </content>
 
-    <!-- KarmaPersonCategoryCacheView -->
-    <content class="canonical.launchpad.database.KarmaPersonCategoryCacheView">
-        <allow interface="
-            canonical.launchpad.interfaces.IKarmaPersonCategoryCacheView" />
-    </content>
-
     <!-- KarmaTotalCache -->
     <content class="canonical.launchpad.database.KarmaTotalCache">
         <allow interface="canonical.launchpad.interfaces.IKarmaTotalCache" />
@@ -31,7 +24,7 @@
     <!-- KarmaCategory -->
     <content class="canonical.launchpad.database.KarmaCategory">
         <allow interface="canonical.launchpad.interfaces.IKarmaCategory" />
-        <require 
+        <require
             permission="launchpad.Admin"
             set_schema="canonical.launchpad.interfaces.IKarmaCategory" />
     </content>
@@ -39,8 +32,8 @@
     <!-- KarmaAction -->
     <content class="canonical.launchpad.database.KarmaAction">
         <allow interface="canonical.launchpad.interfaces.IKarmaAction" />
-        <require 
-            permission="launchpad.Admin" 
+        <require
+            permission="launchpad.Admin"
             set_schema="canonical.launchpad.interfaces.IKarmaAction" />
     </content>
 
@@ -63,8 +56,19 @@
         label="Edit karma action information"
         permission="launchpad.Admin"
         template="../templates/karmaaction-edit.pt"
-        lp:url="karmaaction/$action/+index">
+        >
     </browser:editform>
+
+    <!-- KarmaCacheManager -->
+    <content class="canonical.launchpad.database.KarmaCacheManager">
+        <allow interface="canonical.launchpad.interfaces.IKarmaCacheManager" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.KarmaCacheManager"
+        provides="canonical.launchpad.interfaces.IKarmaCacheManager">
+        <allow interface="canonical.launchpad.interfaces.IKarmaCacheManager" />
+    </securedutility>
 
     <!-- KarmaActionSet -->
     <content class="canonical.launchpad.database.KarmaActionSet">
@@ -95,9 +99,9 @@
     <browser:page
         for="canonical.launchpad.interfaces.IKarmaActionSet"
         name="+index"
-        permission="launchpad.Admin" 
+        permission="launchpad.Admin"
         template="../templates/karmaaction-index.pt"
-        lp:url="karmaaction/$action/+index" />
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IKarmaContext"

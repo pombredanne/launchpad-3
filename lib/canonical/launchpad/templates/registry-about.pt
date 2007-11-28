@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -11,10 +18,10 @@
 
     <p>Based on Edd Dumbill's DOAP framework for open source project
     descriptions, this system allows us to keep track of all the open source
-    projects and products that ultimately are packaged in Ubuntu and its
-    derivatives, or translated in Rosetta, or have bugs tracked by Malone.</p>
+    projects that ultimately are packaged in Ubuntu and its
+    derivatives, or translated in, or have bugs tracked by Launchpad.</p>
 
-    <p>Each open source product includes a description of the product, and
+    <p>Each open source project includes a description of the project, and
     links to translations, bugs, bazaar branches of the code itself and
     packages in Ubuntu.</p>
 

@@ -1,32 +1,49 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:do-this-first tal:content="view/processForm" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
 <div metal:fill-slot="main">
 
-    <h1>Leaving &#8220;<span tal:replace="context/browsername" />&#8221;</h1>
-    <tal:block tal:condition="view/userCanRequestToLeave">
-      <p>
-        Are you sure you want to leave this team?
-      </p>
+  <h1>Leaving &#8220;<span tal:replace="context/browsername" />&#8221;</h1>
+  <tal:block tal:condition="view/userCanRequestToLeave">
+    <h2>Are you sure you want to leave this team?</h2>
 
-      <form class="actions" name="leave" action="" method="POST">
-            <input type="submit" name="goback" value="Back to team" />
-            <input type="submit" name="leave" value="Leave" />
-      </form>
-    </tal:block>
+    <form class="actions" name="leave" action="" method="post">
+      <input type="submit" name="goback" value="Cancel" />
+      <input type="submit" name="leave" value="Leave" />
+    </form>
+  </tal:block>
 
-    <tal:block tal:condition="not: view/userCanRequestToLeave">
-      <p class="error message">You are not an active member of this team.
-      You don't need to leave it.</p>
-      <p><a href="./">Back to <span tal:replace="context/browsername" /></a></p>
-    </tal:block>
+  <tal:block tal:condition="not: view/userCanRequestToLeave">
+    <p class="warning message">
+      You are not an active member of this team. You don't need to leave it.
+    </p>
+    <p>
+      <a tal:attributes="href context/fmt:url">
+        Back to <span tal:replace="context/browsername" />
+      </a>
+    </p>
+  </tal:block>
 
 </div> 
 
 </body>
 </html>
+</tal:root>

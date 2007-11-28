@@ -1,0 +1,30 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+
+    <div metal:fill-slot="main">
+
+      <div metal:use-macro="context/@@launchpad_form/form">
+        <tal:comment condition="nothing">
+        XXX: Hiding this message to make sure you remember to add some more
+        information to this template.
+        <p metal:fill-slot="extra_info" class="informational message">
+          The bugtracker with the given URL is not registered in
+          Launchpad. Would you like to register it now?
+        </p>
+        </tal:comment> 
+      </div>
+
+    </div>
+
+  </body>
+</html>

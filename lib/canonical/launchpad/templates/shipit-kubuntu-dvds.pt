@@ -1,28 +1,27 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <div style="padding: 1em">
   <h3>Want fast delivery of Kubuntu DVDs?</h3>
   <h4>If you live in the US, you can order online now!</h4>
   <div style="text-align: center">
-    <p>Kubuntu 6.06 LTS for PCs</p>
+    <p>Kubuntu 7.04 for PCs</p>
     <iframe
-      src="http://rcm.amazon.com/e/cm?t=ubuntushipit-20&o=1&p=8&l=as1&asins=B000G6879O&fc1=000000&IS2=1&lt1=_blank&lc1=0000ff&bc1=000000&bg1=ffffff&f=ifr"
+      src="http://rcm.amazon.com/e/cm?t=ubuntushipit-20&o=1&p=8&l=as1&asins=B000PU41WS&fc1=000000&IS2=1&lt1=_blank&lc1=0000FF&bc1=000000&bg1=FFFFFF&f=ifr"
       style="width:120px;height:240px;" scrolling="no" marginwidth="0"
       marginheight="0" frameborder="0">
     </iframe>
     <br />
     <br />
-    <p>Kubuntu 6.06 LTS for 64-bit PCs</p>
+    <p>Kubuntu 7.04 for 64-bit PCs</p>
     <iframe
-      src="http://rcm.amazon.com/e/cm?t=ubuntushipit-20&o=1&p=8&l=as1&asins=B000G648GK&fc1=000000&IS2=1&lt1=_blank&lc1=0000ff&bc1=000000&bg1=ffffff&f=ifr"
-      style="width:120px;height:240px;" scrolling="no" marginwidth="0"
-      marginheight="0" frameborder="0">
-    </iframe>
-    <br />
-    <br />
-    <p>Kubuntu 6.06 LTS for Macs</p>
-    <iframe
-      src="http://rcm.amazon.com/e/cm?t=ubuntushipit-20&o=1&p=8&l=as1&asins=B000G648GU&fc1=000000&IS2=1&lt1=_blank&lc1=0000ff&bc1=000000&bg1=ffffff&f=ifr"
+      src="http://rcm.amazon.com/e/cm?t=ubuntushipit-20&o=1&p=8&l=as1&asins=B000PU1Y3C&fc1=000000&IS2=1&lt1=_blank&lc1=0000FF&bc1=000000&bg1=FFFFFF&f=ifr"
       style="width:120px;height:240px;" scrolling="no" marginwidth="0"
       marginheight="0" frameborder="0">
     </iframe>
   </div>
 </div>
+</tal:root>

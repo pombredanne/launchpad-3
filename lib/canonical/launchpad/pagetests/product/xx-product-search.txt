@@ -1,0 +1,20 @@
+We can search for products using an exact name. If one is found, we get
+redirected to it directly.
+
+  >>> print http(r"""
+  ... GET /projects?exact_name=1&text=firefox HTTP/1.1
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/firefox
+  <BLANKLINE>
+
+
+If one isn't found, a normal search is performed.
+
+  >>> print http(r"""
+  ... GET /projects?exact_name=1&text=mozilla HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Mozilla Firefox
+  ...Mozilla Thunderbird...

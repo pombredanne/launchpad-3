@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -14,30 +21,30 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
   <h1>Current documentation</h1>
 </metal:heading>
 
 <div metal:fill-slot="main" tal:define="specs view/documentation">
 
-      <p class="discreet">
-        To classify a specification as documentation, check the
-        &#8220;Is Informational&#8221; box on its &#8220;Edit Details&#8221;
-        page. When the specification is marked "Approved" then it will show
-        up in this listing.
-      </p>
+  <p>
+    To classify a blueprint as documentation, check the
+    &#8220;Is Informational&#8221; box on its &#8220;Edit Details&#8221;
+    page. When the blueprint is marked "Approved" then it will show
+    up in this listing.
+  </p>
 
-  <tal:per_spec repeat="spec specs">
-    <div tal:replace="structure spec/@@+listing-simple" />
-  </tal:per_spec>
+  <table id="documentation-listing-table">
+    <tr tal:repeat="spec specs"
+         tal:replace="structure spec/@@+listing-simple" />
+  </table>
 
-  <p class="discreet">
+  <p>
     <tal:no_specs condition="not: specs">
       No documentation to list for
       <span tal:replace="context/displayname">Mozilla</span>.
     </tal:no_specs>
     <tal:has_specs condition="specs">
-      <span tal:replace="specs/count:len">7</span> specification(s) listed.
+      <span tal:replace="specs/count:len">7</span> blueprint(s) listed.
     </tal:has_specs>
   </p>
 

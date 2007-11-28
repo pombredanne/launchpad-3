@@ -1,22 +1,18 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-depends">
 
   <h2>Depends on</h2>
 
-  <div class="portletBody portletContent">
+  <div class="portletBody portletContent"
+       id="depends"
+       tal:define="relationships view/depends">
 
-    <ul>
-      <li tal:repeat="bindepends view/depends">
-        <a tal:content="bindepends/name"
-           tal:attributes="href string:../../${bindepends/name}"/> 
-          <tal:dummy condition="bindepends/signal">
-            (<span tal:replace="bindepends/signal" /> 
-             <span tal:replace="bindepends/version" />)
-          </tal:dummy> 
-      </li>
-    </ul>
-    <p tal:condition="not: view/depends">
-      No dependencies.
-    </p>
+     <tal:has_dep condition="relationships/has_items">
+        <tal:block replace="structure relationships/@@+render-list"/>
+     </tal:has_dep>
 
   </div>
 

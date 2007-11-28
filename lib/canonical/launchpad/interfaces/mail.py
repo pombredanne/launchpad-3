@@ -1,4 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
+
 """Interfaces specific to mail handling."""
 
 __metaclass__ = type
@@ -6,6 +8,7 @@ __all__ = ['IWeaklyAuthenticatedPrincipal',
            'ISignedMessage',
            'IMailHandler',
            'EmailProcessingError',
+           'BugTargetNotFound',
            'IEmailCommand',
            'IBugEmailCommand',
            'IBugTaskEmailCommand',
@@ -77,6 +80,10 @@ class IMailHandler(Interface):
 
 class EmailProcessingError(Exception):
     """Something went wrong while processing an email command."""
+
+
+class BugTargetNotFound(Exception):
+    """A bug target couldn't be found."""
 
 
 class IEmailCommand(Interface):

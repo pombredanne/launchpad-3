@@ -1,12 +1,16 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/pillarindex"
+  i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>People and teams in Launchpad</h1>
-    </metal:heading>
+    <h1 metal:fill-slot="heading">People and teams</h1>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-about" />
@@ -16,91 +20,97 @@
     <div tal:replace="structure context/@@+portlet-stats" />
   </metal:rightportlets>
 
+    <h1 metal:fill-slot="application-heading">People and teams</h1>
+
     <div metal:fill-slot="main">
       <tal:block define="bn view/searchPeopleBatchNavigator">
-        <form name="search" action="." method="GET">
-          <table style="margin-bottom: 1em;">
-            <tr>
-              <td>
-                <input type="text" name="name" size="35"
-                     tal:attributes="value request/name|nothing"
-                />
-                <input
-                  tal:condition="not: bn"
-                  type="submit"
-                  value="Search"
-                />
-                <input
-                  tal:condition="bn"
-                  type="submit"
-                  value="Search Again"
-                />
-              </td>
-            </tr>
-            <tr>
-              <td tal:define="searchfor request/searchfor|nothing">
-                <label>
+        <div align="center">
+          <form class="central" name="search" action="." method="GET">
+            <table style="margin-bottom: 1em;">
+              <tr>
+                <td>
+                  <input type="text" name="name" size="35"
+                         tal:attributes="value request/name|nothing"
+                         />
                   <input
-                    tal:condition="python: searchfor == 'peopleonly'"
-                    checked="checked"
-                    type="radio"
-                    name="searchfor"
-                    value="peopleonly"
+                    tal:condition="not: bn"
+                    type="submit"
+                    value="Search"
                   />
                   <input
-                    tal:condition="python: searchfor != 'peopleonly'"
-                    type="radio"
-                    name="searchfor"
-                    value="peopleonly"
+                    tal:condition="bn"
+                    type="submit"
+                    value="Search Again"
                   />
-                  people
-                </label>
-                <label>
-                  <input
-                    tal:condition="python: searchfor == 'teamsonly'"
-                    checked="checked"
-                    type="radio"
-                    name="searchfor"
-                    value="teamsonly"
-                  />
-                  <input
-                    tal:condition="python: searchfor != 'teamsonly'"
-                    type="radio"
-                    name="searchfor"
-                    value="teamsonly"
-                  />
-                  teams
-                </label>
-                <label>
-                  <input
-                    tal:condition="python: searchfor == 'all' or
-                                           searchfor == nothing"
-                    checked="checked"
-                    type="radio"
-                    name="searchfor"
-                    value="all"
-                  />
-                  <input
-                    tal:condition="python: searchfor == 'teamsonly' or
-                                           searchfor == 'peopleonly'"
-                    type="radio"
-                    name="searchfor"
-                    value="all"
-                  />
-                  both
-                </label>
-              </td>
-            </tr>
-          </table>
-        </form>
-        <script type="text/javascript"><!--
-          setFocusByName('name');
-        // --></script>
+                </td>
+              </tr>
+              <tr>
+                <td tal:define="searchfor request/searchfor|nothing">
+                  <label>
+                    <input
+                      tal:condition="python: searchfor == 'peopleonly'"
+                      checked="checked"
+                      type="radio"
+                      name="searchfor"
+                      value="peopleonly"
+                    />
+                    <input
+                      tal:condition="python: searchfor != 'peopleonly'"
+                      type="radio"
+                      name="searchfor"
+                      value="peopleonly"
+                    />
+                    people
+                  </label>
+                  <label>
+                    <input
+                      tal:condition="python: searchfor == 'teamsonly'"
+                      checked="checked"
+                      type="radio"
+                      name="searchfor"
+                      value="teamsonly"
+                    />
+                    <input
+                      tal:condition="python: searchfor != 'teamsonly'"
+                      type="radio"
+                      name="searchfor"
+                      value="teamsonly"
+                    />
+                    teams
+                  </label>
+                  <label>
+                    <input
+                      tal:condition="python: searchfor == 'all' or
+                                             searchfor == nothing"
+                      checked="checked"
+                      type="radio"
+                      name="searchfor"
+                      value="all"
+                    />
+                    <input
+                      tal:condition="python: searchfor == 'teamsonly' or
+                                             searchfor == 'peopleonly'"
+                      type="radio"
+                      name="searchfor"
+                      value="all"
+                    />
+                    both
+                  </label>
+                </td>
+              </tr>
+            </table>
+          </form>
+          <script type="text/javascript"><!--
+            setFocusByName('name');
+          // --></script>
+        </div>
+
         <tal:block condition="not: bn">
-          <p> 
-            <b>Duplicate accounts</b> may have been created
-            automatically by Launchpad. If you find you have more than
-            one account, perhaps for different email addresses, you can
+          <p id="application-summary"> 
+            Launchpad may create <b>duplicate profiles</b> for you
+            as it automatically reviews translation files, mailing lists and
+            other forums. If you find you have more than one profile here,
+            perhaps for multiple email addresses, you can
             <a href="+requestmerge">merge the duplicate accounts</a>.
           </p>
         </tal:block>
@@ -143,7 +153,7 @@
                   </td>
                   <td tal:content="person/name">foobar</td>
                   <td class="amount" tal:content="person/karma">34</td>
-                </tr>    
+                </tr>
               </tbody>
             </table>
           </tal:block>

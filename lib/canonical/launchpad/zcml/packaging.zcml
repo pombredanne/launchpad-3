@@ -3,9 +3,8 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:zope="http://namespaces.zope.org/zope"
-    xmlns:lp="http://launchpad.canonical.com"
     i18n:domain="launchpad">
-    
+
     <!-- Packaging -->
     <content class="canonical.launchpad.database.Packaging">
         <allow interface="canonical.launchpad.interfaces.IPackaging" />

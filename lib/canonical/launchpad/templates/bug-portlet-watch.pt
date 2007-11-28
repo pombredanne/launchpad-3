@@ -1,21 +1,26 @@
-<div class="portlet" tal:condition="context/watches"
-     tal:define="current_task view/currentBugTask;
-                 url current_task/fmt:url">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-watches"
+  tal:condition="context/watches"
+  tal:define="current_task view/currentBugTask;
+              url current_task/fmt:url">
   <h2>Remote bug watches</h2>
   <div class="portletBody portletContent">
 
           <ul class="remote bug">
             <li tal:repeat="watch context/watches">
+              <a tal:attributes="href watch/fmt:url"
+                ><img src="/@@/edit" alt="[Edit]"
+                      title="Change watch details" /></a>
               <a tal:attributes="href watch/url">
                   <span tal:replace="watch/bugtracker/name" />
                   #<span tal:replace="watch/remotebug" />
               </a>
               <tal:block tal:condition="watch/remotestatus">
-                [<span tal:content="watch/remotestatus" />]
+                <br />[<span tal:content="watch/remotestatus" />]
               </tal:block>
-              <small>
-                (<a tal:attributes="href string:$url/watches/${watch/id}">edit</a>)
-              </small>
             </li>
           </ul>
 

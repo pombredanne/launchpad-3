@@ -1,0 +1,106 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:portlets fill-slot="portlets">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-top-contributors" />
+</metal:portlets>
+
+<metal:heading fill-slot="pageheading">
+   <h1>Download project files</h1>
+</metal:heading>
+
+<div metal:fill-slot="main"
+     tal:define="has_edit context/required:launchpad.Edit">
+
+  <form method="POST"
+        tal:attributes="action request/URL">
+
+    <p tal:condition="not: view/has_download_files">
+       No download files exist for this project.
+    </p>
+
+    <tal:series repeat="series view/sorted_series_list">
+
+      <h2 tal:condition="python: has_edit and series.releases">
+        Release series &#8220;<tal:name
+                               replace="series/name">main</tal:name>&#8221;
+      </h2>
+
+      <tal:seriesfilesexist
+          condition="series/release_files">
+        <h2 tal:condition="not: has_edit">
+          Release series &#8220;<tal:name
+                                 replace="series/name">main</tal:name>&#8221;
+        </h2>
+
+        <table class="listing">
+          <thead>
+            <tr>
+              <th tal:condition="has_edit" width="10%">Delete</th>
+              <th>Download</th>
+              <th>Release</th>
+              <th width="50%">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tal:seriesfiles repeat="release series/releases">
+              <tr tal:repeat="file release/files">
+                <td tal:condition="has_edit"
+                    align="center">
+                  <input type="checkbox"
+                         tal:define="cbnum string:${repeat/series/index}_${repeat/release/index}_${repeat/file/index}"
+                         tal:attributes="value file/libraryfile/id;
+                         name string:checkbox_${cbnum}" />
+                </td>
+                <td>
+                  <img alt="download icon" src="/@@/download" />
+                  <a tal:attributes="href python:view.file_url(release,file)"
+                       tal:content="file/libraryfile/filename">filename</a></td>
+                <td>
+                   <tal:version content="release/version">version</tal:version>
+                   <img tal:condition="python: view.is_milestone(series,release)"
+                        alt="milestone icon"
+                        src="/@@/milestone" />
+                </td>
+                <td tal:content="file/description">Installer for i386</td>
+              </tr>
+            </tal:seriesfiles>
+          </tbody>
+        </table>
+
+      </tal:seriesfilesexist>
+
+      <p tal:condition="has_edit">
+        <tal:releases condition="series/releases">
+          Add download file for release:
+          <tal:release repeat="release series/releases">
+            <a tal:attributes="href string:${series/name}/${release/version}/+adddownloadfile"
+               tal:content="release/version"
+              >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
+          </tal:release>
+        </tal:releases>
+      </p>
+
+    </tal:series>
+    <input tal:condition="python: has_edit and view.has_download_files"
+        type="submit"
+        name="delete_files"
+        value="Delete Files" />
+
+  </form>
+
+</div>
+</body>
+</html>

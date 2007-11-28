@@ -1,0 +1,55 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Milestones</h1>
+    <tal:has-milestones condition="context/all_milestones">
+    <ul>
+      <li class="milestone"
+          tal:repeat="milestone context/all_milestones"
+          tal:attributes="id string:milestone-${milestone/name}">
+        <a tal:content="milestone/name"
+           tal:attributes="href milestone/fmt:url">
+           milestone name
+        </a>
+        <strong tal:condition="not: milestone/visible">(Inactive)</strong>
+        <div tal:condition="milestone/dateexpected">
+          Expected for <span tal:replace="milestone/dateexpected/fmt:date" />
+        </div>
+        <div tal:condition="milestone/series_target">
+          For <a tal:attributes="href milestone/series_target/fmt:url"
+                 tal:replace="milestone/series_target/title">Feisty</a>
+        </div>
+	<div class="description"
+	     tal:condition="milestone/description"
+	     tal:content="structure milestone/description/fmt:text-to-html">
+	  Milestone description.
+	</div>
+      </li>
+    </ul>
+    </tal:has-milestones>
+
+    <tal:no-milestones condition="not: context/all_milestones">
+    <p>There are no milestones associated with
+      <span tal:replace="context/title" />
+    </p>
+    </tal:no-milestones>
+</div>
+</body>
+</html>

@@ -1,0 +1,160 @@
+= Redirection of Beta Testers =
+
+Launchpad occasionally runs private beta tests of large
+changes. During these times, members of the launchpad-beta-testers
+team have access to a separate web app running off the same database.
+
+To encourage members of this team to use the beta UI, we automatically
+redirect them to the beta site when they use the main site.
+
+For these tests, we will use the user 'launchpad-beta-owner', who is
+on the beta testers team.  First, create a browser object for this
+person:
+
+    >>> beta_browser = setupBrowser(auth='Basic beta-admin@launchpad.net:test')
+
+XXX 20070131 jamesh:
+zope.testbrowser does not handle redirects to remote sites, so we
+disable the redireciton handling at the mechanize layer.  We then need
+to check the HTTPError directly.
+      http://www.zope.org/Collectors/Zope3-dev/755
+
+    >>> user_browser.mech_browser.set_handle_redirect(False)
+    >>> beta_browser.mech_browser.set_handle_redirect(False)
+    >>> from urllib2 import HTTPError
+    >>> def check(function, *args):
+    ...     try:
+    ...         function(*args)
+    ...     except HTTPError, exc:
+    ...         print str(exc)
+    ...         location = exc.headers.getheader('Location')
+    ...         if location is not None:
+    ...             print 'Location:', location
+
+
+If a normal user goes to a page on the site, it will load as normal:
+
+    >>> check(user_browser.open, 'http://launchpad.dev/ubuntu')
+    >>> print user_browser.url
+    http://launchpad.dev/ubuntu
+
+In contrast, members of the beta testers get redirected:
+
+    >>> check(beta_browser.open, 'http://launchpad.dev/ubuntu')
+    HTTP Error 303: See Other
+    Location: http://beta.launchpad.dev/ubuntu
+
+The redirection is controlled by the beta_testers_redirection_host
+config item.  If it is set to None, no redirection occurs:
+
+    >>> from canonical.config import config
+    >>> print config.launchpad.beta_testers_redirection_host
+    beta.launchpad.dev
+    >>> config.launchpad.beta_testers_redirection_host = None
+
+    >>> check(beta_browser.open, 'http://launchpad.dev/ubuntu')
+    >>> print beta_browser.url
+    http://launchpad.dev/ubuntu
+
+Set the redirection host back for the rest of the tests:
+
+    >>> config.launchpad.beta_testers_redirection_host = 'beta.launchpad.dev'
+
+
+The redirection also works for URLs below the root, and with query
+parameters:
+
+    >>> check(beta_browser.open,
+    ...     'http://launchpad.dev/ubuntu/+search?text=foo')
+    HTTP Error 303: See Other
+    Location: http://beta.launchpad.dev/ubuntu/+search?text=foo
+
+
+The redirection also works for other Launchpad subdomains:
+
+    >>> check(beta_browser.open,
+    ...     'http://bugs.launchpad.dev/launchpad/+bugs?orderby=-datecreated')
+    HTTP Error 303: See Other
+    Location: http://bugs.beta.launchpad.dev/launchpad/+bugs?orderby=-datecreated
+
+    >>> check(beta_browser.open, 'http://answers.launchpad.dev/~name12')
+    HTTP Error 303: See Other
+    Location: http://answers.beta.launchpad.dev/~name12
+
+
+However, domains not under the main site (such as shipit) will not be
+redirected:
+
+    >>> check(beta_browser.open, 'http://shipit.ubuntu.dev/')
+    >>> print beta_browser.url
+    http://shipit.ubuntu.dev/
+
+
+So that beta testers can still access the production site, the front
+page of Launchpad does not redirect.  They will also see a message
+explaining why they get redirected, and provide a link to disable the
+redirection for 2 hours:
+
+    >>> check(beta_browser.open, 'http://launchpad.dev/')
+    >>> print beta_browser.url
+    http://launchpad.dev/
+    >>> print find_tags_by_class(beta_browser.contents,
+    ...                          'informational message')[0]
+    <div class="informational message">
+    <p>As a member of the Launchpad Beta Testers team, you will be
+    redirected to the beta site when viewing Launchpad pages other
+    than the front page.</p>
+    <p><button onclick="setBetaRedirect(false)">Disable redirection
+    for 2 hours</button></p>
+    </div>
+
+This is so that the user can make use of some client side JS on that
+page that sets a cookie to inhibit the redirection.  When the
+redirection is inhibited, the info message changes to one that lets
+them inhibit the redirection (a lower cookie expiry is used, since the
+default is to redirect if no cookie exists):
+
+    >>> beta_browser.addHeader('Cookie', 'inhibit_beta_redirect="1"')
+    >>> check(beta_browser.open, 'http://launchpad.dev/')
+    >>> print beta_browser.url
+    http://launchpad.dev/
+    >>> print find_tags_by_class(beta_browser.contents,
+    ...                          'informational message')[0]
+    <div class="informational message">
+    <p>As a member of the Launchpad Beta Testers team, you would
+    normally be redirected to the beta site when viewing Launchpad
+    pages.  However, you currently have this disabled.</p>
+    <p><button onclick="setBetaRedirect(true)">Enable beta site
+    redirection</button></p>
+    </div>
+
+
+Now when they go to a page on the site, it loads as normal:
+
+    >>> check(beta_browser.open, 'http://launchpad.dev/ubuntu')
+    >>> print beta_browser.url
+    http://launchpad.dev/ubuntu
+
+
+If a beta tester comes to Launchpad but is not yet logged in, they
+will be redirected once they do log in.  First we'll go to the Ubuntu
+product page and try to log in.  We get redirected back to the Ubuntu
+page after authenticating successfully:
+
+    >>> browser.mech_browser.set_handle_redirect(False)
+    >>> browser.open('http://launchpad.dev/ubuntu')
+    >>> browser.getLink('Log In / Register').click()
+    >>> print browser.url
+    http://launchpad.dev/ubuntu/+login
+    >>> browser.getControl('E-mail address',
+    ...                    index=0).value = 'beta-admin@launchpad.net'
+    >>> browser.getControl('Password').value = 'test'
+    >>> check(browser.getControl('Log In').click)
+    HTTP Error 303: See Other
+    Location: http://launchpad.dev/ubuntu
+
+The Ubuntu product page then redirects to the beta site:
+
+    >>> check(browser.open, 'http://launchpad.dev/ubuntu')
+    HTTP Error 303: See Other
+    Location: http://beta.launchpad.dev/ubuntu

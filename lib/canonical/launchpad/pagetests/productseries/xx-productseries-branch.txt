@@ -1,0 +1,10 @@
+Check that the index page for a ProductSeries associated to
+an import branch displays a link to the branch's page.
+
+Since the URL of that page is usable with "bzr branch", we do not display the
+Supermirror URL of the branch anymore.
+
+>>> anon_browser.open('http://launchpad.dev/evolution/trunk')
+>>> content = anon_browser.contents
+>>> print find_tag_by_id(content, 'import-branch-link')
+<a id="import-branch-link" href="http://code.launchpad.dev/~vcs-imports/evolution/main">~vcs-imports/evolution/main</a>

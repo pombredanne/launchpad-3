@@ -1,74 +1,75 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0403
 
 """Script to generate reports with data from ShipIt orders."""
 
 import _pythonpath
 
 from datetime import datetime, date
-import optparse
-import sys
 
 from zope.component import getUtility
 
 import pytz
 
+from canonical.config import config
 from canonical.uuid import generate_uuid
-from canonical.lp import initZopeless
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger, logger_options)
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IShippingRequestSet, IShipItReportSet)
 
 
-def _createLibraryFileAlias(csv_file, basename):
-    """Create and return a LibraryFileAlias containing the given csv file.
-    
-    The filename is generated using the given basename, the current date
-    and a random string, in order for it to not be guessable.
-    """
-    fileset = getUtility(ILibraryFileAliasSet)
-    csv_file.seek(0)
-    now = datetime.now(pytz.timezone('UTC'))
-    filename = ('%s-%s-%s.csv' 
-                % (basename, now.strftime('%y-%m-%d'), generate_uuid()))
-    return fileset.create(
-        name=filename, size=len(csv_file.getvalue()), file=csv_file,
-        contentType='text/plain')
+class ShipitReporter(LaunchpadCronScript):
+    def _createLibraryFileAlias(self, csv_file, basename):
+        """Create and return a LibraryFileAlias containing the given csv file.
 
+        The filename is generated using the given basename, the current date
+        and a random string, in order for it to not be guessable.
+        """
+        fileset = getUtility(ILibraryFileAliasSet)
+        csv_file.seek(0)
+        now = datetime.now(pytz.timezone('UTC'))
+        filename = ('%s-%s-%s.csv' 
+                    % (basename, now.strftime('%y-%m-%d'), generate_uuid()))
+        return fileset.create(
+            name=filename, size=len(csv_file.getvalue()), file=csv_file,
+            contentType='text/plain')
 
-def main(argv):
-    parser = optparse.OptionParser()
-    # Add the verbose/quiet options.
-    logger_options(parser)
+    def main(self):
+        self.logger.info('Generating ShipIt reports')
 
-    options, args = parser.parse_args(argv[1:])
-    logger_obj = logger(options, 'shipit-reports')
-    logger_obj.info('Generating ShipIt reports')
+        requestset = getUtility(IShippingRequestSet)
+        reportset = getUtility(IShipItReportSet)
 
-    ztm = initZopeless(implicitBegin=False)
-    execute_zcml_for_scripts()
-    requestset = getUtility(IShippingRequestSet)
-    reportset = getUtility(IShipItReportSet)
+        self.txn.begin()
+        csv_file = requestset.generateRequestDistributionReport()
+        reportset.new(self._createLibraryFileAlias(
+            csv_file, 'RequestDistribution'))
+        self.txn.commit()
 
-    ztm.begin()
-    csv_file = requestset.generateCountryBasedReport()
-    reportset.new(_createLibraryFileAlias(csv_file, 'OrdersByCountry'))
+        self.txn.begin()
+        csv_file = requestset.generateCountryBasedReport()
+        reportset.new(self._createLibraryFileAlias(csv_file, 'OrdersByCountry'))
+        self.txn.commit()
 
-    csv_file = requestset.generateShipmentSizeBasedReport()
-    reportset.new(_createLibraryFileAlias(csv_file, 'OrdersBySize'))
+        self.txn.begin()
+        csv_file = requestset.generateShipmentSizeBasedReport()
+        reportset.new(self._createLibraryFileAlias(csv_file, 'OrdersBySize'))
+        self.txn.commit()
 
-    # XXX: For now this will be hardcoded as the date when a new ShipIt is
-    # opened. -- Guilherme Salgado, 2005-11-24
-    start_date = date(2006, 5, 17)
-    csv_file = requestset.generateWeekBasedReport(start_date, date.today())
-    reportset.new(_createLibraryFileAlias(csv_file, 'OrdersByWeek'))
-    ztm.commit()
+        self.txn.begin()
+        # XXX: salgado 2005-11-24:
+        # For now this will be hardcoded as the date when a new ShipIt is
+        # opened.
+        start_date = date(2007, 4, 5)
+        csv_file = requestset.generateWeekBasedReport(start_date, date.today())
+        reportset.new(self._createLibraryFileAlias(csv_file, 'OrdersByWeek'))
+        self.txn.commit()
 
-    logger_obj.info('Done.')
-    return 0
+        self.logger.info('Done.')
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    script = ShipitReporter('shipit-reporter', dbuser=config.shipit.dbuser)
+    script.lock_and_run(implicit_begin=False)
 

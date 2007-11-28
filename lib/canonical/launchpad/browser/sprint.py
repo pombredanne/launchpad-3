@@ -4,41 +4,51 @@
 
 __metaclass__ = type
 __all__ = [
+    'SprintAddView',
+    'SprintAttendeesCsvExportView',
+    'SprintBrandingView',
+    'SprintEditView',
     'SprintFacets',
+    'SprintMeetingExportView',
     'SprintNavigation',
     'SprintOverviewMenu',
-    'SprintSpecificationsMenu',
     'SprintSetContextMenu',
+    'SprintSetFacets',
     'SprintSetNavigation',
-    'SprintView',
-    'SprintAddView',
-    'SprintEditView',
+    'SprintSetSOP',
+    'SprintSetView',
+    'SprintsMixinDynMenu',
+    'SprintSpecificationsMenu',
     'SprintTopicSetView',
-    'SprintMeetingExportView',
+    'SprintView',
     ]
 
+import csv
 import pytz
+from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
-from zope.app.form.interfaces import InputErrors
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
-from canonical.launchpad.interfaces import ISprint, ISprintSet
+from canonical.launchpad.interfaces import (
+    ISprint, ISprintSet, SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationPriority, SpecificationSort)
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation,
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.dynmenu import neverempty
 from canonical.launchpad.helpers import shortlist
-from canonical.lp.dbschema import (
-    SpecificationFilter, SpecificationPriority, SpecificationSort,
-    SpecificationStatus)
+from canonical.launchpad.browser.launchpad import (
+    StructuralObjectPresentation)
 from canonical.widgets.textwidgets import LocalDateTimeWidget
-
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -48,9 +58,9 @@ class SprintFacets(StandardLaunchpadFacets):
     enable_only = ['overview', 'specifications']
 
     def specifications(self):
-        text = 'Features'
+        text = 'Blueprints'
         summary = 'Topics for discussion at %s' % self.context.title
-        return Link('+specs', text, summary)
+        return Link('', text, summary)
 
 
 class SprintNavigation(Navigation):
@@ -61,34 +71,61 @@ class SprintNavigation(Navigation):
         return self.context.title
 
 
+class SprintsMixinDynMenu:
+
+    @neverempty
+    def meetingsMenu(self):
+        coming_sprints = shortlist(self.context.coming_sprints, 20)
+        if coming_sprints:
+            for sprint in coming_sprints:
+                yield self.makeLink(sprint.title, context=sprint)
+        else:
+            yield self.makeLink('No meetings planned', target=None)
+        if self.context.past_sprints:
+            yield self.makeLink('Show all meetings...', page='+sprints')
+
+
 class SprintOverviewMenu(ApplicationMenu):
 
     usedfor = ISprint
     facet = 'overview'
-    links = ['attendance', 'registration', 'edit']
+    links = ['attendance', 'registration', 'attendee_export', 'edit',
+             'branding']
 
     def attendance(self):
-        text = 'Register Yourself'
+        text = 'Register yourself'
         summary = 'Register as an attendee of the meeting'
         return Link('+attend', text, summary, icon='add')
 
     def registration(self):
-        text = 'Register Someone'
+        text = 'Register someone else'
         summary = 'Register someone else to attend the meeting'
         return Link('+register', text, summary, icon='add')
 
+    @enabled_with_permission('launchpad.View')
+    def attendee_export(self):
+        text = 'Export attendees to CSV'
+        summary = 'Export attendee contact information to CSV format'
+        return Link('+attendees-csv', text, summary, icon='info')
+
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change details'
         summary = 'Modify the meeting description, dates or title'
         return Link('+edit', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        text = 'Change branding'
+        summary = 'Modify the imagery used to represent this meeting'
+        return Link('+branding', text, summary, icon='edit')
 
 
 class SprintSpecificationsMenu(ApplicationMenu):
 
     usedfor = ISprint
     facet = 'specifications'
-    links = ['assignments', 'declined', 'settopics', 'roadmap']
+    links = ['assignments', 'declined', 'settopics', 'roadmap', 'addspec']
 
     def assignments(self):
         text = 'Assignments'
@@ -96,13 +133,13 @@ class SprintSpecificationsMenu(ApplicationMenu):
         return Link('+assignments', text, summary, icon='info')
 
     def declined(self):
-        text = 'Declined Topics'
+        text = 'List declined blueprints'
         summary = 'Show topics that were not accepted for discussion'
         return Link('+specs?acceptance=declined', text, summary, icon='info')
 
     @enabled_with_permission('launchpad.Driver')
     def settopics(self):
-        text = 'Set Topics'
+        text = 'Set agenda'
         summary = 'Approve or defer topics for discussion'
         return Link('+settopics', text, summary, icon='edit')
 
@@ -110,6 +147,11 @@ class SprintSpecificationsMenu(ApplicationMenu):
         text = 'Roadmap'
         summary = 'Suggest a sequence of implementation for these features'
         return Link('+roadmap', text, summary, icon='info')
+
+    def addspec(self):
+        text = 'Register a blueprint'
+        summary = 'Register a new blueprint for this meeting'
+        return Link('+addspec', text, summary, icon='info')
 
 
 class SprintSetNavigation(GetitemNavigation):
@@ -120,14 +162,52 @@ class SprintSetNavigation(GetitemNavigation):
         return 'Meetings'
 
 
+class SprintSetFacets(StandardLaunchpadFacets):
+    """The facet menu for an ISprintSet."""
+
+    usedfor = ISprintSet
+    enable_only = ['overview', ]
+
+
+class SprintSetSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return 'Meetings and Sprints'
+
+    def listChildren(self, num):
+        return []
+
+    def listAltChildren(self, num):
+        return None
+
+
 class SprintSetContextMenu(ContextMenu):
 
     usedfor = ISprintSet
-    links = ['new']
+    links = ['products', 'distributions', 'people', 'sprints', 'all', 'new']
+
+    def all(self):
+        text = 'List all meetings'
+        return Link('+all', text)
 
     def new(self):
-        text = 'Register New Meeting'
+        text = 'Register a meeting'
         return Link('+new', text, icon='add')
+
+    def products(self):
+        return Link('/projects/', 'View projects')
+
+    def distributions(self):
+        return Link('/distros/', 'View distributions')
+
+    def people(self):
+        return Link('/people/', 'View people')
+
+    def sprints(self):
+        return Link('/sprints/', 'View meetings')
 
 
 class SprintView(HasSpecificationsView, LaunchpadView):
@@ -187,7 +267,8 @@ class SprintAddView(LaunchpadFormView):
     schema = ISprint
     label = "Register a meeting"
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
-                   'time_zone', 'time_starts', 'time_ends', 'address']
+                   'time_zone', 'time_starts', 'time_ends', 'address',
+                   ]
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('time_starts', LocalDateTimeWidget)
     custom_widget('time_ends', LocalDateTimeWidget)
@@ -221,7 +302,9 @@ class SprintAddView(LaunchpadFormView):
             driver=data['driver'],
             time_zone=data['time_zone'],
             time_starts=data['time_starts'],
-            time_ends=data['time_ends'])
+            time_ends=data['time_ends'],
+            address=data['address'],
+            )
         self.request.response.addInfoNotification('Sprint created.')
 
     @property
@@ -230,13 +313,22 @@ class SprintAddView(LaunchpadFormView):
         return canonical_url(self.sprint)
 
 
+class SprintBrandingView(BrandingChangeView):
+
+    schema = ISprint
+    # sabdfl 2007-03-28 deliberately leaving icon off the list, i think it
+    # would be overkill, we can add it later if people ask for it
+    field_names = ['logo', 'mugshot']
+
+
 class SprintEditView(LaunchpadEditFormView):
     """Form for editing sprints"""
 
     schema = ISprint
     label = "Edit sprint details"
     field_names = ['name', 'title', 'summary', 'home_page', 'driver',
-                   'time_zone', 'time_starts', 'time_ends', 'address']
+                   'time_zone', 'time_starts', 'time_ends', 'address',
+                   ]
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('time_starts', LocalDateTimeWidget)
     custom_widget('time_ends', LocalDateTimeWidget)
@@ -369,12 +461,13 @@ class SprintMeetingExportView(LaunchpadView):
 
             # skip sprints with no priority or less than low:
             if (spec.priority is None or
-                spec.priority < SpecificationPriority.LOW):
+                spec.priority < SpecificationPriority.UNDEFINED):
                 continue
 
-            if spec.status not in [SpecificationStatus.NEW,
-                                   SpecificationStatus.DISCUSSION,
-                                   SpecificationStatus.DRAFT]:
+            if (spec.definition_status not in
+                [SpecificationDefinitionStatus.NEW,
+                 SpecificationDefinitionStatus.DISCUSSION,
+                 SpecificationDefinitionStatus.DRAFT]):
                 continue
 
             # get the list of attendees that will attend the sprint
@@ -400,3 +493,61 @@ class SprintMeetingExportView(LaunchpadView):
                                         'application/xml;charset=utf-8')
         body = LaunchpadView.render(self)
         return body.encode('utf-8')
+
+
+class SprintSetView(LaunchpadView):
+
+    def all_batched(self):
+        return BatchNavigator(self.context.all, self.request)
+
+
+class SprintAttendeesCsvExportView(LaunchpadView):
+    """View for exporting the attendees for a sprint as CSV."""
+
+    def encode_value(self, value):
+        """Encode a value for CSV.
+        
+        Return the string representation of `value` encoded as UTF-8,
+        or the empty string if value is None."""
+        if value is not None:
+            return unicode(value).encode('utf-8')
+        else:
+            return ''
+
+    def render(self):
+        """Render a CSV output of all the attendees for a sprint."""
+        rows = [('Launchpad username',
+                 'Display name',
+                 'Email',
+                 'Phone',
+                 'Organization',
+                 'City',
+                 'Country',
+                 'Timezone',
+                 'Arriving',
+                 'Leaving')]
+        for attendance in self.context.attendances:
+            rows.append(
+                (attendance.attendee.name,
+                 attendance.attendee.displayname,
+                 attendance.attendee.safe_email_or_blank,
+                 attendance.attendee.phone,
+                 attendance.attendee.organization,
+                 attendance.attendee.city,
+                 attendance.attendee.country, 
+                 attendance.attendee.timezone,
+                 attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                 attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ')))
+        # CSV can't handle unicode, so we force encoding
+        # everything as UTF-8
+        rows = [[self.encode_value(column)
+                 for column in row]
+                for row in rows]
+        self.request.response.setHeader('Content-type', 'text/csv')
+        self.request.response.setHeader(
+            'Content-disposition',
+            'attachment; filename=%s-attendees.csv' % self.context.name)
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerows(rows)
+        return output.getvalue()

@@ -1,7 +1,0 @@
-Check that the global branch listing works.
-
-  >>> print http(r"""
-  ... GET /+code/+all-branches HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...

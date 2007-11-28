@@ -1,6 +1,4 @@
-
-Published Package
------------------
+= Published Package =
 
 This database view gives us information on which packages are published in
 which distributions.
@@ -9,21 +7,34 @@ which distributions.
     >>> from canonical.launchpad.interfaces import IPublishedPackageSet
     >>> pp_set = getUtility(IPublishedPackageSet)
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(IPublishedPackageSet, pp_set)
     True
 
 There are also some meta objects to combine information from the DB
 model in more intuitive ones:
 
- >>> from canonical.launchpad.interfaces import (
- ...     IDistroReleaseBinaryPackage)
-
  >>> from canonical.launchpad.database import SourcePackageRelease
  >>> src = SourcePackageRelease.get(20)
  >>> src.name
  u'pmount'
 
- >>> verifyObject(IDistroReleaseBinaryPackage, src.meta_binaries[0])
- True
+IDistroSeriesSourcePackageRelease.meta_binaries returns a list of binaries
+resulting from the sourcepackagerelease for a distroseries.
+This test makes sure that the meta_binaries method exists and the
+returned objects meet the IDistroSeriesBinaryPackage interface.
+There should only be one package in the binaries collection for
+mozilla-firefox.  This is a feature of the sample data that we are relying
+upon.
 
+ >>> from canonical.launchpad.interfaces import IDistributionSet
+ >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+ >>> warty = ubuntu['warty']
+ >>> ff_sp = warty.getSourcePackage('mozilla-firefox')
+ >>> ff_drspr = ff_sp['0.9']
+ >>> len(ff_drspr.meta_binaries)
+ 3
+
+ >>> from canonical.launchpad.interfaces import IDistroSeriesBinaryPackage
+ >>> verifyObject(IDistroSeriesBinaryPackage, ff_drspr.meta_binaries[0])
+ True

@@ -1,17 +1,19 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
-  xml:lang="en" lang="en"
-  metal:use-macro="context/@@main_template_2col/master"
-  i18n:domain="rosetta"
->
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="launchpad">
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Rosetta translation groups</h1>
-    </metal:heading>
+    <h1 metal:fill-slot="heading">Translation groups</h1>
     <div metal:fill-slot="main">
       <p>
         A <dfn>translation group</dfn> is a set of teams
-        chosen by the owner of a distribution, project, or product
+        chosen by the owner of a distribution, project group, or project
         to do its translations.
         Each team in a group concentrates on a language or group of languages.
       </p>
@@ -40,27 +42,63 @@
             </td>
             <td>
               <span tal:condition="group/distributions" tal:omit-tag="">
-                <span tal:repeat="distro group/distributions" tal:omit-tag>
+                <span tal:repeat="distro group/distributions" tal:omit-tag="">
                   <span tal:replace="distro/name">ubuntu</span>,
                 </span>
               </span>
               <span tal:condition="group/projects" tal:omit-tag="">
-                <span tal:repeat="project group/projects" tal:omit-tag>
+                <span tal:repeat="project group/projects" tal:omit-tag="">
                   <span tal:replace="project/name">gnome</span>,
                 </span>
               </span>
               <span tal:condition="group/products" tal:omit-tag="">
-                <span tal:repeat="product group/products" tal:omit-tag>
+                <span tal:repeat="product group/products" tal:omit-tag="">
                   <span tal:replace="product/name">a52dec</span>,
                 </span>
               </span>
             </td>
-            <td tal:content="python:group.datecreated.strftime('%d %b %y')">
-              date
+            <td>
+              <span class="sortkey"
+                tal:content="group/datecreated/fmt:datetime" />
+              <span
+                tal:attributes="title group/datecreated/fmt:datetime"
+                tal:content="group/datecreated/fmt:approximatedate">
+                2007-08-15
+              </span>
             </td>
           </tr>
         </tbody>
       </table>
+      <ul class="menu">
+        <tal:can-edit condition="context/required:launchpad.Admin">
+          <li class="add">
+            <a href="+new">Add a new translation group</a>
+          </li>
+        </tal:can-edit>
+      </ul>
+    </div><!--main-->
+    <div metal:fill-slot="help">
+      <p>
+        These translation groups are available to help translate software to
+        various languages.  A group may help on any number of projects, and
+        be capable of translating into one or more languages.
+      </p>
+      <p>
+        A translation group is generally expected to work together with some
+        degree of coordination.  Some translation groups may exist to translate
+        particular classes of application, others may focus on specific language
+        families.  A translation group may even start as an arbitrary circle of
+        friends.  It is often easier to assign a translation group to work on a
+        project as a single entity with its own membership management, than to
+        keep track of individual translators on every project the group works
+        on.
+      </p>
+      <ul class="info">
+        <li>
+          <a href="https://help.launchpad.net/RosettaFAQ"
+          >Frequently asked questions</a>
+        </li>
+      </ul>
     </div>
   </body>
 </html>

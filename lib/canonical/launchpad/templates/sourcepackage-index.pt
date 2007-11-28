@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">    
@@ -10,13 +16,13 @@
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/distrorelease/@@+portlet-details" />
+    <div tal:replace="structure context/distroseries/@@+portlet-details" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-latesttickets" />
+    <div tal:replace="structure context/@@+portlet-latestquestions" />
     <div tal:replace="structure context/@@+portlet-releases" />
-    <div tal:replace="structure context/@@+portlet-hctstatus" />
+    <div tal:replace="structure context/@@+portlet-upstream" />
   </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -25,12 +31,12 @@
 
   <p class="warning message" tal:condition="not:context/currentrelease">
     There is no current release of this source package 
-    in <span tal:replace="context/distrorelease/title" />.
+    in <span tal:replace="context/distroseries/title" />.
     You can still report bugs, make translations, and so on,
     but they might not be used until the package is published.
   </p>
 
-  <dl id="publishings" tal:condition="view/published_by_pocket">
+  <dl id="publishing_history" tal:condition="view/published_by_pocket">
     <tal:block repeat="pocket view/published_by_pocket">
       <tal:block condition="pocket/packages">
         <dt><dfn tal:content="pocket/pocketdetails/title">Plain</dfn></dt>
@@ -54,30 +60,31 @@
   <ul id="upstreams" tal:define="series context/productseries">
     <tal:has_series condition="series">
       <li tal:condition="series/product/project">
-       <b>Project:</b>
+       <b>Project Group:</b>
          <a tal:define="project series/product/project"
           tal:content="project/displayname"
           tal:attributes="href string:/${project/name}">
           Project</a>
       </li>
-      <li><b>Product:</b>
+      <li><b>Project:</b>
          <a tal:condition="series/product"
             tal:content="series/product/displayname"
             tal:attributes="href string:/${series/product/name}">
-         Product</a>
+         Project</a>
       </li>
       <li><b>Branch: </b>
       <a tal:define="productseries context/productseries"
          tal:content="productseries/name"
          tal:attributes="href productseries/fmt:url">
-         ProductSeries</a><br />
+         ProjectSeries</a><br />
       </li>
     </tal:has_series>
     <tal:has_no_series condition="not: context/productseries">
-       <li><b>Related product:</b>
+       <li><b>Related project:</b>
        <i>
-         No product associated with this sourcepackage
+         No project associated with this sourcepackage
        </i>
+       </li>
     </tal:has_no_series>
     <small>(<a tal:attributes="href string:${context/fmt:url}/+packaging">update</a>)</small>
   </ul>
@@ -92,7 +99,7 @@
       <ul class="download" tal:condition="files">
         <li tal:repeat="file files">
           <a tal:content="file/libraryfile/filename"
-             tal:attributes="href file/libraryfile/url">foo-bar_2.dsc</a>
+             tal:attributes="href file/libraryfile/http_url">foo-bar_2.dsc</a>
           (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
         </li>
       </ul>
@@ -123,29 +130,16 @@
 
     <table width="100%" valign="top">
       <tr>
-        <td tal:condition="view/builddepends">
-          <h3>Build dependencies</h3>
-          <ul>
-            <li tal:repeat="dep view/builddepends">
-              <a tal:content="dep/name"
-                 tal:attributes="href string:../../i386/${dep/name}" />
-              <span tal:condition="dep/signal"
-                    tal:content="string:(${dep/signal} ${dep/version})" />
-            </li>
-          </ul>
-        </td>
-
-        <td tal:condition="view/builddependsindep">
-          <h3>Platform-independent build dependencies</h3>
-          <ul>
-            <li tal:repeat="dep view/builddependsindep">
-              <a tal:content="dep/name"
-                 tal:attributes="href string:../../i386/${dep/name}" />
-              <span tal:condition="dep/signal"
-                    tal:content="string:(${dep/signal} ${dep/version})" />
-            </li>
-          </ul>
-        </td>
+          <td id="depends" tal:define="relationships view/builddepends"
+              tal:condition="relationships/has_items">
+              <h3>Build dependencies</h3>
+              <tal:block replace="structure relationships/@@+render-list"/>
+          </td>
+          <td id="dependsindep" tal:define="relationships view/builddependsindep"
+              tal:condition="relationships/has_items">
+              <h3>Platform-independent build dependencies</h3>
+              <tal:block replace="structure relationships/@@+render-list"/>
+          </td>
       </tr>
     </table>
 

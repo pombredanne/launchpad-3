@@ -1,154 +1,207 @@
 <configure
-    xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
-    xmlns:i18n="http://namespaces.zope.org/i18n"
-    i18n_domain="launchpad">
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
 
-    <!-- SourcePackage -->
-    <content class="canonical.launchpad.database.SourcePackage">
-        <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
-        <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
-        <!-- ITicketTarget -->
-        <allow attributes="getTicket searchTickets findSimilarTickets
-            support_contacts direct_support_contacts getSupportedLanguages
-	    getTicketLanguages"
-	    />
-        <require permission="launchpad.AnyPerson"
-            attributes="newTicket addSupportContact removeSupportContact" />
-    </content>
+  <!-- SourcePackage -->
+  <content class="canonical.launchpad.database.SourcePackage">
+    <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
+    <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
+    <!-- IQuestionTarget -->
+    <allow attributes="getQuestion searchQuestions findSimilarQuestions
+      answer_contacts direct_answer_contacts getQuestionLanguages
+      getAnswerContactsForLanguage getSupportedLanguages
+      getAnswerContactRecipients"
+      />
+    <require
+      permission="launchpad.AnyPerson"
+      attributes="newQuestion addAnswerContact removeAnswerContact"
+      />
+  </content>
+  <adapter
+    provides="canonical.launchpad.interfaces.IFAQTarget"
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    factory="canonical.launchpad.components.answertracker.sourcepackage_to_faqtarget"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    name="+index"
+    />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ISourcePackage"
-        name="+index" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    layer="canonical.launchpad.layers.BugsLayer"
+    name="+bugs"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    layer="canonical.launchpad.layers.AnswersLayer"
+    name="+tickets"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    name="+translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ISourcePackage"
-        layer="canonical.launchpad.layers.BugsLayer"
-        name="+bugs" />
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ISourcePackage"
-        layer="canonical.launchpad.layers.AnswersLayer"
-        name="+tickets"
-        />
+  <browser:navigation
+    module="canonical.launchpad.browser"
+    classes="SourcePackageNavigation"
+    />
 
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    factory="canonical.launchpad.browser.SourcePackageSOP"
+    permission="zope.Public"
+    />
 
-    <browser:navigation
-        module="canonical.launchpad.browser"
-        classes="SourcePackageNavigation"
-        />
-
-    <browser:url
-        for="canonical.launchpad.interfaces.ISourcePackage"
-        path_expression="string:+source/${name}"
-        attribute_to_parent="distrorelease"
-        />
+  <browser:url
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    path_expression="string:+source/${name}"
+    attribute_to_parent="distroseries"
+    />
 
    <browser:menus
-        module="canonical.launchpad.browser.sourcepackage"
-        classes="
-            SourcePackageFacets SourcePackageOverviewMenu SourcePackageBugsMenu
-            SourcePackageSupportMenu SourcePackageTranslationsMenu"
-        />
+    module="canonical.launchpad.browser.sourcepackage"
+    classes="
+      SourcePackageFacets SourcePackageOverviewMenu
+      SourcePackageAnswersMenu SourcePackageTranslationsMenu"
+    />
 
-    <browser:pages
-      for="canonical.launchpad.interfaces.ISourcePackage"
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    facet="overview"
+    permission="zope.Public">
+    <browser:page
+      name="+portlet-upstream"
+      template="../templates/sourcepackage-portlet-upstream.pt"
+      />
+    <browser:page
+      name="+portlet-releases"
+      template="../templates/sourcepackage-portlet-releases.pt"
+      />
+  </browser:pages>
+
+  <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.sourcepackage.SourcePackageView"
+    layer="canonical.launchpad.layers.TranslationsLayer" >
+    <browser:page
+      name="+potlist"
+      facet="translations"
+      template="../templates/object-pots.pt"
+      />
+    <browser:page
+      name="+translate"
+      facet="translations"
+      template="../templates/sourcepackage-translate.pt"
+      />
+    <browser:page
+      name="+translations"
+      facet="translations"
+      template="../templates/object-translations.pt"
+      />
+  </browser:pages>
+
+  <!--
+    XXX CarlosPerelloMarin 2007-08-12: This redirect is only useful until all
+    supported Ubuntu distro series stop pointing to
+    https://launchpad.net/ubuntu/.../+translate URLs and instead, use the
+    translations.launchpad.net domain for the 'Translate this application'
+    menu entry available in most graphical applications. See bug #138090 for
+    more details.
+    -->
+  <browser:page
+    name="+translate"
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    class="canonical.launchpad.browser.TranslateRedirectView"
+    permission="zope.Public"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.sourcepackage.SourcePackageView">
+    <browser:page
+      name="+index"
       facet="overview"
-      permission="zope.Public">
-      <browser:page
-        name="+portlet-hctstatus"
-        template="../templates/sourcepackage-portlet-hctstatus.pt"
-        lp:url="/distros/ubuntu/hoary/+sources/pmount/+portlet-hctstatus" />
-      <browser:page
-        name="+portlet-releases"
-        template="../templates/sourcepackage-portlet-releases.pt"
-        lp:url="/distros/ubuntu/hoary/+sources/pmount/+portlet-releases" />
-    </browser:pages>
+      template="../templates/sourcepackage-index.pt"
+      />
+    <browser:page
+      name="+gethelp"
+      facet="answers"
+      template="../templates/sourcepackage-gethelp.pt"
+      />
+    <browser:page
+      name="+changelog"
+      facet="overview"
+      template="../templates/sourcepackage-changelog.pt"
+      />
+    <browser:page
+      name="+packaging"
+      facet="overview"
+      template="../templates/sourcepackage-packaging.pt"
+      />
+    <browser:page
+      name="+builds"
+      facet="overview"
+      template="../templates/sourcepackage-builds.pt"
+      />
+    <browser:page
+      name="+builds-list"
+      template="../templates/builds-list.pt"
+      />
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.ISourcePackage"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.sourcepackage.SourcePackageView">
-        <browser:page
-            name="+index"
-            facet="overview"
-            template="../templates/sourcepackage-index.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/mozilla-firefox/+index" />
-        <browser:page
-            name="+gethelp"
-            facet="overview"
-            template="../templates/sourcepackage-gethelp.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/evolution/+gethelp" />
-        <browser:page
-            name="+translate"
-            facet="translations"
-            template="../templates/sourcepackage-translate.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/pmount/+translate" />
-        <browser:page
-            name="+changelog"
-            facet="overview"
-            template="../templates/sourcepackage-changelog.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/evolution/+changelog" />
-        <browser:page
-            name="+hctstatus"
-            facet="overview"
-            template="../templates/sourcepackage-hctstatus.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/evolution/+hctstatus" />
-        <browser:page
-            name="+translations"
-            facet="translations"
-            template="../templates/sourcepackage-translations.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/evolution/+translations" />
-        <browser:page
-            name="+builds"
-            facet="overview"
-            template="../templates/sourcepackage-builds.pt"
-            lp:url="/distros/$distribution/$distrorelease/+sources/$sourcepackagename/+builds" />
-        <browser:page
-            name="+builds-list"
-            template="../templates/builds-list.pt"
-            lp:url="/distros/$distribution/$distrorelease/+sources/$sourcepackagename/+builds-list" />
-        <browser:page
-            name="+potlist"
-            facet="translations"
-            template="../templates/object-pots.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/evolution/+potlist" />
+    <!-- SourcePackage Portlets -->
+    <browser:page
+      name="+portlet-details"
+      facet="overview"
+      template="../templates/sourcepackage-portlet-details.pt"
+      />
+    />
+  </browser:pages>
 
-        <!-- SourcePackage Portlets -->
-        <browser:page
-            name="+portlet-details"
-            facet="overview"
-            template="../templates/sourcepackage-portlet-details.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/evolution/+portlet-details"
-            />
-        <browser:page
-            name="+portlet-translations"
-            facet="translations"
-            template="../templates/sourcepackage-portlet-translations.pt"
-        />
+  <browser:page
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
 
-    </browser:pages>
+  <browser:page
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    name="+export"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    permission="launchpad.AnyPerson"
+    template="../templates/sourcepackage-export.pt"
+    class="canonical.launchpad.browser.SourcePackageTranslationsExportView"
+    />
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.ISourcePackage"
-        permission="launchpad.Admin"
-        class="canonical.launchpad.browser.sourcepackage.SourcePackageView">
-        <browser:page
-            name="+potemplatenames"
-            facet="translations"
-            template="../templates/object-potemplatenames.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/mozilla-firefox/+potemplatenames" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ISourcePackage"
-        permission="launchpad.AnyPerson"
-        class="canonical.launchpad.browser.sourcepackage.SourcePackageView">
-        <browser:page
-            name="+packaging"
-            facet="overview"
-            template="../templates/sourcepackage-packaging.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/apache2/+packaging" />
-    </browser:pages>
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    permission="launchpad.AnyPerson"
+    class="canonical.launchpad.browser.sourcepackage.SourcePackageView">
+    <browser:page
+      name="+edit-packaging"
+      facet="overview"
+      template="../templates/sourcepackage-edit-packaging.pt"
+      />
+  </browser:pages>
 
 </configure>

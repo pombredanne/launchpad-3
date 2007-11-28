@@ -1,0 +1,86 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+<body>
+
+  <metal:portlets fill-slot="portlets" />
+
+  <metal:heading fill-slot="pageheading">
+    <h1>Personal Package Archives for
+        <span tal:replace="context/title" /></h1>
+  </metal:heading>
+
+  <div metal:fill-slot="main">
+
+    <p>Personal Package Archives (PPA) allow you to upload Ubuntu source
+       packages to be built and published as an apt repository by
+       Launchpad. You can find out more about PPAs and how to use them in our
+       <a href="https://help.launchpad.net/PPAQuickStart"
+       >quick-start guide</a>.</p>
+
+    <p>You can search for a PPA by the owner name or by any word
+       in its description.</p>
+
+    <form name="ppa_search" action="" method="GET">
+      <label for="name">PPAs containing:</label>
+      <input id="name" title="Filter" size="20"
+             type="text" name="name_filter"
+             tal:attributes="value view/name_filter"/>
+      <label for="inactive">Show Inactive</label>
+      <input id="inactive" title="Show Inactive"
+             type="checkbox" name="show_inactive"
+             tal:attributes="checked view/show_inactive"/>
+      <input type="submit" value="Search" />
+    </form>
+
+    <tal:batch define="batch view/search_results">
+
+      <tal:navigation_top
+           replace="structure view/batchnav/@@+navigation-links-upper" />
+
+      <table class="listing sortable" id="ppa_list" tal:condition="batch">
+        <thead>
+          <tr>
+            <th>Owner</th>
+            <th>Description</th>
+            <th>Sources</th>
+            <th>Binaries</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="ppa batch" tal:replace="structure ppa/@@+ppa-row" />
+        </tbody>
+      </table>
+ 
+      <tal:navigation_bottom
+           replace="structure view/batchnav/@@+navigation-links-lower" />
+ 
+      <div id="empty-result" tal:condition="not: batch">
+        <tal:has_filter condition="view/name_filter">
+           No matching Personal Package Archive
+           for '<span tal:replace="view/name_filter" />'.
+        </tal:has_filter>
+      </div>
+ 
+    </tal:batch>
+
+  </div>
+
+  <p metal:fill-slot="help">
+     You can browse for any interesting PPA by accessing its page
+     or even create your own
+     <a tal:attributes="href string:${view/user/fmt:url}/+activate-ppa"
+     >here</a>. Currently we only support PPAs for Ubuntu Linux.
+  </p>
+
+</body>
+</html>
+

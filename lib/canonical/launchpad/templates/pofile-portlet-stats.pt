@@ -1,4 +1,10 @@
-<div class="portlet">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-stats">
 
     <h2>Statistics</h2>
 
@@ -15,9 +21,7 @@
             <tal:block condition="context/lasttranslator">
                 <b>Latest contributor:</b>
                 <br />
-                <img src="/@@/user" />
-                <a tal:content="context/lasttranslator/browsername"
-                   tal:attributes="href context/lasttranslator/fmt:url">
+                <a tal:replace="structure context/lasttranslator/fmt:link">
                     Foo Bar
                 </a><br />
                 <br />
@@ -31,3 +35,4 @@
     </div>
 
 </div>
+</tal:root>

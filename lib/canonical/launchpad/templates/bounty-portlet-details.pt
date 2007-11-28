@@ -1,14 +1,15 @@
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-details">
 
   <h2>Bounty details</h2>
 
   <div class="portletBody portletContent">
 
-    <b>Registrant:</b>
-    <img src="/@@/user" />
-    <a tal:content="context/owner/browsername"
-       tal:attributes="href context/owner/fmt:url">Foo Bar</a><br />
-	
+    <b>Registered by:</b>
+    <a tal:replace="structure context/owner/fmt:link">Foo Bar</a><br />
   </div>
 
 </div>

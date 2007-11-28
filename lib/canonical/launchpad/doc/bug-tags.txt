@@ -67,12 +67,12 @@ Let's correct the spelling mistake we did and delete one of the tags:
 To make it easy editing the tags as a space separated text string, we
 use BugTagsWidget.
 
-    >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.interfaces import IBug
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.widgets.bug import BugTagsWidget
     >>> bug_tags_field = IBug['tags'].bind(bug_one)
     >>> tag_field = bug_tags_field.value_type
-    >>> request = TestRequest()
+    >>> request = LaunchpadTestRequest()
     >>> tags_widget = BugTagsWidget(bug_tags_field, tag_field, request)
 
 Since we didn't provided a value in the request, the form value will be
@@ -91,7 +91,7 @@ string:
 If we pass in a value via the request, we'll be able to get the tags as
 a sorted list from getInputValue():
 
-    >>> request = TestRequest(form={'field.tags': u'svg sco'})
+    >>> request = LaunchpadTestRequest(form={'field.tags': u'svg sco'})
     >>> tags_widget = BugTagsWidget(bug_tags_field, tag_field, request)
     >>> tags_widget._getFormValue()
     u'sco svg'
@@ -110,7 +110,7 @@ When we have an input value, the widget can edit the bug tags.
 If a user enters an invalid tag, we get an error explaining what's
 wrong.
 
-    >>> request = TestRequest(form={'field.tags': u'!!!! foo $$$$'})
+    >>> request = LaunchpadTestRequest(form={'field.tags': u'!!!! foo $$$$'})
     >>> tags_widget = BugTagsWidget(bug_tags_field, tag_field, request)
     >>> tags_widget.getInputValue()
     Traceback (most recent call last):
@@ -151,6 +151,11 @@ separate the tags, so we accept that as well.
     >>> tags_widget._toFieldValue(u'foo,bar')
     [u'bar', u'foo']
 
+Duplicate tags are converted to a single instance.
+
+    >>> tags_widget._toFieldValue(u'FOO, , , , bar bar, bar, bar foo')
+    [u'bar', u'foo']
+
 
 == Searching ==
 
@@ -182,9 +187,9 @@ example, if we search for 'some-tag', we find nothing at the moment:
     >>> some_tag_tasks.count()
     0
 
-XXX: The tests below don't pass yet. It's desirable functionality, but
-     it's better to get this branch landed and spend time on it later.
-     -- Bjorn Tillenius, 2006-07-14
+# XXX: Bjorn Tillenius 2006-07-14
+#      The tests below don't pass yet. It's desirable functionality, but
+#      it's better to get this branch landed and spend time on it later.
 
 If we now set bug one's tag to 'some-tag', it will be found.
 
@@ -203,17 +208,17 @@ If we now set bug one's tag to 'some-tag', it will be found.
 When viewing a bug listing for a context we want to display all the tags
 that are used in that context. For this we have a method on each bug
 target to return all the used tags. For source packages we return the
-tags used in its distribution/distrorelease, since it's good to see
+tags used in its distribution/distroseries, since it's good to see
 which tags can be used. The tags are ordered alphabetically.  All tags
 are shown, no matter if they are used in open bugs or closed ones.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import IProductSet, BugTaskStatus
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login('test@canonical.com')
     >>> for bugtask in firefox.searchTasks(BugTaskSearchParams(
     ...     tag=u'layout-test', user=None)):
-    ...     bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    ...     bugtask.transitionToStatus(
+    ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
@@ -233,7 +238,7 @@ are shown, no matter if they are used in open bugs or closed ones.
     [u'crash', u'dataloss', u'pebcak', u'sco', u'svg']
 
     >>> debian = getUtility(IDistributionSet).getByName('debian')
-    >>> debian_woody = debian.getRelease('woody')
+    >>> debian_woody = debian.getSeries('woody')
     >>> debian_woody.getUsedBugTags()
     [u'dataloss', u'layout-test', u'pebcak']
 
@@ -273,7 +278,8 @@ in the specific package.
 Only bugs that the supplied user has access to will be counted:
 
     >>> bug_nine = getUtility(IBugSet).get(9)
-    >>> bug_nine.private = True
+    >>> bug_nine.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> flush_database_updates()
 
     >>> ubuntu_thunderbird.getUsedBugTagsWithOpenCounts(None)

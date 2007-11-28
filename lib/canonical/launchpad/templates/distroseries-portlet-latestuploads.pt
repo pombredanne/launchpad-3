@@ -1,0 +1,29 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" tal:condition="context/getLatestUploads">
+  <h2>Latest uploads</h2>
+  <div class="portletBody">
+    <ul id="latest-uploads" class="binary package">
+
+  <li tal:repeat="source context/getLatestUploads">
+    <a tal:attributes="href source/fmt:url">
+       <tal:displayname replace="source/displayname">
+          mozilla-firefox
+       </tal:displayname>
+    </a>
+    by
+    <a tal:attributes="href source/sourcepackagerelease/creator/fmt:url">
+       <tal:creator replace="source/sourcepackagerelease/creator/displayname">
+           Mark Shuttleworth
+       </tal:creator>
+    </a>
+    <tal:dateuploaded replace="source/dateuploaded/fmt:displaydate">
+       3 minutes ago
+    </tal:dateuploaded>
+  </li>
+</ul>
+
+  </div>
+</div>

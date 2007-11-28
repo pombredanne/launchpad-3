@@ -7,7 +7,7 @@ package.
 
 This is useful for, among other things, tracking bugs in source
 packages, ensuring that bug reports automatically carry forward from one
-distribution release to the next.
+distribution series to the next.
 
 Fetching a Distribution Source Package
 ======================================
@@ -41,7 +41,8 @@ Useful properties:
 
 List of current 'pmount in Ubuntu' as ISourcePackage:
 
-    >>> [(sp.name, sp.distrorelease.name) for sp in dsp.by_distroreleases]
+    >>> [(sp.name, sp.distroseries.name)
+    ...     for sp in dsp.get_distroseries_packages()]
     [(u'pmount', u'hoary')]
 
 Publishing history of 'pmount in Ubuntu':
@@ -49,7 +50,7 @@ Publishing history of 'pmount in Ubuntu':
     >>> for p in dsp.publishing_history:
     ...     print " ".join((p.sourcepackagerelease.name,
     ...                     p.sourcepackagerelease.version,
-    ...                     p.distrorelease.name))
+    ...                     p.distroseries.name))
     pmount 0.1-2 hoary
     pmount 0.1-1 hoary
 
@@ -58,7 +59,7 @@ Current publishing records for 'pmount in Ubuntu':
     >>> for p in dsp.current_publishing_records:
     ...     print " ".join((p.sourcepackagerelease.name,
     ...                     p.sourcepackagerelease.version,
-    ...                     p.distrorelease.name))
+    ...                     p.distroseries.name))
     pmount 0.1-2 hoary
 
 Releases of 'pmount in Ubuntu':
@@ -103,7 +104,7 @@ IDistributionSourcePackageRelease (IDSPR) or None if not found:
     u'pmount 0.1-1 (source) in Ubuntu'
 
     >>> for pub in pmount_dspr.publishing_history:
-    ...     print pub.distrorelease.name, pub.status.name
+    ...     print pub.distroseries.name, pub.status.name
     hoary SUPERSEDED
 
 'getVersion' also return IDSPRs for REMOVED version which allows
@@ -117,5 +118,6 @@ archive (bug #60440):
     u'alsa-utils 1.0.9a-4 (source) in ubuntutest'
 
     >>> for pub in alsa_dspr.publishing_history:
-    ...     print pub.distrorelease.name, pub.status.name
-    breezy-autotest REMOVED
+    ...     is_removed = pub.dateremoved is not None
+    ...     print pub.distroseries.name, pub.status.name, is_removed
+    breezy-autotest DELETED True

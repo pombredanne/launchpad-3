@@ -1,11 +1,12 @@
 
 Now Sample Person will deactivate his key...
 
-    >>> user_browser.open('http://launchpad.dev/~name12/+editpgpkeys')
-    >>> user_browser.url
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~name12/+editpgpkeys')
+    >>> browser.url
     'http://launchpad.dev/~name12/+editpgpkeys'
 
-    >>> print user_browser.contents
+    >>> print browser.contents
     <...
     ...Active keys...
     ...1024D/DFD20543...
@@ -13,20 +14,19 @@ Now Sample Person will deactivate his key...
 
 ... but he forgot to select the checkbox of the key he wants to remove.
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> user_browser.getControl('Deactivate Key').click()
-    >>> for tag in BeautifulSoup(user_browser.contents)('p', 'error message'):
+    >>> browser.getControl('Deactivate Key').click()
+    >>> for tag in find_main_content(browser.contents)('p', 'error message'):
     ...     print tag.renderContents()
     No Key(s) selected for deactivation.
 
 
 Now he selects the checkbox and deactivates it.
 
-    >>> user_browser.getControl('1024D/DFD20543').selected = True
-    >>> user_browser.getControl('Deactivate Key').click()
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> browser.getControl('1024D/DFD20543').selected = True
+    >>> browser.getControl('Deactivate Key').click()
+    >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('p', 'informational message'):
     ...     print tag.renderContents()
     Deactivated key(s): 1024D/DFD20543
 
-    
+

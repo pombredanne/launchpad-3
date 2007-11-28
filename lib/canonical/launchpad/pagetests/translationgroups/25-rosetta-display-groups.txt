@@ -1,22 +1,13 @@
+The new groups should show up on the "Translation groups" page.
 
-Now, let's have a look at the Rosetta page. We should see the new
-translation group in a portlet on that page.
-
-  >>> print http(r"""
-  ... GET /translations/ HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Welcome to Rosetta...
-  ...Translation groups in Rosetta...
-  .../translations/groups/polyglot/...The PolyGlot Translation Group...
-
-Also, we should get the group showing up on the groups display page for
-Rosetta.
-
-  >>> print http(r"""
-  ... GET /translations/groups/ HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Rosetta translation groups...
-  ...The PolyGlot Translation Group...
-
+  >>> anon_browser.open('http://translations.launchpad.dev/+groups')
+  >>> print anon_browser.url
+  http://translations.launchpad.dev/+groups
+  >>> groups_table = find_tag_by_id(anon_browser.contents, 'translation-groups')
+  >>> groups = groups_table.find('tbody').findAll('tr')
+  >>> for group_row in groups:
+  ...     group = group_row.findNext('td')
+  ...     print '%s: %s' % (group.a.string, group.a['href'])
+  Single-language Translators: monolingua
+  The PolyGlot Translation Group: polyglot
+  Just a testing team: renamed-group

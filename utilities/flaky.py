@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 """Run pyflakes checks on a set of files."""

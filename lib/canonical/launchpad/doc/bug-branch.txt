@@ -1,19 +1,26 @@
-Bugs and Branches
-=================
+= Bugs and Branches =
 
 Branches can be linked to Bugs, to track work in progress on branches,
 and when fixes are committed.
 
-BugBranch
----------
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import IBugBranch, IBugBranchSet
+    >>> from canonical.launchpad.database import BugBranch, BugBranchSet
+    >>> verifyObject(IBugBranch, BugBranch.get(1))
+    True
+    >>> verifyObject(IBugBranchSet, BugBranchSet())
+    True
+
+
+== BugBranch ==
 
 BugBranch links a bug and a branch.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBranchSet)
+    ...     BugBranchStatus, IBugSet, IBranchSet, IPersonSet)
     >>> from canonical.database.sqlbase import flush_database_updates
 
-    >>> login("foo.bar@canonical.com")
+    >>> login("no-priv@canonical.com")
 
     >>> bugset = getUtility(IBugSet)
     >>> bug = bugset.get(1)
@@ -21,7 +28,8 @@ BugBranch links a bug and a branch.
 
 Adding a branch to a bug returns an IBugBranch.
 
-    >>> bug_branch = bug.addBranch(branch)
+    >>> user = getUtility(IPersonSet).getByEmail("no-priv@canonical.com")
+    >>> bug_branch = bug.addBranch(branch, user)
 
     >>> flush_database_updates()
 
@@ -32,6 +40,8 @@ sample data.
     1
     >>> bug_branch.branch.id
     10
+    >>> print bug_branch.registrant.displayname
+    No Privileges Person
 
     >>> [bug_branch.branch.name for bug_branch in
     ...  bug.bug_branches]
@@ -39,15 +49,13 @@ sample data.
 
 By default, a bug branch is in the state BugBranchStatus.INPROGRESS.
 
-    >>> from canonical.lp.dbschema import BugBranchStatus
-
     >>> bug_branch.status == BugBranchStatus.INPROGRESS
     True
 
 Trying to add a branch that is already linked to a bug will simply
 return the existing BugBranch.
 
-    >>> bug_branch_two = bug.addBranch(branch)
+    >>> bug_branch_two = bug.addBranch(branch, user)
     >>> bug_branch_two == bug_branch
     True
 
@@ -65,15 +73,113 @@ of interest to others tracking the bugfix on this branch:
 
     >>> branch = getUtility(IBranchSet).get(1)
     >>> bug_branch_three = bug.addBranch(
-    ...     branch, "I should have this fixed today")
+    ...     branch, user, "I should have this fixed today")
     >>> bug_branch_three.whiteboard
     u'I should have this fixed today'
 
-Bugs Related to Branches
-------------------------
+Anyone who can edit the bug the BugBranch object points to may edit the
+BugBranch object itself.
+
+    >>> login('no-priv@canonical.com')
+    >>> bug_branch_three.whiteboard = 'New whiteboard.'
+    >>> bug.description = 'New description.'
+
+If we make the bug private, no-priv won't be allowed to edit neither the
+bug nor the BugBranch.
+
+    >>> login('foo.bar@canonical.com')
+    >>> bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
+
+    >>> login('no-priv@canonical.com')
+    >>> bug_branch_three.whiteboard = 'Yet another whiteboard.'
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+    >>> bug.description = 'Yet another description.'
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+    >>> login('foo.bar@canonical.com')
+    >>> bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
+    >>> login('no-priv@canonical.com')
+
+
+== Bugs Related to Branches ==
 
 The bugs related to a branch are accessible via the related_bugs
 property.
 
     >>> sorted([bug.id for bug in branch.related_bugs])
     [1, 4, 5]
+
+There are situations where the actual bug task is more useful than the
+bug as a whole.  However a branch can be associated with a bug where the
+project of the branch is not a target of any of the tasks for the
+bug.  For each bug that the branch is linked to, the bug is asked for
+the task for the project of the branch.  If a target cannot be found,
+then the first task of the bug is returned.
+
+    >>> tasks = [(task.bug.id, task.target.displayname, task.importance.title)
+    ...          for task in branch.related_bug_tasks]
+    >>> for bug_id, target_name, importance in sorted(tasks):
+    ...     print bug_id, target_name, importance
+    1 Mozilla Firefox Low
+    4 Mozilla Firefox Medium
+    5 Mozilla Firefox Critical
+
+
+== Getting bug branches associated with multiple branches ==
+
+Sometimes we want to get the associated bug branch links for a set of branches.
+The getBugBranchesForBranches method can do this.
+
+Firstly we need to get the branches.
+
+    >>> from canonical.launchpad.interfaces import IBugBranchSet
+    >>> branches = [getUtility(IBranchSet).getByUniqueName(
+    ...                 '~carlos/iso-codes/0.35'),
+    ...             getUtility(IBranchSet).getByUniqueName(
+    ...                 '~sabdfl/firefox/release-0.9.2')]
+
+The bug branches returned are only those where the user can see the
+bugs that are associated.  This way if there are bugs associated with
+a branch that the user cannot see, then they are not shown.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> bugbranches = getUtility(IBugBranchSet).getBugBranchesForBranches(
+    ...     branches, user)
+    >>> for bugbranch in sorted(bugbranches,
+    ...                         key=lambda b: (b.branch.id, b.bug.id)):
+    ...     print "%s <-> %s" % (
+    ...         bugbranch.branch.unique_name, bugbranch.bug.id)
+    ~sabdfl/firefox/release-0.9.2 <-> 1
+    ~sabdfl/firefox/release-0.9.2 <-> 4
+
+
+== Getting bug branches associated with multiple bugs ==
+
+Sometimes we want to get the associated bug branch links for a set of bugs.
+The getBugBranchesForBugs method can do this.
+
+Firstly we need to get the branches.  We'll look up the relationships
+for bugs 1, 2, 3 and 4.
+
+    >>> bugtasks = list(getUtility(IBugSet).get(1).bugtasks)
+    >>> bugtasks.extend(getUtility(IBugSet).get(2).bugtasks)
+    >>> bugtasks.extend(getUtility(IBugSet).get(3).bugtasks)
+    >>> bugtasks.extend(getUtility(IBugSet).get(4).bugtasks)
+    >>> bugbranches2 = getUtility(IBugBranchSet).getBugBranchesForBugTasks(
+    ...     bugtasks)
+    >>> for bugbranch2 in sorted(bugbranches2,
+    ...                         key=lambda b: (b.branch.id, b.bug.id)):
+    ...     print "%s <-> %s" % (bugbranch2.branch.unique_name, bugbranch2.bug.id)
+    ~name12/firefox/main <-> 1
+    ~name12/firefox/main <-> 4
+    ~sabdfl/firefox/release-0.9.2 <-> 1
+    ~sabdfl/firefox/release-0.9.2 <-> 4
+

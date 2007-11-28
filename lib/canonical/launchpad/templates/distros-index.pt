@@ -1,45 +1,51 @@
 <html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/pillarindex"
+  i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Distributions</h1>
-    </metal:heading>
+    <h1 metal:fill-slot="heading">Registered distributions</h1>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
-    <h2>About Soyuz</h2>
+    <h2>About these distributions</h2>
 
     <div class="portletBody portletContent">
       <img src="/@@/info" />
-      "Soyuz" is the part of Launchpad that keeps track of the applications
-      published in different distributions. It allows you to track, for
-      example, the bugs in a distribution.
+      Launchpad can manage the source packages, builds, archive publishing
+      and historical record-keeping necessary to create a distribution.
+      Some of the distributions described here are fully managed in
+      Launchpad, others are managed elsewhere but Launchpad keeps track of
+      their progress.
     </div>
   </div>
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-    <p class="documentDescription">
-      Launchpad can keep track of the software packages in a GNU/Linux or
-      GNU/Solaris distribution.
-    </p>
+    <div id="application-summary">
+      Launchpad can keep track of the software packages in a distribution,
+      and provide information about the bugs, translations and code
+      associated with each of them.
+    </div>
 
     <table class="listing">
       <thead>
         <tr>
           <th>Distribution</th>
-          <th>Domain Name</th>
+          <th>Domain</th>
         </tr>
       </thead>
       <tbody>
         <tr tal:repeat="distribution context">
           <td>
+            <img src="/@@/distribution" />
             <a tal:content="distribution/title" 
                tal:attributes="href distribution/fmt:url">
                   distribution title
@@ -55,8 +61,8 @@
       </tbody>
     </table>    
 
-    <p class="discreet">
-      * Read-only distribution.
+    <p>
+      <sup>*</sup> Read-only distribution.
       Can be browsed in Launchpad, but not altered or managed,
       and its information might be out of date.
     </p>

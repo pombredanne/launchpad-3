@@ -2,117 +2,122 @@ When adding a bug watch together with a new bugtask, you have to enter
 the URL of the remote bug.
 
     >>> user_browser.open(
-    ...    'http://launchpad.dev/firefox/+bug/4/+choose-affected-product')
-    >>> user_browser.getControl('Product').value = 'gnome-terminal'
+    ...    'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product')
+    >>> user_browser.getControl('Project').value = 'gnome-terminal'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/firefox/+bug/4/+add-affected-product?field.product=gnome-terminal'
-
+    'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
     >>> user_browser.getControl('URL').value = (
     ...     u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42')
-    >>> user_browser.getControl('Indicate bug in GNOME Terminal').click()
+    >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
-    'http://launchpad.dev/gnome-terminal/+bug/4'
+    'http://bugs.launchpad.dev/gnome-terminal/+bug/4'
 
-    >>> print find_portlet(user_browser.contents, 'Remote bug watches')
-    <div class="portlet">
-    ...
-    <a href="http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42">
-          gnome-bugzilla #42
-    </a>
-    ...
+    >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
+    >>> for li in bug_watches('li'):
+    ...     print li.findAll('a')[1].renderContents()
+    gnome-bugzilla #42
 
 It's possible to supply an HTTPS URL, even though the bug tracker's
 base URL is HTTP.
 
     >>> user_browser.open(
-    ...  'http://launchpad.dev/firefox/+bug/4/+choose-affected-product')
-    >>> user_browser.getControl('Product').value = 'netapplet'
+    ...  'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product')
+    >>> user_browser.getControl('Project').value = 'netapplet'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/firefox/+bug/4/+add-affected-product?field.product=netapplet'
+    'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
     >>> user_browser.getControl('URL').value = (
     ...     u'https://bugzilla.gnome.org/bugs/show_bug.cgi?id=84')
-    >>> user_browser.getControl('Indicate bug').click()
+    >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
-    'http://launchpad.dev/netapplet/+bug/4'
+    'http://bugs.launchpad.dev/netapplet/+bug/4'
 
-The URL was automatically converted to HTTP.
+The URL was automatically converted to HTTP:
 
-    >>> print find_portlet(user_browser.contents, 'Remote bug watches')
-    <div class="portlet">
-    ...
-    <a href="http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84">
-          gnome-bugzilla #84
-    </a>
-    ...
+    >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
+    >>> for li in bug_watches('li'):
+    ...     print li.findAll('a')[1]['href']
+    http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42
+    http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84
 
 
 If the URL can't be recognised (i.e., we don't even know what bug
 tracker type it is), an error message is displayed.
 
     >>> user_browser.open(
-    ...    'http://launchpad.dev/firefox/+bug/4/+choose-affected-product')
-    >>> user_browser.getControl('Product').value = 'alsa-utils'
+    ...    'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product')
+    >>> user_browser.getControl('Project').value = 'alsa-utils'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://launchpad.dev/firefox/+bug/4/+add-affected-product?field.product=alsa-utils'
+    'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
     >>> user_browser.getControl('URL').value = u'http://bugs.unknown/42'
-    >>> user_browser.getControl('Indicate bug in alsa-utils').click()
+    >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
-    'http://launchpad.dev/firefox/+bug/4/+add-affected-product'
+    'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
     There is 1 error.
-    Launchpad doesn't know what kind of bug tracker this URL is pointing at.
+    Launchpad does not recognize the bug tracker at this URL.
 
 If the URL can be recognised as a valid bug URL, but no such tracker is
 registered in Launchpad, the user will be prompted to register it first.
 
     >>> user_browser.getControl('URL').value = u"http://new.trac/ticket/42"
-    >>> user_browser.getControl('Indicate bug in alsa-utils').click()
+    >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
-    'http://launchpad.dev/firefox/+bug/4/+add-affected-product'
+    'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print message.renderContents()
-    There is 1 error.
-    The bug tracker at http://new.trac/ isn't registered in
-    Launchpad. You need to <a href="...">register it</a> before you can
-    link any bugs to it.
+    >>> print get_feedback_messages(user_browser.contents)[0]
+    The bugtracker with the given URL is not registered in Launchpad.
+    Would you like to register it now?
 
-Let's follow the link to register it.
+Now the user confirms he wants us to register the bug tracker for him and we
+do that before creating the new bug watch.
 
-    >>> user_browser.getLink('register it').click()
-    >>> user_browser.getControl('Name').value = 'new-trac'
-    >>> user_browser.getControl('Bug Tracker Type').displayValue = ['Trac']
-    >>> user_browser.getControl('Title').value = 'New Trac'
-    >>> user_browser.getControl('Summary').value = "-"
-    >>> user_browser.getControl('Base URL').value = "http://new.trac/"
-    >>> user_browser.getControl('Contact details').value = "-"
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Register Bug Tracker').click()
 
-If we go back to add the same bug URL as before, it will succeed this
-time.
+The bugtracker is now registered, the bug watch is linked, and we're
+redirected to the bug's page.
+
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/alsa-utils/+bug/4'
+
+The bug tracker and bug watch were added. We can see that the bugtracker
+has a special name, starting with 'auto-', to indicate that it was
+registered automatically.
+
+    >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
+    >>> for li in bug_watches('li'):
+    ...     print li.findAll('a')[1].renderContents()
+    gnome-bugzilla #42
+    gnome-bugzilla #84
+    auto-new.trac #42
+
+If the user does not specify the base url's schema at all, we complete it
+to HTTP on their behalf:
 
     >>> user_browser.open(
-    ...    'http://launchpad.dev/firefox/+bug/4/+choose-affected-product')
-    >>> user_browser.getControl('Product').value = 'alsa-utils'
+    ...  'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product')
+    >>> user_browser.getControl('Project').value = 'thunderbird'
     >>> user_browser.getControl('Continue').click()
-    >>> user_browser.getControl('URL').value = (
-    ...     u"http://new.trac/ticket/42")
-    >>> user_browser.getControl('Indicate bug in alsa-utils').click()
     >>> user_browser.url
-    'http://launchpad.dev/alsa-utils/+bug/4'
+    'http://bugs.launchpad.dev/firefox/+bug/4/+choose-affected-product'
 
-    >>> print find_portlet(user_browser.contents, 'Remote bug watches')
-    <div class="portlet">
-    ...
-    <a href="http://new.trac/ticket/42">
-          new-trac #42
-    </a>
-    ...
+    >>> user_browser.getControl('URL').value = (
+    ...     u'bugzilla.gnome.org/bugs/show_bug.cgi?id=168')
+    >>> user_browser.getControl('Add to Bug Report').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/thunderbird/+bug/4'
+
+    >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
+    >>> for li in bug_watches('li'):
+    ...     print li.findAll('a')[1]['href']
+    http://bugzilla.gnome.org/bugs/show_bug.cgi?id=168
+    http://bugzilla.gnome.org/bugs/show_bug.cgi?id=42
+    http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84
+    http://new.trac/ticket/42

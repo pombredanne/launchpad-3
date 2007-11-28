@@ -1,0 +1,108 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+<facet facet="overview">
+
+    <!-- DistroArchSeries -->
+    <content class="canonical.launchpad.database.DistroArchSeries">
+        <allow interface="canonical.launchpad.interfaces.IDistroArchSeries"/>
+        <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+        <allow interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
+        <require
+            permission="launchpad.Admin"
+            set_schema="canonical.launchpad.interfaces.IDistroArchSeries"/>
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistroArchSeries"
+        name="+index" />
+
+   <browser:menus
+        module="canonical.launchpad.browser.distroarchseries"
+        classes="DistroArchSeriesFacets DistroArchSeriesContextMenu"
+        />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IDistroArchSeries"
+        path_expression="architecturetag"
+        attribute_to_parent="distroseries" />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="DistroArchSeriesNavigation"
+        />
+
+    <browser:pages
+        for="canonical.launchpad.database.DistroArchSeries"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.DistroArchSeriesView">
+      <browser:page
+          name="+index"
+          template="../templates/distroarchseries-index.pt"
+          />
+      <browser:page
+          name="+portlet-details"
+          template="../templates/distroarchseries-portlet-details.pt"
+          />
+      <browser:page
+          name="+builds"
+          facet="overview"
+          template="../templates/distroarchseries-builds.pt"
+          />
+      <browser:page
+          name="+builds-list"
+          template="../templates/builds-list.pt"
+          />
+    </browser:pages>
+
+    <browser:page
+      for="canonical.launchpad.database.DistroArchSeries"
+      permission="zope.Public"
+      name="+search"
+      class="canonical.launchpad.browser.DistroArchSeriesBinariesView"
+      template="../templates/distroarchseries-search.pt"
+      />
+
+    <browser:editform
+      for="canonical.launchpad.interfaces.IDistroArchSeries"
+      permission="launchpad.Admin"
+      name="+admin"
+      schema="canonical.launchpad.interfaces.IDistroArchSeries"
+      facet="overview"
+      fields="architecturetag official"
+      template="../templates/distroarchseries-admin.pt"
+      />
+
+</facet>
+
+    <!-- DistroArchSeriesSet -->
+    <content class="canonical.launchpad.database.DistroArchSeriesSet">
+        <allow interface="canonical.launchpad.interfaces.IDistroArchSeriesSet"/>
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.DistroArchSeriesSet"
+        provides="canonical.launchpad.interfaces.IDistroArchSeriesSet">
+        <allow interface="canonical.launchpad.interfaces.IDistroArchSeriesSet" />
+    </securedutility>
+
+
+    <!-- PocketChroot -->
+    <content class="canonical.launchpad.database.PocketChroot">
+	<!-- XXX cprov 2006-07-13: it needs security permission tweaks. -->
+	<!-- Currently it's only modified/added by a script.  -->
+	<!-- We should allow changes only by buildd-admin member. -->
+        <allow
+           interface="canonical.launchpad.interfaces.IPocketChroot"
+         />
+        <require
+           permission="launchpad.Admin"
+           set_schema="canonical.launchpad.interfaces.IPocketChroot"
+         />
+    </content>
+
+
+</configure>

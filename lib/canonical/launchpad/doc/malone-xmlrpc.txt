@@ -70,7 +70,7 @@ return value.)
     >>> bug_url = filebug_api.filebug(params)
     SQLObjectCreatedEvent: <Bug ...>
     >>> print bug_url
-    http://launchpad.dev/bugs/...
+    http://bugs.launchpad.dev/bugs/...
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IBugSet
@@ -97,7 +97,7 @@ Reporting a distro bug.
     >>> bug_url = filebug_api.filebug(params)
     SQLObjectCreatedEvent: <Bug ...>
     >>> print bug_url
-    http://launchpad.dev/bugs/...
+    http://bugs.launchpad.dev/bugs/...
 
     >>> bug = bugset.get(get_bug_id_from_url(bug_url))
 
@@ -124,7 +124,7 @@ Reporting a package bug.
     >>> bug_url = filebug_api.filebug(params)
     SQLObjectCreatedEvent: <Bug ...>
     >>> print bug_url
-    http://launchpad.dev/bugs/...
+    http://bugs.launchpad.dev/bugs/...
 
     >>> login('test@canonical.com')
     >>> bug = bugset.get(get_bug_id_from_url(bug_url))
@@ -162,7 +162,7 @@ Failing to specify a product or distribution.
     Traceback (most recent call last):
     ...
     Fault: <Fault 60: 'Required arguments missing.
-            You must specify either a product or distrubtion
+            You must specify either a product or distribution
             in which the bug exists.'>
 
 Specifying *both* a product and distribution.

@@ -1,12 +1,12 @@
      Components and Sections
      ^^^^^^^^^^^^^^^^^^^^^^^
 
-Component refers to a group of packages within a DistroRelease that
+Component refers to a group of packages within a DistroSeries that
 are related by their need, shipment condition and/or license.
 
 Zope auxiliary test toolchain:
 
- >>> from zope.interface.verify import verifyObject
+ >>> from canonical.launchpad.webapp.testing import verifyObject
  >>> from zope.component import getUtility
 
 Importing Component content class and its interface:
@@ -46,6 +46,7 @@ Test iteration over the sampledata default components:
  u'restricted'
  u'universe'
  u'multiverse'
+ u'partner'
 
 by default, they are ordered by 'id'.
 
@@ -63,15 +64,15 @@ New component creation for a given name:
 
  >>> new_comp = component_set.new('test')
  >>> new_comp.id, new_comp.name
- (5L, u'test')
+ (6L, u'test')
 
 Ensuring a component (if not found, create it):
 
  >>> component_set.ensure('test').id
- 5L
+ 6L
 
  >>> component_set.ensure('test2').id
- 6L
+ 7L
 
 
 Importing Section content class and its interface:

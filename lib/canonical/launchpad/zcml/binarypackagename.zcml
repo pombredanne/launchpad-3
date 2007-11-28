@@ -1,16 +1,20 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-<facet facet="overview">
+  <facet facet="overview">
 
     <!-- BinaryPackagename -->
     <content class="canonical.launchpad.database.BinaryPackageName">
         <allow interface="canonical.launchpad.interfaces.IBinaryPackageName" />
     </content>
+
+    <vocabulary
+      name="BinaryPackageName"
+      factory="canonical.launchpad.database.binarypackagename.BinaryPackageNameVocabulary"
+      />
 
     <!-- BinaryPackageNameSet -->
     <securedutility
@@ -23,10 +27,5 @@
         <allow interface="canonical.launchpad.interfaces.IBinaryPackageNameSet" />
     </content>
 
-    <!-- BinaryAndSourcePackagename -->
-    <content class="canonical.launchpad.database.BinaryAndSourcePackageName">
-        <allow interface="canonical.launchpad.interfaces.IBinaryAndSourcePackageName" />
-    </content>
-
-</facet>
+  </facet>
 </configure>

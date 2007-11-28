@@ -12,11 +12,13 @@ from zope.security.interfaces import ISecurityPolicy
 from zope.security.checker import CheckerPublic
 from zope.security.proxy import removeSecurityProxy
 from zope.security.simplepolicies import ParanoidSecurityPolicy
-from zope.security.management import system_user
+from zope.security.management import (
+    system_user, checkPermission as zcheckPermission)
+from zope.app.security.permission import (
+    checkPermission as check_permission_is_registered)
 
-from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
-from canonical.launchpad.interfaces import IAuthorization
-from canonical.launchpad.interfaces import IPerson
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchpadPrincipal, IAuthorization)
 
 steveIsFixingThis = False
 
@@ -38,10 +40,15 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
           after the permission, use that to check the permission.
         - Otherwise, deny.
         """
+        # XXX kiko 2007-02-07:
+        # webapp shouldn't be depending on launchpad interfaces..
+        from canonical.launchpad.interfaces import IPerson
+
         # This check shouldn't be needed, strictly speaking.
         # However, it is here as a "belt and braces".
-        # XXX: This warning should apply to the policy in zope3 also.
-        # -- Steve Alexander, 2005-01-12
+
+        # XXX Steve Alexander 2005-01-12: 
+        # This warning should apply to the policy in zope3 also.
         if permission == 'zope.Public':
             if steveIsFixingThis:
                 warnings.warn('zope.Public being used raw on object %r' % object)
@@ -92,4 +99,17 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                         'authorization returning non-bool value: %r' %
                         authorization)
                 return bool(result)
+
+def check_permission(permission_name, context):
+    """Like zope.security.management.checkPermission, but also ensures that
+    permission_name is real permission.
+
+    Raises ValueError if the permission doesn't exist.
+    """
+    # This will raise ValueError if the permission doesn't exist.
+    check_permission_is_registered(context, permission_name)
+
+    # Now call Zope's checkPermission.
+    return zcheckPermission(permission_name, context)
+
 

@@ -1,20 +1,19 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Carlos Perello Marin</h3>
-  <h1>Feature specification workload</h1>
+  <h1>Blueprint workload</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
@@ -42,9 +41,7 @@
 
       <tal:has_work condition="member/specifications">
 
-        <img src="/@@/user" />
-        <a tal:content="member/browsername"
-           tal:attributes="href member/fmt:url">Foo Bar</a>'s
+        <a tal:replace="structure member/fmt:link">Foo Bar</a>'s
         specifications:<br />
 
         <div tal:replace="structure member/@@+table-specworkload" />

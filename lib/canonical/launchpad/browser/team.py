@@ -2,38 +2,115 @@
 
 __metaclass__ = type
 
-__all__ = ['TeamEditView', 'TeamEmailView', 'TeamAddView', 'TeamMembersView',
-           'TeamMemberAddView', 'ProposedTeamMembersEditView']
+__all__ = [
+    'ProposedTeamMembersEditView',
+    'TeamAddView',
+    'TeamBrandingView',
+    'TeamContactAddressView',
+    'TeamMailingListConfigurationView',
+    'TeamEditView',
+    'TeamMemberAddView',
+    ]
 
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
-from zope.app.form.browser.add import AddView
+from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
+from zope.formlib import form
+from zope.publisher.interfaces import NotFound
+from zope.schema import Choice, TextLine
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
-from canonical.lp.dbschema import LoginTokenType, TeamMembershipStatus
 from canonical.database.sqlbase import flush_database_updates
+from canonical.widgets import (
+    HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
 
-from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.webapp import canonical_url
+from canonical.config import config
+from canonical.launchpad import _
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp import (
+    action, canonical_url, custom_widget, LaunchpadEditFormView,
+    LaunchpadFormView)
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
-    IPersonSet, ILaunchBag, IEmailAddressSet, ILoginTokenSet,
-    ITeamMembershipSet)
+    EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
+    IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
+    ITeamCreation, ITeamMember, LoginTokenType, MailingListStatus,
+    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
+from canonical.launchpad.interfaces.validation import validate_new_team_email
+
+class HasRenewalPolicyMixin:
+    """Mixin to be used on forms which contain ITeam.renewal_policy.
+
+    This mixin will short-circuit Launchpad*FormView when defining whether
+    the renewal_policy widget should be displayed in a single or multi-line
+    layout. We need that because that field has a very long title, thus
+    breaking the page layout.
+
+    Since this mixin short-circuits Launchpad*FormView in some cases, it must
+    always precede Launchpad*FormView in the inheritance list.
+    """
+
+    def isMultiLineLayout(self, field_name):
+        if field_name == 'renewal_policy':
+            return True
+        return super(HasRenewalPolicyMixin, self).isMultiLineLayout(
+            field_name)
+
+    def isSingleLineLayout(self, field_name):
+        if field_name == 'renewal_policy':
+            return False
+        return super(HasRenewalPolicyMixin, self).isSingleLineLayout(
+            field_name)
 
 
-class TeamEditView(SQLObjectEditView):
+class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
 
-    def __init__(self, context, request):
-        SQLObjectEditView.__init__(self, context, request)
-        self.team = context
+    schema = ITeam
+    field_names = [
+        'teamowner', 'name', 'displayname', 'teamdescription',
+        'subscriptionpolicy', 'defaultmembershipperiod',
+        'renewal_policy', 'defaultrenewalperiod']
+    custom_widget('teamowner', SinglePopupWidget, visible=False)
+    custom_widget(
+        'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget(
+        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
 
-    def changed(self):
-        """Redirect to the team  page.
+    @action('Save', name='save')
+    def action_save(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
-        We need this because people can now change team names, and this will
-        make their canonical_url to change too.
+    def setUpFields(self):
+        """See `LaunchpadViewForm`.
+
+        When a team has a mailing list, renames are prohibited.
         """
-        self.request.response.redirect(canonical_url(self.context))
+        super(TeamEditView, self).setUpFields()
+        if getUtility(IMailingListSet).get(self.context.name) is not None:
+            # Use a custom form field that prints a readonly name and a short
+            # description about why it's readonly.
+            name_field = form.FormFields(form.FormField(
+                TextLine(__name__='name',
+                         title=_('Name'),
+                         description=_('This team has a mailing list and may '
+                                       'not be renamed.'),
+                         default=self.context.name,
+                         readonly=True)))
+            self.form_fields = name_field + self.form_fields.omit('name')
+
+    def setUpWidgets(self):
+        """See `LaunchpadViewForm`.
+
+        When a team has a mailing list, renames are prohibited.
+        """
+        super(TeamEditView, self).setUpWidgets()
+        if getUtility(IMailingListSet).get(self.context.name) is not None:
+            # Avoid the "(Optional)" tag on the Name field.  This attribute
+            # must be set on the widget and so can't be used in setUpFields()
+            # when we create the TextLine.
+            self.widgets['name'].required = True
 
 
 def generateTokenAndValidationEmail(email, team):
@@ -46,116 +123,470 @@ def generateTokenAndValidationEmail(email, team):
     token.sendTeamEmailAddressValidationEmail(user)
 
 
-class TeamEmailView:
-    """A View to edit a team's contact email address."""
+class MailingListTeamBaseView(LaunchpadFormView):
+    """A base view for manipulating a team's mailing list.
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.team = self.context
-        self.wrongemail = None
-        self.errormessage = ""
-        self.feedback = ""
+    This class contains common functionality for retrieving and
+    checking the state of mailing lists.
+    """
 
-    def processForm(self):
-        """Process the form, if it was submitted."""
-        # Any self-posting form that updates the database and want to display
-        # these updated values have to flush all db updates. This is why we
-        # call flush_database_updates() here.
+    def _getList(self):
+        """Try to find a mailing list for this team.
 
-        request = self.request
-        if request.method != "POST":
-            # Nothing to do
-            return
+        :return: The mailing list object, or None if this team has no
+        mailing list.
+        """
+        return getUtility(IMailingListSet).get(self.context.name)
 
-        emailset = getUtility(IEmailAddressSet)
+    def getListInState(self, *statuses):
+        """Return this team's mailing list if it's in one of the given states.
 
-        if request.form.get('ADD_EMAIL') or request.form.get('CHANGE_EMAIL'):
-            emailaddress = request.form.get('newcontactemail', "")
-            emailaddress = emailaddress.lower().strip()
-            if not valid_email(emailaddress):
-                self.errormessage = (
-                    "The email address you're trying to add doesn't seem to "
-                    "be valid. Please make sure it's correct and try again.")
-                # We want to display the invalid address so the user can just
-                # fix what's wrong and send again.
-                self.wrongemail = emailaddress
+        :param statuses: The states that the mailing list must be in for it to
+            be returned.
+        :return: This team's IMailingList or None if the team doesn't have
+            a mailing list, or if it isn't in one of the given states.
+        """
+        mailing_list = self._getList()
+        if mailing_list is not None and mailing_list.status in statuses:
+            return mailing_list
+        return None
+
+    @property
+    def can_create_mailing_list(self):
+        """Is it allowed to create a mailing list for this team?
+
+        `list_is_usable` must return false and mailing lists must
+        be enabled. Once mailing lists are enabled globally, this should
+        be replacable with not list_is_usable."""
+        return (config.mailman.expose_hosted_mailing_lists and
+                not self.list_is_usable)
+
+    @property
+    def list_is_usable(self):
+        """Checks whether or not the list is usable; ie. accepting messages.
+
+        The list must exist and must be in a state acceptable to
+        MailingList.isUsable.
+        """
+        mailing_list = self._getList()
+        return mailing_list is not None and mailing_list.isUsable()
+
+    @property
+    def mailinglist_address(self):
+        """The address for this team's mailing list."""
+        mailing_list = self._getList()
+        assert mailing_list is not None, (
+                'Attempt to find address of nonexistent mailing list.')
+        return mailing_list.address
+
+
+class TeamContactAddressView(MailingListTeamBaseView):
+    """A view for manipulating the team's contact address."""
+
+    schema = ITeamContactAddressForm
+    label = "Contact address"
+    custom_widget(
+        'contact_method', LaunchpadRadioWidget, orientation='vertical')
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`.
+        """
+        super(TeamContactAddressView, self).setUpFields()
+
+        # Replace the default contact_method field by a custom one.
+        self.form_fields = (
+            form.FormFields(self.getContactMethodField())
+            + self.form_fields.omit('contact_method'))
+
+    def getContactMethodField(self):
+        """Create the form.Fields to use for the contact_method field.
+
+        If the team has a mailing list that can be the team contact
+        method, the full range of TeamContactMethod terms shows up
+        in the contact_method vocabulary. Otherwise, the HOSTED_LIST
+        term does not show up in the vocabulary.
+        """
+        terms = [term for term in TeamContactMethod]
+        for i, term in enumerate(TeamContactMethod):
+            if term.value == TeamContactMethod.HOSTED_LIST:
+                hosted_list_term_index = i
+                break
+        if (config.mailman.expose_hosted_mailing_lists
+            and self.list_is_usable):
+            # The team's mailing list can be used as the contact
+            # address. However we need to change the title of the
+            # corresponding term to include the list's email address.
+            title = ('The Launchpad mailing list for this team - '
+                     '<strong>%s</strong>' % self.mailinglist_address)
+            hosted_list_term = SimpleTerm(
+                TeamContactMethod.HOSTED_LIST,
+                TeamContactMethod.HOSTED_LIST.name, title)
+            terms[hosted_list_term_index] = hosted_list_term
+        else:
+            # The team's mailing list does not exist or can't be
+            # used as the contact address. Remove the term from the
+            # field.
+            del terms[hosted_list_term_index]
+
+        return form.FormField(
+            Choice(__name__='contact_method',
+                   title=_("How do people contact this team's members?"),
+                   required=True, vocabulary=SimpleVocabulary(terms)),
+            custom_widget=self.custom_widgets['contact_method'])
+
+    def validate(self, data):
+        """Validate the team contact email address.
+
+        Validation only occurs if the user wants to use an external address,
+        and the given email address is not already in use by this team.
+        This also ensures the mailing list is active if the HOSTED_LIST option
+        has been chosen.
+        """
+        if data['contact_method'] == TeamContactMethod.EXTERNAL_ADDRESS:
+            email = data['contact_address']
+            if not email:
+                self.setFieldError(
+                    'contact_address',
+                    'Enter the contact address you want to use for this team.')
                 return
+            email = getUtility(IEmailAddressSet).getByEmail(
+                data['contact_address'])
+            if email is None or email.person != self.context:
+                try:
+                    validate_new_team_email(data['contact_address'])
+                except LaunchpadValidationError, error:
+                    self.setFieldError('contact_address', str(error))
+        elif data['contact_method'] == TeamContactMethod.HOSTED_LIST:
+            mailing_list = getUtility(IMailingListSet).get(self.context.name)
+            if (mailing_list is None or not mailing_list.isUsable()):
+                self.addError(
+                    "This team's mailing list is not active and may not be "
+                    "used as its contact address yet")
+        else:
+            # Nothing to validate!
+            pass
 
-            email = emailset.getByEmail(emailaddress)
-            if email is not None:
-                if email.person.id != self.team.id:
-                    self.errormessage = (
-                        "The email address you're trying to add is already "
-                        "registered in Launchpad for %s."
-                        % email.person.browsername)
-                else:
-                    self.errormessage = (
-                        "This is the current contact email address of this "
-                        "team. There's no need to add it again.")
-                return
+    @property
+    def initial_values(self):
+        """Infer the contact method from this team's preferredemail.
 
-            self._sendEmailValidationRequest(emailaddress)
-            flush_database_updates()
-            return
-        elif request.form.get('REMOVE_EMAIL'):
-            if self.team.preferredemail is None:
-                self.errormessage = "This team has no contact email address."
-                return
-            self.team.preferredemail.destroySelf()
-            self.feedback = (
-                "The contact email address of this team has been removed. "
-                "From now on, all notifications directed to this team will "
-                "be sent to all team members.")
-            flush_database_updates()
-            return
-        elif (request.form.get('REMOVE_UNVALIDATED') or
-              request.form.get('VALIDATE')):
-            email = self.request.form.get("UNVALIDATED_SELECTED")
+        Return a dictionary representing the contact_address and
+        contact_method so inferred.
+        """
+        context = self.context
+        if context.preferredemail is None:
+            return dict(contact_method=TeamContactMethod.NONE)
+        mailing_list = getUtility(IMailingListSet).get(context.name)
+        if (mailing_list is not None
+            and mailing_list.address == context.preferredemail.email):
+            return dict(contact_method=TeamContactMethod.HOSTED_LIST)
+        return dict(contact_address=context.preferredemail.email,
+                    contact_method=TeamContactMethod.EXTERNAL_ADDRESS)
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        """Changes the contact address for this mailing list."""
+        context = self.context
+        email_set = getUtility(IEmailAddressSet)
+        list_set = getUtility(IMailingListSet)
+        contact_method = data['contact_method']
+        if contact_method == TeamContactMethod.NONE:
+            if context.preferredemail is not None:
+                # The user wants the mailing list to stop being the
+                # team's contact address, but not to be deactivated
+                # altogether. So we demote the list address from
+                # 'preferred' address to being just a regular address.
+                context.preferredemail.status = EmailAddressStatus.VALIDATED
+        elif contact_method == TeamContactMethod.HOSTED_LIST:
+            mailing_list = list_set.get(context.name)
+            assert (mailing_list is not None and mailing_list.isUsable()), (
+                "A team can only use a usable mailing list as its contact "
+                "address.")
+            context.setContactAddress(
+                email_set.getByEmail(mailing_list.address))
+        elif contact_method == TeamContactMethod.EXTERNAL_ADDRESS:
+            contact_address = data['contact_address']
+            email = email_set.getByEmail(contact_address)
             if email is None:
-                self.feedback = ("You must select the email address you want "
-                                 "to remove/confirm.")
-                return
+                generateTokenAndValidationEmail(contact_address, context)
+                self.request.response.addInfoNotification(
+                    "A confirmation message has been sent to '%s'. Follow "
+                    "the instructions in that message to confirm the new "
+                    "contact address for this team. (If the message "
+                    "doesn't arrive in a few minutes, your mail provider "
+                    "might use 'greylisting', which could delay the "
+                    "message for up to an hour or two.)" % contact_address)
+            else:
+                context.setContactAddress(email)
+        else:
+            raise UnexpectedFormData(
+                "Unknown contact_method: %s" % contact_method)
 
-            if request.form.get('REMOVE_UNVALIDATED'):
-                getUtility(ILoginTokenSet).deleteByEmailRequesterAndType(
-                    email, self.context, LoginTokenType.VALIDATETEAMEMAIL)
-                self.feedback = (
-                    "The email address '%s' has been removed." % email)
-            elif request.form.get('VALIDATE'):
-                self._sendEmailValidationRequest(email)
-
-            flush_database_updates()
-            return
-
-    def _sendEmailValidationRequest(self, email):
-        """Send a validation message to <email> and update self.feedback."""
-        generateTokenAndValidationEmail(email, self.team)
-        self.feedback = (
-            "An email message was sent to '%s'. Follow the "
-            "instructions in that message to confirm the new "
-            "contact address for this team." % email)
+        self.next_url = canonical_url(self.context)
 
 
-class TeamAddView(AddView):
+class TeamMailingListConfigurationView(MailingListTeamBaseView):
+    """A view for creating and configuring a team's mailing list.
+
+    Allows creating a request for a list, cancelling the request,
+    setting the welcome message, deactivating, and reactivating the
+    list.
+    """
+
+    schema = IMailingList
+    field_names = ['welcome_message']
+    label = "Mailing list configuration"
+    custom_widget('welcome_message', TextAreaWidget, width=72, height=10)
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        AddView.__init__(self, context, request)
-        self._nextURL = '.'
+        """Set feedback messages for users who want to edit the mailing list.
 
-    def nextURL(self):
-        return self._nextURL
+        There are a number of reasons why your changes to the mailing
+        list might not take effect immediately. First, the mailing
+        list may not actually be set as the team contact
+        address. Second, the mailing list may be in a transitional
+        state: from MODIFIED to UPDATING to ACTIVE can take a while.
+        """
+        super(TeamMailingListConfigurationView, self).__init__(
+            context, request)
+        list_set = getUtility(IMailingListSet)
+        self.mailing_list = list_set.get(self.context.name)
 
-    def createAndAdd(self, data):
+    def initialize(self):
+        """Hide this view if mailing lists are disabled.
+
+        Once mailing lists are enabled globally, this method should be
+        removed.
+        """
+        if not config.mailman.expose_hosted_mailing_lists:
+            raise NotFound(self, '+mailinglist', request=self.request)
+        super(TeamMailingListConfigurationView, self).initialize()
+
+    @action('Save', name='save')
+    def save_action(self, action, data):
+        """Sets the welcome message for a mailing list."""
+        welcome_message = data.get('welcome_message')
+        assert (self.mailing_list is not None
+                and self.mailing_list.isUsable()), (
+            "Only a usable mailing list can be configured.")
+
+        if (welcome_message is not None
+            and welcome_message != self.mailing_list.welcome_message):
+            self.mailing_list.welcome_message = welcome_message
+
+        self.next_url = canonical_url(self.context)
+
+    def cancel_list_creation_validator(self, action, data):
+        """Validator for the `cancel_list_creation` action.
+
+        Adds an error if someone tries to cancel a request that's
+        already been approved or declined. This can only happen
+        through bypassing the UI.
+        """
+        mailing_list = getUtility(IMailingListSet).get(self.context.name)
+        if self.getListInState(MailingListStatus.REGISTERED) is None:
+            self.addError("This application can't be cancelled.")
+
+    @action('Cancel Application', name='cancel_list_creation',
+            validator=cancel_list_creation_validator)
+    def cancel_list_creation(self, action, data):
+        """Cancels a pending mailing list registration."""
+        getUtility(IMailingListSet).get(self.context.name).cancelRegistration()
+        self.request.response.addInfoNotification(
+            "Mailing list application cancelled.")
+        self.next_url = canonical_url(self.context)
+
+    def request_list_creation_validator(self, action, data):
+        """Validator for the `request_list_creation` action.
+
+        Adds an error if someone tries to request a mailing list for a
+        team that already has one. This can only happen through
+        bypassing the UI.
+        """
+        if not self.list_can_be_requested:
+            self.addError(
+                "You cannot request a new mailing list for this team.")
+
+    @action('Apply for Mailing List', name='request_list_creation',
+            validator=request_list_creation_validator)
+    def request_list_creation(self, action, data):
+        """Creates a new mailing list."""
+        list_set = getUtility(IMailingListSet)
+        mailing_list = list_set.get(self.context.name)
+        assert mailing_list is None, (
+            'Tried to create a mailing list for a team that already has one.')
+        list_set.new(self.context)
+        self.request.response.addInfoNotification(
+            "Mailing list requested and queued for approval.")
+        self.next_url = canonical_url(self.context)
+
+    def deactivate_list_validator(self, action, data):
+        """Adds an error if someone tries to deactivate a non-active list.
+
+        This can only happen through bypassing the UI.
+        """
+        if not self.list_can_be_deactivated:
+            self.addError("This list can't be deactivated.")
+
+    @action('Deactivate this Mailing List', name='deactivate_list',
+            validator=deactivate_list_validator)
+    def deactivate_list(self, action, data):
+        """Deactivates a mailing list."""
+        getUtility(IMailingListSet).get(self.context.name).deactivate()
+        self.request.response.addInfoNotification(
+            "The mailing list will be deactivated within a few minutes.")
+        self.next_url = canonical_url(self.context)
+
+    def reactivate_list_validator(self, action, data):
+        """Adds an error if someone tries to reactivate a non-deactivated list.
+
+        This can only happen through bypassing the UI.
+        """
+        if not self.list_can_be_reactivated:
+            self.addError("Only a deactivated list can be reactivated.")
+
+    @action('Reactivate this Mailing List', name='reactivate_list',
+            validator=reactivate_list_validator)
+    def reactivate_list(self, action, data):
+        getUtility(IMailingListSet).get(self.context.name).reactivate()
+        self.request.response.addInfoNotification(
+            "The mailing list will be reactivated within a few minutes.")
+        self.next_url = canonical_url(self.context)
+
+    @property
+    def list_is_usable_but_not_contact_method(self):
+        """The list could be the contact method for its team, but isn't.
+
+        The list exists and is usable, but isn't set as the contact
+        method.
+        """
+
+        return (self.list_is_usable and
+                (self.context.preferredemail is None or
+                 self.mailing_list.address !=
+                 self.context.preferredemail.email))
+
+    @property
+    def mailing_list_status_message(self):
+        """A status message describing the state of the mailing list.
+
+        This status message helps a user be aware of behind-the-scenes
+        processes that would otherwise manifest only as mysterious
+        failures and inconsistencies.
+        """
+
+        if not self.mailing_list:
+            return None
+        elif self.mailing_list.status == MailingListStatus.REGISTERED:
+            return None
+        elif self.mailing_list.status in [MailingListStatus.APPROVED,
+                                          MailingListStatus.CONSTRUCTING]:
+            return _("This team's mailing list will be available within "
+                     "a few minutes.")
+        elif self.mailing_list.status == MailingListStatus.DECLINED:
+            return _("The application for this team's mailing list has been "
+                     'declined. Please '
+                     '<a href="https://help.launchpad.net/FAQ#contact-admin">'
+                     'contact a Launchpad administrator</a> for further '
+                     'assistance.')
+        elif self.mailing_list.status == MailingListStatus.ACTIVE:
+            return None
+        elif self.mailing_list.status == MailingListStatus.DEACTIVATING:
+            return _("This team's mailing list is being deactivated.")
+        elif self.mailing_list.status == MailingListStatus.INACTIVE:
+            return _("This team's mailing list has been deactivated.")
+        elif self.mailing_list.status == MailingListStatus.FAILED:
+            return _("This team's mailing list could not be created. Please "
+                     '<a href="https://help.launchpad.net/FAQ#contact-admin">'
+                     'contact a Launchpad administrator</a> for further '
+                     'assistance.')
+        elif self.mailing_list.status == MailingListStatus.MODIFIED:
+            return _("An update to this team's mailing list is pending "
+                     "and has not yet taken effect.")
+        elif self.mailing_list.status == MailingListStatus.UPDATING:
+            return _("A change to this team's mailing list is currently "
+                     "being applied.")
+        elif self.mailing_list.status == MailingListStatus.MOD_FAILED:
+            return _("This team's mailing list is in an inconsistent state "
+                     'because a change to its configuration was not applied. '
+                     'Please '
+                     '<a href="https://help.launchpad.net/FAQ#contact-admin">'
+                     'contact a Launchpad administrator</a> for further '
+                     'assistance.')
+        else:
+            raise AssertionError(
+                "Unknown mailing list status: %s" % self.mailing_list.status)
+
+    @property
+    def initial_values(self):
+        """The initial value of welcome_message comes from the database.
+
+        :return: A dictionary containing the current welcome message.
+        """
+        context = self.context
+        if self.mailing_list is not None:
+            return dict(welcome_message=self.mailing_list.welcome_message)
+        else:
+            return {}
+
+    @property
+    def list_application_can_be_cancelled(self):
+        """Can this team's mailing list request be cancelled?
+
+        It can only be cancelled if its state is REGISTERED.
+        """
+        return self.getListInState(MailingListStatus.REGISTERED) is not None
+
+    @property
+    def list_can_be_requested(self):
+        """Can a mailing list be requested for this team?
+
+        It can only be requested if there's no mailing list associated with
+        this team.
+        """
+        mailing_list = getUtility(IMailingListSet).get(self.context.name)
+        return mailing_list is None
+
+    @property
+    def list_can_be_deactivated(self):
+        """Is this team's list in a state where it can be deactivated?
+
+        The list must exist and be in the ACTIVE state.
+        """
+        return self.getListInState(MailingListStatus.ACTIVE) is not None
+
+    @property
+    def list_can_be_reactivated(self):
+        """Is this team's list in a state where it can be reactivated?
+
+        The list must exist and be in the INACTIVE state.
+        """
+        return self.getListInState(MailingListStatus.INACTIVE) is not None
+
+
+class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
+
+    schema = ITeamCreation
+    label = ''
+    field_names = ["name", "displayname", "contactemail", "teamdescription",
+                   "subscriptionpolicy", "defaultmembershipperiod",
+                   "renewal_policy", "defaultrenewalperiod", "teamowner"]
+    custom_widget('teamowner', HiddenUserWidget)
+    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+    custom_widget(
+        'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget(
+        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+
+    @action('Create', name='create')
+    def create_action(self, action, data):
         name = data.get('name')
         displayname = data.get('displayname')
         teamdescription = data.get('teamdescription')
         defaultmembershipperiod = data.get('defaultmembershipperiod')
         defaultrenewalperiod = data.get('defaultrenewalperiod')
         subscriptionpolicy = data.get('subscriptionpolicy')
-        teamowner = getUtility(ILaunchBag).user
+        teamowner = data.get('teamowner')
         team = getUtility(IPersonSet).newTeam(
             teamowner, name, displayname, teamdescription,
             subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
@@ -165,29 +596,14 @@ class TeamAddView(AddView):
         if email is not None:
             generateTokenAndValidationEmail(email, team)
             self.request.response.addNotification(
-                "An email message was sent to '%s'. Follow the "
+                "A confirmation message has been sent to '%s'. Follow the "
                 "instructions in that message to confirm the new "
-                "contact address for this team." % email)
+                "contact address for this team. "
+                "(If the message doesn't arrive in a few minutes, your mail "
+                "provider might use 'greylisting', which could delay the "
+                "message for up to an hour or two.)" % email)
 
-        self._nextURL = canonical_url(team)
-        return team
-
-
-class TeamMembersView:
-
-    def allMembersCount(self):
-        return getUtility(ITeamMembershipSet).getTeamMembersCount(self.context)
-
-    def activeMemberships(self):
-        return getUtility(ITeamMembershipSet).getActiveMemberships(self.context)
-
-    def proposedMemberships(self):
-        return getUtility(ITeamMembershipSet).getProposedMemberships(
-            self.context)
-
-    def inactiveMemberships(self):
-        return getUtility(ITeamMembershipSet).getInactiveMemberships(
-            self.context)
+        self.next_url = canonical_url(team)
 
 
 class ProposedTeamMembersEditView:
@@ -212,58 +628,63 @@ class ProposedTeamMembersEditView:
             elif action == "hold":
                 continue
 
-            team.setMembershipStatus(person, status, expires,
-                                     reviewer=self.user)
+            team.setMembershipData(
+                person, status, reviewer=self.user, expires=expires)
 
         # Need to flush all changes we made, so subsequent queries we make
         # with this transaction will see this changes and thus they'll be
         # displayed on the page that calls this method.
         flush_database_updates()
+        self.request.response.redirect('%s/+members' % canonical_url(team))
 
 
-class TeamMemberAddView(AddView):
+class TeamBrandingView(BrandingChangeView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-        self.alreadyMember = None
-        self.addedMember = None
-        added = self.request.get('added')
-        notadded = self.request.get('notadded')
-        if added:
-            self.addedMember = getUtility(IPersonSet).get(added)
-        elif notadded:
-            self.alreadyMember = getUtility(IPersonSet).get(notadded)
-        AddView.__init__(self, context, request)
+    schema = ITeam
+    field_names = ['icon', 'logo', 'mugshot']
 
-    def nextURL(self):
-        if self.addedMember:
-            return '+addmember?added=%d' % self.addedMember.id
-        elif self.alreadyMember:
-            return '+addmember?notadded=%d' % self.alreadyMember.id
-        else:
-            return '+addmember'
 
-    def createAndAdd(self, data):
-        team = self.context
-        approved = TeamMembershipStatus.APPROVED
+class TeamMemberAddView(LaunchpadFormView):
 
+    schema = ITeamMember
+    label = "Select the new member"
+
+    def validate(self, data):
+        """Verify new member.
+
+        This checks that the new member has some active members and is not
+        already an active team member.
+        """
+        newmember = data.get('newmember')
+        error = None
+        if newmember is not None:
+            if newmember.isTeam() and not newmember.activemembers:
+                error = _("You can't add a team that doesn't have any active"
+                          " members.")
+            elif newmember in self.context.activemembers:
+                error = _("%s (%s) is already a member of %s." % (
+                    newmember.browsername, newmember.name,
+                    self.context.browsername))
+
+        if error:
+            self.setFieldError("newmember", error)
+
+    @action(u"Add Member", name="add")
+    def add_action(self, action, data):
+        """Add the new member to the team."""
         newmember = data['newmember']
         # If we get to this point with the member being the team itself,
         # it means the ValidTeamMemberVocabulary is broken.
-        assert newmember != team, newmember
+        assert newmember != self.context, (
+            "Can't add team to itself: %s" % newmember)
 
-        if newmember in team.activemembers:
-            self.alreadyMember = newmember
-            return
-
-        expires = team.defaultexpirationdate
-        if newmember.hasMembershipEntryFor(team):
-            team.setMembershipStatus(newmember, approved, expires,
-                                     reviewer=self.user)
+        self.context.addMember(newmember, reviewer=self.user,
+                               status=TeamMembershipStatus.APPROVED)
+        if newmember.isTeam():
+            msg = "%s has been invited to join this team." % (
+                  newmember.unique_displayname)
         else:
-            team.addMember(newmember, approved, reviewer=self.user)
-
-        self.addedMember = newmember
+            msg = "%s has been added as a member of this team." % (
+                  newmember.unique_displayname)
+        self.request.response.addInfoNotification(msg)
 

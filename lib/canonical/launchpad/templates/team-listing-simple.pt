@@ -1,0 +1,17 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<tr>
+  <td><img src="/@@/team"
+           tal:replace="structure context/image:icon" /></td>
+  <td>
+    <a
+      tal:attributes="href context/fmt:url"
+      tal:content="context/browsername"
+    >Team name</a>
+  </td>
+</tr>
+</tal:root>

@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
   <body>
 
@@ -18,22 +25,35 @@
 
     <div metal:fill-slot="main">
 
-      <div>You are translating</div>
-      <h1>
-        <tal:productseries
-          condition="exists:context/potemplate/productseries/displayname"
-          tal:replace="context/potemplate/productseries/displayname"
-        />
-        <tal:sourcepackage
-          condition="exists:context/potemplate/sourcepackagename"
-          replace="context/potemplate/sourcepackagename"
-        />
-        into
-        <tal:language replace="context/language/englishname" />
-      </h1>
-      <div class="discreet">
-        Template: <tal:template replace="context/title" />
-      </div>
+      <tal:form-not-writeable condition="not:view/form_is_writeable">
+        <div>
+          <a tal:attributes="href context/potemplate/fmt:url"
+             tal:content="context/potemplate/title">
+            evolution 2.10 template
+          </a>
+        </div>
+        <h1>
+          Browsing
+          <tal:language replace="context/language/englishname">
+            Spanish
+          </tal:language>
+          translation
+        </h1>
+      </tal:form-not-writeable>
+      <tal:form-writeable condition="view/form_is_writeable">
+        <div>
+          <a tal:attributes="href context/potemplate/fmt:url"
+             tal:content="context/potemplate/title">
+            evolution 2.10 template
+          </a>
+        </div>
+        <h1>
+          Translating into
+          <tal:language replace="context/language/englishname">
+            Spanish
+          </tal:language>
+        </h1>
+      </tal:form-writeable>
 
       <tal:havepluralforms condition="view/has_plural_form_information">
 
@@ -63,11 +83,9 @@
           <!-- the hidden elements -->
           <input tal:condition="view/second_lang_code"
                  tal:replace="structure view/alternative_language_widget/hidden" />
-          <input type="hidden" name="start" value=""
-                 tal:attributes="value view/start" />
           <input type="hidden" name="batch" value=""
                  tal:attributes="value view/size" />
-          <label>Show:</label>
+          <label for="show_selector">Show:</label>
 
           <tal:comment tal:replace="nothing">
             The 'selected' attribute value in next select means basically
@@ -82,7 +100,8 @@
             'translated'.
           </tal:comment>
 
-          <select name="show" title="Choose which items to show">
+          <select id="show_selector" name="show"
+                  title="Choose which items to show">
             <option value="all"
               tal:attributes="selected
               request/htmlform:show/selected/all"
@@ -107,6 +126,18 @@
               >
               translated
             </option>
+            <option value="new_suggestions"
+              tal:attributes="selected
+              request/htmlform:show/selected/new_suggestions"
+              >
+              with new suggestions
+            </option>
+            <option value="changed_in_launchpad"
+              tal:attributes="selected
+              request/htmlform:show/selected/changed_in_launchpad"
+              >
+              changed in Launchpad
+            </option>
           </select>
           <input
             type="submit" value="Filter" />
@@ -120,18 +151,16 @@
         </tal:block>
 
         <tal:block condition="view/batchnav/currentBatch">
-          <form method="POST" action="+translate">
+          <form method="POST" action="">
             <!-- the hidden elements -->
-            <input tal:condition="view/second_lang_code"
-                   tal:replace="structure view/alternative_language_widget/hidden" />
-            <input type="hidden" name="show"
-                   tal:condition="view/show"
+            <input type="hidden" name="show" value=""
                    tal:attributes="value view/show" />
             <input type="hidden" name="start" value=""
                    tal:attributes="value view/start" />
             <input type="hidden" name="batch" value=""
                    tal:attributes="value view/size" />
             <input type="hidden" name="lock_timestamp" value=""
+                   tal:condition="view/form_is_writeable"
                    tal:attributes="value view/lock_timestamp/isoformat" />
             <table class="listing" style="margin-top: 0.5em;">
               <thead>
@@ -142,19 +171,19 @@
                   </td>
                 </tr>
               </thead>
-              <tbody class="greater">
-                <tal:loop repeat="pomsgset_view view/pomsgset_views">
-                  <div tal:replace="structure pomsgset_view" />
+              <tbody class="greater" id="messages_to_translate">
+                <tal:loop repeat="translationmessage_view view/translationmessage_views">
+                  <div tal:replace="structure translationmessage_view" />
                 </tal:loop>
               </tbody>
               <tfoot>
-                <tr>
+                <tr tal:condition="view/form_is_writeable">
                   <th colspan="5">
                     <tal:review
                       condition="not: view/user_is_official_translator"
                     >
-                      Your translations will be held for review by the official
-                      translators for this file.
+                      Your translations will be held for review by the
+                      official translators for this file.
                     </tal:review>
                     <input type="submit"
                            name="submit_translations"
@@ -166,6 +195,8 @@
             </table>
 
           </form>
+          <!-- Paging doodads. -->
+          <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
         </tal:block>
         <p class="discreet">
           Translation status:

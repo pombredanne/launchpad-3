@@ -1,4 +1,10 @@
-<div class="discreet">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div id="legend" class="discreet">
   <div>
     <img
       alt="Key to this table: &#8220;Unchanged&#8221; means"
@@ -13,7 +19,7 @@
       src="/@@/blue-bar"
       style="height: 1em; width: 2em;"
     />
-    Changed in Rosetta
+    Changed in Launchpad
   </div>
   <div>
     <img
@@ -21,7 +27,7 @@
       src="/@@/purple-bar"
       style="height: 1em; width: 2em;"
     />
-    Newly translated in Rosetta
+    Newly translated in Launchpad
   </div>
   <div>
     <img
@@ -32,3 +38,4 @@
     Untranslated
   </div>
 </div>
+</tal:root>

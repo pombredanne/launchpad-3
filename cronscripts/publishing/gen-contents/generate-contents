@@ -9,6 +9,8 @@ set -x
 set -e
 set -u
 
+# share lockfile with cron.daily
+LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
 # main archive path (target)
 ARCHIVE='/srv/launchpad.net/ubuntu-archive'
 
@@ -22,11 +24,13 @@ LPCONTENT="$LPPATH/cronscripts/publishing/gen-contents"
 APTCONF="apt-contents.conf"
 CONTENTHEADER="Contents.top"
 
-# target distrorelease
-distros='edgy'
+## XXX cprov 20070423: We need to retrieve 'development' distrorelease
+## from helper script. See bug # 49174
+# target suite
+suites='gutsy'
 
 # target architectures
-archs='i386 amd64 hppa powerpc ia64 sparc'
+archs='i386 amd64 hppa powerpc ia64 sparc lpia'
 
 # target components
 components='main restricted universe multiverse'
@@ -41,13 +45,26 @@ MOVEFILES="yes"
 
 set -e
 
+# claim the lock
+if ! lockfile -r1 $LOCKFILE; then
+  echo "Could not claim lock file."
+  exit 1
+fi
+
+cleanup () {
+  echo "Cleaning up lockfile."
+  rm -f $LOCKFILE
+}
+
+trap cleanup EXIT
+
 echo 'Ensure we have a private tree in place ...'
 mkdir -p $CONTENTARCHIVE/ubuntu-misc
 mkdir -p $CONTENTARCHIVE/ubuntu-cache
-for distro in $distros; do
+for suite in $suites; do
   for component in $components; do
     for dir in $dirs; do
-      path="$CONTENTARCHIVE/ubuntu/dists/$distro/$component/$dir"
+      path="$CONTENTARCHIVE/ubuntu/dists/$suite/$component/$dir"
       if test ! -d $path; then
         echo "   $path"
         mkdir -p $path
@@ -69,27 +86,27 @@ fi
 
 if test $COMPAREFILES = "yes" ; then
   echo 'Comparing contents files with public tree ...'
-  for distro in $distros; do
+  for suite in $suites; do
     for arch in $archs; do
-      last_contents="$CONTENTARCHIVE/ubuntu/dists/$distro/.Contents-$arch"
-      current_contents="$CONTENTARCHIVE/ubuntu/dists/$distro/Contents-$arch"
-      new_contents="$CONTENTARCHIVE/ubuntu/dists/$distro/Contents-$arch.gz"
-      contents_dest="$ARCHIVE/ubuntu/dists/$distro/Contents-$arch.gz"
+      last_contents="$CONTENTARCHIVE/ubuntu/dists/$suite/.Contents-$arch"
+      current_contents="$CONTENTARCHIVE/ubuntu/dists/$suite/Contents-$arch"
+      new_contents="$CONTENTARCHIVE/ubuntu/dists/$suite/Contents-$arch.gz"
+      contents_dest="$ARCHIVE/ubuntu/dists/$suite/Contents-$arch.gz"
       # we don't want to overwrite existing files because they are
       # precious and mirrors would need to refetch them.
       if ! cmp -s $current_contents $last_contents; then
         if test $MOVEFILES = "yes"; then
-          echo "   installing new Contents file for $distro/$arch"
+          echo "   installing new Contents file for $suite/$arch"
           # update cached plain content
           mv "$current_contents" "$last_contents"
           # update real gzipped Content
           mv "$new_contents" "$contents_dest"
           chmod ug=rw,o=r "$contents_dest"
         else
-          echo "   not Installing updated Contents file for $distro/$arch"
+          echo "   not Installing updated Contents file for $suite/$arch"
         fi
       else
-          echo "   skipping unmodified Contents file for $distro/$arch"
+          echo "   skipping unmodified Contents file for $suite/$arch"
       fi
     done
   done

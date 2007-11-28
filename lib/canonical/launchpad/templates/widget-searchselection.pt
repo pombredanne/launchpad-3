@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body metal:fill-slot="main">
 
@@ -28,8 +35,7 @@
 
     <tal:noselection condition="not: selection">
         <form action=""
-              style="float: right;"
-              xtal:attributes="action where-to-get-search-results">
+              style="float: right;">
 
             <dl>
                 <dt>
@@ -68,8 +74,7 @@
         
     </tal:selection>
     
-<form action=""
-      xtal:attributes="action selecting-an-item">
+<form action="">
     <fieldset tal:condition="not: selection">
     
         <legend>Search Results</legend>
@@ -93,9 +98,7 @@
         </dl>
         </tal:results>
     
-        <div class="listingBar"
-            tal:condition="searchresults"
-            xtal:condition="result set is more than X items">
+        <div tal:condition="searchresults">
             
             <span class="next">
                 <a href="#">
@@ -112,7 +115,7 @@
         </div>
 
     </fieldset>
-
+  </form>
 </tal:testvalues>
 
 </body>

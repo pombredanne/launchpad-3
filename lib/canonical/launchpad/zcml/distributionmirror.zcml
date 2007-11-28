@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -17,7 +16,10 @@
                             country content official_candidate" />
         <require
             permission="launchpad.Admin"
-            set_attributes="official_approved owner" />
+            set_attributes="official_approved owner whiteboard" />
+        <require
+            permission="launchpad.Admin"
+            attributes="destroySelf" />
     </content>
 
     <browser:defaultView
@@ -51,28 +53,29 @@
         template="../templates/distributionmirror-index.pt">
     </browser:page>
 
-    <browser:editform
+    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IDistributionMirror"
-        schema="canonical.launchpad.interfaces.IDistributionMirror"
         permission="launchpad.Edit"
-        label="Change mirror details"
         class="canonical.launchpad.browser.DistributionMirrorEditView"
-        fields="name displayname description http_base_url ftp_base_url
-                rsync_base_url speed country content official_candidate"
         template="../templates/distributionmirror-edit.pt">
-    </browser:editform>
+    </browser:page>
 
-    <browser:editform
+    <browser:page
         name="+mark-official"
         for="canonical.launchpad.interfaces.IDistributionMirror"
-        schema="canonical.launchpad.interfaces.IDistributionMirror"
         permission="launchpad.Admin"
-        label="Mark as Official"
         class="canonical.launchpad.browser.DistributionMirrorOfficialApproveView"
-        fields="official_approved"
         template="../templates/distributionmirror-mark-official.pt">
-    </browser:editform>
+    </browser:page>
+
+    <browser:page
+        name="+delete"
+        for="canonical.launchpad.interfaces.IDistributionMirror"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.browser.DistributionMirrorDeleteView"
+        template="../templates/distributionmirror-delete.pt">
+    </browser:page>
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistributionMirror"
@@ -101,25 +104,25 @@
         <allow interface="canonical.launchpad.interfaces.IDistributionMirrorSet" />
     </securedutility>
 
-    <!-- MirrorDistroArchRelease -->
-    <content class="canonical.launchpad.database.MirrorDistroArchRelease">
-        <allow interface="canonical.launchpad.interfaces.IMirrorDistroArchRelease" />
+    <!-- MirrorDistroArchSeries -->
+    <content class="canonical.launchpad.database.MirrorDistroArchSeries">
+        <allow interface="canonical.launchpad.interfaces.IMirrorDistroArchSeries" />
         <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IMirrorDistroArchRelease" />
+            set_schema="canonical.launchpad.interfaces.IMirrorDistroArchSeries" />
     </content>
 
-    <!-- MirrorDistroReleaseSource -->
-    <content class="canonical.launchpad.database.MirrorDistroReleaseSource">
-        <allow interface="canonical.launchpad.interfaces.IMirrorDistroReleaseSource" />
+    <!-- MirrorDistroSeriesSource -->
+    <content class="canonical.launchpad.database.MirrorDistroSeriesSource">
+        <allow interface="canonical.launchpad.interfaces.IMirrorDistroSeriesSource" />
         <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IMirrorDistroReleaseSource" />
+            set_schema="canonical.launchpad.interfaces.IMirrorDistroSeriesSource" />
     </content>
 
-    <!-- MirrorCDImageDistroRelease -->
-    <content class="canonical.launchpad.database.MirrorCDImageDistroRelease">
-        <allow interface="canonical.launchpad.interfaces.IMirrorCDImageDistroRelease" />
+    <!-- MirrorCDImageDistroSeries -->
+    <content class="canonical.launchpad.database.MirrorCDImageDistroSeries">
+        <allow interface="canonical.launchpad.interfaces.IMirrorCDImageDistroSeries" />
     </content>
 
     <!-- MirrorProbeRecord -->

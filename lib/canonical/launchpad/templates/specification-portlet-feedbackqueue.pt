@@ -1,21 +1,35 @@
-<tal:fbreqs define="fbreqs context/feedbackrequests">
-  <div tal:condition="fbreqs" class="portlet">
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div
+  tal:define="fbreqs context/feedbackrequests"
+  tal:condition="fbreqs"
+  class="portlet"
+  id="portlet-feedback"
+>
+
     <h2>Feedback requests</h2>
 
-    <div class="portletBody portletContent">
+    <div class="portletBody">
 
-      <ul class="info">
+      <ul>
         <li tal:repeat="fbreq fbreqs">
-          <a href="#" tal:content="fbreq/reviewer/browsername"
-           tal:attributes="href fbreq/reviewer/fmt:url">Dafydd Harries
-          </a><tal:block condition="fbreq/queuemsg">:
-              <i tal:content="fbreq/queuemsg">brief message.</i>
-            </tal:block>
-        </li>
-        <li tal:condition="not: fbreqs">
-          <i>No feedback requests outstanding.</i>
+
+        <tal:requester replace="structure fbreq/requester/fmt:link" />
+        requested feedback from
+        <strong tal:content="structure fbreq/reviewer/fmt:link" />:
+        <div
+          tal:condition="fbreq/queuemsg"
+          tal:content="structure fbreq/queuemsg/fmt:text-to-html"
+          style="font-style: italic;"
+        />
+        
         </li>
       </ul>
     </div>
-  </div>
-</tal:fbreqs>
+
+</div>
+</tal:root>

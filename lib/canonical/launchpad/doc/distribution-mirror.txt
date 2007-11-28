@@ -1,5 +1,4 @@
-Distribution Mirrors
-====================
+= Distribution Mirrors =
 
 A distribution mirror must always be associated with a single distribution, so
 to create a new mirror you should use the Distribution.newMirror method.
@@ -7,24 +6,20 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> from datetime import datetime, timedelta
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet, ICountrySet, IDistroReleaseSet,
-    ...     IDistroArchReleaseSet, IDistributionMirrorSet,
-    ...     ILibraryFileAliasSet)
-    >>> from canonical.lp.dbschema import (
-    ...     PackagePublishingPocket, MirrorSpeed, MirrorContent,
-    ...     PackagePublishingStatus, MirrorStatus)
+    ...     IDistributionSet, IPersonSet, ICountrySet, IDistroSeriesSet,
+    ...     IDistroArchSeriesSet, IDistributionMirrorSet,
+    ...     ILibraryFileAliasSet, MirrorSpeed, MirrorContent, MirrorStatus,
+    ...     PackagePublishingPocket, PackagePublishingStatus)
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> ubuntu = distroset.get(1)
     >>> owner = getUtility(IPersonSet).getByName('name16')
     >>> speed = MirrorSpeed.S2M
-    >>> country = getUtility(ICountrySet)['BR']
+    >>> brazil = getUtility(ICountrySet)['BR']
     >>> content = MirrorContent.ARCHIVE
     >>> http_base_url = 'http://foo.bar.com/pub'
     >>> new_mirror = ubuntu.newMirror(
-    ...     owner, speed, country, content, http_base_url=http_base_url)
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> LibrarianTestSetup().setUp()
+    ...     owner, speed, brazil, content, http_base_url=http_base_url)
 
 When a new mirror is created we'll generate a unique name for it, based on its
 host name and content.
@@ -45,82 +40,84 @@ functionality of Launchpad enabled:
     >>> kubuntu.name
     u'kubuntu'
     >>> poor_mirror = kubuntu.newMirror(
-    ...     owner, speed, country, content, http_base_url=http_base_url)
+    ...     owner, speed, brazil, content, http_base_url=http_base_url)
     >>> print poor_mirror
     None
 
 The contents of a distribution mirror are represented by its associated
-MirrorDistroArchReleases and MirrorDistroReleaseSources. This data is updated
+MirrorDistroArchSeriess and MirrorDistroSeriesSources. This data is updated
 at least once a day by the distributionmirror-prober cronscript, to make sure
 the information we have is always up to date.
 
-    >>> new_mirror.source_releases.count()
+    >>> new_mirror.source_serieses.count()
     0
-    >>> new_mirror.arch_releases.count()
+    >>> new_mirror.arch_serieses.count()
     0
 
-To create a new MirrorDistroArchRelease (or MirrorDistroReleaseSource)
-associated with a given mirror, we use the ensureMirrorDistroArchRelease
-(or ensureMirrorDistroReleaseSource) method.
+To create a new MirrorDistroArchSeries (or MirrorDistroSeriesSource)
+associated with a given mirror, we use the ensureMirrorDistroArchSeries
+(or ensureMirrorDistroSeriesSource) method.
 
-    >>> warty = getUtility(IDistroReleaseSet).get(1)
-    >>> warty_i386 = getUtility(IDistroArchReleaseSet).get(1)
+    >>> warty = getUtility(IDistroSeriesSet).get(1)
+    >>> warty_i386 = getUtility(IDistroArchSeriesSet).get(1)
     >>> pocket = PackagePublishingPocket.RELEASE
     >>> warty_component = warty.components[0]
-    >>> warty_i386_mirror = new_mirror.ensureMirrorDistroArchRelease(
+    >>> warty_i386_mirror = new_mirror.ensureMirrorDistroArchSeries(
     ...     warty_i386, pocket, warty_component)
 
-    >>> warty_mirror = new_mirror.ensureMirrorDistroReleaseSource(
+    >>> warty_mirror = new_mirror.ensureMirrorDistroSeriesSource(
     ...     warty, pocket, warty_component)
 
-    >>> new_mirror.source_releases.count()
+    >>> new_mirror.source_serieses.count()
     1
-    >>> new_mirror.arch_releases.count()
+    >>> new_mirror.arch_serieses.count()
     1
 
-If we try to create another MirrorDistroArchRelease with the same arch release
+If we try to create another MirrorDistroArchSeries with the same arch series
 and pocket, that method will simply return the existing one.
 
-    >>> same_warty_i386_mirror = new_mirror.ensureMirrorDistroArchRelease(
+    >>> same_warty_i386_mirror = new_mirror.ensureMirrorDistroArchSeries(
     ...     warty_i386, pocket, warty_component)
     >>> same_warty_i386_mirror == warty_i386_mirror
     True
 
-    >>> same_warty_mirror = new_mirror.ensureMirrorDistroReleaseSource(
+    >>> same_warty_mirror = new_mirror.ensureMirrorDistroSeriesSource(
     ...     warty, pocket, warty_component)
     >>> same_warty_mirror == warty_mirror
     True
 
-It's also possible to delete a MirrorDistroArchRelease/MirrorDistroReleaseSource
+It's also possible to delete a MirrorDistroArchSeries/MirrorDistroSeriesSource
 if we find out their contents are not in a mirror where they used to be.
 
-    >>> new_mirror.deleteMirrorDistroReleaseSource(
+    >>> new_mirror.deleteMirrorDistroSeriesSource(
     ...     warty, pocket, warty_component)
-    >>> new_mirror.deleteMirrorDistroArchRelease(
+    >>> new_mirror.deleteMirrorDistroArchSeries(
     ...     warty_i386, pocket, warty_component)
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> new_mirror.source_releases.count()
+    >>> new_mirror.source_serieses.count()
     0
-    >>> new_mirror.arch_releases.count()
+    >>> new_mirror.arch_serieses.count()
     0
 
 From every distribution, you can easily get a list with its official ARCHIVE
 or RELEASE mirrors. This is available through the archive_mirrors and 
-release_mirrors properties of IDistribution.
+cdimage_mirrors properties of IDistribution.
 
     >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
     ...  for mirror in ubuntu.archive_mirrors]
-    [(u'archive-404-mirror', '2 Mbps', u'British Indian Ocean Territory'),
-     (u'archive-mirror', '128 Kbps', u'Afghanistan'),
+    [(u'canonical-archive', '100 Mbps', u'United Kingdom'),
+     (u'archive-404-mirror', '512 Kbps', u'France'),
+     (u'archive-mirror', '128 Kbps', u'France'),
      (u'archive-mirror2', '128 Kbps', u'Antarctica')]
 
     >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
-    ...  for mirror in ubuntu.release_mirrors]
-    [(u'releases-mirror', '2 Mbps', u'British Indian Ocean Territory'),
+    ...  for mirror in ubuntu.cdimage_mirrors]
+    [(u'canonical-releases', '100 Mbps', u'United Kingdom'),
+     (u'releases-mirror', '2 Mbps', u'France'),
      (u'releases-mirror2', '2 Mbps', u'Germany'),
-     (u'unreachable-mirror', '512 Kbps', u'British Indian Ocean Territory')]
+     (u'unreachable-mirror', '512 Kbps', u'France')]
 
 The list of unofficial mirrors can easily be obtained, so that the
 distribution owner can see them and mark the ones that should be official.
@@ -128,13 +125,11 @@ distribution owner can see them and mark the ones that should be official.
     >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
     ...  for mirror in ubuntu.unofficial_mirrors]
     [(u'foo.bar.com-archive', '2 Mbps', u'Brazil'),
-     (u'invalid-mirror', '2 Mbps', u'British Indian Ocean Territory'),
-     (u'canonical-archive', '128 Kbps', u'Afghanistan'),
-     (u'canonical-releases', '128 Kbps', u'Afghanistan')]
+     (u'invalid-mirror', '2 Mbps', u'France')]
 
 It's possible to retrieve a mirror by its name:
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import IDistributionMirror
     >>> example_mirror = mirrorset.getByName('archive-mirror')
     >>> verifyObject(IDistributionMirror, example_mirror)
@@ -176,8 +171,71 @@ The getBy*Url methods return the corresponding mirrors:
     None
 
 
-Probing the mirrors
--------------------
+== Finding the best mirror for a given user ==
+
+In order to be able to guess what'd be the best mirror for a given user based
+on his IP address, we provide simple API to find official mirrors of a given
+content type located on a given country (or any other country in its
+continent if the country doesn't have any). The main repository for that type
+is always appended to the end of the list.
+
+We have an official cdimage mirror in Germany, but no archive mirrors, so
+we'll suggest the french mirrors when asked about archive mirrors to be
+used in Germany.
+
+    >>> germany = getUtility(ICountrySet)['DE']
+    >>> cdimage = MirrorContent.RELEASE
+    >>> [(mirror.name, mirror.country.name)
+    ...  for mirror in mirrorset.getBestMirrorsForCountry(germany, cdimage)]
+    [(u'releases-mirror2', u'Germany'),
+     (u'canonical-releases', u'United Kingdom')]
+
+Note that since Germany is in Europe (and so are France and the UK), the
+main mirror will be the first on the list instead of the last, since it's
+the fastest one and is in the same continet than the others.
+
+    >>> archive = MirrorContent.ARCHIVE
+    >>> [(mirror.name, mirror.country.name, mirror.speed.title)
+    ...  for mirror in mirrorset.getBestMirrorsForCountry(germany, archive)]
+    [(u'canonical-archive', u'United Kingdom', '100 Mbps'),
+     (u'archive-404-mirror', u'France', '512 Kbps'),
+     (u'archive-mirror', u'France', '128 Kbps')]
+
+In brazil we don't have official archive or cdimage mirrors, so all we see is
+the main repository.
+
+    >>> [(mirror.name, mirror.country.name)
+    ...  for mirror in mirrorset.getBestMirrorsForCountry(brazil, archive)]
+    [(u'canonical-archive', u'United Kingdom')]
+
+    >>> [(mirror.name, mirror.country.name)
+    ...  for mirror in mirrorset.getBestMirrorsForCountry(brazil, cdimage)]
+    [(u'canonical-releases', u'United Kingdom')]
+
+When we have more than one mirror, they're ordered by speed.
+Note that even though the main mirror (located in the UK) is fastest than the
+French ones, it's still at the end of the list, since the other ones are
+probably closer to the requester and thus may be a better choice.
+
+    >>> france = getUtility(ICountrySet)['FR']
+    >>> mirrors = mirrorset.getBestMirrorsForCountry(france, cdimage)
+    >>> [(mirror.name, mirror.country.name, mirror.speed.title)
+    ...  for mirror in mirrors]
+    [(u'releases-mirror', u'France', '2 Mbps'),
+     (u'unreachable-mirror', u'France', '512 Kbps'),
+     (u'canonical-releases', u'United Kingdom', '100 Mbps')]
+
+In France we also have some unofficial mirrors, but these are not included on
+the above list.
+
+    >>> unofficial_mirror = mirrorset.getByName('invalid-mirror')
+    >>> unofficial_mirror.country == france
+    True
+    >>> unofficial_mirror.isOfficial()
+    False
+
+
+== Probing the mirrors ==
 
 The distributionmirror-prober script is used to check what a mirror contains
 and when it was last updated. This script should run at least once a day, so
@@ -188,11 +246,13 @@ weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.ARCHIVE)]
-    [u'archive-404-mirror', u'archive-mirror', u'archive-mirror2']
+    [u'canonical-archive', u'archive-404-mirror', u'archive-mirror',
+     u'archive-mirror2']
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.RELEASE)]
-    [u'releases-mirror', u'releases-mirror2', u'unreachable-mirror']
+    [u'canonical-releases', u'releases-mirror', u'releases-mirror2',
+     u'unreachable-mirror']
 
     >>> valid_mirror = mirrorset[1]
     >>> valid_mirror.name
@@ -208,29 +268,71 @@ weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.ARCHIVE)]
-    [u'archive-404-mirror', u'archive-mirror2']
+    [u'canonical-archive', u'archive-404-mirror', u'archive-mirror2']
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.RELEASE)]
-    [u'releases-mirror', u'releases-mirror2', u'unreachable-mirror']
+    [u'canonical-releases', u'releases-mirror', u'releases-mirror2',
+     u'unreachable-mirror']
 
-    The getMirrorsToProbe() method also accepts a ignore_last_probe argument,
-    that, if True, will ignore previous probe records for all mirrors.
+The getMirrorsToProbe() method also accepts an ignore_last_probe argument,
+that, if True, will ignore previous probe records for all mirrors.
 
     >>> mirrors = mirrorset.getMirrorsToProbe(
     ...     MirrorContent.ARCHIVE, ignore_last_probe=True)
     >>> [mirror.name for mirror in mirrors]
-    [u'archive-404-mirror', u'archive-mirror', u'archive-mirror2']
+    [u'canonical-archive', u'archive-404-mirror', u'archive-mirror',
+     u'archive-mirror2']
+
+It's also possible to limit the number of mirrors we want to probe by passing
+an extra limit= argument to mirrorset.getMirrorsToProbe().  If any limit is
+given, the mirrors which have never been probed will be given precedence,
+followed by the ones which have been probed longest ago.  Note that although
+we have this precedence when a limit is given, the actual results are not
+ordered by the date the mirrors were last probed as we don't care about it
+anyway.
+
+    >>> mirrors = mirrorset.getMirrorsToProbe(
+    ...     MirrorContent.ARCHIVE, ignore_last_probe=True)
+    >>> import pytz
+    >>> utc = pytz.timezone('UTC')
+    >>> now = datetime.now(utc)
+    >>> for mirror in mirrors:
+    ...     last_probe = mirror.last_probe_record
+    ...     last_probe_date = 'NEVER'
+    ...     if last_probe is not None:
+    ...         if (now - last_probe.date_created).days < 1:
+    ...             last_probe_date = 'TODAY'
+    ...         else:
+    ...             last_probe_date = last_probe.date_created.isoformat()
+    ...     print mirror.name, last_probe_date
+    canonical-archive NEVER
+    archive-404-mirror NEVER
+    archive-mirror TODAY
+    archive-mirror2 2006-05-24...
+
+    >>> mirrors = mirrorset.getMirrorsToProbe(
+    ...     MirrorContent.ARCHIVE, ignore_last_probe=True, limit=3)
+    >>> for mirror in mirrors:
+    ...     last_probe = mirror.last_probe_record
+    ...     last_probe_date = 'NEVER'
+    ...     if last_probe is not None:
+    ...         last_probe_date = last_probe.date_created.isoformat()
+    ...     print mirror.name, last_probe_date
+    canonical-archive NEVER
+    archive-404-mirror NEVER
+    archive-mirror2 2006-05-24...
+
 
 If when we finish probing a mirror, that mirror doesn't have any
-MirrorDistroReleaseSource or MirrorDistroArchRelease, that mirror is marked as
+MirrorDistroSeriesSource or MirrorDistroArchSeries, that mirror is marked as
 disabled and a notification is sent to its owner and to the distribution's
-mirror admin. This is done using IDistributionMirror.disableAndNotifyOwner().
+mirror admin. This is done using IDistributionMirror.disable().
 Disabling a mirror causes it not to show up on the public mirror listings.
 
     >>> valid_mirror.enabled
     True
-    >>> valid_mirror.disableAndNotifyOwner()
+    >>> valid_mirror.disable(notify_owner=True)
 
     Commit, so the email is actually sent.
     >>> import transaction
@@ -256,6 +358,18 @@ Disabling a mirror causes it not to show up on the public mirror listings.
     >>> from canonical.launchpad.ftests import login
     >>> valid_mirror.enabled = True
 
+If we pass notify_owner=False to the disable() method, then we'll send a
+single notification to the distribution's mirror admins.
+
+    >>> valid_mirror.disable(notify_owner=False)
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['To']
+    'mark@hbd.com,karl@canonical.com'
+
     Now we delete the MirrorProbeRecord we've just created, to make
     sure this mirror is probed by our prober script.
     >>> from zope.security.proxy import removeSecurityProxy
@@ -265,20 +379,20 @@ Disabling a mirror causes it not to show up on the public mirror listings.
     >>> transaction.commit()
 
 
-- Checking what content a mirror should contain
+=== Checking what content a mirror should contain ===
 
 After obtaining the list of mirrors that we need to probe, the script will
 then check what content is mirrored in each mirror. This is done by checking
 the existence of some control files on that mirror. 
 
 For Archive mirrors, these files are Packages.gz (one file per 
-[arch_release, component, pocket] tuple) and Sources.gz (one per 
-[release, component, pocket] tuple). The paths to these files are given
+[arch_series, component, pocket] tuple) and Sources.gz (one per 
+[series, component, pocket] tuple). The paths to these files are given
 by the getExpectedPackagesPaths() and getExpectedSourcesPaths() methods of
 IDistributionMirror.
 
     >>> paths = mirror.getExpectedPackagesPaths()
-    >>> [path for (release, pocket, component, path) in paths 
+    >>> [path for (series, pocket, component, path) in paths 
     ...  if 'hoary' in path]
     [u'dists/hoary/main/binary-i386/Packages.gz',
      u'dists/hoary/restricted/binary-i386/Packages.gz',
@@ -292,7 +406,7 @@ IDistributionMirror.
      u'dists/hoary-proposed/restricted/binary-i386/Packages.gz']
 
     >>> paths = mirror.getExpectedSourcesPaths()
-    >>> [path for (release, pocket, component, path) in paths
+    >>> [path for (series, pocket, component, path) in paths
     ...  if 'hoary' in path]
     [u'dists/hoary/main/source/Sources.gz',
      u'dists/hoary/restricted/source/Sources.gz',
@@ -305,40 +419,43 @@ IDistributionMirror.
      u'dists/hoary-proposed/main/source/Sources.gz',
      u'dists/hoary-proposed/restricted/source/Sources.gz']
 
-For Release mirrors, these files are listed in a file stored in
+For cdimage mirrors, these files are listed in a file stored in
 http://releases.ubuntu.com/. This file is parsed by
 get_expected_cdimage_paths(), which returns a list of 
-(distrorelease, flavour name, path) elements.
+(distroseries, flavour name, path) elements.
 (For testing we have a sample of that file stored in our tree, which is
 pointed by the config.distributionmirrorprober.releases_file_list_url option)
 
     >>> from canonical.launchpad.scripts.distributionmirror_prober import (
     ...     get_expected_cdimage_paths)
-    >>> for (dummy, dummy, paths) in sorted(get_expected_cdimage_paths()):
+    >>> for (series, flavour, paths) in get_expected_cdimage_paths():
     ...     for path in paths:
-    ...         if '5.04' in path:
-    ...             print path
-    /kubuntu/hoary/kubuntu-5.04-install-amd64.iso
-    /kubuntu/hoary/kubuntu-5.04-install-i386.iso
-    /kubuntu/hoary/kubuntu-5.04-install-powerpc.iso
-    /kubuntu/hoary/kubuntu-5.04-live-amd64.iso
-    /kubuntu/hoary/kubuntu-5.04-live-i386.iso
-    /kubuntu/hoary/kubuntu-5.04-live-powerpc.iso
-    /hoary/ubuntu-5.04-install-amd64.iso
-    /hoary/ubuntu-5.04-install-i386.iso
-    /hoary/ubuntu-5.04-install-powerpc.iso
-    /hoary/ubuntu-5.04-live-amd64.iso
-    /hoary/ubuntu-5.04-live-i386.iso
-    /hoary/ubuntu-5.04-live-powerpc.iso
+    ...         print series.name, flavour, path
+    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-install-amd64.iso
+    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-install-i386.iso
+    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-install-powerpc.iso
+    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-live-amd64.iso
+    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-live-i386.iso
+    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-live-powerpc.iso
+    hoary ubuntu /hoary/ubuntu-5.04-install-amd64.iso
+    hoary ubuntu /hoary/ubuntu-5.04-install-i386.iso
+    hoary ubuntu /hoary/ubuntu-5.04-install-powerpc.iso
+    hoary ubuntu /hoary/ubuntu-5.04-live-amd64.iso
+    hoary ubuntu /hoary/ubuntu-5.04-live-i386.iso
+    hoary ubuntu /hoary/ubuntu-5.04-live-powerpc.iso
+    warty ubuntu /warty/warty-release-install-amd64.iso
+    warty ubuntu /warty/warty-release-install-i386.iso
+    warty ubuntu /warty/warty-release-install-powerpc.iso
+    warty ubuntu /warty/warty-release-live-i386.iso
 
 
-- Checking how up-to-date the content is
+=== Checking how up-to-date the content is ===
 
 After knowing what content a mirror is expected to contain, we need to check
 when that mirror last synced its contents. 
 
 To do that we use the getURLsToCheckUpdateness() of either
-MirrorDistroReleaseSource or MirrorDistroArchRelease. This method returns a
+MirrorDistroSeriesSource or MirrorDistroArchSeries. This method returns a
 dictionary mapping MirrorStatuses to URLs on that mirror. 
 
 The prober will then check, between all reachable URLs, which one has the
@@ -349,8 +466,6 @@ On the warty release, component 'main' and pocket RELEASE , we had two uploads
 between 2005-09-15 and 2005-09-17, so at that time we could've checked if 
 that mirror's last sync was in the last one or two days.
 
-    >>> import pytz
-    >>> utc = pytz.timezone('UTC')
     >>> when = datetime(2005, 9, 17, tzinfo=utc)
     >>> urls = warty_mirror.getURLsToCheckUpdateness(when=when)
     >>> [(status.name, url) for (status, url) in urls.items()]
@@ -429,8 +544,7 @@ If the mirror has no HTTP base url, we'll use the FTP one.
     >>> naked_mirror.distribution_mirror.http_base_url = http_url
 
 
-Running the prober script
--------------------------
+== Running the prober script ==
 
 First we need to run the http server that's going to answer our requests.
 
@@ -440,96 +554,97 @@ First we need to run the http server that's going to answer our requests.
     >>> http_server = HTTPServerTestSetup()
     >>> http_server.setUp()
 
+    >>> import subprocess
+    >>> def run_prober(arguments):
+    ...     cmd = ('cronscripts/distributionmirror-prober.py %s '
+    ...            '--no-remote-hosts' % arguments)
+    ...     prober = subprocess.Popen(
+    ...         cmd, shell=True,stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...         stderr=subprocess.PIPE)
+    ...     stdout, stderr = prober.communicate()
+    ...     return prober, stdout, stderr
+
 Now we run the prober as another process, and check that the generated output
 doesn't contain any errors and that the number of mirrors probed is correct.
 
-    >>> import subprocess
-    >>> cmd = 'cronscripts/distributionmirror-prober.py --content-type=archive'
-    >>> prober = subprocess.Popen(
-    ...     cmd, shell=True,stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> stdout, stderr = prober.communicate()
+    >>> prober, stdout, stderr = run_prober('--content-type=archive')
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
+    INFO    creating lockfile
     INFO    Probing Archive Mirrors
-    INFO    Probed 3 mirrors.
-    INFO    Disabled 1 mirror(s) that were previously enabled.
+    INFO    Probed 4 mirrors.
+    INFO    Disabling 1 mirror(s):
+            http://launchpad.dev/ubuntu/+mirror/archive-404-mirror
+    INFO    Re-enabling 1 mirror(s):
+            http://launchpad.dev/ubuntu/+mirror/archive-mirror
     INFO    Done.
     <BLANKLINE>
 
-    >>> cmd = 'cronscripts/distributionmirror-prober.py --content-type=release'
-    >>> prober = subprocess.Popen(
-    ...     cmd, shell=True,stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> stdout, stderr = prober.communicate()
+    >>> prober, stdout, stderr = run_prober('--content-type=cdimage')
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    Probing Release Mirrors
-    INFO    Probed 3 mirrors.
-    INFO    Disabled 1 mirror(s) that were previously enabled.
+    INFO    creating lockfile
+    INFO    Probing CD Image Mirrors
+    INFO    Probed 4 mirrors.
+    INFO    Disabling 1 mirror(s):
+            http://launchpad.dev/ubuntu/+mirror/unreachable-mirror
     INFO    Done.
     <BLANKLINE>
 
-    If we run the prober again, it won't do anything, because it will realize
-    that the mirrors were probed recently, and, by default, don't need to be
-    probed again.
+If we run the prober again, it won't do anything, because it will realize
+that the mirrors were probed recently, and, by default, don't need to be
+probed again.
 
-    >>> prober = subprocess.Popen(
-    ...     cmd, shell=True,stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> stdout, stderr = prober.communicate()
+    >>> prober, stdout, stderr = run_prober('--content-type=cdimage')
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    Probing Release Mirrors
+    INFO    creating lockfile
+    INFO    Probing CD Image Mirrors
     INFO    No mirrors to probe.
     INFO    Done.
     <BLANKLINE>
 
-    But we can override the default behaviour and tell the prober to check all
-    official mirrors independently if they were probed recently or not.
+But we can override the default behaviour and tell the prober to check all
+official mirrors independently if they were probed recently or not.
 
-    >>> cmd += ' --force'
-    >>> prober = subprocess.Popen(
-    ...     cmd, shell=True,stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> stdout, stderr = prober.communicate()
+    >>> prober, stdout, stderr = run_prober('--content-type=cdimage --force')
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    INFO    Probing Release Mirrors
-    INFO    Probed 3 mirrors.
+    INFO    creating lockfile
+    INFO    Probing CD Image Mirrors
+    INFO    Probed 4 mirrors.
     INFO    Done.
     <BLANKLINE>
 
     When a mirror is not reachabe or fail to mirror the content that it
     should, it's marked as disabled (as you can see above) and thus not
     shown on the public mirror listings. We'll keep probing these disabled
-    mirrors and once they're reachabe and don't fail the content check
+    mirrors and once they're reachable and don't fail the content check
     we'll enable them again.
 
-    >>> release_mirror = mirrorset.getByName('releases-mirror')
-    >>> release_mirror.enabled
+    >>> cdimage_mirror = mirrorset.getByName('releases-mirror')
+    >>> cdimage_mirror.enabled
     True
-    >>> release_mirror.enabled = False
+    >>> cdimage_mirror.enabled = False
     >>> flush_database_updates()
     >>> transaction.commit()
-    >>> prober = subprocess.Popen(
-    ...     cmd, shell=True,stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> stdout, stderr = prober.communicate()
+    >>> prober, stdout, stderr = run_prober('--content-type=cdimage --force')
     >>> print stderr
-    INFO    Probing Release Mirrors
-    INFO    Probed 3 mirrors.
-    INFO    Enabled 1 mirror(s) that were previously disabled.
+    INFO    creating lockfile
+    INFO    Probing CD Image Mirrors
+    INFO    Probed 4 mirrors.
+    INFO    Re-enabling 1 mirror(s):
+            http://launchpad.dev/ubuntu/+mirror/releases-mirror
     INFO    Done.
     <BLANKLINE>
 
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
-    >>> release_mirror.enabled
+    >>> cdimage_mirror.enabled
     True
 
     >>> http_server.tearDown()
@@ -537,41 +652,40 @@ doesn't contain any errors and that the number of mirrors probed is correct.
 
     >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
     ...  for mirror in ubuntu.disabled_mirrors]
-    [(u'archive-404-mirror', '2 Mbps', u'British Indian Ocean Territory'),
-     (u'unreachable-mirror', '512 Kbps', u'British Indian Ocean Territory')]
+    [(u'archive-404-mirror', '512 Kbps', u'France'),
+     (u'unreachable-mirror', '512 Kbps', u'France')]
 
-
-Mirror content
---------------
+== Mirror content ==
 
 Now that we've probed some mirrors, we can check the content that was found in
 them.
 
-First, let's check the source and arch releases of one archive mirror.
+First, let's check the source and arch series of one archive mirror.
 
     >>> archive_mirror = mirrorset.getByName('archive-mirror')
     >>> archive_mirror.name
     u'archive-mirror'
 
-    >>> mirror_arch_releases = (
-    ...     archive_mirror.getSummarizedMirroredArchReleases())
+    >>> mirror_arch_serieses = (
+    ...     archive_mirror.getSummarizedMirroredArchSerieses())
 
-    (We only have a few publishing records, so most of the release mirrors
+    (We only have a few publishing records, so most of the cdimage mirrors
      will have Unknown as their statuses)
-    >>> for mirror_arch_release in mirror_arch_releases:
-    ...     print (mirror_arch_release.distro_arch_release.displayname,
-    ...            mirror_arch_release.status.title)
+    >>> for mirror_arch_series in mirror_arch_serieses:
+    ...     print (mirror_arch_series.distro_arch_series.displayname,
+    ...            mirror_arch_series.status.title)
     (u'warty i386', 'Up to date')
 
-    >>> mirror_source_releases = (
-    ...     archive_mirror.getSummarizedMirroredSourceReleases())
-    >>> for mirror_source_release in mirror_source_releases:
-    ...     print (mirror_source_release.distrorelease.displayname,
-    ...            mirror_source_release.status.title)
+    >>> mirror_source_serieses = (
+    ...     archive_mirror.getSummarizedMirroredSourceSerieses())
+    >>> for mirror_source_series in mirror_source_serieses:
+    ...     print (mirror_source_series.distroseries.displayname,
+    ...            mirror_source_series.status.title)
     (u'Warty', 'Up to date')
     (u'Hoary', 'Up to date')
+    (u'Breezy Badger Autotest', 'Up to date')
 
-Because all MirrorDistroArchReleases and MirrorDistroReleaseSources of this
+Because all MirrorDistroArchSeriess and MirrorDistroSeriesSources of this
 mirror have 'Up to date' as status, this mirror's overall status will also be
 'Up to date'.
 
@@ -579,23 +693,96 @@ mirror have 'Up to date' as status, this mirror's overall status will also be
     'Up to date'
 
 
-Now we check the MirrorCDImageDistroReleases of a release mirror.
+Now we check the MirrorCDImageDistroSeriess of a cdimage mirror.
 
-    >>> release_mirror.name
+    >>> cdimage_mirror.name
     u'releases-mirror'
 
-    >>> mirrored_releases = []
-    >>> for mirror_cdimage_release in release_mirror.cdimage_releases:
-    ...     mirrored_releases.append(
-    ...         (mirror_cdimage_release.distrorelease.displayname,
-    ...          mirror_cdimage_release.flavour))
-    >>> [release for release in sorted(mirrored_releases)]
+    >>> mirrored_serieses = []
+    >>> for mirror_cdimage_series in cdimage_mirror.cdimage_serieses:
+    ...     mirrored_serieses.append(
+    ...         (mirror_cdimage_series.distroseries.displayname,
+    ...          mirror_cdimage_series.flavour))
+    >>> [series for series in sorted(mirrored_serieses)]
     [(u'Hoary', u'kubuntu'), (u'Hoary', u'ubuntu'), (u'Warty', u'ubuntu')]
 
 
-In the case of release mirrors, they're said to be up-to-date if they
+In the case of cdimage mirrors, they're said to be up-to-date if they
 mirror all ISO images contained in http://releases.ubuntu.com, which is
 the case here.  Otherwise, their status is unknown.
 
-    >>> release_mirror.getOverallStatus().title
+    >>> cdimage_mirror.getOverallStatus().title
     'Up to date'
+
+
+== Mirror counts and bandwidth aggregates ==
+
+We include a count of the number of mirrors per country, and the total
+bandwidth (approximate) that they output. Here we test the aggregation
+functions that achieve that.
+
+First we import the classes required to test the view:
+
+  >>> from zope.component import getView
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistribution)
+  >>> from canonical.launchpad.browser.distribution import (
+  ...     DistributionMirrorsView)
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+Create a view to test:
+
+  >>> request = LaunchpadTestRequest()
+  >>> view = getView(ubuntu, '+archivemirrors', request)
+
+Verify that the view is a DistributionMirrorsView:
+
+  >>> isinstance(view, DistributionMirrorsView)
+  True
+
+We want to make sure that the view._sum_throughput method knows about all
+the possible mirror speeds.
+
+  >>> from canonical.launchpad.interfaces import MirrorSpeed
+  >>> class MockMirror:
+  ...     speed = None
+  >>> mirrors = []
+  >>> for speed in MirrorSpeed.items:
+  ...     a = MockMirror()
+  ...     a.speed = speed
+  ...     mirrors.append(a)
+  >>> print view._sum_throughput(mirrors)
+  37 Gbps
+
+== Deleting mirrors ==
+
+Mirrors are sometimes created by spammers hoping that we'll publicize
+whatever links they put there. Although we only publicize mirrors that
+have been approved by an admin, it's annoying to the admins to have these
+bogus mirrors on their list of unapproved mirrors, so we allow admins
+(and only them) to delete these mirrors.
+
+Only mirrors which have never been probed can be deleted this way.
+
+    >>> login(cdimage_mirror.owner.preferredemail.email)
+    >>> cdimage_mirror.destroySelf()
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+    >>> login('karl@canonical.com')
+    >>> cdimage_mirror.last_probe_record is not None
+    True
+    >>> cdimage_mirror.destroySelf()
+    Traceback (most recent call last):
+    ...
+    AssertionError: ...
+
+    >>> invalid_mirror = mirrorset.getByName('invalid-mirror')
+    >>> invalid_mirror.last_probe_record is None
+    True
+    >>> invalid_mirror.destroySelf()
+
+    >>> mirrorset.getByName('invalid-mirror') is None
+    True
+

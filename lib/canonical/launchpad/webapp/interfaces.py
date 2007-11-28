@@ -4,14 +4,438 @@ __metaclass__ = type
 
 import logging
 
+import zope.app.publication.interfaces
 from zope.interface import Interface, Attribute, implements
 from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
-from zope.schema import Int, Text, Object, Datetime, TextLine
+from zope.schema import Int, Text, Object, Datetime, TextLine, Bool
 
 from canonical.launchpad import _
 
+
+class TranslationUnavailable(Exception):
+    """Translation objects are unavailable."""
+
+
+class NotFoundError(KeyError):
+    """Launchpad object not found."""
+
+
+class UnexpectedFormData(AssertionError):
+    """Got form data that is not what is expected by a form handler."""
+
+
+class POSTToNonCanonicalURL(UnexpectedFormData):
+    """Got a POST to an incorrect URL.
+
+    One example would be a URL containing uppercase letters.
+    """
+
+
+class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
+    """Marker interface for the root object of Launchpad."""
+
+
+class ILaunchpadApplication(Interface):
+    """Marker interface for a launchpad application.
+
+    Rosetta, Malone and Soyuz are launchpad applications.  Their root
+    application objects will provide an interface that extends this
+    interface.
+    """
+    title = Attribute('Title')
+
+class ILaunchpadProtocolError(Interface):
+    """Marker interface for a Launchpad protocol error exception."""
+
+class IAuthorization(Interface):
+    """Authorization policy for a particular object and permission."""
+
+    def checkUnauthenticated():
+        """Returns True if an unauthenticated user has that permission
+        on the adapted object.  Otherwise returns False.
+        """
+
+    def checkAuthenticated(user):
+        """Returns True if the user has that permission on the adapted
+        object.  Otherwise returns False.
+
+        The argument `user` is the person who is authenticated.
+        """
+
+
+class OffsiteFormPostError(Exception):
+    """An attempt was made to post a form from a remote site."""
+
+
+class UnsafeFormGetSubmissionError(Exception):
+    """An attempt was made to submit an unsafe form action with GET."""
+
+
+#
+# Menus and Facets
+#
+
+class IMenu(Interface):
+    """Public interface for facets, menus, extra facets and extra menus."""
+
+    def iterlinks(requesturl=None):
+        """Iterate over the links in this menu.
+
+        requesturl, if it is not None, is a Url object that is used to
+        decide whether a menu link points to the page being requested,
+        in which case it will not be linked.
+        """
+
+
+class IMenuBase(IMenu):
+    """Common interface for facets, menus, extra facets and extra menus."""
+
+    context = Attribute('The object that has this menu.')
+
+    request = Attribute('The request the menus is used in.')
+
+
+class IFacetMenu(IMenuBase):
+    """Main facet menu for an object."""
+
+    def iterlinks(requesturl=None, selectedfacetname=None):
+        """Iterate over the links in this menu.
+
+        requesturl, if it is not None, is a Url object that is used to
+        decide whether a menu link points to the page being requested,
+        in which case it will not be linked.
+
+        If selectedfacetname is provided, the link with that name will be
+        marked as 'selected'.
+        """
+
+    defaultlink = Attribute(
+        "The name of the default link in this menu.  That is, the one that "
+        "will be selected if no others are selected.  It is None if there "
+        "is no default link.")
+
+
+class IApplicationMenu(IMenuBase):
+    """Application menu for an object."""
+
+
+class IContextMenu(IMenuBase):
+    """Context menu for an object."""
+
+
+class ILinkData(Interface):
+    """An object with immutable attributes that represents the data a
+    programmer provides about a link in a menu.
+    """
+
+    target = Attribute("The place this link should link to.  This may be "
+        "a path relative to the context of the menu this link appears in, "
+        "or an absolute path, or an absolute URL.")
+
+    text = Attribute(
+        "The text of this link, as appears underlined on a page.")
+
+    summary = Attribute(
+        "The summary text of this link, as appears as a tooltip on the link.")
+
+    icon = Attribute("The name of the icon to use.")
+
+    enabled = Attribute("Boolean to say whether this link is enabled.")
+
+    site = Attribute(
+        "The name of the site this link is to, or None for the current site.")
+
+
+class ILink(ILinkData):
+    """An object that represents a link in a menu.
+
+    The attributes name, url and linked may be set by the menus infrastructure.
+    """
+
+    name = Attribute("The name of this link in Python data structures.")
+
+    url = Attribute(
+        "The full url this link points to.  Set by the menus infrastructure. "
+        "None before it is set.")
+
+    linked = Attribute(
+        "A boolean value saying whether this link should appear as a "
+        "clickable link in the UI.  The general rule is that a link to "
+        "the current page should not be shown linked.  Defaults to True.")
+
+    enabled = Attribute(
+        "Boolean to say whether this link is enabled.  Can be read and set.")
+
+    escapedtext = Attribute("Text string, escaped as necessary.")
+
+
+class IFacetLink(ILink):
+    """A link in a facet menu.
+
+    It has a 'selected' attribute that is set by the menus infrastructure,
+    and indicates whether the link is the selected facet.
+    """
+
+    selected = Attribute(
+        "A boolean value saying whether this link is the selected facet menu "
+        "item.  Defaults to False.")
+
+
+class IStructuredString(Interface):
+    """An object that represents a string that is to retain its html structure
+    in a menu's link text.
+    """
+
+    escapedtext = Attribute("The escaped text for display on a web page.")
+
+
+class IBreadcrumb(Interface):
+    """A breadcrumb link.  IBreadcrumbs get put into request.breadcrumbs."""
+
+    url = Attribute('Absolute url of this breadcrumb.')
+
+    text = Attribute('Text of this breadcrumb.')
+
+    has_menu = Attribute('Whether this breadcrumb has a drop-down menu.')
+
+
+#
+# Traversal bits
+#
+
+
+class IAfterTraverseEvent(Interface):
+    """An event which gets sent after publication traverse."""
+
+
+class AfterTraverseEvent:
+    """An event which gets sent after publication traverse."""
+
+    implements(IAfterTraverseEvent)
+
+    def __init__(self, ob, request):
+        self.object = ob
+        self.request = request
+
+
+class IBeforeTraverseEvent(
+    zope.app.publication.interfaces.IBeforeTraverseEvent):
+    pass
+
+
+class BeforeTraverseEvent(zope.app.publication.interfaces.BeforeTraverseEvent):
+    pass
+
+
+#
+# Canonical URLs
+#
+
+class ICanonicalUrlData(Interface):
+    """Tells you how to work out a canonical url for an object."""
+
+    rootsite = Attribute(
+        'The root id to use.  None means to use the base of the current request.')
+
+    inside = Attribute('The object this path is relative to.  None for root.')
+
+    path = Attribute('The path relative to "inside", not starting with a /.')
+
+
+class NoCanonicalUrl(TypeError):
+    """There was no canonical URL registered for an object.
+
+    Arguments are:
+      - The object for which a URL was sought
+      - The object that did not have ICanonicalUrlData
+    """
+    def __init__(self, object_url_requested_for, broken_link_in_chain):
+        TypeError.__init__(self, 'No url for %r because %r broke the chain.' %
+            (object_url_requested_for, broken_link_in_chain)
+            )
+
+#
+# DBSchema
+#
+
+
+# XXX kiko 2007-02-08: this is currently unused. We need somebody to come
+# in and set up interfaces for the enums.
+class IDBSchema(Interface):
+    """A DBSchema enumeration."""
+
+    name = Attribute("Lower-cased-spaces-inserted class name of this schema.")
+
+    title = Attribute("Title of this schema.")
+
+    description = Attribute("Description of this schema.")
+
+    items = Attribute("A mapping of [name or value] -> dbschema item.")
+
+
+class IDBSchemaItem(Interface):
+    """An Item in a DBSchema enumeration."""
+
+    value = Attribute("Integer value of this enum item.")
+
+    name = Attribute("Symbolic name of this item.")
+
+    title = Attribute("Title text of this item.")
+
+    description = Attribute("Description text of this item.")
+
+    def __sqlrepr__(dbname):
+        """Return an SQL representation of this item.
+
+        The dbname attribute is required as part of the sqlobject
+        interface, but it not used in this case.
+        """
+
+    def __eq__(other):
+        """An item is equal if it is from the same DBSchema and has the same
+        value.
+        """
+
+    def __ne__(other):
+        """not __eq__"""
+
+    def __hash__():
+        """Returns a hash value."""
+
+# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a
+# truly generic thing. The problem lies in the fact that half of this (user,
+# login, timezone, developer) is actually useful inside webapp/, and the other
+# half is very Launchpad-specific. I suggest we split the interface and
+# implementation into two parts, having a different name for the webapp/
+# bits.
+class ILaunchBag(Interface):
+    site = Attribute('The application object, or None')
+    person = Attribute('IPerson, or None')
+    project = Attribute('IProject, or None')
+    product = Attribute('IProduct, or None')
+    distribution = Attribute('IDistribution, or None')
+    distroseries = Attribute('IDistroSeries, or None')
+    distroarchseries = Attribute('IDistroArchSeries, or None')
+    sourcepackage = Attribute('ISourcepackage, or None')
+    sourcepackagereleasepublishing = Attribute(
+        'ISourcepackageReleasePublishing, or None')
+    bug = Attribute('IBug, or None')
+    bugtask = Attribute('IBugTask, or None')
+
+    user = Attribute('Currently authenticated IPerson, or None')
+    login = Attribute('The login used by the authenticated person, or None')
+
+    timezone = Attribute("The user's time zone")
+
+    developer = Bool(
+        title=u'True if a member of the launchpad developers celebrity'
+        )
+
+
+class IOpenLaunchBag(ILaunchBag):
+    def add(ob):
+        '''Stick the object into the correct attribute of the ILaunchBag,
+        or ignored, or whatever'''
+    def clear():
+        '''Empty the bag'''
+    def setLogin(login):
+        '''Set the login to the given value.'''
+    def setDeveloper():
+        '''Set the developer flag.
+
+        Because we use this during exception handling, we need this set
+        and cached at the start of the transaction in case our database
+        connection blows up.
+        '''
+
+#
+# Request
+#
+
+class IBasicLaunchpadRequest(Interface):
+    stepstogo = Attribute(
+        'The StepsToGo object for this request, allowing you to inspect and'
+        ' alter the remaining traversal steps.')
+
+    breadcrumbs = Attribute(
+        'List of IBreadcrumb objects.  This is appended to during traversal'
+        ' so that a page can render appropriate breadcrumbs.')
+
+    traversed_objects = Attribute(
+        'List of traversed objects.  This is appended to during traversal.')
+
+    def getNearest(*some_interfaces):
+        """Searches for the last traversed object to implement one of
+        the given interfaces.
+
+        Returns an (object, matching_interface) tuple.  If the object
+        implements more than one of the interfaces, the first one is
+        returned.
+
+        If no matching object is found, the tuple (None, None) is returned.
+        """
+
+
+class IBrowserFormNG(Interface):
+    """Interface to manipulate submitted form data."""
+
+    def __contains__(name):
+        """Return True if a field named name was submitted."""
+
+    def __iter__():
+        """Return an iterator over the submitted field names."""
+
+    def getOne(name, default=None):
+        """Return the value of the field name.
+
+        If the field wasn't submitted return the default value.
+        If more than one value was submitted, raises UnexpectedFormData.
+        """
+
+    def getAll(name, default=None):
+        """Return the the list of values submitted under field name.
+
+        If the field wasn't submitted return the default value. (If default
+        is None, an empty list will be returned. It is an error to use
+        something else than None or a list as default value.
+
+        This method should always return a list, if only one value was
+        submitted, it will be returned in a list.
+        """
+
+
+class ILaunchpadBrowserApplicationRequest(
+    IBasicLaunchpadRequest,
+    zope.publisher.interfaces.browser.IBrowserApplicationRequest):
+    """The request interface to the application for launchpad browser requests.
+    """
+
+    form_ng = Object(
+        title=u'IBrowserFormNG object containing the submitted form data',
+        schema=IBrowserFormNG)
+
+
+# XXX SteveAlexander 2005-09-14: These need making into a launchpad version
+#     rather than the zope versions for the publisher simplification work.
+# class IEndRequestEvent(Interface):
+#     """An event which gets sent when the publication is ended"""
+#
+# # called in zopepublication's endRequest method, after ending
+# # the interaction.  it is used only by local sites, to clean
+# # up per-thread state.
+# class EndRequestEvent(object):
+#     """An event which gets sent when the publication is ended"""
+#     implements(IEndRequestEvent)
+#     def __init__(self, ob, request):
+#         self.object = ob
+#         self.request = request
+
+
+#
+#
+#
 
 class IPrincipalIdentifiedEvent(Interface):
     """An event that is sent after a principal has been recovered from the
@@ -109,7 +533,7 @@ class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
     """The Launchpad customized database adapter"""
     def readonly():
         """Set the connection to read only.
-        
+
         This should only be called at the start of the transaction to
         avoid confusing code that defers making database changes until
         transaction commit time.
@@ -118,7 +542,7 @@ class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
     def switchUser(self, dbuser=None):
         """Change the PostgreSQL user we are connected as, defaulting to the
         default Launchpad user.
-       
+
         This involves closing the existing connection and reopening it;
         uncommitted changes will be lost. The new connection will also open
         in read/write mode so calls to readonly() will need to be made
@@ -133,8 +557,8 @@ class BrowserNotificationLevel:
     """Matches the standard logging levels, with the addition of notice
     (which we should probably add to our log levels as well)
     """
-    # XXX Matthew Paul Thomas 2006-03-22: NOTICE and INFO should be merged.
-    # https://launchpad.net/bugs/36287
+    # XXX Matthew Paul Thomas 2006-03-22 bugs=36287:
+    # NOTICE and INFO should be merged.
     DEBUG = logging.DEBUG     # A debugging message
     INFO = logging.INFO       # simple confirmation of a change
     NOTICE = logging.INFO + 5 # action had effects you might not have intended
@@ -225,21 +649,28 @@ class INotificationResponse(Interface):
         are preserved.
         """
 
- 
+
 class IErrorReport(Interface):
-    id = TextLine(description=u"the name of this error report")
-    type = TextLine(description=u"the type of the exception that occurred")
-    value = TextLine(description=u"the value of the exception that occurred")
-    time = Datetime(description=u"the time at which the exception occurred")
-    tb_text = Text(description=u"a text version of the traceback")
-    username = TextLine(description=u"the user associated with the request")
-    url = TextLine(description=u"the URL for the failed request")
-    req_vars = Attribute('the request variables')
+    id = TextLine(description=u"The name of this error report.")
+    type = TextLine(description=u"The type of the exception that occurred.")
+    value = TextLine(description=u"The value of the exception that occurred.")
+    time = Datetime(description=u"The time at which the exception occurred.")
+    pageid = TextLine(
+        description=u"""
+            The context class plus the page template where the exception
+            occurred.
+            """)
+    branch_nick = TextLine(description=u"The branch nickname.")
+    revno = TextLine(description=u"The revision number of the branch.")
+    tb_text = Text(description=u"A text version of the traceback.")
+    username = TextLine(description=u"The user associated with the request.")
+    url = TextLine(description=u"The URL for the failed request.")
+    req_vars = Attribute("The request variables.")
 
 
 class IErrorReportRequest(Interface):
     oopsid = TextLine(
-        description=u"""an identifier for the exception, or None if no 
+        description=u"""an identifier for the exception, or None if no
         exception has occurred""")
 
 #
@@ -273,7 +704,9 @@ class ITableBatchNavigator(IBatchNavigator):
         "be shown in the list, otherwise it won't.")
 
 
+#
 # LaunchpadFormView widget layout
+#
 
 class IAlwaysSubmittedWidget(Interface):
     """A widget that is always submitted (such as a checkbox or radio
@@ -289,3 +722,10 @@ class IMultiLineWidgetLayout(Interface):
 
 class ICheckBoxWidgetLayout(IAlwaysSubmittedWidget):
     """A widget that is displayed like a check box with label to the right."""
+
+
+class IBreadcrumbProvider(Interface):
+    """Object that provides breadcrumb text."""
+
+    def breadcrumb():
+        """Breadcrumb text."""

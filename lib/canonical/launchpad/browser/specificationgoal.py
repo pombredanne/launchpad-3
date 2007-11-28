@@ -13,10 +13,7 @@ from zope.component import getUtility
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 
-from canonical.launchpad.interfaces import ILaunchBag
-
-from canonical.lp.dbschema import (
-    SpecificationGoalStatus, SpecificationFilter)
+from canonical.launchpad.interfaces import ILaunchBag, SpecificationFilter
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
@@ -51,7 +48,7 @@ class GoalDecideView(HasSpecificationsView, LaunchpadView):
         """
         form = self.request.form
         user = getUtility(ILaunchBag).user
-        count = len(self.specs)
+        count = self.specs.count()
 
         if 'SUBMIT_CANCEL' in form:
             self.status_message = 'Cancelled'

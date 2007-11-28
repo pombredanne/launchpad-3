@@ -1,12 +1,24 @@
-<div class="portlet" tal:condition="context/getLatestBranches">
-  <h2>Latest branches of <span tal:replace="context/name">firefox</span></h2>
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div
+  tal:condition="view/getLatestBranches"
+  class="portlet"
+  id="portlet-latest-branches"
+>
+  <h2>Latest branches</h2>
   <div class="portletBody portletContent">
-    
-  <ul>
-    <li tal:repeat="branch context/getLatestBranches" class="branch">
+    <ul class="branch">
+
+    <li tal:repeat="branch view/getLatestBranches" class="branch">
       <a tal:attributes="href branch/fmt:url"
          tal:content="branch/name"
-      >branch name</a>:
+      >branch name</a
+      ><img src="/@@/private" alt=" (private)"
+            tal:condition="branch/private"/>:
       <span tal:condition="branch/author"
             tal:replace="branch/author/name"
       >author</span> 
@@ -18,3 +30,4 @@
 
   </div>
 </div>
+</tal:root>

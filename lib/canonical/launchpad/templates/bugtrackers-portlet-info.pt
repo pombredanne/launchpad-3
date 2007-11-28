@@ -1,16 +1,19 @@
-
-<div class="portlet">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-info">
 
   <h2>Remote bug trackers</h2>
 
   <div class="portletBody portletContent">
 
     <img src="/@@/info" alt="" />
-    Malone is designed to help track the status of a bug upstream and in
+    Launchpad is designed to help track the status of a bug upstream and in
     lots of different bug trackers. This is a list of the bug trackers that
-    are registered with Malone. You can link a Malone bug to any bug in one
-    of these, and Malone will monitor the status on that bug and report
-    changes to the subscribers of the Malone bug.
+    are registered with Launchpad. You can link a Launchpad bug to any bug in
+    one of these, and Launchpad will monitor the status on that bug and report
+    changes to the subscribers of the Launchpad bug.
 
   </div>
 

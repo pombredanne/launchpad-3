@@ -1,31 +1,25 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">    
-      <h3 tal:content="context/title">Name of product</h3>
-      <h1>Top contributors</h1>
-    </metal:heading>
-
-<metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-milestones" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-latestspecs" />
-</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <div class="documentDescription">
-    These are the people who recently contributed the most to
-    <span tal:replace="context/displayname" /> in Launchpad.
-  </div>
-
-  <h2>Top overall contributors</h2>
+      <h1>Top contributors</h1>
+      <p>
+        These lists are based only on things people did in Launchpad.
+        They do not yet include all areas of Launchpad (such as code branches),
+        or contributions elsewhere (such as mailing lists or IRC).
+      </p>
+      <h2>Overall</h2>
 
   <table class="listing sortable" id="overall_top">
   <thead>
@@ -41,12 +35,12 @@
   </tbody>
   </table>
 
-  <h2>Top contributors by category</h2>
+      <h2>By category</h2>
 
   <tal:block 
     define="contributors_by_category view/top_contributors_by_category">
     <tal:categories repeat="category view/sorted_categories">
-      <h4 tal:content="category" />
+      <h3 tal:content="category" />
       <table class="listing sortable" tal:attributes="id category">
       <thead>
         <tr>
@@ -67,3 +61,4 @@
 
 </body>
 </html>
+<!-- 1-0 done -->

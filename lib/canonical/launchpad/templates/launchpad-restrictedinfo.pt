@@ -1,9 +1,26 @@
-<html>
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  i18n:domain="launchpad"
+>
   <head>
     <title>Launchpad</title>
+    <style type="text/css">
+      html {
+        font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
+        font-size: 8pt;
+      }
+      h1 {background: none; color: #83ad23; font-size: 3em; font-weight: normal;}
+    </style>
   </head>
   <body>
-    <tal:block condition="view/isTeamRestrictedServer">
+    <tal:block condition="view/isTeamRestrictedServer"
+               define="non_restricted_url request/form/production|nothing">
       <h1>Restricted Launchpad test site</h1>
 
       <p>This site is accessible by launchpad admins and members of the
@@ -11,9 +28,13 @@
            tal:content="view/getAllowedTeamDescription" />
        team only.
       </p>
-      <p>You may use <a href="https://launchpad.net/">the main Launchpad site</a>
-      instead.
-      </p>
+      <p tal:condition="non_restricted_url">You may be able to
+      access this page
+      <a tal:attributes="href non_restricted_url">on the main
+      Launchpad site</a> instead.</p>
+
+      <p tal:condition="not:non_restricted_url">You may use
+      <a href="https://launchpad.net/">the main Launchpad site</a> instead.</p>
 
       <p>You can <a href="/+logout">log out</a>.</p>
     </tal:block>

@@ -1,11 +1,17 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1 tal:content="context/title">Bob the Builder</h1>
+      <h1>Build history</h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -13,8 +19,6 @@
 </metal:leftportlets>
 
   <div metal:fill-slot="main">
-
-      <h2>Recent builds</h2>
 
       <div tal:replace="structure context/@@+builds-list"/>
 

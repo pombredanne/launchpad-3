@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 """
 Generate some statistics about a PostgreSQL database suitable for
@@ -116,7 +116,8 @@ def main(dbname):
                 print_row('', statstr(stat))
 
     # Unused indexes, ignoring primary keys.
-    # TODO: We should identify constraints used to enforce uniqueness too
+    # XXX Stuart Bishop 2005-06-28:
+    # We should identify constraints used to enforce uniqueness too
     cur.execute("""
         SELECT relname, indexrelname
             FROM pg_stat_user_indexes AS u JOIN pg_indexes AS i

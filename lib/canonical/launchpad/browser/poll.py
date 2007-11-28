@@ -2,16 +2,17 @@
 
 __metaclass__ = type
 
-__all__ = ['PollContextMenu',
-           'PollNavigation',
-           'BasePollView',
-           'PollView',
-           'PollVoteView',
-           'PollAddView',
-           'PollEditView',
-           'PollOptionAddView',
-           'PollOptionEditView',
-           ]
+__all__ = [
+    'BasePollView',
+    'PollAddView',
+    'PollContextMenu',
+    'PollEditView',
+    'PollNavigation',
+    'PollOptionAddView',
+    'PollOptionEditView',
+    'PollView',
+    'PollVoteView',
+    ]
 
 from zope.event import notify
 from zope.component import getUtility
@@ -21,13 +22,12 @@ from zope.app.form.browser.add import AddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, GeneralFormView, Link, Navigation,
-    stepthrough)
+    canonical_url, enabled_with_permission, ContextMenu, GeneralFormView,
+    Link, Navigation, stepthrough)
 from canonical.launchpad.interfaces import (
-    IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll,
-    validate_date_interval)
+    IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll, PollAlgorithm,
+    PollSecrecy, validate_date_interval)
 from canonical.launchpad.helpers import shortlist
-from canonical.lp.dbschema import PollAlgorithm, PollSecrecy
 
 
 class PollContextMenu(ContextMenu):
@@ -36,15 +36,17 @@ class PollContextMenu(ContextMenu):
     links = ['showall', 'addnew', 'edit']
 
     def showall(self):
-        text = 'Show Option Details'
+        text = 'Show option details'
         return Link('+options', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def addnew(self):
-        text = 'Add New Option'
+        text = 'Add new option'
         return Link('+newoption', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit this Poll'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
 
@@ -67,6 +69,18 @@ class BasePollView:
         self.token = None
         self.gotTokenAndVotes = False
         self.feedback = ""
+
+    def setUpTokenAndVotes(self):
+        """Set up the token and votes to be displayed."""
+        if not self.userVoted():
+            return
+
+        # For secret polls we can only display the votes after the token
+        # is submitted.
+        if self.request.method == 'POST' and self.isSecret():
+            self.setUpTokenAndVotesForSecretPolls()
+        elif not self.isSecret():
+            self.setUpTokenAndVotesForNonSecretPolls()
 
     def setUpTokenAndVotesForNonSecretPolls(self):
         """Get the votes of the logged in user in this poll.
@@ -106,7 +120,11 @@ class BasePollView:
         in user has voted on this poll.
         """
         assert self.isSecret() and self.userVoted()
-        self.token = self.request.form.get('token')
+        token = self.request.form.get('token')
+        # Only overwrite self.token if the request contains a 'token'
+        # variable.
+        if token is not None:
+            self.token = token
         votes = getUtility(IVoteSet).getByToken(self.token)
         if not votes:
             self.feedback = ("There's no vote associated with the token %s"
@@ -163,27 +181,16 @@ class PollView(BasePollView):
             elif self.isCondorcet():
                 request.response.redirect("%s/+vote-condorcet" % context_url)
 
-    def setUpTokenAndVotes(self):
-        """Set up the token and votes to be displayed."""
-        if not self.userVoted():
-            return
-
-        # For secret polls we can only display the votes after the token
-        # is submitted.
-        if self.request.method == 'POST' and self.isSecret():
-            self.setUpTokenAndVotesForSecretPolls()
-        elif not self.isSecret():
-            self.setUpTokenAndVotesForNonSecretPolls()
-
     def getVotesByOption(self, option):
         """Return the number of votes the given option received."""
         return getUtility(IVoteSet).getVotesByOption(option)
 
     def getPairwiseMatrixWithHeaders(self):
         """Return the pairwise matrix with headers being the option's names."""
-        # XXX: The list() call here is necessary because, lo and behold,
+        # XXX: kiko 2006-03-13:
+        # The list() call here is necessary because, lo and behold,
         # it gives us a non-security-proxied list object! Someone come
-        # in and fix this! -- kiko, 2006-03-13
+        # in and fix this!
         pairwise_matrix = list(self.context.getPairwiseMatrix())
         headers = [None]
         for idx, option in enumerate(self.context.getAllOptions()):
@@ -222,19 +229,31 @@ class PollVoteView(BasePollView):
             return
 
         if not self.context.isOpen():
-            self.feedback = "This poll is not open. You can't vote anymore."
+            self.feedback = "This poll is not open."
+            return
 
         if self.isSimple():
             self.processSimpleVotingForm()
         else:
             self.processCondorcetVotingForm()
 
+        # User may have voted, so we need to setup the vote to display again.
+        self.setUpTokenAndVotes()
+
     def processSimpleVotingForm(self):
         """Process the simple-voting form to change a user's vote or register
-        a new one."""
+        a new one.
+
+        This method must not be called if the poll is not open.
+        """
+        assert self.context.isOpen()
         context = self.context
         newoption_id = self.request.form.get('newoption')
         if newoption_id == 'donotchange':
+            self.feedback = "Your vote was not changed."
+            return
+        elif newoption_id == 'donotvote':
+            self.feedback = "You chose not to vote yet."
             return
         elif newoption_id == 'none':
             newoption = None
@@ -261,8 +280,12 @@ class PollVoteView(BasePollView):
                     "or change your vote, if you want.")
 
     def processCondorcetVotingForm(self):
-        """Process the condorcet-voting form to change a user's vote or 
-        register a new one."""
+        """Process the condorcet-voting form to change a user's vote or
+        register a new one.
+
+        This method must not be called if the poll is not open.
+        """
+        assert self.context.isOpen()
         form = self.request.form
         activeoptions = shortlist(self.context.getActiveOptions())
         newvotes = {}
@@ -270,9 +293,10 @@ class PollVoteView(BasePollView):
             try:
                 preference = int(form.get('option_%d' % option.id))
             except ValueError:
-                # XXX: User tried to specify a value which we can't convert to
+                # XXX: Guilherme Salgado 2005-09-14:
+                # User tried to specify a value which we can't convert to
                 # an integer. Better thing to do would be to notify the user
-                # and ask him to fix it. -- Guilherme Salgado 2005-09-14
+                # and ask him to fix it.
                 preference = None
             newvotes[option] = preference
 
@@ -316,7 +340,7 @@ class PollAddView(GeneralFormView):
                 dateopens, datecloses):
         pollsubset = IPollSubset(self.context)
         poll = pollsubset.new(
-            name, title, proposition, dateopens, datecloses, 
+            name, title, proposition, dateopens, datecloses,
             secrecy, allowspoilt)
         self._nextURL = canonical_url(poll)
         notify(ObjectCreatedEvent(poll))

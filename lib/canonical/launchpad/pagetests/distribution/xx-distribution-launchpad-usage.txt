@@ -1,0 +1,78 @@
+= Distribution Launchpad usage =
+
+The distribution overview page indicates for what usage the 
+distribution officially uses Launchpad.
+
+    >>> anon_browser.open('http://launchpad.dev/ubuntu')
+    >>> content = find_main_content(anon_browser.contents)
+    >>> label_cell = content.find('th', text='Uses Launchpad for:')
+    >>> print extract_text(label_cell.findNext())
+    Answers
+    Bug tracking
+    Translations
+
+Unprivileged Launchpad users cannot access the page for changing these
+details.
+
+    >>> user_browser.open('http://launchpad.dev/ubuntu')
+    >>> user_browser.getLink('Change distribution details')
+    Traceback (most recent call last):
+      ...
+    LinkNotFound...
+    >>> user_browser.open('http://launchpad.dev/ubuntu/+edit')
+    Traceback (most recent call last):
+      ...
+    Unauthorized...
+
+The distribution's registrant can access the page, but even he/she can't
+change the usage.
+
+    >>> from zope.testbrowser.testing import Browser
+    >>> registrant = setupBrowser(
+    ...     auth='Basic celso.providelo@canonical.com:cprov')
+    >>> registrant.open('http://launchpad.dev/ubuntu/+edit')
+    >>> print registrant.url
+    http://launchpad.dev/ubuntu/+edit
+
+    >>> print registrant.getControl(name='field.official_rosetta').value
+    Traceback (most recent call last):
+    ...
+    LookupError: name...
+
+    >>> print registrant.getControl(name='field.official_malone').value
+    Traceback (most recent call last):
+    ...
+    LookupError: name...
+
+    >>> print registrant.getControl(name='field.official_answers').value
+    Traceback (most recent call last):
+    ...
+    LookupError: name...
+
+A Launchpad administrator, however, can see the controls.
+
+    >>> admin_browser.open('http://launchpad.dev/ubuntu')
+    >>> admin_browser.getLink('Change distribution details').click()
+    >>> print admin_browser.title
+    Change distribution details
+    >>> print admin_browser.getControl(name='field.official_rosetta').value
+    True
+    >>> print admin_browser.getControl(name='field.official_malone').value
+    True
+    >>> print admin_browser.getControl(name='field.official_answers').value
+    True
+
+And if the admin changes the settings, the changes show up on the
+distribution Overview page.
+
+    >>> admin_browser.getControl(name='field.official_rosetta').value = False
+    >>> admin_browser.getControl(name='field.official_malone').value = False
+    >>> admin_browser.getControl(name='field.official_answers').value = False
+    >>> admin_browser.getControl('Change').click()
+
+    >>> print admin_browser.url
+    http://launchpad.dev/ubuntu
+    >>> content = find_main_content(admin_browser.contents)
+    >>> label_cell = content.find('th', text='Uses Launchpad for:')
+    >>> print extract_text(label_cell.findNext())
+    &mdash;

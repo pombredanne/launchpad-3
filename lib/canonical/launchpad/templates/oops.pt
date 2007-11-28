@@ -1,26 +1,33 @@
-<tal:layout define="columns1 default">
-<html metal:use-macro="context/@@main_template/master">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en">
+  <head>
+    <title>Oops!</title>
+    <style type="text/css" media="screen, print">
+      @import url(https://launchpad.net/+icing/rev5/+style-slimmer.css);
+    </style>
+  </head>
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1 class="exception">Oops!</h1>
-    </metal:heading>
-    <div metal:fill-slot="main">
-      <p>
-        Sorry, something just went wrong in Launchpad.
-        We&#8217;ve recorded what happened,
-        and we&#8217;ll fix it as soon as possible.
-        Apologies for the inconvenience.
-      </p>
-      <p>
-        If this is blocking your work, let us know on the
-        <a href="https://lists.canonical.com/mailman/listinfo/launchpad-users"
-        >launchpad-users mailing list</a> (requires subscription).
-        Include the error <abbr>ID</abbr>
-        <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
-        in your message.
-      </p>
-      <tal:traceback replace="structure view/maybeShowTraceback" />
-    </div>
+    <div id="topline"></div>
+    <div id="locationbar"></div>
+      <div id="nonhelp">
+        <!--id="mainarea"-->
+          <div>
+          <h1 class="exception">Oops!</h1>
+          <p>
+            Sorry, something just went wrong in Launchpad.
+            We&#8217;ve recorded what happened,
+            and we&#8217;ll fix it as soon as possible.
+            Apologies for the inconvenience.
+          </p>
+          <p>
+            If this is blocking your work, let us know on the
+            <a href="https://lists.canonical.com/mailman/listinfo/launchpad-users"
+            >launchpad-users mailing list</a> (requires subscription).
+            Include the error <abbr>ID</abbr>
+            <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
+            in your message.
+          </p>
+          <tal:traceback replace="structure view/maybeShowTraceback" />
+        </div>
   </body>
 </html>
-</tal:layout>

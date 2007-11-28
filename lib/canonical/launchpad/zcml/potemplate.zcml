@@ -3,7 +3,6 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:zope="http://namespaces.zope.org/zope"
-    xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
 <facet facet="translations">
@@ -16,12 +15,18 @@
         />
       <require
         permission="launchpad.Admin"
-        set_attributes="potemplatename productseries distrorelease
+        set_attributes="name productseries distroseries
                         sourcepackagename sourcepackageversion
                         binarypackagename languagepack path header
-                        iscurrent from_sourcepackagename date_last_updated"
+                        iscurrent from_sourcepackagename date_last_updated
+                        source_file source_file_format"
       />
     </content>
+
+    <adapter
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        provides="canonical.launchpad.interfaces.ITranslationFileData"
+        factory="canonical.launchpad.database.POTemplateToTranslationFileDataAdapter" />
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -29,9 +34,17 @@
                  POTemplateSetNavigation"
         />
 
+    <adapter
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      for="canonical.launchpad.interfaces.IPOTemplate"
+      factory="canonical.launchpad.browser.POTemplateSOP"
+      permission="zope.Public"
+      />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOTemplate"
         name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:page
@@ -39,12 +52,15 @@
         for="canonical.launchpad.interfaces.IPOTemplate"
         class="canonical.launchpad.browser.POTemplateViewPreferred"
         permission="zope.Public"
-        template="../templates/potemplate-chart.pt" />
+        template="../templates/potemplate-chart.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IPOTemplate"
         class="canonical.launchpad.browser.POTemplateView"
-        permission="zope.Public">
+        permission="zope.Public"
+        layer="canonical.launchpad.layers.TranslationsLayer" >
         <browser:page
             name="+index"
             template="../templates/potemplate-index.pt" />
@@ -61,14 +77,6 @@
             name="+portlet-langstats"
             template="../templates/potemplate-portlet-langstats.pt"
             />
-        <browser:page
-            name="+portlet-relateds"
-            template="../templates/potemplate-portlet-relateds.pt"
-            />
-        <browser:page
-            name="+portlet-for"
-            template="../templates/potemplate-portlet-for.pt"
-            />
     </browser:pages>
 
     <browser:page
@@ -77,7 +85,7 @@
         permission="launchpad.Edit"
         template="../templates/potemplate-upload.pt"
         class="canonical.launchpad.browser.POTemplateView"
-        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+upload"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:editform
@@ -87,7 +95,8 @@
         label="Change PO template information"
         permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
-        fields="name description priority owner"
+        fields="description priority owner"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:editform
@@ -97,6 +106,12 @@
         label="Administer PO template"
         permission="launchpad.Admin"
         template="../templates/potemplate-edit.pt"
+        fields="name description header iscurrent owner
+                productseries distroseries sourcepackagename
+                from_sourcepackagename sourcepackageversion binarypackagename
+                languagepack path source_file_format priority
+                date_last_updated"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:page
@@ -105,6 +120,7 @@
         permission="launchpad.AnyPerson"
         template="../templates/potemplate-export.pt"
         class="canonical.launchpad.browser.POTemplateExportView"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <!-- POTemplateSet -->
@@ -123,7 +139,7 @@
         <require
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.IPOTemplateSubset"
-            set_attributes="sourcepackagename distrorelease"
+            set_attributes="sourcepackagename distroseries"
             />
     </content>
 
@@ -140,6 +156,7 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOTemplateSubset"
         name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:page
@@ -148,6 +165,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.POTemplateSubsetView"
         attribute="__call__"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
 </facet>

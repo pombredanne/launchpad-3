@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <metal:page define-macro="master"
             extend-macro="context/@@+shipit-macros/meta-master">
 
@@ -60,12 +66,12 @@
   <body>
 
     <div metal:fill-slot="footer" id="footer" class="footer ">
-      &copy; 2004-2006 <a href="http://www.canonical.com">Canonical Ltd</a>.<br />
+      &copy; 2004-2007 <a href="http://www.canonical.com">Canonical Ltd</a>.<br />
       Kubuntu, ShipIt and Canonical are registered trademarks of Canonical Ltd.
-      <a href="http://www.ubuntu.com/support/faq#head-7eef2db63e0a75424cdd663ee6f7b8eedcf19607"
-      >Ubuntu ShipIt FAQ</a>
+      <a href="http://www.ubuntu.com/getubuntu/shipit-faq">ShipIt FAQ</a>
     </div>
 
   </body>
 
 </metal:page>
+</tal:root>

@@ -1,111 +1,110 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="launchpad">
+  <body>
+    <h1 metal:fill-slot="heading">Software translations</h1>
+    <div metal:fill-slot="main">
 
-<body>
+                        <ul class="rollover buttons">
+                          <li>
+                            <a href="/+tour">
+                              <img
+                                alt="Take a tour"
+                                src="/+icing/but-lrg-takeatour.gif"
+                              />
+                            </a>
+                          </li>
+                        </ul>
+                        <form class="central" action="/projects/" method="get">
+                          <input id="text" name="text" size="50" type="text" />
+                          <input type="submit" value="Search Projects" />
+                        </form>
+                        <p id="application-summary">
+                          Launchpad helps you build a community to
+                          translate your project into into almost any
+                          language. Translators use this simple web
+                          interface to contribute translations in a
+                          wiki-style of collaboration.
+                          <a href="/+about">Learn more&#8230;</a>
+                        </p>
+                        <div class="three column left">
 
-<metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-groups" />
-    <div tal:replace="structure context/@@+portlet-stats" />
-</metal:leftportlets>
+                            <h2>Translatable operating systems</h2>
+                            <ul class="distroseries">
+                              <li tal:repeat="distroseries context/translatable_distroseriess">
+                                <a tal:attributes="href string:/${distroseries/distribution/name}/${distroseries/name}/+translations">
+                                  <tal:distroname replace="distroseries/distribution/displayname" />
+                                  <tal:version
+                                    condition="distroseries/version"
+                                    replace="distroseries/version"
+                                  />
+                                  <tal:codename
+                                    condition="not:distroseries/version"
+                                    replace="distroseries/title"
+                                  />
+                                </a>
+                              </li>
+                            </ul>
 
-<metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-preflangs" />
-</metal:rightportlets>
+                        </div>
+                        <div class="three column middle">
 
-<div metal:fill-slot="main">
+                            <h2>Translatable projects</h2>
+                            <ul class="product">
+                              <li tal:repeat="product context/featured_products">
+                                <a
+                                  tal:attributes="href string:/${product/name}/+translations"
+                                  tal:content="product/title"
+                                />
+                              </li>
+                            </ul>
+                            <a href="+products-with-translations">
+                              &raquo; List all translatable projects...</a>
 
-    <h1>Welcome to Rosetta</h1>
+                        </div>
+                        <div class="three column right">
+                          <h2>Preferred languages</h2>
+                          <ul class="language">
+                            <li tal:repeat="language view/translatable_languages">
+                              <a
+                                tal:attributes="href language/fmt:url"
+                                tal:content="language/englishname">
+                                Spanish
+                              </a>
+                            </li>
+                          </ul>
+                          <a href="/+editmylanguages">
+                            &raquo; Change your preferred languages...
+                          </a>
+                        </div>
+                        <div
+                          id="application-footer"
+                          tal:content="structure context/@@+portlet-stats"
+                        />
 
-    <p>
-      Rosetta is a Web-based system for translating open source software into
-      any language. <a href="+about">More about Rosetta.</a>
-    </p>
-
-      <h2>Translation groups</h2>
-    
+    </div><!--main-->
+    <div metal:fill-slot="help">
       <p>
-        Most translators in Rosetta are organized into translation teams by language,
-        and then into <a href="groups">translation groups</a>.
-        If the software you want to translate has a translation group already,
-        join or create that group&#8217;s team for your language.
+        Launchpad's translation application, codenamed
+        <a href="+about">Launchpad Translations</a>, helps you translate open source software
+        into any human language through the Web.  All you need to start
+        translating is a Web browser, a good knowledge of the application you
+        are translating, and a working knowledge of both English and your
+        target language.
       </p>
-
-      <h2>Translations in Ubuntu</h2>
-
-      <p>
-        Rosetta is the primary translation system for the Ubuntu distribution.
-        You can help translate any application in Ubuntu, or any of the Ubuntu
-        derivative distributions, using this Web interface. Select a release
-        to start translating.
-      </p>
-      <table>
-        <tbody>
-          <tal:release
-            repeat="distrorelease context/translatable_distroreleases"
-          >
-            <tr>
-              <td class="icon left">
-                <img alt="" src="/@@/product" />
-              </td>
-              <td>
-                <a
-                  tal:attributes="href string:/${distrorelease/distribution/name}/${distrorelease/name}/+translations"
-                >
-                  <span tal:replace="distrorelease/version">5.04</span>:
-                  <span tal:replace="distrorelease/title">Hoary Hedgehog</span>
-                </a>
-              </td>
-            </tr>
-            <tr class="secondary">
-              <td></td>
-              <td>
-                <p
-                  class="discreet"
-                  tal:content="distrorelease/summary"
-                >Summary here.</p>
-              </td>
-            </tr>
-          </tal:release>
-        </tbody>
-      </table>
-
-    <h2>Translatable applications</h2>
-
-    <p>
-      Select an application to begin translating it into your own language.
-      If your favourite open-source application is not listed here,
-      check that it&#8217;s <a href="/products">registered with Launchpad</a>,
-      and follow the instructions described at
-      <a href="https://wiki.ubuntu.com/RosettaFAQ">RosettaFAQ</a>
-    </p>
-
-    <table class="listing">
-      <thead>
-        <tr>
-          <th>Application</th>
-          <th>Title</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="product context/translatable_products">
-          <td>
-            <img alt="" src="/@@/product" />
-            <span tal:replace="product/name">product</span>
-          </td>
-          <td><a href="." tal:content="product/title"
-                 tal:attributes="href
-                     string:/products/${product/name}/+translations">
-                     Product Title here</a></td>
-        </tr>
-      </tbody>
-    </table>
-
-    <p>Find or register <a href="/products/">any other open source
-    application</a> for translation.</p>
-
-</div>
-
-</body>
+      <ul class="info">
+        <li>
+          <a href="https://help.launchpad.net/RosettaFAQ"
+          >Frequently asked questions</a>
+        </li>
+      </ul>
+    </div>
+  </body>
 </html>

@@ -1,0 +1,158 @@
+= Project Overview Page =
+
+The overview page for a project contain a link to the products in the
+project:
+
+    >>> browser.open('http://launchpad.dev/mozilla')
+    >>> browser.title
+    'The Mozilla Project in Launchpad'
+
+    >>> browser.getLink('Mozilla Firefox').url
+    'http://launchpad.dev/firefox'
+    >>> browser.getLink('Mozilla Thunderbird').url
+    'http://launchpad.dev/thunderbird'
+
+That page contain a link to register new products with the project. It
+is only available to users which have 'Admin' privileges on the project.
+
+    >>> browser.getLink('Register another project')
+    Traceback (most recent call last):
+      ...
+    LinkNotFoundError...
+
+    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser.getLink('Register another project')
+    Traceback (most recent call last):
+      ...
+    LinkNotFoundError...
+
+    >>> admin_browser.open('http://launchpad.dev/mozilla')
+    >>> admin_browser.getLink('Register another project').url
+    'http://launchpad.dev/mozilla/+newproduct'
+
+Also, it has a link to help translate it.
+
+    >>> admin_browser.getLink('Help translate').click()
+    >>> print admin_browser.title
+    Translatable projects for The Mozilla Project
+
+
+== Empty Project Groups ==
+
+An empty project group needs to be set up first...
+
+    >>> admin_browser.open('http://launchpad.dev/projectgroups/+new')
+    >>> admin_browser.getControl(name='field.name').value = 'a-test-group'
+    >>> admin_browser.getControl('Display Name:').value = 'Test Group'
+    >>> admin_browser.getControl('Title:').value = 'My Test Group'
+    >>> admin_browser.getControl(name='field.summary').value = 'Summary'
+    >>> admin_browser.getControl('Description:').value = 'Define me'
+    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/a-test-group'
+
+Empty project group index pages will not display the 'Report a bug', 'Ask a
+question' or 'Help translate' buttons.
+
+    >>> user_browser.open('http://launchpad.dev/a-test-group')
+    >>> user_browser.getLink('Report a bug')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+    >>> user_browser.getLink('Ask a question')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+    >>> user_browser.getLink('Help translate')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+    >>> user_browser.getLink(url='+mentoring')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+
+Also, the bugs, blueprints, translations and answers facets will be disabled:
+
+    >>> user_browser.open('http://launchpad.dev/a-test-group')
+    >>> user_browser.getLink('Bugs')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+    >>> user_browser.getLink('Blueprints')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+    >>> user_browser.getLink('Answers')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+    >>> user_browser.getLink('Answers')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+    >>> user_browser.getLink('Translations')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+
+A warning message will be displayed at the top of the overview page when the 
+owner of the project group views it:
+
+    >>> admin_browser.open('http://launchpad.dev/a-test-group')
+    >>> for warning in find_tags_by_class(admin_browser.contents, 'warning'):
+    ...     extract_text(warning.renderContents())
+    u'There are no projects registered for\nTest Group...'
+
+A link is included in the warning message which will take the admin user to
+the new product form for the project group.
+
+    >>> admin_browser.getLink(
+    ...     'register another project that is part of Test Group').click()
+    >>> admin_browser.title
+    'Register a project in Launchpad'
+
+== Products of a project ==
+
+The home page of a project contains a list of all products which are part of that project.
+
+    >>> browser.open('http://launchpad.dev/mozilla')
+    >>> products = find_tags_by_class(browser.contents, 'project')
+    >>> for product in products:
+    ...     print product.find('a').renderContents()
+    Mozilla Firefox
+    Mozilla Thunderbird
+ 
+Inactive products are not included in that list, though.
+
+    >>> from canonical.launchpad.database import ProductSet
+    >>> firefox = ProductSet().getByName('firefox')
+    >>> firefox.active = False
+    >>> firefox.syncUpdate()
+ 
+    >>> browser.open('http://launchpad.dev/mozilla')
+    >>> products = find_tags_by_class(browser.contents, 'project')
+    >>> for product in products:
+    ...     print product.find('a').renderContents()
+    Mozilla Thunderbird
+ 
+    >>> firefox.active = True
+    >>> firefox.syncUpdate()
+
+== URL Shortut to Access the Project's Products ==
+
+It is possible to access the project's product through the project URL.
+
+# XXX flacoste 2007-02-14:
+# Explain where this is used and why it is needed.
+
+  >>> browser.open('http://launchpad.dev/mozilla/firefox')
+  >>> browser.title
+  'Mozilla Firefox in Launchpad'
+  >>> print find_main_content(browser.contents)
+  <...
+  ...The Mozilla Firefox web browser...
+  ...
+  ...Latest bugs...
+  ...
+

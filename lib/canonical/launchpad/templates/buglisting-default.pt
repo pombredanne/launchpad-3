@@ -1,10 +1,29 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="malone"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
+    <metal:heading fill-slot="pageheading"> 
+
+      <tal:block condition="view/_projectContext">
+        <tal:block condition="view/required:launchpad.Edit">
+          <p tal:condition="not: context/products" class="warning message">
+            There are no projects registered for
+            <span tal:replace="context/displayname">project displayname</span>.
+            <br />
+            You need to <a href="+newproduct">register another project that is
+            part of <tal:project replace="context/displayname" /></a> or
+            associate an existing project with it.
+          </p>
+        </tal:block>
+      </tal:block>
       <h1
         tal:condition="view/shouldShowAdvancedForm"
         tal:content="view/getAdvancedSearchPageHeading"
@@ -14,7 +33,7 @@
         <tal:software replace="context/displayname">Fooix</tal:software>
       </h1>
     </metal:heading>
-  
+
     <style metal:fill-slot="head_epilogue" type="text/css">
       label {font-weight: normal;}
     </style>
@@ -24,9 +43,9 @@
       condition="not: view/shouldShowAdvancedForm">
       <tal:block content="structure context/@@+portlet-bugfilters" />
       <tal:block content="structure context/@@+portlet-bugtags" />
-      <tal:releasebugs
-         tal:condition="context/@@+portlet-bugtasklist-releasebugs|nothing"
-         tal:content="structure context/@@+portlet-bugtasklist-releasebugs" />
+      <tal:releasecriticalbugs
+         tal:condition="view/shouldShowReleaseCriticalPortlet"
+         tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
      </tal:do_not_show_portlets_advanced_form>
      <tal:show_portlets_advanced condition="view/shouldShowAdvancedForm">
        <div tal:replace="structure context/@@+portlet-details" />
@@ -34,11 +53,18 @@
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
+
+
       <tal:do_not_show_advanced_form
         condition="not: view/shouldShowAdvancedForm">
       <div tal:define="batch_navigator view/search">
+        <div style="float: right;">
+          <a href="+filebug">
+            <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
+          </a>
+        </div>
+
         <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form" />
-        <br />
         <tal:buglisting content="structure batch_navigator/@@+table-view" />
       </div>
       </tal:do_not_show_advanced_form>

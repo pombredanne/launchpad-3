@@ -1,3 +1,6 @@
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
+
 from zope.interface import Interface, Attribute
 
 __all__ = ['IGPGHandler', 'IPymeSignature', 'IPymeKey', 'IPymeUserId',
@@ -31,7 +34,7 @@ class IGPGHandler(Interface):
 
     def verifySignature(content, signature=None):
         """Returns a PymeSignature object if content is correctly signed
-        or None. 
+        or None.
 
         If signature is None, we assume content is clearsigned. Otherwise
         it stores the detached signature and content should contain the
@@ -44,10 +47,22 @@ class IGPGHandler(Interface):
         :signature: The signature (or None if content is clearsigned)
         """
 
-    def getURLForKeyInServer(fingerprint, action=None):
+    def getURLForKeyInServer(fingerprint, action=None, public=False):
         """Return the URL for that fingerprint on the configured keyserver.
 
+        If public is True, return a URL for the public keyserver; otherwise,
+        references the default (internal) keyserver.
         If action is provided, will attach that to the URL.
+        """
+
+    def getVerifiedSignatureResilient(content, signature=None):
+        """Wrapper for getVerifiedSignature.
+
+        It calls the target method exactly 3 times.
+
+        Return the result if it succeed during the cycle, otherwise
+        capture the errors and emits at the end GPGVerificationError
+        with the stored error information.
         """
 
     def getVerifiedSignature(content, signature=None):
@@ -69,7 +84,7 @@ class IGPGHandler(Interface):
 
     def importPublicKey(content):
         """Import the public key with the given content into our local keyring.
-        
+
         Return a PymeKey object referring to the public key imported.
 
         :content: Public key ASCII armored content (must be an ASCII string;
@@ -95,7 +110,7 @@ class IGPGHandler(Interface):
         """Return the encrypted content or None if failed.
 
         content must be a traditional string. It's up to the caller to
-        encode or decode properly. Fingerprint must be hexadecimal string. 
+        encode or decode properly. Fingerprint must be hexadecimal string.
 
         :content: the Unicode content to be encrypted.
         :fingerprint: the OpenPGP key's fingerprint.
@@ -104,7 +119,7 @@ class IGPGHandler(Interface):
     def retrieveKey(fingerprint):
         """Return a PymeKey object containing the key information from the
         local keyring.
-        
+
         :fingerprint: The key fingerprint, which must be an hexadecimal
                       string.
 

@@ -1,0 +1,37 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<metal:detailed_display define-macro="detailed_display">
+  <tal:comment replace="nothing">
+    This macro expects two variables to be defined:
+      - 'series': The ProductSeries
+      - 'is_focus': A boolean saying whether this is the series in which
+                    development is focused.
+  </tal:comment>
+
+  <strong><a tal:attributes="href series/fmt:url"
+             tal:content="series/name" >
+      1.0
+    </a>
+  </strong>
+  <i tal:condition="is_focus">Current development focus</i>
+  <div tal:condition="series/releases">
+    Releases:
+    <tal:release repeat="release series/releases">
+      <a tal:attributes="href release/fmt:url" tal:content="release/version"
+        >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
+    </tal:release>
+  </div>
+  <div tal:condition="series/milestones">
+    Milestones:
+    <tal:milestone repeat="milestone series/milestones">
+      <a tal:attributes="href milestone/fmt:url" tal:content="milestone/name"
+        >name</a><tal:comma condition="not:repeat/milestone/end">,</tal:comma>
+    </tal:milestone>
+  </div>
+  <metal:extra define-slot="extra" />
+</metal:detailed_display>
+</tal:root>

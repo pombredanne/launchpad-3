@@ -1,0 +1,58 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+  <!-- DistroSeriesLanguage and Dummy -->
+  <content class="canonical.launchpad.database.DistroSeriesLanguage">
+    <allow interface="canonical.launchpad.interfaces.IDistroSeriesLanguage" />
+  </content>
+
+  <content class="canonical.launchpad.database.DummyDistroSeriesLanguage">
+    <allow interface="canonical.launchpad.interfaces.IDistroSeriesLanguage"
+      />
+  </content>
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IDistroSeriesLanguage"
+    path_expression="string:+lang/${language/code}"
+    attribute_to_parent="distroseries"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistroSeriesLanguage"
+    name="+index"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroSeriesLanguage"
+    permission="zope.Public"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer" >
+    <browser:page
+      name="+portlet-stats"
+      template="../templates/distroserieslanguage-portlet-stats.pt" />
+    <browser:page
+      name="+rosetta-status-legend"
+      template="../templates/rosetta-status-legend.pt" />
+  </browser:pages>
+
+  <browser:page
+    name="+index"
+    permission="zope.Public"
+    for="canonical.launchpad.interfaces.IDistroSeriesLanguage"
+    template="../templates/distroserieslanguage-index.pt"
+    class="canonical.launchpad.browser.DistroSeriesLanguageView"
+    facet="translations"
+    layer="canonical.launchpad.layers.TranslationsLayer" />
+
+  <!-- DistroSeriesLanguageSet -->
+  <securedutility
+    class="canonical.launchpad.database.DistroSeriesLanguageSet"
+    provides="canonical.launchpad.interfaces.IDistroSeriesLanguageSet">
+    <allow
+      interface="canonical.launchpad.interfaces.IDistroSeriesLanguageSet" />
+  </securedutility>
+
+</configure>

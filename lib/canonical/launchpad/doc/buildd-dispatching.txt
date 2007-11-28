@@ -1,0 +1,195 @@
+= Buildd Dispatching =
+
+  >>> import transaction
+  >>> import logging
+  >>> logger = logging.getLogger()
+  >>> logger.setLevel(logging.DEBUG)
+
+The buildd dispatching basically consists of finding a available
+Buildd-slave in IDLE state, push required files to it, then request
+the it to start a build procedure.
+
+Those tasks are implemented by the BuilddMaster and BuilderGroup
+classes.
+
+  >>> from canonical.buildmaster.master import BuilddMaster
+  >>> bm = BuilddMaster(logger, transaction)
+
+Setup the test builder:
+
+  >>> from canonical.buildd.ftests import BuilddSlaveTestSetup
+  >>> BuilddSlaveTestSetup().setUp()
+
+Setup a suitable chroot for Hoary i386:
+
+  >>> from canonical.librarian.interfaces import ILibrarianClient
+  >>> from StringIO import StringIO
+  >>> librarian_client = getUtility(ILibrarianClient)
+
+  >>> content = 'anything'
+  >>> alias_id = librarian_client.addFile(
+  ...    'foo.tar.gz', len(content), StringIO(content), 'text/plain')
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistributionSet, ILibraryFileAliasSet)
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+
+  >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
+
+  >>> chroot = getUtility(ILibraryFileAliasSet)[alias_id]
+  >>> pc = hoary_i386.addOrUpdateChroot(chroot=chroot)
+
+Activate builders present in sampledata, we need to be logged in as a
+member of launchpad-buildd-admin:
+
+  >>> from canonical.launchpad.ftests import login
+  >>> login('celso.providelo@canonical.com')
+
+Set IBuilder.builderok of all present builders:
+
+  >>> from canonical.launchpad.interfaces import IBuilderSet
+  >>> builder_set = getUtility(IBuilderSet)
+
+  >>> builder_set.count()
+  2
+
+  >>> from canonical.launchpad.ftests import syncUpdate
+  >>> for b in builder_set:
+  ...     b.builderok = True
+  ...     syncUpdate(b)
+
+Clean up previous BuildQueue results from sampledata:
+
+  >>> from canonical.launchpad.interfaces import IBuildQueueSet
+  >>> lost_job = getUtility(IBuildQueueSet).get(1)
+  >>> lost_job.builder.name
+  u'bob'
+  >>> lost_job.destroySelf()
+
+Setup BuilddMaster class:
+
+  >>> bm.addDistroArchSeries(hoary_i386)
+  >>> bm.setupBuilders(hoary_i386)
+  WARNING:root.builders.x86:frog (http://localhost:9221/) marked as failed due to: (111, 'Connection refused')
+  Traceback (most recent call last):
+  ...
+  error: (111, 'Connection refused')
+
+Check if there are builders available:
+
+  >>> bob_builder = builder_set['bob']
+  >>> bob_builder.name
+  u'bob'
+  >>> bob_builder.trusted
+  True
+  >>> bob_builder.is_available
+  True
+
+Verify how the nonexistent builder was excluded, marked as failed:
+
+  >>> frog_builder = builder_set['frog']
+  >>> frog_builder.builderok
+  False
+  >>> print frog_builder.failnotes
+  (111, 'Connection refused')
+  >>> frog_builder.is_available
+  False
+
+Now let's check the build candidates which will be considered for the
+builder 'bob':
+
+  >>> job = bob_builder.findBuildCandidate()
+
+The single BuildQueue found is a trusted pending build:
+
+  >>> job.id
+  2
+  >>> job.build.buildstate.name
+  'NEEDSBUILD'
+  >>> job.builder is None
+  True
+  >>> job.buildstart is None
+  True
+  >>> job.is_trusted
+  True
+
+Update the SourcePackageReleaseFile corresponding to this job:
+
+  >>> content = 'anything'
+  >>> alias_id = librarian_client.addFile(
+  ...    'foo.dsc', len(content), StringIO(content), 'application/dsc')
+
+  >>> sprf = job.build.sourcepackagerelease.files[0]
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> naked_sprf = removeSecurityProxy(sprf)
+  >>> naked_sprf.libraryfile = getUtility(ILibraryFileAliasSet)[alias_id]
+  >>> flush_database_updates()
+
+Check the dispatching method itself:
+
+  >>> bob_builder.dispatchBuildCandidate(job)
+  >>> flush_database_updates()
+
+Verify if the job (BuildQueue) was updated appropriately:
+
+  >>> job.builder.id == bob_builder.id
+  True
+  >>> job.build.buildstate.name
+  'BUILDING'
+  >>> job.buildstart
+  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+
+Shutdown builder, mark the build record as failed and remove the
+buildqueue record, so the build was eliminated:
+
+  >>> BuilddSlaveTestSetup().tearDown()
+
+  >>> from canonical.launchpad.interfaces import BuildStatus
+  >>> job.build.buildstate = BuildStatus.FAILEDTOBUILD
+  >>> job.destroySelf()
+  >>> flush_database_updates()
+
+Restart buildd-slave:
+
+  >>> BuilddSlaveTestSetup().setUp()
+
+Create new Build record of the same source targeted for a PPA archive:
+
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+  >>> ppa_build = sprf.sourcepackagerelease.createBuild(
+  ...     hoary_i386, PackagePublishingPocket.RELEASE, cprov.archive)
+
+Create BuildQueue record and inspect some parameters:
+
+  >>> ppa_job = ppa_build.createBuildQueueEntry()
+  >>> ppa_job.id
+  3L
+  >>> ppa_job.builder == None
+  True
+  >>> ppa_job.buildstart == None
+  True
+  >>> ppa_job.is_trusted
+  False
+
+  >>> bob_builder.trusted = False
+  >>> flush_database_updates()
+
+  >>> job = bob_builder.findBuildCandidate()
+  >>> ppa_job.id == job.id
+  True
+
+  >>> bob_builder.dispatchBuildCandidate(ppa_job)
+  >>> flush_database_updates()
+
+Anyway, after making 'bob' builder available to build *untrusted*
+code, and dispatching pending jobs, we can see that ppa_job is building:
+
+  >>> ppa_job.builder.name
+  u'bob'
+  >>> ppa_job.build.buildstate.name
+  'BUILDING'
+  >>> ppa_job.buildstart
+  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+

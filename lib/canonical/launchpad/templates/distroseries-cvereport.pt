@@ -1,0 +1,64 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>CVEs related to bugs in <span tal:replace="context/fullseriesname" /></h1>
+    </metal:heading>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-aboutcve" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <tal:open_issues define="bugtaskcves view/open_cve_bugtasks">
+
+    <h2>Open bugs in <span
+          tal:replace="context/fullseriesname">Ubuntu Hoary</span></h2>
+
+    <tal:listing condition="bugtaskcves">
+      <metal:table use-macro="context/@@bugtask-macros-cve/table-listing" />
+    </tal:listing>
+
+    <p tal:condition="not: bugtaskcves">
+      There are no CVEs related to bugs open in <span
+        tal:replace="context/fullseriesname">Ubuntu Hoary</span>.
+    </p>
+
+  </tal:open_issues>
+
+  <tal:resolved_issues define="bugtaskcves view/resolved_cve_bugtasks">
+
+    <h2>Resolved bugs in <span
+      tal:replace="context/fullseriesname">Ubuntu Hoary</span></h2>
+
+    <tal:listing condition="bugtaskcves">
+      <metal:table use-macro="context/@@bugtask-macros-cve/table-listing" />
+    </tal:listing>
+
+    <p tal:condition="not: bugtaskcves">
+      There are no CVEs related to bugs resolved in <span
+        tal:replace="context/fullseriesname">Ubuntu Hoary</span>.
+    </p>
+
+  </tal:resolved_issues>
+
+  <h2>Other CVE reports</h2>
+
+  View the full set of CVE reports <a 
+    tal:attributes="href string:${context/distribution/fmt:url}/+cve">associated with <span
+  tal:replace="context/distribution/displayname" /></a>.
+
+</div>
+</body>
+</html>

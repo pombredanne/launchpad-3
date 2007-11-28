@@ -1,11 +1,17 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1 tal:content="context/title">PPC build of Foopy 1.1 in Fooix 2006</h1>
+      <h1>Build details</h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -23,6 +29,34 @@
         <tbody>
 
           <tr>
+            <th>Changes file:</th>
+            <td tal:condition="context/changesfile">
+              <a tal:attributes="href context/changesfile/http_url"
+                 tal:content="context/changesfile/filename">CHANGESFILE</a>
+            </td>
+            <td tal:condition="not:context/changesfile">
+              <i>not available</i>
+            </td>
+          </tr>
+
+          <tr>
+            <th>Archive:</th>
+            <td tal:condition="not: context/is_trusted">
+              <a tal:attributes="href context/archive/fmt:url">
+               <span tal:replace="context/archive/owner/displayname"/> PPA
+              </a>
+            </td>
+            <td tal:condition="context/is_trusted">
+               <i><span tal:replace="context/distribution/name"/> archive</i>
+            </td>
+          </tr>
+
+          <tr>
+            <th>Component:</th>
+            <td tal:content="context/current_component/name"/>
+          </tr>
+
+          <tr>
             <th>Status:</th>
             <td>
               <span tal:replace="context/buildstate/title" />
@@ -35,19 +69,10 @@
           </tr>
 
           <tr>
-            <th>Build recorded:</th>
-            <td tal:content="context/datecreated/fmt:datetime" />
-          </tr>
-
-          <tr>
-            <th>Changesfile:</th>
-            <td tal:condition="context/changesfile">
-              <a tal:attributes="href context/changesfile/url"
-                 tal:content="context/changesfile/filename">CHANGESFILE</a>
-            </td>
-            <td tal:condition="not:context/changesfile">
-              <i>not available</i>
-            </td>
+            <th>Queued:</th>
+            <td
+              tal:attributes="title context/datecreated/fmt:datetime"
+              tal:content="context/datecreated/fmt:approximatedate" />
           </tr>
 
           <tal:not_built condition="not: context/was_built">
@@ -61,8 +86,10 @@
               </tal:bq_not_started>
               <tal:bq_started condition="bq/buildstart">
                 <tr>
-                  <th>Build started:</th>
-                  <td tal:content="bq/buildstart/fmt:datetime" />
+                  <th>Started:</th>
+                  <td
+                    tal:attributes="title bq/buildstart/fmt:datetime"
+                    tal:content="bq/buildstart/fmt:approximatedate" />
                 </tr>
                 <tr>
                   <th>Builder:</th>
@@ -74,12 +101,14 @@
 
           </tal:not_built>
 
-          <tal:built condition="context/was_built">
             <tr>
-              <th>Build started:</th>
+              <th>Started:</th>
               <td tal:condition="context/buildduration">
-                <span tal:replace="
-                          context/calculated_buildstart/fmt:datetime"/>
+                <span
+                  tal:attributes="
+                    title context/calculated_buildstart/fmt:datetime"
+                  tal:content="
+                    context/calculated_buildstart/fmt:approximatedate" />
               </td>
               <td tal:condition="not: context/buildduration">
                  <i>not available</i>
@@ -87,10 +116,12 @@
             </tr>
 
             <tr>
-              <th>Build finished:</th>
+              <th>Finished:</th>
               <td tal:condition="context/datebuilt">
-                <span tal:replace="context/datebuilt/fmt:datetime"/>
-                (<span tal:replace="
+                <span
+                  tal:attributes="title context/datebuilt/fmt:datetime"
+                  tal:content="context/datebuilt/fmt:approximatedate"/>
+                (took <span tal:replace="
                        context/buildduration/fmt:approximateduration"/>)
               </td>
               <td tal:condition="not: context/datebuilt">
@@ -111,17 +142,21 @@
             <tr>
               <th>Build log:</th>
               <td tal:condition="context/buildlog">
-                <a tal:attributes="href context/buildlog/url"
+                <a tal:attributes="href context/buildlog/http_url"
                    tal:content="context/buildlog/filename">BUILDLOG</a>
               </td>
               <td tal:condition="not: context/buildlog">
                 <i>not available</i>
               </td>
             </tr>
-          </tal:built>
 
         </tbody>
       </table>
+
+      <p tal:condition="view/user_can_retry_build">
+          Use the 'Retry build' link in the Actions menu if you wish to
+          retry your build.
+      </p>
 
     </div>
   </body>

@@ -1,8 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
 
 <body>
@@ -16,7 +21,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Foo Series: main</h3>
   <h1>Ubuntu packaging</h1>
 </metal:heading>
 
@@ -27,14 +31,14 @@
       This page is a quick way for you to link the
       <span tal:replace="context/product/displayname">Firefox</span>
       "<span tal:replace="context/name">1.0</span>" series to a package in
-      the current development release of Ubuntu. We will use this
+      the current development series of Ubuntu. We will use this
       information to improve the flow of bug fixes and translations
       from Ubuntu to the
       <span tal:replace="context/product/displayname">Firefox</span> team.
     </p>
 
     <p class="informational message" tal:condition="not:request/lp:person">
-       You must log in to change the mapping from this product branch to its
+       You must log in to change the mapping from this project branch to its
        Ubuntu package.
     </p>
 
@@ -44,8 +48,8 @@
 
         <h2>
           Package in 
-          <span tal:replace="view/curr_ubuntu_release/title">
-            The Hoary Hedgehog Release
+          <span tal:replace="view/curr_ubuntu_series/title">
+            The Hoary Hedgehog
           </span>
         </h2>
 
@@ -80,15 +84,21 @@
         <thead>
           <tr>
             <th>Date</th>
-            <th>Ubuntu Release</th>
+            <th>Ubuntu Series</th>
             <th>Package</th>
             <th>By</th>
           </tr>
         </thead>
         <tbody>
           <tr tal:repeat="packaging view/ubuntu_history">
-            <td tal:content="packaging/datecreated/fmt:date">13-05-2004</td>
-            <td tal:content="packaging/distrorelease/name">hoary</td>
+            <td>
+              <span
+                tal:attributes="title packaging/datecreated/fmt:datetime"
+                tal:content="packaging/datecreated/fmt:approximatedate">
+                13-05-2004
+              </span>
+            </td>
+            <td tal:content="packaging/distroseries/name">hoary</td>
             <td tal:content="packaging/sourcepackagename/name">evolution</td>
             <td><span tal:condition="packaging/owner"
                       tal:replace="packaging/owner/browsername">sabdfl

@@ -1,68 +1,151 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/default"
+  i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">    
-      <h1 tal:content="context/title">Name of product</h1>
-    </metal:heading>
-
-<metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-translations" />
-    <div tal:replace="structure context/@@+portlet-milestones" />
-    <div tal:condition="context/project"
-         tal:replace="structure context/project/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-top-contributors" />
-    <div tal:replace="structure context/@@+portlet-latestspecs" />
-    <div tal:replace="structure context/@@+portlet-latestbranches" />
-    <div tal:replace="structure context/@@+portlet-packages" />
-</metal:rightportlets>
+    <metal:portlets fill-slot="portlets">
+      <div tal:replace="structure context/@@+portlet-lifecycle" />
+      <div tal:replace="structure context/@@+portlet-milestones" />
+    </metal:portlets>
 
 <div metal:fill-slot="main">
 
-  <div class="documentDescription" tal:content="context/summary">
+  <p id="project-inactive" tal:condition="not: context/active" class="warning message">
+    This project is currently inactive <a href="+review">(change this)</a>
+  </p>
+
+  <span tal:replace="structure context/image:mugshot" />
+  <h1 tal:content="context/title">Name of project</h1>
+
+  <div class="description" tal:content="context/summary">
     $Product.summary goes here. This should be quite short,
-    just a single paragraph of text really, giving the product
+    just a single paragraph of text really, giving the project
     highlights.
   </div>
 
-  <div tal:content="structure context/description/fmt:text-to-html"
-       tal:condition="context/description">
+  <div
+    class="description"
+    tal:content="structure context/description/fmt:text-to-html"
+    tal:condition="context/description"
+  >
     $Product.description goes here. This should be a longer piece of
     text, up to three paragraphs in length, which gives much more
-    detailed information about the open source product in question.
+    detailed information about the open source project in question.
   </div>
 
-  <h2>Product series and releases</h2>
+      <ul class="buttons">
+        <li>
+          <a href="+filebug">
+            <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
+          </a>
+        </li>
+        <li tal:content="structure context/@@+ask-a-question-button" />
+        <li tal:content="structure context/@@+help-translate-button" />
+        <li tal:define="has_mentoring context/mentoring_offers/count">
+          <a href="+mentoring" tal:condition="has_mentoring">
+            <img alt="Mentoring available"
+                 src="/+icing/but-sml-mentoring.gif"/>
+          </a>
+          <a href="+mentoring" tal:condition="not: has_mentoring">
+            <img alt="No mentoring available"
+                 src="/+icing/but-sml-mentoring-off.gif" />
+          </a>
+        </li>
+      </ul>
+      <tal:has-external-links condition="view/has_external_links">
+        <h2 id="external-links-heading">External Resources</h2>
+        <ul>
+          <li class="external link" tal:condition="view/should_display_homepage">
+            <a id="homepageurl-link" tal:attributes="href context/homepageurl">
+              <strong>Home page</strong>
+            </a>
+          </li>
+          <li class="external link" tal:condition="view/sourceforge_url">
+            <a id="sourceforge-link" tal:attributes="href view/sourceforge_url">
+              <strong>Sourceforge project</strong>
+            </a>
+          </li>
+          <li class="external link" tal:condition="view/freshmeat_url">
+            <a id="freshmeat-link" tal:attributes="href view/freshmeat_url">
+              <strong>Freshmeat record</strong>
+            </a>
+          </li>
+          <li class="external link" tal:condition="context/wikiurl">
+            <a id="wikiurl-link" tal:attributes="href context/wikiurl">
+              <strong>Wiki</strong>
+            </a>
+          </li>
+          <li class="external link" tal:condition="context/screenshotsurl">
+            <a id="screenshotsurl-link" tal:attributes="href context/screenshotsurl">
+              <strong>Screenshots</strong>
+            </a>
+          </li>
+          <li class="external link" tal:condition="context/downloadurl">
+            <a id="downloadurl-link" tal:attributes="href context/downloadurl">
+              <strong>External downloads</strong>
+            </a>
+          </li>
+        </ul>
+      </tal:has-external-links>
+      <div class="left">
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-coming-sprints"
+        />
+        <div class="portlet">
+          <h2>Timeline</h2>
 
-  <tal:per_series repeat="series context/serieslist">
+          <div class="project series"
+               tal:repeat="series view/sorted_series_list">
 
-    <div tal:define="is_focus python:context.development_focus == series"
-         tal:attributes="class python:is_focus and 'highlighted' or ''">
-      <p>
-        <a tal:attributes="href series/fmt:url"
-           tal:content="series/name">1.0</a>:
-        <span tal:replace="series/summary">
-          A summary of the series details and status.
-        </span>
-      </p>
-      <div tal:condition="is_focus" class="discreet">
-        This series is the current development focus
+            <div tal:define="
+                   is_focus python:context.development_focus == series"
+                 tal:attributes="
+                   class python:is_focus and 'highlighted' or 'unhighlighted'">
+              <metal:series use-macro="series/@@+macros/detailed_display" />
+            </div>
+
+          </div>
+
+        </div>
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestspecs"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestbranches"
+        />
+      </div>
+      <div class="right">
+        <div
+          class="two column section"
+          tal:content="structure context/@@+portlet-details"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-top-contributors"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestbugs"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestquestions"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-packages"
+        />
       </div>
     </div>
-    <div tal:replace="structure series/@@+table-releases" />
-
-  </tal:per_series>
-
-  <div tal:replace="structure context/@@+portlet-latestbugs" />
-  <div tal:replace="structure context/@@+portlet-latesttickets" />
-
-</div>
-
-</body>
+  </body>
 </html>

@@ -1,0 +1,23 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<tr>
+  <td class="icon left">
+    <img alt="" src="/@@/meeting" />
+  </td>
+  <td>
+    <div>
+      <span
+        tal:attributes="title context/time_starts/fmt:datetime"
+        tal:content="context/time_starts/fmt:approximatedate">
+        2005-10-05
+      </span>:
+      <a tal:attributes="href context/fmt:url"
+      tal:content="context/title">Meeting Title Here</a>
+    </div>
+  </td>
+</tr>
+</tal:root>

@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [ 'BugLinkTargetMixin' ]
@@ -8,7 +9,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
-from canonical.launchpad.helpers import check_permission
+from canonical.launchpad.webapp.authorization import check_permission
 
 class BugLinkTargetMixin:
     """Mixin class for IBugLinkTarget implementation."""

@@ -1,8 +1,21 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:do-this-first replace="view/processForm" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -16,13 +29,14 @@
 
   <div metal:fill-slot="main">
 
+    <tal:open-poll condition="context/isOpen">
     <h1>Simple vote</h1>
 
     <tal:can-vote condition="view/userCanVote">
     <p
       tal:condition="view/feedback"
       tal:content="view/feedback"
-      class="error message"
+      class="informational message"
     />
 
     <div class="highlighted" style="font-size: 80%;">
@@ -49,7 +63,7 @@
       </tal:block>
     </tal:block>
 
-    <table cols="2">
+    <table cols="2" id="your-vote">
       <tr>
         <td>
           <h2>Your current vote</h2>
@@ -65,6 +79,7 @@
                 </b>
                 <b tal:condition="view/currentVote/option" 
                    tal:content="view/currentVote/option/name" />
+              </p>
             </tal:block>
 
             <tal:block condition="not: view/gotTokenAndVotes">
@@ -81,7 +96,8 @@
             <p>Choose one option</p>
 
             <label>
-              <input type="radio" name="newoption" value="donotvote" checked />
+              <input type="radio" name="newoption" value="donotvote"
+                checked="checked" />
               I'm not voting yet
             </label>
             <br />
@@ -92,7 +108,8 @@
             <p>Choose one option</p>
 
             <label>
-              <input type="radio" name="newoption" value="donotchange" checked />
+              <input type="radio" name="newoption" value="donotchange"
+              checked="checked" />
               Don't change my vote
             </label>
             <br />
@@ -123,10 +140,19 @@
     </form>
     </tal:can-vote>
 
-      <p tal:condition="not: view/userCanVote" class="error message">
-        You can&#8217;t vote in this poll because you&#8217;re not
-        a member of <span tal:replace="context/team/browsername" />.
-      </p>
-    </div>
-  </body>
+    <p tal:condition="not: view/userCanVote" class="informational message">
+      You can&#8217;t vote in this poll because you&#8217;re not
+      a member of <span tal:replace="context/team/browsername" />.
+    </p>
+
+    </tal:open-poll> 
+
+    <p tal:condition="not: context/isOpen" class="informational message">
+      This poll is already closed.
+    </p>
+
+  </div>
+
+</body>
 </html>
+</tal:root>

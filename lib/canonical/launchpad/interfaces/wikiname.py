@@ -1,4 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
@@ -30,7 +31,7 @@ class IWikiNameSet(Interface):
 
     def getByWikiAndName(wiki, wikiname):
         """Return the WikiName with the given wiki and wikiname.
-        
+
         Return None if it doesn't exists.
         """
 
@@ -46,7 +47,7 @@ class IWikiNameSet(Interface):
 
     def get(id, default=None):
         """Return the WikiName with the given id.
-        
+
         Return the default value if nof found.
         """
 

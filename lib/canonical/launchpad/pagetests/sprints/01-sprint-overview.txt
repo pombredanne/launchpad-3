@@ -12,15 +12,20 @@ Let's start by viewing the list of sprints registered.
   >>> user_browser.title
   'Meetings and sprints registered in Launchpad'
 
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(user_browser.contents)
+  >>> soup = find_main_content(user_browser.contents)
   >>> print soup('p')[0].string
-  You can register a sprint or a meeting in Launchpad, and then keep track
-  of the specifications that will be discussed at that meeting.
+  <BLANKLINE>
+      Launchpad can help you organise your developer sprints, summits and
+      gatherings. Register the meeting here, then you can invite people to
+      nominate blueprints for discussion at the event. The meeting drivers
+      control the agenda, but everyone can see what's proposed and what's
+      been accepted.
+  <BLANKLINE>
 
-Now lets have a look at one sprint in particular. We expect to have UBZ in
-the sample data:
+Now lets have a look at one sprint in particular. We expect to have a sprint
+called "paris" in the sample data. Note that this list only shows meetings
+in the future, so there is a timebomb here for 2011 or so...
 
-  >>> user_browser.getLink('Ubuntu Below Zero').click()
+  >>> user_browser.getLink('Ubuntu Summit - Paris').click()
   >>> user_browser.url
-  'http://launchpad.dev/sprints/ubz'
+  'http://launchpad.dev/sprints/paris'

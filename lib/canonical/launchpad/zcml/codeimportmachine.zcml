@@ -1,0 +1,31 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  xmlns:zope="http://namespaces.zope.org/zope"
+  i18n_domain="launchpad">
+
+  <!-- CodeImportMachine -->
+
+  <content class="canonical.launchpad.database.CodeImportMachine">
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.ICodeImportMachine"
+      />
+
+    <!-- ICodeImportMachine has no set_schema, because all modifications
+      should be done through methods that create CodeImportEvent objects when
+      appropriate. -->
+  </content>
+
+  <!-- CodeImportMachineSet -->
+
+  <securedutility
+    class="canonical.launchpad.database.CodeImportMachineSet"
+    provides="canonical.launchpad.interfaces.ICodeImportMachineSet" >
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.ICodeImportMachineSet" />
+  </securedutility>
+
+</configure>

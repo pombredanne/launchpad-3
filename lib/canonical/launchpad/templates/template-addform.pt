@@ -1,9 +1,14 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -20,10 +25,6 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context Title Here</h3>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
@@ -33,7 +34,7 @@
         metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
 
     <div metal:fill-slot="extra_info" class="documentDescription">
-      Please the introductory paragraph here. It will be displayed in
+      Place the introductory paragraph here. It will be displayed in
       bold text below the form title. It should be a single paragraph
       giving an overview of what is being added.
     </div>

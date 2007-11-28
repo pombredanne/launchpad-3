@@ -81,7 +81,7 @@
   If in the meantime someone registers the email address that we're using
   to create a new account.
 
-  >>> from canonical.lp.dbschema import EmailAddressStatus
+  >>> from canonical.launchpad.interfaces import EmailAddressStatus
   >>> from canonical.launchpad.database import EmailAddressSet, PersonSet
   >>> salgado = PersonSet().getByName('salgado')
   >>> email = EmailAddressSet().new(
@@ -109,16 +109,15 @@
   ... 
   ... foo
   ... -----------------------------17483551342125833225531652773
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.continue"
   ... 
   ... Continue
   ... -----------------------------17483551342125833225531652773--
   ... """ % path)
   HTTP/1.1 200 Ok
   ...
-  ...Please fix the problems below and try again...
   <BLANKLINE>
-   ...The email address foobarino@baz.com.br is already registered...
+  ...The email address foobarino@baz.com.br is already registered...
   ...
 
 
@@ -191,7 +190,7 @@
   ... foo
   ... 
   ... -----------------------------17483551342125833225531652773
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.continue"
   ... 
   ... Continue
   ... -----------------------------17483551342125833225531652773--
@@ -219,7 +218,7 @@
   ... Content-Disposition: form-data; name="field.password_dupe"
   ... 
   ... -----------------------------17483551342125833225531652773
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.continue"
   ... 
   ... Continue
   ... -----------------------------17483551342125833225531652773--
@@ -245,7 +244,7 @@
   ... Content-Disposition: form-data; name="field.password_dupe"
   ... 
   ... -----------------------------17483551342125833225531652773
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.continue"
   ... 
   ... Continue
   ... -----------------------------17483551342125833225531652773--
@@ -281,7 +280,7 @@
   ... 
   ... tésté
   ... -----------------------------17483551342125833225531652773
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.continue"
   ... 
   ... Continue
   ... -----------------------------17483551342125833225531652773--
@@ -320,7 +319,7 @@
   ... 
   ... f
   ... -----------------------------17483551342125833225531652773
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.continue"
   ... 
   ... Continue
   ... -----------------------------17483551342125833225531652773--
@@ -330,28 +329,15 @@
   Location: http://localhost:9000/~foo
   ...
 
-  >>> foo = PersonSet().getByName('foo')
-  >>> foo.creation_rationale.name
-  'OWNER_CREATED_LAUNCHPAD'
-
 
   New account was created with name 'foo' and the hide email addresses option is
   turned on.
 
-  >>> print http(r"""
-  ... GET /~foo/+edit HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...name="field.displayname" size="20" type="text" value="foobar"...
-  ...
-  ...Hide my email addresses from other Launchpad users...
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-   ...name="field.hide_email_addresses" type="checkbox" value="on"...
-  ...
+  >>> foo = PersonSet().getByName('foo')
+  >>> foo.creation_rationale.name
+  'OWNER_CREATED_LAUNCHPAD'
+  >>> foo.hide_email_addresses
+  True
 
 
   If you are comming from shipit to create a new account, you'll get
@@ -418,7 +404,7 @@ redirection_url in the form post below.
   ... 
   ... f
   ... -----------------------------17483551342125833225531652773
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.continue"
   ... 
   ... Continue
   ... -----------------------------17483551342125833225531652773--

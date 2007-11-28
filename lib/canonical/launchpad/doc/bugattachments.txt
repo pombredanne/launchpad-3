@@ -7,7 +7,7 @@ means a file files that relates to the bug in some other way, like a log
 file or a screenshot.
 
 Let's look at a bug that has no attachments:
-
+    >>> from canonical.launchpad.ftests import login
     >>> login("foo.bar@canonical.com")
 
     >>> from canonical.launchpad.interfaces import (
@@ -76,6 +76,19 @@ IBug.addAttachment's comment parameter can also be a string.
     Attachment added: u'foo.baz'
     <BugAttachment ...>
 
+If no description is given, the title is set to the filename.
+
+    >>> file_ = StringIO(filecontent)
+    >>> screenshot = bug_one.addAttachment(
+    ...     owner=foobar,
+    ...     file_=file_,
+    ...     filename="screenshot.jpg",
+    ...     comment="a string comment",
+    ...     is_patch=False)
+    Attachment added: u'screenshot.jpg'
+    >>> screenshot.title
+    u'screenshot.jpg'
+
 The librarian won't allow empty files, so the view that creates the
 attachment needs to handle that:
 
@@ -85,26 +98,29 @@ attachment needs to handle that:
     >>> login('test@canonical.com')
     >>> filecontent = StringIO('')
     >>> filecontent.filename = 'foo.bar'
-    >>> add_request = LaunchpadTestRequest(form={
-    ...     'field.subject': u'Title',
-    ...     'field.comment': u'Some comment.',
-    ...     'field.include_attachment': 'on',
-    ...     'field.filecontent': filecontent,
-    ...     'field.patch': u'',
-    ...     'FORM_SUBMIT': ''})
+    >>> add_request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': u'Title',
+    ...           'field.comment': u'Some comment.',
+    ...           'field.filecontent': filecontent,
+    ...           'field.patch': u'',
+    ...           'field.actions.save': 'Save Changes'})
 
 Note that the +addcomment-form view is actually registered on a "bug in
 context", i.e. an IBugTask, so let's grab the first bugtask on bug_one
 and work with that:
 
     >>> bugtask = bug_one.bugtasks[0]
+    >>> from canonical.launchpad.browser import BugMessageAddFormView
 
     >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
-    >>> add_comment_view.process_form()
-    u'...problems below...'
-    >>> add_comment_view.errors
-    WidgetInputError: ('filecontent', u'Attachment', Cannot upload empty file.)
-
+    >>> add_comment_view.initialize()
+    >>> len(add_comment_view.errors)
+    1
+    >>> add_comment_view.error_count
+    'There is 1 error.'
+    >>> add_comment_view.getWidgetError('filecontent')
+    u'Cannot upload empty file.'
 
 It's possible to limit the maximum size of the attachments by setting
 max_bug_attachment_size in launchpad.conf. The default value for the
@@ -113,20 +129,21 @@ upload it:
 
     >>> filecontent = StringIO('x'*1025)
     >>> filecontent.filename = 'foo.txt'
-    >>> add_request = LaunchpadTestRequest(form={
-    ...     'field.subject': u'Title',
-    ...     'field.comment': u'Some comment.',
-    ...     'field.include_attachment': 'on',
-    ...     'field.filecontent': filecontent,
-    ...     'field.attachment_description': 'blah',
-    ...     'field.patch': u'',
-    ...     'FORM_SUBMIT': ''})
+    >>> add_request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': u'Title',
+    ...           'field.comment': u'Some comment.',
+    ...           'field.include_attachment': 'on',
+    ...           'field.filecontent': filecontent,
+    ...           'field.attachment_description': 'blah',
+    ...           'field.patch': u'',
+    ...           'field.actions.save' : 'Save Changes'})
     >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
-    >>> add_comment_view.process_form()
-    u'...problems below...'
-    >>> add_comment_view.errors
-    WidgetInputError: ('filecontent', u'Attachment',
-                       Cannot upload files larger than 1024 bytes)
+    >>> add_comment_view.initialize()
+    >>> len(add_comment_view.errors)
+    1
+    >>> [error.doc() for error in add_comment_view.errors]
+    [u'Cannot upload files larger than 1024 bytes']
 
 If we set the limit to 0 we can upload it, though, since a value of 0
 means no limit:
@@ -134,19 +151,55 @@ means no limit:
     >>> from canonical.config import config
     >>> old_max_bug_attachment_size = config.launchpad.max_bug_attachment_size
     >>> config.launchpad.max_bug_attachment_size = 0
-    >>> add_request = LaunchpadTestRequest(form={
-    ...     'field.subject': u'Title',
-    ...     'field.comment': u'Some comment.',
-    ...     'field.include_attachment': 'on',
-    ...     'field.filecontent': filecontent,
-    ...     'field.attachment_description': 'blah',
-    ...     'field.patch': u'',
-    ...     'FORM_SUBMIT': ''})
+    >>> add_request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': u'Title',
+    ...           'field.comment': u'Some comment.',
+    ...           'field.include_attachment': 'on',
+    ...           'field.filecontent': filecontent,
+    ...           'field.attachment_description': 'blah',
+    ...           'field.patch': u'',
+    ...           'field.actions.save' : 'Save Changes'})
     >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view.initialize()
+    Attachment added: u'foo.txt'
     >>> len(add_comment_view.errors)
     0
-    >>> add_comment_view.process_form()
-    Attachment added: u'foo.txt'
+
+The request must contain either a comment or an attachment or both, but it
+must have at least one.
+
+    >>> add_request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': u'Title',
+    ...           'field.patch': u'',
+    ...           'field.actions.save': 'Save Changes'})
+    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view.initialize()
+    >>> len(add_comment_view.errors)
+    1
+    >>> [error for error in add_comment_view.errors]
+    ['Either a comment or attachment must be provided.']
+    
+If the request contains no attachment description the filename should be used.
+    
+    >>> filecontent = StringIO("No, sir. That's one bonehead name, but that ain't me any more.")
+    >>> filecontent.filename = 'RA.txt'
+    >>> add_request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': u'Title',
+    ...           'field.comment': u'Some comment.',
+    ...           'field.filecontent': filecontent,
+    ...           'field.patch': u'',
+    ...           'field.actions.save': 'Save Changes'})
+    >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view.initialize()
+    Attachment added: u'RA.txt'
+    >>> len(add_comment_view.errors)
+    0
+    >>> bug_one.attachments[-1].title
+    u'RA.txt'
+
 
 Since the SQLObjectCreatedEvent was generated, a notification about the
 attachment was added.
@@ -154,28 +207,31 @@ attachment was added.
     >>> from canonical.launchpad.database import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.text_contents
-    ** Attachment added: "blah"
-       http://.../foo.txt
+    ** Attachment added: "RA.txt"
+       http://.../RA.txt
 
 Let's try uploading a file with some weird characters in them:
 
     >>> filecontent.filename = u'fo\xf6 bar'
-    >>> add_request = LaunchpadTestRequest(form={
-    ...     'field.subject': u'Title',
-    ...     'field.comment': u'Some comment.',
-    ...     'field.include_attachment': 'on',
-    ...     'field.filecontent': filecontent,
-    ...     'field.attachment_description': 'blah',
-    ...     'field.patch': u'',
-    ...     'FORM_SUBMIT': ''})
+    >>> add_request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': u'Title',
+    ...           'field.comment': u'Some comment.',
+    ...           'field.include_attachment': 'on',
+    ...           'field.filecontent': filecontent,
+    ...           'field.attachment_description': 'blah',
+    ...           'field.patch': u'',
+    ...           'field.actions.save' : 'Save Changes'})
     >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
     >>> len(add_comment_view.errors)
     0
-    >>> add_comment_view.process_form()
+    >>> add_comment_view.initialize()
     Attachment added: u'fo\xf6 bar'
+    >>> len(add_comment_view.errors)
+    0
     >>> bug_one.attachments[-1].libraryfile.filename
     u'fo\xf6 bar'
-    >>> bug_one.attachments[-1].libraryfile.url
+    >>> bug_one.attachments[-1].libraryfile.http_url
     'http://.../fo%C3%B6%20bar'
 
 If a filename contains a slash, it will be converted to a dash instead.
@@ -183,22 +239,23 @@ We do this since otherwise it won't be possible to download the file
 from the librarian.
 
     >>> filecontent.filename = u'foo/bar/baz'
-    >>> add_request = LaunchpadTestRequest(form={
-    ...     'field.subject': u'Title',
-    ...     'field.comment': u'Some comment.',
-    ...     'field.include_attachment': 'on',
-    ...     'field.filecontent': filecontent,
-    ...     'field.attachment_description': 'blah',
-    ...     'field.patch': u'',
-    ...     'FORM_SUBMIT': ''})
+    >>> add_request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': u'Title',
+    ...           'field.comment': u'Some comment.',
+    ...           'field.include_attachment': 'on',
+    ...           'field.filecontent': filecontent,
+    ...           'field.attachment_description': 'blah',
+    ...           'field.patch': u'',
+    ...           'field.actions.save' : 'Save Changes'})
     >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
+    >>> add_comment_view.initialize()
+    Attachment added: u'foo-bar-baz'
     >>> len(add_comment_view.errors)
     0
-    >>> add_comment_view.process_form()
-    Attachment added: u'foo-bar-baz'
     >>> bug_one.attachments[-1].libraryfile.filename
     u'foo-bar-baz'
-    >>> bug_one.attachments[-1].libraryfile.url
+    >>> bug_one.attachments[-1].libraryfile.http_url
     'http://.../foo-bar-baz'
 
     >>> config.launchpad.max_bug_attachment_size = old_max_bug_attachment_size
@@ -233,7 +290,8 @@ Both Sample Person and Foo Bar can access and set the attributes, though:
 
 Now let's make the bug private instead:
 
-    >>> bug_one.private = True
+    >>> bug_one.setPrivate(True, getUtility(ILaunchBag).user)
+    True
 
 Foo Bar isn't explicitly subscribed to the bug, BUT he is an admin, so he can
 access and set the attachment's attributes:
@@ -279,7 +337,8 @@ the attributes:
 
 Let's make the bug public again:
 
-    >>> bug_one.private = False
+    >>> bug_one.setPrivate(False, getUtility(ILaunchBag).user)
+    True
 
 
 Search for attachments
@@ -288,8 +347,7 @@ Search for attachments
 We can search for attachment of a specific types:
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugTaskSet, BugTaskSearchParams)
-    >>> from canonical.lp.dbschema import BugAttachmentType
+    ...     BugAttachmentType, BugTaskSearchParams, IBugTaskSet)
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> attachmenttype = BugAttachmentType.UNSPECIFIED
     >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)
@@ -338,3 +396,43 @@ Let's make our attachment a patch and search again:
     >>> bugs[0].id
     1
 
+Deleting attachments
+--------------------
+
+It's also possible to delete attachments.
+
+    >>> file_ = StringIO(filecontent)
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> attachment = bug_two.addAttachment(
+    ...     owner=foobar,
+    ...     file_=file_,
+    ...     filename="foo.baz",
+    ...     description="Attachment to be deleted",
+    ...     comment="a string comment",
+    ...     is_patch=False)
+    >>> for attachment in bug_two.attachments:
+    ...     print attachment.title
+    Attachment to be deleted
+
+    >>> attachment.removeFromBug()
+    >>> bug_two.attachments.count()
+    0
+
+Deleting an attachment causes a notification to be sent. It's worth
+noting that the notification still includes the URL to the attachment,
+which will be valid until the Librarian garbage collector kicks in and
+deletes the file entirely. This gives people a chance of undoing an
+incorrect removal by downloading and re-attach the file.
+
+    >>> from canonical.launchpad.database import BugNotification
+    >>> latest_notification = BugNotification
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> latest_notification.is_comment
+    False
+    >>> print latest_notification.message.text_contents
+    ** Attachment removed: "Attachment to be deleted"
+       http://.../foo.baz
+
+
+
+    

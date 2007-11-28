@@ -2,19 +2,21 @@
 
 The owner of a branch can be changed in the $branch/+reassign form.
 
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+
 == Successful reassignation ==
 
 Impressed by his notorious fluency in foreign languages, we want to transfer
 the GNOME Terminal Klingon support branch to SABDFL.
 
-    >>> user_browser.open('http://launchpad.dev/~name12/+branch/gnome-terminal/klingon')
-    >>> user_browser.getLink('Change Registrant').click()
-    >>> user_browser.url
-    'http://launchpad.dev/~name12/+branch/gnome-terminal/klingon/+reassign'
-    >>> user_browser.getControl(name='field.owner').value = 'sabdfl'
-    >>> user_browser.getControl('Change Owner').click()
-    >>> user_browser.url
-    'http://launchpad.dev/~sabdfl/+branch/gnome-terminal/klingon'
+    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> browser.getLink('Change registrant').click()
+    >>> browser.url
+    'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+reassign'
+    >>> browser.getControl(name='field.owner').value = 'sabdfl'
+    >>> browser.getControl('Change Registrant').click()
+    >>> browser.url
+    'http://code.launchpad.dev/~sabdfl/gnome-terminal/klingon'
 
 However, arguing that common Klingon habits are incompatible with the Ubuntu
 Code of Conduct, and that Klingon rocket technology is no match to the Russian,
@@ -22,17 +24,18 @@ SABDFL declines and asks an administrator to reassign the branch back.
 
 Incidentally that restores the test data to its initial state.
 
-    >>> admin_browser.open('http://launchpad.dev/~sabdfl/+branch/gnome-terminal/klingon/+reassign')
+    >>> admin_browser.open('http://launchpad.dev/~sabdfl/gnome-terminal/klingon/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'name12'
-    >>> admin_browser.getControl('Change Owner').click()
+    >>> admin_browser.getControl('Change Registrant').click()
     >>> admin_browser.url
-    'http://launchpad.dev/~name12/+branch/gnome-terminal/klingon'
+    'http://code.launchpad.dev/~name12/gnome-terminal/klingon'
 
 
 NOTE: Transferring to a team we are creating is a stock functionality of
 ObjectReassignmentView and is not tested here. On 2006-08-30 this is is tested
-in lib/canonical/launchpad/pagetests/standalone/xx-reassign-distrorelease.txt;
-look for "Now we reassign it to a newly create team: ubuntu2".
+in lib/canonical/launchpad/pagetests/standalone/xx-reassign-distroseries.txt;
+look for "Now we reassign it to a newly the GNOME Terminal Klingon support branch to SABDFL.
+create team: ubuntu2".
 
 == Branch name conflict ==
 
@@ -43,21 +46,21 @@ We will setup a conflict with ~launchpad/gnome-terminal/launchpad. First, we
 need to rename one of the user branches to use the "launchpad" name, and then
 we will try to reassign to the "launchpad" team.
 
-    >>> user_browser.open('http://launchpad.dev/~name12/+branch/gnome-terminal/main/+edit')
-    >>> user_browser.getControl('Name').value = 'launchpad'
-    >>> user_browser.getControl('Change Branch').click()
-    >>> user_browser.url
-    'http://launchpad.dev/~name12/+branch/gnome-terminal/launchpad'
+    >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/main/+edit')
+    >>> browser.getControl('Name').value = 'launchpad'
+    >>> browser.getControl('Change Branch').click()
+    >>> browser.url
+    'http://code.launchpad.dev/~name12/gnome-terminal/launchpad'
 
 Now, try to reassign that branch to "launchpad", that should cause an error.
 
-    >>> user_browser.getLink('Change Registrant').click()
-    >>> user_browser.url
-    'http://launchpad.dev/~name12/+branch/gnome-terminal/launchpad/+reassign'
-    >>> user_browser.getControl(name='field.owner').value = 'launchpad'
-    >>> user_browser.getControl('Change Owner').click()
-    >>> user_browser.url
-    'http://launchpad.dev/~name12/+branch/gnome-terminal/launchpad/+reassign'
+    >>> browser.getLink('Change registrant').click()
+    >>> browser.url
+    'http://code.launchpad.dev/~name12/gnome-terminal/launchpad/+reassign'
+    >>> browser.getControl(name='field.owner').value = 'launchpad'
+    >>> browser.getControl('Change Registrant').click()
+    >>> browser.url
+    'http://code.launchpad.dev/~name12/gnome-terminal/launchpad/+reassign'
 
 That should have displayed an error message, with a link to the conflicting
 branch and a link to edit the details of this branch.
@@ -70,17 +73,28 @@ XXX: Less ideally, the error message should include hyperlinks to the conflict
 branch and the +edit form of the context branch, but ObjectReassignmentView
 will not let us have even that. -- David Allouche 2005-08-17
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(user_browser.contents)
-    >>> for p_tag in soup('p', 'error message'):
-    ...     print p_tag.renderContents()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
     Branch name conflict. ... try changing its registrant again.
 
-Let's change back the branch to its original name, so other tests will have a
-clean sample data set.
+== Preventing the assignment of a +junk branch to a team ==
 
-    >>> user_browser.open('http://launchpad.dev/~name12/+branch/gnome-terminal/launchpad/+edit')
-    >>> user_browser.getControl('Name').value = 'main'
-    >>> user_browser.getControl('Change Branch').click()
-    >>> user_browser.url
-    'http://launchpad.dev/~name12/+branch/gnome-terminal/main'
++junk branches are a facility to host small snippets of code that do
+not call for collaboration features.  Once a team is needed to
+collaborate on a branch, we consider they also really want a project
+to support their collaboration.  And also, because Mark said so.
+
+One of two potential ways of creating a +junk team branch is to assign
+a +junk branch from yourself to a team.
+
+    >>> browser.open('http://code.launchpad.dev/~name12/+junk/junk.contrib/+reassign')
+    >>> browser.getControl(name='field.owner').value = 'simple-team'
+    >>> browser.getControl('Change Registrant').click()
+    >>> browser.url
+    'http://code.launchpad.dev/~name12/+junk/junk.contrib/+reassign'
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    You cannot assign a +junk branch to a team. Create a project first.
+
+(The other is changing the product of a team owned branch to the +junk
+pseudo project, which is tested in xx-branch-edit.txt).

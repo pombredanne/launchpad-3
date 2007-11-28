@@ -1,0 +1,79 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1 tal:content="context/title">Name of package</h1>
+    </metal:heading>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/distroarchseries/distroseries/@@+portlet-details" />
+  <div tal:replace="structure context/distroarchseries/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div
+    tal:condition="context/binarypackagerelease/depends"
+    tal:replace="structure context/binarypackagerelease/@@+portlet-depends" />
+  <div
+    tal:condition="context/binarypackagerelease/replaces"
+    tal:replace="structure context/binarypackagerelease/@@+portlet-replaces" />
+  <div
+    tal:condition="context/binarypackagerelease/provides"
+    tal:replace="structure context/binarypackagerelease/@@+portlet-provides" />
+  <div
+    tal:condition="context/binarypackagerelease/recommends"
+    tal:replace="structure context/binarypackagerelease/@@+portlet-recommends" />
+  <div
+    tal:condition="context/binarypackagerelease/suggests"
+    tal:replace="structure context/binarypackagerelease/@@+portlet-suggests" />
+  <div
+    tal:condition="context/binarypackagerelease/conflicts"
+    tal:replace="structure context/binarypackagerelease/@@+portlet-conflicts" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <tal:description replace="structure context/description/fmt:text-to-html">
+     Package Description
+  </tal:description>
+
+  <h2>Source package</h2>
+
+  <div id="source">
+    <ul>
+      <li class="source package">
+        <a tal:define="spackage context/distributionsourcepackagerelease"
+           tal:content="spackage/title"
+           tal:attributes="href spackage/fmt:url">SOURCEPACKAGE</a>
+      </li>
+    </ul>
+  </div>
+
+  <h2>File download</h2>
+
+  <div id="files">
+    <ul class="download" tal:condition="context/files">
+      <li tal:repeat="file context/files">
+        <a tal:content="file/libraryfile/filename"
+           tal:attributes="href file/libraryfile/http_url"></a>
+        (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
+      </li>
+    </ul>
+    <p tal:condition="not: context/files">
+      There are no downloadable files for this binary package.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

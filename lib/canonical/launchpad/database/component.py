@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -34,8 +35,8 @@ class ComponentSelection(SQLBase):
 
     _defaultOrder= ['id']
 
-    distrorelease = ForeignKey(dbName='distrorelease',
-                               foreignKey='DistroRelease', notNull=True)
+    distroseries = ForeignKey(dbName='distroseries',
+                               foreignKey='DistroSeries', notNull=True)
     component = ForeignKey(dbName='component',
                            foreignKey='Component', notNull=True)
 

@@ -1,3 +1,36 @@
+launchpad-buildd (37) dapper; urgency=high
+
+  * update-debian-chroot: Adam's LPIA support (i.e. overriding
+    architecture for chapt-get).
+  * debian/launchpad-buildd.cron.daily: fix run-on-line.
+  * debian/postinst: only create ~buildd/.sbuildrc if it doesn't exist.
+    This avoids the problem of upgrades of the launchpad-buildd package
+    resetting the architecture to i386 on lpia builders.
+
+ -- James Troup <james.troup@canonical.com>  Wed, 14 Nov 2007 18:34:46 +0000
+
+launchpad-buildd (36) dapper; urgency=low
+
+  * changing override-sources to replace current sources.list with
+    the content sent by buildmaster instead of prepend. It will allow
+    us to cope more easily with SoyuzArchive implementation (PARTNER,
+    EMBARGOED, PPA)
+
+ -- Celso Providelo <cprov@canonical.com>  Thu, 7 Aug 2007 14:10:26 -0300
+
+launchpad-buildd (35) unstable; urgency=low
+
+  * including previous code changes (32 & 33).
+
+ -- Celso Providelo <cprov@canonical.com>  Thu, 23 May 2007 17:40:26 -0300
+
+launchpad-buildd (34) unstable; urgency=low
+
+  * add suport for overriding the chroot /etc/apt/sources.list with the
+  content of builddmaster build arguments 'archives'.
+
+ -- Celso Providelo <cprov@canonical.com>  Thu, 17 May 2007 15:12:26 -0300
+
 launchpad-buildd (31) unstable; urgency=low
 
   * Cherry-pick patch from Ryan's sbuild that outputs dpkg --purge output

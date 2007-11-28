@@ -11,8 +11,7 @@ from zope.event import notify
 
 from zope.app.event.objectevent import ObjectModifiedEvent
 
-from canonical.lp.dbschema import CveStatus
-from canonical.launchpad.interfaces import ICveSet
+from canonical.launchpad.interfaces import CveStatus, ICveSet
 
 
 CVEDB_NS = '{http://cve.mitre.org/cve/downloads/xml_schema_info.html}'
@@ -29,7 +28,7 @@ def getText(elem):
 
 def handle_references(cve_node, cve, log):
     """Handle the references on the given CVE xml DOM.
-    
+
     This function is passed an XML dom representing a CVE, and a CVE
     database object. It looks for Refs in the XML data structure and ensures
     that those are correctly represented in the database.

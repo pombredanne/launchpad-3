@@ -1,31 +1,39 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:tag condition="view/update"/>
 <html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/specification/@@+portlet-details" />
-</metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/person/@@+portlet-details" />
 </metal:rightportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h3>Subscription of
-      <span tal:replace="context/person/browsername">Jordi
-      Mallach</span></h3>
-</metal:heading>
-
 <div metal:fill-slot="main">
+
+      <div>
+        <img alt="" src="/@@/blueprint" />
+        <a tal:attributes="href context/specification/fmt:url"
+           tal:content="context/specification/title" />
+      </div>
 
   <div metal:use-macro="context/@@launchpad_editform/editform" />
 
 </div>
 </body>
 </html>
+</tal:root>

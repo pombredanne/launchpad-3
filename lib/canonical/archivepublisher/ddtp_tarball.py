@@ -11,87 +11,62 @@ to enable developers to publish indexes of DDTP contents.
 
 __metaclass__ = type
 
-__all__ = ['process_ddtp_tarball', 'DddtpTarballError']
+__all__ = ['process_ddtp_tarball']
 
 import os
 import tarfile
 import stat
 
-
-class DdtpTarballError(Exception):
-    """Base class for all errors associated with publishing ddtp indexes."""
+from canonical.archivepublisher.customupload import CustomUpload
 
 
-class DdtpTarballTarError(DdtpTarballError):
-    """The tarfile module raised an exception."""
-    def __init__(self, tarfile_path, tar_error):
-        message = 'Problem reading tarfile %s: %s' % (tarfile_path, tar_error)
-        DdtpTarballError.__init__(self, message)
+class DdtpTarballUpload(CustomUpload):
+    """DDTP (Debian Description Translation Project) tarball upload
+
+    The tarball should be name as:
+
+     <NAME>_<COMPONENT>_<VERSION>.tar.gz
+
+    where:
+
+     * NAME: anything reasonable (ddtp-tarball);
+     * COMPONENT: LP component (main, universe, etc);
+     * VERSION: debian-like version token.
+
+    It is consisted of a tarball containing all the supported indexes
+    files for the DDTP system (under 'i18n' directory) contents driven
+    by component.
+
+    Results will be published (installed in archive) under:
+
+       <ARCHIVE>dists/<SUITE>/<COMPONENT>/i18n
+
+    Old contents will be preserved.
+    """
+    def __init__(self, archive_root, tarfile_path, distroseries):
+        CustomUpload.__init__(self, archive_root, tarfile_path, distroseries)
+
+        tarfile_base = os.path.basename(tarfile_path)
+        name, component, self.version = tarfile_base.split('_')
+        self.targetdir = os.path.join(archive_root, 'dists',
+                                      distroseries, component)
+
+    def shouldInstall(self, filename):
+        # Ignore files outside of the i18n subdirectory
+        return filename.startswith('i18n/')
+
+    def fixCurrentSymlink(self):
+        # There is no symlink to fix up for DDTP uploads
+        pass
 
 
-class DdtpTarballInvalidTarfile(DdtpTarballError):
-    """The supplied tarfile did not contain the expected elements."""
-    def __init__(self, tarfile_path, expected_dir):
-        message = ('Tarfile %s did not contain expected file %s' %
-                   (tarfile_path, expected_dir))
-        DdtpTarballError.__init__(self, message)
-
-
-def extract_filename_parts(tarfile_path):
-    """Extract the basename, version and arch of the supplied ddtp tarfile."""
-    tarfile_base = os.path.basename(tarfile_path)
-    name, component, version = tarfile_base.split('_')
-    return tarfile_base, component, version
-
-def process_ddtp_tarball(archive_root, tarfile_path, distrorelease):
+def process_ddtp_tarball(archive_root, tarfile_path, distroseries):
     """Process a raw-ddtp-tarball tarfile.
 
-    Unpacking it into the given archive for the given distrorelease.
-    Raises DdtpTarballError (or some subclass thereof) if anything goes
-    wrong.
+    Unpacking it into the given archive for the given distroseries.
+    Raises CustomUploadError (or some subclass thereof) if
+    anything goes wrong.
     """
-    tarfile_base, component, version = extract_filename_parts(tarfile_path)
-    target = os.path.join(archive_root, 'dists', distrorelease, component)
-
-    # Unpack the tarball directly into the archive.
-    # Skip anything outside 'i18n' directory.
-    # Make sure everything we extract is group-writable.
-    # If we didn't extract anything, raise DistUpgraderInvalidTarfile.
-    extracted = False
-    target_dir = 'i18n/'
-    try:
-        tar = tarfile.open(tarfile_path)
-        try:
-            for tarinfo in tar:
-                # ignore files or directories outside target_dir
-                if not tarinfo.name.startswith(target_dir):
-                    continue
-                # ignore directories inside target_dir
-                if tarinfo.isdir() and tarinfo.name != (target_dir):
-                    continue
-                # Workaround a problem of the tarfile lib when dealing
-                # with hardlinks. tarfile.extract() doesn't remove the
-                # destination file, it simply truncates it to position
-                # zero and writes the new content.
-                # If the destination is a hard link it ends up corrupting
-                # contents. We've faced this in /dsync-ed/ production
-                # archive. cprov 20060817
-                destination = os.path.join(target, tarinfo.name)
-                # try to remove disk copy of incoming files,
-                # (ignore <target_dir>, we only care about files).
-                if tarinfo.isfile() and os.path.exists(destination):
-                    os.remove(destination)
-
-                tar.extract(tarinfo, target)
-                newpath = os.path.join(target, tarinfo.name)
-                mode = stat.S_IMODE(os.stat(newpath).st_mode)
-                os.chmod(newpath, mode | stat.S_IWGRP)
-            extracted = True
-        finally:
-            tar.close()
-    except tarfile.TarError, e:
-        raise DdtpTarballTarError(tarfile_path, e)
-
-    if not extracted:
-        raise DdtpTarballInvalidTarfile(tarfile_path, target)
+    upload = DdtpTarballUpload(archive_root, tarfile_path, distroseries)
+    upload.process()
 

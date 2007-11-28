@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -31,17 +37,26 @@
     <table class="listing rowNavigation" width="100%">
       <thead>
         <tr>
-            <th>Title</th>
-            <th>Created</th>
+            <th>Build of</th>
+            <th>Queued</th>
             <th>Started</th>
-            <th>Partial Duration</th>
+            <th>Time spent so far</th>
         </tr>
       </thead>
       <tbody>
         <tr>
             <td tal:content="job/build/title">NAME</td>
-            <td tal:content="job/build/datecreated/fmt:datetime">CREATED</td>
-            <td tal:content="job/buildstart/fmt:datetime">STARTED</td>
+            <td>
+              <span
+                tal:attributes="title job/build/datecreated/fmt:datetime"
+                tal:content="job/build/datecreated/fmt:approximatedate"
+                >CREATED</span>
+            </td>
+            <td>
+              <span
+                tal:attributes="title job/buildstart/fmt:datetime"
+                tal:content="job/buildstart/fmt:approximatedate">STARTED</span>
+            </td>
             <td>
               <span tal:replace="job/buildduration/fmt:approximateduration"/>
             </td>

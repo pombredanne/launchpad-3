@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces related to bug nomination."""
 
@@ -10,32 +11,62 @@ __all__ = [
     'IBugNomination',
     'IBugNominationForm',
     'IBugNominationSet',
-    'NominationReleaseObsoleteError']
+    'BugNominationStatus',
+    'NominationSeriesObsoleteError']
 
 from zope.schema import Int, Datetime, Choice, Set
 from zope.interface import Interface, Attribute
 
-from canonical.lp.dbschema import BugNominationStatus
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IHasBug, IHasDateCreated, IHasOwner, can_be_nominated_for_releases)
+    IHasBug, IHasDateCreated, IHasOwner, can_be_nominated_for_serieses)
+
+from canonical.lazr import DBEnumeratedType, DBItem
 
 class NominationError(Exception):
     """The bug cannot be nominated for this release."""
 
 
-class NominationReleaseObsoleteError(Exception):
-    """A bug cannot be nominated for an obsolete release."""
+class NominationSeriesObsoleteError(Exception):
+    """A bug cannot be nominated for an obsolete series."""
 
 
 class BugNominationStatusError(Exception):
     """A error occurred while trying to set a bug nomination status."""
 
 
-class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
-    """A nomination for a bug to be fixed in a specific release.
+class BugNominationStatus(DBEnumeratedType):
+    """Bug Nomination Status.
 
-    A nomination can apply to an IDistroRelease or an IProductSeries.
+    The status of the decision to fix a bug in a specific release.
+    """
+
+    PROPOSED = DBItem(10, """
+        Nominated
+
+        This nomination hasn't yet been reviewed, or is still under
+        review.
+        """)
+
+    APPROVED = DBItem(20, """
+        Approved
+
+        The release management team has approved fixing the bug for this
+        release.
+        """)
+
+    DECLINED = DBItem(30, """
+        Declined
+
+        The release management team has declined fixing the bug for this
+        release.
+        """)
+
+
+class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
+    """A nomination for a bug to be fixed in a specific series.
+
+    A nomination can apply to an IDistroSeries or an IProductSeries.
     """
     # We want to customize the titles and descriptions of some of the
     # attributes of our parent interfaces, so we redefine those specific
@@ -51,11 +82,11 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
         description=_(
             "The date on which this nomination was approved or declined."),
         required=False, readonly=True)
-    distrorelease = Choice(
-        title=_("Distribution Release"), required=False,
-        vocabulary="DistroRelease")
+    distroseries = Choice(
+        title=_("Series"), required=False,
+        vocabulary="DistroSeries")
     productseries = Choice(
-        title=_("Product Series"), required=False,
+        title=_("Series"), required=False,
         vocabulary="ProductSeries")
     owner = Choice(
         title=_('Submitter'), required=True, readonly=True,
@@ -64,13 +95,13 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
         title=_('Decided By'), required=False, readonly=True,
         vocabulary='ValidPersonOrTeam')
     target = Attribute(
-        "The IProductSeries or IDistroRelease of this nomination.")
+        "The IProductSeries or IDistroSeries of this nomination.")
     status = Choice(
-        title=_("Status"), vocabulary="BugNominationStatus",
+        title=_("Status"), vocabulary=BugNominationStatus,
         default=BugNominationStatus.PROPOSED)
 
     def approve(approver):
-        """Approve this bug for fixing in a release.
+        """Approve this bug for fixing in a series.
 
         :approver: The IPerson that approves this nomination and that
                    will own the created bugtasks.
@@ -83,7 +114,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
         """
 
     def decline(decliner):
-        """Decline this bug for fixing in a release.
+        """Decline this bug for fixing in a series.
 
         :decliner: The IPerson that declines this nomination.
 
@@ -104,6 +135,9 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     def isApproved():
         """Is this nomination in Approved state?"""
 
+    def canApprove(person):
+        """Is this person allowed to approve the nomination?"""
+
 
 class IBugNominationSet(Interface):
     """The set of IBugNominations."""
@@ -117,9 +151,11 @@ class IBugNominationSet(Interface):
 
 
 class IBugNominationForm(Interface):
-    """The browser form for nominating bugs for releases."""
+    """The browser form for nominating bugs for series."""
 
-    nominatable_releases = Set(
-        title=_("Releases that can be nominated"), required=True,
-        value_type=Choice(vocabulary="BugNominatableReleases"),
-        constraint=can_be_nominated_for_releases)
+    nominatable_serieses = Set(
+        title=_("Series that can be nominated"), required=True,
+        value_type=Choice(vocabulary="BugNominatableSerieses"),
+        constraint=can_be_nominated_for_serieses)
+
+

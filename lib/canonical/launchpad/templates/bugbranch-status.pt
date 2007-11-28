@@ -1,9 +1,14 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -13,7 +18,6 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/branch/@@+portlet-details" />
-  <div tal:replace="structure context/bug/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -91,7 +95,7 @@
       for this bug.</li>
 
     <li><em>Abandoned Attempt</em>: A fix for this bug is no longer being
-      worked on in this branch.</ul></li>
+      worked on in this branch.</li>
 
     <li><em>Best Fix Available</em>: This branch contains a fix agreed upon by
       the community as being the best available branch from which to merge to

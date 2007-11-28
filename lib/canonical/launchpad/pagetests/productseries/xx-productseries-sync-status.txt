@@ -1,0 +1,236 @@
+= Reporting import status =
+
+When a vcs import is syncing, we display information on the status of the last
+sync and the freshness of the currently published import.
+
+Since the attributes we are interested in are only modified by non-web
+services, such as importd and the supermirror, we need to poke the database
+directly to set up the various cases we are interested in testing.
+
+XXX: We need to use flush_database_updates before every commit for the test
+browser to see the changes we make to the content object. See bug 3989.
+-- David Allouche 2007-03-23
+
+>>> import transaction
+>>> from canonical.database.constants import UTC_NOW
+>>> from canonical.database.sqlbase import flush_database_updates
+>>> from canonical.launchpad.database import ProductSeries
+>>> from canonical.launchpad.interfaces import ImportStatus
+
+Get a product series with an attached import branch, and set it to syncing for
+the following tests.
+
+>>> series = ProductSeries.get(3)
+>>> series.importstatus = ImportStatus.SYNCING
+
+Then make a small collection of useful timestamps.
+
+>>> from datetime import datetime, timedelta
+>>> import pytz
+>>> UTC = pytz.timezone('UTC')
+>>> one_day_ago = datetime.now(UTC) - timedelta(days=1)
+>>> one_day_one_hour_ago = datetime.now(UTC) - timedelta(days=1, hours=1)
+>>> two_days_one_hour_ago = datetime.now(UTC) - timedelta(days=2, hours=1)
+
+== Success status ==
+
+When an import is successful, datefinished and datelastsynced are equal. The
+series page must report success and how long ago it was.
+
+>>> series.datefinished = one_day_one_hour_ago
+>>> series.datelastsynced = one_day_one_hour_ago
+>>> flush_database_updates()
+>>> transaction.commit()
+>>> anon_browser.open('http://launchpad.dev/evolution/trunk')
+>>> content = anon_browser.contents
+>>> last_run = find_tag_by_id(content, 'last-import-status')
+>>> print last_run.renderContents()
+<span class="vcsimportSUCCESS">Success</span> 25 hours ago
+
+When an import is failing, datefinished is more recent than datelastsynced. The
+series page must report failure and how long ago it was.
+
+>>> series.datefinished = one_day_one_hour_ago
+>>> series.datelastsynced = two_days_one_hour_ago
+>>> flush_database_updates()
+>>> transaction.commit()
+>>> anon_browser.open('http://launchpad.dev/evolution/trunk')
+>>> content = anon_browser.contents
+>>> last_run = find_tag_by_id(content, 'last-import-status')
+>>> print last_run.renderContents()
+<span class="vcsimportFAILURE">Failure</span> 25 hours ago
+
+
+== Import freshness ==
+
+If the import branch was last mirrored after import was last successful, the
+age of the published data is given by datelastsynced.
+
+>>> series.datelastsynced = one_day_one_hour_ago
+>>> series.import_branch.last_mirrored = one_day_ago
+>>> series.datepublishedsync = None
+>>> flush_database_updates()
+>>> transaction.commit()
+>>> anon_browser.open('http://launchpad.dev/evolution/trunk')
+>>> content = anon_browser.contents
+>>> branch_age = find_tag_by_id(content, 'import-branch-age')
+>>> print branch_age.renderContents()
+25 hours ago
+
+But if the import was successful since the branch was last mirrored, the age of
+the published data is given by datepublishedsync.
+
+>>> series.import_branch.last_mirrored = one_day_one_hour_ago
+>>> series.datelastsynced = one_day_ago
+>>> series.datepublishedsync = two_days_one_hour_ago
+>>> flush_database_updates()
+>>> transaction.commit()
+>>> anon_browser.open('http://launchpad.dev/evolution/trunk')
+>>> content = anon_browser.contents
+>>> branch_age = find_tag_by_id(content, 'import-branch-age')
+>>> print branch_age.renderContents()
+two days ago
+
+
+== Success status failsafe ==
+
+In some situations, we cannot, or should not, display the success status. Check
+that the page behaves correctly in those situations.
+
+Some attributes do not actually matter here. Clear them out. Code that depends
+on those being set to a meaningful value should always assert they are not
+None.
+
+>>> series.datepublishedsync = None
+>>> series.import_branch.last_mirrored = None
+
+Then set the attributes that matter to reasonable values.
+
+>>> series.datefinished = one_day_one_hour_ago
+>>> series.datelastsynced = one_day_one_hour_ago
+>>> series.importstatus = ImportStatus.SYNCING
+
+If importstatus is less than PROCESSING, we have not yet completed any
+user-visible import.
+
+>>> series.importstatus = ImportStatus.TESTFAILED
+>>> flush_database_updates()
+>>> transaction.commit()
+>>> anon_browser.open('http://launchpad.dev/evolution/trunk')
+>>> content = anon_browser.contents
+>>> print find_tag_by_id(content, 'last-import-status')
+None
+>>> series.importstatus = ImportStatus.SYNCING
+
+Especially if importstatus is unset.
+
+>>> series.importstatus = None
+>>> flush_database_updates()
+>>> transaction.commit()
+>>> anon_browser.open('http://launchpad.dev/evolution/trunk')
+>>> content = anon_browser.contents
+>>> print find_tag_by_id(content, 'last-import-status')
+None
+>>> series.importstatus = ImportStatus.SYNCING
+
+If datefinished is unset, we cannot know when the last sync attempt was done.
+
+>>> series.datefinished = None
+>>> flush_database_updates()
+>>> transaction.commit()
+>>> anon_browser.open('http://launchpad.dev/evolution/trunk')
+>>> content = anon_browser.contents
+>>> print find_tag_by_id(content, 'last-import-status')
+None
+>>> series.datefinished = one_day_one_hour_ago
+
+If datelastsynced is unset, we cannot know if the last import was successful.
+
+>>> series.datelastsynced = None
+>>> flush_database_updates()
+>>> transaction.commit()
+>>> anon_browser.open('http://launchpad.dev/evolution/trunk')
+>>> content = anon_browser.contents
+>>> print find_tag_by_id(content, 'last-import-status')
+None
+>>> series.datelastsynced = one_day_one_hour_ago
+
+If datelastsynced is /after/ datefinished, something is very wrong. Garbage in,
+nothing out, please.
+
+>>> series.datelastsynced = one_day_ago
+>>> series.datefinished = one_day_one_hour_ago
+>>> flush_database_updates()
+>>> transaction.commit()
+>>> anon_browser.open('http://launchpad.dev/evolution/trunk')
+>>> content = anon_browser.contents
+>>> print find_tag_by_id(content, 'last-import-status')
+None
+>>> series.datelastsynced = one_day_one_hour_ago
+>>> series.datefinished = one_day_one_hour_ago
+
+
+== Import freshness failsafe ==
+
+In some situations, we cannot display the freshness of the import.
+
+Some attributes do not actually matter here. Clear them out.
+
+>>> series.datefinished = None
+>>> series.importstatus = None
+
+Then set attributes that matter to reasonable values
+
+>>> series.datelastsynced = one_day_one_hour_ago
+>>> series.import_branch.last_mirrored = one_day_ago
+>>> series.datepublishedsync = two_days_one_hour_ago
+
+If the import_branch is unset, there's nothing to measure the freshness of.
+
+>>> branch = series.import_branch
+>>> series.import_branch = None
+>>> flush_database_updates()
+>>> transaction.commit()
+>>> anon_browser.open('http://launchpad.dev/evolution/trunk')
+>>> content = anon_browser.contents
+>>> print find_tag_by_id(content, 'import-branch-age')
+None
+>>> series.import_branch = branch
+
+Similarly, if that branch was never published.
+
+>>> series.import_branch.last_mirrored = None
+>>> flush_database_updates()
+>>> transaction.commit()
+>>> anon_browser.open('http://launchpad.dev/evolution/trunk')
+>>> content = anon_browser.contents
+>>> print find_tag_by_id(content, 'import-branch-age')
+None
+>>> series.import_branch.last_mirrored = one_day_ago
+
+If datelastsynced is unset, we are in some trouble.
+
+>>> series.datelastsynced = None
+>>> flush_database_updates()
+>>> transaction.commit()
+>>> anon_browser.open('http://launchpad.dev/evolution/trunk')
+>>> content = anon_browser.contents
+>>> print find_tag_by_id(content, 'import-branch-age')
+None
+>>> series.datelastsynced = one_day_one_hour_ago
+
+Finally, if the branch was last mirrored before the last sync, but
+datepublishedsync is unset, we are at a loss.
+
+>>> series.import_branch.last_mirrored = one_day_one_hour_ago
+>>> series.datelastsynced = one_day_ago
+>>> series.datepublishedsync = None
+>>> flush_database_updates()
+>>> transaction.commit()
+>>> anon_browser.open('http://launchpad.dev/evolution/trunk')
+>>> content = anon_browser.contents
+>>> print find_tag_by_id(content, 'import-branch-age')
+None
+>>> series.datelastsynced = one_day_one_hour_ago
+>>> series.import_branch.last_mirrored = one_day_ago
+>>> series.datepublishedsync = two_days_one_hour_ago

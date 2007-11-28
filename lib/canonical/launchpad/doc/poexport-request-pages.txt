@@ -1,0 +1,115 @@
+PO Export Request Browser Views
+-------------------------------
+
+    >>> from canonical.launchpad.ftests.harness import (
+    ...     LaunchpadFunctionalTestSetup)
+    >>> from canonical.launchpad.layers import TranslationsLayer
+    >>> LaunchpadFunctionalTestSetup().setUp()
+
+Check there are no requests in the database to start with.
+
+    >>> from canonical.launchpad.database import POExportRequest
+    >>> POExportRequest.select().count()
+    0
+
+Here's our user who's going to request some PO files.
+
+    >>> login('carlos@canonical.com')
+
+Here's the PO template they're going to request some files from.
+
+    >>> from canonical.launchpad.database import POTemplate
+    >>> potemplate = POTemplate.get(1)
+
+Here's the for variables from the user.
+
+    >>> form = {
+    ...     'what': 'some',
+    ...     'potemplate': True,
+    ...     'es': True,
+    ...     'format': 'PO'}
+
+And here's the view processing that request.
+
+    >>> potemplate_view = create_view(
+    ...     potemplate, '+export', form=form, layer=TranslationsLayer)
+    >>> potemplate_view.request.method = 'POST'
+    >>> potemplate_view.initialize()
+
+Check that the request has been added to the DB.
+
+    >>> for request in POExportRequest.select(
+    ...         orderBy=['person', 'potemplate', 'pofile']):
+    ...     things = [
+    ...         request.person.displayname,
+    ...         request.potemplate.name]
+    ...     if request.pofile:
+    ...         things.append(request.pofile.language.englishname)
+    ...     print things
+    [u'Carlos Perell\xf3 Mar\xedn', u'evolution-2.2', u'Spanish']
+    [u'Carlos Perell\xf3 Mar\xedn', u'evolution-2.2']
+
+Now forget that request happened.
+
+    >>> LaunchpadFunctionalTestSetup().tearDown()
+    >>> LaunchpadFunctionalTestSetup().setUp()
+
+See, no requests!
+
+    >>> POExportRequest.select().count()
+    0
+
+Request an empty potemplate (i.e. without any POTMsgSets).
+https://launchpad.net/products/rosetta/+bug/68261
+
+    >>> form = {
+    ...     'what': 'some',
+    ...     'potemplate': True,
+    ...     'format': 'PO'}
+    >>> empty_potemplate = POTemplate.get(6)
+    >>> broken_potemplate_view = create_view(
+    ...     empty_potemplate, '+export', form=form, layer=TranslationsLayer)
+    >>> broken_potemplate_view.request.method = 'POST'
+    >>> broken_potemplate_view.initialize()
+
+Check that the request has been added to the DB.
+
+    >>> for request in POExportRequest.select(
+    ...         orderBy=['person', 'potemplate', 'pofile']):
+    ...     things = [
+    ...         request.person.displayname,
+    ...         request.potemplate.name]
+    ...     if request.pofile:
+    ...         things.append(request.pofile.language.englishname)
+    ...     print things
+    [u'Carlos Perell\xf3 Mar\xedn', u'evolution-2.2-test']
+
+Now forget that request happened.
+
+    >>> LaunchpadFunctionalTestSetup().tearDown()
+    >>> LaunchpadFunctionalTestSetup().setUp()
+
+The queue is now empty.
+
+    >>> POExportRequest.select().count()
+    0
+
+Let's request a PO file instead this time.
+
+    >>> from canonical.launchpad.database import POFile
+    >>> pofile = POFile.get(1)
+
+Here's the request getting processed.
+
+    >>> form = {'format': 'PO'}
+    >>> pofile_view = create_view(
+    ...     pofile, '+export', form=form, layer=TranslationsLayer)
+    >>> pofile_view.request.method = 'POST'
+    >>> pofile_view.initialize()
+
+And there it is.
+
+    >>> POExportRequest.select().count()
+    1
+
+    >>> LaunchpadFunctionalTestSetup().tearDown()

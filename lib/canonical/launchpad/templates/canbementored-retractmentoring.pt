@@ -1,0 +1,50 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+</metal:heading>
+
+<div metal:fill-slot="main">
+
+  <tal:are_mentor condition="view/userIsMentor">
+    <div metal:use-macro="context/@@launchpad_form/form">
+
+      <p metal:fill-slot="extra_info" class="documentDescription">
+        When you retract your offer of mentoring, it will disappear
+        immediately from both project and team mentorship listings.
+      </p>
+
+    </div>
+  </tal:are_mentor>
+
+  <tal:not_mentor condition="not: view/userIsMentor">
+
+    <h1>You have not offered to mentor this work</h1>
+
+    <p>
+      You cannot retract an offer you have not yet made.
+    </p>
+
+  </tal:not_mentor>
+
+</div>
+
+</body>
+</html>

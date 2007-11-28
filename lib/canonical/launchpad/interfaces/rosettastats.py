@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface
 
@@ -47,6 +48,13 @@ class IRosettaStats(Interface):
 
         That's the msgsets that are translated in Rosetta and there was no
         translation in the PO file for this language when we last parsed it.
+        """
+
+    def unreviewedCount():
+        """Return the number of msgsets with unreviewed suggestions.
+
+        Unreviewed are those which contain suggestions submitted later
+        than the last review date.
         """
 
     def translatedCount(language=None):

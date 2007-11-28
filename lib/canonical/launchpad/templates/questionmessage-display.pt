@@ -1,0 +1,54 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="boardComment"
+      i18n:domain="launchpad">
+
+  <div class="boardCommentDetails">
+    <tal:bestanswer condition="view/isBestAnswer">
+      <img src="/@@/favourite-yes" style="float:right;" alt="Best"
+           title="Marked as best answer" />
+    </tal:bestanswer>
+    <tal:comment_has_owner>
+      <tal:comment_owner replace="structure context/owner/fmt:link" />
+    </tal:comment_has_owner>
+    said
+    <span
+      tal:attributes="title context/datecreated/fmt:datetime"
+      tal:content="context/datecreated/fmt:displaydate">Thursday
+    13:21</span>:
+  </div>
+
+  <div class="boardCommentBody"
+    tal:attributes="class view/getBodyCSSClass"
+    tal:condition="view/user"
+    tal:content="structure context/text_contents/fmt:email-to-html">
+    Message text.
+  </div>
+
+  <div class="boardCommentBody"
+    tal:attributes="class view/getBodyCSSClass"
+    tal:condition="not:view/user"
+    tal:content="structure
+      context/text_contents/fmt:obfuscate-email/fmt:email-to-html">
+    Message text.
+  </div>
+
+  <div class="confirmBox"
+        tal:condition="view/canConfirmAnswer">
+    <form action=""
+          method="POST"
+          tal:attributes="action request/URL">
+      <input tal:replace="structure view/renderAnswerIdFormElement" />
+      <input type="hidden" name="field.message" value="" />
+      <input type="submit"
+              name="field.actions.confirm"
+              value="This Solved My Problem"
+              i18n:attributes="value" />
+    </form>
+  </div>
+</div>
+</tal:root>

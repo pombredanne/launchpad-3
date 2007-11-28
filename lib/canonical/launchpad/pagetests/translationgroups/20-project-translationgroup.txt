@@ -1,104 +1,59 @@
+Lastly, we should be able to set the translation group on a project.
+We'll use the Gnome project as an example. First make sure we can see
+the Gnome project page and that it has no translation group assigned.
 
-Lastly, we should be able to set the translation group on a project. We'll
-use the Gnome project as an example. First make sure we can see the Gnome
-project page and that it has no translation group assigned.
+    >>> gnome_owner_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
+    >>> gnome_owner_browser.open('http://launchpad.dev/gnome')
+    >>> gnome_owner_browser.getLink('Translations').click()
+    >>> print gnome_owner_browser.title
+    Translatable projects for The GNOME Project
+    >>> print extract_text(
+    ...     find_tag_by_id(gnome_owner_browser.contents,
+    ...                    'portlet-translation-permissions'))
+    Translation permissions
+    Translation group: Not assigned
+    Permissions: Open
 
-  >>> print http(r"""
-  ... GET /gnome/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-  ...Translation Group:...
-  ..."/@@/languages"...
-  <BLANKLINE>
-  <BLANKLINE>
-              <i>Not assigned</i><br />
-  <BLANKLINE>
-              <b>Translation Perms:</b><br />
-              Open
-              <br />
-  ...
+And now make sure we can see the form to change the translation group
+and permissions on a project.
 
-And now make sure we can see the form to change the translation group and
-permissions on a project.
+    >>> gnome_owner_browser.getLink('Change translators').click()
+    >>> print gnome_owner_browser.title
+    Set translation group for The GNOME Project
 
-  >>> print http(r"""
-  ... GET /gnome/+changetranslators HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...GNOME...
-  ...Select a new translation group...
-  ...
+Let's post to the form, setting the translation group to polyglot and
+closed permissions.
 
-Let's post to the form, setting the translation group to polyglot and closed
-permissions.
-
-  >>> print http(r"""
-  ... POST /gnome/+changetranslators HTTP/1.1
-  ... Content-Length: 740
-  ... Content-Type: multipart/form-data; boundary=---------------------------5802497532009257481401449131
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... -----------------------------5802497532009257481401449131
-  ... Content-Disposition: form-data; name="field.translationgroup"
-  ... 
-  ... polyglot
-  ... -----------------------------5802497532009257481401449131
-  ... Content-Disposition: form-data; name="field.translationgroup-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------5802497532009257481401449131
-  ... Content-Disposition: form-data; name="field.translationpermission"
-  ... 
-  ... Closed
-  ... -----------------------------5802497532009257481401449131
-  ... Content-Disposition: form-data; name="field.translationpermission-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------5802497532009257481401449131
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------5802497532009257481401449131--
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-  ...Select a new translation group...
-  <BLANKLINE>
-  ...<p class="informational message">Updated on ...</p>
-  ...
+    >>> gnome_owner_browser.getControl(
+    ...     'Translation Permission System').displayValue = ['Closed']
+    >>> print gnome_owner_browser.getControl(
+    ...     'Translation group').displayOptions
+    ['(no value)', 'Single-language Translators',
+     'The PolyGlot Translation Group', 'Just a testing team']
+    >>> gnome_owner_browser.getControl(
+    ...     'Translation group').displayValue = [
+    ...         'The PolyGlot Translation Group']
+    >>> gnome_owner_browser.getControl('Change').click()
+    >>> print gnome_owner_browser.title
+    Set translation group for The GNOME Project
+    >>> for tag in find_tags_by_class(
+    ...     gnome_owner_browser.contents, 'informational message'):
+    ...     print tag.renderContents()
+    Updated on ...
 
 And make sure these changes are now reflected in the Gnome project page in
 the relevant portlet.
 
-  >>> print http(r"""
-  ... GET /gnome HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-  ...Translation Group:...
-  ..."/@@/languages"...
-  <BLANKLINE>
-              <a href="/translations/groups/polyglot/">The PolyGlot Translation Group</a><br />
-  <BLANKLINE>
-  <BLANKLINE>
-              <b>Translation Perms:</b><br />
-              Closed
-              <br />
-  ...
-
+    >>> gnome_owner_browser.getLink('Translations').click()
+    >>> print gnome_owner_browser.title
+    Translatable projects for The GNOME Project
+    >>> print extract_text(
+    ...     find_tag_by_id(gnome_owner_browser.contents,
+    ...                    'portlet-translation-permissions'))
+    Translation permissions
+    Translation group: The PolyGlot Translation Group
+    Permissions: Closed
+    >>> gnome_owner_browser.getLink('The PolyGlot Translation Group').click()
+    >>> gnome_owner_browser.title
+    '\xe2\x80\x9cThe PolyGlot Translation Group\xe2\x80\x9d Launchpad translation group'

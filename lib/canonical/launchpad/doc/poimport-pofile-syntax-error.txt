@@ -10,7 +10,6 @@ Here are some imports we need to get this test running.
 
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.interfaces import IPersonSet
-  >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
   >>> from canonical.launchpad.interfaces import ITranslationImportQueue
   >>> from canonical.launchpad.database import POTemplateSubset
   >>> import datetime
@@ -24,7 +23,7 @@ We need this for the Librarian to work properly.
 
 And also, the DBSchema to change the imports status
 
-  >>> from canonical.lp.dbschema import RosettaImportStatus
+  >>> from canonical.launchpad.interfaces import RosettaImportStatus
 
 Then, let's get a handle to our mailer. This is the thing we'll examine to show
 what email has been sent, to whom, and what the body of the message contains:
@@ -48,10 +47,10 @@ Now, is time to create the new potemplate
   >>> release.productseries.product.name
   u'firefox'
   >>> series = release.productseries
-  >>> ptn = getUtility(IPOTemplateNameSet).new('firefox', 'Whatever')
   >>> subset = POTemplateSubset(productseries=series)
   >>> potemplate = subset.new(
-  ...     potemplatename=ptn,
+  ...     name='firefox',
+  ...     translation_domain='firefox',
   ...     path='po/firefox.pot',
   ...     owner=person)
 
@@ -111,20 +110,20 @@ There is one email and it's for the error we produced.
   >>> print msg.get_payload(decode=True)
   Hello Mark Shuttleworth,
   <BLANKLINE>
-  On ..., you uploaded a file with
-  Welsh (cy) translations for firefox in Mozilla Firefox trunk in Rosetta.
+  On ..., you uploaded a file with Welsh (cy) translations for firefox in
+  Mozilla Firefox trunk to Launchpad.
   <BLANKLINE>
-  We didn't import it because we found errors in the file format.
+  We were unable to import the file because of errors in its format.
   <BLANKLINE>
-  You can check this file with the 'msgfmt' command. Please fix any
-  error raised by that tool and upload the file again. If you check
-  the file and you don't find any error in it, please, contact us to
-  help you with this problem.
+  You can check your file for correct formatting with the 'msgfmt' command.
+  Please fix any errors raised by msgfmt and upload the file again. If you
+  check the file and you don't find any error in it, please look for an
+  answer or file a question at https://answers.launchpad.net/rosetta/
   <BLANKLINE>
   For your convenience, you can get the file you uploaded at:
-  http://localhost:58000/.../cy.po
+  http://localhost:58000/.../firefox-cy.po
   <BLANKLINE>
-  Thanks for using Rosetta.
+  Thank you,
   <BLANKLINE>
-  The Rosetta SWAT Team
+  The Launchpad team
   <BLANKLINE>

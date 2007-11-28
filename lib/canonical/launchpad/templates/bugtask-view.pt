@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-    i18n:domain="malone"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="malone"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -18,7 +24,6 @@
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-search" />
     <div tal:replace="structure context/@@+portlet-alsoreportedin" />
   </metal:rightportlets>
@@ -58,7 +63,7 @@
           </div>
 
           <h2>Status in
-            <tal:target replace="context/targetname">Firefox</tal:target>
+            <tal:target replace="context/bugtargetname">Firefox</tal:target>
           </h2>
 
           <div class="field">
@@ -87,11 +92,12 @@
               <td tal:content="structure view/status_widget" />
               <td tal:content="structure view/importance_widget" />
               <td tal:condition="python:context.milestone and view.milestone_widget"
-                  tal:content="context/milestone/name">
+                  tal:content="context/milestone/name"
+		  id="milestone">
               </td>
             </tr>
             <tr tal:condition="python:context.distribution or
-                                      context.distrorelease">
+                                      context.distroseries">
               <td colspan="0">
                 <label tal:attributes="for view/sourcepackagename_widget/name"
                        tal:content="view/sourcepackagename_widget/label">
@@ -100,9 +106,10 @@
               </td>
             </tr>
             <tr tal:condition="python:context.distribution or
-                                      context.distrorelease">
+                                      context.distroseries">
               <td colspan="0"
-                  tal:content="context/sourcepackagename/name|nothing" nowrap />
+                  tal:content="context/sourcepackagename/name|nothing"
+                  style="white-space : nowrap;" />
             </tr>
             <tr>
               <td colspan="2">
@@ -122,13 +129,13 @@
               </td>
             </tr>
             <tr>
-              <td nowrap colspan="2">
+              <td style="white-space : nowrap;" colspan="2">
                 <span tal:replace="structure view/assignee_widget">
                   Scott James Remnant
                 </span>
               </td>
-              <td nowrap tal:content="structure view/bugwatch_widget"
-                  colspan="2" />
+              <td style="white-space : nowrap;" colspan="2"
+                tal:content="structure view/bugwatch_widget" />
             </tr>
             </table>
           </div>
@@ -143,10 +150,18 @@
             </div>
           </div>
 
-          <h2>Bug description</h2>
+          <tal:user condition="view/user">
+            <tal:description
+              define="global description context/bug/description/fmt:text-to-html" />
+          </tal:user>
+          <tal:not-user condition="not:view/user">
+            <tal:description
+              define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
+          </tal:not-user>
 
+          <h2>Bug description</h2>
           <tal:description
-            content="structure context/bug/description/fmt:text-to-html"
+            content="structure description"
           >
             $Bug.description
           </tal:description>

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 #
 # Remove all translations from upstream. This script is useful to recover from
 # breakages after importing bad .po files like the one reported at #32610
@@ -11,15 +11,14 @@ import logging
 from optparse import OptionParser
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.lp import initZopeless
-from canonical.lp.dbschema import RosettaTranslationOrigin
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.interfaces import (
-    IProductSet, IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet,
-    IPOTemplateSet)
+    IProductSet, IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet,
+    IPOTemplateSet, ILaunchpadCelebrities, RosettaTranslationOrigin)
 
 logger_name = 'remove-upstream-translations'
 
@@ -36,8 +35,8 @@ def parse_options(args):
         help="The product series where we should look for translations.")
     parser.add_option("-d", "--distro", dest="distro",
         help="The distribution where we should look for translations.")
-    parser.add_option("-r", "--distrorelease", dest="distrorelease",
-        help="The distribution release where we should look for translations."
+    parser.add_option("-r", "--distroseries", dest="distroseries",
+        help="The distribution series where we should look for translations."
         )
     parser.add_option("-n", "--sourcepackagename", dest="sourcepackagename",
         help="The distribution where we should look for translations.")
@@ -72,6 +71,9 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
     logger_object = logging.getLogger(logger_name)
 
     items_deleted = 0
+    # All changes should be logged as done by Rosetta Expert team.
+    rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
+
     for potemplate in potemplates:
         if lang_code is None:
             pofiles = sorted(
@@ -86,58 +88,31 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
 
         for pofile in pofiles:
             logger_object.debug('Processing %s...' % pofile.title)
-            if pofile.latestsubmission is not None:
-                logger_object.debug(
-                    'Before the removal, latest submission came from: %s' %
-                        pofile.latestsubmission.person.displayname)
             pofile_items_deleted = 0
-            pofile.latestsubmission = None
-            for pomsgset in pofile.pomsgsets:
-                for poselection in pomsgset.selections:
-                    if (poselection.activesubmission is not None and
-                        poselection.activesubmission.origin ==
-                            RosettaTranslationOrigin.SCM):
-                        poselection.activesubmission = None
-                        # We removed at least one translation, we cannot have
-                        # this pomsgset as iscomplete anymore, we are missing
-                        # one translation!.
-                        pomsgset.iscomplete = False
-                    if (poselection.publishedsubmission is not None and
-                        poselection.publishedsubmission.origin ==
-                            RosettaTranslationOrigin.SCM):
-                        poselection.publishedsubmission = None
-                        # We removed at least one translation, we cannot have
-                        # this pomsgset as iscomplete anymore, we are missing
-                        # one translation!.
-                        pomsgset.publishedcomplete = False
-                # We are going to delete POSubmissions here, and we need that
-                # the database has all changes we did to remove the references
-                # to the removed object.
-                flush_database_updates()
-                for posubmission in pomsgset.submissions:
-                    if (not posubmission.active_selections and
-                        not posubmission.published_selections and
-                        posubmission.origin == RosettaTranslationOrigin.SCM):
-                        posubmission.destroySelf()
-                        pofile_items_deleted += 1
-                # Let's fix the flags that depend on translations, we modified
-                # the IPOMsgSet and we should leave it in a consistent status.
-                pomsgset.updateFlags()
+            for message in pofile.translation_messages:
+                active_changed = False
+                if message.origin == RosettaTranslationOrigin.SCM:
+                    if message.is_current:
+                        active_changed = True
+                    message.destroySelf()
+                    pofile_items_deleted += 1
+                if active_changed:
+                    message.pofile.date_changed = UTC_NOW
+                    message.pofile.lasttranslator = rosetta_expert
+                    message.reviewer = rosetta_expert
+                    message.date_reviewed = UTC_NOW
+
             items_deleted += pofile_items_deleted
             logger_object.debug(
                  'Removed %d submissions' % pofile_items_deleted)
             pofile.updateStatistics()
-            pofile.recalculateLatestSubmission()
             ztm.commit()
-            if pofile.latestsubmission is not None:
-                logger_object.debug(
-                    'After the removal, latest submission came from: %s' %
-                        pofile.latestsubmission.person.displayname)
 
     # We finished the removal process, is time to notify the amount of entries
     # that we removed.
     logger_object.debug(
         'Removed %d submissions in total.' % items_deleted)
+
 
 def main(argv):
     options = parse_options(argv[1:])
@@ -149,7 +124,7 @@ def main(argv):
     product = None
     series = None
     distro = None
-    distrorelease = None
+    distroseries = None
     sourcepackagename = None
     potemplatename = None
     language_code = None
@@ -187,23 +162,23 @@ def main(argv):
                 'The %s distribution does not exist.' % options.distro)
             return 1
 
-    if options.distrorelease is not None:
+    if options.distroseries is not None:
         if distro is None:
             logger_object.error(
                 'You need to specify a distribution if you want to select a'
                 ' sourcepackagename.')
-        distroreleaseset = getUtility(IDistroReleaseSet)
-        distrorelease = distroreleaseset.queryByName(
-            distro, options.distrorelease)
-        if distrorelease is None:
+        distroseriesset = getUtility(IDistroSeriesSet)
+        distroseries = distroseriesset.queryByName(
+            distro, options.distroseries)
+        if distroseries is None:
             logger_object.error(
-                'The %s distribution does not exist.' % options.distrorelease)
+                'The %s distribution does not exist.' % options.distroseries)
             return 1
 
     if options.sourcepackagename is not None:
-        if distrorelease is None:
+        if distroseries is None:
             logger_object.error(
-                'You need to specify a distribution release if you want to'
+                'You need to specify a distribution series if you want to'
                 ' select a sourcepackagename.')
             return 1
         sourcepackagenameset = getUtility(ISourcePackageNameSet)
@@ -216,7 +191,7 @@ def main(argv):
             return 1
 
     potemplateset = getUtility(IPOTemplateSet)
-    if series is None and distrorelease is None:
+    if series is None and distroseries is None:
         if options.potemplatename is None:
             logger_object.warning('Nothing to do. Exiting...')
             return 0
@@ -225,7 +200,7 @@ def main(argv):
                 options.potemplatename)
     else:
         potemplate_subset = potemplateset.getSubset(
-            distrorelease=distrorelease, sourcepackagename=sourcepackagename,
+            distroseries=distroseries, sourcepackagename=sourcepackagename,
             productseries=series)
         if options.potemplatename is not None:
             potemplate = potemplate_subset.getPOTemplateByName(

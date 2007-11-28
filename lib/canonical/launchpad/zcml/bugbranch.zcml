@@ -1,35 +1,60 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- IBugBranch -->
-    <content class="canonical.launchpad.database.BugBranch">
-      <allow interface="canonical.launchpad.interfaces.IBugBranch" />
-      <require
-          permission="launchpad.AnyPerson"
-          set_attributes="fixed_in_revision_id status whiteboard" />
-    </content>
+  <!-- IBugBranch -->
+  <content class="canonical.launchpad.database.BugBranch">
+    <allow interface="canonical.launchpad.interfaces.IBugBranch" />
+    <require
+        permission="launchpad.Edit"
+        attributes="destroySelf"
+        set_attributes="fixed_in_revision_id status whiteboard" />
+  </content>
 
-    <browser:url
-        for="canonical.launchpad.interfaces.IBugBranch"
-        path_expression="string:+bug/${bug/id}"
-        attribute_to_parent="branch" />
+  <browser:url
+      for="canonical.launchpad.interfaces.IBugBranch"
+      path_expression="string:+bug/${bug/id}"
+      attribute_to_parent="branch" />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugBranch"
-        name="+status" />
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IBugBranch"
+      name="+edit" />
 
-    <browser:generalform
-        name="+status"
-        for="canonical.launchpad.interfaces.IBugBranch"
-        schema="canonical.launchpad.interfaces.IBugBranch"
-        class="canonical.launchpad.browser.bugbranch.BugBranchStatusView"
-        label="Edit bug branch status"
-        fields="status whiteboard"
-        keyword_arguments="status whiteboard"
-        permission="launchpad.View"
-        template="../templates/bugbranch-status.pt" />
+  <browser:page
+      name="+edit"
+      for="canonical.launchpad.interfaces.IBugBranch"
+      class="canonical.launchpad.browser.BugBranchEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/bugbranch-edit.pt" />
+
+  <browser:page
+      name="+branch-edit"
+      for="canonical.launchpad.interfaces.IBugBranch"
+      class="canonical.launchpad.browser.BugBranchBranchInlineEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/bugbranch-inline-edit.pt" />
+
+  <browser:page
+      name="+bug-edit"
+      for="canonical.launchpad.interfaces.IBugBranch"
+      class="canonical.launchpad.browser.BugBranchBugInlineEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/bugbranch-inline-edit.pt" />
+
+  <!-- BugBranchSet -->
+  <content class="canonical.launchpad.database.BugBranchSet">
+    <allow interface="canonical.launchpad.interfaces.IBugBranchSet" />
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.BugBranchSet"
+    provides="canonical.launchpad.interfaces.IBugBranchSet" >
+      <allow interface="canonical.launchpad.interfaces.IBugBranchSet" />
+  </securedutility>
+
 </configure>

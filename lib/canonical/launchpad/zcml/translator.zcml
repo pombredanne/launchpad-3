@@ -1,12 +1,12 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- TranslatorSet -->
+<facet facet="translations">
 
+    <!-- TranslatorSet -->
     <securedutility
       class="canonical.launchpad.database.TranslatorSet"
       provides="canonical.launchpad.interfaces.ITranslatorSet" >
@@ -23,19 +23,27 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslator"
-        name="+edit" />
+        name="+edit"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
-    <browser:editform
+    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.ITranslator"
-        facet="translations"
-        schema="canonical.launchpad.interfaces.ITranslator"
-        label="Change translator"
-        fields="translator"
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.TranslatorEditView"
-        template="../templates/launchpad-editform.pt"
-        lp:url="/rosetta/groups/$TranslationGroup.name/$Language.name/+edit">
-    </browser:editform>
+        template="../templates/translator-edit.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
+    <browser:page
+        name="+remove"
+        for="canonical.launchpad.interfaces.ITranslator"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.TranslatorRemoveView"
+        template="../templates/translator-remove.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+</facet>
 </configure>

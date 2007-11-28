@@ -2,7 +2,6 @@
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
   xmlns:i18n="http://namespaces.zope.org/i18n"
-  xmlns:lp="http://launchpad.canonical.com"
   i18n_domain="launchpad">
 
   <!-- SpecificationSubscription -->
@@ -36,5 +35,15 @@
     template="../templates/specificationsubscription-edit.pt"
     >
   </browser:editform>
+
+  <subscriber
+      for="canonical.launchpad.interfaces.ISpecificationSubscription
+	   canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+      handler="canonical.launchpad.mailnotification.notify_specification_subscription_created" />
+
+  <subscriber
+      for="canonical.launchpad.interfaces.ISpecificationSubscription
+	   canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+      handler="canonical.launchpad.mailnotification.notify_specification_subscription_modified" />
 
 </configure>

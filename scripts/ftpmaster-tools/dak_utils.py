@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 
 # Utility functions from the dak suite
 # Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005, 2006  James Troup <james@nocrew.org>
@@ -32,6 +32,7 @@ import tempfile
 re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)")
 re_multi_line_field = re.compile(r"^\s(.*)")
 re_no_epoch = re.compile(r"^\d+\:")
+re_extract_src_version = re.compile(r"(\S+)\s*\((.*)\)")
 
 changes_parse_error_exc = "Can't parse line in .changes file"
 invalid_dsc_format_exc = "Invalid .dsc file"
@@ -232,7 +233,8 @@ def extract_component_from_section(section):
     if section.find('/') != -1:
         component = section.split('/')[0];
 
-    # XXX - we don't have Cnf, don't want to use DB particularly, so...
+    # XXX James Troup 2006-01-30:
+    # We don't have Cnf, don't want to use DB particularly, so...
     valid_components = [ "main", "restricted", "universe", "multiverse", "contrib", "non-free" ]
 
     # Expand default component

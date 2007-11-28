@@ -1,21 +1,24 @@
-<div class="portlet" id="bug-tags">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-tags">
 
   <h2>Tags</h2>
 
-  <div class="portletBody portletContent">
+  <div class="portletBody">
 
-    <ul>
-
-      <li tal:repeat="bug_tag_info view/getUsedBugTagsWithURLs">
-        <a tal:content="bug_tag_info/tag"
-           tal:attributes=" href bug_tag_info/url">
-          crash
-        </a> <tal:count tal:replace="string:(${bug_tag_info/count})">
-             (20)
-             </tal:count>
-      </li>
-
-    </ul>
+    <table width="100%">
+      <tr tal:repeat="bug_tag_info view/getUsedBugTagsWithURLs">
+        <td>
+          <a tal:content="bug_tag_info/tag"
+             tal:attributes=" href bug_tag_info/url">
+            crash
+          </a>
+        </td>
+        <td tal:content="bug_tag_info/count">20</td>
+      </tr>
+    </table>
 
   </div>
 </div>

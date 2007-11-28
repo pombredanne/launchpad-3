@@ -1,80 +1,67 @@
-  <form action="#"
-      tal:attributes="action string:${context/fmt:url}/+addcomment"
-      method="post"
-      enctype="multipart/form-data">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  metal:use-macro="context/@@launchpad_form/form">
+  <div class="form" metal:fill-slot="widgets">
+    <div
+      tal:condition="context/bug/duplicateof"
+      class="warning message"
+    >
+      Remember, this bug report is a duplicate.
+      Comment here only if you think the duplicate status is wrong.
+    </div>
 
-      <tal:process condition="view/process_form" />
-      <div tal:define="errors view/errors|nothing"
-         tal:condition="errors"
-         tal:repeat="error errors"
-         tal:content="error/doc"
-         class="error message">Individual error.</div>
-
-      <div tal:define="widget nocall:view/subject_widget">
-        <metal:block use-macro="view/subject_widget/@@launchpad_widget_macros/launchpad_widget_row" />
-      </div>
-      <div tal:define="widget nocall:view/comment_widget">
-        <metal:block use-macro="view/comment_widget/@@launchpad_widget_macros/launchpad_widget_row" />
-      </div>
-      <fieldset style="margin: 1em 0;">
-        <legend>
-          <span tal:content="structure view/include_attachment_widget" />
-          <label tal:attributes="for view/include_attachment_widget/name"
-                 tal:content="view/include_attachment_widget/label">
-            Include attachment
-          </label>
-        </legend>
         <table>
-          <tbody>
-            <tr>
-              <td style="text-align: right">
-                <label tal:attributes="for view/filecontent_widget/name">
-                  File
-                </label>
-              </td>
-              <td>
-                <input type="file"
-                       tal:attributes="name view/filecontent_widget/name;
-                                       id view/filecontent_widget/name"
-                       size="30"
-                       onKeyPress="selectWidget('field.include_attachment', event)"
-                       onChange="selectWidget('field.include_attachment', event)" />
-              </td>
-            </tr>
-            <tr>
-              <td></td>
-              <td>
-                <span tal:content="structure view/patch_widget" />
-                <label style="font-weight: normal"
-                       tal:content="view/patch_widget/label"
-                       tal:attributes="for view/patch_widget/name">
-                  patch
-                </label>
-              </td>
-            </tr>
-            <tr>
-              <td style="text-align: right">
-                <label tal:attributes="for view/attachment_description_widget/name">
-                  Description
-                </label>
-              </td>
-              <td>
-                <span tal:content="structure view/attachment_description_widget" />
-              </td>
-            </tr>
-          </tbody>
+          <tal:subject
+              tal:define="widget nocall:view/widgets/subject|nothing"
+              tal:condition="widget">
+            <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+          </tal:subject>
+
+          <tal:comment
+              tal:define="widget nocall:view/widgets/comment|nothing"
+              tal:condition="widget">
+            <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+          </tal:comment>
         </table>
-      </fieldset>
-      <div tal:condition="view/shouldShowEmailMeWidget">
-        <span tal:content="structure view/email_me_widget" />
-        <label style="font-weight: normal"
-               tal:content="view/email_me_widget/label"
-               tal:attributes="for view/email_me_widget/name">
-            E-mail me about changes to this bug report
-        </label>
+
+        <tal:email_me
+             tal:define="widget nocall:view/widgets/email_me|nothing"
+             tal:condition="python: widget and view.shouldShowEmailMeWidget()">
+          <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+        </tal:email_me>
+
+        <fieldset style="border: 1px solid;">
+          <legend style="margin-left: 1em; font-weight: normal;">
+            <span class="fieldRequired">Include an attachment (Optional)</span>
+          </legend>
+
+          <table>
+            <tal:filecontent
+                tal:define="widget nocall:view/widgets/filecontent|nothing"
+                tal:condition="widget">
+              <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+            </tal:filecontent>
+
+            <tal:patch
+                tal:define="widget nocall:view/widgets/patch|nothing"
+                tal:condition="widget">
+              <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+            </tal:patch>
+
+            <tal:attachment_description
+                tal:define="widget nocall:view/widgets/attachment_description|nothing"
+                tal:condition="widget">
+              <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+            </tal:attachment_description>
+
+          </table>
+        </fieldset>
+
       </div>
-      <br />
-      <div class="field">
-        <input type="submit" name="FORM_SUBMIT" value="Save Changes" />
+
+      <div class="actions" metal:fill-slot="buttons">
+        <input tal:replace="structure view/actions/field.actions.save/render" />
       </div>
-  </form>
+
+</div>

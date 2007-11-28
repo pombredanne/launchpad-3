@@ -1,0 +1,67 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-subscribers" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-bugs" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+      <div>
+        <img alt="" src="/@@/question" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <metal:extra_info fill-slot="extra_info">
+      <tal:comment replace="nothing">
+        This link should appear in the appropriate widget description,
+        but cannot because of bug #72730.
+      </tal:comment>
+      <p><a href="/people/+me/+editlanguages">Change your
+        preferred languages</a> to modify the list of languages available
+        for writing the question.
+      </p>
+      <metal:unsupported_languages_warning
+        use-macro="view/unsupported_languages_warning" />
+    </metal:extra_info>
+  </div>
+
+</div>
+
+<metal:help fill-slot="help">
+  <p>Use this page to edit the question's <strong>title</strong> or
+    <strong>description</strong>. If you are not the user who posted the
+    question, try to only do edits that clarify the quesion or describes it
+    better.
+  </p>
+
+  <p>In distribution, you may want to set the
+    <strong>source package</strong> to which this question is related.
+    This will help people familiar with that application find the question.
+  </p>
+
+  <p>You can use the <strong>status whiteboard</strong> to leave a transient
+    note that will be displayed on the question page.
+  </p>
+
+</metal:help>
+
+</body>
+</html>

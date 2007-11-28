@@ -1,0 +1,343 @@
+= XML-RPC integration for mailing lists =
+
+Team mailing lists are requested in Launchpad, but the lists actually live in
+an external system running GNU Mailman.  The communication pattern is
+initiated by Mailman in all cases; in other words, Mailman polls Launchpad to
+see if there is any work for Mailman to do.
+
+    >>> # Note that this test is run multiple times, with the harness
+    >>> # providing `mailinglist_api` and `commit` for impedance matching.
+
+
+== Registered lists ==
+
+When there's nothing for Mailman to do, we'll just get an empty dictionary
+back from the XMLRPC call.
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('foo.bar@canonical.com')
+    >>> mailinglist_api.getPendingActions()
+    {}
+
+Mailing lists are always tied -- one-to-one -- to teams.
+
+    >>> from canonical.launchpad.ftests.mailinglists_helper import new_team
+    >>> team_one = new_team('team-one')
+    >>> team_two = new_team('team-two')
+    >>> commit()
+
+A team owner must register the mailing list for team, but Mailman will not be
+told to create mailing lists in the REGISTERED state.  We'll register one of
+the lists with a custom welcome message.
+
+    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> list_set = getUtility(IMailingListSet)
+    >>> list_one = list_set.new(team_one)
+    >>> list_one.welcome_message = u'Welcome to Team One'
+    >>> list_two = list_set.new(team_two)
+    >>> commit()
+    >>> list_one.status.name
+    'REGISTERED'
+    >>> list_two.status.name
+    'REGISTERED'
+    >>> mailinglist_api.getPendingActions()
+    {}
+
+A mailing list in the REGISTERED state must be reviewed and approved by a
+Launchpad administrator before Mailman will be told to create it.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, MailingListStatus)
+    >>> personset = getUtility(IPersonSet)
+    >>> carlos = personset.getByName('carlos')
+    >>> list_one.review(carlos, MailingListStatus.APPROVED)
+    >>> list_two.review(carlos, MailingListStatus.APPROVED)
+    >>> commit()
+    >>> list_one.status.name
+    'APPROVED'
+    >>> list_two.status.name
+    'APPROVED'
+
+The next time Mailman polls the XMLRPC interface, there will be mailing lists
+for it to create.
+
+    >>> pending_actions = mailinglist_api.getPendingActions()
+    >>> commit()
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     print_actions)
+    >>> print_actions(pending_actions)
+    team-one --> create {'welcome_message': u'Welcome to Team One'}
+    team-two --> create {}
+
+In the database, the state of both lists should now be CONSTRUCTING to
+indicate that Mailman is in the process of creating the lists.
+
+    >>> list_one = list_set.get('team-one')
+    >>> list_one.status.name
+    'CONSTRUCTING'
+    >>> list_two = list_set.get('team-two')
+    >>> list_two.status.name
+    'CONSTRUCTING'
+
+Should Mailman poll the actions again before it completes creating these
+lists, there will be nothing to do because lists in the CONSTRUCTING state
+don't show up as needing to be created.
+
+    >>> mailinglist_api.getPendingActions()
+    {}
+
+
+== Creating the mailing lists ==
+
+Mailman will attempt to satisfy the requested creation.  This will either
+succeed or fail, and this status is communicated back to Launchpad.  Let's say
+that team-one was created succesfully, but the creation of team-two failed for
+some reason.
+
+    >>> mailinglist_api.reportStatus({
+    ...     'team-one': 'success',
+    ...     'team-two': 'failure',
+    ...     })
+    True
+    >>> commit()
+
+We can see that the statuses of the mailing lists have been updated in the
+database.
+
+    >>> list_one.status.name
+    'ACTIVE'
+    >>> list_two.status.name
+    'FAILED'
+
+Once these actions have been taken, there are no more pending actions for
+Mailman.
+
+    >>> mailinglist_api.getPendingActions()
+    {}
+
+
+== Deactivating mailing lists ==
+
+The other action that Mailman needs to take is to deactivate a list when the
+team owner requests it.  These also show up as pending actions when Mailman
+polls Launchpad.
+
+Now, say team one's owner wants to deactive their list.
+
+    >>> list_one.deactivate()
+    >>> commit()
+
+This will show up in the actions pending for Mailman.
+
+    >>> pending_actions = mailinglist_api.getPendingActions()
+    >>> print_actions(pending_actions)
+    team-one --> deactivate
+
+Let's create another team mailing list and request its deactivation, to show
+what happens if a deactivation fails.  First, set things up behind the
+scenes.
+
+    >>> ddaa = personset.getByName('ddaa')
+    >>> team_three = personset.newTeam(ddaa, 'team-three', 'Team Three')
+    >>> list_three = list_set.new(team_three)
+    >>> list_three.review(carlos, MailingListStatus.APPROVED)
+    >>> commit()
+
+    >>> pending_actions = mailinglist_api.getPendingActions()
+    >>> commit()
+    >>> print_actions(pending_actions)
+    team-three --> create {}
+    team-one --> deactivate
+    >>> mailinglist_api.reportStatus({'team-three': 'success'})
+    True
+    >>> list_three.deactivate()
+    >>> commit()
+
+We now have two active mailing lists for which deactivation has been
+requested.
+
+    >>> print_actions(mailinglist_api.getPendingActions())
+    team-one --> deactivate
+    team-three --> deactivate
+
+Perhaps team one's list was successfully deactivated but team three's list
+deactivation failed for some reason.
+
+    >>> mailinglist_api.reportStatus({
+    ...     'team-one': 'success',
+    ...     'team-three': 'failure',
+    ...     })
+    True
+    >>> list_one = list_set.get('team-one')
+    >>> list_one.status.name
+    'INACTIVE'
+    >>> list_three = list_set.get('team-three')
+    >>> list_three.status.name
+    'MOD_FAILED'
+
+
+== Modifying mailing lists ==
+
+Activate mailing lists can also be modified.  Currently the only modification
+supported is changing the list's welcome message.  Because deactivated and
+failed mailing lists cannot be re-activated without manual intervention, let's
+create a couple more teams and mailing lists.
+
+    >>> team_four = personset.newTeam(ddaa, 'team-four', 'Team Four')
+    >>> list_four = list_set.new(team_four)
+    >>> list_four.review(carlos, MailingListStatus.APPROVED)
+    >>> team_five = personset.newTeam(ddaa, 'team-five', 'Team Five')
+    >>> list_five = list_set.new(team_five)
+    >>> list_five.review(carlos, MailingListStatus.APPROVED)
+    >>> commit()
+    >>> pending_actions = mailinglist_api.getPendingActions()
+    >>> print_actions(pending_actions)
+    team-five --> create {}
+    team-four --> create {}
+    >>> mailinglist_api.reportStatus({
+    ...     'team-four': 'success',
+    ...     'team-five': 'success',
+    ...     })
+    True
+    >>> commit()
+    >>> mailinglist_api.getPendingActions()
+    {}
+
+Now, when a mailing list's welcome message is changed, Mailman will see this
+modification action the next time it polls.
+
+    >>> list_four.welcome_message = u'Welcome to Team Four'
+    >>> list_five.welcome_message = u'Welcome to Team Five'
+    >>> commit()
+    >>> print_actions(mailinglist_api.getPendingActions())
+    team-five --> modify {'welcome_message': u'Welcome to Team Five'}
+    team-four --> modify {'welcome_message': u'Welcome to Team Four'}
+
+And at this point, the lists are in the MODIFIED state, awaiting a status
+report from Mailman.
+
+    >>> list_four = list_set.get('team-four')
+    >>> list_four.status.name
+    'UPDATING'
+    >>> list_five = list_set.get('team-five')
+    >>> list_five.status.name
+    'UPDATING'
+
+Let's say that the change was successful for one of the lists, but failed for
+the other...
+
+    >>> mailinglist_api.reportStatus({
+    ...     'team-four': 'success',
+    ...     'team-five': 'failure',
+    ...     })
+    True
+
+...this is reflected in the status of the mailing lists in the database.
+
+    >>> list_four = list_set.get('team-four')
+    >>> list_four.status.name
+    'ACTIVE'
+    >>> list_five = list_set.get('team-five')
+    >>> list_five.status.name
+    'MOD_FAILED'
+
+
+== Error conditions ==
+
+Although we control both ends of this XMLRPC interface, it might still be
+possible to pass bad input, due to bugs and such.  The XMLRPC interface is
+resilient enough to handle this sanely.  The getPendingActions() interface of
+course takes no input so you can't mess it up.  Not so with the reportStatus()
+method.
+
+One possibility is that a bad team name is passed in the statuses dictionary.
+
+    >>> mailinglist_api.reportStatus({'bogus team': 'success'})
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 140: 'No such team mailing list: bogus team'>
+
+Similarly we could pass in the name of a person that is not a team.
+
+    >>> mailinglist_api.reportStatus({'carlos': 'success'})
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 140: 'No such team mailing list: carlos'>
+
+We could also pass in a success or failure status to a list that is not
+expecting it.  In this case, list_four is active so it is not expecting a
+status report, either success...
+
+    >>> list_four.status.name
+    'ACTIVE'
+    >>> mailinglist_api.reportStatus({'team-four': 'success'})
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 150: 'Unexpected status report "success"
+            for team: team-four'>
+
+...or failure.
+
+    >>> mailinglist_api.reportStatus({'team-four': 'failure'})
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 150: 'Unexpected status report "failure"
+            for team: team-four'>
+
+This is also true of lists in the failed state.
+
+    >>> list_two.status.name
+    'FAILED'
+    >>> mailinglist_api.reportStatus({'team-two': 'success'})
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 150: 'Unexpected status report "success"
+            for team: team-two'>
+
+    >>> mailinglist_api.reportStatus({'team-two': 'failure'})
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 150: 'Unexpected status report "failure"
+            for team: team-two'>
+
+And of lists in the modification-failed state.
+
+    >>> list_five.status.name
+    'MOD_FAILED'
+    >>> mailinglist_api.reportStatus({'team-five': 'success'})
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 150: 'Unexpected status report "success"
+            for team: team-five'>
+
+    >>> mailinglist_api.reportStatus({'team-five': 'failure'})
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 150: 'Unexpected status report "failure"
+            for team: team-five'>
+
+Finally, for a list that is expecting a status report, we could pass in a
+bogus status string.  To illustrate, let's begin the process of deactivating
+an active list.
+
+    >>> list_four = list_set.get('team-four')
+    >>> list_four.deactivate()
+    >>> commit()
+    >>> pending_actions = mailinglist_api.getPendingActions()
+    >>> print_actions(pending_actions)
+    team-four --> deactivate
+
+Status strings are case-sensitive.
+
+    >>> mailinglist_api.reportStatus({'team-four': 'SUCCESS'})
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 160: 'Bad status string "SUCCESS" for team: team-four'>
+
+And of course, entirely bogus status strings aren't accepted either.
+
+    >>> mailinglist_api.reportStatus({'team-four': 'entirely-bogus'})
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 160: 'Bad status string "entirely-bogus"
+            for team: team-four'>

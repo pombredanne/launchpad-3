@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -34,16 +33,16 @@
         <browser:page
             template="../templates/codeofconduct-index.pt"
             name="+index"
-            lp:url="codeofconduct/$CoC.version/+index" />
+            />
     </browser:pages>
 
-    <browser:page 
+    <browser:page
         name="+download"
         for="canonical.launchpad.interfaces.ICodeOfConduct"
         class="canonical.launchpad.browser.CodeOfConductDownloadView"
         permission="zope.Public"
         attribute="__call__"
-        lp:url="codeofconduct/$CoC.version/+download" />
+        />
 
     <browser:generalform
         name="+sign"
@@ -54,7 +53,7 @@
         class="canonical.launchpad.browser.SignedCodeOfConductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/signedcodeofconduct-add.pt"
-        lp:url="codeofconduct/$release/+sign">
+        >
     </browser:generalform>
 
     <!-- CodeOfConductConf -->
@@ -96,7 +95,7 @@
         <browser:page
             template="../templates/codeofconduct-list.pt"
             name="+index"
-            lp:url="codeofconduct/+index" />
+            />
     </browser:pages>
 
 
@@ -119,7 +118,7 @@
         <browser:page
             template="../templates/signedcodeofconduct-index.pt"
             name="+index"
-            lp:url="codeofconduct/console/$signed.id/+index" />
+            />
     </browser:pages>
 
     <browser:editform
@@ -131,7 +130,7 @@
         fields="admincomment"
         permission="launchpad.Admin"
         template="../templates/signedcodeofconduct-activate.pt"
-        lp:url="foaf/$person.name/cocs/$signed.id/+activate">
+        >
     </browser:editform>
 
     <browser:editform
@@ -143,7 +142,7 @@
         fields="admincomment"
         permission="launchpad.Admin"
         template="../templates/signedcodeofconduct-deactivate.pt"
-        lp:url="foaf/$person.name/cocs/$signed.id/+deactivate">
+        >
     </browser:editform>
 
     <!-- SignedCodeOfConductSet -->
@@ -186,7 +185,7 @@
         <browser:page
             template="../templates/codeofconduct-admin.pt"
             name="+index"
-            lp:url="codeofconduct/console/+index" />
+            />
     </browser:pages>
 
 
@@ -199,7 +198,7 @@
         class="canonical.launchpad.browser.SignedCodeOfConductAckView"
         permission="launchpad.Admin"
         template="../templates/signedcodeofconduct-acknowledge.pt"
-        lp:url="codeofconduct/console/+new">
+        >
     </browser:addform>
 
 </facet>

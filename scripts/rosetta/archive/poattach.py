@@ -9,9 +9,7 @@ from canonical.database.constants import UTC_NOW
 import canonical.lp
 from canonical.launchpad.database import Person, POTemplate
 from canonical.launchpad.database import ProductSet
-from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
-
-from canonical.lp.dbschema import RosettaImportStatus
+from canonical.interfaces import RosettaImportStatus
 
 from canonical.rosetta.pofile import POParser
 
@@ -27,11 +25,12 @@ translation in the PO file when we last parsed it: %d
 """
 
 def get_product(name):
-    # XXX: We should probably be using a utility for getting the product.
-    # -- Dafydd Harries, Fri, 19 Nov 2004 01:31:23 -0500
-    # XXX: This will be difficult when this is run as a script.
+    # XXX: Dafydd Harries 2004-11-19:
+    # We should probably be using a utility for getting the product.
+    # -- 
+    # XXX: Steve Alexander 2004-11-19
+    #      This will be difficult when this is run as a script.
     #      Perhaps initZopeless needs to load adapters and utilities too?
-    # -- Steve Alexander, Fri Nov 19 15:25:08 UTC 2004
     try:
         product = ProductSet()[name]
     except KeyError:
@@ -89,9 +88,9 @@ class PODBBridge:
             languageCode):
         product = get_product(productName)
         poTemplate = get_template(product, poTemplateName)
-        # XXX: Perhaps we should try and catch the case where the PO file does
+        # XXX: Dafydd Harries 2004-11-19:
+        # Perhaps we should try and catch the case where the PO file does
         # not exist.
-        #  -- Dafydd Harries, Fri, 19 Nov 2004 01:29:30 -0500
         poFile = poTemplate.poFile(languageCode)
         current, updates, rosetta = poFile.updateStatistics()
         print stats_message % (current, updates, rosetta)

@@ -1,0 +1,82 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@marketing_template/master"
+  i18n:domain="launchpad"
+>
+<body>
+  <div id="about" metal:fill-slot="contents">
+    <div id="primary">
+      <h2>Bugs</h2>
+      <h3 class="byline">Overview</h3>
+    </div>
+
+    <h2 class="headline">Cross-project collaboration for shared bugs</h2>
+
+    <table id="features">
+      <tbody>
+        <tr>
+          <th>Cross-project bug teams</th>
+          <th>Monitor external trackers</th>
+          <th>Web and email interfaces</th>
+          <th>Tagging</th>
+        </tr>
+        <tr class="screenshots">
+          <td><img src="/+icing/bugs-feature-teams.png"
+                   alt="Cross-project teams mini screenshot" /></td>
+          <td><img src="/+icing/bugs-feature-tracker.png"
+                   alt="External trackers mini screenshot" /></td>
+          <td><img src="/+icing/bugs-feature-web-email-ui.png"
+                   alt="Web and email interfaces mini screenshot" /></td>
+          <td><img src="/+icing/bugs-feature-tagging.png"
+                   alt="Tagging mini screenshot" /></td>
+        </tr>
+        <tr>
+          <td>Create ad-hoc teams to tackle bugs that affect multiple
+            projects.
+          </td>
+          <td>Link to instances of the same bug in external trackers,
+            including Bugzilla, Sourceforge and Debian BTS.
+          </td>
+          <td>Suits both new users and experienced developers.</td>
+          <td>Group related bugs quickly and easily.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div id="content">
+      <div class="intro">
+        <h3>About the Launchpad Bug Tracker</h3>
+
+        <p>Bugs aren't always found by the people who wrote the buggy code. If
+           you find a bug in code that your project relies on, Launchpad helps
+           you to create a cross-project team to solve it.
+        </p>
+
+        <p>If both projects use Launchpad's bug tracker, you can share common
+           bugs. Shared bugs appear in both project's bug lists and send
+           updates to both project's bug contacts but retain separate bug
+           statuses.
+         </p>
+
+        <p>If your project is affected by a bug in code that is tracked by an
+          external tracker - such as Bugzilla, Sourceforge or Debian BTS - you
+          can ask Launchpad to report its current status on your project's bug
+          page.
+        </p>
+
+        <p>Everyday bug reporting and management are simple, thanks to an
+           intuitive web interface. Experience developers, many of whom prefer
+           email to the web, are well served by a comprehensive email
+           interface.
+        </p>
+      </div>
+    </div> <!-- content -->
+  </div>
+</body>
+</html>

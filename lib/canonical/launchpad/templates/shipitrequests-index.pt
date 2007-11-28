@@ -1,8 +1,21 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:do-this-first condition="view/processForm" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 <body>
 
   <div metal:fill-slot="body" style="padding-left: 1em">
@@ -12,13 +25,13 @@
   <table>
   <tbody>
   <tr>
-  <td width="80%">
+  <td width="80%" id="main-content">
 
-  <form name="search" method="GET" tal:attributes="action request/URL">
-  <table>
+  <form name="search" method="get" tal:attributes="action request/URL">
+  <table class="headers-right-aligned">
     <tbody>
     <tr>
-      <th>Show:</th>
+      <th >Show:</th>
       <td colspan="2">
         <select name="statusfilter">
           <option tal:repeat="option view/status_options"
@@ -33,8 +46,8 @@
     <tr>
       <th>with:</th>
       <td>
-        <select name="releasefilter">
-          <option tal:repeat="option view/release_options"
+        <select name="seriesfilter">
+          <option tal:repeat="option view/series_options"
                   tal:attributes="
                     value option/name;
                     selected option/is_selected"
@@ -71,13 +84,14 @@
           <option value="-daterequested" 
             tal:attributes="selected python: orderby == '-daterequested'">
             newest first</option>
-          <option value="highpriority"
+          <option value="-highpriority"
             tal:attributes="selected python: orderby == '-highpriority'">
             priority</option>
         </select>
         <input type="submit" value="Show" name="show" />
       </td>
     </tr>
+    </tbody>
   </table>
   </form>
 
@@ -105,12 +119,12 @@
             <th>Recipient</th>
             <th>Date</th>
             <th>Country</th>
-            <th style="text-align: right">requested</th>
-            <th style="text-align: right">approved</th>
-            <th>status</th>
+            <th style="text-align: right">Requested</th>
+            <th style="text-align: right">Approved</th>
+            <th>Status</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="results-body">
           <tal:block repeat="shipitrequest shipitrequests">
             <tr tal:define="
               bg python: shipitrequest.highpriority and '#ff6666' or None;
@@ -125,7 +139,13 @@
                   tal:replace="shipitrequest/recipient_email"
                   />)
               </td>
-              <td tal:content="shipitrequest/daterequested/fmt:date" />
+              <td>
+                <span
+                  tal:attributes="
+                    title shipitrequest/daterequested/fmt:datetime"
+                  tal:content="
+                    shipitrequest/daterequested/fmt:approximatedate" />
+              </td>
               <td tal:content="shipitrequest/country/name" />
               <td style="text-align: right" tal:content="total_requested" />
               <td style="text-align: right" tal:content="total_approved" />
@@ -138,20 +158,23 @@
             <tal:navigation replace="structure bn/@@+navigation-links-lower" />
           </td>
         </tr>
+      </table>
     </tal:block>
 
   </tal:block>
 
   </td>
   <td
-    width="20%"
+    width="20%" id="navigation"
     style="vertical-align: top;"
     tal:content="structure context/@@+portlet-navigation"
   />
   </tr>
+  </tbody>
   </table>  
   
 </div>
 
 </body>
 </html>
+</tal:root>

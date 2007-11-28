@@ -1,0 +1,131 @@
+The POTemplate admin page lets us to edit any aspect of that object, that's
+why we need to be a Rosetta Expert or a Launchpad admin to use it.
+
+Check to be sure that an unpriviledged user cannot reach this page
+
+  >>> user_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
+  ...     'evolution-2.2/+admin')
+  Traceback (most recent call last):
+  ...
+  Unauthorized:...
+
+Check to be sure that a Rosetta expert (Jordi) can reach the POTemplate admin
+page.
+
+  >>> browser = setupBrowser(auth='Basic jordi@ubuntu.com:test')
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
+  ...     'evolution-2.2/+admin')
+  >>> print browser.url
+  http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+admin
+
+Now, we should be sure that the admin form gets all required fields to allow
+a Rosetta Expert to administrate it.
+
+  >>> browser.getControl(name='field.name').value
+  'evolution-2.2'
+  >>> browser.getControl(name='field.description').value
+  'Template for evolution in hoary'
+  >>> print browser.getControl(name='field.header').value
+  Project-Id-Version: PACKAGE VERSION
+  Report-Msgid-Bugs-To:
+  POT-Creation-Date: 2005-08-25 14:56+0200
+  PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+  Last-Translator: FULL NAME <EMAIL@ADDRESS>
+  Language-Team: LANGUAGE <LL@li.org>
+  MIME-Version: 1.0
+  Content-Type: text/plain; charset=CHARSET
+  Content-Transfer-Encoding: 8bit
+  Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;
+  <BLANKLINE>
+  >>> browser.getControl(name='field.iscurrent').value
+  True
+  >>> browser.getControl(name='field.owner').value
+  'rosetta-admins'
+  >>> browser.getControl(name='field.productseries').value
+  'evolution/trunk'
+  >>> browser.getControl(name='field.distroseries').value
+  ['']
+  >>> browser.getControl(name='field.sourcepackagename').value
+  ''
+  >>> browser.getControl(name='field.sourcepackageversion').value
+  ''
+  >>> browser.getControl(name='field.binarypackagename').value
+  ''
+  >>> browser.getControl(name='field.languagepack').value
+  False
+  >>> browser.getControl(name='field.path').value
+  'po/evolution-2.2.pot'
+
+Check to be sure that an admin can reach the POTemplate admin page.
+
+  >>> admin_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
+  ...     'evolution-2.2/+admin')
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+admin
+
+Now, we should be sure that the admin form gets all required fields to allow
+an admin to administrate it.
+
+  >>> admin_browser.getControl(name='field.name').value
+  'evolution-2.2'
+  >>> admin_browser.getControl(name='field.description').value
+  'Template for evolution in hoary'
+  >>> print admin_browser.getControl(name='field.header').value
+  Project-Id-Version: PACKAGE VERSION
+  Report-Msgid-Bugs-To:
+  POT-Creation-Date: 2005-08-25 14:56+0200
+  PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+  Last-Translator: FULL NAME <EMAIL@ADDRESS>
+  Language-Team: LANGUAGE <LL@li.org>
+  MIME-Version: 1.0
+  Content-Type: text/plain; charset=CHARSET
+  Content-Transfer-Encoding: 8bit
+  Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;
+  <BLANKLINE>
+  >>> admin_browser.getControl(name='field.iscurrent').value
+  True
+  >>> admin_browser.getControl(name='field.owner').value
+  'rosetta-admins'
+  >>> admin_browser.getControl(name='field.productseries').value
+  'evolution/trunk'
+  >>> admin_browser.getControl(name='field.distroseries').value
+  ['']
+  >>> admin_browser.getControl(name='field.sourcepackagename').value
+  ''
+  >>> admin_browser.getControl(name='field.sourcepackageversion').value
+  ''
+  >>> admin_browser.getControl(name='field.binarypackagename').value
+  ''
+  >>> admin_browser.getControl(name='field.languagepack').value
+  False
+  >>> admin_browser.getControl(name='field.path').value
+  'po/evolution-2.2.pot'
+
+And that we are able to POST it.
+
+  >>> admin_browser.getControl(name='field.languagepack').value = True
+  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2
+
+Finally, lets rename 'evolution-2.2' to 'evolution-renamed'.
+
+  >>> admin_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
+  ...     'evolution-2.2/+admin')
+
+Lets use this opportunity to check if languagepack was changed successfully
+above.
+
+  >>> admin_browser.getControl(name='field.languagepack').value
+  True
+
+And now lets get back to renaming.
+
+  >>> admin_browser.getControl(name='field.name').value = 'evolution-renamed'
+  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/evolution/trunk/+pots/evolution-renamed

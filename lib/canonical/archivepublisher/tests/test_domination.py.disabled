@@ -14,7 +14,7 @@ import sys
 import os
 import shutil
 
-from canonical.lp.dbschema import PackagePublishingStatus
+from canonical.launchpad.interfaces import PackagePublishingStatus
 
 from canonical.archivepublisher.tests.util import (
         FakeSource, FakeBinary, _deepCopy, FakeDistroRelease

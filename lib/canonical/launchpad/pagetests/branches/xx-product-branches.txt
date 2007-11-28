@@ -1,52 +1,46 @@
-= Branches Overview =
+= Product Branches Overview =
 
-Products should link their branch listing page.
+Products link their branch listing page.
 
-  >>> print http(r"""
-  ... GET /gnome-terminal HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...href="http://code.launchpad.dev/gnome-terminal/"...
+   >>> browser.open('http://launchpad.dev/gnome-terminal')
+   >>> browser.getLink('Code').click()
+   >>> print browser.title
+   GNOME Terminal's Bazaar branches registered in Launchpad
 
-There are two listings of branches for a product. The short tabular listing,
-and the detailed branch listing that includes branch summaries and more
-hyperlinks. We'll use the presence of the summary for the Gnome Terminal
-Mainline branch to distinguish the pages.
+We are be able to display a list of branches for a product at +branches.
 
-  >>> gterm_main_summary = u"Release branch of GNOME Terminal for the GNOME 2.6 environment."
+   >>> browser.open('http://launchpad.dev/gnome-terminal/+branches')
+   >>> print browser.title
+   GNOME Terminal's Bazaar branches registered in Launchpad
 
-We should be able to display a list of branches for a product at +branches.
 
-  >>> page = http(r"""
-  ... GET /gnome-terminal/+branches HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  >>> print page
-  HTTP/1.1 200 Ok
-  ...<a href="http://launchpad.dev/~name12/+branch/gnome-terminal/main">GNOME Terminal Mainline</a>...
-  >>> gterm_main_summary in unicode(page)
-  False
+== Default page for code site ==
 
-And another at +branchlisting. That one is the detailed branch listing.
+When going directly to a product on the code rootsite for launchpad,
+the +branches is the default page shown.
 
-  >>> page = http(r"""
-  ... GET /gnome-terminal/+branchlisting HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  >>> print page
-  HTTP/1.1 200 Ok
-  ...<a href="http://launchpad.dev/~name12/+branch/gnome-terminal/main">GNOME Terminal Mainline</a>...
-  >>> gterm_main_summary in unicode(page)
-  True
+   >>> browser.open('http://code.launchpad.dev/applets')
+   >>> print browser.title
+   Gnome Applets's Bazaar branches registered in Launchpad
+   >>> print extract_text(find_main_content(browser.contents).h1)
+   Bazaar branches for Gnome Applets
 
-If there are no branches, we should display a message stating that there is no
-branch registered for this product.
+If there are not any branches, a relevant message is shown.
 
-  >>> print http(r"""
-  ... GET /applets/+branchlisting HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...There are no branches registered for...
+   >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
+   >>> print extract_text(message)
+   There are no branches registered for Gnome Applets in Launchpad today.
+   We recommend you visit www.bazaar-vcs.org
+   for more information about how you can use
+   the Bazaar revision control system to improve community
+   participation in this project.
 
+If there are branches, but they do not fit with the appropriate filter
+we are given a different message.
+
+   >>> browser.open(
+   ...     'http://code.launchpad.dev/firefox?field.lifecycle=Mature')
+   >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
+   >>> print extract_text(message)
+   There are branches registered for Mozilla Firefox but none of them match
+   the current filter criteria for this page. Try filtering on "Any Status".

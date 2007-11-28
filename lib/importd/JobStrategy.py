@@ -9,12 +9,14 @@ __metaclass__ = type
 
 import os
 import shutil
+import subprocess
+import sys
 
 import CVS
 import cscvs
 import SCM
 
-from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.uri import URI
 
 
 class ImportSanityError(Exception):
@@ -460,6 +462,10 @@ class SVNStrategy(CSCVSStrategy):
             'https://numexp.org/svn/numexp-core',
             'svn://svn.berlios.de/sax/sax-head',
             'http://codespeak.net/svn/pypy/dist',
+            ('https://mailman.svn.sourceforge.net/svnroot/mailman/'
+             'branches/Release_2_1-maint/mailman'),
+            ('https://stage.maemo.org/svn/maemo/projects/haf/branches/'
+             'hildon-control-panel/refactoring'),
          ])
 
     def getSVNDirPath(self, aJob, dir):
@@ -475,12 +481,23 @@ class SVNStrategy(CSCVSStrategy):
             path=self.getSVNDirPath(self.aJob,self.dir)
             try:
                 if os.access(path, os.F_OK):
-                    SCM.tree(path).update()
+                    # XXX: David Allouche 2006-01-31 bug=82483: A bug in
+                    # pysvn prevents us from ignoring svn:externals. We work
+                    # around it by shelling out to svn. When cscvs no longer
+                    # uses pysvn, we will use the cscvs API again.
+                    arguments = ['svn', 'update', '--ignore-externals']
+                    retcode = subprocess.call(arguments, cwd=path)
+                    if retcode != 0:
+                        sys.exit(retcode)
                 else:
                     self.logger.debug("getting from SVN: %s %s",
                         repository, self.aJob.module)
                     client=pysvn.Client()
-                    client.checkout(repository, path)
+                    # XXX: David Allouche 2007-01-29:
+                    # This should use the cscvs API, but it is currently
+                    # hardcoded to only work with repositories on the
+                    # filesystem.
+                    client.checkout(repository, path, ignore_externals=True)
             except Exception: # don't leave partial checkouts around
                 if os.access(path, os.F_OK):
                     shutil.rmtree(path)
@@ -499,14 +516,14 @@ class SVNStrategy(CSCVSStrategy):
         if self._sanityIsOverridden():
             return
         url = self.job.repository
-        if Url(url).path.endswith('/'):
+        if URI(url).path.endswith('/'):
             # Non-canonicalized URLs will cause old unpatched svn servers to
             # crash. We should also canonicalize the URLs to catch duplicates,
             # but this provides belt-and-suspenders to avoid harming remote
             # servers.
             raise ImportSanityError(
                 'URL ends with a slash: %s' % url)
-        if '/trunk/' in Url(url).pathslash:
+        if '/trunk/' in URI(url).ensureSlash().path:
             return
         raise ImportSanityError(
             'URL does not appear to be a SVN trunk: %s' % url)
@@ -518,4 +535,7 @@ class SVNStrategy(CSCVSStrategy):
         while-list. Eventually, that will check for a flag set by the operator
         in the Launchpad web UI.
         """
+        if not self.job.autotest:
+            # Only perform the sanity check on autotest.
+            return True
         return self.job.repository in self._svn_url_whitelist

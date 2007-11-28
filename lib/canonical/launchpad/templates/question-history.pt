@@ -1,0 +1,74 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:condition="context/reopenings"
+       tal:replace="structure context/@@+portlet-reopenings" />
+  <div tal:replace="structure context/@@+portlet-subscribers" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-bugs" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+  
+  <div>
+    <img alt="" src="/@@/question" />
+    <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+  </div>
+
+  <h1>History of this question</h1>
+
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Who</th>
+        <th>Action</th>
+        <th>New State</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="message context/messages">
+        <td>
+          <span
+            tal:attributes="title message/datecreated/fmt:datetime"
+            tal:content="message/datecreated/fmt:approximatedate">
+            2005-10-16
+          </span>
+        </td>
+        <td><a tal:replace="structure message/owner/fmt:link">Foo Bar</a></td>
+        <td tal:content="message/action/title">Comment</td>
+        <td class="questionstatus"
+            tal:content="message/new_status/title"
+            tal:attributes="class string:questionstatus${message/new_status/name}"
+            >Open</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p metal:fill-slot="help">
+  The history table displays all the status change that the question underwent.
+  The date and time at which the status change occured,
+  the person who made the status change and the kind of action that
+  triggered the change are displayed.
+  You can find more information about status changes in the
+    <a href="https://help.launchpad.net/QuestionLifeCycle">Question
+      Life-cycle</a> document.
+</p>
+</body>
+</html>

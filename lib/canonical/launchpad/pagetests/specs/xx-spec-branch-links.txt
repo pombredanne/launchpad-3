@@ -43,13 +43,13 @@ portlet will be visible:
   <...
   <ul class="branch">
   <li>
-  <a href="http://blueprints.launchpad.dev/~name12/+branch/+junk/junk.dev">Ubuntu Junk Code</a>
-  <a href="http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.dev">(edit)</a><br />
+  <a href="http://code.launchpad.dev/~name12/+junk/junk.dev">Ubuntu Junk Code</a>
+  <a href="/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.dev"><img src="/@@/edit" title="Change this branch link" /></a><br />
   <i>This branch should fix the issue</i>
   </li>
   <li>
-  <a href="http://blueprints.launchpad.dev/~name12/+branch/+junk/junk.contrib">Junk Code Contributions</a>
-  <a href="http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib">(edit)</a><br />
+  <a href="http://code.launchpad.dev/~name12/+junk/junk.contrib">Junk Code Contributions</a>
+  <a href="/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib"><img src="/@@/edit" title="Change this branch link" /></a><br />
   <i>Summary text</i>
   </li>
   </ul>
@@ -63,7 +63,7 @@ in:
   >>> print find_portlet(anon_browser.contents, 'Branches')
   <...
   <li>
-  <a href="http://blueprints.launchpad.dev/~name12/+branch/+junk/junk.contrib">Junk Code Contributions</a>
+  <a href="http://code.launchpad.dev/~name12/+junk/junk.contrib">Junk Code Contributions</a>
   <br />
   <i>Summary text</i>
   </li>
@@ -73,13 +73,12 @@ in:
 Similar to the portlet on the specification page, there is a list of
 linked specifications on the branch page:
 
-  >>> user_browser.open('http://launchpad.dev/~name12/+branch/'
-  ...                   '+junk/junk.contrib')
-  >>> print find_portlet(user_browser.contents, 'Specifications')
+  >>> user_browser.open('http://launchpad.dev/~name12/+junk/junk.contrib')
+  >>> print find_portlet(user_browser.contents, 'Blueprints')
   <...
   <li>
   <a href="http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check">CD Media Integrity Check</a>
-  <a href="http://launchpad.dev/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib">(edit)</a><br />
+  <a href="/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib"><img src="/@@/edit" title="Change this blueprint link" /></a><br />
   <i>Summary text</i>
   </li>
   ...
@@ -103,8 +102,8 @@ The new summary now appears in the branches portlet:
   >>> print find_portlet(user_browser.contents, 'Branches')
   <...
   <li>
-  <a href="http://blueprints.launchpad.dev/~name12/+branch/+junk/junk.contrib">Junk Code Contributions</a>
-  <a href="http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib">(edit)</a><br />
+  <a href="http://code.launchpad.dev/~name12/+junk/junk.contrib">Junk Code Contributions</a>
+  <a href="/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib"><img src="/@@/edit" title="Change this branch link" /></a><br />
   <i>New summary</i>
   </li>
   ...

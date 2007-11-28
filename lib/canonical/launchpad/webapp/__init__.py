@@ -7,17 +7,43 @@ This module also has an API for use by the application.
 """
 __metaclass__ = type
 
-__all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
-           'nearest_menu', 'canonical_url', 'nearest', 'structured',
-           'StandardLaunchpadFacets', 'enabled_with_permission',
-           'LaunchpadView', 'LaunchpadXMLRPCView',
-           'Navigation', 'stepthrough', 'redirection',
-           'stepto', 'GetitemNavigation', 'smartquote',
-           'urlappend', 'urlparse', 'urlsplit',
-           'GeneralFormView', 'GeneralFormViewFactory',
-           'Utf8PreferredCharsets', 'LaunchpadFormView',
-           'LaunchpadEditFormView', 'action', 'custom_widget',
-           'RedirectionNavigation', 'RedirectionView']
+__all__ = [
+    'Link',
+    'FacetMenu',
+    'ApplicationMenu',
+    'ContextMenu',
+    'nearest_context_with_adapter',
+    'nearest_adapter',
+    'canonical_name',
+    'canonical_url',
+    'nearest',
+    'structured',
+    'StandardLaunchpadFacets',
+    'enabled_with_permission',
+    'LaunchpadView',
+    'LaunchpadXMLRPCView',
+    'Navigation',
+    'stepthrough',
+    'redirection',
+    'stepto',
+    'GetitemNavigation',
+    'smartquote',
+    'urlappend',
+    'urlparse',
+    'urlsplit',
+    'GeneralFormView',
+    'GeneralFormViewFactory',
+    'Utf8PreferredCharsets',
+    'LaunchpadFormView',
+    'LaunchpadEditFormView',
+    'action',
+    'custom_widget',
+    'safe_action',
+    'expand_numbers',
+    'sorted_version_numbers',
+    'sorted_dotted_numbers',
+    'UnsafeFormGetSubmissionError',
+    ]
 
 import re
 
@@ -28,16 +54,18 @@ from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory
     )
 from canonical.launchpad.webapp.launchpadform import (
-    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
+    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget,
+    safe_action)
 from canonical.launchpad.webapp.menu import (
-    Link, FacetMenu, ApplicationMenu, ContextMenu, nearest_menu, structured,
-    enabled_with_permission
+    Link, FacetMenu, ApplicationMenu, ContextMenu, structured,
+    enabled_with_permission, nearest_context_with_adapter, nearest_adapter
     )
 from canonical.launchpad.webapp.preferredcharsets import Utf8PreferredCharsets
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, nearest, LaunchpadView, Navigation, stepthrough,
-    redirection, RedirectionView, stepto, LaunchpadXMLRPCView)
-
+    canonical_name, canonical_url, nearest, LaunchpadView, Navigation,
+    stepthrough, redirection, stepto, LaunchpadXMLRPCView)
+from canonical.launchpad.webapp.sorting import (
+    expand_numbers, sorted_version_numbers, sorted_dotted_numbers)
 
 def smartquote(str):
     """Return a copy of the string provided, with smartquoting applied.
@@ -54,10 +82,14 @@ def smartquote(str):
     u'""foo " bar "" baz""'
     >>> smartquote('" foo "')
     u'" foo "'
+    >>> smartquote('"foo".')
+    u'\u201cfoo\u201d.'
+    >>> smartquote('a lot of "foo"?')
+    u'a lot of \u201cfoo\u201d?'
     """
     str = unicode(str)
     str = re.compile(u'(^| )(")([^" ])').sub(u'\\1\u201c\\3', str)
-    str = re.compile(u'([^ "])(")($| )').sub(u'\\1\u201d\\3', str)
+    str = re.compile(u'([^ "])(")($|[\s.,;:!?])').sub(u'\\1\u201d\\3', str)
     return str
 
 
@@ -69,35 +101,6 @@ class GetitemNavigation(Navigation):
         return self.context[name]
 
 
-class RedirectionNavigation(Navigation):
-    """Class for navigation that redirects suburls elsewhere.
-
-    Used when reparenting parts of Launchpad when we don't want to break
-    old URLs.
-    """
-    # Subclasses should override this to the new root
-    redirection_root_url = None
-
-    redirection_status = 301 # Default is a permanent redirect
-
-    def traverse(self, name):
-        """Consume the rest of the URL, and use it to return a
-           RedirectionView.
-        """
-        target = urlappend(self.redirection_root_url, name)
-        while True:
-            nextstep = self.request.stepstogo.consume()
-            if nextstep is None:
-                break
-            target = urlappend(target, nextstep)
-
-        query_string = self.request.get('QUERY_STRING')
-        if query_string:
-            target = target + '?' + query_string
-
-        return RedirectionView(target, self.request, self.redirection_status)
-
-
 class StandardLaunchpadFacets(FacetMenu):
     """The standard set of facets that most faceted content objects have."""
 
@@ -105,7 +108,7 @@ class StandardLaunchpadFacets(FacetMenu):
     #   usedfor = IWhatever
 
     links = ['overview', 'branches', 'bugs', 'specifications', 'translations',
-        'support']
+        'answers']
 
     enable_only = ['overview', 'bugs', 'specifications',
                    'translations', 'calendar']
@@ -120,7 +123,7 @@ class StandardLaunchpadFacets(FacetMenu):
                 link.site = 'code'
             elif name == 'translations':
                 link.site = 'translations'
-            elif name == 'support':
+            elif name == 'answers':
                 link.site = 'answers'
             elif name == 'bugs':
                 link.site = 'bugs'
@@ -129,33 +132,28 @@ class StandardLaunchpadFacets(FacetMenu):
         return link
 
     def overview(self):
-        target = ''
         text = 'Overview'
-        return Link(target, text)
+        return Link('', text)
 
     def translations(self):
-        target = '+translations'
         text = 'Translations'
-        return Link(target, text)
+        return Link('', text)
 
     def bugs(self):
-        target = '+bugs'
         text = 'Bugs'
-        return Link(target, text)
+        return Link('', text)
 
-    def support(self):
+    def answers(self):
         # This facet is visible but unavailable by default.
         # See the enable_only list above.
-        target = '+tickets'
-        text = 'Support'
-        summary = 'Technical Support Requests'
-        return Link(target, text, summary)
+        text = 'Answers'
+        summary = 'Launchpad Answer Tracker'
+        return Link('', text, summary)
 
     def specifications(self):
-        target = '+specs'
-        text = 'Features'
-        summary = 'Feature specifications and plans'
-        return Link(target, text, summary)
+        text = 'Blueprints'
+        summary = 'Blueprints and specifications'
+        return Link('', text, summary)
 
     def bounties(self):
         target = '+bounties'
@@ -165,15 +163,13 @@ class StandardLaunchpadFacets(FacetMenu):
 
     def calendar(self):
         """Disabled calendar link."""
-        target = '+calendar'
+        target = '+branches'
         text = 'Calendar'
         return Link(target, text, enabled=False)
 
     def branches(self):
         # this is disabled by default, because relatively few objects have
         # branch views
-        target = '+branches'
         text = 'Code'
         summary = 'View related branches of code'
-        return Link(target, text, summary=summary)
-
+        return Link('', text, summary=summary)

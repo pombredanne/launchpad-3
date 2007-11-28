@@ -36,17 +36,17 @@ We can remove all translations from a concrete potemplate.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
-    DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-    DEBUG   Before the removal, latest submission came from: Valentina Commissari
-    DEBUG   Removed 12 submissions
-    DEBUG   After the removal, latest submission came from: Foo Bar
-    DEBUG   Processing Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-    DEBUG   Before the removal, latest submission came from: Carlos Perelló Marín
+    DEBUG   Processing Spanish (es) translation of man in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
-    DEBUG   After the removal, latest submission came from: Carlos Perelló Marín
+    DEBUG   Processing Spanish (es) translation of disabled-template in Ubuntu Hoary package "evolution"...
+    DEBUG   Removed 0 submissions
+    DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
+    DEBUG   Removed 10 submissions
+    DEBUG   Processing Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
+    DEBUG   Removed 0 submissions
     DEBUG   Processing Xhosa (xh) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
-    DEBUG   Removed 12 submissions in total.
+    DEBUG   Removed 10 submissions in total.
     <BLANKLINE>
 
 We need to force a DB reset because the changes are done from an external
@@ -69,11 +69,13 @@ Or with a concrete language.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    DEBUG   Processing Spanish (es) translation of man in Ubuntu Hoary package "evolution"...
+    DEBUG   Removed 0 submissions
+    DEBUG   Processing Spanish (es) translation of disabled-template in Ubuntu Hoary package "evolution"...
+    DEBUG   Removed 0 submissions
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-    DEBUG   Before the removal, latest submission came from: Valentina Commissari
-    DEBUG   Removed 12 submissions
-    DEBUG   After the removal, latest submission came from: Foo Bar
-    DEBUG   Removed 12 submissions in total.
+    DEBUG   Removed 10 submissions
+    DEBUG   Removed 10 submissions in total.
     <BLANKLINE>
 
 We need to force a DB reset because the changes are done from an external
@@ -82,7 +84,7 @@ script and the test system is not able to detect the database changes.
     >>> LaunchpadTestSetup().force_dirty_database()
     >>> LaunchpadTestSetup().tearDown()
 
-Or even with a concrete IPOTemplateName.
+Or even with a concrete template name.
 
     >>> LaunchpadTestSetup(dbuser='rosettaadmin').setUp()
 
@@ -97,16 +99,12 @@ Or even with a concrete IPOTemplateName.
     >>> (output, empty) = process.communicate()
     >>> print output
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-    DEBUG   Before the removal, latest submission came from: Valentina Commissari
-    DEBUG   Removed 12 submissions
-    DEBUG   After the removal, latest submission came from: Foo Bar
+    DEBUG   Removed 10 submissions
     DEBUG   Processing Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-    DEBUG   Before the removal, latest submission came from: Carlos Perelló Marín
     DEBUG   Removed 0 submissions
-    DEBUG   After the removal, latest submission came from: Carlos Perelló Marín
     DEBUG   Processing Xhosa (xh) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
-    DEBUG   Removed 12 submissions in total.
+    DEBUG   Removed 10 submissions in total.
     <BLANKLINE>
 
 We need to force a DB reset because the changes are done from an external
@@ -129,11 +127,11 @@ And it also works for products!
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    DEBUG   Processing Portuguese (Brazil) (pt_BR) translation of evolution-2.2-test in Evolution trunk...
+    DEBUG   Removed 6 submissions
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Evolution trunk...
-    DEBUG   Before the removal, latest submission came from: Mark Shuttleworth
-    DEBUG   Removed 12 submissions
-    DEBUG   After the removal, latest submission came from: Carlos Perelló Marín
-    DEBUG   Removed 12 submissions in total.
+    DEBUG   Removed 10 submissions
+    DEBUG   Removed 16 submissions in total.
     <BLANKLINE>
 
 We need to force a DB reset because the changes are done from an external

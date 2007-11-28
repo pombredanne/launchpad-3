@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 """
 Process LinkChecker .csv results for the staging server, stuff them into
@@ -99,7 +99,7 @@ def main(csvfile, log):
     total = len(broken)
 
     # Delete any entries that were not spidered
-    # TODO: Only if older than a threshold -- StuartBishop 20050704
+    # XXX StuartBishop 2005-07-04: Only if older than a threshold.
     for link in CheckedLink.select():
         if link in broken:
             continue

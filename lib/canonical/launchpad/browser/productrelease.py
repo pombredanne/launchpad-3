@@ -3,49 +3,61 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProductReleaseNavigation',
     'ProductReleaseContextMenu',
     'ProductReleaseEditView',
     'ProductReleaseAddView',
     'ProductReleaseRdfView',
+    'ProductReleaseAddDownloadFileView',
+    'ProductReleaseNavigation',
+    'ProductReleaseView',
     ]
+
+from StringIO import StringIO
 
 # zope3
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.component import getUtility
+from zope.app.form.browser import TextWidget
 from zope.app.form.browser.add import AddView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 # launchpad
 from canonical.launchpad.interfaces import (
-    IProductRelease, IPOTemplateSet, IProductReleaseSet, ICountry,
-    ILaunchBag)
+    IProductRelease, IProductReleaseSet,
+    ILaunchBag, ILibraryFileAliasSet, IProductReleaseFileAddForm)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
-
-from canonical.launchpad import helpers
+from canonical.launchpad.browser.product import download_file_url
 from canonical.launchpad.webapp import (
-    Navigation, canonical_url, ContextMenu, Link, enabled_with_permission)
+    ContextMenu, LaunchpadFormView, LaunchpadView, Link, Navigation, action,
+    canonical_url, custom_widget, enabled_with_permission, stepthrough)
 
 
 class ProductReleaseNavigation(Navigation):
 
     usedfor = IProductRelease
 
-    def breadcrumb(self):
-        return 'Release ' + self.context.version
+    @stepthrough('+download')
+    def download(self, name):
+        newlocation = self.context.getFileAliasByName(name)
+        return newlocation
 
 
 class ProductReleaseContextMenu(ContextMenu):
 
     usedfor = IProductRelease
-    links = ['edit', 'administer', 'download']
+    links = ['edit', 'add_file', 'administer', 'download']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def add_file(self):
+        text = 'Add download file'
+        return Link('+adddownloadfile', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
@@ -53,7 +65,7 @@ class ProductReleaseContextMenu(ContextMenu):
         return Link('+review', text, icon='edit')
 
     def download(self):
-        text = 'Download RDF Metadata'
+        text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
 
 
@@ -70,7 +82,7 @@ class ProductReleaseAddView(AddView):
         prset = getUtility(IProductReleaseSet)
         user = getUtility(ILaunchBag).user
         newrelease = prset.new(
-            data['version'], data['productseries'], user, 
+            data['version'], data['productseries'], user,
             codename=data['codename'], summary=data['summary'],
             description=data['description'], changelog=data['changelog'])
         self._nextURL = canonical_url(newrelease)
@@ -110,3 +122,38 @@ class ProductReleaseRdfView(object):
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
+
+
+class ProductReleaseAddDownloadFileView(LaunchpadFormView):
+    schema = IProductReleaseFileAddForm
+
+    custom_widget('description', TextWidget, width=62)
+
+    @action('Add file', name='add')
+    def add_action(self, action, data):
+        file_upload = self.request.form.get(self.widgets['filecontent'].name)
+        # XXX BradCrittenden 2007-04-26: Write a proper upload widget.
+        if file_upload and data['description']:
+            # replace slashes in the filename with less problematic dashes.
+            filename = file_upload.filename.replace('/', '-')
+
+            # create the alias for the file
+            alias = getUtility(ILibraryFileAliasSet).create(
+                        filename, len(data['filecontent']),
+                        StringIO(data['filecontent']),
+                        data['contenttype'])
+            self.context.addFileAlias(alias=alias,
+                                      uploader=self.user,
+                                      description=data['description'])
+            self.request.response.addNotification(
+                "Your file '%s' has been uploaded." % filename)
+        self.next_url = canonical_url(self.context)
+
+
+class ProductReleaseView(LaunchpadView):
+    """View for ProductRelease overview."""
+    __used_for__ = IProductRelease
+
+    def file_url(self, file_):
+        """Create a download URL for the file."""
+        return download_file_url(self.context, file_)

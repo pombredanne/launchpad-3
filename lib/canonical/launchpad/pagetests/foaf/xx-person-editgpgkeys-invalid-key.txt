@@ -2,7 +2,7 @@
 Imports and setup of stub keyserver:
 
   >>> from zope.component import getUtility
-  >>> from canonical.lp.dbschema import LoginTokenType
+  >>> from canonical.launchpad.interfaces import LoginTokenType
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
   >>> from canonical.launchpad.interfaces import (
@@ -27,38 +27,33 @@ The following keys are used in these tests:
 
 Attempts to claim a revoked OpenPGP key fail:
 
-  >>> print http(r"""
-  ... POST /~name12/+editpgpkeys HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... action=claim_gpg&fingerprint=84D205F03E1E67096CB54E262BE83793AACCD97C""")
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  <p class="error message">
-  The key AACCD97C cannot be validated
-  because it has been publically revoked...
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/~name12/+editpgpkeys')
+  >>> browser.getControl(
+  ...     name='fingerprint').value = '84D205F03E1E67096CB54E262BE83793AACCD97C'
+  >>> browser.getControl('Import Key').click()
+  >>> for tag in find_tags_by_class(browser.contents, 'error message'):
+  ...     print tag.renderContents()
+  <BLANKLINE>
+  The key AACCD97C cannot be validated because it has been publicly revoked.
+  You will need to generate a new key (using <kbd>gpg --genkey</kbd>) and 
+  repeat the process to import it.
+  <BLANKLINE>
 
 
 Attempts to claim an expired OpenPGP key also fail:
 
-  >>> print http(r"""
-  ... POST /~name12/+editpgpkeys HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... action=claim_gpg&fingerprint=ECA5B797586F2E27381A16CFDE6C9167046C6D63""")
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  <p class="error message">
-  The key 046C6D63 cannot be validated
-  because it has expired...
+  >>> browser.getControl(
+  ...     name='fingerprint').value = 'ECA5B797586F2E27381A16CFDE6C9167046C6D63'
+  >>> browser.getControl('Import Key').click()
+  >>> for tag in find_tags_by_class(browser.contents, 'error message'):
+  ...     print tag.renderContents()
+  <BLANKLINE>
+  The key 046C6D63 cannot be validated because it has expired. Change the
+  expiry date (in a terminal,  enter <kbd>gpg --edit-key
+  <var>your@e-mail.address</var></kbd> then enter <kbd>expire</kbd>),
+  and try again.
+  <BLANKLINE>
 
 
 It is possible for a key to be revoked or expire between the time it
@@ -83,45 +78,41 @@ will create login tokens for the revoked and expired test keys:
 
 Try to validate the revoked OpenPGP key:
 
-  >>> print http(r"""
-  ... POST /token/%s/+validategpg HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... password=test&SUBMIT_CHANGES=Submit""" % revoked_key_token)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...class="error message">The key AACCD97C cannot be validated because it has been publicly revoked...
-  ...
+  >>> browser.open(
+  ...     'http://launchpad.dev/token/%s/+validategpg' % revoked_key_token)
+  >>> browser.getControl('Continue').click()
+  >>> for tag in find_tags_by_class(browser.contents, 'error message'):
+  ...     print tag.renderContents()
+  There is 1 error.
+  The key AACCD97C cannot be validated because it has been publicly revoked.
+  You will need to generate a new key (using <kbd>gpg --genkey</kbd>) and 
+  repeat the previous process to 
+  <a href="http://launchpad.dev/~name12/+editpgpkeys">find and import</a>
+  the new key.
 
 
 Try to validate the revoked OpenPGP key:
 
-  >>> print http(r"""
-  ... POST /token/%s/+validategpg HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... password=test&SUBMIT_CHANGES=Submit""" % expired_key_token)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...class="error message">The key 046C6D63 cannot be validated because it has expired...
-  ...
+  >>> browser.open(
+  ...     'http://launchpad.dev/token/%s/+validategpg' % expired_key_token)
+  >>> browser.getControl('Continue').click()
+  >>> for tag in find_tags_by_class(browser.contents, 'error message'):
+  ...     print tag.renderContents()
+  There is 1 error.
+  The key 046C6D63 cannot be validated because it has expired. Change the
+  expiry date (in a terminal,  enter <kbd>gpg --edit-key
+  <var>your@e-mail.address</var></kbd> then enter <kbd>expire</kbd>),
+  and try again.
 
-
-Each login token is marked consumed after the failed validations:
+The login tokens are only consumed if they're successfully processed.
+Otherwise they're kept around so the user can try again after fixing his
+key.
 
   >>> login(ANONYMOUS)
   >>> tokenset[revoked_key_token].date_consumed is not None
-  True
+  False
   >>> tokenset[expired_key_token].date_consumed is not None
-  True
+  False
   >>> logout()
 
 

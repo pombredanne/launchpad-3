@@ -1,8 +1,21 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:do-this-first replace="view/setUpTokenAndVotes" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -40,8 +53,10 @@
 
     <h2>Voting has closed</h2>
 
-    <p>The voting is closed since 
-      <span tal:replace="context/datecloses/fmt:date" />.
+    <p>Voting closed
+      <span
+        tal:attributes="title context/datecloses/fmt:datetime"
+        tal:content="context/datecloses/fmt:displaydate" />.
     </p>
 
     <tal:block condition="view/userVoted">
@@ -66,7 +81,7 @@
               none of the options.
             </b>
             <b tal:condition="view/currentVote/option" 
-               tal:content="view/currentVote/option/name" />
+               tal:content="view/currentVote/option/name" /></p>
         </tal:block>
 
         <tal:block condition="view/isCondorcet">
@@ -157,8 +172,11 @@
   <tal:block condition="context/isNotYetOpened">
     <h2>Voting hasn't opened yet</h2>
 
-    <p>The vote will commence at
-      <span tal:replace="context/dateopens/fmt:datetime" />.
+    <p>
+      The vote will commence
+      <span
+        tal:attributes="title context/dateopens/fmt:datetime"
+        tal:content="context/dateopens/fmt:displaydate" />.
     </p>
   </tal:block>
 
@@ -166,3 +184,4 @@
 
 </body>
 </html>
+</tal:root>
