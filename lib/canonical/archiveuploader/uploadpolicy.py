@@ -232,6 +232,32 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
                 "PPA is only allowed for members of "
                 "launchpad-beta-testers team.")
 
+    def checkArchiveSizeQuota(self, upload):
+        """Reject the upload if target archive size quota will be exceeded.
+
+        This check will reject source upload exceeding the specified archive
+        size quota.
+        Binary upload will be skipped to avoid unnecessary hassle dealing
+        with 'failed-to-upload' builds.
+        """
+        # Skip the check for binary uploads.
+        if upload.binaryful:
+            return
+
+        # Calculate the incoming upload total size.
+        upload_size = 0
+        for uploadfile in upload.changes.files:
+            upload_size += uploadfile.size
+
+        # Reject the upload if the archive size is going to exceed
+        # the authorized_size.
+        proposed_size = self.archive.estimated_size + upload_size
+        if proposed_size > self.archive.authorized_size:
+            upload.reject(
+                "PPA exceeded its size limit of %s bytes. Contact a "
+                "Launchpad administrator if you really need more space." % (
+                self.archive.authorized_size))
+
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now.
 
@@ -246,6 +272,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
             # publicly.
             self.checkSignerIsUbuntero(upload)
             #self.checkSignerIsBetaTester(upload)
+            self.checkArchiveSizeQuota(upload)
         else:
             if self.pocket == PackagePublishingPocket.SECURITY:
                 upload.reject(
