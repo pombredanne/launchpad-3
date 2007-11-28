@@ -4,7 +4,10 @@
 
 __metaclass__ = type
 
+import logging
 import os
+from StringIO import StringIO
+import sys
 import tempfile
 import unittest
 
@@ -13,8 +16,6 @@ from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.tests import TestCase
 
-from twisted.web.xmlrpc import Fault
-
 from canonical.authserver.interfaces import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
 from canonical.codehosting.tests.helpers import FakeLaunchpad
@@ -22,7 +23,7 @@ from canonical.codehosting.transport import (
     LaunchpadServer, makedirs, set_up_logging)
 from canonical.config import config
 
-from canonical.testing import BaseLayer
+from canonical.testing import BaseLayer, reset_logging
 
 
 class TestLaunchpadServer(TestCase):
@@ -401,11 +402,21 @@ class TestLoggingSetup(TestCase):
 
     def setUp(self):
         TestCase.setUp(self)
+
+        # Configure the debug logfile
         self._real_debug_logfile = config.codehosting.debug_logfile
+        file_handle, filename = tempfile.mkstemp()
+        config.codehosting.debug_logfile = filename
+
+        # Trap stderr.
+        self._real_stderr = sys.stderr
+        sys.stderr = StringIO()
 
     def tearDown(self):
+        sys.stderr = self._real_stderr
         config.codehosting.debug_logfile = self._real_debug_logfile
         TestCase.tearDown(self)
+        reset_logging()
 
     def test_loggingSetUpAssertionFailsIfParentDirectoryIsNotADirectory(self):
         # set_up_logging fails with an AssertionError if it cannot create the
@@ -416,6 +427,76 @@ class TestLoggingSetup(TestCase):
             self.assertRaises(AssertionError, set_up_logging)
         finally:
             os.unlink(filename)
+
+    def test_makesLogDirectory(self):
+        # If the specified logfile is in a directory that doesn't exist, then
+        # set_up_logging makes that directory.
+        directory = tempfile.mkdtemp()
+        config.codehosting.debug_logfile = os.path.join(
+            directory, 'debug.log')
+        set_up_logging()
+        self.failUnless(os.path.isdir(directory))
+
+    def test_returnsCodehostingLogger(self):
+        # set_up_logging returns the 'codehosting' logger.
+        self.assertIs(set_up_logging(), logging.getLogger('codehosting'))
+
+    def test_codehostingLogGoesToDebugLogfile(self):
+        # Once set_up_logging is called, messages logged to the codehosting
+        # logger are stored in config.codehosting.debug_logfile
+        # Need this to properly simulate stderr logging behaviour.
+        self._finishLogFile()
+        set_up_logging()
+
+        # Make sure that a logged message goes to the debug logfile
+        logging.getLogger('codehosting').debug('Hello hello')
+        self.failUnless(
+            open(config.codehosting.debug_logfile).read().endswith(
+                'Hello hello\n'))
+
+    def test_codehostingLogDoesntGoToStderr(self):
+        # Once set_up_logging is called, any messages logged to the
+        # codehosting logger should *not* be logged to stderr. If they are,
+        # they will appear on the user's terminal.
+
+        # Need this to properly simulate stderr logging behaviour.
+        self._finishLogFile()
+        set_up_logging()
+
+        # Make sure that a logged message does not go to stderr.
+        logging.getLogger('codehosting').info('Hello hello')
+        self.assertEqual(sys.stderr.getvalue(), '')
+
+    def test_codehostingLogDoesntGoToStderrEvenWhenNoLogfile(self):
+        # Once set_up_logging is called, any messages logged to the
+        # codehosting logger should *not* be logged to stderr, even if there's
+        # no debug_logfile set.
+
+        config.codehosting.debug_logfile = None
+
+        # Need this to properly simulate stderr logging behaviour.
+        self._finishLogFile()
+        set_up_logging()
+
+        # Make sure that a logged message does not go to stderr.
+        logging.getLogger('codehosting').info('Hello hello')
+        self.assertEqual(sys.stderr.getvalue(), '')
+
+    def test_bzrLogGoesToStderr(self):
+        # Once set_up_logging is called, any info messages logged to the bzr
+        # logger should be logged to stderr so they will appear on the user's
+        # terminal.
+
+        # This test is somewhat artificial. Really, we want to test that the
+        # bzr log handling is untouched by set_up_logging.
+
+        # Need this to properly simulate stderr logging behaviour.
+        self._finishLogFile()
+        set_up_logging()
+
+        # Make sure that a logged message does not go to stderr.
+        logging.getLogger('bzr').info('Hello hello')
+        self.assertEqual(sys.stderr.getvalue(), 'Hello hello\n')
 
 
 def test_suite():

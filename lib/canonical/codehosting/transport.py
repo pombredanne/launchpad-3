@@ -73,21 +73,40 @@ def get_path_segments(path):
     return path.strip('/').split('/')
 
 
+class _NotFilter(logging.Filter):
+    """A Filter that only allows records that do *not* match.
+
+    A _NotFilter initialized with "A.B" will allow "C", "A.BB" but not allow
+    "A.B", "A.B.C" etc.
+    """
+
+    def filter(self, record):
+        return not logging.Filter.filter(self, record)
+
+
 def set_up_logging():
-    trace.disable_default_logging()
     log = logging.getLogger('codehosting')
+
     if config.codehosting.debug_logfile is not None:
+        # Create the directory that contains the debug logfile.
         parent_dir = os.path.dirname(config.codehosting.debug_logfile)
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
         assert os.path.isdir(parent_dir), (
             "%r should be a directory" % parent_dir)
+
+        # Messages logged to 'codehosting' are stored in the debug_logfile.
         handler = logging.FileHandler(config.codehosting.debug_logfile)
         handler.setFormatter(
             logging.Formatter(
                 '%(asctime)s %(levelname)-8s %(name)s\t%(message)s'))
         handler.setLevel(logging.DEBUG)
         log.addHandler(handler)
+
+    # Don't log 'codehosting' messages to stderr.
+    if trace._stderr_handler is not None:
+        trace._stderr_handler.addFilter(_NotFilter('codehosting'))
+
     log.setLevel(logging.DEBUG)
     return log
 
