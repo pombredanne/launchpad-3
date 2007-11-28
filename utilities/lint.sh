@@ -19,6 +19,12 @@ elif ! which pyflakes >/dev/null; then
     exit 1
 fi
 
+function bzr {
+    # For pylint to operate properly, PYTHONPATH must point to the ./lib
+    # directory in the launchpad tree. This directory includes a bzrlib. When
+    # this script calls bzr, we want it to use the system bzrlib, not the one
+    # in the launchpad tree.
+    PYTHONPATH='' `which bzr` "$@" }
 
 rules="Using normal rules."
 rcfile="--rcfile=utilities/lp.pylintrc"
