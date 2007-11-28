@@ -44,8 +44,11 @@ we return to the bugtask index, so that we can change our choice (the
 form fields are pre-filled with the data previously entered, and the
 relevant bugtask is expanded as soon as the page is loaded).
 
+    >>> def url_path(url):
+    ...     return url.split('?')[0]
+
     >>> admin_browser.getLink("Choose someone else...").click()
-    >>> print admin_browser.url.split('?')[0]
+    >>> print url_path(admin_browser.url)
     http://bugs.launchpad.dev/firefox/+bug/1
     >>> assign_to_control = admin_browser.getControl(
     ...     name="firefox.assignee", index=0)
