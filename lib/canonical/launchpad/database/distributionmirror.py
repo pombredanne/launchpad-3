@@ -293,6 +293,11 @@ class DistributionMirror(SQLBase):
             mirror.destroySelf()
 
     @property
+    def arch_serieses(self):
+        """See IDistributionMirror"""
+        return MirrorDistroArchSeries.selectBy(distribution_mirror=self)
+
+    @property
     def cdimage_serieses(self):
         """See IDistributionMirror"""
         return MirrorCDImageDistroSeries.selectBy(distribution_mirror=self)
@@ -319,11 +324,6 @@ class DistributionMirror(SQLBase):
                        MirrorDistroSeriesSource.status DESC)
             """ % sqlvalues(distribution=self.distribution, mirrorid=self)
         return MirrorDistroSeriesSource.select(query)
-
-    @property
-    def arch_serieses(self):
-        """See IDistributionMirror"""
-        return MirrorDistroArchSeries.selectBy(distribution_mirror=self)
 
     def getSummarizedMirroredArchSerieses(self):
         """See IDistributionMirror"""

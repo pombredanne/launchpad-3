@@ -48,6 +48,9 @@ if [ -z "$1" ]; then
         # No uncommitted changes in the tree, lint changes relative to the
         # parent.
         rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
+        # XXX sinzui 2007-11-18 bug=163612:
+        # The bzr+ssh protocol causes an exception; fallback to sftp.
+        rev=`echo $rev | sed 's/bzr+ssh:/sftp:/'`
         rev_option="-r $rev"
     elif [ $diff_status -eq 1 ] ; then
         # Uncommitted changes in the tree, lint those changes.
@@ -148,7 +151,7 @@ if [ ! -z "$pyflakes_notices" ]; then
 fi
 
 
-export PYTHONPATH="/usr/share/pycentral/pylint/site-packages:$PYTHONPATH"
+export PYTHONPATH="/usr/share/pycentral/pylint/site-packages:lib:$PYTHONPATH"
 pylint="python2.4 -Wi::DeprecationWarning `which pylint`"
 
 # XXX sinzui 2007-10-18 bug=154140:

@@ -998,6 +998,20 @@ def notify_bug_cve_deleted(bugcve, event):
     add_bug_change_notifications(bug_delta)
 
 
+def notify_bug_became_question(event):
+    """Notify CC'd list that a bug was made into a question.
+
+    The event must contain the bug that became a question, and the question
+    that the bug became.
+    """
+    bug = event.bug
+    question = event.question
+    change_info = '\n'.join([
+        '** bug changed to question:\n'
+        '   %s' %  canonical_url(question)])
+    bug.addChangeNotification(change_info, person=event.user)
+
+
 def notify_bug_attachment_added(bugattachment, event):
     """Notify CC'd list that a new attachment has been added.
 
@@ -1399,7 +1413,12 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
             # The first message cannot contain a References
             # because we don't create a Message instance for the
             # question description, so we don't have a Message-ID.
-            index = list(self.question.messages).index(self.new_message)
+
+            # XXX sinzui 2007-11-27 bug=164435:
+            # SQLObject can refetch the question, so we are using the ids.
+            message_ids = list([message.id
+                                for message in self.question.messages])
+            index = message_ids.index(self.new_message.id)
             if index > 0:
                 headers['References'] = (
                     self.question.messages[index-1].rfc822msgid)

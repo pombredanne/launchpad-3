@@ -414,7 +414,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         Return an URL to the support page of the source package related
         to question or mdash if there is no related source package.
         """
-        assert self.context == question.distribution, (
+        # XXX sinzui 2007-11-27 bug=164435:
+        # SQLObject can refetch the question, so we are comparing ids.
+        assert self.context.id == question.distribution.id, (
             "The question.distribution (%s) must be equal to the context (%s)"
             % (question.distribution, self.context))
         if not question.sourcepackagename:
