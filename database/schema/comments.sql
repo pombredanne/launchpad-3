@@ -107,6 +107,7 @@ COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subs
 COMMENT ON COLUMN Bug.security_related IS 'Is this bug a security issue?';
 COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initially this will be set to the contents of the initial email or bug filing comment, but later it can be edited to give a more accurate description of the bug itself rather than the symptoms observed by the reporter.';
 COMMENT ON COLUMN Bug.date_last_message IS 'When the last BugMessage was attached to this Bug. Maintained by a trigger on the BugMessage table.';
+COMMENT ON COLUMN Bug.number_of_duplicates IS 'The number of bugs marked as duplicates of this bug.';
 
 -- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';

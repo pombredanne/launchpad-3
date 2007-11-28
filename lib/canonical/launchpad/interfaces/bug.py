@@ -194,6 +194,9 @@ class IBug(IMessageTarget, ICanBeMentored):
         "when there are no tasks that are still open for the bug.")
     date_last_message = Datetime(
         title=_('Date of last bug message'), required=False, readonly=True)
+    number_of_duplicates = Int(
+        title=_('The number of bugs marked as duplicates of this bug'),
+        required=True, readonly=True)
 
 
     def followup_subject():

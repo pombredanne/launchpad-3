@@ -969,7 +969,8 @@ class BugTaskSet:
         "dateassigned": "BugTask.dateassigned",
         "datecreated": "BugTask.datecreated",
         "date_last_updated": "Bug.date_last_updated",
-        "date_closed": "BugTask.date_closed"}
+        "date_closed": "BugTask.date_closed",
+        "number_of_duplicates": "Bug.number_of_duplicates"}
 
     _open_resolved_upstream = """
                 EXISTS (

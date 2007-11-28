@@ -540,3 +540,39 @@ We can file a bug against it and see that show up in a search:
     >>> cdrkit_bugs.count()
     1
 
+
+== Ordering search results ==
+
+The result returned by bugtask searches can come sorted by a specified order
+
+
+=== Ordering by number of duplicates ===
+
+In order to 
+
+    >>> params = BugTaskSearchParams(
+    ...     orderby='-number_of_duplicates', user=None)
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in ubuntu_tasks:
+    ...     print bugTaskInfo(bugtask)
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    26 2 Ubuntu Blackhole Trash folder
+    38 18 cdrkit (Ubuntu) Bug to be fixed in trunk
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+
+    >>> bug_9 = getUtility(IBugSet).get(9)
+    >>> bug_10 = getUtility(IBugSet).get(10)
+    >>> bug_10.duplicateof = bug_9
+    >>> flush_database_updates()
+
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in ubuntu_tasks:
+    ...     print bugTaskInfo(bugtask)
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    26 2 Ubuntu Blackhole Trash folder
+    38 18 cdrkit (Ubuntu) Bug to be fixed in trunk
