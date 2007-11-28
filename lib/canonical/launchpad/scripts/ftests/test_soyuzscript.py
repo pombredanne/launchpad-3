@@ -25,7 +25,7 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
         Allow tests to use a set of default options and pass an
         inactive logger to SoyuzScript.
         """
-        test_args=['-d', distribution_name, '-y' ]
+        test_args = ['-d', distribution_name, '-y']
 
         if suite is not None:
             test_args.extend(['-s', suite])
