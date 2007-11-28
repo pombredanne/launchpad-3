@@ -1165,7 +1165,8 @@ class PackageCopier(SoyuzScript):
            operate only in PARTNER, but that's odd)
         """
         if ((self.options.partner_archive and not self.options.to_partner)
-            or (self.options.to_partner and not self.options.partner_archive)):
+            or (self.options.to_partner and not
+                self.options.partner_archive)):
             raise SoyuzScriptError(
                 "Cross-PARTNER copies are not allowed.")
 
