@@ -201,8 +201,10 @@ class TestLpQueryDistro(LaunchpadZopelessTestCase):
         self.assertRaises(LaunchpadScriptFailure, helper._buildLocation)
 
     def testActionsWithUndefinedSuite(self):
-        """Only 'current' and 'development' work with undefined suite.
+        """Check the actions supposed to work with undefined suite.
 
+        Only 'current', 'development' and 'supported' work with undefined
+        suite.
         The other actions ('archs', 'official_arch', 'nominated_arch_indep')
         will assume the CURRENT distroseries in context.
         """
@@ -211,6 +213,7 @@ class TestLpQueryDistro(LaunchpadZopelessTestCase):
 
         self.assertEqual(helper.get_current, u'warty')
         self.assertEqual(helper.get_development, u'hoary')
+        self.assertEqual(helper.get_supported, u'hoary warty')
         self.assertEqual(helper.get_archs, u'hppa i386')
         self.assertEqual(helper.get_official_archs, u'i386')
         self.assertEqual(helper.get_nominated_arch_indep, u'i386')
@@ -219,8 +222,9 @@ class TestLpQueryDistro(LaunchpadZopelessTestCase):
         """Opposite of  testActionsWithUndefinedSuite.
 
         Only some actions ('archs', 'official_arch', 'nominated_arch_indep')
-        work with defined suite, the other actions ('current' and
-        'development') will raise LaunchpadScriptError if the suite is defined.
+        work with defined suite, the other actions ('current', 'development'
+        and 'supported') will raise LaunchpadScriptError if the suite is
+        defined.
         """
         helper = self.getLpQueryDistro(test_args=['-s', 'warty'])
         helper._buildLocation()
@@ -230,6 +234,9 @@ class TestLpQueryDistro(LaunchpadZopelessTestCase):
             helper)
         self.assertRaises(
             LaunchpadScriptFailure, operator.attrgetter('get_development'),
+            helper)
+        self.assertRaises(
+            LaunchpadScriptFailure, operator.attrgetter('get_supported'),
             helper)
         self.assertEqual(helper.get_archs, u'hppa i386')
         self.assertEqual(helper.get_official_archs, u'i386')
