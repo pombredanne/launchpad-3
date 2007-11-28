@@ -132,6 +132,8 @@ class LaunchpadFormView(LaunchpadView):
         transaction.abort()
 
     def setUpFields(self):
+        assert self.schema is not None, (
+            "Schema must be set for LaunchpadFormView")
         self.form_fields = form.Fields(self.schema, for_input=self.for_input,
                                        render_context=self.render_context)
         if self.field_names is not None:
@@ -192,10 +194,10 @@ class LaunchpadFormView(LaunchpadView):
         self.widget_errors[field_name] = message
         self.errors.append(message)
 
-    def validate_widgets(self, data, labels=None):
+    def validate_widgets(self, data, names=None):
         """Validate the named form widgets.
 
-        :param labels: Labels of widgets to validate. If None, all widgets
+        :param names: Names of widgets to validate. If None, all widgets
         will be validated.
         """
         # XXX jamesh 2006-09-26:
@@ -208,7 +210,7 @@ class LaunchpadFormView(LaunchpadView):
         #     http://www.zope.org/Collectors/Zope3-dev/717
         widgets = []
         for input, widget in self.widgets.__iter_input_and_widget__():
-            if labels is None or widget.label in labels:
+            if names is None or widget.context.__name__ in names:
                 if (input and IInputWidget.providedBy(widget) and
                     not widget.hasInput()):
                     if widget.context.required:

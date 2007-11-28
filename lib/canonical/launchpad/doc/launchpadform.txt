@@ -278,22 +278,26 @@ easy for an action to validate its widgets, while ignoring widgets
 that belong to other actions. Here, we'll define a form with two
 required fields, and show how to validate one field at a time.
 
-  >>> class FormForWidgetValidation(IFormTest):
+  >>> class INameAndPasswordForm(Interface):
+  ...     name = TextLine(title=u"Name")
+  ...     password = TextLine(title=u"Password")
+
+  >>> class FormForWidgetValidation:
+  ...     implements(INameAndPasswordForm)
   ...     name = TextLine(title=u"Name", required=True)
   ...     password = TextLine(title=u"Password", required=True)
 
   >>> class FormViewForWidgetValidation(LaunchpadFormView):
-  ...     schema = FormForWidgetValidation
+  ...     schema = INameAndPasswordForm
 
-  >>> def print_widget_validation(labels):
+  >>> def print_widget_validation(names):
   ...     data = {'field.name': '', 'field.password': ''}
   ...     context = FormTest()
   ...     request = LaunchpadTestRequest(method='POST', form=data)
-  ...     view = FormTestView6(context, request)
+  ...     view = FormViewForWidgetValidation(context, request)
   ...     view.setUpFields()
   ...     view.setUpWidgets()
-  ...     for error in view.validate_widgets(data, labels=labels):
-  ...         import pdb; pdb.set_trace()
+  ...     for error in view.validate_widgets(data, names=names):
   ...         if isinstance(error, str):
   ...            print error
   ...         else:
@@ -301,23 +305,19 @@ required fields, and show how to validate one field at a time.
 
 Only the fields we specify will be validated:
 
-  >>> print_widget_validation(['Name'])
+  >>> print_widget_validation(['name'])
   Name: Required input is missing.
 
-  >>> print_widget_validation(['Password'])
+  >>> print_widget_validation(['password'])
   Password: Required input is missing.
 
-  >>> print_widget_validation(['Name', 'Password'])
+  >>> print_widget_validation(['name', 'password'])
   Name: Required input is missing.
   Password: Required input is missing.
 
 The default behavior is to validate all widgets.
 
   >>> print_widget_validation(None)
-  # XXX Is this right? Should this first form-wide message be
-  # displayed in the other tests as well?
-
-  Required field is missing.
   Name: Required input is missing.
   Password: Required input is missing.
 

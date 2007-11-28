@@ -2537,7 +2537,6 @@ class TeamLeaveView(PersonView):
 
 
 class PersonEditEmailsView(LaunchpadFormView):
-
     """A view for editing a person's email settings.
 
     The user can associate emails with their account, verify emails
@@ -2631,7 +2630,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         be represented by an EmailAddress object or (for unvalidated
         addresses) a LoginToken object.
         """
-        self.validate_widgets(data, [self.widgets[field].label])
+        self.validate_widgets(data, [self.widgets[field].context.__name__])
 
         email = data.get(field)
         if email is None:
@@ -2790,10 +2789,9 @@ class PersonEditEmailsView(LaunchpadFormView):
         The email address must be syntactically valid and must not already
         be in use.
         """
-        self.validate_widgets(data, [self.widgets['newemail'].label])
+        self.validate_widgets(data,
+                              [self.widgets['newemail'].context.__name__])
         newemail = data['newemail']
-        # XXX - Why lower()? Some parts of an email address are case-sensitive.
-        #newemail = self.request.form.get("newemail", "").strip().lower()
         if not valid_email(newemail):
             self.addError(
                 "'%s' doesn't seem to be a valid email address." % newemail)
@@ -2806,11 +2804,10 @@ class PersonEditEmailsView(LaunchpadFormView):
                 self.addError(
                     "The email address '%s' is already registered as your "
                     "email address. This can be either because you already "
-                    "added this email address before or because it have "
-                    "been detected by our system as being yours. If "
-                    "it was detected by our system, it's probably shown "
-                    "on this page and is waiting to be confirmed as "
-                    "yours." % email.email)
+                    "added this email address before or because our system "
+                    "detected it as being yours. If it was detected by our "
+                    "system, it's probably shown on this page and is waiting "
+                    "to be confirmed as yours." % email.email)
             else:
                 owner = email.person
                 owner_name = urllib.quote(owner.name)

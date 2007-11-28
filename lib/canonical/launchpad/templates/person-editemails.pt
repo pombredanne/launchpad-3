@@ -80,10 +80,16 @@
 
 <div metal:fill-slot="help">
   <p>
-    This page displays all the email addresses Launchpad associated
-    with your Launchpad account. Some of these addresses are verified
-    (known to be associated with you), but some may still need
-    verification.
+    This page displays all the email addresses associated with your
+    Launchpad account. Some of these addresses are verified (known to
+    be associated with you), but some may need confirmation before you
+    can use them in Launchpad.
+  </p>
+
+  <p>
+    When you confirm that an address is yours, Launchpad will send a
+    verification email to that address. To complete the verification
+    process, simply visit the URL contained in the email.
   </p>
 
   <p>
