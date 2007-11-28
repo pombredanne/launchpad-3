@@ -7,8 +7,8 @@ him another one so we can test switching between them.
 
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~carlos/+editemails')
-    >>> browser.getControl(name='newemail').value = 'carlos@test.com'
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Add a new address').value = 'carlos@test.com'
+    >>> browser.getControl('Add', index=1).click()
 
 Carlos receives an email containing a login token URL.
 
@@ -30,15 +30,16 @@ He follows the link to confirm his second email address.
     >>> browser.getControl('Continue').click()
     >>> browser.title
     'Carlos Perell\xc3\xb3 Mar\xc3\xadn in Launchpad'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Email address successfully confirmed.
 
 Now he's got a confirmed address in addition to his preferred address:
 
     >>> browser.getLink('Update e-mail addresses').click()
-    >>> print extract_text(find_tag_by_id(browser.contents, 'confirmed-emails'))
-    carlos@test.com
+    >>> confirmed = browser.getControl(name="field.VALIDATED_SELECTED")
+    >>> confirmed.displayOptions
+    ['\xa0carlos@canonical.com', '\xa0carlos@test.com']
 
 Okay, that's the email setup. Now the teams. Carlos belongs to four
 teams: `admins`, `rosetta-admins`, `testing-spanish-team`, and
@@ -48,18 +49,20 @@ list used as its contact address. We're also going to create a mailing
 list for `testing-spanish-team`, but not approve it.
 
     >>> from canonical.launchpad.database import MailingListSet, Person
-    >>> from canonical.launchpad.interfaces import MailingListStatus
+    >>> from canonical.launchpad.interfaces import (MailingListStatus,
+    ...      ILaunchpadCelebrities)
     >>> from canonical.launchpad.ftests import login, logout
+    >>> from zope.component import getUtility
     >>> def setup_list_for(team_name, make_contact_address=True):
     ...     browser.open('http://launchpad.dev/~%s' % team_name)
-    ...     browser.getLink('Change contact address').click()
+    ...     browser.getLink('Configure mailing list').click()
     ...     browser.getControl('Apply for Mailing List').click()
-    ... 
+    ...
     ...     list_set = MailingListSet()
     ...     mailing_list = list_set.get(team_name)
-    ...     login('foo.bar@canonical.com')
-    ...     foobar = Person.byName('name16')
-    ...     mailing_list.review(foobar, MailingListStatus.APPROVED)
+    ...     experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    ...     admin = list(experts.allmembers)[0]
+    ...     mailing_list.review(admin, MailingListStatus.APPROVED)
     ...     mailing_list.syncUpdate()
     ...     mailing_list.startConstructing()
     ...     mailing_list.syncUpdate()
@@ -72,12 +75,12 @@ list for `testing-spanish-team`, but not approve it.
     ...        import pdb; pdb.set_trace()
     ...        browser.getControl('The Launchpad mailing list').selected = True
     ...        browser.getControl('Change').click()
-    
+
     >>> setup_list_for('admins')
     >>> setup_list_for('rosetta-admins', False)
     >>> browser.open('http://launchpad.dev/~testing-spanish-team')
-    >>> browser.getLink('Change contact address').click()
-    >>> browser.getControl('Apply for Mailing List').click()   
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Apply for Mailing List').click()
 
 ==Subscription management==
 
@@ -85,11 +88,16 @@ To subscribe to a mailing list, Carlos needs to use his subscription
 management screen, which shows a subscription control for every
 mailing list.
 
-    >>> browser.getLink('Update e-mail addresses').click()
+    >>> browser.open('http://launchpad.dev/~carlos/+editemails')
+    >>> control = browser.getControl(name='field.subscription.admins')
+    >>> control2 = browser.getControl(name='field.subscription.rosetta-admins')
+
     >>> for t in find_tags_by_class(browser.contents, 'subscription'):
     ...     print t.name, t.value
-    field.subscription.admins Not subscribed
-    field.subscription.rosetta-admins Not subscribed
+    >>> print control.value
+    Not subscribed
+    >>> print control2.value
+    Not subscribed
 
 Note that a mailing list shows up whether or not it's currently the
 team contact method. Also note that the not-fully-created mailing list
@@ -102,15 +110,15 @@ Carlos can subscribe to a list under his preferred email address:
     >>> browser.getControl('Apply Changes').click()
 
     >>> browser.getLink('Update e-mail addresses').click()
-    >>> for t in find_tags_by_class(browser.contents, ''):
-    ...     print t.name, t.value
-    field.subscription.admins Preferred
-    field.subscription.rosetta-admins Not subscribed
+    >>> control = browser.getControl(name='field.subscription.admins')
+    >>> control2 = browser.getControl(name='field.subscription.rosetta-admins')
+    >>> print control.value
+    Preferred
+    >>> print control2.value
+    Not subscribed
 
 He can subscribe to a list under one or the other of his addresses:
 
-    >>> control = browser.getControl(name='field.subscription.admins')
-    >>> control2 = browser.getControl(name='field.subscription.rosetta-admins')
     >>> control.value = 'carlos@canonical.com'
     >>> control2.value = 'carlos@test.com'
     >>> browser.getControl('Apply Changes').click()

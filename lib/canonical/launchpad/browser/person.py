@@ -2623,28 +2623,32 @@ class PersonEditEmailsView(LaunchpadFormView):
         mailing_list_set = getUtility(IMailingListSet)
         fields = []
         choices = [email.email for email in self.context.validatedemails]
-        choices.insert(0, "Preferred")
+        preferred_name = "Preferred (%s)" % self.context.preferredemail.email
+        choices.insert(0, preferred_name)
         choices.append("Don't subscribe")
+        terms = [SimpleTerm(choice) for choice in choices]
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
             if mailing_list and mailing_list.isUsable():
-                subscription = team_membership.getSubscription(self.context)
+                subscription = mailing_list.getSubscription(self.context)
                 if subscription:
                     if subscription.email is None:
-                        value = "Preferred"
+                        value = preferred_name
                     else:
                         value = subscription.email
                 else:
                     value = "Don't subscribe"
-                field = Choice(__name__='subscription.%s' % team.name,
-                               title=team.name, values=choices, value=value)
+                name = 'subscription.%s' % team.name
+                field = Choice(__name__=name,
+                               title=team.name, source=SimpleVocabulary(terms),
+                               default=value)
                 fields.append(field)
-        self._mailing_list_widgets = form.fields(*fields)
-        return self._mailing_list_widgets
+        return form.fields(*fields)
 
     @property
     def mailing_list_widgets(self):
-        return self._mailing_list_widgets
+        return [widget for widget in self.widgets
+                if 'field.subscription.' in widget.name]
 
     def _validate_selected_address(self, data, validatedAddress):
         """A generic validator for this view's actions.
@@ -2867,6 +2871,18 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "provider might use 'greylisting', which could delay the "
                 "message for up to an hour or two.)" % newemail)
         self.next_url = self.action_url
+
+    ### Actions to do with subscription management.
+    def validate_action_update_subscriptions(self, action, data):
+        """
+        """
+        return self.errors
+
+    @action(_("Update subscriptions"), name="update_subscriptions",
+            validator=validate_action_update_subscriptions)
+    def action_update_subscriptions(self, action, data):
+        import pdb; pdb.set_trace()
+
 
 class TeamReassignmentView(ObjectReassignmentView):
 

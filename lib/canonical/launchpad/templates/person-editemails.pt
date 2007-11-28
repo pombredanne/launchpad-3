@@ -54,6 +54,9 @@
         <metal:block use-macro="context/@@launchpad_form/widget_row" />
       </tal:widget>
 
+      <input tal:replace="structure view/action_add_email/render" />
+      <br /><br />
+
       <tal:block tal:condition="view/mailing_list_widgets">
         <h1>Mailing list subscriptions</h1>
         <table>
@@ -61,13 +64,14 @@
             <metal:block use-macro="context/@@launchpad_form/widget_row" />
           </tr>
         </table>
+
+        <input tal:replace="structure view/action_update_subscriptions/render"
+               />
       </tal:block>
 
     </metal:widgets>
 
-    <metal:widgets fill-slot="buttons">
-      <input tal:replace="structure view/action_add_email/render" />
-    </metal:widgets>
+    <metal:widgets fill-slot="buttons" />
   </div>
 
 </div>
