@@ -436,12 +436,13 @@ It's also important to note that the teams/pillars owned/driven by Foo Bar
 are now owned/driven by the registry admins team.
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> registry = getUtility(ILaunchpadCelebrities).registry
-    >>> registry_pillars = set(registry.getOwnedOrDrivenPillars())
+    >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
+
+    >>> registry_pillars = set(registry_experts.getOwnedOrDrivenPillars())
     >>> registry_pillars.issuperset(foobar_pillars)
     True
 
-    >>> registry_teams = set(Person.selectBy(teamowner=registry))
+    >>> registry_teams = set(Person.selectBy(teamowner=registry_experts))
     >>> registry_teams.issuperset(foobar_teams)
     True
 
