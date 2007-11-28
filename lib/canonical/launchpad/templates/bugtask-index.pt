@@ -94,6 +94,16 @@
     </p>
   </tal:duplicate-of>
 
+
+  <p id="bug-is-question" class="informational message"
+    tal:condition="context/bug/getQuestionCreatedFromBug"
+    tal:define="question context/bug/getQuestionCreatedFromBug">
+    This bug report was converted into a question:
+    question #<tal:question-id replace="question/id" />:
+    <a href=""
+      tal:attributes="href question/fmt:url"
+      tal:content="question/title">%s</a>.
+  </p>
       <form
         tal:condition="not:view/isReportedInContext"
         class="error message"

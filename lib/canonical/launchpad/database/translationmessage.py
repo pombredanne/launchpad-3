@@ -36,14 +36,8 @@ class TranslationMessageMixIn:
         if self.potmsgset.msgid_plural is None:
             # This message is a singular message.
             return 1
-        elif self.pofile.language.pluralforms is None:
-            # It's a plural form, but we don't know plural forms for this
-            # message. Fallback to '2'.
-            return 2
         else:
-            # It's a plural form, and we know it's number of entries for this
-            # language.
-            return self.pofile.language.pluralforms
+            return self.pofile.plural_forms
 
     def makeHTMLID(self, suffix=None):
         """See `ITranslationMessage`."""

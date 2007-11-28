@@ -12,11 +12,13 @@ __all__ = [
     'BugTargetTraversalMixin',
     'BugTargetView',
     'BugTaskContextMenu',
+    'BugTaskCreateQuestionView',
     'BugTaskEditView',
     'BugTaskListingView',
     'BugTaskNavigation',
     'BugTaskPortletView',
     'BugTasksAndNominationsView',
+    'BugTaskRemoveQuestionView',
     'BugTaskSearchListingView',
     'BugTaskSetNavigation',
     'BugTaskSOP',
@@ -66,15 +68,15 @@ from canonical.launchpad.interfaces import (
     BugAttachmentType, BugNominationStatus, BugTaskImportance,
     BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay, IBug,
     IBugAttachmentSet, IBugBranchSet, IBugNominationSet, IBugSet, IBugTask,
-    IBugTaskSearch, IBugTaskSet, ICveSet, IDistribution,
-    IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
+    IBugTaskSearch, IBugTaskSet, ICreateQuestionFromBugTaskForm, ICveSet,
+    IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
     INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
     IPersonBugTaskSearch, IPersonSet, IProduct, IProductSeries,
-    IProductSeriesBugTask, IProject, ISourcePackage, IUpstreamBugTask,
-    IUpstreamProductBugTaskSearch, NotFoundError, RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData, valid_upstreamtask,
-    validate_distrotask)
+    IProductSeriesBugTask, IProject, IRemoveQuestionFromBugTaskForm,
+    ISourcePackage, IUpstreamBugTask, IUpstreamProductBugTaskSearch,
+    NotFoundError, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData, valid_upstreamtask, validate_distrotask)
 
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -1784,10 +1786,12 @@ class BugTaskSearchListingView(LaunchpadFormView):
         search criteria taken from the request. Params in `extra_params` take
         precedence over request params.
         """
-        unbatchedTasks = self.searchUnbatched(searchtext, context, extra_params)
+        unbatchedTasks = self.searchUnbatched(
+            searchtext, context, extra_params)
         return self._getBatchNavigator(unbatchedTasks)
 
-    def searchUnbatched(self, searchtext=None, context=None, extra_params=None):
+    def searchUnbatched(
+        self, searchtext=None, context=None, extra_params=None):
         """Return a `SelectResults` object for the GET search criteria.
 
         :param searchtext: If the searchtext is None, the search text will be
@@ -2224,7 +2228,8 @@ class BugTargetView(LaunchpadView):
 
 
 class TextualBugTaskSearchListingView(BugTaskSearchListingView):
-    """View that renders a list of bug IDs for a given set of search criteria."""
+    """View that renders a list of bug IDs for a given set of search criteria.
+    """
 
     def render(self):
         """Render the BugTarget for text display."""
@@ -2307,13 +2312,15 @@ class BugTaskTableRowView(LaunchpadView):
     def canSeeTaskDetails(self):
         """Whether someone can see a task's status details.
 
-        This returns true if this is not a conjoined task, and if the bug is
-        not a duplicate. It is independent of whether they can *change* the
-        status; you need to expand the details to see any milestone set.
+        Return True if this is not a conjoined task, and the bug is
+        not a duplicate, and a question was not made from this report.
+        It is independent of whether they can *change* the status; you
+        need to expand the details to see any milestone set.
         """
         return (self.displayEditForm() and
                 self.context.conjoined_master is None and
-                self.context.bug.duplicateof is None)
+                self.context.bug.duplicateof is None and
+                self.context.bug.getQuestionCreatedFromBug() is None)
 
     def getTaskRowCSSClass(self):
         """The appropriate CSS class for the row in the Affects table.
@@ -2452,3 +2459,95 @@ class BugTaskSOP(StructuralObjectPresentation):
         """Return None."""
         return None
 
+
+class BugTaskCreateQuestionView(LaunchpadFormView):
+    """View for creating a question from a bug."""
+    schema = ICreateQuestionFromBugTaskForm
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        LaunchpadFormView.setUpFields(self)
+        if not self.can_be_a_question:
+            self.form_fields = self.form_fields.omit('comment')
+
+    @property
+    def next_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    @property
+    def can_be_a_question(self):
+        """Return True if this bug can become a question, otherwise False."""
+        return self.context.bug.canBeAQuestion()
+
+    @action('Convert this Bug into a Question', name='create')
+    def create_action(self, action, data):
+        """Create a question from this bug and set this bug to Invalid.
+
+        The bugtask's status will be set to Invalid. The question
+        will be linked to this bug.
+
+        A question will not be created if a question was previously created,
+        the pillar does not use Launchpad to track bugs, or there is more
+        than one valid bugtask.
+        """
+        if not self.context.bug.canBeAQuestion():
+            self.request.response.addNotification(
+                'This bug could not be converted into a question.')
+            return
+
+        comment = data.get('comment', None)
+        self.context.bug.convertToQuestion(self.user, comment=comment)
+
+
+class BugTaskRemoveQuestionView(LaunchpadFormView):
+    """View for creating a question from a bug."""
+    schema = IRemoveQuestionFromBugTaskForm
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        LaunchpadFormView.setUpFields(self)
+        if not self.has_question:
+            self.form_fields = self.form_fields.omit('comment')
+
+    @property
+    def next_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    @property
+    def has_question(self):
+        """Return True if a question was created from this bug, or False."""
+        return self.context.bug.getQuestionCreatedFromBug() is not None
+
+    @action('Convert Back to Bug', name='remove')
+    def remove_action(self, action, data):
+        """Remove a question from this bug.
+
+        The question will be unlinked from the bug. The question is not
+        altered in any other way; it belongs to the question workflow.
+        The bug's bugtasks are editable, though none are changed. Bug
+        contacts are responsible for updating the bugtasks.
+        """
+        question = self.context.bug.getQuestionCreatedFromBug()
+        if question is None:
+            self.request.response.addNotification(
+                'This bug does not have a question to remove')
+            return
+
+        owner_is_subscribed = question.isSubscribed(self.context.bug.owner)
+        question.unlinkBug(self.context.bug)
+        # The question.owner was implicitly unsubscribed when the bug
+        # was unlinked. We resubscribe the owner if he was subscribed.
+        if owner_is_subscribed is True:
+            self.context.bug.subscribe(question.owner)
+        self.request.response.addNotification(
+            'Removed Question #%s: <a href="%s">%s<a>.'
+            % (question.id, canonical_url(question),
+               cgi.escape(question.title)))
+        comment = data.get('comment', None)
+        if comment is not None:
+            self.context.bug.newMessage(
+                owner=getUtility(ILaunchBag).user,
+                subject=self.context.bug.followup_subject(),
+                content=comment)

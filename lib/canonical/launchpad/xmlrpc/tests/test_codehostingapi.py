@@ -9,7 +9,6 @@ __all__ = []
 import os
 import unittest
 
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.codehosting.tests.helpers import BranchTestCase
@@ -101,7 +100,6 @@ class TestExpandURL(BranchTestCase):
         results = self.api.resolve_lp_path(self.product.name)
         urls = [
             'bzr+ssh://bazaar.launchpad.dev/%s' % trunk.unique_name,
-            'sftp://bazaar.launchpad.dev/%s' % trunk.unique_name,
             'http://bazaar.launchpad.dev/%s' % trunk.unique_name]
         self.assertEqual(dict(urls=urls), results)
 

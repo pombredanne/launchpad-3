@@ -1,6 +1,7 @@
 import unittest
 
-from zope.interface import directlyProvides
+from zope.app.form.interfaces import IDisplayWidget, IInputWidget
+from zope.interface import directlyProvides, implements
 from canonical.launchpad.webapp import LaunchpadFormView
 from canonical.launchpad.webapp.interfaces import (
     ISingleLineWidgetLayout, IMultiLineWidgetLayout, ICheckBoxWidgetLayout)
@@ -47,6 +48,30 @@ class LaunchpadFormTest(unittest.TestCase):
                     self.assertEqual(count, 1,
                                      'Expected count of 1 for %r.  Got %d'
                                      % (provides, count))
+
+    def test_showOptionalMarker(self):
+        """Verify that a field marked .for_display has no (Optional) marker."""
+        # IInputWidgets have an (Optional) marker if they are not required.
+        form = LaunchpadFormView(None, None)
+        class FakeInputWidget:
+            implements(IInputWidget)
+            def __init__(self, required):
+                self.required = required
+        form.widgets = {'widget': FakeInputWidget(required=False)}
+        self.assertTrue(form.showOptionalMarker('widget'))
+        # Required IInputWidgets have no (Optional) marker.
+        form.widgets = {'widget': FakeInputWidget(required=True)}
+        self.assertFalse(form.showOptionalMarker('widget'))
+        # IDisplayWidgets have no (Optional) marker, regardless of whether
+        # they are required or not, since they are read only.
+        class FakeDisplayWidget:
+            implements(IDisplayWidget)
+            def __init__(self, required):
+                self.required = required
+        form.widgets = {'widget': FakeDisplayWidget(required=False)}
+        self.assertFalse(form.showOptionalMarker('widget'))
+        form.widgets = {'widget': FakeDisplayWidget(required=True)}
+        self.assertFalse(form.showOptionalMarker('widget'))
 
 
 def test_suite():

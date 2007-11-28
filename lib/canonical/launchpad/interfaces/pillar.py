@@ -8,15 +8,13 @@ Pillars are currently Product, Project and Distribution.
 
 __metaclass__ = type
 
-from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import Int
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import BlacklistableContentNameField
 
 
-__all__ = ['IPillarName', 'IPillarNameSet', 'PillarNameField']
+__all__ = ['IPillarName', 'IPillarNameSet']
 
 
 class IPillarName(Interface):
@@ -63,14 +61,4 @@ class IPillarNameSet(Interface):
 
         The results are ordered descending by rank.
         """
-
-
-class PillarNameField(BlacklistableContentNameField):
-
-    errormessage = _(
-            "%s is already in use by another project"
-            )
-
-    def _getByName(self, name):
-        return getUtility(IPillarNameSet).getByName(name)
 
