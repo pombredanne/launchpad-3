@@ -1,5 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0611,W0212
+# pylint: disable-msg=E0611,W0212,W0231
 
 """`SQLObject` implementation of `IPOFile` interface."""
 
@@ -154,7 +154,7 @@ def _can_add_suggestions(pofile, person):
     be able to add suggestions only if the permission is not CLOSED.
     """
     return (_can_edit_translations(pofile, person) or
-            pofile.translationpermission <> TranslationPermission.CLOSED)
+            pofile.translationpermission != TranslationPermission.CLOSED)
 
 
 class POFileMixIn(RosettaStats):
@@ -577,7 +577,7 @@ class POFile(SQLBase, POFileMixIn):
 
             # Add two empty email fields to make formatting nicer.
             # See bug #133817 for details.
-            emails.extend([u'',u''])
+            emails.extend([u'', u''])
 
             for contributor in self.contributors:
                 preferred_email = contributor.preferredemail
@@ -983,7 +983,8 @@ class POFile(SQLBase, POFileMixIn):
             # There is no new import waiting for being imported.
             return
 
-        import_file = librarian_client.getFileByAlias(entry_to_import.content.id)
+        import_file = librarian_client.getFileByAlias(
+            entry_to_import.content.id)
 
         # While importing a file, there are two kinds of errors:
         #
@@ -1222,7 +1223,8 @@ class POFile(SQLBase, POFileMixIn):
                 # file in librarian, that's fine. It only means that next
                 # time, we will do a full export again.
                 logging.warning(
-                    "Error uploading a cached file into librarian", exc_info=1)
+                    "Error uploading a cached file into librarian",
+                    exc_info=1)
 
         return contents
 
