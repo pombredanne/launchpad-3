@@ -2550,6 +2550,12 @@ class TeamLeaveView(PersonView):
 
 
 class PersonEditEmailsView(LaunchpadFormView):
+    """A view for editing a person's email settings.
+
+    The user can associate emails with their account, verify emails
+    the system associated with their account, and remove associated
+    emails.
+    """
 
     schema = IEmailAddress
 
@@ -2559,16 +2565,31 @@ class PersonEditEmailsView(LaunchpadFormView):
                   orientation='vertical')
 
     def setUpFields(self):
+        """Set up fields for this view.
+
+        The main fields of interest are the selection fields with custom
+        vocabularies for the lists of validated and unvalidated email
+        addresses.
+        """
         super(PersonEditEmailsView, self).setUpFields()
-        self.form_fields = form.FormFields(
-            self._validated_emails_field(),
-            self._unvalidated_emails_field(),
-            form.fields(TextLine(__name__='newemail',
-                                 title=u'Add a new address'))
-            ) + self._mailing_list_fields()
+        self.form_fields = (self._validated_emails_field() +
+                            self._unvalidated_emails_field() +
+                            form.fields(TextLine(__name__='newemail',
+                                                 title=u'Add a new address'))
+                            + self._mailing_list_fields())
 
     @property
     def initial_values(self):
+        """Set up default values for the radio widgets.
+
+        A radio widget must have a selected value, so we select the
+        first unvalidated and validated email addresses in the lists
+        to be the default for the corresponding widgets.
+
+        The only exception is if the user has a preferred email
+        address: then, that address is used as the default validated
+        email address.
+        """
         validated = self.context.preferredemail
         if validated is None:
             validated = self.context.validatedemails[0]
@@ -2581,7 +2602,7 @@ class PersonEditEmailsView(LaunchpadFormView):
     def _validated_emails_field(self):
         """Create a field with a vocabulary of validated emails.
 
-        :return: A form.Fields instance containing the list of emails
+        :return: A Choice field containing the list of validated emails
         """
         terms = [SimpleTerm(term, term.email)
                  for term in self.context.validatedemails]
@@ -2599,7 +2620,7 @@ class PersonEditEmailsView(LaunchpadFormView):
     def _unvalidated_emails_field(self):
         """Create a field with a vocabulary of unvalidated and guessed emails.
 
-        :return: A form.Fields instance containing the list of emails
+        :return: A Choice field containing the list of emails
         """
         terms = []
         for term in self.unvalidated_addresses:
@@ -2617,6 +2638,7 @@ class PersonEditEmailsView(LaunchpadFormView):
 
     def _mailing_list_fields(self):
         """Creates a field for each mailing list the user can subscribe to.
+
         If a team doesn't have a mailing list, or the mailing list
         isn't usable, it's not included.
         """
@@ -2647,10 +2669,11 @@ class PersonEditEmailsView(LaunchpadFormView):
 
     @property
     def mailing_list_widgets(self):
+        """Returns all the mailing list subscription widgets."""
         return [widget for widget in self.widgets
                 if 'field.subscription.' in widget.name]
 
-    def _validate_selected_address(self, data, validatedAddress):
+    def _validate_selected_address(self, data, field='VALIDATED_SELECTED'):
         """A generic validator for this view's actions.
 
         Makes sure one (and only one) email address is selected and that
@@ -2658,11 +2681,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         be represented by an EmailAddress object or (for unvalidated
         addresses) a LoginToken object.
         """
-        if validatedAddress:
-            field = 'VALIDATED_SELECTED'
-        else:
-            field = 'UNVALIDATED_SELECTED'
-        self._validate(action, data, [self.widgets[field]])
+        self.validate_widgets(data, [self.widgets[field].context.__name__])
 
         email = data.get(field)
         if email is None:
@@ -2676,7 +2695,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         if IEmailAddress.providedBy(email):
             person = email.person
 
-            assert person.id == self.context.id, (
+            assert person == self.context, (
                 "differing ids in emailaddress.person.id(%s,%d) == "
                 "self.context.id(%s,%d) (%s)"
                 % (person.name, person.id, self.context.name, self.context.id,
@@ -2711,7 +2730,8 @@ class PersonEditEmailsView(LaunchpadFormView):
 
     def validate_action_remove_validated(self, action, data):
         """Make sure the user selected an email address to remove."""
-        emailaddress = self._validate_selected_address(data, True)
+        emailaddress = self._validate_selected_address(data,
+                                                       'VALIDATED_SELECTED')
         if emailaddress is None:
             return self.errors
 
@@ -2720,7 +2740,8 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "You can't remove %s because it's your contact email "
                 "address." % self.context.preferredemail.email)
             return self.errors
-        assert self.context.preferredemail is not None
+        assert (self.context.preferredemail is not None,
+                "User no longer has a preferred email!")
         return self.errors
 
     @action(_("Remove"), name="remove_validated",
@@ -2821,6 +2842,99 @@ class PersonEditEmailsView(LaunchpadFormView):
         newemail = data['newemail']
         # XXX - Why lower()? Some parts of an email address are case-sensitive.
         #newemail = self.request.form.get("newemail", "").strip().lower()
+        self.request.response.addInfoNotification(
+            "The email address '%s' has been removed." % emailaddress.email)
+        self.next_url = self.action_url
+
+    def validate_action_set_preferred(self, action, data):
+        """Make sure the user selected an address."""
+        emailaddress = self._validate_selected_address(data,
+                                                       'VALIDATED_SELECTED')
+        if emailaddress is None:
+            return self.errors
+
+        if emailaddress.status == EmailAddressStatus.PREFERRED:
+            self.request.response.addInfoNotification(
+                "%s is already set as your contact address." % (
+                    emailaddress.email))
+        return self.errors
+
+    @action(_("Set as Contact Address"), name="set_preferred",
+            validator=validate_action_set_preferred)
+    def action_set_preferred(self, action, data):
+        """Set the selected email as preferred for the person in context."""
+        emailaddress = data['VALIDATED_SELECTED']
+        if emailaddress.status != EmailAddressStatus.PREFERRED:
+            self.context.setPreferredEmail(emailaddress)
+            self.request.response.addInfoNotification(
+                "Your contact address has been changed to: %s" % (
+                    emailaddress.email))
+        self.next_url = self.action_url
+
+    ### Actions to do with unvalidated email addresses.
+
+    def validate_action_confirm(self, action, data):
+        """Make sure the user selected an email address to confirm."""
+        self._validate_selected_address(data, 'UNVALIDATED_SELECTED')
+        return self.errors
+
+    @action(_('Confirm'), name='validate', validator=validate_action_confirm)
+    def action_confirm(self, action, data):
+        """Mail a validation URL to the selected email address."""
+        email = data['UNVALIDATED_SELECTED']
+        token = getUtility(ILoginTokenSet).new(
+                    self.context, getUtility(ILaunchBag).login, email.email,
+                    LoginTokenType.VALIDATEEMAIL)
+        token.sendEmailValidationRequest(self.request.getApplicationURL())
+        self.request.response.addInfoNotification(
+            "An e-mail message was sent to '%s' with "
+            "instructions on how to confirm that "
+            "it belongs to you." % email.email)
+        self.next_url = self.action_url
+
+    def validate_action_remove_unvalidated(self, action, data):
+        """Make sure the user selected an email address to remove."""
+        email = self._validate_selected_address(data, 'UNVALIDATED_SELECTED')
+        if email is not None and IEmailAddress.providedBy(email):
+            assert self.context.preferredemail.id != email.id
+        return self.errors
+
+    @action(_("Remove"), name="remove_unvalidated",
+            validator=validate_action_remove_unvalidated)
+    def action_remove_unvalidated(self, action, data):
+        """Delete the selected (un-validated) email address.
+
+        This selected address can be either on the EmailAddress table
+        marked with status NEW, or in the LoginToken table.
+        """
+        emailaddress = data['UNVALIDATED_SELECTED']
+        if IEmailAddress.providedBy(emailaddress):
+            emailaddress.destroySelf()
+            email = emailaddress.email
+        elif isinstance(emailaddress, unicode):
+            logintokenset = getUtility(ILoginTokenSet)
+            logintokenset.deleteByEmailRequesterAndType(
+                emailaddress, self.context, LoginTokenType.VALIDATEEMAIL)
+            email = emailaddress
+        else:
+            raise AssertionError("Selected address was not EmailAddress "
+                                 "or Unicode string!")
+
+        self.request.response.addInfoNotification(
+            "The email address '%s' has been removed." % email)
+        self.next_url = self.action_url
+
+    ### Actions to do with new email addresses
+
+    def validate_action_add_email(self, action, data):
+        """Make sure the user entered a valid email address.
+
+        The email address must be syntactically valid and must not already
+        be in use.
+        """
+        self.validate_widgets(data,
+                              [self.widgets['newemail'].context.__name__])
+        newemail = data['newemail']
         if not valid_email(newemail):
             self.addError(
                 "'%s' doesn't seem to be a valid email address." % newemail)
@@ -2829,15 +2943,14 @@ class PersonEditEmailsView(LaunchpadFormView):
         email = getUtility(IEmailAddressSet).getByEmail(newemail)
         person = self.context
         if email is not None:
-            if email.person.id == person.id:
+            if email.person == person:
                 self.addError(
                     "The email address '%s' is already registered as your "
                     "email address. This can be either because you already "
-                    "added this email address before or because it have "
-                    "been detected by our system as being yours. If "
-                    "it was detected by our system, it's probably shown "
-                    "on this page and is waiting to be confirmed as "
-                    "yours." % email.email)
+                    "added this email address before or because our system "
+                    "detected it as being yours. If it was detected by our "
+                    "system, it's probably shown on this page and is waiting "
+                    "to be confirmed as yours." % email.email)
             else:
                 owner = email.person
                 owner_name = urllib.quote(owner.name)
@@ -2849,8 +2962,8 @@ class PersonEditEmailsView(LaunchpadFormView):
                     '<a href="%s">%s</a>. If you think that is a '
                     'duplicated account, you can <a href="%s">merge it</a> '
                     "into your account. "
-                    % (email.email, canonical_url(owner), owner.browsername,
-                       merge_url))
+                    % (email.email, canonical_url(owner),
+                       cgi.escape(owner.browsername), merge_url))
         return self.errors
 
     @action(_("Add"), name="add_email", validator=validate_action_add_email)

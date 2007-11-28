@@ -27,5 +27,4 @@ Setting foo@baz.com again in another browser should return a nice message.
 
     >>> for msg in get_feedback_messages(second_browser.contents):
     ...     print msg
-    There is 1 error.
     foo@baz.com is already set as your contact address.
