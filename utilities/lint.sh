@@ -50,6 +50,12 @@ echo "$rules"
 if [ -z "$files" ]; then
     echo "No changed files detected."
     exit 0
+else
+    echo
+    echo "Linting changed files:"
+    for file in $files; do
+        echo "  $file"
+    done
 fi
 
 
