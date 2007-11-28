@@ -34,8 +34,21 @@ fi
 
 
 if [ -z "$1" ]; then
-    rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
-    files=`bzr st --short -r $rev | sed '/^.[MN]/!d; s/.* //'`
+    # Command line argument provided, use the defaut logic.
+    bzr diff > /dev/null
+    diff_status=$?
+    if [ $diff_status -eq 0 ] ; then
+        # No uncommitted changes in the tree, lint changes relative to the parent.
+        rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
+        rev_option="-r $rev"
+    elif [ $diff_status -eq 1 ] ; then
+        # Uncommitted changes in the tree, lint those changes.
+        rev_option=""
+    else
+        # bzr diff failed
+        exit 1
+    fi
+    files=`bzr st --short $rev_option | sed '/^.[MN]/!d; s/.* //'`
 else
     # Add newlines so grep filters out pyfiles correctly later.
     files=`echo $* | tr " " "\n"`
