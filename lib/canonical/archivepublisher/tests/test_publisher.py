@@ -157,7 +157,8 @@ class TestPublisher(TestNativePublishingBase):
         pub_source2.sync()
         self.assertDirtyPocketsContents(
             [('hoary-test', 'RELEASE')], publisher.dirty_pockets)
-        self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source2.status,
+            PackagePublishingStatus.PUBLISHED)
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
 
     def testPublishingSpecificPocket(self):
@@ -307,7 +308,8 @@ class TestPublisher(TestNativePublishingBase):
         helper function: 'getPublisher'
         """
         # stub parameters
-        allowed_suites = [('breezy-autotest', PackagePublishingPocket.RELEASE)]
+        allowed_suites = [('breezy-autotest',
+            PackagePublishingPocket.RELEASE)]
         distsroot = None
 
         distro_publisher = getPublisher(
@@ -425,7 +427,8 @@ class TestPublisher(TestNativePublishingBase):
         pub_bin = self.getPubBinary(
             pub_source=pub_source,
             description="   My leading spaces are normalised to a single "
-                        "space but not trailing.  \n    It does nothing, though")
+                        "space but not trailing.  \n    It does nothing, "
+                        "though")
 
         archive_publisher.A_publish(False)
         self.layer.txn.commit()
