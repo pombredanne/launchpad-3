@@ -2691,7 +2691,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         be represented by an EmailAddress object or (for unvalidated
         addresses) a LoginToken object.
         """
-        self.validate_widgets(data, [self.widgets[field].context.__name__])
+        self.validate_widgets(data, [field])
 
         email = data.get(field)
         if email is None:
@@ -2760,98 +2760,6 @@ class PersonEditEmailsView(LaunchpadFormView):
         """Delete the selected (validated) email address."""
         emailaddress = data['VALIDATED_SELECTED']
         emailaddress.destroySelf()
-        self.request.response.addInfoNotification(
-            "The email address '%s' has been removed." % emailaddress.email)
-        self.next_url = self.action_url
-
-    def validate_action_set_preferred(self, action, data):
-        """Make sure the user selected an address."""
-        emailaddress = self._validate_selected_address(data, True)
-        if emailaddress is None:
-            return self.errors
-
-        if emailaddress.status == EmailAddressStatus.PREFERRED:
-            self.addError(
-                "%s is already set as your contact address." % (
-                    emailaddress.email))
-        return self.errors
-
-    @action(_("Set as Contact Address"), name="set_preferred",
-            validator=validate_action_set_preferred)
-    def action_set_preferred(self, action, data):
-        """Set the selected email as preferred for the person in context."""
-        emailaddress = data['VALIDATED_SELECTED']
-        self.context.setPreferredEmail(emailaddress)
-        self.request.response.addInfoNotification(
-            "Your contact address has been changed to: %s" % (
-                emailaddress.email))
-        self.next_url = self.action_url
-
-    ### Actions to do with unvalidated email addresses.
-
-    def validate_action_confirm(self, action, data):
-        """Make sure the user selected an email address to confirm."""
-        self._validate_selected_address(data, False)
-        return self.errors
-
-    @action(_('Confirm'), name='validate', validator=validate_action_confirm)
-    def action_confirm(self, action, data):
-        """Mail a validation URL to the selected email address."""
-        email = data['UNVALIDATED_SELECTED']
-        token = getUtility(ILoginTokenSet).new(
-                    self.context, getUtility(ILaunchBag).login, email.email,
-                    LoginTokenType.VALIDATEEMAIL)
-        token.sendEmailValidationRequest(self.request.getApplicationURL())
-        self.request.response.addInfoNotification(
-            "An e-mail message was sent to '%s' with "
-            "instructions on how to confirm that "
-            "it belongs to you." % email.email)
-        self.next_url = self.action_url
-
-    def validate_action_remove_unvalidated(self, action, data):
-        """Make sure the user selected an email address to remove."""
-        email = self._validate_selected_address(data, False)
-        if email is not None and IEmailAddress.providedBy(email):
-            assert self.context.preferredemail.id != email.id
-        return self.errors
-
-    @action(_("Remove"), name="remove_unvalidated",
-            validator=validate_action_remove_unvalidated)
-    def action_remove_unvalidated(self, action, data):
-        """Delete the selected (un-validated) email address.
-
-        This selected address can be either on the EmailAddress table
-        marked with status NEW, or in the LoginToken table.
-        """
-        emailaddress = data['UNVALIDATED_SELECTED']
-        if IEmailAddress.providedBy(emailaddress):
-            emailaddress.destroySelf()
-            email = emailaddress.email
-        elif isinstance(emailaddress, unicode):
-            logintokenset = getUtility(ILoginTokenSet)
-            logintokenset.deleteByEmailRequesterAndType(
-                emailaddress, self.context, LoginTokenType.VALIDATEEMAIL)
-            email = emailaddress
-        else:
-            raise AssertionError("Selected address was not EmailAddress "
-                                 "or Unicode string!")
-
-        self.request.response.addInfoNotification(
-            "The email address '%s' has been removed." % email)
-        self.next_url = self.action_url
-
-    ### Actions to do with new email addresses
-
-    def validate_action_add_email(self, action, data):
-        """Make sure the user entered a valid email address.
-
-        The email address must be syntactically valid and must not already
-        be in use.
-        """
-        self._validate(action, data, [self.widgets['newemail']])
-        newemail = data['newemail']
-        # XXX - Why lower()? Some parts of an email address are case-sensitive.
-        #newemail = self.request.form.get("newemail", "").strip().lower()
         self.request.response.addInfoNotification(
             "The email address '%s' has been removed." % emailaddress.email)
         self.next_url = self.action_url
@@ -2942,8 +2850,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         The email address must be syntactically valid and must not already
         be in use.
         """
-        self.validate_widgets(data,
-                              [self.widgets['newemail'].context.__name__])
+        self.validate_widgets(data, ['newemail'])
         newemail = data['newemail']
         if not valid_email(newemail):
             self.addError(
