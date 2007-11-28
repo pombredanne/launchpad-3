@@ -1271,7 +1271,7 @@ class LpQueryDistro(LaunchpadScript):
         Also initialise the list 'allowed_arguments'.
         """
         self.allowed_actions = [
-            'current', 'development', 'archs', 'official_archs',
+            'current', 'development', 'supported', 'archs', 'official_archs',
             'nominated_arch_indep']
         self.usage = '%%prog <%s>' % ' | '.join(self.allowed_actions)
         LaunchpadScript.__init__(self, *args, **kwargs)
@@ -1386,7 +1386,7 @@ class LpQueryDistro(LaunchpadScript):
 
         It is restricted for the context distribution.
 
-        It may raise LaunchpadScriptFailure if a suite was passed in the
+        It may raise LaunchpadScriptFailure if a suite was passed on the
         command-line or if not CURRENT distroseries was found.
         """
         self.checkNoSuiteDefined()
@@ -1403,7 +1403,7 @@ class LpQueryDistro(LaunchpadScript):
 
         It is restricted for the context distribution.
 
-        It may raise `LaunchpadScriptFailure` if a suite was passed in the
+        It may raise `LaunchpadScriptFailure` if a suite was passed on the
         command-line.
 
         Return the first FROZEN distroseries found if there is no
@@ -1428,6 +1428,35 @@ class LpQueryDistro(LaunchpadScript):
                 self.location.distribution.name)
 
         return series.name
+
+    @property
+    def get_supported(self):
+        """Return the names of the distroseries currently supported.
+
+        'supported' means not EXPERIMENTAL or OBSOLETE.
+
+        It is restricted for the context distribution.
+
+        It may raise `LaunchpadScriptFailure` if a suite was passed on the
+        command-line or if there is not supported distroseries for the
+        distribution given.
+
+        Return a space-separated list of distroseries names.
+        """
+        self.checkNoSuiteDefined()
+        supported_series = []
+        unsupported_status = (DistroSeriesStatus.EXPERIMENTAL,
+                              DistroSeriesStatus.OBSOLETE)
+        for distroseries in self.location.distribution:
+            if distroseries.status not in unsupported_status:
+                supported_series.append(distroseries.name)
+
+        if not supported_series:
+            raise LaunchpadScriptFailure(
+                'There is no supported distroseries for %s' %
+                self.location.distribution.name)
+
+        return " ".join(supported_series)
 
     @property
     def get_archs(self):

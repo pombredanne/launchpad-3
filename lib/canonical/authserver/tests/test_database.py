@@ -419,7 +419,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
     def test_createBranch_bad_product(self):
         # Test that creating a branch for a non-existant product fails.
         storage = DatabaseUserDetailsStorageV2(None)
-        message = "Product 'no-such-product' does not exist."
+        message = "Project 'no-such-product' does not exist."
         self.assertRaisesFault(
             NOT_FOUND_FAULT_CODE, message,
             storage._createBranchInteraction,
