@@ -1,5 +1,6 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+
 """Tests for the Launchpad code hosting Bazaar transport."""
 
 __metaclass__ = type
@@ -44,17 +45,18 @@ class TestLaunchpadServer(TestCase):
             self.mirror_transport)
 
     def test_construct(self):
-        self.assertEqual(self.backing_transport, self.server.backing_transport)
+        self.assertEqual(
+            self.backing_transport, self.server.backing_transport)
         self.assertEqual(self.user_id, self.server.user_id)
         self.assertEqual('testuser', self.server.user_name)
         self.assertEqual(self.authserver, self.server.authserver)
 
     def test_base_path_translation(self):
-        # Branches are stored on the filesystem by branch ID. This allows users
-        # to rename and re-assign branches without causing unnecessary disk
-        # churn. The ID is converted to four-byte hexadecimal and split into
-        # four path segments, to make sure that the directory tree doesn't get
-        # too wide and cause ext3 to have conniptions.
+        # Branches are stored on the filesystem by branch ID. This allows
+        # users to rename and re-assign branches without causing unnecessary
+        # disk churn. The ID is converted to four-byte hexadecimal and split
+        # into four path segments, to make sure that the directory tree
+        # doesn't get too wide and cause ext3 to have conniptions.
         #
         # However, branches are _accessed_ using their
         # ~person/product/branch-name. The server knows how to map this unique
@@ -93,7 +95,8 @@ class TestLaunchpadServer(TestCase):
             self.server.translate_virtual_path('/~testuser/firefox/baz/.bzr'))
         self.assertEqual(
             ('00/00/00/05/.bzr', READ_ONLY),
-            self.server.translate_virtual_path('/~name12/+junk/junk.dev/.bzr'))
+            self.server.translate_virtual_path(
+                '/~name12/+junk/junk.dev/.bzr'))
 
     def test_setUp(self):
         # Setting up the server registers its schema with the protocol
@@ -107,7 +110,8 @@ class TestLaunchpadServer(TestCase):
         # protocol handlers.
         self.server.setUp()
         self.server.tearDown()
-        self.assertFalse(self.server.scheme in _get_protocol_handlers().keys())
+        self.assertFalse(
+            self.server.scheme in _get_protocol_handlers().keys())
 
     def test_noMirrorsRequestedIfNoBranchesChanged(self):
         # Starting up and shutting down the server will send no mirror
@@ -163,8 +167,8 @@ class TestLaunchpadTransport(TestCase):
             transport.get_bytes('~testuser/firefox/baz/.bzr/hello.txt'))
 
     def test_put_mapped_file(self):
-        # Putting a file from a public branch URL stores the file in the mapped
-        # URL on the base transport.
+        # Putting a file from a public branch URL stores the file in the
+        # mapped URL on the base transport.
         transport = get_transport(self.server.get_url())
         transport.put_bytes(
             '~testuser/firefox/baz/.bzr/goodbye.txt', "Goodbye")
@@ -174,8 +178,8 @@ class TestLaunchpadTransport(TestCase):
 
     def test_cloning_updates_base(self):
         # A transport can be constructed using a path relative to another
-        # transport by using 'clone'. When this happens, it's necessary for the
-        # newly constructed transport to preserve the non-relative path
+        # transport by using 'clone'. When this happens, it's necessary for
+        # the newly constructed transport to preserve the non-relative path
         # information from the transport being cloned. It's necessary because
         # the transport needs to have the '~user/product/branch-name' in order
         # to translate paths.
@@ -220,8 +224,8 @@ class TestLaunchpadTransport(TestCase):
 
     def test_complete_non_existent_path_not_found(self):
         # Bazaar looks for files inside a branch directory before it looks for
-        # the branch itself. If the branch doesn't exist, any files it asks for
-        # are not found. i.e. we raise NoSuchFile
+        # the branch itself. If the branch doesn't exist, any files it asks
+        # for are not found. i.e. we raise NoSuchFile
         transport = get_transport(self.server.get_url())
         self.assertRaises(
             errors.NoSuchFile,
@@ -252,12 +256,13 @@ class TestLaunchpadTransport(TestCase):
         files = list(
             transport.clone('~testuser/firefox/baz').iter_files_recursive())
         backing_transport = self.backing_transport.clone('00/00/00/01')
-        self.assertEqual(list(backing_transport.iter_files_recursive()), files)
+        self.assertEqual(
+            list(backing_transport.iter_files_recursive()), files)
 
     def test_make_two_directories(self):
         # Bazaar doesn't have a makedirs() facility for transports, so we need
-        # to make sure that we can make a directory on the backing transport if
-        # its parents exist and if they don't exist.
+        # to make sure that we can make a directory on the backing transport
+        # if its parents exist and if they don't exist.
         transport = get_transport(self.server.get_url())
         transport.mkdir('~testuser/thunderbird/banana')
         transport.mkdir('~testuser/thunderbird/orange')

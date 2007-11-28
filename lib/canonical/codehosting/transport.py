@@ -46,8 +46,8 @@ def split_with_padding(a_string, splitter, num_fields, padding=None):
 # XXX: JonathanLange 2007-06-13 bugs=120135:
 # This should probably be part of bzrlib.
 def makedirs(base_transport, path, mode=None):
-    """Create 'path' on 'base_transport', even if parents of 'path' don't exist
-    yet.
+    """Create 'path' on 'base_transport', even if parents of 'path' don't
+    exist yet.
     """
     need_to_create = []
     transport = base_transport.clone(path)
@@ -165,7 +165,8 @@ class LaunchpadServer(Server):
         path_segments = get_path_segments(virtual_path)
         if len(path_segments) != 3:
             raise PermissionDenied(
-                'This method is only for creating branches: %s' % (virtual_path,))
+                'This method is only for creating branches: %s'
+                % (virtual_path,))
         branch_id = self._make_branch(*path_segments)
         if branch_id == '':
             raise PermissionDenied(
@@ -214,8 +215,8 @@ class LaunchpadServer(Server):
                     raise
 
     def _translate_path(self, virtual_path):
-        """Translate a virtual path into an internal branch id, permissions and
-        relative path.
+        """Translate a virtual path into an internal branch id, permissions
+        and relative path.
 
         'virtual_path' is a path that points to a branch or a path within a
         branch. This method returns the id of the branch, the permissions that
@@ -223,8 +224,8 @@ class LaunchpadServer(Server):
         to that branch. In short, everything you need to be able to access a
         file in a branch.
         """
-        # We can safely pad with '' because we can guarantee that no product or
-        # branch name is the empty string. (Mapping '' to '+junk' happens
+        # We can safely pad with '' because we can guarantee that no product
+        # or branch name is the empty string. (Mapping '' to '+junk' happens
         # in _iter_branches). 'user' is checked later.
         user_dir, product, branch, path = split_with_padding(
             virtual_path.lstrip('/'), '/', 4, padding='')
@@ -238,8 +239,8 @@ class LaunchpadServer(Server):
         return branch_id, permissions, path
 
     def translate_virtual_path(self, virtual_path):
-        """Translate an absolute virtual path into the real path on the backing
-        transport.
+        """Translate an absolute virtual path into the real path on the
+        backing transport.
 
         :raise UntranslatablePath: If path is untranslatable. This could be
             because the path is too short (doesn't include user, product and
@@ -264,7 +265,8 @@ class LaunchpadServer(Server):
         if '.bzr' in segments:
             segments = segments[:segments.index('.bzr')]
         if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
-            raise PermissionDenied(FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
+            raise PermissionDenied(
+                FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
 
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
