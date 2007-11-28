@@ -22,7 +22,7 @@ from canonical.launchpad.database.publishing import (
     BinaryPackageFilePublishing, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, ISecureSourcePackagePublishingHistory,
-    ISecureBinaryPackagePublishingHistory, NotInPool, PackagePublishingStatus)
+    ISecureBinaryPackagePublishingHistory, NotInPool)
 
 
 def getDeathRow(archive, log, pool_root_override):
