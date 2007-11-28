@@ -3,6 +3,7 @@
 Test the examples included in the system documentation in
 lib/canonical/launchpad/doc.
 """
+# pylint: disable-msg=C0103
 
 import logging
 import os
@@ -27,6 +28,7 @@ from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
     IPersonSet)
 from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
@@ -207,9 +209,12 @@ def _createUbuntuBugTaskLinkedToQuestion():
     ubuntu_question.linkBug(bug)
     [ubuntu_bugtask] = bug.bugtasks
     login(ANONYMOUS)
+    # Remove the notifcations for the newly created question.
+    notifications = pop_notifications()
     return ubuntu_bugtask.id
 
 def bugLinkedToQuestionSetUp(test):
+    """Setup the question and linked bug for testing."""
     def get_bugtask_linked_to_question():
         return getUtility(IBugTaskSet).get(bugtask_id)
     setUp(test)
@@ -705,7 +710,7 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
             special[filename] = cls.createLayeredDocFileSuite(
                 filename, stdout_logging=True)
 
-        # Adds a copy of bug-set-status.txt that will be run with
+        # Adds a copy of some bug doctests that will be run with
         # the processmail user.
         def bugSetStatusSetUp(test):
             setUp(test)
@@ -714,6 +719,16 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         special['bug-set-status.txt-processmail'] = LayeredDocFileSuite(
                 '../doc/bug-set-status.txt',
                 setUp=bugSetStatusSetUp, tearDown=tearDown,
+                optionflags=default_optionflags, layer=cls,
+                stdout_logging=False)
+
+        def bugmessageSetUp(test):
+            setUp(test)
+            login('no-priv@canonical.com')
+
+        special['bugmessage.txt-processmail'] = LayeredDocFileSuite(
+                '../doc/bugmessage.txt',
+                setUp=bugmessageSetUp, tearDown=tearDown,
                 optionflags=default_optionflags, layer=cls,
                 stdout_logging=False)
 

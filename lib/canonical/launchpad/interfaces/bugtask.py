@@ -19,6 +19,7 @@ __all__ = [
     'IBugTaskDelta',
     'IBugTaskSearch',
     'IBugTaskSet',
+    'ICreateQuestionFromBugTaskForm',
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
@@ -27,6 +28,7 @@ __all__ = [
     'IPersonBugTaskSearch',
     'IProductSeriesBugTask',
     'ISelectResultsSlicable',
+    'IRemoveQuestionFromBugTaskForm',
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
@@ -981,3 +983,19 @@ class IAddBugTaskWithProductCreationForm(Interface):
 
 class INominationsReviewTableBatchNavigator(ITableBatchNavigator):
     """Marker interface to render custom template for the bug nominations."""
+
+
+class ICreateQuestionFromBugTaskForm(Interface):
+    """Form for creating and question from a bug."""
+    comment = Text(
+        title=_('Comment'),
+        description=_('An explanation of why the bug report is a question.'),
+        required=False)
+
+
+class IRemoveQuestionFromBugTaskForm(Interface):
+    """Form for removing a question created from a bug."""
+    comment = Text(
+        title=_('Comment'),
+        description=_('An explanation of why the bug report is valid.'),
+        required=False)
