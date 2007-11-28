@@ -207,7 +207,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Expected acceptance email not rejection. Actually Got:\n%s"
                 % raw_msg)
 
-    def _publishPackage(self, packagename, version, source=True, archive=None):
+    def _publishPackage(self, packagename, version, source=True,
+                        archive=None):
         """Publish a single package that is currently NEW in the queue."""
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.NEW, name=packagename,

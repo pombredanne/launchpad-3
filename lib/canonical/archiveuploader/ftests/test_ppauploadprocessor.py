@@ -33,7 +33,8 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         # Let's make 'name16' person member of 'launchpad-beta-tester'
         # team only in the context of this test.
-        beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+        beta_testers = getUtility(
+            ILaunchpadCelebrities).launchpad_beta_testers
         admin = getUtility(ILaunchpadCelebrities).admin
         self.name16 = getUtility(IPersonSet).getByName("name16")
         beta_testers.addMember(self.name16, admin)
@@ -182,7 +183,8 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
             "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
-        # Create a build record for source bar in breezy-i386 distroarchseries.
+        # Create a build record for source bar in
+        # breezy-i386 distroarchseries.
         pub_sources = self.name16.archive.getPublishedSources(name='bar')
         [pub_bar] = pub_sources
         build_bar_i386 = pub_bar.sourcepackagerelease.createBuild(
@@ -195,7 +197,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        # The binary upload was accepted and it's waiting in queue.
+        # The binary upload was accepted and it's waiting in the queue.
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
             version="1.0-1", exact_match=True, archive=self.name16.archive)
@@ -220,8 +222,8 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
             cprov_pub_bar.sourcepackagerelease.upload_archive.title,
             'PPA for Foo Bar')
 
-        # Create a build record for source bar for breezy-i386 distroarchseries
-        # in cprov PPA.
+        # Create a build record for source bar for breezy-i386
+        # distroarchseries in cprov PPA.
         build_bar_i386 = cprov_pub_bar.sourcepackagerelease.createBuild(
             self.breezy['i386'], PackagePublishingPocket.RELEASE,
             cprov.archive)
@@ -232,7 +234,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~cprov/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        # The binary upload was accepted and it's waiting in queue.
+        # The binary upload was accepted and it's waiting in the queue.
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
             version="1.0-1", exact_match=True, archive=cprov.archive)
@@ -372,7 +374,8 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
             purpose=ArchivePurpose.PPA)
         self.layer.commit()
 
-        upload_dir = self.queueUpload("bar_1.0-1", "~ubuntu-translators/ubuntu")
+        upload_dir = self.queueUpload(
+            "bar_1.0-1", "~ubuntu-translators/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [""]
@@ -382,7 +385,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(pending_ppas.count(), 0)
 
     def testUploadToSomeoneElsePPA(self):
-        """Upload to a someone else's PPA gets rejected with proper message."""
+        """Upload to a someone else's PPA gets rejected."""
         kinnison = getUtility(IPersonSet).getByName("kinnison")
         getUtility(IArchiveSet).new(
             owner=kinnison, distribution=self.ubuntu,
@@ -428,7 +431,8 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         keep this test as a simple reference to the check disabled in code
         (uploadpolicy.py).
         """
-        beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+        beta_testers = getUtility(
+            ILaunchpadCelebrities).launchpad_beta_testers
         self.name16.leave(beta_testers)
         # Pop the message notifying the membership modification.
         unused = stub.test_emails.pop()
@@ -463,7 +467,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
             recipients=[self.name16_recipient, self.kinnison_recipient])
 
     def testUploadWithMismatchingPPANotation(self):
-        """Upload with mismatching PPA notation gets proper rejection email."""
+        """Upload with mismatching PPA notation results in rejection email."""
         upload_dir = self.queueUpload("bar_1.0-1", "biscuit/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
@@ -484,7 +488,8 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
 
     def testUploadWithMismatchingPath(self):
         """Upload with mismating path gets proper rejection email."""
-        upload_dir = self.queueUpload("bar_1.0-1", "ubuntu/one/two/three/four")
+        upload_dir = self.queueUpload(
+            "bar_1.0-1", "ubuntu/one/two/three/four")
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
