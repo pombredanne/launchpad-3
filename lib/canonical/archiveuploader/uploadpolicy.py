@@ -10,9 +10,8 @@ from zope.component import getUtility
 
 from canonical.archiveuploader.nascentuploadfile import UploadError
 from canonical.launchpad.interfaces import (
-    IDistributionSet, ILaunchpadCelebrities)
-from canonical.lp.dbschema import (
-    ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket)
+    ArchivePurpose, DistroSeriesStatus, IDistributionSet,
+    ILaunchpadCelebrities, PackagePublishingPocket)
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
@@ -268,7 +267,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
             # flag). This code will be revisited before releasing PPA
             # publicly.
             self.checkSignerIsUbuntero(upload)
-            self.checkSignerIsBetaTester(upload)
+            #self.checkSignerIsBetaTester(upload)
         else:
             if self.pocket == PackagePublishingPocket.SECURITY:
                 upload.reject(
@@ -277,8 +276,14 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def autoApprove(self, upload):
         """The insecure policy only auto-approves RELEASE pocket stuff.
 
-        Additionally, we only auto-approve if the distroseries is not FROZEN.
+        PPA uploads are always auto-approved.
+        Other uploads (to main archives) are only auto-approved if the
+        distroseries is not FROZEN (note that we already performed the
+        IDistroSeries.canUploadToPocket check in the checkUpload base method).
         """
+        if upload.is_ppa:
+            return True
+
         if self.pocket == PackagePublishingPocket.RELEASE:
             if (self.distroseries.status !=
                 DistroSeriesStatus.FROZEN):

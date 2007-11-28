@@ -1,4 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
+
 """Logging setup for scripts.
 
 Don't import from this module. Import it from canonical.scripts.
@@ -49,6 +51,8 @@ class FakeLogger:
 
     def warning(self, *stuff, **kw):
         self.message('WARNING', *stuff, **kw)
+
+    warn = warning
 
     def error(self, *stuff, **kw):
         self.message('ERROR', *stuff, **kw)

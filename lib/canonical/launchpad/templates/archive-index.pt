@@ -12,14 +12,25 @@
 <body>
 
     <metal:heading fill-slot="pageheading">
-      <h1 tal:content="context/title">Foo Bar PPA</h1>
+      <h2 style="margin-top: 0">URL: <a tal:attributes="href context/archive_url"
+       tal:content="context/archive_url">url</a></h2>
     </metal:heading>
 
     <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure context/owner/@@+portlet-details" />
     </metal:leftportlets>
 
     <div metal:fill-slot="main">
+
+    <script>
+    <!--
+        function updateSeries(select) {
+            var deb = document.getElementById('series-deb');
+            deb.innerHTML = select.value;
+            var deb_src = document.getElementById('series-deb-src');
+            deb_src.innerHTML = select.value;
+        }
+    //-->
+    </script>
 
       <tal:whiteboard condition="context/required:launchpad.Edit">
          <div id="whiteboard" class="informational"
@@ -31,17 +42,25 @@
       </tal:whiteboard>
 
       <div id="description">
-         <p>PPA description:</p>
          <tal:archive-description condition="context/description"
             replace="structure context/description/fmt:text-to-html" />
-         <p class="informational" tal:condition="not:context/description"
-            >No description available.</p>
       </div>
 
-      <p>For more information about how to configure your system to
-        use packages from this PPA see
-        <a href="https://help.launchpad.net/PPAQuickStart"
-        >quick-start guide</a>.</p>
+      <h2>sources.list entries</h2>
+
+      <div tal:condition="view/sources_in_more_than_one_series" id="series-widget-div">
+        <form style="display: inline">
+        Display entries for: <span tal:replace="structure view/plain_series_widget" />
+        </form>
+      </div>
+
+      <pre style="border: 1px solid gray; padding: 0.3em" id="sources-list-entries">
+deb <a tal:attributes="href context/archive_url"
+       tal:content="context/archive_url" /> <span id="series-deb"
+             tal:content="context/distribution/currentseries/name">gutsy</span> main
+deb-src <a tal:attributes="href context/archive_url"
+       tal:content="context/archive_url" /> <span id="series-deb-src"
+             tal:content="context/distribution/currentseries/name">gutsy</span> main</pre>
 
       <h2>Packages</h2>
 
@@ -59,22 +78,19 @@
           <li id="binary_counter">
              <span tal:replace="view/binary_count_text" />
              (<span tal:replace="context/binaries_size/fmt:bytes" />)</li>
-	      <li id="total_size">
+          <li id="total_size">
              Estimated archive size:
              <span tal:replace="context/estimated_size/fmt:bytes" /></li>
         </ul>
       </div>
 
-      <p>Browse the archive in
-         <a tal:attributes="href context/archive_url"
-            tal:content="context/archive_url" />.</p>
-
       <div>
         <form name="package_search" action="" method="GET">
-           <label for="name"> Packages with name containing:</label>
-           <input id="name" title="Package Name" size="20"
-                  type="text" name="name_filter"
+           <label for="name">Package name contains:</label>
+           <input id="field.name_filter" title="Package Name" size="20"
+                  type="text" name="field.name_filter"
                   tal:attributes="value view/name_filter"/>
+           <span tal:replace="structure view/plain_status_filter_widget" />
            <input type="submit" value="Search" />
         </form>
       </div>
@@ -85,16 +101,14 @@
            condition="python: view.name_filter is not None"
            replace="structure view/batchnav/@@+navigation-links-upper" />
 
-      <table class="listing sortable" id="packages_list" tal:condition="batch">
+      <table class="listing" id="packages_list" tal:condition="batch">
         <thead>
           <tr>
-            <th>Source</th>
+            <th colspan="2">Source</th>
             <th tal:condition="context/owner/isTeam">Uploader</th>
             <th>Published</th>
             <th>Status</th>
-            <th>Target</th>
-            <th>Pocket</th>
-            <th>Component</th>
+            <th>Series</th>
             <th>Section</th>
           </tr>
         </thead>
@@ -122,9 +136,17 @@
     </div>
 
     <p metal:fill-slot="help">
-      Here you can find information about the source packages
-      currently published in the PPA in question. This page also
-      provides estimated archive sizes.
+      You can view the current
+      <a href="https://help.launchpad.net/PPATermsofUse"
+      >Terms of Use</a> for the Launchpad PPA service.
+
+      <br />
+      <br />
+      For more information about how to configure your system to
+      use packages from this PPA see
+      <a href="https://help.launchpad.net/PPAQuickStart"
+      >quick-start guide</a>.
+
     </p>
 
   </body>

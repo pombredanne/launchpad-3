@@ -3,6 +3,13 @@
   table.
 */
 
+-- Announcement
+
+COMMENT ON TABLE Announcement IS 'A project announcement. This is a single item of news or information that the project is communicating. Announcements can be attached to a Project, a Product or a Distribution.';
+COMMENT ON COLUMN Announcement.date_announced IS 'The date at which an announcement will become public, if it is active. If this is not set then the announcement will not become public until someone consciously publishes it (which sets this date).';
+COMMENT ON COLUMN Announcement.url IS 'A web location for the announcement itself.';
+COMMENT ON COLUMN Announcement.active IS 'Whether or not the announcement is public. This is TRUE by default, but can be set to FALSE if the project "retracts" the announcement.';
+
 -- AnswerContact
 
 COMMENT ON TABLE AnswerContact IS 'Defines the answer contact for a given question target. The answer contact will be automatically notified about changes to any questions filed on the question target.';
@@ -26,6 +33,10 @@ COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when 
 COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
 COMMENT ON COLUMN Branch.mirror_request_time IS 'The time when a user requested that we mirror this branch (NULL if not requested). This will be set automatically by pushing to a hosted branch. Once mirrored, it will be set back to NULL.';
 COMMENT ON COLUMN Branch.private IS 'If the branch is private, then only the owner and subscribers of the branch can see it.';
+COMMENT ON COLUMN Branch.date_last_modified IS 'A branch is modified any time a user updates something using a view, a new revision for the branch is scanned, or the branch is linked to a bug, blueprint or merge proposal.';
+COMMENT ON COLUMN Branch.reviewer IS 'The reviewer (person or) team are able to transition merge proposals targetted at the branch throught the CODE_APPROVED state.';
+COMMENT ON COLUMN Branch.merge_robot IS 'The robot that controls the automatic landing onto this branch.';
+COMMENT ON COLUMN Branch.merge_control_status IS 'When there is no merge_robot set, the merge_control_status must be set to Manual.  If a merge_robot is set, then the branch merge_control_status can be set to Automatic which means that the merge robot will start merging the branches.';
 
 -- BranchMergeProposal
 
@@ -39,6 +50,31 @@ COMMENT ON COLUMN BranchMergeProposal.whiteboard IS 'Used to write other informa
 COMMENT ON COLUMN BranchMergeProposal.merged_revno IS 'This is the revision number of the revision on the target branch that includes the merge from the source branch.';
 COMMENT ON COLUMN BranchMergeProposal.merge_reporter IS 'This is the user that marked the proposal as merged.';
 COMMENT ON COLUMN BranchMergeProposal.date_merged IS 'This is the date that merge occurred.';
+COMMENT ON COLUMN BranchMergeProposal.commit_message IS 'This is the commit message that is to be used when the branch is landed by a robot.';
+COMMENT ON COLUMN BranchMergeProposal.queue_position IS 'The position on the merge proposal in the overall landing queue.  If the branch has a merge_robot set and the merge robot controls multiple branches then the queue position is unique over all the queued merge proposals for the landing robot.';
+COMMENT ON COLUMN BranchMergeProposal.queue_status IS 'This is the current state of the merge proposal.';
+COMMENT ON COLUMN BranchMergeProposal.date_review_requested IS 'The date that the merge proposal enters the REVIEW_REQUESTED state. This is stored so that we can determine how long a branch has been waiting for code approval.';
+COMMENT ON COLUMN BranchMergeProposal.reviewer IS 'The individual who said that the code in this branch is OK to land.';
+COMMENT ON COLUMN BranchMergeProposal.date_reviewed IS 'When the reviewer said the code is OK to land.';
+COMMENT ON COLUMN BranchMergeProposal.reviewed_revision_id IS 'The Bazaar revision ID that was approved to land.';
+COMMENT ON COLUMN BranchMergeProposal.queuer IS 'The individual who submitted the branch to the merge queue. This is usually the merge proposal registrant.';
+COMMENT ON COLUMN BranchMergeProposal.date_queued IS 'When the queuer submitted the branch to the merge queue.';
+COMMENT ON COLUMN BranchMergeProposal.queued_revision_id IS 'The Bazaar revision ID that is queued to land.';
+COMMENT ON COLUMN BranchMergeProposal.merger IS 'The merger is the person who merged the branch.';
+COMMENT ON COLUMN BranchMergeProposal.merged_revision_id IS 'The Bazaar revision ID that was actually merged.  If the owner of the source branch is a trusted person, this may be different than the revision_id that was actually queued or reviewed.';
+COMMENT ON COLUMN BranchMergeProposal.date_merge_started IS 'If the merge is performed by a bot the time the merge was started is recorded otherwise it is NULL.';
+COMMENT ON COLUMN BranchMergeProposal.date_merge_finished IS 'If the merge is performed by a bot the time the merge was finished is recorded otherwise it is NULL.';
+COMMENT ON COLUMN BranchMergeProposal.merge_log_file IS 'If the merge is performed by a bot the log file is accessible from the librarian.';
+
+
+-- BranchMergeRobot
+
+COMMENT ON TABLE BranchMergeRobot IS 'In order to have a single merge robot be able to control landings on multiple branches, we need some robot entity.';
+COMMENT ON COLUMN BranchMergeRobot.registrant IS 'The person that created the merge robot.';
+COMMENT ON COLUMN BranchMergeRobot.owner IS 'The person or team that is able to update the robot and manage the landing queue.';
+COMMENT ON COLUMN BranchMergeRobot.name IS 'The name of the robot.  This is unique for the owner.';
+COMMENT ON COLUMN BranchMergeRobot.whiteboard IS 'Any interesting comments about the robot itself.';
+COMMENT ON COLUMN BranchMergeRobot.date_created IS 'When this robot was created.';
 
 -- BranchSubscription
 
@@ -56,6 +92,12 @@ COMMENT ON COLUMN BranchVisibilityPolicy.product IS 'The product that the visibi
 COMMENT ON COLUMN BranchVisibilityPolicy.team IS 'Refers to the team that the policy applies to.  NULL is used to indicate ALL people, as there is no team defined for *everybody*.';
 COMMENT ON COLUMN BranchVisibilityPolicy.policy IS 'An enumerated type, one of PUBLIC or PRIVATE.  PUBLIC is the default value.';
 
+-- BranchWithSortKeys
+
+COMMENT ON VIEW BranchWithSortKeys IS 'A hack to allow the sorting of queries to Branch by human-meaningful keys in the face of limitations in SQLObject.  Will go away when we start using Storm.  This view has all the columns of Branch with three extra names joined on to it.';
+COMMENT ON COLUMN BranchWithSortKeys.product_name IS 'Branch.product.name';
+COMMENT ON COLUMN BranchWithSortKeys.author_name IS 'Branch.author.displayname';
+COMMENT ON COLUMN BranchWithSortKeys.owner_name IS 'Branch.owner.displayname';
 
 -- Bug
 
@@ -73,11 +115,12 @@ COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
 COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this branch became interesting to this bug, and/or may contain a fix for the bug.';
 COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
+COMMENT ON COLUMN BugBranch.registrant IS 'The person who linked the bug to the branch.';
 
 -- BugNomination
-COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distrorelease or productseries';
+COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distroseries or productseries';
 COMMENT ON COLUMN BugNomination.bug IS 'The bug being nominated.';
-COMMENT ON COLUMN BugNomination.distrorelease IS 'The distrorelease for which the bug is nominated.';
+COMMENT ON COLUMN BugNomination.distroseries IS 'The distroseries for which the bug is nominated.';
 COMMENT ON COLUMN BugNomination.productseries IS 'The productseries for which the bug is nominated.';
 COMMENT ON COLUMN BugNomination.status IS 'The status of the nomination.';
 COMMENT ON COLUMN BugNomination.date_created IS 'The date the nomination was submitted.';
@@ -118,13 +161,6 @@ task to a bug watch. In other words, we are connecting the state of the task
 to the state of the bug in a different bug tracking system. To the best of
 our ability we\'ll try and keep the bug task syncronised with the state of
 the remote bug watch.';
-
-
--- BugExternalRef
-
-COMMENT ON TABLE BugExternalRef IS 'A table to store web links to related content for bugs.';
-COMMENT ON COLUMN BugExternalRef.bug IS 'The bug to which this URL is relevant.';
-COMMENT ON COLUMN BugExternalRef.owner IS 'This refers to the person who created the link.';
 
 
 -- BugNotification
@@ -177,6 +213,11 @@ COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker en
 -- BugCve
 
 COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
+
+
+-- BugWatch
+
+COMMENT ON COLUMN BugWatch.last_error_type IS 'The type of error which last prevented this entry from being updated. Legal values are defined by the BugWatchErrorType enumeration.';
 
 
 -- CodeImport
@@ -273,15 +314,15 @@ COMMENT ON COLUMN DistributionSourcePackageCache.binpkgdescriptions IS 'The aggr
 COMMENT ON COLUMN DistributionSourcePackageCache.changelog IS 'A concatenation of the source package release changelogs for this source package, where the status is not REMOVED.';
 
 
--- DistroReleasePackageCache
+-- DistroSeriesPackageCache
 
-COMMENT ON TABLE DistroReleasePackageCache IS 'A cache of the text associated with binary packages in the distrorelease. This table allows for fast queries to find a binary packagename that matches a given text.';
-COMMENT ON COLUMN DistroReleasePackageCache.distrorelease IS 'The distrorelease in which we are checking.';
-COMMENT ON COLUMN DistroReleasePackageCache.binarypackagename IS 'The binary package name for which we are caching details.';
-COMMENT ON COLUMN DistroReleasePackageCache.name IS 'The binary package name itself. This is just a copy of the value of binarypackagename.name. We have it here so it can be part of the full text index.';
-COMMENT ON COLUMN DistroReleasePackageCache.summary IS 'A single summary for one of the binary packages of this name in this distrorelease. We could potentially have binary packages in different architectures with the same name and different summaries, so this is a way of collapsing to one arbitrarily-chosen one, for display purposes. The chances of actually having different summaries and descriptions is pretty small. It could happen, though, because of the way package superseding works when a package does not build on a specific architecture.';
-COMMENT ON COLUMN DistroReleasePackageCache.summaries IS 'The aggregated summaries of all the binary packages with this name in this distrorelease.';
-COMMENT ON COLUMN DistroReleasePackageCache.descriptions IS 'The aggregated description of all the binary packages with this name in this distrorelease.';
+COMMENT ON TABLE DistroSeriesPackageCache IS 'A cache of the text associated with binary packages in the distroseries. This table allows for fast queries to find a binary packagename that matches a given text.';
+COMMENT ON COLUMN DistroSeriesPackageCache.distroseries IS 'The distroseries in which we are checking.';
+COMMENT ON COLUMN DistroSeriesPackageCache.binarypackagename IS 'The binary package name for which we are caching details.';
+COMMENT ON COLUMN DistroSeriesPackageCache.name IS 'The binary package name itself. This is just a copy of the value of binarypackagename.name. We have it here so it can be part of the full text index.';
+COMMENT ON COLUMN DistroSeriesPackageCache.summary IS 'A single summary for one of the binary packages of this name in this distroseries. We could potentially have binary packages in different architectures with the same name and different summaries, so this is a way of collapsing to one arbitrarily-chosen one, for display purposes. The chances of actually having different summaries and descriptions is pretty small. It could happen, though, because of the way package superseding works when a package does not build on a specific architecture.';
+COMMENT ON COLUMN DistroSeriesPackageCache.summaries IS 'The aggregated summaries of all the binary packages with this name in this distroseries.';
+COMMENT ON COLUMN DistroSeriesPackageCache.descriptions IS 'The aggregated description of all the binary packages with this name in this distroseries.';
 
 
 -- EmailAddress
@@ -361,7 +402,6 @@ COMMENT ON COLUMN Product.reviewed IS 'Whether or not someone at Canonical has r
 COMMENT ON COLUMN Product.active IS 'Whether or not this product should be considered active.';
 COMMENT ON COLUMN Product.translationgroup IS 'The TranslationGroup that is responsible for translations for this product. Note that the Product may be part of a Project which also has a TranslationGroup, in which case the translators from both the product and project translation group have permission to edit the translations of this product.';
 COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of this product\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
-COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product.';
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
 COMMENT ON COLUMN Product.official_answers IS 'Whether or not this product upstream uses Answers officialy. This is useful to help indicate whether or not that a question will receive an answer.';
@@ -376,6 +416,14 @@ COMMENT ON COLUMN Product.mugshot IS 'The library file alias of a mugshot image 
 COMMENT ON COLUMN Product.logo IS 'The library file alias of a smaller version of this product\'s mugshot.';
 COMMENT ON COLUMN Product.private_bugs IS 'Indicates whether bugs filed in this product are automatically marked as private.';
 COMMENT ON COLUMN Product.private_specs IS 'Indicates whether specs filed in this product are automatically marked as private.';
+COMMENT ON COLUMN Product.license_info IS 'Additional information about licenses that are not included in the License enumeration.';
+COMMENT ON COLUMN Product.enable_bug_expiration IS 'Indicates whether automatic bug expiration is enabled.';
+COMMENT ON COLUMN Product.official_blueprints IS 'Whether or not this product upstream uses Blueprints officially. This is useful to help indicate whether or not the upstream project will be actively watching the blueprints in Launchpad.';
+
+-- ProductLicense
+COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
+COMMENT ON COLUMN ProductLicense.product IS 'Foreign key to the product that has licenses associated with it.';
+COMMENT ON COLUMN ProductLicense.license IS 'An integer referencing a value in the License enumeration in product.py';
 
 -- ProductRelease
 
@@ -404,7 +452,7 @@ COMMENT ON COLUMN ProductSeries.driver IS 'This is a person or team who can appr
 COMMENT ON COLUMN ProductSeries.importstatus IS 'A status flag which
 gives the state of our efforts to import the upstream code from its revision
 control system and publish that in the baz revision control system. The
-allowed values are documented in dbschema.BazImportStatus.';
+allowed values are documented in ImportStatus.';
 COMMENT ON COLUMN ProductSeries.rcstype IS 'The revision control system used
 by upstream for this product series. The value is defined in
 dbschema.RevisionControlSystems.  If NULL, then there should be no CVS or
@@ -490,7 +538,6 @@ this project\'s translation process. The enum lists different approaches to
 translation, from the very open (anybody can edit any translation in any
 language) to the completely closed (only designated translators can make any
 changes at all).';
-COMMENT ON COLUMN Project.calendar IS 'The calendar associated with this project.';
 -- COMMENT ON COLUMN Project.bugtracker IS 'The external bug tracker that is used to track bugs primarily for products within this project.';
 COMMENT ON COLUMN Project.homepage_content IS 'A home page for this project in the Launchpad.';
 COMMENT ON COLUMN Project.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a project.';
@@ -506,11 +553,12 @@ COMMENT ON COLUMN ProjectRelationship.label IS 'The nature of the relationship. 
 
 
 -- POTMsgSet
-COMMENT ON TABLE POTMsgSet IS 'POTMsgSet: This table is stores a collection of msgids without their translations and all kind of information associated to that set of messages that could be found in a potemplate file.';
-
-COMMENT ON COLUMN POTMsgSet.primemsgid IS 'The id of a pomgsid that identify this message set.';
+COMMENT ON TABLE POTMsgSet IS 'This table is stores a collection of msgids
+without their translations and all kind of information associated to that set
+of messages that could be found in a potemplate file.';
 COMMENT ON COLUMN POTMsgSet.context IS 'Context uniquely defining a message when there are messages with same primemsgids.';
-COMMENT ON COLUMN POTMsgSet.alternative_msgid IS 'The alternative (non-English-based) id of a pomgsid that identifies this message set.';
+COMMENT ON COLUMN POTMsgSet.msgid_singular IS 'The singular msgid for this message.';
+COMMENT ON COLUMN POTMsgSet.msgid_plural IS 'The plural msgid for this message.';
 COMMENT ON COLUMN POTMsgSet."sequence" IS 'The position of this message set inside the potemplate.';
 COMMENT ON COLUMN POTMsgSet.potemplate IS 'The potemplate where this message set is stored.';
 COMMENT ON COLUMN POTMsgSet.commenttext IS 'The comment text that is associated to this message set.';
@@ -521,22 +569,16 @@ COMMENT ON COLUMN POTMsgSet.flagscomment IS 'The flags associated with this set 
 -- POTemplate
 COMMENT ON TABLE POTemplate IS 'This table stores a pot file for a given product.';
 COMMENT ON COLUMN POTemplate.sourcepackagename IS 'A reference to a sourcepackage name from where this POTemplate comes.';
-COMMENT ON COLUMN POTemplate.distrorelease IS 'A reference to the distribution from where this POTemplate comes.';
+COMMENT ON COLUMN POTemplate.distroseries IS 'A reference to the distribution from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version string from where this potemplate was imported last time with our buildd <-> Rosetta gateway.';
 COMMENT ON COLUMN POTemplate.header IS 'The header of a .pot file when we import it. Most important info from it is POT-Creation-Date and custom headers.';
-COMMENT ON COLUMN POTemplate.potemplatename IS 'A reference to a POTemplateName row that tells us the name/domain for this POTemplate.';
+COMMENT ON COLUMN POTemplate.name IS 'The name of the POTemplate set. It must be unique';
 COMMENT ON COLUMN POTemplate.productseries IS 'A reference to a ProductSeries from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.path IS 'The path to the .pot source file inside the tarball tree, including the filename.';
 COMMENT ON COLUMN POTemplate.from_sourcepackagename IS 'The sourcepackagename from where the last .pot file came (only if it\'s different from POTemplate.sourcepackagename)';
 COMMENT ON COLUMN POTemplate.source_file IS 'Reference to Librarian file storing the last uploaded template file.';
 COMMENT ON COLUMN POTemplate.source_file_format IS 'File format for the Librarian file referenced in "source_file" column.';
-
--- POTemplateName
-COMMENT ON TABLE POTemplateName IS 'POTemplate Name. This table stores the domains/names of a set of POTemplate rows.';
-COMMENT ON COLUMN POTemplateName.name IS 'The name of the POTemplate set. It must be unique';
-COMMENT ON COLUMN POTemplateName.title IS 'The title we are going to use every time that we render a view of this POTemplateName row.';
-COMMENT ON COLUMN POTemplateName.description IS 'A brief text about this POTemplateName so the user could know more about it.';
-COMMENT ON COLUMN POTemplateName.translationdomain IS 'The translation domain name for this POTemplateName';
+COMMENT ON COLUMN POTemplate.translation_domain IS 'The translation domain for this POTemplate';
 
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a PO file for a given PO template.';
@@ -544,51 +586,8 @@ COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of t
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
 COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
-COMMENT ON COLUMN POFile.unreviewed_count IS 'Number of POMsgSets with new, unreviewed POSubmissions.';
-
--- POSubmission
-COMMENT ON TABLE POSubmission IS 'This table records the fact
-that we saw, or someone submitted, a particular translation for a particular
-msgset under a particular licence, at a specific time.';
-COMMENT ON COLUMN POSubmission.pomsgset IS 'The message set for which the
-submission or sighting was made.';
-COMMENT ON COLUMN POSubmission.pluralform IS 'The plural form of the
-submission which was made.';
-COMMENT ON COLUMN POSubmission.potranslation IS 'The translation that was
-submitted or sighted.';
-COMMENT ON COLUMN POSubmission.person IS 'The person that made
-the submission through the web to rosetta, or the last-translator on the
-pofile that we are processing, or the person who uploaded that pofile to
-rosetta. In short, our best guess as to the person who is contributing that
-translation.';
-COMMENT ON COLUMN POSubmission.origin IS 'The source of this
-translation. This indicates whether the translation was in a pofile that we
-parsed (probably one published in a package or branch or tarball), or was
-submitted through the web.';
-COMMENT ON COLUMN POSubmission.validationstatus IS 'Says whether or not we have validated this translation. Its value is specified by dbschema.TranslationValidationStatus, with 0 the value that says this row has not been validated yet.';
-COMMENT ON COLUMN POSubmission.active IS 'Whether this submission is being used in Rosetta.';
-COMMENT ON COLUMN POSubmission.published IS 'Whether this submission is the current translation published in revision control (or in the public po files for this translation template, in the package or tarball or branch which is considered the source of it).';
-
--- POMsgSet
-COMMENT ON COLUMN POMsgSet.publishedfuzzy IS 'This indicates that this
-POMsgSet was fuzzy when it was last imported from a published PO file. By
-comparing the current fuzzy state (in the "fuzzy" field) to that, we know if
-we have changed the fuzzy condition of the messageset in Rosetta.';
-COMMENT ON COLUMN POMsgSet.publishedcomplete IS 'This indicates that this
-POMsgSet was complete when it was last imported from a published PO file. By
-"complete" we mean "has a translation for every expected plural form". We
-can compare the current completeness state (in the "iscomplete" field) to
-this, to know if we have changed the completeness of the messageset in
-Rosetta since it was imported.';
-COMMENT ON COLUMN POMsgSet.isfuzzy IS 'This indicates if the msgset is
-currently fuzzy in Rosetta. The other indicator, publishedfuzzy, shows the
-same status for the last published pofile we pulled in.';
-COMMENT ON COLUMN POMsgSet.iscomplete IS 'This indicates if we believe that
-Rosetta has an active translation for every expected plural form of this
-message set.';
-COMMENT ON COLUMN POMsgSet.reviewer IS 'The person who last reviewd the translations for this message.';
-COMMENT ON COLUMN POMsgSet.date_reviewed IS 'Last time this message was reviewed.';
-COMMENT ON COLUMN POMsgSet.language IS 'Language this POMsgSet is in; copied from its POFile for performance reasons.';
+COMMENT ON COLUMN POFile.unreviewed_count IS 'Number of POTMsgSets with new,
+unreviewed TranslationMessages for this POFile.';
 
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
@@ -613,6 +612,54 @@ COMMENT ON COLUMN SprintSpecification.registrant IS 'The person who nominated th
 COMMENT ON COLUMN SprintSpecification.decider IS 'The person who approved or declined this specification for the sprint agenda.';
 COMMENT ON COLUMN SprintSpecification.date_decided IS 'The date this specification was approved or declined for the agenda.';
 
+-- TranslationMessage
+COMMENT ON TABLE TranslationMessage IS 'This table stores a concrete
+translation for a POTMsgSet message. It knows who, when and where did it,
+and whether it was reviewed by someone and when was it reviewed.';
+COMMENT ON COLUMN TranslationMessage.pofile IS 'The translation file which
+this translation message is part of.';
+COMMENT ON COLUMN TranslationMessage.potmsgset IS 'The template message which
+this translation message is a translation of.';
+COMMENT ON COLUMN TranslationMessage.date_created IS 'The date we saw this
+translation first.';
+COMMENT ON COLUMN TranslationMessage.submitter IS 'The person that made
+the submission through the web to Launchpad, or the last translator on the
+translation file that we are processing, or the person who uploaded that
+pofile to Launchpad. In short, our best guess as to the person who is
+contributing that translation.';
+COMMENT ON COLUMN TranslationMessage.date_reviewed IS 'The date when this
+message was reviewed for last time.';
+COMMENT ON COLUMN TranslationMessage.reviewer IS 'The person who did the
+review and accepted current translations.';
+COMMENT ON COLUMN TranslationMessage.msgstr0 IS 'Translation for plural form 0
+(if any).';
+COMMENT ON COLUMN TranslationMessage.msgstr1 IS 'Translation for plural form 1
+(if any).';
+COMMENT ON COLUMN TranslationMessage.msgstr2 IS 'Translation for plural form 2
+(if any).';
+COMMENT ON COLUMN TranslationMessage.msgstr3 IS 'Translation for plural form 3
+(if any).';
+COMMENT ON COLUMN TranslationMessage.comment IS 'Text of translator
+comment from the translation file.';
+COMMENT ON COLUMN TranslationMessage.origin IS 'The source of this
+translation. This indicates whether the translation was in a translation file
+that we parsed (probably one published in a package or branch or tarball), in
+which case its value will be 1, or was submitted through the web, in which
+case its value will be 2.';
+COMMENT ON COLUMN TranslationMessage.validation_status IS 'Whether we have
+validated this translation. Being 0 the value that says this row has not been
+validated yet, 1 the value that says it is correct and 2 the value noting that
+there was an unknown error with the validation.';
+COMMENT ON COLUMN TranslationMessage.is_current IS 'Whether this translation
+is being used in Launchpad.';
+COMMENT ON COLUMN TranslationMessage.is_fuzzy IS 'Whether this translation
+must be checked before use it.';
+COMMENT ON COLUMN TranslationMessage.is_imported IS 'Whether this translation
+is being used in latest imported file.';
+COMMENT ON COLUMN TranslationMessage.was_obsolete_in_last_import IS 'Whether
+this translation was obsolete in last imported file.';
+COMMENT ON COLUMN TranslationMessage.was_fuzzy_in_last_import IS 'Whether this
+imported translation must be checked before use it.';
 
 -- Question
 COMMENT ON TABLE Question IS 'A question, or support request, for a distribution or for an application. Such questions are created by end users who need support on a particular feature or package or product.';
@@ -671,43 +718,21 @@ COMMENT ON COLUMN FAQ.last_updated_by IS 'The person who last modified the docum
 COMMENT ON COLUMN FAQ.date_last_updated IS 'The datetime when the document was last modified.';
 
 
--- DistroReleaseLanguage
+-- DistroSeriesLanguage
 
-COMMENT ON TABLE DistroReleaseLanguage IS 'A cache of the current translation status of that language across an entire distrorelease.';
-COMMENT ON COLUMN DistroReleaseLanguage.dateupdated IS 'The date these statistucs were last updated.';
-COMMENT ON COLUMN DistroReleaseLanguage.currentcount IS 'As per IRosettaStats.';
-COMMENT ON COLUMN DistroReleaseLanguage.updatescount IS 'As per IRosettaStats.';
-COMMENT ON COLUMN DistroReleaseLanguage.rosettacount IS 'As per IRosettaStats.';
-COMMENT ON COLUMN DistroReleaseLanguage.unreviewed_count IS 'As per IRosettaStats.';
-COMMENT ON COLUMN DistroReleaseLanguage.contributorcount IS 'The total number of contributors to the translation of this distrorelease into this language.';
-
--- Calendar
-
-COMMENT ON TABLE Calendar IS 'A Calendar attached to some other Launchpad object (currently People, Projects or Products)';
-COMMENT ON COLUMN Calendar.title IS 'The title of the Calendar';
-COMMENT ON COLUMN Calendar.revision IS 'An monotonically increasing counter indicating a particular version of the calendar';
-
-
--- CalendarSubscription
-COMMENT ON TABLE CalendarSubscription IS 'A subscription relationship between two calendars';
-COMMENT ON COLUMN CalendarSubscription.subject IS 'The subject of the subscription relationship';
-COMMENT ON COLUMN CalendarSubscription.object IS 'The object of the subscription relationship';
-COMMENT ON COLUMN CalendarSubscription.colour IS 'The colour used to display events from calendar \'object\' when in the context of calendar \'subject\'';
-
-COMMENT ON TABLE CalendarEvent IS 'Events belonging to calendars';
-COMMENT ON COLUMN CalendarEvent.uid IS 'A globally unique identifier for the event.  This identifier should be preserved through when importing events from a desktop calendar application';
-COMMENT ON COLUMN CalendarEvent.calendar IS 'The calendar this event belongs to';
-COMMENT ON COLUMN CalendarEvent.dtstart IS 'The start time for the event in UTC';
-COMMENT ON COLUMN CalendarEvent.duration IS 'The duration of the event';
-COMMENT ON COLUMN CalendarEvent.title IS 'A one line description of the event';
-COMMENT ON COLUMN CalendarEvent.description IS 'A multiline description of the event';
-COMMENT ON COLUMN CalendarEvent.location IS 'A location associated with the event';
+COMMENT ON TABLE DistroSeriesLanguage IS 'A cache of the current translation status of that language across an entire distroseries.';
+COMMENT ON COLUMN DistroSeriesLanguage.dateupdated IS 'The date these statistucs were last updated.';
+COMMENT ON COLUMN DistroSeriesLanguage.currentcount IS 'As per IRosettaStats.';
+COMMENT ON COLUMN DistroSeriesLanguage.updatescount IS 'As per IRosettaStats.';
+COMMENT ON COLUMN DistroSeriesLanguage.rosettacount IS 'As per IRosettaStats.';
+COMMENT ON COLUMN DistroSeriesLanguage.unreviewed_count IS 'As per IRosettaStats.';
+COMMENT ON COLUMN DistroSeriesLanguage.contributorcount IS 'The total number of contributors to the translation of this distroseries into this language.';
 
 COMMENT ON COLUMN SourcePackageName.name IS
     'A lowercase name identifying one or more sourcepackages';
 COMMENT ON COLUMN BinaryPackageName.name IS
     'A lowercase name identifying one or more binarypackages';
-COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchreleases which pertain.';
+COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchseries which pertain.';
 
 
 -- Distribution
@@ -717,7 +742,7 @@ information which lucille will use when processing uploads and
 generating archives for this distribution';
 COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit priviledges relating to this distribution. Other rights may be assigned to this role in the future.';
 COMMENT ON COLUMN Distribution.mirror_admin IS 'Person or team with privileges to mark a mirror as official.';
-COMMENT ON COLUMN Distribution.driver IS 'The team or person responsible for approving goals for each release in the distribution. This should usually be a very small team because the Distribution driver can approve items for backporting to past releases as well as the current release under development. Each distrorelease has its own driver too, so you can have the small superset in the Distribution driver, and then specific teams per distrorelease for backporting, for example, or for the current release management team on the current development focus release.';
+COMMENT ON COLUMN Distribution.driver IS 'The team or person responsible for approving goals for each release in the distribution. This should usually be a very small team because the Distribution driver can approve items for backporting to past releases as well as the current release under development. Each distroseries has its own driver too, so you can have the small superset in the Distribution driver, and then specific teams per distroseries for backporting, for example, or for the current release management team on the current development focus release.';
 COMMENT ON COLUMN Distribution.translationgroup IS 'The translation group that is responsible for all translation work in this distribution.';
 COMMENT ON COLUMN Distribution.translationpermission IS 'The level of openness of this distribution\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
 COMMENT ON COLUMN Distribution.bugcontact IS 'Person who will be automatically subscribed to every bug targeted to this distribution.';
@@ -726,34 +751,34 @@ COMMENT ON COLUMN Distribution.official_rosetta IS 'Whether or not this distribu
 COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribution uses Malone for an official bug tracker.';
 COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product upstream uses Answers officialy.';
 
-COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroRelease that should get the translation effort focus.';
+COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroSeries that should get the translation effort focus.';
 COMMENT ON COLUMN Distribution.language_pack_admin IS 'The Person or Team that handle language packs for the distro release.';
+COMMENT ON COLUMN Distribution.enable_bug_expiration IS 'Indicates whether automatic bug expiration is enabled.';
 
+-- DistroSeries
 
--- DistroRelease
-
-COMMENT ON COLUMN DistroRelease.lucilleconfig IS 'Configuration
+COMMENT ON COLUMN DistroSeries.lucilleconfig IS 'Configuration
 information which lucille will use when processing uploads and
 generating archives for this distro release';
-COMMENT ON COLUMN DistroRelease.summary IS 'A brief summary of the distro release. This will be displayed in bold at the top of the distrorelease page, above the distrorelease description. It should include any high points that are particularly important to draw to the attention of users.';
-COMMENT ON COLUMN DistroRelease.description IS 'An extensive list of the features in this release of the distribution. This will be displayed on the main distro release page, below the summary.';
-COMMENT ON COLUMN DistroRelease.hide_all_translations IS 'Whether we should hid
+COMMENT ON COLUMN DistroSeries.summary IS 'A brief summary of the distro release. This will be displayed in bold at the top of the distroseries page, above the distroseries description. It should include any high points that are particularly important to draw to the attention of users.';
+COMMENT ON COLUMN DistroSeries.description IS 'An extensive list of the features in this release of the distribution. This will be displayed on the main distro release page, below the summary.';
+COMMENT ON COLUMN DistroSeries.hide_all_translations IS 'Whether we should hid
 e all available translations for this distro release to non admin users.';
-COMMENT ON COLUMN DistroRelease.messagecount IS 'This is a cached value and may be a few hours out of sync with reality. It should, however, be in sync with the values in DistroReleaseLanguage, and should never be updated separately. The total number of translation messages in this distro release, as per IRosettaStats.';
-COMMENT ON COLUMN DistroRelease.nominatedarchindep IS 'This is the DistroArchRelease nominated to build architecture independent packages within this DistroRelase, it is mandatory for buildable distroreleases, i.e., Auto Build System will avoid to create build jobs for a DistroRelease with no nominatedarchindep, but the database model allow us to do it (for non-buildable DistroReleases). See further info in NominatedArchIndep specification.';
-COMMENT ON COLUMN DistroRelease.binarycount IS 'A cache of the number of distinct binary package names published in this distro release.';
-COMMENT ON COLUMN DistroRelease.sourcecount IS 'A cache of the number of distinct source package names published in this distro release.';
-COMMENT ON COLUMN DistroRelease.language_pack_base IS 'Current full export language pack for this distribution release.';
-COMMENT ON COLUMN DistroRelease.language_pack_delta IS 'Current language pack update based on language_pack_base information.';
-COMMENT ON COLUMN DistroRelease.language_pack_proposed IS 'Either a full or update language pack being tested to be used in language_pack_base or language_pack_delta.';
-COMMENT ON COLUMN DistroRelease.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
+COMMENT ON COLUMN DistroSeries.messagecount IS 'This is a cached value and may be a few hours out of sync with reality. It should, however, be in sync with the values in DistroSeriesLanguage, and should never be updated separately. The total number of translation messages in this distro release, as per IRosettaStats.';
+COMMENT ON COLUMN DistroSeries.nominatedarchindep IS 'This is the DistroArchSeries nominated to build architecture independent packages within this DistroRelase, it is mandatory for buildable distroseries, i.e., Auto Build System will avoid to create build jobs for a DistroSeries with no nominatedarchindep, but the database model allow us to do it (for non-buildable DistroSeries). See further info in NominatedArchIndep specification.';
+COMMENT ON COLUMN DistroSeries.binarycount IS 'A cache of the number of distinct binary package names published in this distro release.';
+COMMENT ON COLUMN DistroSeries.sourcecount IS 'A cache of the number of distinct source package names published in this distro release.';
+COMMENT ON COLUMN DistroSeries.language_pack_base IS 'Current full export language pack for this distribution release.';
+COMMENT ON COLUMN DistroSeries.language_pack_delta IS 'Current language pack update based on language_pack_base information.';
+COMMENT ON COLUMN DistroSeries.language_pack_proposed IS 'Either a full or update language pack being tested to be used in language_pack_base or language_pack_delta.';
+COMMENT ON COLUMN DistroSeries.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
 
 -- PackageUpload
-COMMENT ON TABLE PackageUpload IS 'An upload. This table stores information pertaining to uploads to a given DistroRelease/Archive.';
+COMMENT ON TABLE PackageUpload IS 'An upload. This table stores information pertaining to uploads to a given DistroSeries/Archive.';
 
 COMMENT ON COLUMN PackageUpload.status IS 'This is an integer field containing the current status of the upload. Possible values are given by the UploadStatus class in dbschema.py';
 
-COMMENT ON COLUMN PackageUpload.distrorelease IS 'This integer field refers to the DistroRelease to which this upload is targeted';
+COMMENT ON COLUMN PackageUpload.distroseries IS 'This integer field refers to the DistroSeries to which this upload is targeted';
 
 COMMENT ON COLUMN PackageUpload.pocket IS 'This is the pocket the upload is targeted at.';
 
@@ -790,7 +815,7 @@ COMMENT ON COLUMN SourcePackageName.name IS
 COMMENT ON COLUMN BinaryPackageName.name IS
     'A lowercase name identifying one or more binarypackages';
 
-COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchreleases which pertain.';
+COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchseries which pertain.';
 
 
 -- SourcePackageRelease
@@ -808,7 +833,7 @@ COMMENT ON COLUMN SourcePackageRelease.dsc IS 'Original DSC text.';
 COMMENT ON COLUMN SourcePackageRelease.section IS 'This integer field references the Section which the source package claims to be in';
 COMMENT ON COLUMN SourcePackageRelease.maintainer IS 'Reference to the person noted as source package maintainer in the DSC.';
 COMMENT ON COLUMN SourcePackageRelease.sourcepackagename IS 'Reference to a SourcePackageName.';
-COMMENT ON COLUMN SourcePackageRelease.uploaddistrorelease IS 'DistroRelease to where the source was originally uploaded.';
+COMMENT ON COLUMN SourcePackageRelease.upload_distroseries IS 'DistroSeries to where the source was originally uploaded.';
 COMMENT ON COLUMN SourcePackageRelease.format IS 'Source package format constant, SourcePackageReleaseFormat.';
 COMMENT ON COLUMN SourcePackageRelease.dsc_maintainer_rfc822 IS 'The original maintainer line in RFC-822 format, to be used in archive indexes.';
 COMMENT ON COLUMN SourcePackageRelease.dsc_standards_version IS 'DSC standards version (such as "3.6.2", "3.5.9", etc) used to build this source.';
@@ -820,7 +845,7 @@ COMMENT ON COLUMN SourcePackageRelease.copyright IS 'The copyright associated wi
 -- SecureBinaryPackagePublishingHistory
 COMMENT ON TABLE SecureBinaryPackagePublishingHistory IS 'PackagePublishingHistory: The history of a BinaryPackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.binarypackagerelease IS 'The binarypackage being published.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.distroarchrelease IS 'The distroarchrelease into which the binarypackage is being published.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.distroarchseries IS 'The distroarchseries into which the binarypackage is being published.';
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.status IS 'The current status of the publishing.';
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.component IS 'The component into which the publishing takes place.';
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.section IS 'The section into which the publishing takes place.';
@@ -832,13 +857,18 @@ COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.supersededby IS 'The buil
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the package is/was scheduled to be deleted.';
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.dateremoved IS 'The date/time at which the package was actually deleted.';
-COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distrorelease name such as the UPDATES pocket (-updates) or the SECURITY pocket (-security).';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distroseries name such as the UPDATES pocket (-updates) or the SECURITY pocket (-security).';
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.archive IS 'Target archive for this publishing record.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
+
+-- BinaryPackagePublishingHistory and PublishedPackage Views
+
 COMMENT ON VIEW BinaryPackagePublishingHistory IS 'View on SecureBinaryPackagePublishingHistory that restricts access to embargoed entries';
 
-COMMENT ON VIEW PublishedPackageView IS
+COMMENT ON VIEW PublishedPackage IS
     'A very large view that brings together all the information about
     packages that are currently being published within a distribution. This
     view was designed for the page which shows packages published in the
@@ -846,7 +876,7 @@ COMMENT ON VIEW PublishedPackageView IS
 
 -- ProcessorFamily
 
-COMMENT ON TABLE ProcessorFamily IS 'An architecture, that might consist of several actual processors. Different distributions call these architectures different things, so we have an "architecturetag" in DistroArchRelease that might be different to the architecture\'s name.';
+COMMENT ON TABLE ProcessorFamily IS 'An architecture, that might consist of several actual processors. Different distributions call these architectures different things, so we have an "architecturetag" in DistroArchSeries that might be different to the architecture\'s name.';
 COMMENT ON COLUMN ProcessorFamily.name IS 'The name of the architecture. This is a short unix-style name such as i386 or amd64';
 COMMENT ON COLUMN ProcessorFamily.title IS 'A title for the architecture. For example "Intel i386 Compatible".';
 COMMENT ON COLUMN ProcessorFamily.description IS 'A description for this processor family. It might include any gotchas such as the fact that i386 does not necessarily mean that code would run on a 386... Ubuntu for example requires a 486.';
@@ -857,12 +887,13 @@ COMMENT ON TABLE Processor IS 'A single processor for which code might be compil
 COMMENT ON COLUMN Processor.name IS 'The name of this processor, for example, i386, Pentium, P2, P3, P4, Itanium, Itanium2, K7, Athlon, Opteron... it should be short and unique.';
 COMMENT ON COLUMN Processor.family IS 'The ProcessorFamily for this Processor.';
 
--- DistroArchRelease
+-- DistroArchSeries
 
-COMMENT ON COLUMN DistroArchRelease.processorfamily IS 'A link to the ProcessorFamily table, giving the architecture of this DistroArchRelease.';
-COMMENT ON COLUMN DistroArchRelease.architecturetag IS 'The name of this architecture in the context of this specific distro release. For example, some distributions might label amd64 as amd64, others might call is x86_64. This information is used, for example, in determining the names of the actual package files... such as the "amd64" part of "apache2_2.0.56-1_amd64.deb"';
-COMMENT ON COLUMN DistroArchRelease.official IS 'Whether or not this architecture or "port" is an official release. If it is not official then you may not be able to install it or get all the packages for it.';
-COMMENT ON COLUMN DistroArchRelease.package_count IS 'A cache of the number of binary packages published in this distro arch release. The count only includes packages published in the release pocket.';
+COMMENT ON COLUMN DistroArchSeries.processorfamily IS 'A link to the ProcessorFamily table, giving the architecture of this DistroArchSeries.';
+COMMENT ON COLUMN DistroArchSeries.architecturetag IS 'The name of this architecture in the context of this specific distro release. For example, some distributions might label amd64 as amd64, others might call is x86_64. This information is used, for example, in determining the names of the actual package files... such as the "amd64" part of "apache2_2.0.56-1_amd64.deb"';
+COMMENT ON COLUMN DistroArchSeries.official IS 'Whether or not this architecture or "port" is an official release. If it is not official then you may not be able to install it or get all the packages for it.';
+COMMENT ON COLUMN DistroArchSeries.package_count IS 'A cache of the number of binary packages published in this distro arch release. The count only includes packages published in the release pocket.';
+COMMENT ON COLUMN DistroArchSeries.ppa_supported IS 'Whether or not PPA support should be provided by this specific distroarchseries';
 
 -- LauncpadDatabaseRevision
 COMMENT ON TABLE LaunchpadDatabaseRevision IS 'This table contains a list of the database patches that have been successfully applied to this database.';
@@ -907,7 +938,6 @@ COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will ha
 COMMENT ON COLUMN Person.teamdescription IS 'Informative description of the team. Format and restrictions are as yet undefined.';
 COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this person or team. Useful for url traversal or in places where we need to unambiguously refer to a person or team (as displayname is not unique).';
 COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset for teams). UI should be displayed in this language wherever possible.';
-COMMENT ON COLUMN Person.calendar IS 'The calendar associated with this person.';
 COMMENT ON COLUMN Person.timezone IS 'The name of the time zone this person prefers (if unset, UTC is used).  UI should display dates and times in this time zone wherever possible.';
 COMMENT ON COLUMN Person.homepage_content IS 'A home page for this person in the Launchpad. In short, this is like a personal wiki page. The person will get to edit their own page, and it will be published on /people/foo/. Note that this is in text format, and will migrate to being in Moin format as a sort of mini-wiki-homepage.';
 COMMENT ON COLUMN Person.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to that person.';
@@ -970,8 +1000,8 @@ COMMENT ON VIEW BinaryPackageFilePublishing IS 'This view is used mostly by Luci
 
 COMMENT ON TABLE SourcePackageRelease IS 'SourcePackageRelease: A source
 package release. This table represents a specific release of a source
-package. Source package releases may be published into a distrorelease, or
-even multiple distroreleases.';
+package. Source package releases may be published into a distroseries, or
+even multiple distroseries.';
 COMMENT ON COLUMN SourcePackageRelease.creator IS 'The creator of this
 sourcepackagerelease. This is the person referred to in the top entry in the
 package changelog in debian terms. Note that a source package maintainer in
@@ -982,7 +1012,7 @@ release would be recorded in the SourcePackageRelease.creator field.';
 COMMENT ON COLUMN SourcePackageRelease.version IS 'The version string for
 this source package release. E.g. "1.0-2" or "1.4-5ubuntu9.1". Note that, in
 ubuntu-style and redhat-style distributions, the version+sourcepackagename
-is unique, even across distroreleases. In other words, you cannot have a
+is unique, even across distroseries. In other words, you cannot have a
 foo-1.2-1 package in Hoary that is different from foo-1.2-1 in Warty.';
 COMMENT ON COLUMN SourcePackageRelease.dateuploaded IS 'The date/time that
 this sourcepackagerelease was first uploaded to the Launchpad.';
@@ -1015,8 +1045,8 @@ values are listed in dbschema.SourcePackageFormat';
 COMMENT ON COLUMN SourcePackageRelease.dsc IS 'The "Debian Source Control"
 file for the sourcepackagerelease, from its upload into Ubuntu for the
 first time.';
-COMMENT ON COLUMN SourcePackageRelease.uploaddistrorelease IS 'The
-distrorelease into which this source package release was uploaded into
+COMMENT ON COLUMN SourcePackageRelease.upload_distroseries IS 'The
+distroseries into which this source package release was uploaded into
 Launchpad / Ubuntu for the first time. In general, this will be the
 development Ubuntu release into which this package was uploaded. For a
 package which was unchanged between warty and hoary, this would show Warty.
@@ -1035,7 +1065,7 @@ COMMENT ON COLUMN Specification.drafter IS 'The person who has been asked to dra
 COMMENT ON COLUMN Specification.approver IS 'The person who is responsible for approving the specification in due course, and who will probably be required to review the code itself when it is being implemented.';
 COMMENT ON COLUMN Specification.product IS 'The product for which this is a feature specification. The specification must be connected either to a product, or to a distribution.';
 COMMENT ON COLUMN Specification.distribution IS 'The distribution for which this is a feature specification. The specification must be connected either to a product, or to a distribution.';
-COMMENT ON COLUMN Specification.distrorelease IS 'If this is not NULL, then it means that the release managers have targeted this feature to be released in the given distrorelease. It is not necessary to target a distrorelease, but this is a useful way of know which specifications are, for example, BreezyGoals.';
+COMMENT ON COLUMN Specification.distroseries IS 'If this is not NULL, then it means that the release managers have targeted this feature to be released in the given distroseries. It is not necessary to target a distroseries, but this is a useful way of know which specifications are, for example, BreezyGoals.';
 COMMENT ON COLUMN Specification.productseries IS 'This is an indicator that the specification is planned, or targeted, for implementation in a given product series. It is not necessary to target a spec to a series, but it is a useful way of showing which specs are planned to implement for a given series.';
 COMMENT ON COLUMN Specification.milestone IS 'This is an indicator that the feature defined in this specification is expected to be delivered for a given milestone. Note that milestones are not necessarily releases, they are a way of identifying a point in time and grouping bugs and features around that.';
 COMMENT ON COLUMN Specification.definition_status IS 'An enum called SpecificationDefinitionStatus that shows what the current status (new, draft, implemented etc) the spec is currently in.';
@@ -1045,7 +1075,7 @@ COMMENT ON COLUMN Specification.whiteboard IS 'As long as the specification is s
 COMMENT ON COLUMN Specification.superseded_by IS 'The specification which replaced this specification.';
 COMMENT ON COLUMN Specification.implementation_status IS 'The implementation status of this specification. This field is used to track the actual delivery of the feature (implementing the spec), as opposed to the definition of expected behaviour (writing the spec).';
 COMMENT ON COLUMN Specification.goalstatus IS 'Whether or not the drivers for the goal product series or distro release have accepted this specification as a goal.';
-COMMENT ON COLUMN Specification.goal_proposer IS 'The person who proposed this spec as a goal for the productseries or distrorelease.';
+COMMENT ON COLUMN Specification.goal_proposer IS 'The person who proposed this spec as a goal for the productseries or distroseries.';
 COMMENT ON COLUMN Specification.date_goal_proposed IS 'The date the spec was proposed as a goal.';
 COMMENT ON COLUMN Specification.goal_decider IS 'The person who approved or declined this goal.';
 COMMENT ON COLUMN Specification.date_goal_decided IS 'The date this goal was accepted or declined.';
@@ -1065,6 +1095,7 @@ COMMENT ON COLUMN SpecificationFeedback.queuemsg IS 'An optional text message fo
 COMMENT ON TABLE SpecificationBranch IS 'A branch related to a specification, most likely a branch for implementing the specification.  It is possible to have multiple branches for a given specification especially in the situation where the specification requires modifying multiple products.';
 COMMENT ON COLUMN SpecificationBranch.specification IS 'The specification associated with this branch.';
 COMMENT ON COLUMN SpecificationBranch.branch IS 'The branch associated to the specification.';
+COMMENT ON COLUMN SpecificationBranch.registrant IS 'The person who linked the specification to the branch.';
 
 -- SpecificationBug
 COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug. This is used to provide for easy navigation from bugs to related specs, and vice versa.';
@@ -1117,7 +1148,7 @@ COMMENT ON TABLE BinaryPackageName IS 'BinaryPackageName: A soyuz binary package
 
 -- Distribution
 
-COMMENT ON TABLE Distribution IS 'Distribution: A soyuz distribution. A distribution is a collection of DistroReleases. Distributions often group together policy and may be referred to by a name such as "Ubuntu" or "Debian"';
+COMMENT ON TABLE Distribution IS 'Distribution: A soyuz distribution. A distribution is a collection of DistroSeries. Distributions often group together policy and may be referred to by a name such as "Ubuntu" or "Debian"';
 COMMENT ON COLUMN Distribution.name IS 'The unique name of the distribution as a short lowercase name suitable for use in a URL.';
 COMMENT ON COLUMN Distribution.title IS 'The title of the distribution. More a "display name" as it were. E.g. "Ubuntu" or "Debian GNU/Linux"';
 COMMENT ON COLUMN Distribution.description IS 'A description of the distribution. More detailed than the title, this column may also contain information about the project this distribution is run by.';
@@ -1130,27 +1161,27 @@ COMMENT ON COLUMN Distribution.icon IS 'The library file alias to a small image 
 COMMENT ON COLUMN Distribution.mugshot IS 'The library file alias of a mugshot image to display as the branding of a distribution, on its home page.';
 COMMENT ON COLUMN Distribution.logo IS 'The library file alias of a smaller version of this distributions\'s mugshot.';
 
--- DistroRelease
+-- DistroSeries
 
-COMMENT ON TABLE DistroRelease IS 'DistroRelease: A soyuz distribution release. A DistroRelease is a given version of a distribution. E.g. "Warty" "Hoary" "Sarge" etc.';
-COMMENT ON COLUMN DistroRelease.distribution IS 'The distribution which contains this distrorelease.';
-COMMENT ON COLUMN DistroRelease.name IS 'The unique name of the distrorelease. This is a short name in lower case and would be used in sources.list configuration and in generated URLs. E.g. "warty" "sarge" "sid"';
-COMMENT ON COLUMN DistroRelease.title IS 'The display-name title of the distrorelease E.g. "Warty Warthog"';
-COMMENT ON COLUMN DistroRelease.description IS 'The long detailed description of the release. This may describe the focus of the release or other related information.';
-COMMENT ON COLUMN DistroRelease.version IS 'The version of the release. E.g. warty would be "4.10" and hoary would be "5.4"';
-COMMENT ON COLUMN DistroRelease.releasestatus IS 'The current release status of this distrorelease. E.g. "pre-release freeze" or "released"';
-COMMENT ON COLUMN DistroRelease.datereleased IS 'The date on which this distrorelease was released. (obviously only valid for released distributions)';
-COMMENT ON COLUMN DistroRelease.parentrelease IS 'The parent release on which this distribution is based. This is related to the inheritance stuff.';
-COMMENT ON COLUMN DistroRelease.owner IS 'The ultimate owner of this distrorelease.';
-COMMENT ON COLUMN DistroRelease.driver IS 'This is a person or team who can act as a driver for this specific release - note that the distribution drivers can also set goals for any release.';
-COMMENT ON COLUMN DistroRelease.changeslist IS 'The email address (name name) of the changes announcement list for this distrorelease. If NULL, no announcement mail will be sent.';
-COMMENT ON COLUMN DistroRelease.defer_translation_imports IS 'Don''t accept PO imports for this release just now.';
+COMMENT ON TABLE DistroSeries IS 'DistroSeries: A soyuz distribution release. A DistroSeries is a given version of a distribution. E.g. "Warty" "Hoary" "Sarge" etc.';
+COMMENT ON COLUMN DistroSeries.distribution IS 'The distribution which contains this distroseries.';
+COMMENT ON COLUMN DistroSeries.name IS 'The unique name of the distroseries. This is a short name in lower case and would be used in sources.list configuration and in generated URLs. E.g. "warty" "sarge" "sid"';
+COMMENT ON COLUMN DistroSeries.title IS 'The display-name title of the distroseries E.g. "Warty Warthog"';
+COMMENT ON COLUMN DistroSeries.description IS 'The long detailed description of the release. This may describe the focus of the release or other related information.';
+COMMENT ON COLUMN DistroSeries.version IS 'The version of the release. E.g. warty would be "4.10" and hoary would be "5.4"';
+COMMENT ON COLUMN DistroSeries.releasestatus IS 'The current release status of this distroseries. E.g. "pre-release freeze" or "released"';
+COMMENT ON COLUMN DistroSeries.datereleased IS 'The date on which this distroseries was released. (obviously only valid for released distributions)';
+COMMENT ON COLUMN DistroSeries.parent_series IS 'The parent distroseries on which this distribution is based. This is related to the inheritance stuff.';
+COMMENT ON COLUMN DistroSeries.owner IS 'The ultimate owner of this distroseries.';
+COMMENT ON COLUMN DistroSeries.driver IS 'This is a person or team who can act as a driver for this specific release - note that the distribution drivers can also set goals for any release.';
+COMMENT ON COLUMN DistroSeries.changeslist IS 'The email address (name name) of the changes announcement list for this distroseries. If NULL, no announcement mail will be sent.';
+COMMENT ON COLUMN DistroSeries.defer_translation_imports IS 'Don''t accept PO imports for this release just now.';
 
 
--- DistroArchRelease
+-- DistroArchSeries
 
-COMMENT ON TABLE DistroArchRelease IS 'DistroArchRelease: A soyuz distribution release for a given architecture. A distrorelease runs on various architectures. The distroarchrelease groups that architecture-specific stuff.';
-COMMENT ON COLUMN DistroArchRelease.distrorelease IS 'The distribution which this distroarchrelease is part of.';
+COMMENT ON TABLE DistroArchSeries IS 'DistroArchSeries: A soyuz distribution release for a given architecture. A distroseries runs on various architectures. The distroarchseries groups that architecture-specific stuff.';
+COMMENT ON COLUMN DistroArchSeries.distroseries IS 'The distribution which this distroarchseries is part of.';
 
 
 -- DistroComponentUploader
@@ -1179,6 +1210,7 @@ COMMENT ON COLUMN LibraryFileAlias.filename IS 'The name of the file. E.g. "foo_
 COMMENT ON COLUMN LibraryFileAlias.mimetype IS 'The mime type of the file. E.g. "application/x-debian-package"';
 COMMENT ON COLUMN LibraryFileAlias.expires IS 'The expiry date of this file. If NULL, this item may be removed as soon as it is no longer referenced. If set, the item will not be removed until this date. Once the date is passed, the file may be removed from disk even if this item is still being referenced (in which case content.deleted will be true)';
 COMMENT ON COLUMN LibraryFileAlias.last_accessed IS 'Roughly when this file was last retrieved from the Librarian. Initially set to this item''s creation date.';
+COMMENT ON COLUMN LibraryFileAlias.date_created IS 'The timestamp when this alias was created.';
 
 -- SourcePackageReleaseFile
 
@@ -1201,21 +1233,22 @@ COMMENT ON TABLE Milestone IS 'An identifier that helps a maintainer group toget
 COMMENT ON COLUMN Milestone.name IS 'The identifier text, e.g. "1.2."';
 COMMENT ON COLUMN Milestone.product IS 'The product for which this is a milestone.';
 COMMENT ON COLUMN Milestone.distribution IS 'The distribution to which this milestone belongs, if it is a distro milestone.';
-COMMENT ON COLUMN Milestone.distrorelease IS 'The distrorelease for which this is a milestone. A milestone on a distrorelease is ALWAYS also a milestone for the same distribution. This is because milestones started out on products/distributions but are moving to being on series/distroreleases.';
-COMMENT ON COLUMN Milestone.productseries IS 'The productseries for which this is a milestone. A milestone on a productseries is ALWAYS also a milestone for the same product. This is because milestones started out on products/distributions but are moving to being on series/distroreleases.';
+COMMENT ON COLUMN Milestone.distroseries IS 'The distroseries for which this is a milestone. A milestone on a distroseries is ALWAYS also a milestone for the same distribution. This is because milestones started out on products/distributions but are moving to being on series/distroseries.';
+COMMENT ON COLUMN Milestone.productseries IS 'The productseries for which this is a milestone. A milestone on a productseries is ALWAYS also a milestone for the same product. This is because milestones started out on products/distributions but are moving to being on series/distroseries.';
 COMMENT ON COLUMN Milestone.dateexpected IS 'If set, the date on which we expect this milestone to be delivered. This allows for optional sorting by date.';
 COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
+COMMENT ON COLUMN Milestone.description IS 'A description of the milestone. This can be used to summarize the changes included in past milestones and to document the status of current milestones.';  
 
 COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';
 COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
 COMMENT ON COLUMN PushMirrorAccess.person IS 'A person that has access to update the named archive';
 
 -- Build
-COMMENT ON TABLE Build IS 'Build: This table stores the build procedure information of a sourcepackagerelease and its results (binarypackagereleases) for a given distroarchrelease.';
+COMMENT ON TABLE Build IS 'Build: This table stores the build procedure information of a sourcepackagerelease and its results (binarypackagereleases) for a given distroarchseries.';
 COMMENT ON COLUMN Build.datecreated IS 'When the build record was created.';
 COMMENT ON COLUMN Build.datebuilt IS 'When the build record was processed.';
 COMMENT ON COLUMN Build.buildduration IS 'How long this build took to be processed.';
-COMMENT ON COLUMN Build.distroarchrelease IS 'Points the target Distroarchrelease for this build.';
+COMMENT ON COLUMN Build.distroarchseries IS 'Points the target Distroarchrelease for this build.';
 COMMENT ON COLUMN Build.processor IS 'Points to the Distroarchrelease available processor target for this build.';
 COMMENT ON COLUMN Build.sourcepackagerelease IS 'Sourcepackagerelease which originated this build.';
 COMMENT ON COLUMN Build.buildstate IS 'Stores the current build procedure state.';
@@ -1224,6 +1257,9 @@ COMMENT ON COLUMN Build.builder IS 'Points to the builder which has once process
 COMMENT ON COLUMN Build.pocket IS 'Stores the target pocket identifier for this build.';
 COMMENT ON COLUMN Build.dependencies IS 'Contains a debian-like dependency line specifying the current missing-dependencies for this package.';
 COMMENT ON COLUMN Build.archive IS 'Targeted archive for this build.';
+COMMENT ON COLUMN Build.estimated_build_duration IS 'How long does the previous attempt to build this source took in this architecture.';
+COMMENT ON COLUMN Build.build_warnings IS 'Warnings and diagnosis messages provided by the builder while building this job.';
+
 
 -- Builder
 COMMENT ON TABLE Builder IS 'Builder: This table stores the build-slave registry and status information as: name, url, trusted, builderok, builderaction, failnotes.';
@@ -1232,7 +1268,7 @@ COMMENT ON COLUMN Builder.failnotes IS 'This column gets filled out with a textu
 COMMENT ON COLUMN Builder.trusted IS 'Whether or not the builder is able to build only trusted or untrusted packages. Packages coming via ubuntu workflow are trusted and do not need facist behaviour to be built. Other packages like ppa/grumpy incoming packages can contain malicious code, so are unstrusted. Building these packages will require isolated environment (xen-based builder) and extra network access restrictions.';
 COMMENT ON COLUMN Builder.url IS 'The url to the build slave. There may be more than one build slave on a given host so this url includes the port number to use. The default port number for a build slave is 8221';
 COMMENT ON COLUMN Builder.manual IS 'Whether or not builder was manual mode, i.e., collect any result from the it, but do not dispach anything to it automatically.';
-
+COMMENT ON COLUMN Builder.vm_host IS 'The virtual machine host associated to this builder. It should be empty for "native" builders (old fashion or architectures not yet supported by XEN).';
 
 -- BuildQueue
 COMMENT ON TABLE BuildQueue IS 'BuildQueue: The queue of builds in progress/scheduled to run. This table is the core of the build daemon master. It lists all builds in progress or scheduled to start.';
@@ -1255,18 +1291,19 @@ COMMENT ON COLUMN Mirror.freshness IS 'dbschema.MirrorFreshness enumeration indi
 COMMENT ON COLUMN Mirror.lastcheckeddate IS 'UTC timestamp of when the last check for freshness and consistency was made. NULL indicates no check has ever been made.';
 COMMENT ON COLUMN Mirror.approved IS 'True if this mirror has been approved by the Ubuntu/Canonical mirror manager, otherwise False.';
 
-COMMENT ON TABLE MirrorContent IS 'Stores which distroarchreleases and compoenents a given mirror has.';
-COMMENT ON COLUMN MirrorContent.distroarchrelease IS 'A distroarchrelease that this mirror contains.';
-COMMENT ON COLUMN MirrorContent.component IS 'What component of the distroarchrelease that this mirror contains.';
+COMMENT ON TABLE MirrorContent IS 'Stores which distroarchseries and compoenents a given mirror has.';
+COMMENT ON COLUMN MirrorContent.distroarchseries IS 'A distroarchseries that this mirror contains.';
+COMMENT ON COLUMN MirrorContent.component IS 'What component of the distroarchseries that this mirror contains.';
 
-COMMENT ON TABLE MirrorSourceContent IS 'Stores which distrorelease and components a given mirror that includes source packages has.';
-COMMENT ON COLUMN MirrorSourceContent.distrorelease IS 'A distrorelease that this mirror contains.';
-COMMENT ON COLUMN MirrorSourceContent.component IS 'What component of the distrorelease that this sourcepackage mirror contains.';
+COMMENT ON TABLE MirrorSourceContent IS 'Stores which distroseries and components a given mirror that includes source packages has.';
+COMMENT ON COLUMN MirrorSourceContent.distroseries IS 'A distroseries that this mirror contains.';
+COMMENT ON COLUMN MirrorSourceContent.component IS 'What component of the distroseries that this sourcepackage mirror contains.';
 
 -- SecureSourcePackagePublishingHistory
+
 COMMENT ON TABLE SecureSourcePackagePublishingHistory IS 'SourcePackagePublishingHistory: The history of a SourcePackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.sourcepackagerelease IS 'The sourcepackagerelease being published.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.distrorelease IS 'The distrorelease into which the sourcepackagerelease is being published.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.distroseries IS 'The distroseries into which the sourcepackagerelease is being published.';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.status IS 'The current status of the publishing.';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.component IS 'The component into which the publishing takes place.';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.section IS 'The section into which the publishing takes place.';
@@ -1277,9 +1314,14 @@ COMMENT ON COLUMN SecureSourcePackagePublishingHistory.supersededby IS 'The sour
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the source is/was scheduled to be deleted.';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.dateremoved IS 'The date/time at which the source was actually deleted.';
-COMMENT ON COLUMN SecureSourcePackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distrorelease name such as the UPDATES pocket (-updates), the SECURITY pocket (-security) and the PROPOSED pocket (-proposed)';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distroseries name such as the UPDATES pocket (-updates), the SECURITY pocket (-security) and the PROPOSED pocket (-proposed)';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
+
+-- SourcePackagePublishingHistory View
+
 COMMENT ON VIEW SourcePackagePublishingHistory IS 'A view on SecureSourcePackagePublishingHistory that restricts access to embargoed entries';
 COMMENT ON COLUMN SecureSourcePackagePublishingHistory.archive IS 'The target archive for thi publishing record.';
 
@@ -1292,17 +1334,17 @@ distro managed in Launchpad. So don\'t join through this table to get from
 product to source package, or vice versa. Rather, use the
 ProductSeries.sourcepackages attribute, or the
 SourcePackage.productseries attribute. You may need to create a
-SourcePackage with a given sourcepackagename and distrorelease, then use its
+SourcePackage with a given sourcepackagename and distroseries, then use its
 .productrelease attribute. The code behind those methods does more than just
 join through the tables, it is also smart enough to look at related
-distro\'s and parent distroreleases, and at Ubuntu in particular.';
+distro\'s and parent distroseries, and at Ubuntu in particular.';
 COMMENT ON COLUMN Packaging.productseries IS 'The upstream product series
-that has been packaged in this distrorelease sourcepackage.';
+that has been packaged in this distroseries sourcepackage.';
 COMMENT ON COLUMN Packaging.sourcepackagename IS 'The source package name for
 the source package that includes the upstream productseries described in
 this Packaging record. There is no requirement that such a sourcepackage
 actually be published in the distro.';
-COMMENT ON COLUMN Packaging.distrorelease IS 'The distrorelease in which the
+COMMENT ON COLUMN Packaging.distroseries IS 'The distroseries in which the
 productseries has been packaged.';
 COMMENT ON COLUMN Packaging.packaging IS 'A dbschema Enum (PackagingType)
 describing the way the upstream productseries has been packaged. Generally
@@ -1328,10 +1370,10 @@ COMMENT ON COLUMN Translator.language IS 'The language for which this Translator
 COMMENT ON COLUMN Translator.translator IS 'The Person who is responsible for this language in this translation group.';
 
 -- PocketChroot
-COMMENT ON TABLE PocketChroot IS 'PocketChroots: Which chroot belongs to which pocket of which distroarchrelease. Any given pocket of any given distroarchrelease needs a specific chroot in order to be built. This table links it all together.';
-COMMENT ON COLUMN PocketChroot.distroarchrelease IS 'Which distroarchrelease this chroot applies to.';
-COMMENT ON COLUMN PocketChroot.pocket IS 'Which pocket of the distroarchrelease this chroot applies to. Valid values are specified in dbschema.PackagePublishingPocket';
-COMMENT ON COLUMN PocketChroot.chroot IS 'The chroot used by the pocket of the distroarchrelease.';
+COMMENT ON TABLE PocketChroot IS 'PocketChroots: Which chroot belongs to which pocket of which distroarchseries. Any given pocket of any given distroarchseries needs a specific chroot in order to be built. This table links it all together.';
+COMMENT ON COLUMN PocketChroot.distroarchseries IS 'Which distroarchseries this chroot applies to.';
+COMMENT ON COLUMN PocketChroot.pocket IS 'Which pocket of the distroarchseries this chroot applies to. Valid values are specified in dbschema.PackagePublishingPocket';
+COMMENT ON COLUMN PocketChroot.chroot IS 'The chroot used by the pocket of the distroarchseries.';
 
 -- POExportRequest
 COMMENT ON TABLE POExportRequest IS
@@ -1416,9 +1458,9 @@ COMMENT ON TABLE RequestedCDs IS 'The requested CDs of a Shipping Request.';
 COMMENT ON COLUMN RequestedCDs.quantity IS 'The number of CDs.';
 COMMENT ON COLUMN RequestedCDs.quantityapproved IS 'The number of CDs that were approved for shipping, in case the request was approved.';
 COMMENT ON COLUMN RequestedCDs.request IS 'The request itself.';
-COMMENT ON COLUMN RequestedCDs.distrorelease IS 'The distrorelease of the CDs (e.g. Ubuntu Breezy).';
+COMMENT ON COLUMN RequestedCDs.distroseries IS 'The distroseries of the CDs (e.g. Ubuntu Breezy).';
 COMMENT ON COLUMN RequestedCDs.architecture IS 'The architecture the CDs are meant to be installed on (e.g. x86).';
-COMMENT ON COLUMN RequestedCDs.flavour IS 'The flavour of the distrorelease (e.g. EdUbuntu).';
+COMMENT ON COLUMN RequestedCDs.flavour IS 'The flavour of the distroseries (e.g. EdUbuntu).';
 
 -- StandardShipItRequest
 COMMENT ON TABLE StandardShipItRequest IS 'The Standard ShipIt Requests. This is what we want most of the people to choose, having only a few people placing custom requests.';
@@ -1427,6 +1469,7 @@ COMMENT ON COLUMN StandardShipItRequest.quantityx86 IS 'The quantity of X86 CDs'
 COMMENT ON COLUMN StandardShipItRequest.quantityamd64 IS 'The quantity of AMD64 CDs';
 COMMENT ON COLUMN StandardShipItRequest.quantityppc IS 'The quantity of PowerPC CDs';
 COMMENT ON COLUMN StandardShipItRequest.isdefault IS 'Is this the order that is pre-selected in the options we give for the user?';
+COMMENT ON COLUMN StandardShipItRequest.description IS 'The description of this option.';
 
 -- ShockAndAwe
 COMMENT ON TABLE ShockAndAwe IS 'Information about specific Shock And Awe programs.';
@@ -1491,24 +1534,24 @@ COMMENT ON COLUMN DistributionMirror.official_approved IS 'Is the mirror approve
 COMMENT ON COLUMN DistributionMirror.enabled IS 'Is this mirror enabled?';
 COMMENT ON COLUMN DistributionMirror.whiteboard IS 'Notes on the current status of the mirror';
 
--- MirrorDistroArchRelease
-COMMENT ON TABLE MirrorDistroArchRelease IS 'The mirror of the packages of a given Distro Arch Release.';
-COMMENT ON COLUMN MirrorDistroArchRelease.distribution_mirror IS 'The distribution mirror.';
-COMMENT ON COLUMN MirrorDistroArchRelease.distro_arch_release IS 'The distro arch release.';
-COMMENT ON COLUMN MirrorDistroArchRelease.status IS 'The status of the mirror, that is, how up-to-date it is.';
-COMMENT ON COLUMN MirrorDistroArchRelease.pocket IS 'The PackagePublishingPocket.';
+-- MirrorDistroArchSeries
+COMMENT ON TABLE MirrorDistroArchSeries IS 'The mirror of the packages of a given Distro Arch Release.';
+COMMENT ON COLUMN MirrorDistroArchSeries.distribution_mirror IS 'The distribution mirror.';
+COMMENT ON COLUMN MirrorDistroArchSeries.distroarchseries IS 'The distro arch series.';
+COMMENT ON COLUMN MirrorDistroArchSeries.status IS 'The status of the mirror, that is, how up-to-date it is.';
+COMMENT ON COLUMN MirrorDistroArchSeries.pocket IS 'The PackagePublishingPocket.';
 
--- MirrorDistroReleaseSource
-COMMENT ON TABLE MirrorDistroReleaseSource IS 'The mirror of a given Distro Release';
-COMMENT ON COLUMN MirrorDistroReleaseSource.distribution_mirror IS 'The distribution mirror.';
-COMMENT ON COLUMN MirrorDistroReleaseSource.distrorelease IS 'The Distribution Release.';
-COMMENT ON COLUMN MirrorDistroReleaseSource.status IS 'The status of the mirror, that is, how up-to-date it is.';
+-- MirrorDistroSeriesSource
+COMMENT ON TABLE MirrorDistroSeriesSource IS 'The mirror of a given Distro Release';
+COMMENT ON COLUMN MirrorDistroSeriesSource.distribution_mirror IS 'The distribution mirror.';
+COMMENT ON COLUMN MirrorDistroSeriesSource.distroseries IS 'The Distribution Release.';
+COMMENT ON COLUMN MirrorDistroSeriesSource.status IS 'The status of the mirror, that is, how up-to-date it is.';
 
--- MirrorCDImageDistroRelease
-COMMENT ON TABLE MirrorCDImageDistroRelease IS 'The mirror of a given CD/DVD image.';
-COMMENT ON COLUMN MirrorCDImageDistroRelease.distribution_mirror IS 'The distribution mirror.';
-COMMENT ON COLUMN MirrorCDImageDistroRelease.distrorelease IS 'The Distribution Release.';
-COMMENT ON COLUMN MirrorCDImageDistroRelease.flavour IS 'The Distribution Release Flavour.';
+-- MirrorCDImageDistroSeries
+COMMENT ON TABLE MirrorCDImageDistroSeries IS 'The mirror of a given CD/DVD image.';
+COMMENT ON COLUMN MirrorCDImageDistroSeries.distribution_mirror IS 'The distribution mirror.';
+COMMENT ON COLUMN MirrorCDImageDistroSeries.distroseries IS 'The Distribution Release.';
+COMMENT ON COLUMN MirrorCDImageDistroSeries.flavour IS 'The Distribution Release Flavour.';
 
 -- MirrorProbeRecord
 COMMENT ON TABLE MirrorProbeRecord IS 'Records stored when a mirror is probed.';
@@ -1523,7 +1566,7 @@ COMMENT ON COLUMN TranslationImportQueueEntry.content IS 'The file content that 
 COMMENT ON COLUMN TranslationImportQueueEntry.format IS 'The file format of the content that is being imported.';
 COMMENT ON COLUMN TranslationImportQueueEntry.importer IS 'The person that did the import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.dateimported IS 'The timestamp when the import was done.';
-COMMENT ON COLUMN TranslationImportQueueEntry.distrorelease IS 'The distribution release related to this import.';
+COMMENT ON COLUMN TranslationImportQueueEntry.distroseries IS 'The distribution release related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.sourcepackagename IS 'The source package name related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.productseries IS 'The product series related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.is_published IS 'Notes whether is a published upload.';
@@ -1558,14 +1601,14 @@ COMMENT ON COLUMN Section.name IS 'Section name text';
 
 
 -- ComponentSelection
-COMMENT ON TABLE ComponentSelection IS 'Allowed components in a given distrorelease.';
-COMMENT ON COLUMN ComponentSelection.distrorelease IS 'Refers to the distrorelease in question.';
+COMMENT ON TABLE ComponentSelection IS 'Allowed components in a given distroseries.';
+COMMENT ON COLUMN ComponentSelection.distroseries IS 'Refers to the distroseries in question.';
 COMMENT ON COLUMN ComponentSelection.component IS 'Refers to the component in qestion.';
 
 
 -- SectionSelection
-COMMENT ON TABLE SectionSelection IS 'Allowed sections in a given distrorelease.';
-COMMENT ON COLUMN SectionSelection.distrorelease IS 'Refers to the distrorelease in question.';
+COMMENT ON TABLE SectionSelection IS 'Allowed sections in a given distroseries.';
+COMMENT ON COLUMN SectionSelection.distroseries IS 'Refers to the distroseries in question.';
 COMMENT ON COLUMN SectionSelection.section IS 'Refers to the section in question.';
 
 -- PillarName
@@ -1575,8 +1618,10 @@ COMMENT ON TABLE PillarName IS 'A cache of the names of our "Pillar''s" (distrib
 COMMENT ON TABLE POFileTranslator IS 'A materialized view caching who has translated what pofile.';
 COMMENT ON COLUMN POFileTranslator.person IS 'The person who submitted the translation.';
 COMMENT ON COLUMN POFileTranslator.pofile IS 'The pofile the translation was submitted for.';
-COMMENT ON COLUMN POFileTranslator.latest_posubmission IS 'The most recent translation submitted by this user to this pofile.';
-COMMENT ON COLUMN POFileTranslator.date_last_touched IS 'When the most recent submission was made.';
+COMMENT ON COLUMN POFileTranslator.latest_message IS 'Latest translation
+message added to the translation file.';
+COMMENT ON COLUMN POFileTranslator.date_last_touched IS 'When was added latest
+translation message.';
 
 -- NameBlacklist
 COMMENT ON TABLE NameBlacklist IS 'A list of regular expressions used to blacklist names.';
@@ -1626,7 +1671,7 @@ COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation ration
 -- COMMENT ON TABLE ProductSubscription IS 'Defines the support contacts for a given product. The support contacts will be automatically subscribed to every support request filed on the product.';
 
 -- LanguagePack
-COMMENT ON TABLE LanguagePack IS 'Store exported language packs for DistroReleases.';
+COMMENT ON TABLE LanguagePack IS 'Store exported language packs for DistroSeries.';
 COMMENT ON COLUMN LanguagePack.file IS 'Librarian file where the language pack is stored.';
 COMMENT ON COLUMN LanguagePack.date_exported IS 'When was exported the language pack.';
 COMMENT ON COLUMN LanguagePack.date_last_used IS 'When did we stop using the language pack. It\'s used to decide whether we can remove it completely from the system. When it\'s being used, its value is NULL';
@@ -1647,6 +1692,89 @@ COMMENT ON COLUMN HWSubmission.owner IS 'A reference to the Person table: The ow
 COMMENT ON COLUMN HWSubmission.distroarchseries IS 'A reference to the distroarchseries of the submission. This value is null, if the submitted values for distribution, distroseries and architecture do not match an existing entry in the Distroarchseries table.';
 COMMENT ON COLUMN HWSubmission.raw_submission IS 'A reference to a row of LibraryFileAlias. The library file contains the raw submission data.';
 COMMENT ON COLUMN HWSubmission.system_fingerprint IS 'A reference to an entry of the HWDBSystemFingerPrint table. This table stores the system name as returned by HAL (system.vendor, system.product)';
+COMMENT ON COLUMN HWSubmission.raw_emailaddress IS 'The email address of the submitter.';
 
 COMMENT ON TABLE HWSystemFingerprint IS 'A distinct list of "fingerprints" (HAL system.name, system.vendor) from raw submission data';
 COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
+
+COMMENT ON TABLE HWDriver IS 'Information about a driver for a device';
+COMMENT ON COLUMN HWDriver.package_name IS 'The Debian package name a driver is a part of';
+COMMENT ON COLUMN HWDriver.name IS 'The name of a driver.';
+
+COMMENT ON TABLE HWVendorName IS 'A list of hardware vendor names.';
+COMMENT ON COLUMN HWVendorName.name IS 'The name of a vendor.';
+
+COMMENT ON TABLE HWVendorId IS 'Associates tuples (bus, vendor ID for this bus) with vendor names.';
+COMMENT ON COLUMN HWVendorId.bus IS 'The bus.';
+COMMENT ON COLUMN HWVendorId.vendor_id_for_bus IS 'The ID of a vendor for the bus given by column `bus`';
+
+COMMENT ON TABLE HWDevice IS 'Basic information on devices.';
+COMMENT ON COLUMN HWDevice.bus_vendor_id IS 'A reference to a HWVendorID record.';
+COMMENT ON COLUMN HWDevice.bus_product_id IS 'The bus product ID of a device';
+COMMENT ON COLUMN HWDevice.variant IS 'An optional additional description for a device that shares its vendor and product ID with another, technically different, device.';
+COMMENT ON COLUMN HWDevice.name IS 'The human readable product name of the device.';
+COMMENT ON COLUMN HWDevice.submissions IS 'The number of submissions that contain this device.';
+
+COMMENT ON TABLE HWDeviceNameVariant IS 'Alternative vendor and product names of devices.';
+COMMENT ON COLUMN HWDeviceNameVariant.vendor_name IS 'The alternative vendor name.';
+COMMENT ON COLUMN HWDeviceNameVariant.product_name IS 'The alternative product name.';
+COMMENT ON COLUMN HWDeviceNameVariant.device IS 'The device named by this alternative vendor and product names.';
+COMMENT ON COLUMN HWDeviceNameVariant.submissions IS 'The number of submissions containing this alternative vendor and product name.';
+
+COMMENT ON TABLE HWDeviceDriverLink IS 'Combinations of devices and drivers mentioned in submissions.';
+COMMENT ON COLUMN HWDeviceDriverLink.device IS 'The device controlled by the driver.';
+COMMENT ON COLUMN HWDeviceDriverLink.driver IS 'The driver controlling the device.';
+
+COMMENT ON TABLE HWSubmissionDevice IS 'Links between devices and submissions.';
+COMMENT ON COLUMN HWSubmissionDevice.device_driver_link IS 'The combination (device, driver) mentioned in a submission.';
+COMMENT ON COLUMN HWSubmissionDevice.submission IS 'The submission mentioning this (device, driver) combination.';
+COMMENT ON COLUMN HWSubmissionDevice.parent IS 'The parent device of this device.';
+
+COMMENT ON TABLE HWTest IS 'General information about a device test.';
+COMMENT ON COLUMN HWTest.namespace IS 'The namespace of a test.';
+COMMENT ON COLUMN HWTest.name IS 'The name of a test.';
+
+COMMENT ON TABLE HWTestAnswerChoice IS 'Choice values of multiple choice tests/questions.';
+COMMENT ON COLUMN HWTestAnswerChoice.choice IS 'The choice value.';
+COMMENT ON COLUMN HWTestAnswerChoice.test IS 'The test this choice belongs to.';
+
+COMMENT ON TABLE HWTestAnswer IS 'The answer for a test from a submission. This can be either a multiple choice selection or a numerical value. Exactly one of the columns choice, intval, floatval must be non-null.';
+COMMENT ON COLUMN HWTestAnswer.test IS 'The test answered by this answer.';
+COMMENT ON COLUMN HWTestAnswer.choice IS 'The selected value of a multiple choice test.';
+COMMENT ON COLUMN HWTestAnswer.intval IS 'The integer result of a test with a numerical result.';
+COMMENT ON COLUMN HWTestAnswer.floatval IS 'The double precision floating point number result of a test with a numerical result.';
+COMMENT ON COLUMN HWTestAnswer.unit IS 'The physical unit of a test with a numerical result.';
+
+COMMENT ON TABLE HWTestAnswerCount IS 'Accumulated results of tests. Either the column choice or the columns average and sum_square must be non-null.';
+COMMENT ON COLUMN HWTestAnswerCount.test IS 'The test.';
+COMMENT ON COLUMN HWTestAnswerCount.distroarchseries IS 'The distroarchseries for which results are accumulated,';
+COMMENT ON COLUMN HWTestAnswerCount.choice IS 'The choice value of a multiple choice test.';
+COMMENT ON COLUMN HWTestAnswerCount.average IS 'The average value of the result of a numerical test.';
+COMMENT ON COLUMN HWTestAnswerCount.sum_square IS 'The sum of the squares of the results of a numerical test.';
+COMMENT ON COLUMN HWTestAnswerCount.unit IS 'The physical unit of a numerical test result.';
+COMMENT ON COLUMN HWTestAnswerCount.num_answers IS 'The number of submissions from which the result is accumulated.';
+
+COMMENT ON TABLE HWTestAnswerDevice IS 'Association of test results and device/driver combinations.';
+COMMENT ON COLUMN HWTestAnswerDevice.answer IS 'The test answer.';
+COMMENT ON COLUMN HWTestAnswerDevice.device_driver IS 'The device/driver combination.';
+
+COMMENT ON TABLE HWTestAnswerCountDevice IS 'Association of accumulated test results and device/driver combinations.';
+COMMENT ON COLUMN HWTestAnswerCountDevice.answer IS 'The test answer.';
+COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver combination.';
+
+
+-- StructuralSubscription
+COMMENT ON TABLE StructuralSubscription IS 'A subscription to notifications about a Launchpad structure';
+COMMENT ON COLUMN StructuralSubscription.product IS 'The subscription\`s target, when it is a product.';
+COMMENT ON COLUMN StructuralSubscription.productseries IS 'The subscription\`s target, when it is a product series.';
+COMMENT ON COLUMN StructuralSubscription.project IS 'The subscription\`s target, when it is a project.';
+COMMENT ON COLUMN StructuralSubscription.milestone IS 'The subscription\`s target, when it is a milestone.';
+COMMENT ON COLUMN StructuralSubscription.distribution IS 'The subscription\`s target, when it is a distribution.';
+COMMENT ON COLUMN StructuralSubscription.distroseries IS 'The subscription\`s target, when it is a distribution series.';
+COMMENT ON COLUMN StructuralSubscription.sourcepackagename IS 'The subscription\`s target, when it is a source-package';
+COMMENT ON COLUMN StructuralSubscription.subscriber IS 'The person subscribed.';
+COMMENT ON COLUMN StructuralSubscription.subscribed_by IS 'The person initiating the subscription.';
+COMMENT ON COLUMN StructuralSubscription.bug_notification_level IS 'The volume and type of bug notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
+COMMENT ON COLUMN StructuralSubscription.blueprint_notification_level IS 'The volume and type of blueprint notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
+COMMENT ON COLUMN StructuralSubscription.date_created IS 'The date on which this subscription was created.';
+COMMENT ON COLUMN StructuralSubscription.date_last_updated IS 'The date on which this subscription was last updated.';

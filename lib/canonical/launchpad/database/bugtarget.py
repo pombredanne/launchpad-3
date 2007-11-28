@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Components related to IBugTarget."""
 
@@ -8,13 +9,13 @@ __all__ = ['BugTargetBase']
 from zope.component import getUtility
 
 from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.lp.dbschema import BugTaskImportance
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugtask import get_bug_privacy_filter
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces import BugTaskStatus, ILaunchBag
 from canonical.launchpad.interfaces.bugtask import (
-    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES, BugTaskSearchParams)
+    BugTaskImportance, BugTaskSearchParams, RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES)
 
 class BugTargetBase:
     """Standard functionality for IBugTargets.

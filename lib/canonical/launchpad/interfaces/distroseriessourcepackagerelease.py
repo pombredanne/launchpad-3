@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Source package release in Distribution Series interfaces."""
 
@@ -65,20 +66,6 @@ class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):
         title=_("Correspondent changesfile."), schema=ILibraryFileAlias,
         readonly=True)
 
-    def changeOverride(new_component=None, new_section=None):
-        """Change the component and/or section.
-
-        It is changed only if the argument is not None.
-        """
-
-    def supersede():
-        """Supersede a DistroSeriesSourcePackageRelease.
-
-        Return the modified ISourcePackagePublishingHistory object.
-        """
-
-    def copyTo(distroseries, pocket):
-        """Copy a DistroSeriesSourcePackageRelease to another location.
-
-        Return the publishing record in the targeted location.
-        """
+    published_binaries = Attribute(
+        "A list of published `DistroArchSeriesBinaryPackageRelease` for "
+        "all relevant architectures.")

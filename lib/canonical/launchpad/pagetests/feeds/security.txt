@@ -1,0 +1,88 @@
+== Feeds do not display private bugs ==
+
+Feeds never contain private bugs, as we are serving feeds over HTTP.
+First, set all the bugs to private.
+
+    >>> from zope.security.interfaces import Unauthorized
+    >>> from BeautifulSoup import BeautifulStoneSoup as BSS
+    >>> from canonical.launchpad.database import Bug
+    >>> bugs = Bug.select()
+    >>> for bug in bugs:
+    ...     bug.private = True
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+There should be zero entries in these feeds, since all the bugs are private.
+
+    >>> browser.open('http://feeds.launchpad.dev/jokosher/latest-bugs.atom')
+    >>> BSS(browser.contents)('entry')
+    []
+
+    >>> browser.open('http://feeds.launchpad.dev/mozilla/latest-bugs.atom')
+    >>> BSS(browser.contents)('entry')
+    []
+
+    >>> browser.open('http://feeds.launchpad.dev/~name16/latest-bugs.atom')
+    >>> BSS(browser.contents)('entry')
+    []
+
+    >>> browser.open('http://feeds.launchpad.dev/~simple-team/latest-bugs.atom')
+    >>> BSS(browser.contents)('entry')
+    []
+
+    >>> browser.open('http://feeds.launchpad.dev/bugs/+bugs.atom?'
+    ...        'field.searchtext=&search=Search+Bug+Reports&'
+    ...        'field.scope=all&field.scope.target=')
+    >>> BSS(browser.contents)('entry')
+    []
+
+Looking up a single bug raises an Unauthorized error if it is private.
+
+    >>> browser.open('http://feeds.launchpad.dev/bugs/1/bug.atom')
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
+
+There should be just one <tr> elements for the table header in
+these HTML feeds, since all the bugs are private.
+
+    >>> browser.open('http://feeds.launchpad.dev/jokosher/latest-bugs.html')
+    >>> len(BSS(browser.contents)('tr'))
+    1
+
+    >>> print extract_text(BSS(browser.contents)('tr')[0])
+    Bugs in Jokosher
+
+    >>> browser.open('http://feeds.launchpad.dev/mozilla/latest-bugs.html')
+    >>> len(BSS(browser.contents)('tr'))
+    1
+
+    >>> print extract_text(BSS(browser.contents)('tr')[0])
+    Bugs in the Mozilla Project
+
+    >>> browser.open('http://feeds.launchpad.dev/~name16/latest-bugs.html')
+    >>> len(BSS(browser.contents)('tr'))
+    1
+
+    >>> print extract_text(BSS(browser.contents)('tr')[0])
+    Bugs for Foo Bar
+
+    >>> browser.open('http://feeds.launchpad.dev/~simple-team/latest-bugs.html')
+    >>> len(BSS(browser.contents)('tr'))
+    1
+
+    >>> print extract_text(BSS(browser.contents)('tr')[0])
+    Bugs for Simple Team
+
+    >>> browser.open('http://feeds.launchpad.dev/bugs/+bugs.html?'
+    ...        'field.searchtext=&search=Search+Bug+Reports&'
+    ...        'field.scope=all&field.scope.target=')
+    >>> len(BSS(browser.contents)('tr'))
+    1
+
+    >>> try:
+    ...      browser.open('http://feeds.launchpad.dev/bugs/1/bug.html')
+    ... except Unauthorized:
+    ...     pass
+    ... else:
+    ...     print "Should raise Unauthorized exception"

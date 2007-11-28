@@ -17,7 +17,7 @@ and when fixes are committed.
 BugBranch links a bug and a branch.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBranchSet)
+    ...     BugBranchStatus, IBugSet, IBranchSet, IPersonSet)
     >>> from canonical.database.sqlbase import flush_database_updates
 
     >>> login("no-priv@canonical.com")
@@ -28,7 +28,8 @@ BugBranch links a bug and a branch.
 
 Adding a branch to a bug returns an IBugBranch.
 
-    >>> bug_branch = bug.addBranch(branch)
+    >>> user = getUtility(IPersonSet).getByEmail("no-priv@canonical.com")
+    >>> bug_branch = bug.addBranch(branch, user)
 
     >>> flush_database_updates()
 
@@ -39,6 +40,8 @@ sample data.
     1
     >>> bug_branch.branch.id
     10
+    >>> print bug_branch.registrant.displayname
+    No Privileges Person
 
     >>> [bug_branch.branch.name for bug_branch in
     ...  bug.bug_branches]
@@ -46,15 +49,13 @@ sample data.
 
 By default, a bug branch is in the state BugBranchStatus.INPROGRESS.
 
-    >>> from canonical.lp.dbschema import BugBranchStatus
-
     >>> bug_branch.status == BugBranchStatus.INPROGRESS
     True
 
 Trying to add a branch that is already linked to a bug will simply
 return the existing BugBranch.
 
-    >>> bug_branch_two = bug.addBranch(branch)
+    >>> bug_branch_two = bug.addBranch(branch, user)
     >>> bug_branch_two == bug_branch
     True
 
@@ -72,7 +73,7 @@ of interest to others tracking the bugfix on this branch:
 
     >>> branch = getUtility(IBranchSet).get(1)
     >>> bug_branch_three = bug.addBranch(
-    ...     branch, "I should have this fixed today")
+    ...     branch, user, "I should have this fixed today")
     >>> bug_branch_three.whiteboard
     u'I should have this fixed today'
 
@@ -87,7 +88,8 @@ If we make the bug private, no-priv won't be allowed to edit neither the
 bug nor the BugBranch.
 
     >>> login('foo.bar@canonical.com')
-    >>> bug.private = True
+    >>> bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
 
     >>> login('no-priv@canonical.com')
     >>> bug_branch_three.whiteboard = 'Yet another whiteboard.'
@@ -101,7 +103,8 @@ bug nor the BugBranch.
     Unauthorized:...
 
     >>> login('foo.bar@canonical.com')
-    >>> bug.private = False
+    >>> bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
     >>> login('no-priv@canonical.com')
 
 
@@ -141,8 +144,15 @@ Firstly we need to get the branches.
     ...                 '~carlos/iso-codes/0.35'),
     ...             getUtility(IBranchSet).getByUniqueName(
     ...                 '~sabdfl/firefox/release-0.9.2')]
+
+The bug branches returned are only those where the user can see the
+bugs that are associated.  This way if there are bugs associated with
+a branch that the user cannot see, then they are not shown.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> user = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> bugbranches = getUtility(IBugBranchSet).getBugBranchesForBranches(
-    ...     branches)
+    ...     branches, user)
     >>> for bugbranch in sorted(bugbranches,
     ...                         key=lambda b: (b.branch.id, b.bug.id)):
     ...     print "%s <-> %s" % (

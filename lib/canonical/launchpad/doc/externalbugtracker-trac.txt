@@ -11,10 +11,13 @@ bug watches on Trac bug trackers is externalbugtracker.Trac, which implements
 IExternalBugTracker.
 
     >>> from canonical.launchpad.components.externalbugtracker import Trac
-    >>> from canonical.launchpad.interfaces.externalbugtracker import (
-    ...     IExternalBugtracker)
-    >>> from zope.interface.verify import verifyObject
-    >>> verifyObject(IExternalBugtracker, Trac('http://trac.foo.com'))
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IExternalBugtracker)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> trac = Trac(new_bugtracker(BugTrackerType.TRAC))
+    >>> verifyObject(IExternalBugtracker, trac)
     True
 
 
@@ -23,7 +26,6 @@ IExternalBugTracker.
 The basic Trac ticket statuses map to Launchpad bug statuses.
 Trac.convertRemoteStatus() handles the conversion.
 
-    >>> trac = Trac('http://foo.bar')
     >>> trac.convertRemoteStatus('open').title
     'New'
     >>> trac.convertRemoteStatus('new').title
@@ -70,7 +72,8 @@ overrides ExternalBugTracker.urlopen() so that we don't have to rely on a
 working network connection.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestTrac
-    >>> trac = TestTrac('http://test.trac')
+    >>> trac = TestTrac(
+    ...     new_bugtracker(BugTrackerType.TRAC, base_url='http://test.trac/'))
     >>> trac.initializeRemoteBugDB([1])
     >>> sorted(trac.bugs.keys())
     [1]
@@ -94,18 +97,18 @@ one-at-a-time:
 
     >>> trac.trace_calls = True
     >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
-    CALLED urlopen('http://test.trac/ticket/6?format=csv')
-    CALLED urlopen('http://test.trac/ticket/7?format=csv')
-    CALLED urlopen('http://test.trac/ticket/8?format=csv')
-    CALLED urlopen('http://test.trac/ticket/9?format=csv')
-    CALLED urlopen('http://test.trac/ticket/10?format=csv')
+    CALLED urlopen(u'http://test.trac/ticket/6?format=csv')
+    CALLED urlopen(u'http://test.trac/ticket/7?format=csv')
+    CALLED urlopen(u'http://test.trac/ticket/8?format=csv')
+    CALLED urlopen(u'http://test.trac/ticket/9?format=csv')
+    CALLED urlopen(u'http://test.trac/ticket/10?format=csv')
 
 If there are more than batch_query_threshold bugs to update then they are
 fetched as a batch:
 
     >>> trac.batch_query_threshold = 4
     >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
-    CALLED urlopen('http://test.trac/query?id=6&id=7...&format=csv')
+    CALLED urlopen(u'http://test.trac/query?id=6&id=7...&format=csv')
 
 The batch updating method will also be used in cases where the Trac instance
 doesn't support CSV exports of individual tickets:
@@ -113,7 +116,7 @@ doesn't support CSV exports of individual tickets:
     >>> trac.batch_query_threshold = 10
     >>> trac.supports_single_exports = False
     >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
-    CALLED urlopen('http://test.trac/query?id=6&id=7...&format=csv')
+    CALLED urlopen(u'http://test.trac/query?id=6&id=7...&format=csv')
 
 
 == Invalid Bug Statuses ==
@@ -126,7 +129,7 @@ invalid bug:
     >>> invalid_bug = {'id': 1, 'description': 'This bug has no status'}
     >>> trac.bugs = {invalid_bug['id']: invalid_bug}
     >>> trac.getRemoteStatus(invalid_bug['id'])
-    WARNING:root:Trac ticket 1 defines no status.
+    WARNING:...:Trac ticket 1 defines no status.
     'UNKNOWN'
 
 
@@ -134,28 +137,16 @@ invalid bug:
 
 First, we create some bug watches to test with:
 
-    >>> from canonical.launchpad.database import BugTracker
     >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
-    >>> from canonical.lp.dbschema import BugTrackerType
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
-    >>> example_bug_tracker = BugTracker(
-    ...     name="example-bugs",
-    ...     title="Example.com Trac",
-    ...     bugtrackertype=BugTrackerType.TRAC,
-    ...     baseurl="http://bugs.example.com",
-    ...     summary="Contains bugs for Example.com",
-    ...     contactdetails="foo.bar@example.com",
-    ...     owner=sample_person)
-
-    >>> login('test@canonical.com')
+    >>> example_bug_tracker = new_bugtracker(BugTrackerType.TRAC)
 
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, 1, sample_person)
 
-    >>> login('no-priv@canonical.com')
 
 Collect the Example.com watches:
 
@@ -165,7 +156,7 @@ Collect the Example.com watches:
 
 And have a Trac instance process them:
 
-    >>> trac = TestTrac(example_bug_tracker.baseurl)
+    >>> trac = TestTrac(example_bug_tracker)
     >>> trac.updateBugWatches(example_bug_tracker.watches)
     >>> for bug_watch in example_bug_tracker.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
@@ -207,7 +198,7 @@ We'll add some more watches now.
 
     >>> trac.trace_calls = True
     >>> trac.updateBugWatches(example_bug_tracker.watches)
-    CALLED urlopen(u'http://bugs.example.com/query?id=...
+    CALLED urlopen(u'http://.../query?id=...
 
     >>> for remote_bug_id in sorted(bug_watches.keys()):
     ...     remote_status = bug_watches[remote_bug_id].remotestatus

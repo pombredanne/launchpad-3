@@ -5,7 +5,7 @@ Testing the Package Death Row
   >>> import datetime
   >>> import pytz
   >>> from canonical.database.sqlbase import flush_database_updates
-  >>> from canonical.lp.dbschema import PackagePublishingStatus
+  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
   >>> from canonical.archivepublisher.deathrow import DeathRow
   >>> from canonical.archivepublisher.diskpool import DiskPool
   >>> from canonical.launchpad.database import Distribution
@@ -41,9 +41,9 @@ Nothing to do
 
 The no-operation use case:
 
-  >>> dp = DiskPool(pool_path, temp_path, MockLogger())
-  >>> dr = DeathRow(distro.main_archive, dp, MockLogger())
-  >>> dr.reap(dry_run=True)
+  >>> disk_pool = DiskPool(pool_path, temp_path, MockLogger())
+  >>> death_row = DeathRow(distro.main_archive, disk_pool, MockLogger())
+  >>> death_row.reap(dry_run=True)
   DEBUG: 0 Sources
   DEBUG: 0 Binaries
   INFO: Removing 0 files marked for reaping
@@ -62,71 +62,70 @@ And, if we mark some packages to be pending removal. Source publication
   >>> future_date = datetime.datetime(year=this_year + 2, month=1, day=1,
   ...                                 tzinfo=pytz.timezone('UTC'))
 
-  >>> pub = SSPPH.get(15)
-  >>> print pub.dateremoved
+  >>> publishing_record = SSPPH.get(15)
+  >>> print publishing_record.dateremoved
   None
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
-  >>> pub.scheduleddeletiondate = old_date
+  >>> publishing_record.status = PackagePublishingStatus.DELETED
+  >>> publishing_record.scheduleddeletiondate = old_date
 
 Source publication 12 includes alsa-utils_1.0.9a-4ubuntu1.dsc:
 
-  >>> pub = SSPPH.get(12)
-  >>> print pub.distroseries.name
+  >>> publishing_record = SSPPH.get(12)
+  >>> print publishing_record.distroseries.name
   hoary
-  >>> print pub.dateremoved
+  >>> print publishing_record.dateremoved
   None
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
-  >>> pub.scheduleddeletiondate = old_date
+  >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
+  >>> publishing_record.scheduleddeletiondate = old_date
 
 But so does source publication 20, which we'll set to pending removal
 but with a scheduled deletion date in the future. Because not all of the
 references to the file are ready to be removed, the file will not be
 deleted yet.
 
-  >>> pub = SSPPH.get(20)
-  >>> print pub.distroseries.name
+  >>> publishing_record = SSPPH.get(20)
+  >>> print publishing_record.distroseries.name
   warty
   >>> print [f.libraryfile.filename
-  ...        for f in pub.sourcepackagerelease.files]
+  ...        for f in publishing_record.sourcepackagerelease.files]
   [u'alsa-utils_1.0.9a-4ubuntu1.dsc']
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
-  >>> pub.scheduleddeletiondate = future_date
+  >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
+  >>> publishing_record.scheduleddeletiondate = future_date
 
 Knock off some binaries as well:
 
-  >>> pub = SBPPH.get(17)
-  >>> print pub.dateremoved
+  >>> publishing_record = SBPPH.get(17)
+  >>> print publishing_record.dateremoved
   None
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
-  >>> pub.scheduleddeletiondate = old_date
+  >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
+  >>> publishing_record.scheduleddeletiondate = old_date
 
-  >>> pub = SBPPH.get(19)
-  >>> print pub.dateremoved
+  >>> publishing_record = SBPPH.get(19)
+  >>> print publishing_record.dateremoved
   None
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
-  >>> pub.scheduleddeletiondate = old_date
+  >>> publishing_record.status = PackagePublishingStatus.DELETED
+  >>> publishing_record.scheduleddeletiondate = old_date
 
 As above, both 19 and 21 binary publication refer to the same pmount
 binaries, and since 21 is not to be removed, 19 is supposed to be left
 alone too:
 
-  >>> pub = SBPPH.get(21)
+  >>> publishing_record = SBPPH.get(21)
   >>> print [f.libraryfile.filename
-  ...        for f in pub.binarypackagerelease.files]
+  ...        for f in publishing_record.binarypackagerelease.files]
   [u'pmount_1.9-1_all.deb']
 
-  >>> pub = SBPPH.get(19)
+  >>> publishing_record = SBPPH.get(19)
   >>> print [f.libraryfile.filename
-  ...        for f in pub.binarypackagerelease.files]
+  ...        for f in publishing_record.binarypackagerelease.files]
   [u'pmount_1.9-1_all.deb']
-
 
 Flush our these updates and kick the DeathRow processor again.
 
   >>> flush_database_updates()
-  >>> dp = DiskPool(pool_path, temp_path, MockLogger())
-  >>> dr = DeathRow(distro.main_archive, dp, MockLogger())
-  >>> dr.reap(dry_run=True)
+  >>> disk_pool = DiskPool(pool_path, temp_path, MockLogger())
+  >>> death_row = DeathRow(distro.main_archive, disk_pool, MockLogger())
+  >>> death_row.reap(dry_run=True)
   DEBUG: 2 Sources
   DEBUG: 2 Binaries
   INFO: Removing 2 files marked for reaping
@@ -144,28 +143,60 @@ the transaction when that flag is set.
 Look at the results of our actions. Two packages removed (one source
 and one binary) and the date removed properly set up:
 
-  >>> source_pub = SSPPH.get(15)
-  >>> source_pub.status.name
-  'REMOVED'
-  >>> source_pub.dateremoved
+  >>> source_publishing_record = SSPPH.get(15)
+  >>> source_publishing_record.status.name
+  'DELETED'
+  >>> source_publishing_record.dateremoved
   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
-  >>> binary_pub = SBPPH.get(17)
-  >>> binary_pub.status.name
-  'REMOVED'
-  >>> binary_pub.dateremoved
+  >>> binary_publishing_record = SBPPH.get(17)
+  >>> binary_publishing_record.status.name
+  'SUPERSEDED'
+  >>> binary_publishing_record.dateremoved
   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
 Source publication 20 (has a future 'scheduled deletion date') and
 binary publication 19 (file hold by another active publication), of
 course are left alone:
 
-  >>> pub = SSPPH.get(20)
-  >>> pub.status.name != PackagePublishingStatus.REMOVED
+  >>> publishing_record = SSPPH.get(20)
+  >>> publishing_record.dateremoved is None
   True
 
-  >>> pub = SBPPH.get(19)
-  >>> pub.status != PackagePublishingStatus.REMOVED
+  >>> publishing_record = SBPPH.get(19)
+  >>> publishing_record.dateremoved is None
+  True
+
+Deathrow is also able to ignore files if there is any reference not
+yet dominated, for instance, just-deleted packages, they will contain
+empty 'scheduleddeletiondate' (see archivepublish/domination.py).
+
+  >>> publishing_record = SSPPH.get(20)
+  >>> publishing_record.status = PackagePublishingStatus.DELETED
+  >>> publishing_record.scheduleddeletiondate = None
+
+Deathrow will simply ignore references to the just-deleted package,
+since it can't be sure whether or not they can be removed.
+
+  >>> flush_database_updates()
+  >>> disk_pool = DiskPool(pool_path, temp_path, MockLogger())
+  >>> death_row = DeathRow(distro.main_archive, disk_pool, MockLogger())
+  >>> death_row.reap(dry_run=True)
+  DEBUG: 1 Sources
+  DEBUG: 1 Binaries
+  INFO: Removing 0 files marked for reaping
+  INFO: Total bytes freed: 0
+  DEBUG: Marking 0 condemned packages as removed.
+
+Since the just-deleted package was ignored its related publications
+were not removed from disk.
+
+  >>> publishing_record = SSPPH.get(20)
+  >>> publishing_record.dateremoved is None
+  True
+
+  >>> publishing_record = SBPPH.get(19)
+  >>> publishing_record.dateremoved is None
   True
 
 
@@ -177,15 +208,15 @@ Test that bytes freed computing is handled correctly:
   >>> def removeFileReturningSize(cn, sn, fn):
   ...    print "DEBUG: (Not really!) removing %s %s/%s" % (cn, sn, fn)
   ...    return 5
-  >>> dr._removeFile = removeFileReturningSize
-  >>> pub = SSPPH.get(2)
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
-  >>> pub.scheduleddeletiondate = old_date
-  >>> pub = SBPPH.get(24)
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
-  >>> pub.scheduleddeletiondate = old_date
+  >>> death_row._removeFile = removeFileReturningSize
+  >>> publishing_record = SSPPH.get(2)
+  >>> publishing_record.status = PackagePublishingStatus.DELETED
+  >>> publishing_record.scheduleddeletiondate = old_date
+  >>> publishing_record = SBPPH.get(24)
+  >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
+  >>> publishing_record.scheduleddeletiondate = old_date
   >>> flush_database_updates()
-  >>> dr.reap()
+  >>> death_row.reap()
   DEBUG: 2 Sources
   DEBUG: 2 Binaries
   INFO: Removing 2 files marked for reaping
@@ -199,12 +230,12 @@ Test that random exceptions are handled correctly:
   >>> def removeFileRaisingOtherException(cn, sn, fn):
   ...    print "DEBUG: (Not really!) removing %s %s/%s" % (cn, sn, fn)
   ...    raise TypeError
-  >>> dr._removeFile = removeFileRaisingOtherException
-  >>> pub = SSPPH.get(10)
-  >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
-  >>> pub.scheduleddeletiondate = old_date
+  >>> death_row._removeFile = removeFileRaisingOtherException
+  >>> publishing_record = SSPPH.get(10)
+  >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
+  >>> publishing_record.scheduleddeletiondate = old_date
   >>> flush_database_updates()
-  >>> dr.reap()
+  >>> death_row.reap()
   DEBUG: 2 Sources
   DEBUG: 1 Binaries
   INFO: Removing 1 files marked for reaping

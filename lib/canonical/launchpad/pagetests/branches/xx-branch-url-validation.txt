@@ -11,7 +11,7 @@ First, let's define a helper to post to the Person +addbranch form.
 Try to create a branch with an invalid URL.
 
     >>> add_branch('example.com/~lifeless/pyresources/')
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
     &quot;example.com/~lifeless/pyresources/&quot; is not a valid URI
@@ -19,30 +19,30 @@ Try to create a branch with an invalid URL.
 Try to create branches with URLs in bazaar.launchpad.dev.
 
     >>> add_branch('http://bazaar.launchpad.dev')
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
     For Launchpad to mirror a branch, the original branch cannot be on
-    launchpad.dev. Did you want to create a hosted branch instead?
+    launchpad.dev.
 
     >>> add_branch('http://bazaar.launchpad.dev/~me/that/this')
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
     For Launchpad to mirror a branch, the original branch cannot be on
-    launchpad.dev. Did you want to create a hosted branch instead?
+    launchpad.dev.
 
     >>> add_branch('sftp://bazaar.launchpad.dev/~me/that/this')
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
     For Launchpad to mirror a branch, the original branch cannot be on
-    launchpad.dev. Did you want to create a hosted branch instead?
+    launchpad.dev.
 
 Try to create a branch with a URL that is already registered.
 
     >>> add_branch('http://example.com/gnome-terminal/main/')
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
     The bzr branch GNOME Terminal Mainline is already registered with this URL.
@@ -51,7 +51,7 @@ Try to create a branch with a URL that is already registered.
 Try to create a branch without URL
 
     >>> add_branch('')
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
     Branch URLs are required for Mirrored branches.

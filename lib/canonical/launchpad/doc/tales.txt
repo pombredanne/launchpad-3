@@ -62,24 +62,13 @@ an actual launchpad user.
     >>> test_tales("person/image:mugshot", person=spiv)
     '...<img...src="/@@/person-inactive-mugshot" />...'
 
-One other thing we have for people is fmt:link, which gives us a link to that
-person's page, containing the person name and an icon.
+If you are on feeds.launchpad.net, you need to specify the rootsite, so
+that the links and images are pointing at the right hostname.
 
-    >>> test_tales("person/fmt:link", person=person)
-    u'<a ...><img ... src="/@@/person" />&nbsp;Mark Shuttleworth</a>'
-
-    >>> test_tales("person/fmt:link", person=spiv)
-    u'<a ...><img ... src="/@@/person-inactive" />&nbsp;Andrew Bennetts</a>'
-
-    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
-    >>> test_tales("person/fmt:link", person=ubuntu_team)
-    u'<a ...><img ... src="/@@/team" />&nbsp;Ubuntu Team</a>'
-
-The fmt:link formatter uses additional path components to extend the
-link:
-
-    >>> test_tales("person/fmt:link/foo/bar", person=spiv)
-    u'<a href=".../~spiv/foo/bar">...'
+    >>> test_tales("person/fmt:link:mainsite/foo/bar", person=spiv)
+    u'<a href="http://launchpad.dev/~spiv/foo/bar"><img...src="http://launchpad.dev/@@/person-inactive"...'
+    >>> test_tales("person/fmt:link:bugs/foo/bar", person=spiv)
+    u'<a href="http://bugs.launchpad.dev/~spiv/foo/bar"><img...src="http://bugs.launchpad.dev/@@/person-inactive"...'
 
 We also have image:icon for KarmaCategory:
 
@@ -133,6 +122,56 @@ Add manual word breaks to long words in a string:
     >>> test_tales('foo/fmt:break-long-words',
     ...     foo='<http://launchpad.net/products/launchpad>')
     '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>net/products/<wbr></wbr>launchpad&gt;'
+
+
+== The fmt: namespace to get strings (links) ==
+
+The `fmt:link` tales expression provides a way to define a standard link
+to a content object.  There are currently links defined for:
+  * people / teams
+  * branches
+  * bugs
+  * bug tasks
+
+For a person or team, fmt:link gives us a link to that person's page,
+containing the person name and an icon.
+
+    >>> test_tales("person/fmt:link", person=person)
+    u'<a ...><img ... src="/@@/person" />&nbsp;Mark Shuttleworth</a>'
+
+    >>> test_tales("person/fmt:link", person=spiv)
+    u'<a ...><img ... src="/@@/person-inactive" />&nbsp;Andrew Bennetts</a>'
+
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> test_tales("person/fmt:link", person=ubuntu_team)
+    u'<a ...><img ... src="/@@/team" />&nbsp;Ubuntu Team</a>'
+
+The fmt:link formatter uses additional path components to extend the
+link:
+
+    >>> test_tales("person/fmt:link/foo/bar", person=spiv)
+    u'<a href=".../~spiv/foo/bar">...'
+
+For branches, fmt:link links to the branch page.
+
+    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    ...     '~name12/gnome-terminal/main')
+    >>> test_tales("branch/fmt:link", branch=branch)
+    u'<a href=".../~name12/gnome-terminal/main" title="GNOME Terminal Mainline"><img src="/@@/branch"...>&nbsp;~name12/gnome-terminal/main</a>'
+
+For bugs, fmt:link takes to the bug redirect page.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
+    u'<a href=".../bugs/1"><img src="/@@/bug"...>&nbsp;Bug #1: Firefox does not support SVG</a>'
+
+For bugtasks, fmt:link shows the severity bug icon, and links to the
+appropriate project's bug.
+
+    >>> bugtask = getUtility(IBugSet).get(1).bugtasks[0]
+    >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
+    u'<a href=".../firefox/+bug/1"><img ...src="/@@/bug-low" />&nbsp;Bug #1: Firefox does not support SVG</a>'
 
 
 == The fmt: namespace to get strings (hiding) ==
@@ -320,6 +359,8 @@ is replaced with the message '<email address hidden>'.
     '<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email', foo='foo@staticmethod.com')
     '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email', foo='<foo@bar.com>')
+    '<email address hidden>'
 
     >>> print test_tales('foo/fmt:obfuscate-email/fmt:text-to-html',
     ...     foo=signature)
@@ -360,6 +401,50 @@ is replaced with the message '<email address hidden>'.
     ...     "...........................................................not")
     >>> test_tales('foo/fmt:obfuscate-email', foo=bad_address)
     'medicalwei@sara:~$ ...'
+
+
+== Linkification of email addresses ==
+
+fmt:linkify-email will recognise email addresses that are registered in
+Launchpad and linkify them to point at the profile page for that person.
+The resulting HTML includes a person icon next to the linked text to
+emphasise the linkage.
+
+    >>> test_tales('foo/fmt:linkify-email',
+    ...    foo='I am the mighty foo.bar@canonical.com hear me roar.')
+    u'...<a href="http://launchpad.dev/~name16"><img ...src="/@@/person"
+    />&nbsp;foo.bar@canonical.com</a>...'
+
+Multiple addresses may be linkified at once:
+
+    >>> test_tales('foo/fmt:linkify-email',
+    ...     foo='foo.bar@canonical.com and cprov@ubuntu.com')
+    u'<a href="http://launchpad.dev/~name16"><img ...src="/@@/person"
+    />&nbsp;foo.bar@canonical.com</a> and
+    <a href="http://launchpad.dev/~cprov"><img ...src="/@@/person"
+    />&nbsp;cprov@ubuntu.com</a>'
+
+Team addresses are linkified with a team icon:
+
+    >>> test_tales('foo/fmt:linkify-email', foo='support@ubuntu.com')
+    u'<a href="http://launchpad.dev/~ubuntu-team"><img ...src="/@@/team"
+    />&nbsp;support@ubuntu.com</a>'
+
+Unknown email addresses are not altered in any way:
+
+    >>> test_tales('foo/fmt:linkify-email', foo='nobody@example.com')
+    'nobody@example.com'
+
+Users who specifiy that their email adresses must be hidden also do not
+get linkified.  test@canonical.com is hidden:
+
+    >>> person_set = getUtility(IPersonSet)
+    >>> discreet_user = person_set.getByEmail('test@canonical.com')
+    >>> discreet_user.hide_email_addresses
+    True
+
+    >>> test_tales('foo/fmt:linkify-email', foo='test@canonical.com')
+    'test@canonical.com'
 
 
 == Test the 'fmt:' namespace where the context is a dict. ==
@@ -476,7 +561,7 @@ an EnumCol for sqlobject.
 
 Test the 'lp:' namespace for presenting DBSchema items.
 
-    >>> from canonical.lp.dbschema import BinaryPackageFormat
+    >>> from canonical.launchpad.interfaces import BinaryPackageFormat
     >>> deb = BinaryPackageFormat.DEB.value
     >>> test_tales('deb/lp:BinaryPackageFormat', deb=deb)
     'Ubuntu Package'
@@ -511,7 +596,7 @@ matches a particular valid value for that DBSchema enum.
 This was going to be called 'enum-value', but Zope doesn't allow this.
 To be fixed upstream.
 
-    >>> from canonical.lp.dbschema import BinaryPackageFormat
+    >>> from canonical.launchpad.interfaces import BinaryPackageFormat
     >>> deb = BinaryPackageFormat.DEB
     >>> udeb = BinaryPackageFormat.UDEB
     >>> test_tales('deb/enumvalue:DEB', deb=deb)

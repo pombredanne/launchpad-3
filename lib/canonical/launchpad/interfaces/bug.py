@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces related to bugs."""
 
@@ -36,7 +37,7 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, assignee=None, datecreated=None,
                  security_related=False, private=False, subscribers=(),
-                 binarypackagename=None, tags=None):
+                 binarypackagename=None, tags=None, subscribe_reporter=True):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -54,6 +55,7 @@ class CreateBugParams:
         self.sourcepackagename = None
         self.binarypackagename = binarypackagename
         self.tags = tags
+        self.subscribe_reporter = subscribe_reporter
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -93,13 +95,16 @@ class CreateBugParams:
 
 
 class BugNameField(ContentNameField):
+    """Provides a a way to retrieve bugs by name."""
     errormessage = _("%s is already in use by another bug.")
 
     @property
     def _content_iface(self):
+        """Return the `IBug` interface."""
         return IBug
 
     def _getByName(self, name):
+        """Return a bug by name, or None."""
         try:
             return getUtility(IBugSet).getByNameOrID(name)
         except NotFoundError:
@@ -140,6 +145,12 @@ class IBug(IMessageTarget, ICanBeMentored):
         description=_(
             "Private bug reports are visible only to their subscribers."),
         default=False)
+    date_made_private = Datetime(
+        title=_('Date Made Private'), required=False)
+    who_made_private = Choice(
+        title=_('Who Made Private'), required=False,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The person who set this bug private."))
     security_related = Bool(
         title=_("This bug is a security vulnerability"), required=False,
         default=False)
@@ -155,7 +166,6 @@ class IBug(IMessageTarget, ICanBeMentored):
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
-    externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
@@ -265,8 +275,13 @@ class IBug(IMessageTarget, ICanBeMentored):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
-    def addBranch(branch, whiteboard=None, status=None):
+    def addBranch(branch, registrant, whiteboard=None, status=None):
         """Associate a branch with this bug.
+
+        :param branch: The branch being linked to the bug
+        :param registrant: The user making the link.
+        :param whiteboard: A space where people can write about the bug fix
+        :param status: The status of the fix in the branch
 
         Returns an IBugBranch.
         """
@@ -364,6 +379,15 @@ class IBug(IMessageTarget, ICanBeMentored):
         Return None if no bugtask was edited.
         """
 
+    def setPrivate(private, who):
+        """Set bug privacy.
+
+            :private: True/False.
+            :who: The IPerson who is making the change.
+
+        Return True if a change is made, False otherwise.
+        """
+
     def getBugTask(target):
         """Return the bugtask with the specified target.
 
@@ -390,9 +414,6 @@ class IBugDelta(Interface):
         "IBug's")
 
     # other things linked to the bug
-    external_reference = Attribute(
-        "A dict with two keys, 'old' and 'new', or None. Key values are "
-        "IBugExternalRefs.")
     bugwatch = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "IBugWatch's.")
@@ -478,8 +499,11 @@ class IBugSet(Interface):
         """
 
     def queryByRemoteBug(bugtracker, remotebug):
-        """Find one or None bugs in Launchpad that have a BugWatch matching the
-        given bug tracker and remote bug id."""
+        """Find one or None bugs for the BugWatch and bug tracker.
+
+        Find one or None bugs in Launchpad that have a BugWatch matching
+        the given bug tracker and remote bug id.
+        """
 
     def createBug(bug_params):
         """Create a bug and return it.

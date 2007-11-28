@@ -211,6 +211,7 @@ Alsa does not use Launchpad to track answers.
 
 We can create new products with the createProduct() method:
 
+    >>> from canonical.launchpad.interfaces.product import License
     >>> owner = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> product = productset.createProduct(
     ...     owner=owner,
@@ -218,7 +219,8 @@ We can create new products with the createProduct() method:
     ...     displayname='Test Product',
     ...     title='Test Product',
     ...     summary='A test product',
-    ...     description='A description of the test product')
+    ...     description='A description of the test product',
+    ...     licenses=(License.GPL,))
 
 When creating a product, a default product series is created for it:
 
@@ -227,6 +229,17 @@ When creating a product, a default product series is created for it:
     >>> trunk = product.serieses[0]
     >>> print trunk.name
     trunk
+
+A product's licenses is now being tracked. Previously registered products 
+may not have a license set, so an empty tuple is valid.
+
+    >>> productset.getByName('jokosher').licenses == ()
+    True
+    >>> product.licenses
+    (<...License.GPL...>,)
+    >>> product.licenses = (License.GPL, License.LGPL)
+    >>> product.licenses
+    (<...License.GPL...>, <...License.LGPL...>)
 
 This series is set as the development focus for the product:
 
@@ -243,7 +256,7 @@ Basically, we can filter by completeness, and by whether or not the spec is
 informational.
 
  >>> firefox = productset.getByName('firefox')
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be only one informational spec for firefox:
 
@@ -332,7 +345,13 @@ no longer appear in the result set.
     >>> thunderbird_branches = getUtility(IBranchSet).getBranchesForProduct(
     ...     product=productset.getByName('thunderbird'),
     ...     lifecycle_statuses=None)
-    >>> for branch in thunderbird_branches:
+    >>> for branch_view in thunderbird_branches:
+    ...     # XXX: MichaelHudson 2007-10-12 bug=154016: getBranchesForProduct
+    ...     # returns objects from BranchWithSortKeys, which is a view and so
+    ...     # can't be modified.  Get the branch with the same id.  This can
+    ...     # go away when BranchWithSortKeys goes away, i.e. when we get
+    ...     # away from SQLObject.
+    ...     branch = getUtility(IBranchSet).get(branch_view.id)
     ...     branch.lifecycle_status = BranchLifecycleStatus.ABANDONED
     >>> flush_database_updates()
 
@@ -363,18 +382,17 @@ testing this, we need to log in as a translations administrator.
     >>> translations_admin = getUtility(IPersonSet).getByEmail(
     ...     'carlos@canonical.com')
 
-We'll also create new templates, so we need IPOTemplateSet and
-POTemplateNameSet:
+We'll also create new templates, so we need IPOTemplateSet:
 
     >>> from canonical.launchpad.interfaces import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
-    >>> from canonical.launchpad.database import POTemplateNameSet
 
-Firefox has two serieses, but no translatable series either:
+Firefox has two series, but no translatable series either:
 
     >>> firefox = productset.getByName('firefox')
     >>> for firefoxseries in firefox.serieses:
-    ...     print firefoxseries.displayname, firefoxseries.potemplates
+    ...     print '%s %s' % (firefoxseries.displayname,
+    ...                      firefoxseries.getCurrentTranslationTemplates())
     1.0 []
     trunk []
     >>> print firefox.primary_translatable
@@ -392,12 +410,18 @@ But, there's also a 1.0 series for Firefox.
 
 We can create and associate a new potemplate with Firefox 1.0.
 
-    >>> firefox_potemplatename = POTemplateNameSet()['firefox']
     >>> potemplatesubset = potemplate_set.getSubset(
     ...     productseries=firefox_10)
-    >>> firefox_10_pot = potemplatesubset.new(firefox_potemplatename,
+    >>> firefox_10_pot = potemplatesubset.new('firefox',
+    ...                                       'firefox',
     ...                                       'firefox.pot',
     ...                                       translations_admin)
+
+And set that product as using translations officially. We need it so
+translations are available.
+
+    >>> firefox.official_rosetta = True
+    >>> flush_database_updates()
 
 The primary_translatable now points at firefox 1.0:
 
@@ -409,7 +433,8 @@ translatable because it's a series with development focus.
 
     >>> potemplatesubset = potemplate_set.getSubset(
     ...     productseries=firefox_trunk)
-    >>> firefox_trunk_pot = potemplatesubset.new(firefox_potemplatename,
+    >>> firefox_trunk_pot = potemplatesubset.new('firefox',
+    ...                                          'firefox',
     ...                                          'firefox.pot',
     ...                                          translations_admin)
     >>> print firefox.primary_translatable.displayname
@@ -419,4 +444,29 @@ If we change the development_focus, primary_translatable changes as well.
 
     >>> firefox.development_focus = firefox_10
     >>> print firefox.primary_translatable.displayname
+    1.0
+
+
+= Series list = 
+
+The series for a product are returned as a sorted list, with the
+exception that the current development focus is first.
+
+    >>> from zope.component import getView
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest()
+    >>> firefox_view = getView(firefox, "+index", request)
+    >>> sorted_series = firefox_view.sorted_series_list
+    >>> for series in sorted_series:
+    ...     print series.name
+    1.0
+    trunk
+
+Change the development focus and the sort order changes.
+
+    >>> firefox.development_focus = sorted_series[-1]
+    >>> sorted_series = firefox_view.sorted_series_list
+    >>> for series in sorted_series:
+    ...     print series.name
+    trunk
     1.0

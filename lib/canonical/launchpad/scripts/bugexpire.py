@@ -10,13 +10,17 @@ __all__ = ['BugJanitor']
 from logging import getLogger
 
 from zope.component import getUtility
+from zope.event import notify
+from zope.interface import providedBy
 
 from canonical.config import config
+from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BugTaskStatus, ILaunchpadCelebrities, IBugTaskSet)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 class BugJanitor:
@@ -55,8 +59,8 @@ class BugJanitor:
         message_template = ('[Expired for %s because there has been no '
             'activity for %d days.]')
         self.log.info(
-            'Expiring unassigned, INCOMPLETE bugtask without activity for '
-            'the last %d days for projects that use Malone.' %
+            'Expiring unattended, INCOMPLETE bugtasks older than '
+            '%d days for projects that use Launchpad Bugs.' %
             self.days_before_expiration)
         self._login()
         try:
@@ -67,6 +71,8 @@ class BugJanitor:
             self.log.info(
                 'Found %d bugtasks to expire.' % len(incomplete_bugtasks))
             for bugtask in incomplete_bugtasks:
+                bugtask_before_modification = Snapshot(
+                    bugtask, providing=providedBy(bugtask))
                 bugtask.transitionToStatus(
                     BugTaskStatus.INVALID, self.janitor)
                 content = message_template % (
@@ -76,6 +82,9 @@ class BugJanitor:
                     subject=bugtask.bug.followup_subject(),
                     content=content)
                 bugtask.statusexplanation = content
+                notify(SQLObjectModifiedEvent(
+                    bugtask, bugtask_before_modification,
+                    ['status', 'statusexplanation'], user=self.janitor))
                 # XXX sinzui 2007-08-02 bug=29744:
                 # We commit after each expiration because emails are sent
                 # immediately in zopeless. This minimize the risk of

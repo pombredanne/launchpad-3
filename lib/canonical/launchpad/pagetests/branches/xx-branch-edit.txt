@@ -114,6 +114,7 @@ Set the branch status back to its initial state.
     >>> browser.getControl('Whiteboard').value = ''
     >>> browser.getControl('Change Branch').click()
 
+
 == Changing branch product and name ==
 
 The edit form allows changing the product of a branch.
@@ -159,10 +160,11 @@ reasons given in xx-branch-reassign.txt.
     >>> browser.getControl('Change Branch').click()
     >>> browser.url
     'http://code.launchpad.dev/%7Elandscape-developers/landscape/trunk/+edit'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
     Team-owned branches must be associated with a project.
+
 
 == Name conflicts ==
 
@@ -190,7 +192,7 @@ but that is just for the needs of the demonstration.
 
 This should have displayed an error message next to the name field.
 
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
     Name already in use. ...
@@ -211,7 +213,7 @@ branch, and changing the product and the branch name at the same time.
     >>> browser.getControl('Change Branch').click()
     >>> browser.url
     'http://launchpad.dev/%7Ename12/gnome-terminal/main/+edit'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
     Name already in use. ...
@@ -221,14 +223,12 @@ branch we already own in the same product. So we have tested all the
 combinations of changing name and product that can cause an error.
 
     >>> browser.open('http://launchpad.dev'
-    ...     '/~name12/gnome-terminal/2.6')
-    >>> browser.open('http://launchpad.dev'
     ...     '/~name12/gnome-terminal/main/+edit')
     >>> browser.getControl('Name').value = '2.6'
     >>> browser.getControl('Change Branch').click()
     >>> browser.url
     'http://launchpad.dev/%7Ename12/gnome-terminal/main/+edit'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
     Name already in use. ...
@@ -241,7 +241,35 @@ know if it conflicts or not:
     >>> browser.getControl('Change Branch').click()
     >>> browser.url
     'http://launchpad.dev/%7Ename12/gnome-terminal/main/+edit'
-    >>> for msg in get_feedback_messages(browser):
+    >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     There is 1 error.
     Invalid value
+
+
+== URL validation ==
+
+Edit forms do the same URL validation checks as the add forms.
+
+    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Branch URL').value = (
+    ...     'http://bazaar.launchpad.dev/~foo/bar/baz')
+    >>> browser.getControl('Change Branch').click()
+
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    There is 1 error.
+    For Launchpad to mirror a branch, the original branch cannot be
+    on launchpad.dev.
+
+Check that when editing a hosted branch the URL field is not shown.
+
+    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Branch URL').value = (
+    ...     'http://acme.example.com/~foo/bar/baz')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Branch URL'
+

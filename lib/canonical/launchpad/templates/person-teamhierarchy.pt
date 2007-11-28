@@ -1,64 +1,67 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
-    <div metal:fill-slot="main">
-      <h1>
-        &#8220;<span tal:replace="context/browsername">
-        Foo</span>&#8221; team
-      </h1>
-      <h2>Relationship to other teams</h2>
-      <tal:block define="
-        subteams context/getSubTeams;
-        superteams context/getSuperTeams
-      ">
-        <p tal:condition="python: not subteams and not superteams">
-          None of the members of
-          &#8220;<span tal:replace="context/browsername"/>&#8221;
-          are teams,
-          and nor is it a member of any other team.
-        </p>
-        <p tal:condition="python: superteams and not subteams">
-          None of the members of
-          &#8220;<span tal:replace="context/browsername"/>&#8221;
-          are teams.
-        </p>
-        <tal:block condition="subteams">
-          <p>
-            These teams are members of
-            &#8220;<span tal:replace="context/browsername"/>&#8221;:
-          </p>
-          <ul>
-            <li tal:repeat="team subteams">
-              <a tal:attributes="href string:../${team/name}"
-                 tal:content="team/browsername">name</a>
-            </li>
-          </ul>
-        </tal:block>
-        <p tal:condition="python: subteams and not superteams">
-          &#8220;<span tal:replace="context/browsername"/>&#8221;
-          is not a member of any other team.
-        </p>
-        <tal:block condition="superteams">
-          <p>
-            &#8220;<span tal:replace="context/browsername"/>&#8221;
-            is a member of these teams:
-          </p>
-          <ul>
-            <li tal:repeat="team superteams">
-              <a tal:attributes="href string:../${team/name}"
-                 tal:content="team/browsername">name</a>
-            </li>
-          </ul>
-        </tal:block>
-      </tal:block>
-    </div>
-  </body>
+<div metal:fill-slot="main">
+  <h1>
+    &#8220;<span tal:replace="context/browsername">
+    Foo</span>&#8221; team
+  </h1>
+  <h2>Relationship to other teams</h2>
+  <tal:block define="
+    subteams context/getSubTeams;
+    superteams context/getSuperTeams
+  ">
+    <p tal:condition="python: not subteams and not superteams">
+      None of the members of
+      &#8220;<span tal:replace="context/browsername"/>&#8221;
+      are teams,
+      and nor is it a member of any other team.
+    </p>
+    <p tal:condition="python: superteams and not subteams">
+      None of the members of
+      &#8220;<span tal:replace="context/browsername"/>&#8221;
+      are teams.
+    </p>
+    <tal:block condition="subteams">
+      <p>
+        These teams are members of
+        &#8220;<span tal:replace="context/browsername"/>&#8221;:
+      </p>
+      <ul>
+        <li tal:repeat="team subteams">
+          <a tal:attributes="href string:../${team/name}"
+             tal:content="team/browsername">name</a>
+        </li>
+      </ul>
+    </tal:block>
+    <p tal:condition="python: subteams and not superteams">
+      &#8220;<span tal:replace="context/browsername"/>&#8221;
+      is not a member of any other team.
+    </p>
+    <tal:block condition="superteams">
+      <p>
+        &#8220;<span tal:replace="context/browsername"/>&#8221;
+        is a member of these teams:
+      </p>
+      <ul>
+        <li tal:repeat="team superteams">
+          <a tal:attributes="href string:../${team/name}"
+             tal:content="team/browsername">name</a>
+        </li>
+      </ul>
+    </tal:block>
+  </tal:block>
+</div>
+</body>
 </html>

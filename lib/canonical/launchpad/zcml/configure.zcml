@@ -23,7 +23,6 @@
     <include file="bugbranch.zcml" />
     <include file="bugcomment.zcml" />
     <include file="bugcve.zcml" />
-    <include file="bugextref.zcml" />
     <include file="buglinktarget.zcml" />
     <include file="buginfestation.zcml" />
     <include file="bugmessage.zcml" />
@@ -38,9 +37,11 @@
     <include file="bug.zcml" />
     <include file="build.zcml" />
     <include file="builder.zcml" />
-    <include file="calendar.zcml" />
     <include file="codeimport.zcml" />
+    <include file="codeimportevent.zcml" />
+    <include file="codeimportjob.zcml" />
     <include file="codeimportmachine.zcml" />
+    <include file="codeimportresult.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
@@ -66,6 +67,7 @@
     <include file="entitlement.zcml" />
     <include file="faq.zcml" />
     <include file="faqcollection.zcml" />
+    <include file="feeds.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />
     <include file="hwdb.zcml" />
@@ -93,11 +95,8 @@
     <include file="pofile.zcml" />
     <include file="poll.zcml" />
     <include file="pomsgid.zcml" />
-    <include file="pomsgset.zcml" />
     <include file="potemplate.zcml" />
-    <include file="potemplatename.zcml" />
     <include file="potmsgset.zcml" />
-    <include file="posubmission.zcml" />
     <include file="potranslation.zcml" />
     <include file="processor.zcml" />
     <include file="productrelease.zcml" />
@@ -132,6 +131,7 @@
     <include file="temporaryblobstorage.zcml" />
     <include file="translationexport.zcml" />
     <include file="translationimport.zcml" />
+    <include file="translationmessage.zcml" />
     <include file="question.zcml" />
     <include file="question-events.zcml" />
     <include file="questionreopening.zcml" />
@@ -153,7 +153,7 @@
     <include file="widgets.zcml" />
 
     <!-- System homepages -->
-    <include file="rosetta.zcml" />
+    <include file="translations.zcml" />
     <include file="malone.zcml" />
     <include file="registry.zcml" />
     <include file="bazaar.zcml" />

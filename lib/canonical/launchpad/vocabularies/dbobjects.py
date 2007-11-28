@@ -9,6 +9,7 @@ docstring in __init__.py for details.
 __metaclass__ = type
 
 __all__ = [
+    'ActiveMailingListVocabulary',
     'BountyVocabulary',
     'BranchVocabulary',
     'BugNominatableSeriesesVocabulary',
@@ -38,7 +39,6 @@ __all__ = [
     'PersonAccountToMergeVocabulary',
     'PersonActiveMembershipVocabulary',
     'person_team_participations_vocabulary_factory',
-    'POTemplateNameVocabulary',
     'ProcessorVocabulary',
     'ProcessorFamilyVocabulary',
     'ProductReleaseVocabulary',
@@ -53,6 +53,7 @@ __all__ = [
     'SprintVocabulary',
     'TranslatableLanguageVocabulary',
     'TranslationGroupVocabulary',
+    'TranslationMessageVocabulary',
     'UserTeamsParticipationVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidTeamVocabulary',
@@ -73,21 +74,23 @@ from zope.security.proxy import isinstance as zisinstance
 from canonical.launchpad.database import (
     Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component, Country,
     Distribution, DistroArchSeries, DistroSeries, KarmaCategory, Language,
-    LanguagePack, Milestone, Person, PillarName, POTemplateName, Processor,
+    LanguagePack, MailingList, Milestone, Person, PillarName, Processor,
     ProcessorFamily, Product, ProductRelease, ProductSeries, Project,
-    SourcePackageRelease, Specification, Sprint, TranslationGroup)
+    SourcePackageRelease, Specification, Sprint, TranslationGroup,
+    TranslationMessage)
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IBugTask, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
-    IFAQ, IFAQTarget, ILanguage, ILaunchBag, IMilestoneSet, IPerson,
+    DistroSeriesStatus, EmailAddressStatus, IBugTask, IDistribution,
+    IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
+    IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget, ILanguage,
+    ILaunchBag, IMailingList, IMailingListSet, IMilestoneSet, IPerson,
     IPersonSet, IPillarName, IProduct, IProject, ISourcePackage,
-    ISpecification, ITeam, IUpstreamBugTask, LanguagePackType)
+    ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
+    MailingListStatus)
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
-from canonical.lp.dbschema import DistroSeriesStatus
 
 
 class BasePersonVocabulary:
@@ -496,6 +499,22 @@ class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
     _table = TranslationGroup
 
 
+class TranslationMessageVocabulary(SQLObjectVocabularyBase):
+
+    _table = TranslationMessage
+    _orderBy = 'date_created'
+
+    def toTerm(self, obj):
+        translation = ''
+        if obj.msgstr0 is not None:
+            translation = obj.msgstr0.translation
+        return SimpleTerm(obj, obj.id, translation)
+
+    def __iter__(self):
+        for message in self.context.messages:
+            yield self.toTerm(message)
+
+
 class NonMergedPeopleAndTeamsVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
     """The set of all non-merged people and teams.
@@ -748,6 +767,88 @@ class PersonActiveMembershipVocabulary:
             raise LookupError(token)
 
 
+class ActiveMailingListVocabulary:
+    """The set of all active mailing lists."""
+
+    implements(IHugeVocabulary)
+
+    displayname = 'Select an active mailing list.'
+
+    def __init__(self, context):
+        assert context is None, (
+            'Unexpected context for ActiveMailingListVocabulary')
+
+    def __iter__(self):
+        """See `IIterableVocabulary`."""
+        return iter(getUtility(IMailingListSet).active_lists)
+
+    def __len__(self):
+        """See `IIterableVocabulary`."""
+        return getUtility(IMailingListSet).active_lists.count()
+
+    def __contains__(self, team_list):
+        """See `ISource`."""
+        # Unlike other __contains__() implementations in this module, and
+        # somewhat contrary to the interface definition, this method does not
+        # return False when team_list is not an IMailingList.  No interface
+        # check of the argument is done here.  Doing the interface check and
+        # returning False when we get an unexpected type would be more
+        # Pythonic, but we deliberately break that rule because it is
+        # considered more helpful to generate an OOPS when the wrong type of
+        # object is used in a containment test.  The __contains__() methods in
+        # this module that type check their arguments is considered incorrect.
+        # This also implies that .getTerm(), contrary to its interface
+        # definition, will not always raise LookupError when the term isn't in
+        # the vocabulary, because an exceptions from the containment test it
+        # does will just be passed on up the call stack.
+        return team_list.status == MailingListStatus.ACTIVE
+
+    def toTerm(self, team_list):
+        """Turn the team mailing list into a SimpleTerm."""
+        return SimpleTerm(team_list, team_list.team.name,
+                          team_list.team.displayname)
+
+    def getTerm(self, team_list):
+        """See `IBaseVocabulary`."""
+        if team_list not in self:
+            raise LookupError(team_list)
+        return self.toTerm(team_list)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        # token should be the team name as a string.
+        team_list = getUtility(IMailingListSet).get(token)
+        if team_list is None:
+            raise LookupError(token)
+        return self.getTerm(team_list)
+
+    def search(self, text=None):
+        """Search for active mailing lists.
+
+        :param text: The name of a mailing list, which can be a partial
+            name.  This actually matches against the name of the team to which
+            the mailing list is linked.  If None (the default), all active
+            mailing lists are returned.
+        :return: An iterator over the active mailing lists matching the query.
+        """
+        if text is None:
+            return getUtility(IMailingListSet).active_lists
+        # The mailing list name, such as it has one, is really the name of the
+        # team to which it is linked.
+        return MailingList.select("""
+            MailingList.team = Person.id
+            AND Person.fti @@ ftq(%s)
+            AND Person.teamowner IS NOT NULL
+            AND MailingList.status = %s
+            """ % sqlvalues(text, MailingListStatus.ACTIVE),
+            clauseTables=['Person'])
+
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        results = self.search(query)
+        return CountableIterator(results.count(), results, self.toTerm)
+
+
 def person_team_participations_vocabulary_factory(context):
     """Return a SimpleVocabulary containing the teams a person
     participate in.
@@ -915,8 +1016,8 @@ class FilteredDistroArchSeriesVocabulary(SQLObjectVocabularyBase):
         distribution = getUtility(ILaunchBag).distribution
         if distribution:
             query = """
-                DistroRelease.id = DistroArchRelease.distrorelease AND
-                DistroRelease.distribution = %s
+                DistroSeries.id = DistroArchSeries.distroseries AND
+                DistroSeries.distribution = %s
                 """ % sqlvalues(distribution.id)
             results = self._table.select(
                 query, orderBy=self._orderBy, clauseTables=self._clauseTables)
@@ -1106,8 +1207,8 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
         quoted_query = quote_like(query)
         sql_query = ("""
-            (Specification.name ~ %s OR
-             Specification.title ~ %s OR
+            (Specification.name LIKE %s OR
+             Specification.title LIKE %s OR
              fti @@ ftq(%s))
             """
             % (quoted_query, quoted_query, quoted_query))
@@ -1238,7 +1339,7 @@ class DistributionUsingMaloneVocabulary:
 class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
 
     _table = DistroSeries
-    _orderBy = ["Distribution.displayname", "-DistroRelease.date_created"]
+    _orderBy = ["Distribution.displayname", "-DistroSeries.date_created"]
     _clauseTables = ['Distribution']
 
     def __iter__(self):
@@ -1262,9 +1363,9 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
             raise LookupError(token)
 
         obj = DistroSeries.selectOne('''
-                    Distribution.id = DistroRelease.distribution AND
+                    Distribution.id = DistroSeries.distribution AND
                     Distribution.name = %s AND
-                    DistroRelease.name = %s
+                    DistroSeries.name = %s
                     ''' % sqlvalues(distroname, distroseriesname),
                     clauseTables=['Distribution'])
         if obj is None:
@@ -1289,16 +1390,6 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
                 orderBy=self._orderBy
                 )
         return objs
-
-
-class POTemplateNameVocabulary(NamedSQLObjectHugeVocabulary):
-
-    displayname = 'Select a POTemplate'
-    _table = POTemplateName
-    _orderBy = 'name'
-
-    def toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.translationdomain)
 
 
 class ProcessorVocabulary(NamedSQLObjectVocabulary):
@@ -1527,3 +1618,4 @@ class FilteredLanguagePackVocabulary(FilteredLanguagePackVocabularyBase):
         query.append('(updates is NULL OR updates = %s)' % sqlvalues(
             self.context.language_pack_base))
         return query
+

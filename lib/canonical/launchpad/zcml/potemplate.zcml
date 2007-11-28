@@ -15,7 +15,7 @@
         />
       <require
         permission="launchpad.Admin"
-        set_attributes="potemplatename productseries distroseries
+        set_attributes="name productseries distroseries
                         sourcepackagename sourcepackageversion
                         binarypackagename languagepack path header
                         iscurrent from_sourcepackagename date_last_updated
@@ -25,8 +25,8 @@
 
     <adapter
         for="canonical.launchpad.interfaces.IPOTemplate"
-        provides="canonical.launchpad.interfaces.ITranslationFile"
-        factory="canonical.launchpad.database.POTemplateToTranslationFileAdapter" />
+        provides="canonical.launchpad.interfaces.ITranslationFileData"
+        factory="canonical.launchpad.database.POTemplateToTranslationFileDataAdapter" />
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -95,7 +95,7 @@
         label="Change PO template information"
         permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
-        fields="name description priority owner"
+        fields="description priority owner"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
@@ -106,7 +106,7 @@
         label="Administer PO template"
         permission="launchpad.Admin"
         template="../templates/potemplate-edit.pt"
-        fields="potemplatename name description header iscurrent owner
+        fields="name description header iscurrent owner
                 productseries distroseries sourcepackagename
                 from_sourcepackagename sourcepackageversion binarypackagename
                 languagepack path source_file_format priority

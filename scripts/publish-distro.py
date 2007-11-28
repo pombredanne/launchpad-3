@@ -8,14 +8,14 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.archivepublisher.publishing import getPublisher
+from canonical.config import config
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+    ArchivePurpose, IDistributionSet, NotFoundError)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
-from canonical.lp.dbschema import ArchivePurpose
 
 
 def parse_options():
@@ -95,9 +95,8 @@ def main():
         log.info("      Indexing: %s" % careful_msg(options.careful_apt))
 
     log.debug("Initialising zopeless.")
-    # Change this when we fix up db security
-    txn = initZopeless(dbuser='lucille')
 
+    txn = initZopeless(dbuser=config.archivepublisher.dbuser)
     execute_zcml_for_scripts()
 
     log.debug("Finding distribution object.")

@@ -98,9 +98,9 @@ upload, even though it gets changed in the publishing record.
 Only PUBLISHED records are considered when looking the latest published
 component. If there are no PUBLISHED records, None is returned.
 
-    >>> from canonical.lp.dbschema import PackagePublishingStatus
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
 
-    >>> latest_publishing.status = PackagePublishingStatus.REMOVED
+    >>> latest_publishing.status = PackagePublishingStatus.SUPERSEDED
     >>> syncUpdate(latest_publishing)
     >>> print firefox_warty.latest_published_component
     None
@@ -264,19 +264,19 @@ number linkification just below.
     >>> sp = SourcePackage(sourcepackagename=pmount, distroseries=hoary)
     >>> spr = sp['0.1-2']
     >>> spr_view = queryView(spr, "+changelog", request)
-    >>> print spr_view.changelog()
+    >>> print spr_view.changelog
     This is a placeholder changelog for pmount 0.1-2
 
     >>> spr = sp['0.1-1']
     >>> spr_view = queryView(spr, "+changelog", request)
-    >>> print spr_view.changelog()
-    pmount (<a href="../../../hoary/+source/pmount/0.1-1">0.1-1</a>) hoary; urgency=low
+    >>> print spr_view.changelog
+    pmount (0.1-1) hoary; urgency=low
     <BLANKLINE>
      * Fix description (Malone #1)
      * Fix debian (Debian #2000)
      * Fix warty (Warty Ubuntu #1)
     <BLANKLINE>
-     -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
+     -- Sample Person &lt;email address hidden&gt; Tue, 7 Feb 2006 12:10:08 +0300
     <BLANKLINE>
     <BLANKLINE>
 
@@ -353,7 +353,7 @@ Lastly, note that sourcepackages know how to compare to each other:
 
 SourcePackageName implements IHasTranslationImports interface:
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IHasTranslationImports)
     >>> IHasTranslationImports.providedBy(warty_firefox)

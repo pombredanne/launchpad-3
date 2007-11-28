@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IRequestedCDs', 'IShippingRequest', 'IShippingRequestSet',
@@ -121,6 +122,12 @@ class ShipItFlavour(DBEnumeratedType):
         The Edubuntu flavour.
         """)
 
+    SERVER = DBItem(4, """
+        Server
+
+        The Ubuntu Server Edition.
+        """)
+
 
 class ShipItArchitecture(DBEnumeratedType):
     """The Distro Architecture, used only to link with ShippingRequest."""
@@ -137,6 +144,8 @@ class ShipItArchitecture(DBEnumeratedType):
         AMD64 or EM64T based processors.
         """)
 
+    # Although we don't ship PPC CDs anymore, there are lots of existing
+    # requests with PPC CDs, so we need to keep this item here.
     PPC = DBItem(3, """
         Mac
 
@@ -651,8 +660,16 @@ class IStandardShipItRequest(Interface):
     quantities = Attribute(
         _('A dictionary mapping architectures to their quantities.'))
     totalCDs = Attribute(_('Total number of CDs in this request.'))
-    description = Attribute(_('Description'))
-    description_without_flavour = Attribute(_('Description without Flavour'))
+    user_description = TextLine(
+        title=_('Description'), readonly=False, required=False,
+        description=_(
+            "This option's description. Leave it blank to use the default "
+            "(e.g. 5 Ubuntu CDs (3 PC CDs, 2 64-bit PC CDs))."))
+    description = TextLine(
+        title=_('Description'), readonly=True, required=False,
+        description=_(
+            "If user_description is not empty it's used. Otherwise we "
+            "generate a description based on the flavour and quantities."))
 
     def destroySelf():
         """Delete this object from the database."""
@@ -661,7 +678,8 @@ class IStandardShipItRequest(Interface):
 class IStandardShipItRequestSet(Interface):
     """The set of all standard ShipIt requests."""
 
-    def new(flavour, quantityx86, quantityamd64, quantityppc, isdefault):
+    def new(flavour, quantityx86, quantityamd64, quantityppc, isdefault,
+            description):
         """Create and return a new StandardShipItRequest."""
 
     def getByFlavour(flavour, user):
@@ -810,9 +828,6 @@ class IShippingRequestQuantities(Interface):
     ubuntu_quantityx86 = ShipItQuantity(
         title=_('PC'), description=_('Quantity of Ubuntu PC CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
-    ubuntu_quantityppc = ShipItQuantity(
-        title=_('Mac'), description=_('Quantity of Ubuntu Mac CDs'),
-        required=False, readonly=False, constraint=_validate_positive_int)
     ubuntu_quantityamd64 = ShipItQuantity(
         title=_('64-bit PC'), description=_('Quantity of Ubuntu 64-bit PC CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
@@ -827,6 +842,14 @@ class IShippingRequestQuantities(Interface):
 
     edubuntu_quantityx86 = ShipItQuantity(
         title=_('PC'), description=_('Quantity of Edubuntu PC CDs'),
+        required=False, readonly=False, constraint=_validate_positive_int)
+
+    server_quantityx86 = ShipItQuantity(
+        title=_('PC'), description=_('Quantity of Server PC CDs'),
+        required=False, readonly=False, constraint=_validate_positive_int)
+    server_quantityamd64 = ShipItQuantity(
+        title=_('64-bit PC'),
+        description=_('Quantity of Server 64-bit PC CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
 
 
@@ -861,24 +884,29 @@ class IShippingRequestEdit(Interface):
     ubuntu_quantityx86approved = ShipItQuantity(
         title=_('PC'), description=_('Quantity of Ubuntu X86 Approved CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
-    ubuntu_quantityppcapproved = ShipItQuantity(
-        title=_('Mac'), description=_('Quantity of Ubuntu PPC Approved CDs'),
-        required=False, readonly=False, constraint=_validate_positive_int)
     ubuntu_quantityamd64approved = ShipItQuantity(
         title=_('64-bit PC'),
-        description=_('Quantity of Ubuntu AMD64 Approved CDs'), required=False,
-        readonly=False, constraint=_validate_positive_int)
+        description=_('Quantity of Ubuntu 64-bit PC Approved CDs'),
+        required=False, readonly=False, constraint=_validate_positive_int)
 
     kubuntu_quantityx86approved = ShipItQuantity(
-        title=_('PC'), description=_('Quantity of Kubuntu X86 Approved CDs'),
+        title=_('PC'), description=_('Quantity of Kubuntu PC Approved CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
     kubuntu_quantityamd64approved = ShipItQuantity(
         title=_('64-bit PC'),
-        description=_('Quantity of Kubuntu AMD64 Approved CDs'), required=False,
-        readonly=False, constraint=_validate_positive_int)
+        description=_('Quantity of Kubuntu 64-bit PC Approved CDs'),
+        required=False, readonly=False, constraint=_validate_positive_int)
 
     edubuntu_quantityx86approved = ShipItQuantity(
         title=_('PC'), description=_('Quantity of Edubuntu X86 Approved CDs'),
+        required=False, readonly=False, constraint=_validate_positive_int)
+
+    server_quantityx86approved = ShipItQuantity(
+        title=_('PC'), description=_('Quantity of Server PC Approved CDs'),
+        required=False, readonly=False, constraint=_validate_positive_int)
+    server_quantityamd64approved = ShipItQuantity(
+        title=_('64-bit PC'),
+        description=_('Quantity of Server 64-bit PC Approved CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
 
     highpriority = IShippingRequest.get('highpriority')

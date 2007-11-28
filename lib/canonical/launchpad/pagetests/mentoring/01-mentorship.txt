@@ -280,7 +280,7 @@ We are going to now poke into the back of the db's head, and "privatise" the
 bug we have been using.
 
    >>> from canonical.launchpad.interfaces import (
-   ...     BugTaskStatus, IPersonSet, IBugSet, IDistributionSet)
+   ...     BugTaskStatus, IPersonSet, IBugSet, IDistributionSet, ILaunchBag)
    >>> from canonical.launchpad.ftests import login, logout, syncUpdate
    >>> from canonical.database.sqlbase import flush_database_updates
    >>> login('foo.bar@canonical.com')
@@ -293,7 +293,8 @@ bug we have been using.
    >>> bug_2 = bugset.get(2)
    >>> bug_2.private
    False
-   >>> bug_2.private = True
+   >>> bug_2.setPrivate(True, getUtility(ILaunchBag).user)
+   True
    >>> syncUpdate(bug_2)
    >>> bug_2.private
    True
@@ -362,7 +363,8 @@ Or for a distribution:
 Let's make this bug public again:
 
    >>> login('foo.bar@canonical.com')
-   >>> bug_2.private = False
+   >>> bug_2.setPrivate(False, getUtility(ILaunchBag).user)
+   True
    >>> syncUpdate(bug_2)
    >>> bug_2.private
    False
@@ -377,8 +379,8 @@ successes" list (if the mentorship was offered less than a year ago).
 We are going to now poke into the back of the db's head, and "complete" the
 bug and the blueprint we have been using.
 
-   >>> from canonical.launchpad.interfaces import ILaunchBag
-   >>> from canonical.lp.dbschema import SpecificationImplementationStatus
+   >>> from canonical.launchpad.interfaces import (
+   ...     ILaunchBag, SpecificationImplementationStatus)
    >>> login('foo.bar@canonical.com')
    >>> spec_1 = kubuntu.getSpecification('cluster-installation')
    >>> bug_2.is_complete

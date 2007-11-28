@@ -25,7 +25,7 @@ import the bunch of required database classes:
   ...      PocketChroot, DistroArchSeries, Build, BuildQueue,
   ...      SourcePackageReleaseFile)
 
-  >>> from canonical.lp.dbschema import (
+  >>> from canonical.launchpad.interfaces import (
   ...      PackagePublishingPocket, PackagePublishingStatus,
   ...      SourcePackageFileType)
 
@@ -136,7 +136,7 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...         section=1,
   ...         maintainer=1,
   ...         component=1,
-  ...         uploaddistroseries=1,
+  ...         upload_distroseries=1,
   ...         sourcepackagename=name,
   ...         architecturehintlist=architecturehintlist,
   ...         builddependsindep='foo (<< 1.0)',
@@ -265,16 +265,31 @@ And a source listing which causes us to produce no builds:
 Binary PAS
 ----------
 
-To check binary PAS listings we'll use a publication for
-mozilla-firefox, which already has its data set up.
+To check binary PAS listings we'll use a source publication for
+iceweasel which produces mozilla-firefox binaries in warty and already
+has its data set up.
 
   >>> warty = DistroSeries.selectOneBy(name="warty")
-  >>> firefox_pub = SecureSourcePackagePublishingHistory.get(18)
+  >>> firefox_pub = SecureSourcePackagePublishingHistory.get(28)
+  >>> print firefox_pub.sourcepackagerelease.title
+  iceweasel - 1.0
+  >>> print firefox_pub.sourcepackagerelease.architecturehintlist
+  any
+  >>> iceweasel_binaries = warty.getSourcePackage('iceweasel')['1.0'].binaries
+  >>> [b.title for b in iceweasel_binaries]
+  [u'mozilla-firefox-1.0']
+
   >>> legal_archs = set(warty.architectures)
+  >>> sorted([a.architecturetag for a in legal_archs], reverse=True)
+  [u'i386', u'hppa']
+
+Restrict iceweasel targets to i386 and sparc, since the latter is not
+present in warty, we will only create a build for i386:
+
   >>> pas_verify = getPASVerifier("mozilla-firefox: i386 sparc", dar=warty)
-  >>> [a.architecturetag for a in
-  ...       determineArchitecturesToBuild(firefox_pub, legal_archs, warty,
-  ...                                     pas_verify)]
+  >>> permitted_archs = determineArchitecturesToBuild(
+  ...      firefox_pub, legal_archs, warty, pas_verify)
+  >>> [a.architecturetag for a in permitted_archs]
   [u'i386']
 
 And a binary PAS listing that tries to exclude i386 and hppa from an
@@ -282,9 +297,9 @@ arch-any build. The exclusion of i386 is ignored; see comment in
 pas.py:_handleBinaryPAS for more information on why.
 
   >>> pas_verify = getPASVerifier("mozilla-firefox: !i386 !hppa", dar=warty)
-  >>> [a.architecturetag for a in
-  ...       determineArchitecturesToBuild(firefox_pub, legal_archs, warty,
-  ...                                     pas_verify)]
+  >>> permitted_archs = determineArchitecturesToBuild(
+  ...      firefox_pub, legal_archs, warty, pas_verify)
+  >>> [a.architecturetag for a in permitted_archs]
   [u'i386']
 
 
@@ -342,7 +357,7 @@ the default score value of 0:
 Check the published component name retriever, they might be different,
 i.e., the published component can be different than the original component.
 
-  >>> bq.current_component.name
+  >>> bq.build.current_component.name
   u'main'
   >>> bq.build.sourcepackagerelease.component.name
   u'main'

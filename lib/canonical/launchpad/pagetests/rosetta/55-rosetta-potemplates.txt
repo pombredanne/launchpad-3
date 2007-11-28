@@ -45,6 +45,13 @@ And with at least one translation, legend is shown.
 When there are no translations in a single template, legend and
 headers will not be shown.
 
+    # To check this, we need to state that this project uses Launchpad for
+    # translations.
+    >>> admin_browser.open('http://launchpad.dev/netapplet/+edit')
+    >>> admin_browser.getControl(
+    ...     'Translations for this project are done in Launchpad'
+    ...     ).selected = True
+    >>> admin_browser.getControl('Change').click()
     >>> anon_browser.open(
     ...     'http://translations.launchpad.dev/netapplet/trunk/+pots/'
     ...     'netapplet')

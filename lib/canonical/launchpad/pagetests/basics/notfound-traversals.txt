@@ -56,7 +56,10 @@ status is returned.
 >>> check("/")
 >>> check("/rdf")
 >>> check_redirect("/legal", status=301)
->>> check("/feedback")
+>>> check_redirect("/faq", status=301)
+>>> check_redirect("/feedback", status=301)
+>>> check_redirect("/", host='feeds.launchpad.dev', status=301)
+>>> check_redirect("/+index", host='feeds.launchpad.dev', status=301)
 >>> check("/+graphics")
 
 >>> check("/translations/+about")
@@ -110,6 +113,7 @@ status is returned.
 >>> check_redirect("/products", status=301)
 >>> check("/projects")
 >>> check("/projects/+all")
+>>> check("/projects/+review", auth=True)
 >>> check("/firefox")
 >>> check("/firefox/+series")
 >>> check("/firefox/1.0")
@@ -263,7 +267,6 @@ one.)
 >>> check("/firefox/+bug/1/+subscribe", auth=True)
 >>> check("/firefox/+bug/1/+addsubscriber", auth=True)
 >>> check("/firefox/+bug/1/+addcomment", auth=True)
->>> check("/firefox/+bug/1/+addurl", auth=True)
 >>> check("/firefox/+bug/1/+activity", auth=True)
 
 Viewing a bug in a distribution context where the current development
@@ -276,7 +279,6 @@ release is targeted.
 >>> check("/ubuntu/+bug/2/+subscribe", auth=True)
 >>> check("/ubuntu/+bug/2/+addsubscriber", auth=True)
 >>> check("/ubuntu/+bug/2/+addcomment", auth=True)
->>> check("/ubuntu/+bug/2/+addurl", auth=True)
 >>> check("/ubuntu/+bug/2/+activity", auth=True)
 
 Viewing a bug comment.
@@ -384,14 +386,12 @@ This is for a team:
 
 >>> check("/~name18/+teamhierarchy")
 >>> check("/~name18/+edit", auth=True)
->>> check("/~name18/+editemail", auth=True)
 >>> check("/~name18/+members")
 >>> check("/~name18/+packages")
 >>> check("/~name18/+leave", auth=True)
 >>> check("/~name18/+reassign", auth=True)
 >>> check("/~name18/+review", auth=True)
 >>> check("/~name18/+specs")
->>> check_not_found("/~name18/+calendar")
 >>> check("/~name18/+bounties")
 >>> check_redirect("/~name18/+translations", status=301)
 >>> check("/~name18/+translations", host='translations.launchpad.dev')
@@ -427,8 +427,6 @@ And this is for a person:
 >>> check("/~name16/+portlet-emails")
 >>> check("/~name16/+portlet-details")
 >>> check("/~name16/+portlet-team-assignedbugs")
->>> check("/~name16/+calendar")
->>> check("/~name16/+calendar/+subscribe", auth=True)
 >>> check("/~name16/+specworkload")
 >>> check("/~name16/+imports", host='translations.launchpad.dev')
 
@@ -438,7 +436,6 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/~sabdfl/+packages")
 
 >>> check("/+code")
->>> check("/+code/+portlet-importstats")
 >>> check("/+code/series", auth=True)
 >>> check("/+code/series/+bazaar-index", auth=True)
 

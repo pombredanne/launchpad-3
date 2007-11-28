@@ -6,7 +6,8 @@ __metaclass__ = type
 __all__ = [
     'AvatarTestCase', 'CodeHostingTestProviderAdapter',
     'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
-    'ServerTestCase', 'adapt_suite', 'deferToThread']
+    'ServerTestCase', 'adapt_suite', 'create_branch_with_one_revision',
+    'deferToThread', 'make_bazaar_branch_and_tree']
 
 import os
 import shutil
@@ -16,16 +17,22 @@ import unittest
 
 import transaction
 
+from bzrlib.bzrdir import BzrDir
+from bzrlib.errors import FileExists, TransportNotPossible
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib.errors import SmartProtocolError
 
 from zope.component import getUtility
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
+from canonical.authserver.interfaces import PERMISSION_DENIED_FAULT_CODE
+from canonical.codehosting.transport import branch_id_to_path
+from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet, IPersonSet, IProductSet, PersonCreationRationale,
-    UnknownBranchTypeError)
+    BranchType, IBranchSet, IPersonSet, IProductSet, License,
+    PersonCreationRationale, UnknownBranchTypeError)
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.tests.test_twisted import TwistedTestCase
@@ -33,6 +40,7 @@ from canonical.tests.test_twisted import TwistedTestCase
 from twisted.internet import defer, threads
 from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
+from twisted.web.xmlrpc import Fault
 
 
 class AvatarTestCase(TwistedTestCase):
@@ -71,6 +79,21 @@ class AvatarTestCase(TwistedTestCase):
         shutil.rmtree(tmpdir_root)
 
 
+def exception_names(exceptions):
+    """Return a list of exception names for the given exception list."""
+    if isinstance(exceptions, tuple):
+        names = []
+        for exc in exceptions:
+            names.extend(exception_names(exc))
+    elif exceptions is TransportNotPossible:
+        # Unfortunately, not all exceptions render themselves as their name.
+        # More cases like this may need to be added
+        names = ["Transport operation not possible"]
+    else:
+        names = [exceptions.__name__]
+    return names
+
+
 class ServerTestCase(TrialTestCase):
 
     server = None
@@ -106,6 +129,32 @@ class ServerTestCase(TrialTestCase):
     def __str__(self):
         return self.id()
 
+    def assertTransportRaises(self, exception, f, *args, **kwargs):
+        """A version of assertRaises() that also catches SmartProtocolError.
+
+        If SmartProtocolError is raised, the error message must
+        contain the exception name.  This is to cover Bazaar's
+        handling of unexpected errors in the smart server.
+        """
+        # XXX: JamesHenstridge 2007-10-08 bug=118736
+        # This helper should not be needed, but some of the exceptions
+        # we raise (such as PermissionDenied) are not yet handled by
+        # the smart server protocol as of bzr-0.91.
+        names = exception_names(exception)
+        try:
+            f(*args, **kwargs)
+        except SmartProtocolError, inst:
+            for name in names:
+                if name in str(inst):
+                    break
+            else:
+                raise self.failureException("%s not raised" % names)
+            return inst
+        except exception, inst:
+            return inst
+        else:
+            raise self.failureException("%s not raised" % names)
+
     def getTransport(self, relpath=None):
         return self.server.getTransport(relpath)
 
@@ -121,6 +170,15 @@ class BranchTestCase(TestCaseWithTransport):
         self.cursor = cursor()
         self.branch_set = getUtility(IBranchSet)
 
+    def createTemporaryBazaarBranchAndTree(self, base_directory='.'):
+        """Create a local branch with one revision, return the working tree."""
+        tree = self.make_branch_and_tree(base_directory)
+        self.local_branch = tree.branch
+        self.build_tree([os.path.join(base_directory, 'foo')])
+        tree.add('foo')
+        tree.commit('Added foo', rev_id='rev1')
+        return tree
+
     def emptyPullQueues(self):
         transaction.begin()
         self.cursor.execute("UPDATE Branch SET mirror_request_time = NULL")
@@ -134,22 +192,28 @@ class BranchTestCase(TestCaseWithTransport):
     def getUniqueString(self, prefix=None):
         """Return a string to this run of the test case.
 
+        The string returned will always be a valid name that can be used in
+        Launchpad URLs.
+
         :param prefix: Used as a prefix for the unique string. If unspecified,
             defaults to the name of the test.
         """
         if prefix is None:
             prefix = self.id().split('.')[-1]
-        return "%s%s" % (prefix, self.getUniqueInteger())
+        string = "%s%s" % (prefix, self.getUniqueInteger())
+        return string.replace('_', '-').lower()
 
     def getUniqueURL(self):
         """Return a URL unique to this run of the test case."""
         return 'http://%s.example.com/%s' % (
             self.getUniqueString(), self.getUniqueString())
 
-    def makePerson(self):
+    def makePerson(self, email=None, name=None):
         """Create and return a new, arbitrary Person."""
-        email = self.getUniqueString('email')
-        name = self.getUniqueString('person-name')
+        if email is None:
+            email = self.getUniqueString('email')
+        if name is None:
+            name = self.getUniqueString('person-name')
         return getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
 
@@ -161,30 +225,36 @@ class BranchTestCase(TestCaseWithTransport):
             self.getUniqueString('displayname'),
             self.getUniqueString('title'),
             self.getUniqueString('summary'),
-            self.getUniqueString('description'))
+            self.getUniqueString('description'),
+            licenses=[License.GPL])
 
-    def makeBranch(self, branch_type=None):
-        """Create and return a new, arbitrary Branch of the given type."""
+    def makeBranch(self, branch_type=None, owner=None, name=None, product=None,
+                   url=None, **optional_branch_args):
+        """Create and return a new, arbitrary Branch of the given type.
+
+        Any parameters for IBranchSet.new can be specified to override the
+        default ones.
+        """
         if branch_type is None:
             branch_type = BranchType.HOSTED
-        owner = self.makePerson()
-        branch_name = self.getUniqueString('branch')
-        product = self.makeProduct()
+        if owner is None:
+            owner = self.makePerson()
+        if name is None:
+            name = self.getUniqueString('branch')
+        if product is None:
+            product = self.makeProduct()
+
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
-        elif branch_type == BranchType.MIRRORED:
+        elif (branch_type in (BranchType.MIRRORED, BranchType.REMOTE)
+              and url is None):
             url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
         return self.branch_set.new(
-            branch_type, branch_name, owner, owner, product, url)
-
-    def relaxSecurityPolicy(self):
-        """Switch to using 'PermissiveSecurityPolicy'."""
-        old_policy = getSecurityPolicy()
-        setSecurityPolicy(PermissiveSecurityPolicy)
-        self.addCleanup(lambda: setSecurityPolicy(old_policy))
+            branch_type, name, owner, owner, product, url,
+            **optional_branch_args)
 
     def restrictSecurityPolicy(self):
         """Switch to using 'LaunchpadSecurityPolicy'."""
@@ -209,7 +279,17 @@ def deferToThread(f):
 
 
 class FakeLaunchpad:
-    """Stub RPC interface to Launchpad."""
+    """Stub RPC interface to Launchpad.
+
+    If the 'failing_branch_name' attribute is set and createBranch() is called
+    with its value for the branch_name parameter, a Fault will be raised with
+    code and message taken from the 'failing_branch_code' and
+    'failing_branch_string' attributes respectively.
+    """
+
+    failing_branch_name = None
+    failing_branch_code = None
+    failing_branch_string = None
 
     def __init__(self):
         self._person_set = {
@@ -244,7 +324,13 @@ class FakeLaunchpad:
         return new_id
 
     def createBranch(self, login_id, user, product, branch_name):
-        """See IHostedBranchStorage.createBranch."""
+        """See `IHostedBranchStorage.createBranch`.
+
+        Also see the description of 'failing_branch_name' in the class
+        docstring.
+        """
+        if self.failing_branch_name == branch_name:
+            raise Fault(self.failing_branch_code, self.failing_branch_string)
         for user_id, user_info in self._person_set.iteritems():
             if user_info['name'] == user:
                 break
@@ -253,6 +339,10 @@ class FakeLaunchpad:
         product_id = self.fetchProductID(product)
         if product_id is None:
             return ''
+        user = self.getUser(user_id)
+        if product_id == '' and 'team' in user['name']:
+            raise Fault(PERMISSION_DENIED_FAULT_CODE,
+                        'Cannot create team-owned +junk branches.')
         new_branch = dict(
             name=branch_name, user_id=user_id, product_id=product_id)
         for branch in self._branch_set.values():
@@ -348,9 +438,34 @@ class CodeHostingTestProviderAdapter:
         return result
 
 
+def make_bazaar_branch_and_tree(db_branch):
+    """Make a dummy Bazaar branch and working tree from a database Branch."""
+    assert db_branch.branch_type == BranchType.HOSTED, (
+        "Can only create branches for HOSTED branches: %r"
+        % db_branch)
+    branch_dir = os.path.join(
+        config.codehosting.branches_root, branch_id_to_path(db_branch.id))
+    return create_branch_with_one_revision(branch_dir)
+
+
 def adapt_suite(adapter, base_suite):
     from bzrlib.tests import iter_suite_tests
     suite = unittest.TestSuite()
     for test in iter_suite_tests(base_suite):
         suite.addTests(adapter.adapt(test))
     return suite
+
+
+def create_branch_with_one_revision(branch_dir):
+    """Create a dummy Bazaar branch at the given directory."""
+    if not os.path.exists(branch_dir):
+        os.makedirs(branch_dir)
+    try:
+        tree = BzrDir.create_standalone_workingtree(branch_dir)
+    except FileExists:
+        return
+    f = open(branch_dir + 'hello', 'w')
+    f.write('foo')
+    f.close()
+    tree.commit('message')
+    return tree

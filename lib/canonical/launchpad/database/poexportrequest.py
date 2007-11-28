@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd. All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
@@ -94,7 +95,7 @@ class POExportRequestSet:
         try:
             request = POExportRequest.select(limit=1, orderBy='id')[0]
         except IndexError:
-            return None
+            return None, None, None
 
         person = request.person
         format = request.format

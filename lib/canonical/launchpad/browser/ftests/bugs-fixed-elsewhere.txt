@@ -34,7 +34,7 @@ Simply opening a bug elsewhere won't increase the count.
     >>> bugs_fixed['count']
     0
 
-But if we marked the bug as fixed in the other, the count will increase
+But if we mark the bug as fixed in the other, the count will increase
 by one.
 
     >>> from canonical.launchpad.ftests import syncUpdate
@@ -47,12 +47,30 @@ by one.
     >>> bugs_fixed['count']
     1
 
+Bugs fixed elsewhere also show up when we perform an advanced bug search, using
+the appropriate query string parameter to ask for "bugs resolved elsewhere":
+
+    >>> view = getView(
+    ...     bugtarget, '+bugs',
+    ...     LaunchpadTestRequest(
+    ...         form={'field.status_upstream': 'resolved_upstream'}))
+    >>> view.initialize()
+    >>> navigator = view.search()
+    
+    >>> for task in view.search().batch:
+    ...     for related_task in task.related_tasks:
+    ...         print related_task.target.name
+    ...         print related_task.status.name
+    evolution
+    FIXRELEASED
+
 == Private Bugs ==
 
 Only bugs that the user has permission to view are included in the count.
 
     >>> another_bug = filebug(bugtarget, 'Example Bug')
-    >>> another_bug.private = True
+    >>> another_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(another_bug)
 
     >>> another_elsewhere = getUtility(IBugTaskSet).createTask(
@@ -81,7 +99,8 @@ If the private bug is made public again, he will of course see that
 there are two bugs fixed.
 
     >>> login('foo.bar@canonical.com')
-    >>> another_bug.private = False
+    >>> another_bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(another_bug)
 
     >>> login('no-priv@canonical.com')

@@ -42,7 +42,7 @@ Check that the request has been added to the DB.
     ...         orderBy=['person', 'potemplate', 'pofile']):
     ...     things = [
     ...         request.person.displayname,
-    ...         request.potemplate.potemplatename.name]
+    ...         request.potemplate.name]
     ...     if request.pofile:
     ...         things.append(request.pofile.language.englishname)
     ...     print things
@@ -78,7 +78,7 @@ Check that the request has been added to the DB.
     ...         orderBy=['person', 'potemplate', 'pofile']):
     ...     things = [
     ...         request.person.displayname,
-    ...         request.potemplate.potemplatename.name]
+    ...         request.potemplate.name]
     ...     if request.pofile:
     ...         things.append(request.pofile.language.englishname)
     ...     print things

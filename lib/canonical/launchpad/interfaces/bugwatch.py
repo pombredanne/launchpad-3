@@ -1,10 +1,12 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Bug watch interfaces."""
 
 __metaclass__ = type
 
 __all__ = [
+    'BugWatchErrorType',
     'IBugWatch',
     'IBugWatchSet',
     'NoBugTrackerFound',
@@ -17,6 +19,57 @@ from zope.schema import Choice, Datetime, Int, TextLine, Text
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces import IHasBug
+from canonical.lazr import DBEnumeratedType, DBItem
+
+class BugWatchErrorType(DBEnumeratedType):
+    """An enumeration of possible BugWatch errors."""
+
+    BUG_NOT_FOUND = DBItem(1, """
+        Bug Not Found
+
+        Launchpad could not find the specified bug on the remote server.
+        """)
+
+    CONNECTION_ERROR = DBItem(2, """
+        Connection Error
+
+        Launchpad was unable to connect to the remote server.
+        """)
+
+    INVALID_BUG_ID = DBItem(3, """
+        Invalid Bug ID
+
+        The specified bug ID is not valid.
+        """)
+
+    TIMEOUT = DBItem(4, """
+        Timeout
+
+        Launchpad encountered a timeout when trying to connect to the
+        remote server and was unable to retrieve the bug's status.
+        """)
+
+    UNPARSABLE_BUG = DBItem(5, """
+        Unparsable Bug
+
+        Launchpad could not extract a status from the data it received
+        from the remote server.
+        """)
+
+    UNPARSABLE_BUG_TRACKER = DBItem(6, """
+        Unparsable Bug Tracker Version
+
+        Launchpad could not determine the version of the bug tracker 
+        software running on the remote server.
+        """)
+
+    UNSUPPORTED_BUG_TRACKER = DBItem(7, """
+        Unsupported Bugtracker Version
+
+        The remote server is using a version of its bug tracker software
+        which Launchpad does not currently support.
+        """)
+
 
 class IBugWatch(IHasBug):
     """A bug on a remote system."""
@@ -35,6 +88,8 @@ class IBugWatch(IHasBug):
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True)
     owner = Int(title=_('Owner'), required=True, readonly=True)
+    last_error_type = Choice(title=_('Last Error Type'),
+        vocabulary=BugWatchErrorType)
 
     # useful joins
     bugtasks = Attribute('The tasks which this watch will affect. '
@@ -62,6 +117,9 @@ class IBugWatch(IHasBug):
 
     def destroySelf():
         """Delete this bug watch."""
+
+    def getLastErrorMessage():
+        """Return a string describing the contents of last_error_type."""
 
 
 class IBugWatchSet(Interface):

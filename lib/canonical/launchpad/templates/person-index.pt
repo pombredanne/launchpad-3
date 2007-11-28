@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <head>
   <tal:block metal:fill-slot="head_epilogue">
@@ -34,13 +41,10 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-emails" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-emails" />
   <div tal:replace="structure context/@@+portlet-latestquestions" />
-</metal:rightportlets>
+</metal:leftportlets>
 
 <div metal:fill-slot="main">
 
@@ -58,18 +62,16 @@
     class="description"
     tal:content="structure context/teamdescription/fmt:text-to-html"
   />
-  <div id="subscription_policy" tal:condition="context/isTeam"
-       tal:content="view/subscription_policy_description" />
   <ul class="buttons" tal:define="mentorships context/team_mentorships"
                       tal:condition="context/isTeam">
     <li tal:condition="mentorships">
       <a href="+mentoring" title="People will mentor work for newcomers">
-        <img alt="Mentorships" src="/+icing/but-sml-mentoring.gif">
+        <img alt="Mentorships" src="/+icing/but-sml-mentoring.gif" />
       </a>
     </li>
     <li tal:condition="not: mentorships">
       <a href="+mentoring" title="No mentoring is yet offered for this team">
-        <img alt="Mentorships" src="/+icing/but-sml-mentoring-off.gif">
+        <img alt="Mentorships" src="/+icing/but-sml-mentoring-off.gif" />
       </a>
     </li>
     <tal:not-restricted
@@ -215,7 +217,7 @@
     <div class="portlet" id="membership-summary">
       <h2 tal:condition="not: context/isTeam">Contact details</h2>
       <h2 tal:condition="context/isTeam">Team and membership summary</h2>
-      <table class="summary">
+      <table>
         <tbody>
           <tr tal:condition="context/teamowner">
             <th>Team owner:</th>
@@ -226,14 +228,33 @@
               >sabdfl</a>
             </td>
           </tr>
-          <tr tal:condition="context/teamowner">
-            <th>Membership:</th>
-            <td>
-              <span tal:replace="context/all_member_count">12</span>
-              (<span
-                tal:replace="context/subscriptionpolicy/title">Moderated</span>)
-            </td>
-          </tr>
+          <tal:is_team condition="context/teamowner">
+            <tr>
+              <th>Membership:</th>
+              <td>
+                <span tal:replace="context/all_member_count">12</span>
+                active members
+              </td>
+            </tr>
+            <tr tal:define="count context/proposed_member_count"
+                tal:condition="count">
+              <th />
+              <td><span tal:replace="count" /> proposed members
+              </td>
+            </tr>
+            <tr tal:define="count context/invited_member_count"
+                tal:condition="count">
+              <th />
+              <td><span tal:replace="count" /> invited members
+              </td>
+            </tr>
+            <tr tal:define="count context/inactive_member_count"
+                tal:condition="count">
+              <th />
+              <td><span tal:replace="count" /> inactive members
+              </td>
+            </tr>
+          </tal:is_team>
           <tr tal:condition="context/icon">
             <th>Icon:</th>
             <td><tal:icon replace="structure context/image:icon" /></td>
@@ -294,6 +315,14 @@
               /></a>
             </td>
           </tr>
+          <tr tal:condition="context/isTeam">
+            <td colspan="2" id="subscription_policy">
+              <strong tal:content="context/subscriptionpolicy/title">
+                Moderated
+              </strong>:
+              <span tal:replace="context/subscriptionpolicy/description" />
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -323,7 +352,7 @@
       <table>
         <tr tal:repeat="spec specs"
             tal:replace="structure spec/@@+listing-simple" />
-      <table>
+      </table>
       <div tal:condition="specs">
         <tal:comment condition="nothing">
           <!-- XXX: Guilherme Salgado 2007-02-12:
@@ -364,6 +393,7 @@
       </tal:block>
     </div>
 
+  </div>
   </div>
   </tal:valid-person-or-team>
 

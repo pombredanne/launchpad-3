@@ -1,340 +1,341 @@
-Introduction
-============
+= Bug Activity =
 
 Bugs are problems that occur in software. In Malone, various things can be
 added to, edited and removed from a bug over the course of a bug's lifetime. We
 call this stuff bug activity. This document is about bug activity.
 
-Bug Activity
-============
-
-During a bug's lifetime, one may:
-
-o assign the bug to a source package
-
-o assign the bug to a upstream product
-
-o document a source package infestation
-
-o document a product infestation
-
-o add a cve reference number that relates to this bug
-
-o add a subscriber to this bug
-
-o add a web link related to this bug
-
-o add a reference to a bug on an external bugtracker to track the status of the
-  same bug as reported on other bug trackers
-
-o add an attachment to this bug
-
-o mark the bug as a duplicate of another bug
-
-Each of these can happen more than once to a bug over the course of its
+Each activity can happen more than once to a bug over the course of its
 lifetime. For auditing reasons, it's useful to track when these happen, why
 these things happen, and who made them happen.
-
-Tracking Bug Activity in Launchpad
-==================================
 
 Before going any further--because editing a bug requires an
 authenticated user--let's login:
 
-  >>> login("test@canonical.com")
+    >>> login("test@canonical.com")
 
 Bug activity tracking is done using event subscribers. The handlers
 are simple little functions.
 
-  >>> from datetime import datetime
-  >>> from zope.event import notify
-  >>> from canonical.database.constants import UTC_NOW
-  >>> from canonical.launchpad.event.sqlobjectevent import (
-  ...     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
-  >>> from canonical.launchpad.database import (
-  ...     BugPackageInfestation, BugProductInfestation)
-  >>> from canonical.launchpad.interfaces import (
-  ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugTaskSet)
-  >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from datetime import datetime
+    >>> from zope.event import notify
+    >>> from canonical.database.constants import UTC_NOW
+    >>> from canonical.launchpad.event.sqlobjectevent import (
+    ...     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+    >>> from canonical.launchpad.database import (
+    ...     BugPackageInfestation, BugProductInfestation)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugTaskSet)
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> user = getUtility(ILaunchBag).user
 
-Here's a list of events that happen, and the resulting activity
-logged:
 
-  >>> user = getUtility(ILaunchBag).user
+== User files a bug ==
 
-EVENT: user files a bug
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> firefox = getUtility(IProductSet)['firefox']
+    >>> params = CreateBugParams(
+    ...     title="a test bug",
+    ...     comment="this is only a test bug\nplease ignore",
+    ...     owner=user)
+    >>> bug = firefox.createBug(params)
+    >>> bug.activity.count()
+    0
+    >>> object_created = SQLObjectCreatedEvent(bug)
+    >>> notify(object_created)
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.person == user
+    True
+    >>> latest_activity.whatchanged
+    u'bug'
+    >>> latest_activity.message
+    u'added bug'
 
-  >>> from canonical.launchpad.interfaces import CreateBugParams
-  >>> firefox = getUtility(IProductSet)['firefox']
-  >>> params = CreateBugParams(
-  ...     title="a test bug", comment="this is only a test bug\nplease ignore",
-  ...     owner=user)
-  >>> bug = firefox.createBug(params)
-  >>> bug.activity.count()
-  0
-  >>> object_created = SQLObjectCreatedEvent(bug)
-  >>> notify(object_created)
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.person == user
-  True
-  >>> latest_activity.whatchanged
-  u'bug'
-  >>> latest_activity.message
-  u'added bug'
 
-EVENT: bug edited
+== Bug title edited ==
 
-  >>> from canonical.launchpad.interfaces import IBug
-  >>> old_state = Snapshot(bug, providing=IBug)
-  >>> bug.title = "new bug title"
-  >>> bug_edited = SQLObjectModifiedEvent(
-  ...     bug, old_state, ["title", "description"])
-  >>> notify(bug_edited)
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'title'
-  >>> latest_activity.oldvalue
-  u'a test bug'
-  >>> latest_activity.newvalue
-  u'new bug title'
+    >>> from canonical.launchpad.interfaces import IBug
+    >>> old_state = Snapshot(bug, providing=IBug)
+    >>> bug.title = "new bug title"
+    >>> bug_edited = SQLObjectModifiedEvent(
+    ...     bug, old_state, ["title", "description"])
+    >>> notify(bug_edited)
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.whatchanged
+    u'title'
+    >>> latest_activity.oldvalue
+    u'a test bug'
+    >>> latest_activity.newvalue
+    u'new bug title'
 
-EVENT: bug gets assigned to a source package
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     ISourcePackageNameSet, IDistributionSet)
-  >>> mozilla_firefox = getUtility(ISourcePackageNameSet)['mozilla-firefox']
-  >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-  >>> source_package_assignment = getUtility(IBugTaskSet).createTask(
-  ...     bug=bug, sourcepackagename=mozilla_firefox,
-  ...     distribution=ubuntu,owner=user)
-  >>> source_package_assignment_added = SQLObjectCreatedEvent(
-  ...     source_package_assignment)
-  >>> notify(source_package_assignment_added)
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'bug'
-  >>> latest_activity.message
-  u'assigned to mozilla-firefox (Ubuntu)'
+== Bug gets assigned to a source package ==
 
-EVENT: source package assignment edited
+    >>> from canonical.launchpad.interfaces import (
+    ...     ISourcePackageNameSet, IDistributionSet)
+    >>> mozilla_firefox = getUtility(ISourcePackageNameSet)['mozilla-firefox']
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> source_package_assignment = getUtility(IBugTaskSet).createTask(
+    ...     bug=bug, sourcepackagename=mozilla_firefox,
+    ...     distribution=ubuntu,owner=user)
+    >>> source_package_assignment_added = SQLObjectCreatedEvent(
+    ...     source_package_assignment)
+    >>> notify(source_package_assignment_added)
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.whatchanged
+    u'bug'
+    >>> latest_activity.message
+    u'assigned to mozilla-firefox (Ubuntu)'
 
-  >>> from canonical.launchpad.webapp.snapshot import Snapshot
-  >>> from canonical.launchpad.interfaces import BugTaskStatus, IBugTask
-  >>> edit_fields = [
-  ...     "distribution", "sourcepackagename", "milestone", "status",
-  ...     "importance", "assignee", "bugwatch"]
-  >>> old_source_package_assignment = Snapshot(
-  ...   source_package_assignment, providing=IDistroBugTask)
-  >>> source_package_assignment.transitionToStatus(
-  ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
-  >>> source_package_assignment_edited = SQLObjectModifiedEvent(
-  ...     source_package_assignment, old_source_package_assignment, edit_fields)
-  >>> notify(source_package_assignment_edited)
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'mozilla-firefox: status'
-  >>> latest_activity.oldvalue == BugTaskStatus.NEW.title
-  True
-  >>> latest_activity.newvalue == BugTaskStatus.CONFIRMED.title
-  True
 
-EVENT: bug gets assigned to an upstream product
+== Source package assignment edited ==
 
-  >>> product_assignment = getUtility(IBugTaskSet).createTask(
-  ...   bug=bug, product=getUtility(IProductSet)['thunderbird'], owner=user)
-  >>> product_assignment_added = SQLObjectCreatedEvent(product_assignment)
-  >>> notify(product_assignment_added)
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'bug'
-  >>> latest_activity.message
-  u'assigned to thunderbird'
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from canonical.launchpad.interfaces import BugTaskStatus, IBugTask
+    >>> edit_fields = [
+    ...     "distribution", "sourcepackagename", "milestone", "status",
+    ...     "importance", "assignee", "bugwatch"]
+    >>> old_source_package_assignment = Snapshot(
+    ...   source_package_assignment, providing=IDistroBugTask)
+    >>> source_package_assignment.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
+    >>> source_package_assignment_edited = SQLObjectModifiedEvent(
+    ...     source_package_assignment, old_source_package_assignment,
+    ...     edit_fields)
+    >>> notify(source_package_assignment_edited)
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.whatchanged
+    u'mozilla-firefox: status'
+    >>> latest_activity.oldvalue == BugTaskStatus.NEW.title
+    True
+    >>> latest_activity.newvalue == BugTaskStatus.CONFIRMED.title
+    True
 
-EVENT: upstream product assignment edited
 
-  >>> edit_fields = [
-  ...     "product", "milestone", "status", "assignee", "bugwatch",
-  ...     "importance"]
-  >>> old_product_assignment = Snapshot(
-  ...     product_assignment, providing=IUpstreamBugTask)
-  >>> product_assignment.transitionToStatus(
-  ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
-  >>> product_assignment_edited = SQLObjectModifiedEvent(
-  ...     product_assignment, old_product_assignment, edit_fields)
-  >>> notify(product_assignment_edited)
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'thunderbird: status'
-  >>> latest_activity.oldvalue == BugTaskStatus.NEW.title
-  True
-  >>> latest_activity.newvalue == BugTaskStatus.INVALID.title
-  True
+== Bug gets assigned to an upstream product ==
 
-EVENT: source package infestation gets documented
+    >>> product_assignment = getUtility(IBugTaskSet).createTask(
+    ...   bug=bug, product=getUtility(IProductSet)['thunderbird'], owner=user)
+    >>> product_assignment_added = SQLObjectCreatedEvent(product_assignment)
+    >>> notify(product_assignment_added)
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.whatchanged
+    u'bug'
+    >>> latest_activity.message
+    u'assigned to thunderbird'
 
-  >>> from canonical.lp.dbschema import BugInfestationStatus
-  >>> right_now = UTC_NOW
-  >>> package_infestation = BugPackageInfestation(
-  ...     bug=bug.id, explicit=True, datecreated=right_now,
-  ...     creatorID=user.id, dateverified=right_now,
-  ...     verifiedbyID=user.id, lastmodified=right_now,
-  ...     lastmodifiedbyID=user.id, sourcepackagerelease=14,
-  ...     infestationstatus=BugInfestationStatus.AFFECTED)
-  >>> package_infesation_added = SQLObjectCreatedEvent(package_infestation)
-  >>> notify(package_infesation_added)
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'bug'
-  >>> latest_activity.message
-  u'added infestation of package release mozilla-firefox 0.9'
 
-EVENT: source package infestation edited
+== Upstream product assignment edited ==
 
-  >>> edit_fields = ["sourcepackagerelease", "infestationstatus"]
-  >>> old_package_infestation = Snapshot(
-  ...     package_infestation, names=edit_fields)
-  >>> package_infestation.infestationstatus = BugInfestationStatus.VICTIMIZED
-  >>> package_infestation_edited = SQLObjectModifiedEvent(
-  ...     package_infestation, old_package_infestation, edit_fields)
-  >>> notify(package_infestation_edited)
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'mozilla-firefox 0.9: infestationstatus'
-  >>> latest_activity.oldvalue == BugInfestationStatus.AFFECTED.title
-  True
-  >>> latest_activity.newvalue == BugInfestationStatus.VICTIMIZED.title
-  True
+    >>> edit_fields = [
+    ...     "product", "milestone", "status", "assignee", "bugwatch",
+    ...     "importance"]
+    >>> old_product_assignment = Snapshot(
+    ...     product_assignment, providing=IUpstreamBugTask)
+    >>> product_assignment.transitionToStatus(
+    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
+    >>> product_assignment_edited = SQLObjectModifiedEvent(
+    ...     product_assignment, old_product_assignment, edit_fields)
+    >>> notify(product_assignment_edited)
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.whatchanged
+    u'thunderbird: status'
+    >>> latest_activity.oldvalue == BugTaskStatus.NEW.title
+    True
+    >>> latest_activity.newvalue == BugTaskStatus.INVALID.title
+    True
 
-EVENT: product infestation gets documented
 
-  >>> right_now = UTC_NOW
-  >>> product_infestation = BugProductInfestation(
-  ...     bug=bug.id, explicit=True, datecreated=right_now,
-  ...     creatorID=user.id, dateverified=right_now,
-  ...     verifiedbyID=user.id, lastmodified=right_now,
-  ...     lastmodifiedbyID=user.id, productrelease=4,
-  ...     infestationstatus=BugInfestationStatus.AFFECTED)
-  >>> product_infesation_added = SQLObjectCreatedEvent(
-  ...     product_infestation)
-  >>> notify(product_infesation_added)
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'bug'
-  >>> latest_activity.message
-  u'added infestation of product release firefox 0.9.1'
+== Source package infestation gets documented ==
 
-EVENT: product infestation edited
+    >>> from canonical.launchpad.interfaces import BugInfestationStatus
+    >>> right_now = UTC_NOW
+    >>> package_infestation = BugPackageInfestation(
+    ...     bug=bug.id, explicit=True, datecreated=right_now,
+    ...     creatorID=user.id, dateverified=right_now,
+    ...     verifiedbyID=user.id, lastmodified=right_now,
+    ...     lastmodifiedbyID=user.id, sourcepackagerelease=14,
+    ...     infestationstatus=BugInfestationStatus.AFFECTED)
+    >>> package_infesation_added = SQLObjectCreatedEvent(package_infestation)
+    >>> notify(package_infesation_added)
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.whatchanged
+    u'bug'
+    >>> latest_activity.message
+    u'added infestation of package release mozilla-firefox 0.9'
 
-  >>> edit_fields = ["productrelease", "infestationstatus"]
-  >>> old_product_infestation = Snapshot(
-  ...     product_infestation, names=edit_fields)
-  >>> product_infestation.infestationstatus = BugInfestationStatus.UNKNOWN
-  >>> product_infestation_edited = SQLObjectModifiedEvent(
-  ...     product_infestation, old_product_infestation, edit_fields)
-  >>> notify(product_infestation_edited)
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'firefox 0.9.1: infestationstatus'
-  >>> latest_activity.oldvalue == BugInfestationStatus.AFFECTED.title
-  True
-  >>> latest_activity.newvalue == BugInfestationStatus.UNKNOWN.title
-  True
 
-EVENT: this bug report is marked as a duplicate of another bug report
+== Source package infestation edited ==
 
-  >>> edit_fields = [
-  ...     "id", "title", "description", "name",
-  ...     "private", "duplicateof", "security_related"]
-  >>> old_bug = Snapshot(bug, providing=IBug)
-  >>> bug.duplicateof = 1
-  >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
-  >>> notify(bug_edited)
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'marked as duplicate'
-  >>> latest_activity.oldvalue is None
-  True
-  >>> latest_activity.newvalue == u'1'
-  True
+    >>> edit_fields = ["sourcepackagerelease", "infestationstatus"]
+    >>> old_package_infestation = Snapshot(
+    ...     package_infestation, names=edit_fields)
+    >>> package_infestation.infestationstatus = BugInfestationStatus.VICTIMIZED
+    >>> package_infestation_edited = SQLObjectModifiedEvent(
+    ...     package_infestation, old_package_infestation, edit_fields)
+    >>> notify(package_infestation_edited)
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.whatchanged
+    u'mozilla-firefox 0.9: infestationstatus'
+    >>> latest_activity.oldvalue == BugInfestationStatus.AFFECTED.title
+    True
+    >>> latest_activity.newvalue == BugInfestationStatus.VICTIMIZED.title
+    True
 
-EVENT: the same bug report has his duplicate marker changed to another
-bug report
 
-  >>> edit_fields = [
-  ...     "id", "title", "description", "name", "private", "duplicateof",
-  ...     "security_related"]
-  >>> old_bug = Snapshot(bug, providing=IBug)
-  >>> bug.duplicateof = 2
-  >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
-  >>> notify(bug_edited)
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'changed duplicate marker'
-  >>> latest_activity.oldvalue == u'1'
-  True
-  >>> latest_activity.newvalue == u'2'
-  True
+== Product infestation gets documented ==
 
-EVENT: the bug report is now un-duplicated
+    >>> right_now = UTC_NOW
+    >>> product_infestation = BugProductInfestation(
+    ...     bug=bug.id, explicit=True, datecreated=right_now,
+    ...     creatorID=user.id, dateverified=right_now,
+    ...     verifiedbyID=user.id, lastmodified=right_now,
+    ...     lastmodifiedbyID=user.id, productrelease=4,
+    ...     infestationstatus=BugInfestationStatus.AFFECTED)
+    >>> product_infesation_added = SQLObjectCreatedEvent(
+    ...     product_infestation)
+    >>> notify(product_infesation_added)
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.whatchanged
+    u'bug'
+    >>> latest_activity.message
+    u'added infestation of product release firefox 0.9.1'
 
-  >>> edit_fields = [
-  ...     "id", "title", "description", "name", "private", "duplicateof",
-  ...     "security_related"]
-  >>> old_bug = Snapshot(bug, providing=IBug)
-  >>> bug.duplicateof = None
-  >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
-  >>> notify(bug_edited)
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'removed duplicate marker'
-  >>> latest_activity.oldvalue == u'2'
-  True
-  >>> latest_activity.newvalue is None
-  True
 
-EVENT: add a subscriber to this bug
+== Product infestation edited ==
 
-  >>> from canonical.launchpad.database import BugSubscription
-  >>> from canonical.launchpad.interfaces import IPersonSet
-  >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-  >>> bug_subscription = BugSubscription(bug=bug, person=foo_bar)
-  >>> notify(SQLObjectCreatedEvent(bug_subscription))
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'bug'
-  >>> latest_activity.message
-  u'added subscriber Foo Bar'
+    >>> edit_fields = ["productrelease", "infestationstatus"]
+    >>> old_product_infestation = Snapshot(
+    ...     product_infestation, names=edit_fields)
+    >>> product_infestation.infestationstatus = BugInfestationStatus.UNKNOWN
+    >>> product_infestation_edited = SQLObjectModifiedEvent(
+    ...     product_infestation, old_product_infestation, edit_fields)
+    >>> notify(product_infestation_edited)
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.whatchanged
+    u'firefox 0.9.1: infestationstatus'
+    >>> latest_activity.oldvalue == BugInfestationStatus.AFFECTED.title
+    True
+    >>> latest_activity.newvalue == BugInfestationStatus.UNKNOWN.title
+    True
 
-EVENT: add an attachment to this bug
+
+== Bug report is marked as a duplicate of another bug report ==
+
+    >>> edit_fields = [
+    ...     "id", "title", "description", "name",
+    ...     "private", "duplicateof", "security_related"]
+    >>> old_bug = Snapshot(bug, providing=IBug)
+    >>> bug.duplicateof = 1
+    >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
+    >>> notify(bug_edited)
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.whatchanged
+    u'marked as duplicate'
+    >>> latest_activity.oldvalue is None
+    True
+    >>> latest_activity.newvalue == u'1'
+    True
+
+
+== Bug report has itss duplicate marker changed to another bug report ==
+
+    >>> edit_fields = [
+    ...     "id", "title", "description", "name", "private", "duplicateof",
+    ...     "security_related"]
+    >>> old_bug = Snapshot(bug, providing=IBug)
+    >>> bug.duplicateof = 2
+    >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
+    >>> notify(bug_edited)
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.whatchanged
+    u'changed duplicate marker'
+    >>> latest_activity.oldvalue == u'1'
+    True
+    >>> latest_activity.newvalue == u'2'
+    True
+
+
+== The bug report is un-duplicated ==
+
+    >>> edit_fields = [
+    ...     "id", "title", "description", "name", "private", "duplicateof",
+    ...     "security_related"]
+    >>> old_bug = Snapshot(bug, providing=IBug)
+    >>> bug.duplicateof = None
+    >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
+    >>> notify(bug_edited)
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.whatchanged
+    u'removed duplicate marker'
+    >>> latest_activity.oldvalue == u'2'
+    True
+    >>> latest_activity.newvalue is None
+    True
+
+
+== Add a subscriber to the bug ==
+
+    >>> from canonical.launchpad.database import BugSubscription
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> bug_subscription = BugSubscription(bug=bug, person=foo_bar)
+    >>> notify(SQLObjectCreatedEvent(bug_subscription))
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.whatchanged
+    u'bug'
+    >>> latest_activity.message
+    u'added subscriber Foo Bar'
+
+
+== Add an attachment to the bug ==
 
 First we have to create the file itself, and upload it to the Librarian:
 
-  >>> from StringIO import StringIO
-  >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
-  >>> filecontent = 'Some useful information.'
-  >>> filealias = getUtility(ILibraryFileAliasSet).create(
-  ...     name='foo.txt', size=len(filecontent),
-  ...     file=StringIO(filecontent), contentType='text/plain')
+    >>> from StringIO import StringIO
+    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> filecontent = 'Some useful information.'
+    >>> filealias = getUtility(ILibraryFileAliasSet).create(
+    ...     name='foo.txt', size=len(filecontent),
+    ...     file=StringIO(filecontent), contentType='text/plain')
 
-  >>> from canonical.launchpad.interfaces import IBugAttachmentSet, IMessageSet
-  >>> message = getUtility(IMessageSet).fromText(
-  ...     subject="title", content="added an attachment")
-  >>> attachment = getUtility(IBugAttachmentSet).create(
-  ...     bug=bug, title="title", message=message, filealias=filealias)
-  >>> notify(SQLObjectCreatedEvent(attachment))
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'bug'
-  >>> latest_activity.message
-  u"added attachment 'foo.txt' (title)"
-
-
-For the future?
-===============
-
-At some point, we may find it useful to track the following events as well:
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugAttachmentSet, IMessageSet)
+    >>> message = getUtility(IMessageSet).fromText(
+    ...     subject="title", content="added an attachment")
+    >>> attachment = getUtility(IBugAttachmentSet).create(
+    ...     bug=bug, title="title", message=message, filealias=filealias)
+    >>> notify(SQLObjectCreatedEvent(attachment))
+    >>> latest_activity = bug.activity[-1]
+    >>> latest_activity.whatchanged
+    u'bug'
+    >>> latest_activity.message
+    u"added attachment 'foo.txt' (title)"
 
 
-EVENT: add a web link related to this bug
+== Target a bug task to a milestone ==
 
-EVENT: add a reference to a bug on an external bugtracker
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_1_0 = firefox.getMilestone('1.0')
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> firefox_task = bug_one.getBugTask(firefox)
+    >>> print firefox_task.milestone
+    None
+    >>> old_bugtask = Snapshot(firefox_task, providing=IUpstreamBugTask)
+
+    >>> firefox_task.milestone = firefox_1_0
+    >>> edit_fields = ["milestone"]
+    >>> bugtask_edited = SQLObjectModifiedEvent(
+    ...     firefox_task, old_bugtask, edit_fields, user=no_priv)
+    >>> notify(bugtask_edited)
+
+    >>> latest_activity = bug_one.activity[-1]
+    >>> latest_activity.person.name
+    u'no-priv'
+    >>> latest_activity.whatchanged
+    u'firefox: milestone'
+    >>> print latest_activity.oldvalue
+    None
+    >>> print latest_activity.newvalue
+    1.0

@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Launchpad Pillars share a namespace.
 
@@ -52,6 +53,8 @@ class PillarNameSet:
 
     def __contains__(self, name):
         """See IPillarNameSet."""
+        # XXX flacoste 20071009 Workaround bug #90983.
+        name = name.encode('ASCII')
         cur = cursor()
         cur.execute("""
             SELECT TRUE
@@ -65,6 +68,8 @@ class PillarNameSet:
 
     def __getitem__(self, name):
         """See IPillarNameSet."""
+        # XXX flacoste 20071009 Workaround bug #90983.
+        name = name.encode('ASCII')
         pillar = self.getByName(name, ignore_inactive=True)
         if pillar is None:
             raise NotFoundError(name)
@@ -81,6 +86,9 @@ class PillarNameSet:
         # expect that doing two queries will be faster that OUTER JOINing
         # the Project, Product and Distribution tables (and this approach
         # works better with SQLObject too.
+
+        # XXX flacoste 20071009 Workaround bug #90983.
+        name = name.encode('ASCII')
 
         # Retrieve information out of the PillarName table.
         cur = cursor()

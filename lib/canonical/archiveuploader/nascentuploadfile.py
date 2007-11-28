@@ -34,12 +34,10 @@ from canonical.archiveuploader.utils import (
     re_extract_src_version)
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
-    IComponentSet, ISectionSet, IBuildSet, ILibraryFileAliasSet,
-    IBinaryPackageNameSet)
+    ArchivePurpose, BinaryPackageFormat, BuildStatus, IComponentSet,
+    ISectionSet, IBuildSet, ILibraryFileAliasSet, IBinaryPackageNameSet,
+    PackagePublishingPriority, PackageUploadCustomFormat, PackageUploadStatus)
 from canonical.librarian.utils import filechunks
-from canonical.lp.dbschema import (
-    PackagePublishingPriority, PackageUploadCustomFormat,
-    PackageUploadStatus, BinaryPackageFormat, BuildStatus)
 
 
 apt_pkg.InitSystem()
@@ -290,10 +288,18 @@ class PackageUploadFile(NascentUploadFile):
             # were forced to accept a package with a broken section
             # (linux-meta_2.6.12.16_i386). Result: packages with invalid
             # sections now get put into misc -- cprov 20060119
-            default_section = 'misc'
-            self.logger.warn("Unable to grok section %r, overriding it with %s"
-                      % (self.section_name, default_section))
-            self.section_name = default_section
+            if self.policy.archive.purpose == ArchivePurpose.PPA:
+                # PPA uploads should not override because it will probably
+                # make the section inconsistent with the one in the .dsc.
+                raise UploadError(
+                    "%s: Section %r is not valid" % (
+                    self.filename, self.section_name))
+            else:
+                default_section = 'misc'
+                self.logger.warn("Unable to grok section %r, "
+                                 "overriding it with %s"
+                          % (self.section_name, default_section))
+                self.section_name = default_section
 
         if self.component_name not in valid_components:
             raise UploadError(

@@ -11,7 +11,10 @@ stores a base URL which it will use to construct URLs to pull a CSV
 export from.
 
     >>> from canonical.launchpad.components.externalbugtracker import Mantis
-    >>> alsa_mantis = Mantis("https://bugtrack.alsa-project.org/alsa-bug/")
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> alsa_mantis = Mantis(new_bugtracker(BugTrackerType.MANTIS))
 
 As with all ExternalBugTrackers, Mantis contains a function for converting one
 of its own status to a Malone status. Mantis' function takes a string
@@ -49,34 +52,23 @@ but didn't succeed. For example, if the bug number was invalid.
 Let's set up a BugTracker and some watches for the Example.com Bug
 Tracker:
 
-    >>> from canonical.launchpad.database import BugTracker
     >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
-    >>> from canonical.launchpad.ftests.externalbugtracker import TestMantis
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestMantis)
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
-    >>> example_bug_tracker = BugTracker(
-    ...     name="example-bugs",
-    ...     title="Example.com Bug Tracker",
-    ...     bugtrackertype=BugTrackerType.MANTIS,
-    ...     baseurl="http://bugs.example.com/",
-    ...     summary="Contains bugs for Example.com",
-    ...     contactdetails="foo.bar@example.com",
-    ...     owner=sample_person)
-
-    >>> login('foo.bar@canonical.com')
+    >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
 
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, 1550, sample_person)
 
-    >>> login('no-priv@canonical.com')
 
 We use a specially hacked Mantis instance that doesn't do network
 calls to verify here:
 
-    >>> example_ext_bug_tracker = TestMantis(example_bug_tracker.baseurl)
+    >>> example_ext_bug_tracker = TestMantis(example_bug_tracker)
 
 Collect the Example.com watches:
 
@@ -118,7 +110,7 @@ Let's add a few more watches:
     ...         bugtracker=example_bug_tracker,
     ...         remotebug=str(remote_bug_id))
     ...     if remote_bug is None:
-    ...         expected_remote_statuses[remote_bug_id] = 'UNKNOWN'
+    ...         expected_remote_statuses[remote_bug_id] = None
     ...     else:
     ...         expected_remote_statuses[remote_bug_id] = (
     ...             "%s: %s" % (remote_bug['status'],
@@ -139,7 +131,7 @@ updateBugWatches() issues only one request to update all watches:
     CALLED _getPage(u'view.php?id=1738')
     CALLED _getPage(u'view.php?id=1748')
     CALLED _getPage(u'view.php?id=1798')
-    WARNING:root:Didn't find bug u'1798' on http://bugs.example.com
+    WARNING:...:Didn't find bug u'1798' on http://bugs.some.where
     (local bugs: 10).
 
     >>> remote_statuses = dict(
@@ -169,8 +161,8 @@ updateBugWatches() issues only one request to update all watches:
      * Expected << resolved: fixed >>
      *      Got << resolved: fixed >>
     Remote bug 1798
-     * Expected << UNKNOWN >>
-     *      Got << UNKNOWN >>
+     * Expected << None >>
+     *      Got << None >>
 
     >>> example_ext_bug_tracker.trace_calls = False
 
