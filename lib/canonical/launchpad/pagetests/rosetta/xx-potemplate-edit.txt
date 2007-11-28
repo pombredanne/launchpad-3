@@ -30,7 +30,7 @@ page.
 
 We should be sure that the edit form get only the non admin fields.
 
-  >>> browser.getControl(name='field.potemplatename').value
+  >>> browser.getControl(name='field.name').value
   Traceback (most recent call last):
   ...
   LookupError:...

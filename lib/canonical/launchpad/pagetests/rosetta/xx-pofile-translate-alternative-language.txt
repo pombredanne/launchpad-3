@@ -76,7 +76,7 @@ The Spanish translations now show up as suggestions.  For example, where
 "tarjetas."
 
     >>> print extract_text(find_main_content(
-    ...     browser.contents)).encode('utf-8', 'backslashescape')
+    ...     browser.contents)).encode('UTF-8')
     Template "evolution-2.2" in Ubuntu Hoary package "evolution"
     Translating into Catalan
     ...
@@ -155,7 +155,7 @@ Carlos can see that he is viewing the first page of results in the
 navigation bar between the translation controls and the messages.
 
     >>> navigation = find_tags_by_class(browser.contents, 'results')[0].td
-    >>> print extract_text(navigation)
+    >>> print extract_text(navigation).decode('utf-8')
     1 ... 10  of 13 results ...
 
 Carlos uses the 'Save & Continue' button to see the next page of

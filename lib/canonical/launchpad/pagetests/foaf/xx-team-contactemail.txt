@@ -473,16 +473,29 @@ functionality on production. -- Guilherme Salgado 2007-09-20
     >>> browser.getLink('Configure mailing list').url
     'http://launchpad.dev/~landscape-developers/+mailinglist'
 
+    >> extract_text(browser.find_tag_by_id('set-up-a-mailing-list'))
+    If you set up a mailing list for this team, you can use the
+    mailing list as the team contact address.
+
     >>> config.mailman.expose_hosted_mailing_lists = False
     >>> browser.reload()
     >>> browser.getControl(name='field.contact_method').displayOptions
     ['\xa0Each member individually',
      '\xa0Another e-mail address']
 
+    >> browser.find_tag_by_id('set-up-a-mailing-list')
+    None
+
     >>> browser.getLink('Configure mailing list')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
+
+    >>> browser2 = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser2.open('http://launchpad.dev/~landscape-developers/+mailinglist')
+    Traceback (most recent call last):
+    ...
+    NotFound:...
 
     >>> config.mailman.expose_hosted_mailing_lists = True
     >>> browser.reload()

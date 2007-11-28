@@ -14,36 +14,10 @@ recomputing translation statistics and noting any divergence between the
 cached values and the ones it recomputes from scratch.
 
 
-== Cron job ==
-
-The cron script starts, runs, and completes successfully, even if some
-POFiles turn out to have incorrect statistics (as is the case in our sample
-data).
-
-    >>> import subprocess
-    >>> import sys
-    >>> process = subprocess.Popen([
-    ...     sys.executable, 'cronscripts/rosetta-pofile-stats.py', '-v'],
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.STDOUT)
-    >>> (output, empty) = process.communicate()
-    >>> print output
-    INFO creating lockfile
-    INFO Starting verification of POFile stats at id 0
-    ...
-    WARNING POFile ...: cached stats were (...), recomputed as (...)
-    INFO Done.
-    DEBUG Removing lock file: /var/lock/launchpad-pofile-stats.lock
-
-Bad data is reported and fixed, but the cron script continues to run to
-completion.
-
-
 == Direct invocation ==
 
-The statistics verifier is invoked by the cron job, but we can also invoke
-it directly.  Since the cron job already cleaned up all bad stats for us, we
-see no warnings this time.
+The statistics verifier is invoked by the cron job, but we can also call
+it directly.
 
     >>> import transaction
     >>> from canonical.launchpad.scripts.verify_pofile_stats import (
@@ -96,9 +70,12 @@ A software bug incorrectly sets the number of changed translations to 999.
 
     >>> pofile.rosettacount = 999
 
-We run the verifier on the incorrect POFile (and all POFile's with higher
-ids).  It detects and reports the problem, finding a count of 999 changed
-translations where it expected to find 3.
+We run the verifier on the incorrect POFile (and all POFile's with
+higher ids).  It detects and reports the problem, finding a count of 999
+changed translations where it expected to find 3.
+
+Incorrect statistics are reported but do not affect the successful
+completion of the verifier.
 
     >>> verifier = VerifyPOFileStatsProcess(transaction, logger, 34)
     >>> verifier.run()
@@ -136,4 +113,26 @@ The Translations administrators also receive an email about the error.
     <BLANKLINE>
     See the pofile-stats log for detailed information.
 
+
+== Cron job ==
+
+The rosetta-pofile-stats cron script invokes the verifier code.  It
+completes without finding any errors: the one we introduced earlier was
+fixed by running the verifier directly.
+
+    >>> pofile.sync()
+    >>> transaction.commit() # Ensure other process can see latest changes
+
+    >>> import subprocess
+    >>> import sys
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-pofile-stats.py', '-v'],
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT)
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    INFO    creating lockfile
+    INFO    Starting verification of POFile stats at id 0
+    INFO    Done.
+    DEBUG   Removing lock file: /var/lock/launchpad-pofile-stats.lock
 
