@@ -2643,7 +2643,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         be represented by an EmailAddress object or (for unvalidated
         addresses) a LoginToken object.
         """
-        self.validate_widgets(data, [self.widgets[field].context.__name__])
+        self.validate_widgets(data, [field])
 
         email = data.get(field)
         if email is None:
@@ -2802,8 +2802,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         The email address must be syntactically valid and must not already
         be in use.
         """
-        self.validate_widgets(data,
-                              [self.widgets['newemail'].context.__name__])
+        self.validate_widgets(data, ['newemail'])
         newemail = data['newemail']
         if not valid_email(newemail):
             self.addError(

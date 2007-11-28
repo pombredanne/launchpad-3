@@ -279,11 +279,6 @@ that belong to other actions. Here, we'll define a form with two
 required fields, and show how to validate one field at a time.
 
   >>> class INameAndPasswordForm(Interface):
-  ...     name = TextLine(title=u"Name")
-  ...     password = TextLine(title=u"Password")
-
-  >>> class FormForWidgetValidation:
-  ...     implements(INameAndPasswordForm)
   ...     name = TextLine(title=u"Name", required=True)
   ...     password = TextLine(title=u"Password", required=True)
 
