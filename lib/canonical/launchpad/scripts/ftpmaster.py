@@ -23,15 +23,12 @@ import apt_pkg
 import commands
 import md5
 import os
-import shutil
 import stat
 import sys
 import tempfile
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
-from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archiveuploader.utils import re_extract_src_version
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.helpers import filenameToContentType
@@ -40,14 +37,14 @@ from canonical.launchpad.interfaces import (
     IDistributionSet, IBinaryPackageReleaseSet, ILaunchpadCelebrities,
     NotFoundError, ILibraryFileAliasSet, IPersonSet, PackagePublishingPocket,
     PackagePublishingPriority, PackagePublishingStatus)
-from canonical.launchpad.interfaces.publishing import pocketsuffix
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.scripts.ftpmasterbase import (
-    build_package_location, PackageLocationError, SoyuzScript, SoyuzScriptError)
+    build_package_location, PackageLocationError, SoyuzScript,
+    SoyuzScriptError)
 
 
 class ArchiveOverriderError(Exception):
@@ -524,11 +521,13 @@ class ArchiveCruftChecker:
 
                 source_version = self.source_versions.get(source, "0")
 
-                if apt_pkg.VersionCompare(latest_version, source_version) == 0:
-                    self.addNBS(
-                        self.dubious_nbs, source, latest_version, package)
+                if apt_pkg.VersionCompare(latest_version,
+                                          source_version) == 0:
+                    self.addNBS(self.dubious_nbs, source, latest_version,
+                                package)
                 else:
-                    self.addNBS(self.real_nbs, source, latest_version, package)
+                    self.addNBS(self.real_nbs, source, latest_version,
+                                package)
 
     def outputNBS(self):
         """Properly display built NBS entries.
@@ -559,7 +558,8 @@ class ArchiveCruftChecker:
                 for pkg in packages:
                     self.nbs_to_remove.append(pkg)
 
-                output += "        o %s: %s\n" % (version, ", ".join(packages))
+                output += "        o %s: %s\n" % (
+                    version, ", ".join(packages))
 
             output += "\n"
 
@@ -1562,13 +1562,6 @@ class ObsoleteDistroseries(SoyuzScript):
     usage = "%prog -d <distribution> -s <suite>"
     description = ("Make obsolete (schedule for removal) packages in an "
                   "obsolete distroseries.")
-    all_pockets = (
-        PackagePublishingPocket.RELEASE,
-        PackagePublishingPocket.SECURITY,
-        PackagePublishingPocket.UPDATES,
-        PackagePublishingPocket.PROPOSED,
-        PackagePublishingPocket.BACKPORTS)
-
 
     def add_my_options(self):
         """Add -d, -s, dry-run and confirmation options."""
@@ -1616,17 +1609,15 @@ class ObsoleteDistroseries(SoyuzScript):
 
         self.logger.info("Obsoleting sources...")
         for package in sources:
-            package.status = PackagePublishingStatus.OBSOLETE
+            package.requestObsolescence()
 
         self.logger.info("Obsoleting binaries...")
         for package in binaries:
-            package.status = PackagePublishingStatus.OBSOLETE
+            package.requestObsolescence()
 
-        # This will mark the packages with a "stay of execution" period and
-        # will subsequently be deleted for good after that period expires.
-        # The "archives" list is used by finishProcedure to know in which
-        # archives to delete the "dists" tree.
-        self.archives = self._dominatePackages(distroseries)
+        # The obsoleted packages will be caught by death row processing
+        # the next time it runs.  We skip the domination phase in the
+        # publisher because it won't consider stable distroseries.
 
         # Information returned mainly for the benefit of the test harness.
         return sources, binaries
@@ -1655,10 +1646,10 @@ class ObsoleteDistroseries(SoyuzScript):
         """
         # Avoid circular import.
         from canonical.launchpad.database.publishing import (
-            SecureSourcePackagePublishingHistory)
+            SourcePackagePublishingHistory)
         self.logger.info("Generating list of published sources for %s." %
            distroseries.name)
-        sources = SecureSourcePackagePublishingHistory.select("""
+        sources = SourcePackagePublishingHistory.select("""
             distroseries = %s AND
             status = %s AND
             archive in %s
@@ -1673,76 +1664,17 @@ class ObsoleteDistroseries(SoyuzScript):
         """
         # Avoid circular import.
         from canonical.launchpad.database.publishing import (
-            SecureBinaryPackagePublishingHistory)
+            BinaryPackagePublishingHistory)
         self.logger.info("Generating list of published binaries for %s." %
             distroseries.name)
-        binaries = SecureBinaryPackagePublishingHistory.select("""
-            SecureBinaryPackagePublishingHistory.distroarchseries =
+        binaries = BinaryPackagePublishingHistory.select("""
+            BinaryPackagePublishingHistory.distroarchseries =
                 distroarchseries.id AND
             distroarchseries.distroseries = distroseries.id AND
             distroseries.id = %s AND
-            SecureBinaryPackagePublishingHistory.status = %s AND
-            SecureBinaryPackagePublishingHistory.archive in %s
+            BinaryPackagePublishingHistory.status = %s AND
+            BinaryPackagePublishingHistory.archive in %s
             """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
                             archive_ids),
             clauseTables=["DistroArchSeries", "DistroSeries"])
         return binaries
-
-    def _dominatePackages(self, distroseries):
-        """Run the Dominator over the distroseries.
-
-        Return the list of archives that were dominated.
-        """
-        # Avoid circular import.
-        from canonical.archivepublisher.domination import Dominator
-
-        # Dominate the packages in all pockets for all main archives.
-        # We do not touch PPAs.
-        archives = []
-        for archive in distroseries.distribution.all_distro_archives:
-            try:
-                # This is required because Config does not have an interface.
-                config = removeSecurityProxy(archive.getPubConfig())
-            except LucilleConfigError:
-                self.logger.error(
-                    "Config missing for archive %s, skipping" % archive.title)
-                continue
-            else:
-                archives.append(archive)
-
-            self.logger.info(
-                "Dominating files in archive: %s" % archive.title)
-            for pocket in self.all_pockets:
-                self.logger.info(
-                    "..Dominating files in pocket: %s" % pocket.name)
-                dominator = Dominator(self.logger, archive)
-                dominator.judgeAndDominate(distroseries, pocket, config)
-        return archives
-
-    def finishProcedure(self):
-        """Called by Soyuz script when the transaction should be committed.
-
-        Here, we will delete the dists tree in the distroseries/archives
-        required.
-        """
-        # Ask SoyuzScript to commit the transaction.
-        committed = SoyuzScript.finishProcedure(self)
-
-        # If we committed it, then we need to delete the relevant "dists"
-        # tree in the archive(s).
-        series_name = self.location.distroseries.name
-        if committed:
-            for archive in self.archives:
-                # No need to catch LucilleException as it has already
-                # succeeded to be able to get here.
-                config = removeSecurityProxy(archive.getPubConfig())
-                # Process each pocket in this distroseries, in this archive.
-                for pocket in self.all_pockets:
-                    pocket_path = series_name + pocketsuffix[pocket]
-                    path_to_delete = os.path.join(
-                        config.distsroot, pocket_path)
-                    self.logger.info("Deleting %s" % path_to_delete)
-                    # It doesn't matter if this fails, it can always be done
-                    # by hand if necessary.
-                    shutil.rmtree(path_to_delete, ignore_errors=True)
-

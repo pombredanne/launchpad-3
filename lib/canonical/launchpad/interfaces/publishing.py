@@ -143,6 +143,13 @@ class IPublishing(Interface):
         `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
         """
 
+    def requestObsolescence():
+        """Make this publication obsolete.
+
+        Return the obsoleted publishing record, either a
+        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        """
+
     def copyTo(distroseries, pocket, archive):
         """Copy this publication to another location.
 
