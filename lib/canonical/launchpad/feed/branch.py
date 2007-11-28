@@ -12,6 +12,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.interfaces import IBranch
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
@@ -23,17 +24,6 @@ class BranchFeedContentView(LaunchpadView):
     def __init__(self, context, request, feed):
         super(BranchFeedContentView, self).__init__(context, request)
         self.feed = feed
-
-    @property
-    def branch_for_display(self):
-        """Get the rendered branch revisions.
-
-        Using the existing templates and views, transform the information for
-        the branch into a representation to be used as the 'content' in the
-        branch feed.
-        """
-        branch_task_view = BugTaskView(self.context.bugtasks[0], self.request)
-        return bug_task_view.getBugCommentsForDisplay()
 
     def render(self):
         """Render the view."""

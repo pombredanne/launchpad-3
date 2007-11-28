@@ -52,16 +52,6 @@ class BugFeedContentView(LaunchpadView):
         super(BugFeedContentView, self).__init__(context, request)
         self.feed = feed
 
-    @property
-    def bug_comments_for_display(self):
-        """Get the rendered bug comments.
-
-        Using the existing templates and views, transform the comments for the
-        bug into a representation to be used as the 'content' in the bug feed.
-        """
-        bug_task_view = BugTaskView(self.context.bugtasks[0], self.request)
-        return bug_task_view.getBugCommentsForDisplay()
-
     def render(self):
         """Render the view."""
         return ViewPageTemplateFile('templates/bug.pt')(self)
