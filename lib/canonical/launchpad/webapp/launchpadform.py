@@ -186,7 +186,7 @@ class LaunchpadFormView(LaunchpadView):
         self.errors.append(message)
 
     def getFieldError(self, field_name):
-        """Get the error associated with a particular widget.
+        """Get the error associated with a particular field.
 
         If an error message is available in widget_errors, it is
         returned.  As a fallback, the corresponding widget's error()
@@ -198,7 +198,7 @@ class LaunchpadFormView(LaunchpadView):
             return self.widgets[field_name].error()
 
     def setFieldError(self, field_name, message):
-        """Set the error associated with a particular field
+        """Set the error associated with a particular field.
 
         If the validator for the field also flagged an error, the
         message passed to this method will be used in preference.
