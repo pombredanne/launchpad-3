@@ -681,7 +681,7 @@ class POFile(SQLBase, POFileMixIn):
 
         return POTMsgSet.select(
             ' AND '.join(query), clauseTables=['TranslationMessage'],
-            orderBy='POTMsgSet.sequence', distinct=True)
+            orderBy='POTMsgSet.sequence')
 
     def getPOTMsgSetFuzzy(self):
         """See `IPOFile`."""
@@ -759,50 +759,22 @@ class POFile(SQLBase, POFileMixIn):
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
-            LEFT JOIN TranslationMessage AS imported ON
+            JOIN TranslationMessage AS imported ON
                 POTMsgSet.id = imported.potmsgset AND
                 imported.pofile = %s AND
                 imported.is_imported IS TRUE
-            LEFT OUTER JOIN POTranslation AS imported_translation0 ON
-                imported.msgstr0 = imported_translation0.id AND
-                imported_translation0.translation <> ''
-            LEFT OUTER JOIN POTranslation AS imported_translation1 ON
-                imported.msgstr1 = imported_translation1.id AND
-                imported_translation1.translation <> ''
-            LEFT OUTER JOIN POTranslation AS imported_translation2 ON
-                imported.msgstr2 = imported_translation2.id AND
-                imported_translation2.translation <> ''
-            LEFT OUTER JOIN POTranslation AS imported_translation3 ON
-                imported.msgstr3 = imported_translation3.id AND
-                imported_translation3.translation <> ''
-            LEFT JOIN TranslationMessage AS current ON
+            JOIN TranslationMessage AS current ON
                 POTMsgSet.id = current.potmsgset AND
-                imported.id != current.id AND
+                imported.id <> current.id AND
                 current.pofile = imported.pofile AND
                 current.is_current IS TRUE
-            LEFT OUTER JOIN POTranslation AS current_translation0 ON
-                current.msgstr0 = current_translation0.id AND
-                current_translation0.translation <> ''
-            LEFT OUTER JOIN POTranslation AS current_translation1 ON
-                current.msgstr1 = current_translation1.id AND
-                current_translation1.translation <> ''
-            LEFT OUTER JOIN POTranslation AS current_translation2 ON
-                current.msgstr2 = current_translation2.id AND
-                current_translation2.translation <> ''
-            LEFT OUTER JOIN POTranslation AS current_translation3 ON
-                current.msgstr3 = current_translation3.id AND
-                current_translation3.translation <> ''
             WHERE
                 POTMsgSet.sequence > 0 AND
                 POTMsgSet.potemplate = %s AND
-                (imported_translation0 IS NOT NULL OR
-                 imported_translation1 IS NOT NULL OR
-                 imported_translation2 IS NOT NULL OR
-                 imported_translation3 IS NOT NULL) AND
-                (current_translation0 IS NOT NULL OR
-                 current_translation1 IS NOT NULL OR
-                 current_translation2 IS NOT NULL OR
-                 current_translation3 IS NOT NULL))
+                (imported.msgstr0 IS NOT NULL OR
+                 imported.msgstr1 IS NOT NULL OR
+                 imported.msgstr2 IS NOT NULL OR
+                 imported.msgstr3 IS NOT NULL))
             ''' % sqlvalues(self, self.potemplate),
             orderBy='POTmsgSet.sequence')
 
