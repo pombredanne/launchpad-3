@@ -67,19 +67,18 @@ from canonical.launchpad.webapp import (
     redirection, stepthrough)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
-    BugNominationStatus, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, BugTaskStatusSearchDisplay, IBug, IBugAttachmentSet,
-    IBugBranchSet, IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch,
-    IBugTaskSet, ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
-    IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
-    IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
-    INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
-    IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
-    IProject, IRemoveQuestionFromBugTaskForm, ISourcePackage, IUpstreamBugTask,
-    IUpstreamProductBugTaskSearch, NotFoundError,
-    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UnexpectedFormData, valid_upstreamtask, validate_distrotask,
-    BugAttachmentType)
+    BugAttachmentType, BugNominationStatus, BugTaskImportance,
+    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay, IBug,
+    IBugAttachmentSet, IBugBranchSet, IBugNominationSet, IBugSet, IBugTask,
+    IBugTaskSearch, IBugTaskSet, ICreateQuestionFromBugTaskForm, ICveSet,
+    IDistribution, IDistributionSourcePackage, IDistroBugTask,
+    IDistroSeries, IDistroSeriesBugTask, IFrontPageBugTaskSearch,
+    ILaunchBag, INominationsReviewTableBatchNavigator, INullBugTask,
+    IPerson, IPersonBugTaskSearch, IProduct, IProductSeries,
+    IProductSeriesBugTask, IProject, IRemoveQuestionFromBugTaskForm,
+    ISourcePackage, IUpstreamBugTask, IUpstreamProductBugTaskSearch,
+    NotFoundError, RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    UNRESOLVED_BUGTASK_STATUSES, valid_upstreamtask, validate_distrotask)
 
 from canonical.launchpad.searchbuilder import any, NULL
 

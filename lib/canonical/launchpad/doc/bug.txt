@@ -873,7 +873,7 @@ will expire if it becomes inactive because of a bugtask.
 `bugtask-expiration.txt` outlines the complete list of constraints that
 govern expiration. In general, a bug that is not valid anywhere,
 that has a single unattended Incomplete bugtask whose pillar uses
-launchpad to track bugs is expirable. Once an bug is recognised to be
+Launchpad to track bugs is expirable. Once an bug is recognised to be
 valid for one bugtask (confirmed), or attended (is assigned or has a
 milestone), the bug will not permit expiration.
 

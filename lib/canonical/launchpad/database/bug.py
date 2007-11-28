@@ -258,7 +258,7 @@ class Bug(SQLBase):
                 # We found an unexpirable bugtask; the bug cannot expire.
                 return False
             if (bugtask.status == BugTaskStatus.INCOMPLETE
-                and bugtask.pillar.official_malone is True):
+                and bugtask.pillar.official_malone):
                 # This bugtasks meets the basic conditions to expire.
                 has_an_expirable_bugtask = True
 

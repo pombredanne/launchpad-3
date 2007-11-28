@@ -193,7 +193,7 @@ class IBug(IMessageTarget, ICanBeMentored):
         "completely addressed. A bug is Launchpad is completely addressed "
         "when there are no tasks that are still open for the bug.")
     permits_expiration = Bool(
-        title=_("Does the bug's state permits expiration? "
+        title=_("Does the bug's state permit expiration? "
         "Expiration is permitted when the bug is not valid anywhere, "
         "a message was sent to the bug reporter, and the bug is associated "
         "with pillars that use the Launchpad bug tracker."))
