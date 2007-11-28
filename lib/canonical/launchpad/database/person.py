@@ -221,6 +221,21 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if self.teamownerID is not None:
             alsoProvides(self, ITeam)
 
+    def convertToTeam(self, team_owner):
+        """See `IPerson`."""
+        assert not self.isTeam(), "Can't convert a team to a team."
+        assert self.account_status == AccountStatus.NOACCOUNT, (
+            "Only Person entries whose account_status is NOACCOUNT can be "
+            "converted into teams.")
+        self.password = None
+        self.creation_rationale = None
+        self.teamowner = team_owner
+        alsoProvides(self, ITeam)
+        # Add the owner as a team admin manually because we know what we're
+        # doing and we don't want any email notifications to be sent.
+        TeamMembershipSet().new(
+            team_owner, self, TeamMembershipStatus.ADMIN, reviewer=team_owner)
+
     # specification-related joins
     @property
     def approver_specs(self):
