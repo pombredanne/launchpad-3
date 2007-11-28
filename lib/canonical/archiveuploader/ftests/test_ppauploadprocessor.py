@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+import os
+import shutil
 import unittest
 
 from email import message_from_string
@@ -65,9 +67,11 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         if not contents:
             contents = []
 
+        queue_size = len(stub.test_emails)
+        messages = "\n".join([m for f, t, m in stub.test_emails])
         self.assertEqual(
-            len(stub.test_emails), 1,
-            'Unexpected number of emails sent: %s' % len(stub.test_emails))
+            queue_size, 1,'Unexpected number of emails sent: %s\n%s'
+            % (queue_size, messages))
 
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         msg = message_from_string(raw_msg)
@@ -172,6 +176,50 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         contents = [
             "Subject: bar_1.0-2_source.changes rejected",
             "Version older than that in the archive. 1.0-2 <= 1.0-10"]
+        self.assertEmail(contents)
+
+    def testPPAReusingOrigFromUbuntu(self):
+        """'orig.tar.gz' from primary archive can be reused by PPA uploads."""
+        # Upload a 'bar' source containing a new orig.tar.gz in ubuntu.
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: New: bar 1.0-1 (source)"]
+        ubuntu_recipients = [
+            self.name16_recipient, self.kinnison_recipient]
+        self.assertEmail(contents, recipients=ubuntu_recipients)
+
+        # Accept and publish the NEW source, so it become available to
+        # the rest of the system.
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.NEW, name="bar",
+            version="1.0-1", exact_match=True)
+        queue_item.setAccepted()
+        queue_item.realiseUpload()
+
+        # Upload a higher version of 'bar' that relies on the availability
+        # of orig.tar.gz published in ubuntu.
+        upload_dir = self.queueUpload("bar_1.0-10", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-10 (source)"]
+        self.assertEmail(contents)
+
+        # Cleanup queue directory in order to re-upload the same source.
+        shutil.rmtree(
+            os.path.join(self.queue_folder, 'incoming', 'bar_1.0-10'))
+
+        # Upload the same higher version of 'bar' to the ubuntu primary
+        # archive, we expect it to continue to benefit of the existent
+        # 'orig.tar.gz'.
+        upload_dir = self.queueUpload("bar_1.0-10")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        # Discard the announcement email and check the acceptance message
+        # content.
+        announcement = stub.test_emails.pop()
+        contents = [
+            "Subject: Accepted: bar 1.0-10 (source)"]
         self.assertEmail(contents)
 
     def testPPABinaryUploads(self):

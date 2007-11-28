@@ -33,8 +33,9 @@ from canonical.archiveuploader.utils import (
     re_valid_pkg_name, re_valid_version, re_issource)
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
-    NotFoundError, IGPGHandler, GPGVerificationError, IGPGKeySet,
-    IPersonSet, ISourcePackageNameSet, PersonCreationRationale)
+    ArchivePurpose, GPGVerificationError, IGPGHandler, IGPGKeySet,
+    IPersonSet, ISourcePackageNameSet, NotFoundError,
+    PersonCreationRationale)
 from canonical.librarian.utils import copy_and_close
 
 
@@ -145,8 +146,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     # Copyrigth is only set inside unpackAndCheckSource().
     copyright = None
 
-    def __init__(self, filepath, digest, size, component_and_section, priority,
-                 package, version, changes, policy, logger):
+    def __init__(self, filepath, digest, size, component_and_section,
+                 priority, package, version, changes, policy, logger):
         """Construct a DSCFile instance.
 
         This takes all NascentUploadFile constructor parameters plus package
@@ -273,8 +274,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             if field is not None:
                 if field.startswith("ARRAY"):
                     yield UploadError(
-                        "%s: invalid %s field produced by a broken version of "
-                        "dpkg-dev (1.10.11)" % (self.filename, field_name))
+                        "%s: invalid %s field produced by a broken version "
+                        "of dpkg-dev (1.10.11)" % (self.filename, field_name))
                 try:
                     apt_pkg.ParseSrcDepends(field)
                 except (SystemExit, KeyboardInterrupt):
@@ -299,6 +300,35 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         for error in self.checkFiles():
             yield error
 
+    def _getFileByName(self, filename):
+        """Enhanced file lookup method.
+
+        It allows PPA 'orig.tar.gz' file lookups to also reach candidates
+        in the distribution PRIMARY archive.
+
+        This way PPA uploaders don't have to waste bandwidth uploading huge
+        upstream tarballs that are already published in the target
+        distribution.
+        """
+        if (self.policy.archive.purpose == ArchivePurpose.PPA and
+            filename.endswith('.orig.tar.gz')):
+            archives = [self.policy.archive, self.policy.distro.main_archive]
+        else:
+            archives = [self.policy.archive]
+
+        library_file = None
+        for archive in archives:
+            try:
+                library_file = self.policy.distro.getFileByName(
+                    filename, source=True, binary=False, archive=archive)
+            except NotFoundError:
+                pass
+
+        if library_file:
+            return library_file
+
+        raise NotFoundError(filename)
+
     def checkFiles(self):
         """Check if mentioned files are present and match.
 
@@ -312,9 +342,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 has_tar = True
 
             try:
-                library_file = self.policy.distro.getFileByName(
-                    sub_dsc_file.filename, source=True, binary=False,
-                    archive=self.policy.archive)
+                library_file = self._getFileByName(sub_dsc_file.filename)
             except NotFoundError, error:
                 library_file = None
             else:
@@ -369,7 +397,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
     def unpackAndCheckSource(self):
         """Verify uploaded source using dpkg-source."""
-        self.logger.debug("Verifying uploaded source package by unpacking it.")
+        self.logger.debug(
+            "Verifying uploaded source package by unpacking it.")
 
         # Get a temporary dir together.
         tmpdir = tempfile.mkdtemp(dir=self.dirname)
@@ -435,8 +464,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         except OSError, error:
             # XXX: dsilvers 2006-03-15: We currently lack a test for this.
             if errno.errorcode[error.errno] != 'EACCES':
-                yield UploadError("%s: couldn't remove tmp dir %s: code %s" % (
-                                  self.filename, tmpdir, error.errno))
+                yield UploadError(
+                    "%s: couldn't remove tmp dir %s: code %s" % (
+                    self.filename, tmpdir, error.errno))
             else:
                 yield UploadWarning(
                     "%s: Couldn't remove tree, fixing up permissions." %
