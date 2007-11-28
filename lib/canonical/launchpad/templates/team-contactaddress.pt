@@ -12,12 +12,6 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form">
@@ -26,41 +20,19 @@
     </p>
     <metal:widgets fill-slot="widgets">
       <div tal:define="contact_method nocall:view/widgets/contact_method">
-        <div>
-          <tal:disabled-option
-            condition="view/shouldRenderHostedListOptionManually">
-            <label style="font-weight: normal">
-              <input class="radioType" name="field.contact_method"
-                     type="radio" value="HOSTED_LIST" disabled="true" />
-              The Launchpad mailing list for this team -
-              <span tal:replace="view/mailinglist_address">a@b.com</span>
-              <div class="informational message" style="margin: 0 0 0 2em"
-                   tal:condition="view/mailing_list_status_message">
-                <span tal:content="structure view/mailing_list_status_message">
-                  foo
-                </span>
-                <input tal:replace="structure view/request_list_creation/render"
-                       tal:condition="view/list_can_be_requested" />
-                <input tal:replace="structure view/cancel_list_creation/render"
-                       tal:condition="view/list_application_can_be_cancelled" />
-              </div>
-            </label>
-          </tal:disabled-option>
-          <input tal:replace="structure contact_method" />:
-          <tal:email-widget 
-            define="contact_address nocall:view/widgets/contact_address;
-                    field_name contact_address/context/__name__;
-                    error python:view.getWidgetError(field_name);
-                    error_class python:error and 'error' or None;">
-            <span tal:attributes="class error_class">
-              <input tal:replace="structure contact_address" />
-              <div class="message" tal:condition="error"
-                 tal:content="structure error">Error message</div>
-            </span>
-          </tal:email-widget>
-        </div>
+        <input tal:replace="structure contact_method" />:
+        <tal:email-widget
+           define="contact_address nocall:view/widgets/contact_address;
+                   field_name contact_address/context/__name__;
+                   error python:view.getWidgetError(field_name);
+                   error_class python:error and 'error' or None;">
+           <span tal:attributes="class error_class">
+             <input tal:replace="structure contact_address" />
+             <div class="message" tal:condition="error"
+                  tal:content="structure error">Error message</div>
+           </span>
+         </tal:email-widget>
       </div>
-      <br />
     </metal:widgets>
 
     <div class="actions" metal:fill-slot="buttons">
@@ -68,6 +40,12 @@
     </div>
   </div>
 
-</div> 
+  <p id="set-up-a-mailing-list" tal:condition="view/can_create_mailing_list">
+    If you <a href="+mailinglist">set up a mailing list for this
+    team</a>, you can use the mailing list as the team contact
+    address.
+  </p>
+
+</div>
 </body>
 </html>

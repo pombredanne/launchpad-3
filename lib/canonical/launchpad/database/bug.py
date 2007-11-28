@@ -1,10 +1,13 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
 
-__all__ = ['Bug', 'BugSet', 'get_bug_tags', 'get_bug_tags_open_count']
+__all__ = [
+    'Bug', 'BugBecameQuestionEvent', 'BugSet', 'get_bug_tags',
+    'get_bug_tags_open_count']
 
 
 import operator
@@ -22,12 +25,14 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, DistroSeriesStatus, IBug, IBugAttachmentSet,
-    IBugBranch, IBugSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
-    IProductSeriesBugTask, ISourcePackage, IUpstreamBugTask, NominationError,
-    NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    BugAttachmentType, BugTaskStatus, DistroSeriesStatus, IBug,
+    IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
+    IBugWatchSet, ICveSet, IDistribution, IDistroBugTask, IDistroSeries,
+    IDistroSeriesBugTask, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IMessage, IProduct, IProductSeries, IProductSeriesBugTask,
+    IQuestionTarget, ISourcePackage, IUpstreamBugTask, NominationError,
+    NominationSeriesObsoleteError, NotFoundError,
+    UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -123,6 +128,16 @@ class BugTag(SQLBase):
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     tag = StringCol(notNull=True)
+
+
+class BugBecameQuestionEvent:
+    """See `IBugBecameQuestionEvent`."""
+    implements(IBugBecameQuestionEvent)
+
+    def __init__(self, bug, question, user):
+        self.bug = bug
+        self.question = question
+        self.user = user
 
 
 class Bug(SQLBase):
@@ -522,6 +537,7 @@ class Bug(SQLBase):
         bug_branch = BugBranch(
             branch=branch, bug=self, whiteboard=whiteboard, status=status,
             registrant=registrant)
+        branch.date_last_modified = UTC_NOW
 
         notify(SQLObjectCreatedEvent(bug_branch))
 
@@ -554,6 +570,83 @@ class Bug(SQLBase):
     # cargo culted into Product, Distribution, ProductSeries etc
     completeness_clause =  """
         BugTask.bug = Bug.id AND """ + BugTask.completeness_clause
+
+    def canBeAQuestion(self):
+        """See `IBug`."""
+        return (self._getQuestionTargetableBugTask() is not None
+            and self.getQuestionCreatedFromBug() is None)
+
+    def _getQuestionTargetableBugTask(self):
+        """Return the only bugtask that can be a QuestionTarget, or None.
+
+        Bugs that are also in external bug trackers cannot be converted
+        to questions. This is also true for bugs that are being developed.
+        None is returned when either of these conditions are true.
+
+        The bugtask is selected by these rules:
+        1. It's status is not Invalid.
+        2. It is not a conjoined slave.
+        Only one bugtask must meet both conditions to be return. When
+        zero or many bugtasks match, None is returned.
+        """
+        # XXX sinzui 2007-10-19:
+        # We may want to removed the bugtask.conjoined_master check
+        # below. It is used to simplify the task of converting
+        # conjoined bugtasks to question--since slaves cannot be
+        # directly updated anyway.
+        non_invalid_bugtasks = [
+            bugtask for bugtask in self.bugtasks
+            if (bugtask.status != BugTaskStatus.INVALID
+                and bugtask.conjoined_master is None)]
+        if len(non_invalid_bugtasks) != 1:
+            return None
+        [valid_bugtask] = non_invalid_bugtasks
+        if valid_bugtask.pillar.official_malone:
+            return valid_bugtask
+        else:
+            return None
+
+
+    def convertToQuestion(self, person, comment=None):
+        """See `IBug`."""
+        question = self.getQuestionCreatedFromBug()
+        assert question is None, (
+            'This bug was already converted to question #%s.' % question.id)
+        bugtask = self._getQuestionTargetableBugTask()
+        assert bugtask is not None, (
+            'A question cannot be created from this bug without a '
+            'valid bugtask.')
+
+        bugtask_before_modification = Snapshot(
+            bugtask, providing=providedBy(bugtask))
+        bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
+        edited_fields = ['status']
+        if comment is not None:
+            bugtask.statusexplanation = comment
+            edited_fields.append('statusexplanation')
+            self.newMessage(
+                owner=person, subject=self.followup_subject(),
+                content=comment)
+        notify(
+            SQLObjectModifiedEvent(
+                object=bugtask,
+                object_before_modification=bugtask_before_modification,
+                edited_fields=edited_fields,
+                user=person))
+
+        question_target = IQuestionTarget(bugtask.target)
+        question = question_target.createQuestionFromBug(self)
+
+        notify(BugBecameQuestionEvent(self, question, person))
+        return question
+
+    def getQuestionCreatedFromBug(self):
+        """See `IBug`."""
+        for question in self.questions:
+            if (question.owner == self.owner
+                and question.datecreated == self.datecreated):
+                return question
+        return None
 
     def canMentor(self, user):
         """See `ICanBeMentored`."""

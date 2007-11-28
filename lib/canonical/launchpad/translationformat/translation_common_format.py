@@ -33,7 +33,7 @@ class TranslationMessageData:
     implements(ITranslationMessageData)
 
     def __init__(self):
-        self.msgid = None
+        self.msgid_singular = None
         self.msgid_plural = None
         self.context = None
         self._translations = []
