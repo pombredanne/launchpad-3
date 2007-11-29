@@ -1,0 +1,67 @@
+= Registry Experts =
+
+This is a celebrity that is allowed to garden registry data. They are
+allowed to modify instances of a number of our interfaces. Read on for
+more details on what and how.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from canonical.launchpad.database import (
+    ...     Person, Product, ProductSeries, ProductRelease,
+    ...     BugTracker, Packaging, ProductReleaseFile,
+    ...     Milestone, BugTracker)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProduct, IProductSeries, IProductRelease,
+    ...     IBugTracker, IPackaging, IProductReleaseFile,
+    ...     IMilestone, ILaunchpadCelebrities, IBugTracker)
+
+This helper checks permissions for the objects we care about:
+
+    >>> def check_permissions():
+    ...     for klass in [
+    ...             Product,
+    ...             ProductRelease,
+    ...             ProductSeries,
+    ...             BugTracker,
+    ...             Packaging,
+    ...             ProductReleaseFile,
+    ...             Milestone]:
+    ...         if check_permission('launchpad.Edit', klass.get(1)):
+    ...             print klass.__name__
+    ...
+
+So if you're not in the experts team, you can't do anything to these
+classes if you don't own them:
+
+    >>> no_priv = Person.selectOneBy(name="no-priv")
+    >>> foobar = Person.selectOneBy(name="name16")
+    >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
+    >>> no_priv.inTeam(registry_experts)
+    False
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permissions()
+
+But if we add you to the team (clearing the _inTeam_cache meanwhile to
+work around its existence):
+
+    >>> registry_experts.addMember(no_priv, foobar)
+    >>> no_priv._inTeam_cache = {}
+    >>> no_priv.inTeam(registry_experts)
+    True
+    >>> check_permissions()
+    Product
+    ProductRelease
+    ProductSeries
+    BugTracker
+    Packaging
+    ProductReleaseFile
+    Milestone
+
+Two comments on ProductReleaseFile and Milestone: though there are not
+strong use cases for editing them, the fact that they can be created by
+the experts, as a consequence of Launchpad.Edit on their parent objects,
+implies that it's better to allow editing them than not.
+
+We also explicitly choose not to provide EditSource permissions because
+it really doesn't work very well given our existing code import backend.
+
