@@ -755,3 +755,37 @@ for Salgado.
     t1
     t4
 
+== Membership caches ==
+
+Person instances have membership caches (_inTeam_cache) to avoid the
+need to reissue identical membership queries repeatedly. (This test uses
+Person directly to allow us access to an unproxied object, since
+_inTeam_cache is private, and TeamMembershipSet directly to allow us to
+call TeamMembership.setStatus, which is private).
+
+    >>> from canonical.launchpad.database import Person, TeamMembershipSet
+    >>> no_priv = Person.selectOneBy(name='no-priv')
+    >>> no_priv.inTeam(admins)
+    False
+    >>> no_priv._inTeam_cache
+    {25: False}
+
+This cache is cleared when memberships are created:
+
+    >>> membership = TeamMembershipSet().new(no_priv, admins,
+    ...     status=TeamMembershipStatus.APPROVED)
+    >>> no_priv._inTeam_cache
+    {}
+    >>> no_priv.inTeam(admins)
+    True
+    >>> no_priv._inTeam_cache
+    {25: True}
+
+Or changed:
+
+    >>> membership.setStatus(TeamMembershipStatus.DEACTIVATED, reviewer=sabdfl)
+    >>> no_priv._inTeam_cache
+    {}
+    >>> no_priv.inTeam(admins)
+    False
+

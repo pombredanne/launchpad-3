@@ -83,13 +83,9 @@ neither and thus may not create a list for team_two.
 However, if we make Anne a team administrator, she can then register the
 mailing list.
 
-    >>> # XXX BarryWarsaw bug 125505: Use .join() and .setMembershipData()
-    >>> # instead of the more direct team.addMember() because the latter
-    >>> # doesn't invalidate the person's _inTeam_cache.
-    >>> anne.join(team_two)
-    >>> bart = new_person('Bart')
     >>> from canonical.launchpad.interfaces import TeamMembershipStatus
-    >>> team_two.setMembershipData(anne, TeamMembershipStatus.ADMIN, bart)
+    >>> bart = new_person('Bart')
+    >>> team_two.addMember(anne, bart, status=TeamMembershipStatus.ADMIN)
     >>> flush_database_updates()
     >>> list_two = list_set.new(team_two, anne)
     >>> list_two

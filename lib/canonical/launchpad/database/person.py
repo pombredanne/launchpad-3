@@ -1085,9 +1085,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             raise AssertionError(
                 "Unknown subscription policy: %s" % team.subscriptionpolicy)
 
-        self._inTeam_cache = {} # Flush the cache used by the inTeam method
-
         team.addMember(self, reviewer=self, status=status)
+
+    def clearInTeamCache(self):
+        """See `IPerson`."""
+        self._inTeam_cache = {}
 
     #
     # ITeam methods
