@@ -755,6 +755,15 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             raise Invalid(
                 'You must specify a default renewal period greater than 0.')
 
+    def convertToTeam(team_owner):
+        """Convert this person into a team owned by the given team_owner.
+
+        Also adds the given team owner as an administrator of the team.
+
+        Only Person entries whose account_status is NOACCOUNT and which are
+        not teams can be converted into teams.
+        """
+
     def getActiveMemberships():
         """Return all active TeamMembership objects of this team.
 
@@ -886,6 +895,12 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
         """
+
+    def clearInTeamCache():
+        """Clears the person's inTeam cache.
+
+        To be used when membership changes are enacted. Only meant to be
+        used between TeamMembership and Person objects."""
 
     def lastShippedRequest():
         """Return this person's last shipped request, or None."""

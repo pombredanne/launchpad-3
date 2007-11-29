@@ -299,7 +299,6 @@ accessed:
     >>> for url in results['urls']:
     ...     print url
     bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
-    sftp://bazaar.launchpad.dev/~vcs-imports/evolution/main
     http://bazaar.launchpad.dev/~vcs-imports/evolution/main
 
 The URLs that are likely to be faster or provide write access appear
@@ -316,7 +315,6 @@ associated with the project's development focus series.
     >>> for url in results['urls']:
     ...     print url
     bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
-    sftp://bazaar.launchpad.dev/~vcs-imports/evolution/main
     http://bazaar.launchpad.dev/~vcs-imports/evolution/main
 
 
@@ -346,7 +344,6 @@ reference to a particular series on a project.
     >>> for url in results['urls']:
     ...     print url
     bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
-    sftp://bazaar.launchpad.dev/~vcs-imports/evolution/main
     http://bazaar.launchpad.dev/~vcs-imports/evolution/main
 
 
@@ -375,7 +372,6 @@ followed by an arbitrary path:
     >>> for url in results['urls']:
     ...     print url
     bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
-    sftp://bazaar.launchpad.dev/~vcs-imports/evolution/main
     http://bazaar.launchpad.dev/~vcs-imports/evolution/main
 
 
@@ -385,7 +381,6 @@ Launchpad will still resolve the branch even if it doesn't exist:
     >>> for url in results['urls']:
     ...     print url
     bzr+ssh://bazaar.launchpad.dev/~sabdfl/+junk/doesntexist
-    sftp://bazaar.launchpad.dev/~sabdfl/+junk/doesntexist
     http://bazaar.launchpad.dev/~sabdfl/+junk/doesntexist
 
 
