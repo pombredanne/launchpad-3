@@ -8,6 +8,7 @@ from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.ftests import sync
 from canonical.launchpad.ftests.test_pages import (
     extract_text, find_main_content, find_portlet, find_tag_by_id,
     find_tags_by_class)
@@ -144,3 +145,12 @@ def summarize_bugtasks(bugtasks):
             bugtask.bug.duplicateof is not None,
             bugtask.milestone is not None,
             bugtask.bug.messages.count() == 1)
+
+
+def sync_bugtasks(bugtasks):
+    """Sync the bugtask and its bug to the database."""
+    if not isinstance(bugtasks, list):
+        bugtasks = [bugtasks]
+    for bugtask in bugtasks:
+        sync(bugtask)
+        sync(bugtask.bug)
