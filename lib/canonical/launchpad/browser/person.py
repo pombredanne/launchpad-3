@@ -2948,6 +2948,11 @@ class PersonEditEmailsView(LaunchpadFormView):
     ### Actions to do with subscription management.
 
     def validate_action_update_subscriptions(self, action, data):
+        """Make sure the user is subscribing using their own addresses.
+
+        XXX Is this neccessary? Similar check code is found in
+        changeAddress() and subscribe().
+        """
         names = [w.context.getName() for w in self.mailing_list_widgets]
         self.validate_widgets(data, names)
 
@@ -2969,6 +2974,7 @@ class PersonEditEmailsView(LaunchpadFormView):
     @action(_("Update Subscriptions"), name="update_subscriptions",
             validator=validate_action_update_subscriptions)
     def action_update_subscriptions(self, action, data):
+        """Change the user's mailing list subscriptions."""
         mailing_list_set = getUtility(IMailingListSet)
         dirty = False
         for widget in self.mailing_list_widgets:
