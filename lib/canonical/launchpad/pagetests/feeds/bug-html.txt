@@ -132,6 +132,7 @@ to True.
 
     >>> config.launchpad.is_bug_search_feed_active = True
     >>> browser.open(url)
+    >>> config.launchpad.is_bug_search_feed_active = False
     >>> browser.title
     'Bugs from custom search'
 
