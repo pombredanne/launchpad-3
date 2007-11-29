@@ -805,7 +805,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editemailaddresses(self):
         target = '+editemails'
-        text = 'Update e-mail addresses'
+        text = 'Change e-mail settings'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')

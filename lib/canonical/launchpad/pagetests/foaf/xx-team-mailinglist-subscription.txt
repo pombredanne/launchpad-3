@@ -36,7 +36,7 @@ He follows the link to confirm his second email address.
 
 Now he's got a confirmed address in addition to his preferred address:
 
-    >>> browser.getLink('Update e-mail addresses').click()
+    >>> browser.getLink('Change e-mail settings').click()
     >>> confirmed = browser.getControl(name="field.VALIDATED_SELECTED")
     >>> confirmed.displayOptions
     ['\xa0carlos@canonical.com', '\xa0carlos@test.com']
