@@ -301,14 +301,17 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             yield error
 
     def _getFileByName(self, filename):
-        """Enhanced file lookup method.
+        """Return the corresponding library file in the policy context.
 
-        It allows PPA 'orig.tar.gz' file lookups to also reach candidates
-        in the distribution PRIMARY archive.
+        If the filename ends in '.orig.tar.gz', then we look for it in the
+        distribution primary archive as well, with the PPA file taking
+        precedence in case it's found in both archives.
 
-        This way PPA uploaders don't have to waste bandwidth uploading huge
-        upstream tarballs that are already published in the target
-        distribution.
+        This is needed so that PPA uploaders don't have to waste bandwidth
+        uploading huge upstream tarballs that are already published in the
+        target distribution.
+
+        Raises NotFoundError if the wanted file could not be found.
         """
         if (self.policy.archive.purpose == ArchivePurpose.PPA and
             filename.endswith('.orig.tar.gz')):
@@ -321,11 +324,11 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             try:
                 library_file = self.policy.distro.getFileByName(
                     filename, source=True, binary=False, archive=archive)
+                self.logger.debug(
+                    "%s found in %s" % (filename, archive.title))
+                return library_file
             except NotFoundError:
                 pass
-
-        if library_file:
-            return library_file
 
         raise NotFoundError(filename)
 
