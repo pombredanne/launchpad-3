@@ -30,13 +30,12 @@ import tempfile
 from zope.component import getUtility
 
 from canonical.archiveuploader.utils import re_extract_src_version
-from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IBinaryPackageNameSet,
     IDistributionSet, IBinaryPackageReleaseSet, ILaunchpadCelebrities,
     NotFoundError, ILibraryFileAliasSet, IPersonSet, PackagePublishingPocket,
-    PackagePublishingPriority, PackagePublishingStatus)
+    PackagePublishingPriority)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.librarian.interfaces import (

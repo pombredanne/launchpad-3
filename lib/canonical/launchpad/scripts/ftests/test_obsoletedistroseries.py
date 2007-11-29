@@ -12,13 +12,14 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
-from canonical.launchpad.ftests.soyuz import SoyuzTestHelper
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
-    PackageLocationError, ObsoleteDistroseries, SoyuzScriptError)
+    ObsoleteDistroseries, SoyuzScriptError)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
+    SourcePackagePublishingHistory,
+    SecureBinaryPackagePublishingHistory,
+    BinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     DistroSeriesStatus, IDistributionSet, PackagePublishingStatus)
 
@@ -72,27 +73,6 @@ class TestObsoleteDistroseries(LaunchpadZopelessTestCase):
         self.main_archive_ids = [
             id for id in self.warty.distribution.all_distro_archive_ids]
 
-        #self.setupBreezy()
-
-    def setupBreezy(self):
-        """Create a fresh distroseries in ubuntu.
-
-        Use *initialiseFromParent* procedure to create 'breezy'
-        on ubuntu based on the last 'breezy-autotest'.
-
-        Also sets 'changeslist' and 'nominatedarchindep' properly.
-        """
-        self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        bat = self.ubuntu['breezy-autotest']
-        self.breezy = getUtility(IDistroSeriesSet).new(
-            self.ubuntu, 'breezy', 'Breezy Badger',
-            'The Breezy Badger', 'Black and White', 'Someone',
-            '5.10', bat, bat.owner)
-        breezy_i386 = self.breezy.newArch(
-            'i386', bat['i386'].processorfamily, True, self.breezy.owner)
-        self.breezy.nominatedarchindep = breezy_i386
-        self.breezy.initialiseFromParent()
-
     def getObsoleter(self, suite='warty', distribution='ubuntu',
                      confirm_all=True):
         """Return an ObsoleteDistroseries instance.
@@ -117,10 +97,32 @@ class TestObsoleteDistroseries(LaunchpadZopelessTestCase):
         obsoleter.setupLocation()
         return obsoleter
 
+    def getPublicationsForDistroseries(self, distroseries=None):
+        """Return a tuple of sources, binaries published in distroseries."""
+        if distroseries is None:
+            distroseries = self.warty
+        published_sources = SecureSourcePackagePublishingHistory.select("""
+            DistroSeries = %s AND
+            Status = %s AND
+            Archive IN %s
+            """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
+                            self.main_archive_ids))
+        published_binaries = SecureBinaryPackagePublishingHistory.select("""
+            SecureBinaryPackagePublishingHistory.distroarchseries =
+                DistroArchSeries.id AND
+            DistroArchseries.DistroSeries = DistroSeries.id AND
+            DistroSeries.id = %s AND
+            SecureBinaryPackagePublishingHistory.status = %s AND
+            SecureBinaryPackagePublishingHistory.archive IN %s
+            """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
+                            self.main_archive_ids),
+            clauseTables=["DistroArchSeries", "DistroSeries"])
+        return (published_sources, published_binaries)
+
     def testNonObsoleteDistroseries(self):
         """Test running over a non-obsolete distroseries."""
         # Default to warty, which is not obsolete.
-        self.assertTrue(warty.status != PackagePublishingStatus.OBSOLETE)
+        self.assertTrue(self.warty.status != PackagePublishingStatus.OBSOLETE)
         obsoleter = self.getObsoleter(suite='warty')
         self.assertRaises(SoyuzScriptError, obsoleter.mainTask)
 
@@ -130,22 +132,8 @@ class TestObsoleteDistroseries(LaunchpadZopelessTestCase):
         self.warty.status = DistroSeriesStatus.OBSOLETE
 
         # Get all the published sources in warty.
-        published_sources = SecureSourcePackagePublishingHistory.select("""
-            distroseries = %s AND
-            status = %s AND
-            archive IN %s
-            """ % sqlvalues(self.warty, PackagePublishingStatus.PUBLISHED,
-                            self.main_archive_ids))
-        published_binaries = SecureBinaryPackagePublishingHistory.select("""
-            SecureBinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchseries.DistroSeries = DistroSeries.id AND
-            DistroSeries.id = %s AND
-            SecureBinaryPackagePublishingHistory.status = %s AND
-            SecureBinaryPackagePublishingHistory.archive IN %s
-            """ % sqlvalues(self.warty, PackagePublishingStatus.PUBLISHED,
-                            self.main_archive_ids),
-            clauseTables=["DistroArchSeries", "DistroSeries"])
+        published_sources, published_binaries = (
+            self.getPublicationsForDistroseries())
 
         # Reset their status to OBSOLETE.
         for package in published_sources:
@@ -156,6 +144,69 @@ class TestObsoleteDistroseries(LaunchpadZopelessTestCase):
         # Call the script and ensure it does nothing.
         self.layer.txn.commit()
         self.assertRaises(SoyuzScriptError, obsoleter.mainTask)
+
+    def testObsoleteDistroseriesWorks(self):
+        """A full run to make sure the required publications are obsoleted."""
+        obsoleter = self.getObsoleter()
+        self.warty.status = DistroSeriesStatus.OBSOLETE
+
+        # Get all the published sources in warty.
+        published_sources, published_binaries = (
+            self.getPublicationsForDistroseries())
+
+        # Assert that none of them is obsolete yet:
+        self.assertTrue(published_sources.count() != 0)
+        self.assertTrue(published_binaries.count() != 0)
+        for source in published_sources:
+            self.assertTrue(
+                source.status == PackagePublishingStatus.PUBLISHED)
+            self.assertTrue(source.scheduleddeletiondate is None)
+        for binary in published_binaries:
+            self.assertTrue(
+                binary.status == PackagePublishingStatus.PUBLISHED)
+            self.assertTrue(binary.scheduleddeletiondate is None)
+
+        # Keep their DB IDs for later.
+        source_ids = [source.id for source in published_sources]
+        binary_ids = [binary.id for binary in published_binaries]
+
+        # Make them obsolete.
+        obsoleter.mainTask()
+        self.layer.txn.commit()
+
+        # Now see if the modified publications have been correctly obsoleted.
+        # We need to re-fetch the published_sources and published_binaries
+        # because the existing objects are not valid through a transaction.
+        for id in source_ids:
+            source = SourcePackagePublishingHistory.get(id)
+            self.assertTrue(
+                source.status == PackagePublishingStatus.OBSOLETE)
+            self.assertTrue(source.scheduleddeletiondate is not None)
+        for id in binary_ids:
+            binary = BinaryPackagePublishingHistory.get(id)
+            self.assertTrue(
+                binary.status == PackagePublishingStatus.OBSOLETE)
+            self.assertTrue(binary.scheduleddeletiondate is not None)
+
+        # Make sure nothing else was obsoleted.  Subtract the set of
+        # known OBSOLETE IDs from the set of all the IDs and assert that
+        # the remainder are not OBSOLETE.
+        all_sources = SourcePackagePublishingHistory.select(True)
+        all_binaries = BinaryPackagePublishingHistory.select(True)
+        all_source_ids = [source.id for source in all_sources]
+        all_binary_ids = [binary.id for binary in all_binaries]
+
+        remaining_source_ids = set(all_source_ids) - set(source_ids)
+        remaining_binary_ids = set(all_binary_ids) - set(binary_ids)
+
+        for id in remaining_source_ids:
+            source = SourcePackagePublishingHistory.get(id)
+            self.assertTrue(
+                source.status != PackagePublishingStatus.OBSOLETE)
+        for id in remaining_binary_ids:
+            binary = BinaryPackagePublishingHistory.get(id)
+            self.assertTrue(
+                binary.status != PackagePublishingStatus.OBSOLETE)
 
 
 def test_suite():
