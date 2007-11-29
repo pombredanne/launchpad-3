@@ -325,7 +325,7 @@
                         <label for="none"> Nobody</label><br />
                         <div class="field"
                           tal:define="error
-                          python:view.getWidgetError('assignee')">
+                          python:view.getFieldError('assignee')">
                           <div tal:attributes="class python:error and 'error' or None">
                             <span style="white-space: nowrap">
                               <input
@@ -361,7 +361,7 @@
                       <td style="white-space: nowrap">
                         <div class="field"
                              tal:define="error
-                             python:view.getWidgetError('bug_reporter')">
+                             python:view.getFieldError('bug_reporter')">
                           <div tal:attributes=
                                "class python:error and 'error' or None">
                             <span tal:content="structure
@@ -386,7 +386,7 @@
                       <td style="white-space: nowrap">
                         <div class="field"
                              tal:define="error
-                             python:view.getWidgetError('bug_contact')">
+                             python:view.getFieldError('bug_contact')">
                           <div tal:attributes=
                                "class python:error and 'error' or None">
                             <span tal:content="structure
@@ -413,7 +413,7 @@
                       <td style="white-space: nowrap">
                         <div class="field"
                              tal:define="error
-                             python:view.getWidgetError('bug_commenter')">
+                             python:view.getFieldError('bug_commenter')">
                           <div tal:attributes=
                                "class python:error and 'error' or None">
                             <span tal:content="structure
@@ -440,7 +440,7 @@
                       <td style="white-space: nowrap">
                         <div class="field"
                              tal:define="error
-                             python:view.getWidgetError('subscriber')">
+                             python:view.getFieldError('subscriber')">
                           <div tal:attributes=
                                "class python:error and 'error' or None">
                             <span tal:content="structure

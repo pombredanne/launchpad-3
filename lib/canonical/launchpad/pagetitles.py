@@ -293,8 +293,10 @@ bugtarget_filebug_search = bugtarget_filebug_advanced
 
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
-bugtask_choose_affected_product = LaunchbagBugID(
+bugtask_affects_new_product = LaunchbagBugID(
     'Bug #%d - Record as affecting another project')
+
+bugtask_choose_affected_product = bugtask_affects_new_product
 
 # This page is used for both projects/distros so we have to say 'software'
 # rather than distro or project here.
@@ -655,6 +657,8 @@ loginservice_resetpassword = 'Reset your password'
 
 logintoken_claimprofile = 'Claim Launchpad profile'
 
+logintoken_claimteam = 'Claim Launchpad team'
+
 logintoken_index = 'Launchpad: redirect to the logintoken page'
 
 logintoken_mergepeople = 'Merge Launchpad accounts'
@@ -794,6 +798,8 @@ person_branch_add = ContextDisplayName('Register a new branch for %s')
 person_changepassword = 'Change your password'
 
 person_claim = 'Claim account'
+
+person_claim_team = 'Claim team'
 
 person_deactivate_account = 'Deactivate your Launchpad account'
 

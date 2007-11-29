@@ -185,8 +185,20 @@ class LaunchpadFormView(LaunchpadView):
         self.form_wide_errors.append(message)
         self.errors.append(message)
 
+    def getFieldError(self, field_name):
+        """Get the error associated with a particular field.
+
+        If an error message is available in widget_errors, it is
+        returned.  As a fallback, the corresponding widget's error()
+        method is called.
+        """
+        if field_name in self.widget_errors:
+            return self.widget_errors[field_name]
+        else:
+            return self.widgets[field_name].error()
+
     def setFieldError(self, field_name, message):
-        """Set the error associated with a particular field
+        """Set the error associated with a particular field.
 
         If the validator for the field also flagged an error, the
         message passed to this method will be used in preference.
@@ -241,18 +253,6 @@ class LaunchpadFormView(LaunchpadView):
         else:
             return 'There are %d errors.' % count
 
-    def getWidgetError(self, field_name):
-        """Get the error associated with a particular widget.
-
-        If an error message is available in widget_errors, it is
-        returned.  As a fallback, the corresponding widget's error()
-        method is called.
-        """
-        if field_name in self.widget_errors:
-            return self.widget_errors[field_name]
-        else:
-            return self.widgets[field_name].error()
-
     def validate(self, data):
         """Validate the form.
 
@@ -269,7 +269,7 @@ class LaunchpadFormView(LaunchpadView):
         for widget in self.widgets:
             if first_widget is None:
                 first_widget = widget
-            if self.getWidgetError(widget.context.__name__):
+            if self.getFieldError(widget.context.__name__):
                 break
         else:
             # otherwise we use the widget named by self.initial_focus_widget

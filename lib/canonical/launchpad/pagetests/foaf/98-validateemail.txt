@@ -1,85 +1,61 @@
-  'salgado' have an email address that was probably added by gina, let's
-  validate it now.
+= Validating an email address =
 
-  Workaround while https://launchpad.net/launchpad/+bug/39016 is not
-  fixed.
-  >>> from canonical.launchpad.mail import stub
-  >>> stub.test_emails[:] = []
+The user 'salgado' has an unvalidated email address that was probably
+added by gina. Now he wants to validate it.
 
-  >>> print http(r"""
-  ... GET /~salgado/+editemails HTTP/1.1
-  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...<h1>Your e-mail addresses</h1>...
-  ...
+    # Workaround for https://launchpad.net/launchpad/+bug/39016
+    >>> from canonical.launchpad.mail import stub
+    >>> stub.test_emails[:] = []
 
+    >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
+    >>> browser.open('http://launchpad.dev/~salgado/+editemails')
+    >>> print browser.title
+    Guilherme Salgado's e-mail addresses
 
-  >>> print http(r"""
-  ... POST /~salgado/+editemails HTTP/1.1
-  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... UNVALIDATED_SELECTED=salgado%40ubuntu.com&VALIDATE=Confirm""")
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...A new email was sent to...
-  ...
+    >>> browser.getControl(name="UNVALIDATED_SELECTED").getControl(
+    ...     value='salgado@ubuntu.com').selected = True
+    >>> browser.getControl('Confirm').click()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    A new email was sent to 'salgado@ubuntu.com'...
 
+Retrieve the email and make sure it was sent to the right address.
 
-  Get the token we'll have to use to finish the registration process.
+    >>> import email
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_msg)
+    >>> print msg.get('to')
+    salgado@ubuntu.com
 
-  >>> import email, re
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> assert not stub.test_emails
-  >>> msg = email.message_from_string(raw_msg)
-  >>> body = msg.get_payload()
-  >>> link = re.findall(r'http.*/token/.*', body)[0]
-  >>> token = re.sub(r'.*token/', '', link)
-  >>> base_path = '/token/%s' % token
+Visit the token URL mentioned in the email, and get redirected to
++validateemail.
 
-  Check if the email was sent to the right address.
+    >>> from canonical.launchpad.ftests.logintoken import (
+    ...     get_token_url_from_email)
+    >>> token_url = get_token_url_from_email(raw_msg)
+    >>> browser.open(token_url)
 
-  >>> to_addrs
-  ['salgado@ubuntu.com']
+    >>> print browser.url
+    http://launchpad.dev/token/.../+validateemail
+    >>> print browser.title
+    Confirm e-mail address
 
+    >>> print find_main_content(browser.contents)
+    <div...Confirm e-mail address...salgado@ubuntu.com...
 
-  >>> print http(r"""
-  ... GET %s HTTP/1.1
-  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
-  ... """ % base_path)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/token/.../+validateemail
-  <BLANKLINE>
+    >>> browser.getControl('Continue').click()
+    >>> print browser.title
+    Guilherme Salgado in Launchpad
 
+Check that the email address now shows up as validated.
 
-  >>> path = "%s/+validateemail" % base_path
-  >>> print http(r"""
-  ... GET %s HTTP/1.1
-  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
-  ... """ % path)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Confirm e-mail address...salgado@ubuntu.com...
-  ...
+    >>> browser.getLink('Update e-mail addresses').click()
+    >>> browser.getControl(name="VALIDATED_SELECTED").getControl(
+    ...     value='salgado@ubuntu.com')
+    <ItemControl...optionValue='salgado@ubuntu.com'>
 
-
-  >>> print http(r"""
-  ... POST %s HTTP/1.1
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... field.actions.continue=Continue""" % path)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/~salgado
-  ...
-
+    >>> browser.getControl(name="UNVALIDATED_SELECTED").getControl(
+    ...     value='salgado@ubuntu.com')
+    Traceback (most recent call last):
+    ...
+    LookupError...
