@@ -140,14 +140,50 @@ class SSHTestCase(ServerTestCase, TestCaseWithTransport):
 
 
 class AcceptanceTests(SSHTestCase):
-    """Acceptance tests for the Launchpad codehosting service's Bazaar support.
+    """Acceptance tests for the Launchpad codehosting service.
 
     Originally converted from the English at
     https://launchpad.canonical.com/SupermirrorTaskList
     """
 
+    def addRevisionToBranch(self, branch):
+        """Add a new revision in the database to the given database branch."""
+        # We don't care who the author is. Just find someone.
+        author = database.RevisionAuthor.selectFirst(orderBy='id')
+        revision = database.Revision(
+            revision_id='rev1', log_body='', revision_date=UTC_NOW,
+            revision_author=author, owner=branch.owner)
+        database.BranchRevision(branch=branch, sequence=1, revision=revision)
+        return revision
+
+    def captureStderr(self, function, *args, **kwargs):
+        real_stderr, sys.stderr = sys.stderr, StringIO()
+        try:
+            ret = function(*args, **kwargs)
+        finally:
+            captured_stderr, sys.stderr = sys.stderr, real_stderr
+        return ret, captured_stderr.getvalue()
+
     def getDefaultServer(self):
         return make_sftp_server()
+
+    def makeDatabaseBranch(self, owner_name, product_name, branch_name,
+                           branch_type=BranchType.HOSTED, private=False):
+        """Create a new branch in the database."""
+        owner = database.Person.selectOneBy(name=owner_name)
+        if product_name is '+junk':
+            product = None
+        else:
+            product = database.Product.selectOneBy(name=product_name)
+        if branch_type == BranchType.MIRRORED:
+            url = 'http://google.com'
+        else:
+            url = None
+        return database.Branch(
+            name=branch_name, owner=owner, author=owner, product=product,
+            url=url, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            summary=None, home_page=None, whiteboard=None, private=private,
+            date_created=UTC_NOW, branch_type=branch_type)
 
     @deferToThread
     def test_push_to_new_branch(self):
@@ -316,28 +352,11 @@ class AcceptanceTests(SSHTestCase):
             '~landscape-developers/landscape/some-branch')
         self.assertRaises(NotBranchError, self.getLastRevision, remote_url)
 
-    def makeDatabaseBranch(self, owner_name, product_name, branch_name,
-                           branch_type=BranchType.HOSTED, private=False):
-        """Create a new branch in the database."""
-        owner = database.Person.selectOneBy(name=owner_name)
-        if product_name is '+junk':
-            product = None
-        else:
-            product = database.Product.selectOneBy(name=product_name)
-        if branch_type == BranchType.MIRRORED:
-            url = 'http://google.com'
-        else:
-            url = None
-        return database.Branch(
-            name=branch_name, owner=owner, author=owner, product=product,
-            url=url, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
-            summary=None, home_page=None, whiteboard=None, private=private,
-            date_created=UTC_NOW, branch_type=branch_type)
-
     @deferToThread
     def test_can_push_to_existing_hosted_branch(self):
-        # If a hosted branch exists in the database, but not on the filesystem,
-        # and is writable by the user, then the user is able to push to it.
+        # If a hosted branch exists in the database, but not on the
+        # filesystem, and is writable by the user, then the user is able to
+        # push to it.
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.makeDatabaseBranch('testuser', 'firefox', 'some-branch')
         remote_url = self.getTransportURL(branch.unique_name)
@@ -345,14 +364,6 @@ class AcceptanceTests(SSHTestCase):
         self.push(remote_url)
         remote_revision = self.getLastRevision(remote_url)
         self.assertEqual(self.local_branch.last_revision(), remote_revision)
-
-    def captureStderr(self, function, *args, **kwargs):
-        real_stderr, sys.stderr = sys.stderr, StringIO()
-        try:
-            ret = function(*args, **kwargs)
-        finally:
-            captured_stderr, sys.stderr = sys.stderr, real_stderr
-        return ret, captured_stderr.getvalue()
 
     @deferToThread
     def test_cant_push_to_existing_mirrored_branch(self):
@@ -379,16 +390,6 @@ class AcceptanceTests(SSHTestCase):
         self.assertRaises(
             (BzrCommandError, TransportNotPossible), self.push, remote_url)
 
-    def addRevisionToBranch(self, branch):
-        """Add a new revision in the database to the given database branch."""
-        # We don't care who the author is. Just find someone.
-        author = database.RevisionAuthor.selectFirst(orderBy='id')
-        revision = database.Revision(
-            revision_id='rev1', log_body='', revision_date=UTC_NOW,
-            revision_author=author, owner=branch.owner)
-        database.BranchRevision(branch=branch, sequence=1, revision=revision)
-        return revision
-
     @deferToThread
     def test_cant_push_to_existing_hosted_branch_with_revisions(self):
         # XXX: JonathanLange 2007-08-07, We shoudn't be able to push to
@@ -408,9 +409,7 @@ class AcceptanceTests(SSHTestCase):
 
 
 class SmartserverTests(SSHTestCase):
-    """Acceptance tests for the smartserver component of Launchpad codehosting
-    service's Bazaar support.
-    """
+    """Acceptance tests for the codehosting smartserver."""
 
     def getDefaultServer(self):
         return make_bzr_ssh_server()
@@ -421,7 +420,8 @@ class SmartserverTests(SSHTestCase):
 
         # Mark as mirrored.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch(person_name, product_name, branch_name)
+        branch = self.getDatabaseBranch(
+            person_name, product_name, branch_name)
         branch.branch_type = BranchType.MIRRORED
         branch.url = "http://example.com/smartservertest/branch"
         LaunchpadZopelessTestSetup().txn.commit()
@@ -454,7 +454,8 @@ class SmartserverTests(SSHTestCase):
     def test_can_read_mirrored_branch(self):
         # Users should be able to read mirrored branches that they own.
         # Added to catch bug 126245.
-        ro_branch_url = self.makeMirroredBranch('testuser', 'firefox', 'mirror')
+        ro_branch_url = self.makeMirroredBranch(
+            'testuser', 'firefox', 'mirror')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
         remote_revision = self.getLastRevision(
             self.getTransportURL('~testuser/firefox/mirror'))
@@ -462,8 +463,8 @@ class SmartserverTests(SSHTestCase):
 
     @deferToThread
     def test_can_read_unowned_mirrored_branch(self):
-        # Users should be able to read mirrored branches even if they don't own
-        # those branches.
+        # Users should be able to read mirrored branches even if they don't
+        # own those branches.
         ro_branch_url = self.makeMirroredBranch('sabdfl', 'firefox', 'mirror')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
         remote_revision = self.getLastRevision(
