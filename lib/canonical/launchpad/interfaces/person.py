@@ -891,7 +891,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """Clears the person's inTeam cache.
 
         To be used when membership changes are enacted. Only meant to be
-        used between IPerson objects."""
+        used between TeamMembership and Person objects."""
 
     def lastShippedRequest():
         """Return this person's last shipped request, or None."""

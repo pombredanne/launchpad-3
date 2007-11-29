@@ -373,6 +373,9 @@ class TeamMembershipSet:
         admin = TeamMembershipStatus.ADMIN
         invited = TeamMembershipStatus.INVITED
         assert status in [proposed, approved, admin, invited]
+
+        person.clearInTeamCache()
+
         tm = TeamMembership(
             person=person, team=team, status=status, dateexpires=dateexpires,
             reviewer=reviewer, reviewercomment=reviewercomment)

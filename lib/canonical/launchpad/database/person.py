@@ -1071,7 +1071,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 "Unknown subscription policy: %s" % team.subscriptionpolicy)
 
         team.addMember(self, reviewer=self, status=status)
-        self.clearInTeamCache()
 
     def clearInTeamCache(self):
         """See `IPerson`."""
@@ -1146,7 +1145,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 person, self, status, dateexpires=expires, reviewer=reviewer,
                 reviewercomment=comment)
             notify(event(person, self))
-            person.clearInTeamCache()
 
     # The three methods below are not in the IPerson interface because we want
     # to protect them with a launchpad.Edit permission. We could do that by
