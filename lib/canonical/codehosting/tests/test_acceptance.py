@@ -150,15 +150,15 @@ class AcceptanceTests(SSHTestCase):
         return make_sftp_server()
 
     @deferToThread
-    def test_bzr_sftp(self):
+    def test_push_to_new_branch(self):
         """
-        The bzr client should be able to read and write to the Supermirror SFTP
-        server just like another other SFTP server.  This means that actions
+        The bzr client should be able to read and write to the codehosting
+        server just like another other server.  This means that actions
         like:
-            * `bzr push sftp://testinstance/somepath`
+            * `bzr push bzr+ssh://testinstance/somepath`
             * `bzr log sftp://testinstance/somepath`
-        (and/or their bzrlib equivalents) and so on should work, so long as the
-        user has permission to read or write to those URLs.
+        (and/or their bzrlib equivalents) and so on should work, so long as
+        the user has permission to read or write to those URLs.
         """
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(remote_url)
@@ -166,12 +166,8 @@ class AcceptanceTests(SSHTestCase):
         self.assertEqual(self.local_branch.last_revision(), remote_revision)
 
     @deferToThread
-    def test_bzr_push_again(self):
-        """Pushing to an existing branch must work.
-
-        test_1_bzr_sftp tests that the initial push works. Here we test that
-        pushing further revisions to an existing branch works as well.
-        """
+    def test_push_to_existing_branch(self):
+        """Pushing to an existing branch must work."""
         # Initial push.
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(remote_url)
@@ -243,28 +239,6 @@ class AcceptanceTests(SSHTestCase):
         self.assertEqual(remote_revision, self.local_branch.last_revision())
 
     @deferToThread
-    def test_mod_rewrite_data(self):
-        """
-        A mapping file for use with Apache's mod_rewrite should be generated
-        correctly.
-        """
-        # We already test that the mapping file is correctly generated from the
-        # database in
-        # lib/canonical/launchpad/scripts/ftests/test_supermirror_rewritemap.py,
-        # so here we just need to show that creating a branch puts the right
-        # values in the database.
-
-        # Push branch to sftp server
-        self.push(self.getTransportURL('~testuser/+junk/test-branch'))
-
-        # Retrieve the branch from the database.
-        branch = self.getDatabaseBranch('testuser', None, 'test-branch')
-
-        self.assertEqual(None, branch.url)
-        # If we get this far, the branch has been correctly inserted into the
-        # database.
-
-    @deferToThread
     def test_push_team_branch(self):
         remote_url = self.getTransportURL('~testteam/firefox/a-new-branch')
         self.push(remote_url)
@@ -288,12 +262,14 @@ class AcceptanceTests(SSHTestCase):
     @deferToThread
     def test_push_triggers_mirror_request(self):
         # Pushing new data to a branch should trigger a mirror request.
-        remote_url = self.getTransportURL('~testuser/+junk/totally-new-branch')
+        remote_url = self.getTransportURL(
+            '~testuser/+junk/totally-new-branch')
         self.push(remote_url)
 
         # Retrieve the branch from the database.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch('testuser', None, 'totally-new-branch')
+        branch = self.getDatabaseBranch(
+            'testuser', None, 'totally-new-branch')
         # Confirm that the branch hasn't had a mirror requested yet. Not core
         # to the test, but helpful for checking internal state.
         self.assertNotEqual(None, branch.mirror_request_time)
@@ -309,7 +285,8 @@ class AcceptanceTests(SSHTestCase):
 
         # Retrieve the branch from the database.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch('testuser', None, 'totally-new-branch')
+        branch = self.getDatabaseBranch(
+            'testuser', None, 'totally-new-branch')
         self.assertNotEqual(None, branch.mirror_request_time)
         LaunchpadZopelessTestSetup().txn.abort()
 
@@ -391,7 +368,7 @@ class AcceptanceTests(SSHTestCase):
         self.captureStderr(
             self.assertRaises,
             (BzrCommandError, TransportNotPossible), self.push, remote_url)
-    
+
     @deferToThread
     def test_cant_push_to_existing_unowned_hosted_branch(self):
         # Users can only push to hosted branches that they own.
@@ -417,7 +394,7 @@ class AcceptanceTests(SSHTestCase):
         # XXX: JonathanLange 2007-08-07, We shoudn't be able to push to
         # branches that have revisions in the database but not actual files:
         # it's a pathological case.
-        # 
+        #
         # However, at the moment we don't provide any checking for this. We
         # should in the future. Until then, this test is disabled.
         return
