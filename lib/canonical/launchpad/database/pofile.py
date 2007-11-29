@@ -849,7 +849,7 @@ class POFile(SQLBase, POFileMixIn):
     def _appendCompletePluralFormsConditions(self, query):
         """Add conditions to implement ITranslationMessage.is_complete in SQL.
 
-        :param query: A list of AND SQL conditions where the implement of
+        :param query: A list of AND SQL conditions where the implementation of
             ITranslationMessage.is_complete will be appended as SQL
             conditions.
         """
