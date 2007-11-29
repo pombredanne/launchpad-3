@@ -41,6 +41,24 @@ The link takes you to the list of the bugs fixed elsewhere.
     <p>There are currently no open bugs.</p>
     ...
 
+== Expirable Bugs ==
+
+The bugs page displays the number of bugs that can expire if they are
+not confirmed when the project uses Launchpad to track bugs.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/warty')
+    >>> expirable_bugs_link = anon_browser.getLink(
+    ...     'bugs will expire if they are not confirmed')
+    >>> expirable_bugs_link.text
+    '0 bugs will expire if they are not confirmed'
+
+The link goes to the expirable bugs page, where the anonymous user can
+see which bugs will expire if they are not confirmed.
+
+    >>> expirable_bugs_link.click()
+    >>> anon_browser.title
+    'Bugs that can expire in Warty'
+
 
 == Bugs Statistics ==
 

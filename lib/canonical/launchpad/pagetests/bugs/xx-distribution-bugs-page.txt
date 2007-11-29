@@ -64,6 +64,35 @@ The link takes you to the list of bugs with CVEs linked to them.
       Medium New
 
 
+== Expirable Bugs ==
+
+The bugs page displays the number of bugs that can expire if they are
+not confirmed when the project uses Launchpad to track bugs.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu')
+    >>> expirable_bugs_link = anon_browser.getLink(
+    ...     'bugs will expire if they are not confirmed')
+    >>> expirable_bugs_link.text
+    '0 bugs will expire if they are not confirmed'
+
+The link goes to the expirable bugs page, where the anonymous user can
+see which bugs will expire if they are not confirmed.
+
+    >>> expirable_bugs_link.click()
+    >>> anon_browser.title
+    'Bugs that can expire in Ubuntu'
+
+Debian does not use Launchpad to track bugs; the anonymous user cannot
+see any link reporting that bugs can expire.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/debian')
+    >>> expirable_bugs_link = anon_browser.getLink(
+    ...     'bugs will expire if they are not confirmed')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+
 == Open Bugs Statistics ==
 
 There's also some statistics about the open bugs for the distribution.
