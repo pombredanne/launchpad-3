@@ -63,11 +63,11 @@ printing out the import status after import is done.
     ...             productseries=series, potemplate=potemplate)
     ...     transaction.commit()
     ...     entry.status = RosettaImportStatus.APPROVED
-    ...     syncUpdate(entry)
     ...     if pofile:
-    ...         pofile.importFromQueue(FakeLogger())
+    ...         (subject, body) = pofile.importFromQueue(entry, FakeLogger())
     ...     else:
-    ...         potemplate.importFromQueue(FakeLogger())
+    ...         (subject, body) = potemplate.importFromQueue(
+    ...             entry, FakeLogger())
     ...     return entry
 
 == Import PO templates ==

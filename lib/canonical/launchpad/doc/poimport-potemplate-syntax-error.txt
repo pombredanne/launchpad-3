@@ -67,30 +67,18 @@ TranslationFormatSyntaxError
   ...     productseries=series, potemplate=potemplate)
   >>> transaction.commit()
   >>> entry.status = RosettaImportStatus.APPROVED
-  >>> flush_database_updates()
-  >>> potemplate.importFromQueue()
+  >>> (subject, message) = potemplate.importFromQueue(entry)
 
 The status is now FAILED:
 
   >>> entry.status == RosettaImportStatus.FAILED
   True
 
-And we sent an email with the notification of the error.
+And the code composed email with a notification of the error.
 
-We need to commit the transaction to get the email.
-
-  >>> transaction.commit()
-
-There is one email and it's for the error we produced.
-
-  >>> len(stub.test_emails)
-  1
-
-  >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
-  >>> msg = email.message_from_string(raw_message)
-  >>> msg["Subject"]
-  'Import problem - firefox in Mozilla Firefox trunk'
-  >>> print msg.get_payload(decode=True)
+  >>> subject
+  u'Import problem - firefox in Mozilla Firefox trunk'
+  >>> print message
   Hello Mark Shuttleworth,
   <BLANKLINE>
   On ..., you uploaded a file with translation templates for firefox in

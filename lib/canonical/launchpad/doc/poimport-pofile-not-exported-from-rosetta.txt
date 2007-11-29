@@ -14,10 +14,9 @@ change translations being used in Rosetta, it's just a reference of what
 upstream has and they only add active translations if there isn't one already
 so there aren't conflicts to solve.
 
-Let's check that we don't accept .po imports that aren't exported first from
-Rosetta.
-
-This test makes sure we send such email.
+This test shows that we don't accept .po imports that weren't first
+exported from Launchpad, and that a notification email is generated to
+warn the uploader about this.
 
 Here are some imports we need to get this test running.
 
@@ -40,9 +39,6 @@ And also, the DBSchema to change the imports status
 
 Then, let's get a handle to our mailer. This is the thing we'll examine to show
 what email has been sent, to whom, and what the body of the message contains:
-
-  >>> import email
-  >>> from canonical.launchpad.mail import stub
 
 Login as an admin to be able to do changes to the import queue.
 
@@ -94,32 +90,22 @@ comes from a previous export from Rosetta and when did it happen.
 We must approve the entry to be able to import it.
 
   >>> entry.status = RosettaImportStatus.APPROVED
-  >>> flush_database_updates()
 
 We do the import.
 
-  >>> pofile.importFromQueue()
+  >>> (subject, message) = pofile.importFromQueue(entry)
 
 The status is now FAILED:
 
   >>> entry.status == RosettaImportStatus.FAILED
   True
 
-And we sent an email with the notification of the error.
+And the method returned an email with a notification of the error.
 
-We need to commit the transaction to get the email.
+  >>> subject
+  u'Import problem - Welsh (cy) - firefox in Mozilla Firefox trunk'
 
-  >>> transaction.commit()
-
-There is one email and it's for the error we produced.
-
-  >>> len(stub.test_emails)
-  1
-  >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
-  >>> msg = email.message_from_string(raw_message)
-  >>> msg["Subject"]
-  'Import problem - Welsh (cy) - firefox in Mozilla Firefox trunk'
-  >>> print msg.get_payload(decode=True)
+  >>> print message
   Hello Mark Shuttleworth,
   <BLANKLINE>
   On ..., you uploaded a file with
@@ -161,33 +147,23 @@ Now, attach the file again, but this time as published.
   >>> entry = translation_import_queue.addOrUpdateEntry(
   ...     pofile.path, pofile_contents, published, person,
   ...     productseries=series, potemplate=potemplate, pofile=pofile)
-  >>> transaction.commit()
 
 We must approve the entry to be able to import it.
 
   >>> entry.status = RosettaImportStatus.APPROVED
-  >>> flush_database_updates()
+  >>> transaction.commit()
 
 We do the import.
 
-  >>> pofile.importFromQueue()
+  >>> (subject, message) = pofile.importFromQueue(entry)
 
 The status is now IMPORTED:
 
   >>> entry.status == RosettaImportStatus.IMPORTED
   True
 
-And we sent an email with the notification of the import.
+The import code has also composed an email with the notification of the
+import.
 
-We need to commit the transaction to get the email.
-
-  >>> transaction.commit()
-
-There is one email and it's a confirmation of the import.
-
-  >>> len(stub.test_emails)
-  1
-  >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
-  >>> msg = email.message_from_string(raw_message)
-  >>> msg["Subject"]
-  'Translation import - Welsh (cy) - firefox in Mozilla Firefox trunk'
+  >>> subject
+  u'Translation import - Welsh (cy) - firefox in Mozilla Firefox trunk'

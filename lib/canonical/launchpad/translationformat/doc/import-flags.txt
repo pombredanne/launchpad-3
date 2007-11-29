@@ -73,11 +73,11 @@ with the contents of the file.
     ...             productseries=series, potemplate=potemplate)
     ...     transaction.commit()
     ...     entry.status = RosettaImportStatus.APPROVED
-    ...     syncUpdate(entry)
     ...     if pofile:
-    ...         pofile.importFromQueue(FakeLogger())
+    ...         (subject, body) = pofile.importFromQueue(entry, FakeLogger())
     ...     else:
-    ...         potemplate.importFromQueue(FakeLogger())
+    ...         (subject, body) = potemplate.importFromQueue(
+    ...             entry, FakeLogger())
     ...     return entry
 
 And lets define a nice printout function for PO files.

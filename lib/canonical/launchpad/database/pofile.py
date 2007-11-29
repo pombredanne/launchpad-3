@@ -22,9 +22,9 @@ from sqlobject import (
     )
 from zope.interface import implements
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
@@ -44,8 +44,6 @@ from canonical.launchpad.interfaces import (
     RosettaImportStatus, TranslationFormatSyntaxError,
     TranslationFormatInvalidInputError, TranslationPermission,
     TranslationValidationStatus, ZeroLengthPOExportError)
-from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.translationformat import TranslationMessageData
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import (
@@ -923,25 +921,23 @@ class POFile(SQLBase, POFileMixIn):
         # Check whether the date is older.
         return old_date > new_date
 
-    def getNextToImport(self):
+    def importFromQueue(self, entry_to_import, logger=None):
         """See `IPOFile`."""
-        flush_database_updates()
-        return TranslationImportQueueEntry.selectFirstBy(
-                pofile=self,
-                status=RosettaImportStatus.APPROVED,
-                orderBy='dateimported')
+        assert entry_to_import is not None, "Attempt to import None entry."
+        assert entry_to_import.import_into.id == self.id, (
+            "Attempt to import entry to POFile it doesn't belong to.")
+        assert entry_to_import.status == RosettaImportStatus.APPROVED, (
+            "Attempt to import non-approved entry.")
 
-    def importFromQueue(self, logger=None):
-        """See `IPOFile`."""
+        # We're handed down the right entry from the import script, but we
+        # need to deal with it more intimately.
+        entry_to_import = removeSecurityProxy(entry_to_import)
+
+        translation_importer = getUtility(ITranslationImporter)
+
         librarian_client = getUtility(ILibrarianClient)
-
-        entry_to_import = self.getNextToImport()
-
-        if entry_to_import is None:
-            # There is no new import waiting for being imported.
-            return
-
-        import_file = librarian_client.getFileByAlias(entry_to_import.content.id)
+        import_file = librarian_client.getFileByAlias(
+            entry_to_import.content.id)
 
         # While importing a file, there are two kinds of errors:
         #
@@ -956,8 +952,7 @@ class POFile(SQLBase, POFileMixIn):
         #   list of faulty messages.
         import_rejected = False
         try:
-            importer = getUtility(ITranslationImporter)
-            errors = importer.importFile(entry_to_import, logger=logger)
+            errors = translation_importer.importFile(entry_to_import, logger)
         except NotExportedFromLaunchpad:
             # We got a file that was not exported from Rosetta as a non
             # published upload. We log it and select the email template.
@@ -994,9 +989,9 @@ class POFile(SQLBase, POFileMixIn):
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
             'elapsedtime': entry_to_import.getElapsedTimeText(),
             'file_link': entry_to_import.content.http_url,
+            'importer': entry_to_import.importer.displayname,
             'import_title': '%s translations for %s' % (
                 self.language.displayname, self.potemplate.displayname),
-            'importer': entry_to_import.importer.displayname,
             'language': self.language.displayname,
             'numberofmessages': msgsets_imported,
             'template': self.potemplate.displayname,
@@ -1035,24 +1030,17 @@ class POFile(SQLBase, POFileMixIn):
             subject = 'Translation import - %s - %s' % (
                 self.language.displayname, self.potemplate.displayname)
 
-        # Send the email.
+        # Send email: confirmation or error.
         template = helpers.get_email_template(template_mail)
         message = template % replacements
 
-        fromaddress = config.rosetta.rosettaadmin.email
-
-        toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
-
-        simple_sendmail(fromaddress,
-            toaddress,
-            subject,
-            MailWrapper().format(message))
+        notification = (subject, message)
 
         if import_rejected:
             # There were no imports at all and the user needs to review that
             # file, we tag it as FAILED.
             entry_to_import.status = RosettaImportStatus.FAILED
-            return
+            return notification
 
         # The import has been done, we mark it that way.
         entry_to_import.status = RosettaImportStatus.IMPORTED
@@ -1071,6 +1059,8 @@ class POFile(SQLBase, POFileMixIn):
 
         # Now we update the statistics after this new import
         self.updateStatistics()
+
+        return notification
 
     def updateExportCache(self, contents):
         """See `IPOFile`."""
@@ -1419,7 +1409,7 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
-    def importFromQueue(self, logger=None):
+    def importFromQueue(self, entry_to_import, logger=None):
         """See `IPOFile`."""
         raise NotImplementedError
 

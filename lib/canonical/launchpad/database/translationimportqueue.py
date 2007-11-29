@@ -730,7 +730,7 @@ class TranslationImportQueue:
                     ' IProductSeries, IDistribution, IDistroSeries or'
                     ' ISourcePackage')
         if status is not None:
-            queries.append('status = %s' % sqlvalues(status.value))
+            queries.append('status = %s' % sqlvalues(status))
         if file_extension is not None:
             queries.append("path LIKE '%%' || %s" % quote_like(file_extension))
 
@@ -773,10 +773,10 @@ class TranslationImportQueue:
         from canonical.launchpad.database.distroseries import DistroSeries
         from canonical.launchpad.database.product import Product
 
-        query = []
-        query.append('ProductSeries.product=Product.id')
-        query.append(
-            'TranslationImportQueueEntry.productseries=ProductSeries.id')
+        query = [
+            'ProductSeries.product = Product.id',
+            'TranslationImportQueueEntry.productseries = ProductSeries.id'
+            ]
         if status is not None:
             query.append('TranslationImportQueueEntry.status=%s' % sqlvalues(
                 status))
@@ -786,11 +786,10 @@ class TranslationImportQueue:
             clauseTables=['ProductSeries', 'TranslationImportQueueEntry'],
             distinct=True)
 
-        query = []
-        query.append('TranslationImportQueueEntry.distroseries IS NOT NULL')
-        query.append(
-            'TranslationImportQueueEntry.distroseries=DistroSeries.id')
-        query.append('DistroSeries.defer_translation_imports IS FALSE')
+        query = [
+            'TranslationImportQueueEntry.distroseries = DistroSeries.id',
+            'DistroSeries.defer_translation_imports IS FALSE'
+            ]
         if status is not None:
             query.append('TranslationImportQueueEntry.status=%s' % sqlvalues(
                 status))

@@ -18,9 +18,9 @@ from sqlobject import (
     StringCol)
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -40,8 +40,6 @@ from canonical.launchpad.interfaces import (
     IVPOTExportSet, LanguageNotFound, NotFoundError, RosettaImportStatus,
     TranslationFileFormat, TranslationFormatInvalidInputError,
     TranslationFormatSyntaxError)
-from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.translationformat import TranslationMessageData
 
 
@@ -610,21 +608,17 @@ class POTemplate(SQLBase, RosettaStats):
         for pofile in self.pofiles:
             pofile.invalidateCache()
 
-    def getNextToImport(self):
+    def importFromQueue(self, entry_to_import, logger=None):
         """See `IPOTemplate`."""
-        flush_database_updates()
-        return TranslationImportQueueEntry.selectFirstBy(
-                potemplate=self,
-                status=RosettaImportStatus.APPROVED,
-                orderBy='dateimported')
+        assert entry_to_import is not None, "Attempt to import None entry."
+        assert entry_to_import.import_into.id == self.id, (
+            "Attempt to import entry to POTemplate it doesn't belong to.")
+        assert entry_to_import.status == RosettaImportStatus.APPROVED, (
+            "Attempt to import non-approved entry.")
 
-    def importFromQueue(self, logger=None):
-        """See `IPOTemplate`."""
-        entry_to_import = self.getNextToImport()
-
-        if entry_to_import is None:
-            # There is no new import waiting for being imported.
-            return
+        # We're handed down the right entry from the import script, but we
+        # need to deal with it more intimately.
+        entry_to_import = removeSecurityProxy(entry_to_import)
 
         translation_importer = getUtility(ITranslationImporter)
 
@@ -645,26 +639,20 @@ class POTemplate(SQLBase, RosettaStats):
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
             'elapsedtime': entry_to_import.getElapsedTimeText(),
             'file_link': entry_to_import.content.http_url,
-            'import_title': 'translation templates for %s' % self.displayname,
             'importer': entry_to_import.importer.displayname,
-            'template': self.displayname
+            'import_title': 'translation templates for %s' % self.displayname,
+            'template': self.displayname,
             }
 
         # Send email: confirmation or error.
         template = helpers.get_email_template(template_mail)
         message = template % replacements
 
-        fromaddress = config.rosetta.rosettaadmin.email
-        toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
-
-        simple_sendmail(fromaddress,
-            toaddress,
-            subject,
-            MailWrapper().format(message))
+        notification = (subject, message)
 
         if entry_to_import.status == RosettaImportStatus.FAILED:
             # Give up on this file.
-            return
+            return notification
 
         # The import has been done, we mark it that way.
         entry_to_import.status = RosettaImportStatus.IMPORTED
@@ -691,6 +679,8 @@ class POTemplate(SQLBase, RosettaStats):
         # .pot file has because msgsets will have changed.
         for pofile in self.pofiles:
             pofile.updateStatistics()
+
+        return notification
 
 
 class POTemplateSubset:

@@ -10,7 +10,6 @@ In this test, we are going to check that we detect and notify it.
 
 Here are some imports we need to get this test running.
 
-  >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.interfaces import (
   ...     IPersonSet, ITranslationImportQueue)
   >>> from canonical.launchpad.database import POTemplateSubset
@@ -83,16 +82,18 @@ First, we do a valid import.
 We must approve the entry to be able to import it.
 
   >>> entry.status = RosettaImportStatus.APPROVED
-  >>> flush_database_updates()
 
 We do the import.
 
-  >>> pofile.importFromQueue()
+  >>> (subject, message) = pofile.importFromQueue(entry)
 
 The status is now IMPORTED:
 
   >>> entry.status == RosettaImportStatus.IMPORTED
   True
+
+(The procedure also generates a confirmation email, but that is tested
+elsewhere.)
 
 We can see that the header has the same 'PO-Revision-Date' than the file we
 just imported.
@@ -101,21 +102,6 @@ just imported.
     Project-Id-Version:...
     PO-Revision-Date: 2005-05-03 20:41+0100
     ...
-
-We need to commit the transaction to get the notification email.
-
-  >>> transaction.commit()
-
-There is one email.
-
-  >>> len(stub.test_emails)
-  1
-
-Let's remove it from the queue (We can ignore it completely as it's a
-successful notification that we are already aware of and the successful
-checks is outside the scope of this test).
-
-  >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
 
 Now, we are going to import a .po file that has a 'PO-Revision-Date' field
 with a date older than a previous .po import.
@@ -141,11 +127,10 @@ with a date older than a previous .po import.
 We must approve the entry to be able to import it.
 
   >>> entry.status = RosettaImportStatus.APPROVED
-  >>> flush_database_updates()
 
 We do the import.
 
-  >>> pofile.importFromQueue()
+  >>> (subject, message) = pofile.importFromQueue(entry)
 
 The status is now FAILED:
 
@@ -159,21 +144,11 @@ We can see that the header remains unchanged
     PO-Revision-Date: 2005-05-03 20:41+0100
     ...
 
-And we sent an email with the notification of the error.
+The code also generated an email about the error we produced.
 
-We need to commit the transaction to get the email.
-
-  >>> transaction.commit()
-
-There is one email and it's for the error we produced.
-
-  >>> len(stub.test_emails)
-  1
-  >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
-  >>> msg = email.message_from_string(raw_message)
-  >>> msg["Subject"]
-  'Import problem - Welsh (cy) - firefox in Mozilla Firefox trunk'
-  >>> print msg.get_payload(decode=True)
+  >>> subject
+  u'Import problem - Welsh (cy) - firefox in Mozilla Firefox trunk'
+  >>> print message
   Hello Mark Shuttleworth,
   <BLANKLINE>
   On ..., you uploaded a file with
@@ -183,8 +158,8 @@ There is one email and it's for the error we produced.
   We were unable to import your translations because you did not update
   the time stamp in its header to state when you added your translations.
   <BLANKLINE>
-  To fix this problem, please upload the file again, but with the 'PO-
-  Revision-Date' field updated.
+  To fix this problem, please upload the file again, but with the
+  'PO-Revision-Date' field updated.
   <BLANKLINE>
   For your convenience, you can get the file you uploaded at:
   http://localhost:58000/.../firefox-cy.po

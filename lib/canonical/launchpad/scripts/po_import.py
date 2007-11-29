@@ -9,8 +9,12 @@ import time
 
 from zope.component import getUtility
 
+from canonical.config import config
+from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     ITranslationImportQueue, RosettaImportStatus)
+from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.mailnotification import MailWrapper
 
 class ImportProcess:
     """Import .po and .pot files attached to Rosetta."""
@@ -59,6 +63,9 @@ class ImportProcess:
             # would accidentally favour queues that happened to come out at
             # the front of the list.
             for queue in importqueues:
+                from canonical.database.sqlbase import (
+                    flush_database_caches, flush_database_updates)
+                flush_database_updates()
                 entry_to_import = queue.getFirstEntryToImport()
                 if entry_to_import is None:
                     continue
@@ -85,11 +92,38 @@ class ImportProcess:
                 try:
                     title = entry_to_import.import_into.title
                     self.logger.info('Importing: %s' % title)
-                    entry_to_import.import_into.importFromQueue(self.logger)
-                    from canonical.database.sqlbase import flush_database_caches
-                    flush_database_caches()
+
+                    (mail_subject, mail_body) = (
+                        entry_to_import.import_into.importFromQueue(
+                            entry_to_import, self.logger))
+
+                    assert (entry_to_import.status !=
+                        RosettaImportStatus.APPROVED), (
+                        "Import process left request in original state.")
+
+                    from_email = config.rosetta.rosettaadmin.email
+                    to_email = helpers.contactEmailAddresses(
+                        entry_to_import.importer)
+                    text = MailWrapper().format(mail_body)
+
+                    # XXX: JeroenVermeulen 2007-11-29 bug=29744: email isn't
+                    # transactional in zopeless mode.  That means that our
+                    # current transaction can fail after we already sent out a
+                    # success notification.  To prevent that, we commit the
+                    # import (attempt) before sending out the email.  That
+                    # way, the worst that can happen is that an email goes
+                    # missing.  Once bug 29744 is fixed, this commit must die
+                    # so the email and the import will be in a single atomic
+                    # operation.
+                    self.ztm.commit()
+                    self.ztm.begin()
+
+                    simple_sendmail(from_email, to_email, mail_subject, text)
+
                 except KeyboardInterrupt:
                     self.ztm.abort()
+                    raise
+                except AssertionError:
                     raise
                 except:
                     # If we have any exception, log it, abort the transaction
@@ -127,6 +161,7 @@ class ImportProcess:
                                       ' committing the transaction', exc_info=1)
                     self.ztm.abort()
                     self.ztm.begin()
+
             # Refresh the list of objects with pending imports.
             importqueues = (
                 translation_import_queue.getPillarObjectsWithImports(
