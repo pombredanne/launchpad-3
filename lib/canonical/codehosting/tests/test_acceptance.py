@@ -116,8 +116,8 @@ class SSHTestCase(ServerTestCase, TestCaseWithTransport):
         return database.Branch.selectOneBy(
             owner=owner, product=product, name=branchName)
 
-    def pushNewBranch(self, user, product, branch, creator=None,
-                      branch_root=None):
+    def createBazaarBranch(self, user, product, branch, creator=None,
+                           branch_root=None):
         """Create a new branch in the database and push our test branch there.
 
         Used to create branches that the test user is not able to create, and
@@ -340,7 +340,7 @@ class AcceptanceTests(SSHTestCase):
             "salgado should be a member of landscape-developers, but isn't.")
 
         # Make a private branch.
-        branch_url = self.pushNewBranch(
+        branch_url = self.createBazaarBranch(
             'landscape-developers', 'landscape', 'some-branch',
             creator='salgado')
         # Sanity checking that the branch is actually there. We don't care
@@ -374,8 +374,8 @@ class AcceptanceTests(SSHTestCase):
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
         # The Bazaar client forwards the error from the SFTP server. We don't
-        # care about that error for this test, so just swallow it. The error we
-        # care about is the one that cmd_push raises.
+        # care about that error for this test, so just swallow it. The error
+        # we care about is the one that cmd_push raises.
         self.captureStderr(
             self.assertRaises,
             (BzrCommandError, TransportNotPossible), self.push, remote_url)
@@ -415,7 +415,7 @@ class SmartserverTests(SSHTestCase):
         return make_bzr_ssh_server()
 
     def makeMirroredBranch(self, person_name, product_name, branch_name):
-        ro_branch_url = self.pushNewBranch(
+        ro_branch_url = self.createBazaarBranch(
             person_name, product_name, branch_name)
 
         # Mark as mirrored.
@@ -430,7 +430,8 @@ class SmartserverTests(SSHTestCase):
     @deferToThread
     def test_can_read_readonly_branch(self):
         # We can get information from a read-only branch.
-        ro_branch_url = self.pushNewBranch('sabdfl', '+junk', 'ro-branch')
+        ro_branch_url = self.createBazaarBranch(
+            'sabdfl', '+junk', 'ro-branch')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
         remote_revision = self.getLastRevision(
             self.getTransportURL('~sabdfl/+junk/ro-branch'))
@@ -439,7 +440,8 @@ class SmartserverTests(SSHTestCase):
     @deferToThread
     def test_cant_write_to_readonly_branch(self):
         # We can't write to a read-only branch.
-        ro_branch_url = self.pushNewBranch('sabdfl', '+junk', 'ro-branch')
+        ro_branch_url = self.createBazaarBranch(
+            'sabdfl', '+junk', 'ro-branch')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
 
         # Create a new revision on the local branch.
