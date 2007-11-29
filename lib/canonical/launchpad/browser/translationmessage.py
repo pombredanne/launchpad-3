@@ -1418,10 +1418,11 @@ class TranslationMessageSuggestions:
         self.submissions = []
 
         for submission in submissions:
-            if plural_form >= submission.pofile.language.pluralforms:
-                # The requested plural form is not available for the language
-                # where we are getting suggestions from. We don't have
-                # suggestions to extract.
+            has_form = (plural_form < submission.pofile.plural_forms and
+                plural_form < len(submission.translations))
+            if not has_form:
+                # This submission does not have a translation for the
+                # requested plural form.  It's not a viable suggestion here.
                 continue
             this_translation = submission.translations[plural_form]
             if (this_translation is None or
