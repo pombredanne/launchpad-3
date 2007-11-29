@@ -14,6 +14,8 @@ from datetime import datetime
 
 from zope.component import getUtility
 
+import bzrlib
+
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.lp import decorates
@@ -57,6 +59,10 @@ class BazaarApplicationView(LaunchpadView):
 
     def import_count(self):
         return self.series_set.searchImports().count()
+
+    @cachedproperty
+    def bzr_version(self):
+        return bzrlib.__version__
 
     @cachedproperty
     def recently_changed_branches(self):

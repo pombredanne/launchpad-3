@@ -138,6 +138,10 @@
                             <strong tal:content="view/branches_with_bugs_count">12</strong>
                             branches associated with bug reports
                           </div>
+                          <div>
+                            Launchpad uses Bazaar
+                            <tal:version tal:content="view/bzr_version">0.92.0</tal:version>.
+                          </div>
                         </div>
 
     </div><!--main-->
