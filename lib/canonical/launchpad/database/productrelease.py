@@ -82,6 +82,7 @@ class ProductRelease(SQLBase):
                 return f.libraryfile
         raise NotFoundError(name)
 
+
 class ProductReleaseFile(SQLBase):
     """A file of a product release."""
     implements(IProductReleaseFile)
@@ -102,6 +103,7 @@ class ProductReleaseFile(SQLBase):
                           notNull=True)
 
     date_uploaded = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+
 
 class ProductReleaseSet(object):
     """See IProductReleaseSet"""
@@ -127,3 +129,4 @@ class ProductReleaseSet(object):
         if productrelease is None:
             return default
         return productrelease
+

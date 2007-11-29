@@ -58,7 +58,7 @@ that product is required:
     ...     'field.visited_steps': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
-    >>> add_task_view.getWidgetError('product')
+    >>> add_task_view.getFieldError('product')
     u'Required input is missing.'
 
 
@@ -81,7 +81,7 @@ If the validation fails, an error will be displayed.
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.step_name
     'choose_product'
-    >>> add_task_view.getWidgetError('product')
+    >>> add_task_view.getFieldError('product')
     u'A fix for this bug has already been requested for Mozilla Firefox'
 
 
@@ -316,7 +316,7 @@ URL. If we don't enter a valid URL, we get an error message.
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.step_name
     'specify_remote_bug_url'
-    >>> print add_task_view.getWidgetError('bug_url')
+    >>> print add_task_view.getFieldError('bug_url')
     Launchpad does not recognize the bug tracker at this URL.
 
 Note that this caused the transaction to be aborted, thus the bugtasks

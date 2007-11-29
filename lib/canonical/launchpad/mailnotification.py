@@ -28,8 +28,8 @@ from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     IBranch, IBugTask, IEmailAddressSet, INotificationRecipientSet, IPerson,
-    ISpecification, ITeamMembershipSet, IUpstreamBugTask, QuestionAction,
-    TeamMembershipStatus, UnknownRecipientError)
+    IPersonSet, ISpecification, ITeamMembershipSet, IUpstreamBugTask,
+    QuestionAction, TeamMembershipStatus, UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -1058,19 +1058,21 @@ def notify_invitation_to_join_team(event):
 
     reviewer = membership.reviewer
     admin_addrs = member.getTeamAdminsEmailAddresses()
-    from_addr = format_address('Launchpad', config.noreply_from_address)
-    subject = (
-        'Launchpad: %s was invited to join %s' % (member.name, team.name))
+    from_addr = format_address(team.displayname, config.noreply_from_address)
+    subject = 'Invitation for %s to join' % member.name
     templatename = 'membership-invitation.txt'
     template = get_email_template(templatename)
-    msg = template % {
+    replacements = {
         'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
         'member': '%s (%s)' % (member.browsername, member.name),
         'team': '%s (%s)' % (team.browsername, team.name),
         'membership_invitations_url':
             "%s/+invitation/%s" % (canonical_url(member), team.name)}
-    msg = MailWrapper().format(msg)
-    simple_sendmail(from_addr, admin_addrs, subject, msg)
+    for address in admin_addrs:
+        recipient = getUtility(IPersonSet).getByEmail(address)
+        replacements['recipient_name'] = recipient.displayname
+        msg = MailWrapper().format(template % replacements)
+        simple_sendmail(from_addr, address, subject, msg)
 
 
 def notify_team_join(event):
@@ -1091,26 +1093,28 @@ def notify_team_join(event):
         TeamMembershipStatus.PROPOSED]
     admin_addrs = team.getTeamAdminsEmailAddresses()
 
-    from_addr = format_address('Launchpad', config.noreply_from_address)
+    from_addr = format_address(team.displayname, config.noreply_from_address)
 
     if reviewer != person and membership.status in [approved, admin]:
         # Somebody added this person as a member, we better send a
         # notification to the person too.
         member_addrs = contactEmailAddresses(person)
 
-        subject = (
-            'Launchpad: %s is now a member of %s' % (person.name, team.name))
+        subject = '%s joined' % person.name
         templatename = 'new-member-notification.txt'
         if person.isTeam():
             templatename = 'new-member-notification-for-teams.txt'
 
         template = get_email_template(templatename)
-        msg = template % {
+        replacements = {
             'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
             'member': '%s (%s)' % (person.browsername, person.name),
             'team': '%s (%s)' % (team.browsername, team.name)}
-        msg = MailWrapper().format(msg)
-        simple_sendmail(from_addr, member_addrs, subject, msg)
+        for address in member_addrs:
+            recipient = getUtility(IPersonSet).getByEmail(address)
+            replacements['recipient_name'] = recipient.displayname
+            msg = MailWrapper().format(template % replacements)
+            simple_sendmail(from_addr, address, subject, msg)
 
         # The member's email address may be in admin_addrs too; let's remove
         # it so the member don't get two notifications.
@@ -1130,19 +1134,20 @@ def notify_team_join(event):
     if membership.status in [approved, admin]:
         template = get_email_template(
             'new-member-notification-for-admins.txt')
-        subject = (
-            'Launchpad: %s is now a member of %s' % (person.name, team.name))
+        subject = '%s joined' % person.name
     elif membership.status == proposed:
         template = get_email_template('pending-membership-approval.txt')
-        subject = (
-            "Launchpad: %s wants to join team %s" % (person.name, team.name))
+        subject = "%s wants to join" % person.name
         headers = {"Reply-To": person.preferredemail.email}
     else:
         raise AssertionError(
             "Unexpected membership status: %s" % membership.status)
 
-    msg = MailWrapper().format(template % replacements)
-    simple_sendmail(from_addr, admin_addrs, subject, msg, headers=headers)
+    for address in admin_addrs:
+        recipient = getUtility(IPersonSet).getByEmail(address)
+        replacements['recipient_name'] = recipient.displayname
+        msg = MailWrapper().format(template % replacements)
+        simple_sendmail(from_addr, address, subject, msg, headers=headers)
 
 
 def dispatch_linked_question_notifications(bugtask, event):

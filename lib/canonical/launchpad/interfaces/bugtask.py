@@ -877,8 +877,11 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distroseries must be provided.
         """
 
-    def findExpirableBugTasks(min_days_old):
+    def findExpirableBugTasks(min_days_old, bug=None):
         """Return a list of bugtasks that are at least min_days_old.
+
+        When a bug is passed as an argument, only bugtasks that belong
+        to the bug may be returned, otherwise all bugs are searched.
 
         A bugtask is expirable if its status is Incomplete, and the bug
         report has been never been confirmed, and it has been inactive for
