@@ -504,3 +504,39 @@ But a team with no mailing list (yet) can still be renamed.
     >>> team_six.name = 'team-canonical'
     >>> team_six.name
     u'team-canonical'
+
+
+== Team archive links ==
+
+A team with no mailing list has no archived mailing list.
+
+    >>> print team_six.archived_mailing_list
+    None
+
+A team that failed when trying to create its mailing list, also has no
+archived mailing list.
+
+    >>> print team_four.archived_mailing_list
+    None
+
+Teams with active mailing lists and teams with lists that have been deactived
+both have archived mailing lists.
+
+    >>> list_one.status.name
+    'ACTIVE'
+    >>> team_one.archived_mailing_list
+    <MailingList for team "team-one"; status=ACTIVE at ...>
+    >>> list_one.deactivate()
+    >>> list_one.transitionToStatus(MailingListStatus.INACTIVE)
+    >>> list_one.status.name
+    'INACTIVE'
+    >>> team_one.archived_mailing_list
+    <MailingList for team "team-one"; status=INACTIVE at ...>
+
+All mailing lists have an archive url, regardless of whether they are active
+or not.
+
+    >>> list_one.archive_url
+    u'http://lists.launchpad.dev/archives/team-one'
+    >>> list_four.archive_url
+    u'http://lists.launchpad.dev/archives/team-four'

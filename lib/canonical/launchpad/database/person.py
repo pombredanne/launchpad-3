@@ -52,10 +52,10 @@ from canonical.launchpad.interfaces import (
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
     IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType, PersonCreationRationale,
-    QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
-    ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType, MailingListStatus,
+    PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
+    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -739,6 +739,24 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def isTeam(self):
         """See `IPerson`."""
         return self.teamowner is not None
+
+    @property
+    def archived_mailing_list(self):
+        """See `IPerson`."""
+        mailing_list = getUtility(IMailingListSet).get(self.name)
+        if mailing_list is None:
+            return None
+        # These represent states that can occur at or after a mailing list has
+        # been activated.  Once it's been activated, a mailing list could have
+        # an archive.
+        if mailing_list.status in [MailingListStatus.ACTIVE,
+                                   MailingListStatus.INACTIVE,
+                                   MailingListStatus.MODIFIED,
+                                   MailingListStatus.UPDATING,
+                                   MailingListStatus.DEACTIVATING,
+                                   MailingListStatus.MOD_FAILED]:
+            return mailing_list
+        return None
 
     @cachedproperty
     def is_trusted_on_shipit(self):
@@ -1437,7 +1455,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
             # XXX flacoste 2007/11/26 The comparison using id in the assert
-            # below works around a nasty intermittent failure. 
+            # below works around a nasty intermittent failure.
             # See bug #164635.
             assert bug_task.assignee.id == self.id, (
                "Bugtask %s assignee isn't the one expected: %s != %s" % (
@@ -1818,7 +1836,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if ppa_only:
             clauses.append('archive.purpose = %s' % quote(ArchivePurpose.PPA))
         else:
-            clauses.append('archive.purpose != %s' % quote(ArchivePurpose.PPA))
+            clauses.append('archive.purpose != %s' %
+                           quote(ArchivePurpose.PPA))
 
         query_clause = " AND ".join(clauses)
         query = """

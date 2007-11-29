@@ -285,8 +285,15 @@ class IMailingList(Interface):
         )
 
     address = TextLine(
-        title=_("This list's email address."), required=True, readonly=True,
-        description=_("The text representation of this team's email address."))
+        title=_("This list's email address."),
+        description=_(
+            "The text representation of this team's email address."),
+        required=True,
+        readonly=True)
+
+    archive_url = TextLine(
+        title=_("The url to the list's archives"),
+        readonly=True)
 
     def isUsable():
         """Is this mailing list in a state to accept messages?
@@ -472,9 +479,9 @@ class IMailingListSet(Interface):
         readonly=True)
 
     deactivated_lists = Set(
-        title=_('Deactivated lists'),
-        description=_(
-            'All mailing lists with status `MailingListStatus.DEACTIVATING`.'),
+       title=_('Deactivated lists'),
+        description=_('All mailing lists with status '
+                      '`MailingListStatus.DEACTIVATING`.'),
         value_type=Object(schema=IMailingList),
         readonly=True)
 

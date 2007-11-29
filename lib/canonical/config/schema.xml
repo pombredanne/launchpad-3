@@ -1111,6 +1111,8 @@ k            </description>
         - Guilherme Salgado 2007-09-14 -->
         <key name="expose_hosted_mailing_lists" datatype="boolean"
              default="false" />
+        <key name="archive_url_template" datatype="string"
+             default="http://lists.launchpad.dev/archives/$team_name" />
     </sectiontype>
 
     <sectiontype name="checkwatches">
