@@ -413,20 +413,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         dbName="removed_by", foreignKey="Person", default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
-    @classmethod
-    def getAllPublishedSources(cls, distroseries, archives):
-        """See `ISourcePackagePublishingHistory`."""
-        # Convert the archives list into a list of IDs to be sure that
-        # any Zope proxies are removed, otherwise sqlvalues will barf.
-        archive_ids = [archive.id for archive in archives]
-        return SourcePackagePublishingHistory.select("""
-            distroseries = %s AND
-            status = %s AND
-            archive in %s
-            """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
-                            archive_ids),
-            orderBy="id")
-
     def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
         clause = """
@@ -616,24 +602,6 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person", default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
-
-    @classmethod
-    def getAllPublishedBinaries(cls, distroseries, archives):
-        """See `IBinaryPackagePublishingHistory`."""
-        # Convert the archives list into a list of IDs to be sure that
-        # any Zope proxies are removed, otherwise sqlvalues will barf.
-        archive_ids = [archive.id for archive in archives]
-        return BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchseries =
-                distroarchseries.id AND
-            distroarchseries.distroseries = distroseries.id AND
-            distroseries.id = %s AND
-            BinaryPackagePublishingHistory.status = %s AND
-            BinaryPackagePublishingHistory.archive in %s
-            """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
-                            archive_ids),
-            clauseTables=["DistroArchSeries", "DistroSeries"],
-            orderBy="BinaryPackagePublishingHistory.id")
 
     @property
     def distroarchseriesbinarypackagerelease(self):

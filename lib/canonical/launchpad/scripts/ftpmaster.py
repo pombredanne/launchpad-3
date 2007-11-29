@@ -1594,8 +1594,8 @@ class ObsoleteDistroseries(SoyuzScript):
                             distroseries.name,
                             distroseries.distribution.name))
 
-        sources = self._generateSourcesList(distroseries)
-        binaries = self._generateBinariesList(distroseries)
+        sources = distroseries.getAllPublishedSources()
+        binaries = distroseries.getAllPublishedBinaries()
         num_sources = sources.count()
         num_binaries = binaries.count()
         self.logger.info("There are %d sources and %d binaries." % (
@@ -1636,28 +1636,3 @@ class ObsoleteDistroseries(SoyuzScript):
             raise SoyuzScriptError(
                 "%s is not at status OBSOLETE." % distroseries.name)
 
-    def _generateSourcesList(self, distroseries):
-        """Return a list of published source packages for distroseries.
-
-        Additionally, only consider the archive IDs supplied.
-        """
-        # Avoid circular import.
-        from canonical.launchpad.database.publishing import (
-            SourcePackagePublishingHistory)
-        self.logger.info("Generating list of published sources for %s." %
-           distroseries.name)
-        return SourcePackagePublishingHistory.getAllPublishedSources(
-            distroseries, distroseries.distribution.all_distro_archives)
-
-    def _generateBinariesList(self, distroseries):
-        """Return a list of published binary packages for distroseries.
-
-        Additionally, only consider the archive IDs supplied.
-        """
-        # Avoid circular import.
-        from canonical.launchpad.database.publishing import (
-            BinaryPackagePublishingHistory)
-        self.logger.info("Generating list of published binaries for %s." %
-            distroseries.name)
-        return BinaryPackagePublishingHistory.getAllPublishedBinaries(
-            distroseries, distroseries.distribution.all_distro_archives)
