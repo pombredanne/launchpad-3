@@ -180,31 +180,58 @@ to raise the correct exception:
   ...
   UnexpectedFormData: No suitable state found for value "foo"
 
+The page shows the right message for a distribution that doesn't have
+any builds. On first page loads (no get variables) a section stating
+that 'No packages are currently building' is presented.
 
-Check if page still works for sourcepackages with no builds (bug #62545):
+  >>> browser.open("http://launchpad.dev/debian/+builds")
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, 'no-default-result'))
+  No packages currently building.
+  >>> find_tag_by_id(browser.contents, 'empty-result') is None
+  True
+
+If the user hit the form button and nothing comes out, the message
+change for something clearly stating that 'No matching builds' could
+be found.
+
+  >>> browser.getControl(name="build_state").value = ['all']
+  >>> browser.getControl("Update").click()
+  >>> find_tag_by_id(browser.contents, 'no-default-result') is None
+  True
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, 'empty-result'))
+  No matching builds.
+
+Also that we do not miss-present 'no-default-result' banner for the
+first page load of distributions with building jobs, see bug #160331.
+
+  >>> browser.open("http://launchpad.dev/ubuntu/+builds")
+  >>> find_tag_by_id(browser.contents, 'empty-result') is None
+  True
+  >>> find_tag_by_id(browser.contents, 'no-default-result') is None
+  True
+
+The same mechanism still working for a SourcePackage page with no
+builds, see bug 62545.
 
   >>> browser.open(
   ...    "http://launchpad.dev/ubuntu/hoary/+source/mozilla-firefox/+builds")
-  >>> browser.getControl(name="build_state").value = ['all']
-  >>> browser.getControl("Update").click()
 
-  >>> print find_tag_by_id(browser.contents, 'empty-result')
-  <div id="empty-result">
-          No matching builds.
-  </div>
-
-
-Checking that we show the right message for a distribution that
-doesn't have any builds.
-
-  >>> browser.open("http://launchpad.dev/debian/+builds")
-  >>> browser.contents
-  '...No packages currently building...'
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, 'no-default-result'))
+  No packages currently building.
+  >>> find_tag_by_id(browser.contents, 'empty-result') is None
+  True
 
   >>> browser.getControl(name="build_state").value = ['all']
   >>> browser.getControl("Update").click()
-  >>> browser.contents
-  '...No matching builds...'
+
+  >>> find_tag_by_id(browser.contents, 'no-default-result') is None
+  True
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, 'empty-result'))
+  No matching builds.
 
 
 == Partner builds ==
