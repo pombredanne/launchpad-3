@@ -135,7 +135,7 @@ class SoyuzScript(LaunchpadScript):
         code is running as a genuine script.  In this case, this is
         also the _only_ exception to be raised.
 
-    The test harness doesn't enter via main(), it calls task(), so
+    The test harness doesn't enter via main(), it calls mainTask(), so
     it does not see LaunchpadScriptError.
 
     Each script can extend:
@@ -151,7 +151,11 @@ class SoyuzScript(LaunchpadScript):
     success_message = "Done."
 
     def add_my_options(self):
-        """Adds SoyuzScript default options."""
+        """Adds SoyuzScript default options.
+
+        Any subclass may override this method and call the add_*_options
+        individually to reduce the number of available options as necessary.
+        """
         self.add_transaction_options()
         self.add_distro_options()
         self.add_package_location_options()
@@ -326,14 +330,12 @@ class SoyuzScript(LaunchpadScript):
         """Setup `PackageLocation` for context distribution and suite."""
         # These can raise PackageLocationError, but we're happy to pass
         # it upwards.
-        if(hasattr(self.options, 'partner_archive') and
-            self.options.partner_archive is not None):
+        if getattr(self.options, 'partner_archive', ''):
             self.location = build_package_location(
                 self.options.distribution_name,
                 self.options.suite,
                 ArchivePurpose.PARTNER)
-        elif(hasattr(self.options, 'archive_owner_name') and
-             self.options.archive_owner_name is not None):
+        elif getattr(self.options, 'archive_owner_name', ''):
             self.location = build_package_location(
                 self.options.distribution_name,
                 self.options.suite,
