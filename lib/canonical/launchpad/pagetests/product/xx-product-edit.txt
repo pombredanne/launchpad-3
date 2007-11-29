@@ -136,26 +136,17 @@ Regular joes can't edit any old project:
 
 But if we add them to the Registry Experts team:
 
-  >>> from zope.component import getUtility
-  >>> import transaction
-  >>> from canonical.launchpad.database import Person
-  >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-  >>> login(ANONYMOUS)
-  >>> no_priv = Person.selectOneBy(name="no-priv")
-  >>> foobar = Person.selectOneBy(name="name16")
-  >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
-  >>> registry_experts.addMember(no_priv, foobar)
-  >>> logout()
-  >>> transaction.commit()
-  >>> flush_database_updates()
+  >>> admin_browser.open("http://launchpad.dev/~registry/+addmember")
+  >>> admin_browser.getControl('New member').value = 'no-priv'
+  >>> admin_browser.getControl('Add Member').click()
 
 They sure can:
 
   >>> browser.open('http://launchpad.dev/firefox/+edit')
-  >>> browser.getControl(name='field.displayname').value = 'Mozilla Firefox by no-priv'
-  >>> browser.getControl(name='field.actions.change').click()
+  >>> browser.getControl('Title').value = 'Mozilla Firefox by no-priv'
+  >>> browser.getControl('Change').click()
   >>> browser.url
   'http://launchpad.dev/firefox'
+  >>> browser.title
+  'Mozilla Firefox by no-priv in Launchpad'
 
