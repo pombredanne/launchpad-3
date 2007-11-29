@@ -10,6 +10,7 @@ import time
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     ITranslationImportQueue, RosettaImportStatus)
@@ -63,9 +64,13 @@ class ImportProcess:
             # would accidentally favour queues that happened to come out at
             # the front of the list.
             for queue in importqueues:
-                from canonical.database.sqlbase import (
-                    flush_database_caches, flush_database_updates)
+                # Make sure our previous state changes hit the database.
+                # Otherwise, getFirstEntryToImport() might pick up an entry
+                # we've already processed but haven't flushed yet.
+                # XXX: JeroenVermeulen 2007-11-29 bug=3989: should become
+                # unnecessary once Zopeless commit() improves.
                 flush_database_updates()
+
                 entry_to_import = queue.getFirstEntryToImport()
                 if entry_to_import is None:
                     continue
@@ -139,7 +144,8 @@ class ImportProcess:
                     self.ztm.begin()
                     translation_import_queue = getUtility(
                         ITranslationImportQueue)
-                    entry_to_import = translation_import_queue[failed_entry_id]
+                    entry_to_import = translation_import_queue[
+                        failed_entry_id]
                     entry_to_import.status = RosettaImportStatus.FAILED
                     self.ztm.commit()
                     self.ztm.begin()
@@ -157,8 +163,10 @@ class ImportProcess:
                 except:
                     # If we have any exception, we log it and abort the
                     # transaction.
-                    self.logger.error('We got an unexpected exception while'
-                                      ' committing the transaction', exc_info=1)
+                    self.logger.error(
+                        'We got an unexpected exception while committing the '
+                        'transaction',
+                        exc_info=1)
                     self.ztm.abort()
                     self.ztm.begin()
 

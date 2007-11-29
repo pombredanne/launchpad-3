@@ -32,8 +32,6 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
-from canonical.launchpad.database.translationimportqueue import (
-    TranslationImportQueueEntry)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
     ITranslationExporter, ITranslationFileData, ITranslationImporter,
@@ -421,8 +419,8 @@ class POTemplate(SQLBase, RosettaStats):
 
     def hasMessageID(self, messageID, context=None):
         """See `IPOTemplate`."""
-        results = POTMsgSet.selectBy(potemplate=self, msgid_singular=messageID,
-                                     context=context)
+        results = POTMsgSet.selectBy(
+            potemplate=self, msgid_singular=messageID, context=context)
         return bool(results)
 
     def hasPluralMessage(self):
@@ -618,6 +616,9 @@ class POTemplate(SQLBase, RosettaStats):
 
         # We're handed down the right entry from the import script, but we
         # need to deal with it more intimately.
+        # XXX: JeroenVermeulen 2007-11-29: If TranslationImportQueueEntry
+        # supported those interactions in a proper API, this would become
+        # unnecessary.
         entry_to_import = removeSecurityProxy(entry_to_import)
 
         translation_importer = getUtility(ITranslationImporter)

@@ -260,7 +260,8 @@ class XpiTestCase(unittest.TestCase):
         # The status is now IMPORTED:
         sync(translation_entry)
         sync(template_entry)
-        self.assertEquals(translation_entry.status, RosettaImportStatus.IMPORTED)
+        self.assertEquals(translation_entry.status,
+            RosettaImportStatus.IMPORTED)
         self.assertEquals(template_entry.status, RosettaImportStatus.IMPORTED)
 
         # Let's validate the content of the messages.

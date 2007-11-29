@@ -371,7 +371,7 @@ class TranslationImportQueueEntry(SQLBase):
             # We need to extract the language information from the package
             # name
 
-            # Here we have the set of language codes that have special meanings.
+            # These language codes have special meanings.
             lang_mapping = {
                 'engb': 'en_GB',
                 'ptbr': 'pt_BR',
@@ -402,13 +402,13 @@ class TranslationImportQueueEntry(SQLBase):
             dir_name = os.path.basename(dir_path)
 
             if dir_name == 'messages' or dir_name == 'LC_MESSAGES':
-                # We have another directory between the language code directory
-                # and the filename (second and third case).
+                # We have another directory between the language code
+                # directory and the filename (second and third case).
                 dir_path = os.path.dirname(dir_path)
                 lang_code = os.path.basename(dir_path)
             else:
-                # The .po file is stored inside the directory with the language
-                # code as its name or an unsupported layout.
+                # The .po file is stored inside the directory with the
+                # language code as its name or an unsupported layout.
                 lang_code = dir_name
 
             if lang_code is None:
@@ -732,7 +732,8 @@ class TranslationImportQueue:
         if status is not None:
             queries.append('status = %s' % sqlvalues(status))
         if file_extension is not None:
-            queries.append("path LIKE '%%' || %s" % quote_like(file_extension))
+            queries.append(
+                "path LIKE '%%' || %s" % quote_like(file_extension))
 
         return queries, clause_tables
 

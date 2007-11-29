@@ -201,7 +201,8 @@ class IPOTemplate(IRosettaStats):
         default=False)
 
     path = TextLine(
-        title=_("Path of the template in the source tree, including filename."),
+        title=_(
+            "Path of the template in the source tree, including filename."),
         required=False)
 
     source_file = Object(
@@ -505,7 +506,7 @@ class IPOTemplateSubset(Interface):
         """
 
     def getClosestPOTemplate(path):
-        """Return a `IPOTemplate` with a path closer to the given path or None.
+        """Return a `IPOTemplate` with a path closer to given path, or None.
 
         If there is no `IPOTemplate` with a common path with the given argument,
         or if there are more than one `IPOTemplate` with the same common path,
@@ -548,7 +549,8 @@ class IPOTemplateSet(Interface):
 
 
 class IPOTemplateWithContent(IPOTemplate):
-    """Interface for an `IPOTemplate` used to create the new POTemplate form."""
+    """Interface for an `IPOTemplate` used to create the new POTemplate form.
+    """
 
     content = Bytes(
         title=_("PO Template File to Import"),

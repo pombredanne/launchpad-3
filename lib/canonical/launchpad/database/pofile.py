@@ -32,8 +32,6 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.potmsgset import POTMsgSet
-from canonical.launchpad.database.translationimportqueue import (
-    TranslationImportQueueEntry)
 from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)
 from canonical.launchpad.interfaces import (
@@ -152,7 +150,7 @@ def _can_add_suggestions(pofile, person):
     be able to add suggestions only if the permission is not CLOSED.
     """
     return (_can_edit_translations(pofile, person) or
-            pofile.translationpermission <> TranslationPermission.CLOSED)
+            pofile.translationpermission != TranslationPermission.CLOSED)
 
 
 class POFileMixIn(RosettaStats):
@@ -575,7 +573,7 @@ class POFile(SQLBase, POFileMixIn):
 
             # Add two empty email fields to make formatting nicer.
             # See bug #133817 for details.
-            emails.extend([u'',u''])
+            emails.extend([u'', u''])
 
             for contributor in self.contributors:
                 preferred_email = contributor.preferredemail
@@ -852,8 +850,10 @@ class POFile(SQLBase, POFileMixIn):
                  'POTMsgSet.sequence > 0',
                  'TranslationMessage.msgstr0 IS NOT NULL']
         for plural_form in range(1, self.plural_forms):
-            query.append(
-                '(POTMsgSet.msgid_plural IS NULL OR TranslationMessage.msgstr%d IS NOT NULL)' % plural_form)
+            query.append("""
+                (POTMsgSet.msgid_plural IS NULL OR
+                 TranslationMessage.msgstr%d IS NOT NULL)
+                """ % plural_form)
 
         current = TranslationMessage.select(
             ' AND '.join(query), clauseTables=['POTMsgSet']).count()
@@ -931,6 +931,9 @@ class POFile(SQLBase, POFileMixIn):
 
         # We're handed down the right entry from the import script, but we
         # need to deal with it more intimately.
+        # XXX: JeroenVermeulen 2007-11-29: If TranslationImportQueueEntry
+        # supported those interactions in a proper API, this would become
+        # unnecessary.
         entry_to_import = removeSecurityProxy(entry_to_import)
 
         translation_importer = getUtility(ITranslationImporter)
@@ -1170,7 +1173,8 @@ class POFile(SQLBase, POFileMixIn):
                 # file in librarian, that's fine. It only means that next
                 # time, we will do a full export again.
                 logging.warning(
-                    "Error uploading a cached file into librarian", exc_info=1)
+                    "Error uploading a cached file into librarian",
+                    exc_info=1)
 
         return contents
 
