@@ -8,14 +8,14 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.archivepublisher.publishing import getPublisher
+from canonical.config import config
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+    ArchivePurpose, IDistributionSet, NotFoundError)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
-from canonical.lp.dbschema import ArchivePurpose
 
 
 def parse_options():
@@ -48,7 +48,8 @@ def parse_options():
 
     parser.add_option("-R", "--distsroot",
                       dest="distsroot", metavar="SUFFIX", default=None,
-                      help="Override the dists path for generation")
+                      help="Override the dists path for generation of the "
+                           "PRIMARY archive only.")
 
     parser.add_option("--ppa", action="store_true",
                       dest="ppa", metavar="PPA", default=False,
@@ -94,9 +95,8 @@ def main():
         log.info("      Indexing: %s" % careful_msg(options.careful_apt))
 
     log.debug("Initialising zopeless.")
-    # Change this when we fix up db security
-    txn = initZopeless(dbuser='lucille')
 
+    txn = initZopeless(dbuser=config.archivepublisher.dbuser)
     execute_zcml_for_scripts()
 
     log.debug("Finding distribution object.")
@@ -137,8 +137,12 @@ def main():
         else:
             log.info("Processing %s" % archive.archive_url)
 
-        publisher = getPublisher(
-            archive, allowed_suites, log, options.distsroot)
+        # Only let the primary archive override the distsroot.
+        if archive.purpose == ArchivePurpose.PRIMARY:
+            publisher = getPublisher(
+                archive, allowed_suites, log, options.distsroot)
+        else:
+            publisher = getPublisher(archive, allowed_suites, log)
 
         try_and_commit("publishing", publisher.A_publish,
                        options.careful or options.careful_publishing)

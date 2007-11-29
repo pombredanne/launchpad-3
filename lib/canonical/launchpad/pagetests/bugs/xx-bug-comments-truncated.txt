@@ -19,10 +19,9 @@ the first one will be displayed as it is, and the other two will be
 truncated.
 
     >>> browser.open('http://localhost/bugs/2')
-    >>> from BeautifulSoup import BeautifulSoup
     >>> def print_comments(page):
     ...     """Print all the comments on the page."""
-    ...     soup = BeautifulSoup(page)
+    ...     soup = find_main_content(page)
     ...     comment_divs = soup('div', 'boardCommentBody')
     ...     for div_tag in comment_divs:
     ...         print div_tag
@@ -162,7 +161,7 @@ see the markup.
 
     >>> print text.findAll('p')[-3]
     <p>Somebody said sometime ago:<br />
-    <span class="foldable">
+    <span class="foldable-quoted">
     &gt; 1. Remove the letters  c, j, q, x, w<br />
     &gt;    from the English Language.<br />
     &gt; 2. Remove the penny from US currency.

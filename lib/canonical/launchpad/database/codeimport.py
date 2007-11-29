@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to CodeImport."""
 
@@ -9,20 +10,21 @@ __all__ = [
     'CodeImportSet',
     ]
 
-from sqlobject import ForeignKey, IntervalCol, StringCol, SQLObjectNotFound
+from datetime import timedelta
 
+from sqlobject import ForeignKey, IntervalCol, StringCol, SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (cursor, SQLBase, sqlvalues)
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
-    ICodeImport, ICodeImportSet, ILaunchpadCelebrities, NotFoundError)
-from canonical.lp.dbschema import (
-    CodeImportReviewStatus, RevisionControlSystems)
+    CodeImportReviewStatus, ICodeImport, ICodeImportEventSet, ICodeImportSet,
+    ILaunchpadCelebrities, NotFoundError, RevisionControlSystems)
 
 
 class CodeImport(SQLBase):
@@ -65,6 +67,27 @@ class CodeImport(SQLBase):
     date_last_successful = UtcDateTimeCol(default=None)
     update_interval = IntervalCol(default=None)
 
+    @property
+    def effective_update_interval(self):
+        """See `ICodeImport`."""
+        if self.update_interval is not None:
+            return self.update_interval
+        default_interval_dict = {
+            RevisionControlSystems.CVS:
+                config.codeimport.default_interval_cvs,
+            RevisionControlSystems.SVN:
+                config.codeimport.default_interval_subversion}
+        seconds = default_interval_dict[self.rcs_type]
+        return timedelta(seconds=seconds)
+
+    def updateFromData(self, data, user):
+        """See `ICodeImport`."""
+        event_set = getUtility(ICodeImportEventSet)
+        token = event_set.beginModify(self)
+        for name, value in data.items():
+            setattr(self, name, value)
+        event_set.newModify(self, user, token)
+
 
 class CodeImportSet:
     """See `ICodeImportSet`."""
@@ -85,18 +108,22 @@ class CodeImportSet:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
                 "rcs_type %s"%rcs_type)
-        return CodeImport(
+        code_import = CodeImport(
             registrant=registrant, owner=registrant, branch=branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
+        getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
+        return code_import
 
     # XXX: DavidAllouche 2007-07-05:
     # newWithId is only needed for code-import-sync-script. This method
     # should be removed after the transition to the new code import system is
     # complete.
 
-    def newWithId(self, id, registrant, branch, rcs_type, svn_branch_url=None,
-            cvs_root=None, cvs_module=None):
+    def newWithId(self, id, registrant, branch, rcs_type,
+            review_status=CodeImportReviewStatus.NEW,
+            date_last_successful=None,
+            svn_branch_url=None, cvs_root=None, cvs_module=None):
         """See `ICodeImportSet`."""
         assert branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
         if rcs_type == RevisionControlSystems.CVS:
@@ -115,10 +142,14 @@ class CodeImportSet:
                 SELECT last_value from codeimport_id_seq)));"""
             % sqlvalues(id))
         assert len(cur.fetchall()) == 1
-        return CodeImport(
+        code_import = CodeImport(
             id=id, registrant=registrant, owner=registrant, branch=branch,
+            review_status=review_status,
+            date_last_successful=date_last_successful,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
+        getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
+        return code_import
 
     def delete(self, id):
         """See `ICodeImportSet`."""

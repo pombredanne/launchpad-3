@@ -30,7 +30,7 @@ However, a person who is a member of any teams should have the ability to
 offer mentorship. Since they can offer mentorship, they should not be able
 to retract it at the same time.
 
-  >>> browser.addHeader("Authorization", "Basic one-membership@test.com:test")
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
   >>> menu_mentoring_offer in browser.contents
   True
@@ -53,9 +53,7 @@ to retract it at the same time.
 We confirm that a person who is not a member of any teams will not see the
 ability to offer mentorship:
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> browser = Browser()
-  >>> browser.addHeader("Authorization", "Basic no-team-memberships@test.com:test")
+  >>> browser = setupBrowser(auth="Basic no-team-memberships@test.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
   >>> menu_mentoring_offer in browser.contents
   False
@@ -72,8 +70,7 @@ We should never see the ability to offer mentorship when the bug or
 spec is complete. For the bug, we will just take a look at Bug #8 which is
 complete.
 
-  >>> browser = Browser()
-  >>> browser.addHeader("Authorization", "Basic one-membership@test.com:test")
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/8')
   >>> menu_mentoring_offer in browser.contents
   False
@@ -106,8 +103,7 @@ right.
 
 First, we will make an offer of mentorship on a bug.
 
-  >>> browser = Browser()
-  >>> browser.addHeader("Authorization", "Basic one-membership@test.com:test")
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
   >>> browser.getLink(menu_mentoring_offer).click()
   >>> print browser.url
@@ -144,8 +140,7 @@ which allow us to retract this offer of mentorship.
 However, somebody ELSE should still be able to offer mentoring, and not yet
 offer mentoring:
 
-  >>> browser = Browser()
-  >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
+  >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
   >>> menu_mentoring_offer in browser.contents
   True
@@ -158,8 +153,7 @@ offer mentoring:
 
 Now, let's repeat the whole exercise with a Blueprint.
 
-  >>> browser = Browser()
-  >>> browser.addHeader("Authorization", "Basic one-membership@test.com:test")
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
   >>> browser.getLink(menu_mentoring_offer).click()
   >>> print browser.title
@@ -192,8 +186,7 @@ which allow us to retract this offer of mentorship.
 However, somebody ELSE should still be able to offer mentoring, and not yet
 offer mentoring:
 
-  >>> browser = Browser()
-  >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
+  >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
   >>> menu_mentoring_offer in browser.contents
   True
@@ -286,10 +279,9 @@ will no longer show up on any of these listings.
 We are going to now poke into the back of the db's head, and "privatise" the
 bug we have been using.
 
-   >>> from canonical.launchpad.interfaces import IPersonSet, IBugSet
-   >>> from canonical.launchpad.interfaces import IDistributionSet
+   >>> from canonical.launchpad.interfaces import (
+   ...     BugTaskStatus, IPersonSet, IBugSet, IDistributionSet, ILaunchBag)
    >>> from canonical.launchpad.ftests import login, logout, syncUpdate
-   >>> from canonical.lp.dbschema import BugTaskStatus
    >>> from canonical.database.sqlbase import flush_database_updates
    >>> login('foo.bar@canonical.com')
    >>> from zope.component import getUtility
@@ -301,7 +293,8 @@ bug we have been using.
    >>> bug_2 = bugset.get(2)
    >>> bug_2.private
    False
-   >>> bug_2.private = True
+   >>> bug_2.setPrivate(True, getUtility(ILaunchBag).user)
+   True
    >>> syncUpdate(bug_2)
    >>> bug_2.private
    True
@@ -370,7 +363,8 @@ Or for a distribution:
 Let's make this bug public again:
 
    >>> login('foo.bar@canonical.com')
-   >>> bug_2.private = False
+   >>> bug_2.setPrivate(False, getUtility(ILaunchBag).user)
+   True
    >>> syncUpdate(bug_2)
    >>> bug_2.private
    False
@@ -385,8 +379,8 @@ successes" list (if the mentorship was offered less than a year ago).
 We are going to now poke into the back of the db's head, and "complete" the
 bug and the blueprint we have been using.
 
-   >>> from canonical.launchpad.interfaces import ILaunchBag
-   >>> from canonical.lp.dbschema import SpecificationImplementationStatus
+   >>> from canonical.launchpad.interfaces import (
+   ...     ILaunchBag, SpecificationImplementationStatus)
    >>> login('foo.bar@canonical.com')
    >>> spec_1 = kubuntu.getSpecification('cluster-installation')
    >>> bug_2.is_complete
@@ -482,8 +476,7 @@ And for a distribution
 When an item is complete, the mentors will still be listed but you cannot
 retract mentoring that you have offered.
 
-  >>> browser = Browser()
-  >>> browser.addHeader("Authorization", "Basic one-membership@test.com:test")
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
   >>> 'Mentors:' in browser.contents
   True
@@ -526,8 +519,7 @@ Right. Let's retract the offer of mentorship from the specification. It
 should take us back to the blueprint page, and we should be able to offer
 mentoring again.
 
-  >>> browser = Browser()
-  >>> browser.addHeader("Authorization", "Basic one-membership@test.com:test")
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
   >>> browser.getLink(menu_mentoring_retract).click()
   >>> print browser.title
@@ -557,8 +549,7 @@ Subscribing when offering mentorship
 When you offer to mentor some work, you are offered the option to subscribe
 to that bug or blueprint. We will demonstrate this in action.
 
-  >>> browser = Browser()
-  >>> browser.addHeader("Authorization", "Basic one-membership@test.com:test")
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
 
 First we show that 'One Membership' is not initially a subscriber to the
@@ -586,8 +577,7 @@ And now 'One Membership' is a subscriber:
 
 Now let's do the same with a bug.
 
-  >>> browser = Browser()
-  >>> browser.addHeader("Authorization", "Basic one-membership@test.com:test")
+  >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://bugs.launchpad.dev/ubuntu/+source/linux-source-2.6.15/+bug/10')
 
 First we show that 'One Membership' is not initially a subscriber to the

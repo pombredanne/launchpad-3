@@ -336,6 +336,11 @@ class BugNotificationRecipients(NotificationRecipientSet):
         self._addReason(person, text, reason)
 
 
+def format_rfc2822_date(date):
+    """Formats a date according to RFC2822's desires."""
+    return formatdate(rfc822.mktime_tz(date.utctimetuple() + (0,)))
+
+
 def construct_bug_notification(bug, from_address, address, body, subject,
         email_date, rationale_header=None, references=None, msgid=None):
     """Constructs a MIMEText message based on a bug and a set of headers."""
@@ -346,8 +351,7 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     if references is not None:
         msg['References'] = ' '.join(references)
     msg['Sender'] = config.bounce_address
-    msg['Date'] = formatdate(
-        rfc822.mktime_tz(email_date.utctimetuple() + (0,)))
+    msg['Date'] = format_rfc2822_date(email_date)
     if msgid is not None:
         msg['Message-Id'] = msgid
     subject_prefix = "[Bug %d]" % bug.id
@@ -550,7 +554,7 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
             # There's a person assigned to fix this task, so show that
             # information too.
             bug_info.append(
-                u"     Assignee: %s" % bugtask.assignee.displayname)
+                u"     Assignee: %s" % bugtask.assignee.unique_displayname)
         bug_info.append(u"         Status: %s\n" % bugtask.status.title)
 
     if bug.tags:
@@ -692,14 +696,6 @@ def get_bug_edit_notification_texts(bug_delta):
         if removed_tags:
             changes.append(u'** Tags removed: %s' % ' '.join(removed_tags))
 
-    if bug_delta.external_reference is not None:
-        old_ext_ref = bug_delta.external_reference.get('old')
-        if old_ext_ref is not None:
-            changes.append(u'** Web link removed: %s' % old_ext_ref.url)
-        new_ext_ref = bug_delta.external_reference['new']
-        if new_ext_ref is not None:
-            changes.append(u'** Web link added: %s' % new_ext_ref.url)
-
     if bug_delta.bugwatch is not None:
         old_bug_watch = bug_delta.bugwatch.get('old')
         if old_bug_watch:
@@ -752,9 +748,11 @@ def get_bug_edit_notification_texts(bug_delta):
                 oldval_display = u"(unassigned)"
                 newval_display = u"(unassigned)"
                 if bugtask_delta.assignee.get('old'):
-                    oldval_display = bugtask_delta.assignee['old'].browsername
+                    oldval_display = (
+                        bugtask_delta.assignee['old'].unique_displayname)
                 if bugtask_delta.assignee.get('new'):
-                    newval_display = bugtask_delta.assignee['new'].browsername
+                    newval_display = (
+                        bugtask_delta.assignee['new'].unique_displayname)
 
                 changerow = (
                     u"%(label)13s: %(oldval)s => %(newval)s\n" % {
@@ -792,8 +790,8 @@ def get_bug_edit_notification_texts(bug_delta):
                 added_bugtask.importance.title)
             if added_bugtask.assignee:
                 assignee = added_bugtask.assignee
-                change_info += u"%13s: %s <%s>\n" % (
-                    u"Assignee", assignee.name, assignee.preferredemail.email)
+                change_info += u"%13s: %s\n" % (u"Assignee",
+                    assignee.unique_displayname)
             change_info += u"%13s: %s" % (
                 u"Status", added_bugtask.status.title)
             changes.append(change_info)
@@ -937,42 +935,6 @@ def notify_bug_comment_added(bugmessage, event):
     bug.addCommentNotification(bugmessage.message)
 
 
-def notify_bug_external_ref_added(ext_ref, event):
-    """Notify CC'd list that a new web link has been added for this
-    bug.
-
-    ext_ref must be an IBugExternalRef. event must be an
-    ISQLObjectCreatedEvent.
-    """
-    bug_delta = BugDelta(
-        bug=ext_ref.bug,
-        bugurl=canonical_url(ext_ref.bug),
-        user=event.user,
-        external_reference={'new' : ext_ref})
-
-    add_bug_change_notifications(bug_delta)
-
-
-def notify_bug_external_ref_edited(edited_ext_ref, event):
-    """Notify CC'd list that a web link has been edited.
-
-    edited_ext_ref must be an IBugExternalRef. event must be an
-    ISQLObjectModifiedEvent.
-    """
-    old = event.object_before_modification
-    new = event.object
-    if ((old.url != new.url) or (old.title != new.title)):
-        # A change was made that's worth sending an edit
-        # notification about.
-        bug_delta = BugDelta(
-            bug=new.bug,
-            bugurl=canonical_url(new.bug),
-            user=event.user,
-            external_reference={'old' : old, 'new' : new})
-
-        add_bug_change_notifications(bug_delta)
-
-
 def notify_bug_watch_added(watch, event):
     """Notify CC'd list that a new watch has been added for this bug.
 
@@ -1034,6 +996,20 @@ def notify_bug_cve_deleted(bugcve, event):
         cve={'old': bugcve.cve})
 
     add_bug_change_notifications(bug_delta)
+
+
+def notify_bug_became_question(event):
+    """Notify CC'd list that a bug was made into a question.
+
+    The event must contain the bug that became a question, and the question
+    that the bug became.
+    """
+    bug = event.bug
+    question = event.question
+    change_info = '\n'.join([
+        '** bug changed to question:\n'
+        '   %s' %  canonical_url(question)])
+    bug.addChangeNotification(change_info, person=event.user)
 
 
 def notify_bug_attachment_added(bugattachment, event):
@@ -1247,6 +1223,8 @@ class QuestionNotification:
             '%s status=%s; assignee=%s; priority=%s; language=%s' % (
                 target, question.status.title, assignee,
                 question.priority.title, question.language.code))
+        headers['Reply-To'] = 'question%s@%s' % (
+            self.question.id, config.answertracker.email_domain)
 
         return headers
 
@@ -1431,11 +1409,16 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         """Add a References header."""
         headers = QuestionNotification.getHeaders(self)
         if self.new_message:
-            # XXX flacoste 2007-02-02 bug=83846: 
+            # XXX flacoste 2007-02-02 bug=83846:
             # The first message cannot contain a References
             # because we don't create a Message instance for the
             # question description, so we don't have a Message-ID.
-            index = list(self.question.messages).index(self.new_message)
+
+            # XXX sinzui 2007-11-27 bug=164435:
+            # SQLObject can refetch the question, so we are using the ids.
+            message_ids = list([message.id
+                                for message in self.question.messages])
+            index = message_ids.index(self.new_message.id)
             if index > 0:
                 headers['References'] = (
                     self.question.messages[index-1].rfc822msgid)
@@ -1873,7 +1856,7 @@ def notify_specification_subscription_modified(specsub, event):
     else:
         specsub_type = 'Participation non-essential'
     mailwrapper = MailWrapper(width=72)
-    body = mailwrapper.format(        
+    body = mailwrapper.format(
         'Your subscription to the blueprint '
         '%(blueprint_name)s - %(blueprint_title)s '
         'has changed to [%(specsub_type)s].\n\n'

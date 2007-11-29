@@ -17,8 +17,10 @@ __all__ = [
     'IHostedBranchStorage',
     'IUserDetailsStorage',
     'IUserDetailsStorageV2',
+    'NOT_FOUND_FAULT_CODE',
+    'PERMISSION_DENIED_FAULT_CODE',
     'READ_ONLY',
-    'WRITABLE'
+    'WRITABLE',
     ]
 
 
@@ -27,6 +29,18 @@ from zope.interface import Interface
 
 READ_ONLY = 'r'
 WRITABLE = 'w'
+
+
+# Values for the faultCode of Faults raised by the authserver.
+#
+# We borrow the numbers from HTTP for familiarity, there's nothing deep in it.
+#
+# Currently, Faults are only raised by createBranch().  If more methods get
+# converted to raise Faults, they should use these values if appropriate or
+# define more codes here if not.
+
+PERMISSION_DENIED_FAULT_CODE = 403
+NOT_FOUND_FAULT_CODE = 404
 
 
 class IUserDetailsStorage(Interface):
@@ -167,12 +181,21 @@ class IHostedBranchStorage(Interface):
         new branch to it.  See also
         https://launchpad.canonical.com/SupermirrorFilesystemHierarchy.
 
+        Note that this function raises instances of exactly
+        twisted.web.xmlrpc.Fault; while raising subclasses would perhaps be
+        clearer, the client side would only see a Fault, so we do that on the
+        server side too for consistency.
+
         :param loginID: the person ID of the user creating the branch.
         :param personName: the unique name of the owner of the branch.
         :param productName: the unique name of the product that the branch
             belongs to.
         :param branchName: the name for this branch, to be used in URLs.
         :returns: the ID for the new branch.
+        :raises twisted.web.xmlrpc.Fault: If the branch cannot be created.
+            The faultCode will be PERMISSION_DENIED_FAULT_CODE or
+            NOT_FOUND_FAULT_CODE and the faultString will be a description
+            suitable to display to the user.
         """
 
     def requestMirror(branchID):
@@ -188,8 +211,12 @@ class IBranchDetailsStorage(Interface):
     Published at `http://$authserver_host/branch`.
     """
 
-    def getBranchPullQueue():
+    def getBranchPullQueue(branch_type):
         """Get the list of branches to be pulled by the supermirror.
+
+        :param branch_type: One of 'HOSTED', 'MIRRORED', or 'IMPORTED'.
+
+        :raise UnknownBranchTypeError: if the branch type is unrecognized.
 
         :returns: a list of (branch_id, pull_url, unique_name) triples, where
         unique_name is owner_name/product_name/branch_name, and product_name is

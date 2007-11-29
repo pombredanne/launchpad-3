@@ -12,21 +12,24 @@
     <content class="canonical.launchpad.database.PackageUpload">
       <implements
           interface="canonical.launchpad.interfaces.IPackageUpload" />
+      <allow 
+          attributes="status"
+          />
       <require
           permission="launchpad.View"
-          attributes="id status distroseries pocket changesfile
+          attributes="id distroseries pocket changesfile
                       signing_key archive sources builds customfiles
                       datecreated sourcepackagerelease
-                      containsSource containsBuild
-                      containsTranslation containsInstaller containsUpgrader
-                      containsDdtp displayname displayarchs displayversion
+                      contains_source contains_build
+                      contains_translation contains_installer contains_upgrader
+                      contains_ddtp displayname displayarchs displayversion
                       isPPA"
           />
       <require
           permission="launchpad.Edit"
           attributes="setNew setUnapproved setRejected setAccepted setDone
                       realiseUpload addSource addBuild addCustom syncUpdate
-                      notify"
+                      notify acceptFromQueue rejectFromQueue"
           set_attributes="status distroseries pocket changesfile archive"
           />
     </content>

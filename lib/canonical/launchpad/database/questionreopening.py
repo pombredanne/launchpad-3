@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """SQLBase implementation of IQuestionReopening."""
 
@@ -36,7 +37,7 @@ class QuestionReopening(SQLBase):
         notNull=True)
     answerer = ForeignKey(dbName='answerer', foreignKey='Person',
         notNull=False, default=None)
-    dateanswered = UtcDateTimeCol(notNull=False, default=None)
+    date_solved = UtcDateTimeCol(notNull=False, default=None)
     priorstate = EnumCol(schema=QuestionStatus, notNull=True)
 
 # XXX flacoste 2006-10-25 The QuestionReopening is probably not that useful
@@ -71,7 +72,7 @@ def create_questionreopening(question, event):
             question=question, reopener=reopen_msg.owner,
             datecreated=reopen_msg.datecreated,
             answerer=old_question.answerer,
-            dateanswered=old_question.dateanswered,
+            date_solved=old_question.date_solved,
             priorstate=old_question.status)
 
     reopening = ProxyFactory(reopening)

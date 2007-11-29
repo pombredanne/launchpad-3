@@ -1,5 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Interfaces for events."""
+
 __metaclass__ = type
 
 from zope.app.event.interfaces import (
@@ -22,16 +24,10 @@ class ISQLObjectModifiedEvent(IObjectModifiedEvent):
 
     object_before_modification = Attribute("The object before modification.")
     edited_fields = Attribute(
-        "The list of fields that were edited. A field name may appear in this "
-        "list if it were shown on an edit form, but not actually changed.")
+        "The list of fields that were edited. A field name may appear in "
+        "this list if it were shown on an edit form, but not actually "
+        "changed.")
     user = Attribute("The user who modified the object.")
-
-
-class ISQLObjectToBeModifiedEvent(IObjectEvent):
-    """An SQLObject is about to be modified."""
-
-    new_values = Attribute("A dict of fieldname -> newvalue pairs.")
-    user = Attribute("The user who will modify the object.")
 
 
 class IJoinTeamEvent(Interface):

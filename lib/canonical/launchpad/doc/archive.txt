@@ -2,10 +2,9 @@
 
 An Archive models a Debian Archive ...
 
-  >>> from zope.interface.verify import verifyObject
-  >>> from canonical.lp.dbschema import ArchivePurpose
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.launchpad.interfaces import (
-  ...     IPerson, IPersonSet, IArchiveSet, IArchive,
+  ...     ArchivePurpose, IPerson, IPersonSet, IArchiveSet, IArchive,
   ...     IDistributionSet)
 
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -27,11 +26,15 @@ An Archive models a Debian Archive ...
 Useful properties:
 
   >>> cprov_archive.title
-  u'Personal Package Archive for Celso Providelo'
+  u'PPA for Celso Providelo'
 
   >>> cprov_archive.archive_url
   u'http://ppa.launchpad.dev/cprov/ubuntu'
 
+Inquire what Distribution Series this archive has published sources to:
+
+  >>> [s.name for s in cprov_archive.series_with_sources]
+  [u'breezy-autotest', u'warty']
 
 == Published Source and Binary Lookup ==
 
@@ -41,44 +44,123 @@ returning I{Source, Binary}PackagePublishingHistory objects.
   >>> cprov_archive.getPublishedSources().count()
   3
 
-  >>> cprov_archive.getPublishedBinaries().count()
+  >>> cprov_archive.getPublishedOnDiskBinaries().count()
   3
 
-This lookup also support 'name' restriction (as in SQL
-"LIKE '%%' || NAME || '%%'").
+  >>> cprov_archive.getAllPublishedBinaries().count()
+  4
 
-Let's inspect sources:
 
-  >>> cd_lookup = cprov_archive.getPublishedSources(name='cd')
-  >>> cd_lookup.count()
+This lookup also supports optional filters:
+
+ * 'name': as in SQL "LIKE '%%' || NAME || '%%'");
+ * 'version': exact version string matching;
+ * 'status': a item or a list of PackagePublishingStatus.
+
+  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+
+  >>> active_status = [PackagePublishingStatus.PENDING,
+  ...                  PackagePublishingStatus.PUBLISHED]
+
+  >>> inactive_status = [PackagePublishingStatus.SUPERSEDED,
+  ...                    PackagePublishingStatus.DELETED]
+
+Let's inspect source publications in Cprov PPA:
+
+  >>> all_sources = cd_lookup = cprov_archive.getPublishedSources()
+  >>> for pub in all_sources:
+  ...     title = pub.sourcepackagerelease.title
+  ...     pub_ds = pub.distroseries.name
+  ...     print "%s -> %s" % (title, pub_ds)
+  cdrkit - 1.0 -> breezy-autotest
+  iceweasel - 1.0 -> warty
+  pmount - 0.1-1 -> warty
+
+Using 'name' filter:
+
+  >>> cprov_archive.getPublishedSources(name='cd').count()
   1
-  >>> cd_lookup[0].sourcepackagerelease.name
-  u'cdrkit'
 
-  >>> ice_lookup = cprov_archive.getPublishedSources(name='ice')
-  >>> ice_lookup.count()
+  >>> cprov_archive.getPublishedSources(name='ice').count()
   1
-  >>> ice_lookup[0].sourcepackagerelease.name
-  u'iceweasel'
 
-  >>> cprov_archive.getPublishedSources(name='foo').count()
+Combining 'name' filter and 'exact_match' flag:
+
+  >>> cprov_archive.getPublishedSources(
+  ...      name='iceweasel', exact_match=True).count()
+  1
+  >>> cprov_archive.getPublishedSources(name='ice', exact_match=True).count()
   0
 
-Let's inspect binaires:
+Using 'version' filter:
 
-  >>> moz_lookup = cprov_archive.getPublishedBinaries(name='moz')
-  >>> moz_lookup[0].binarypackagerelease.name
-  u'mozilla-firefox'
+  >>> ice_version_lookup = cprov_archive.getPublishedSources(
+  ...      version='1.0')
+  Traceback (most recent call last):
+  ...
+  AssertionError: 'version' can be only used when name is set
 
-  >>> cprov_archive.getPublishedBinaries(name='foo').count()
+  >>> ice_version_lookup = cprov_archive.getPublishedSources(
+  ...      name='ice', version='1.0')
+  >>> ice_version_lookup.count()
+  1
+
+  >>> cprov_archive.getPublishedSources(
+  ...      name='ice', version='666').count()
   0
 
-'getPublishedBinaries' returns only unique publications, i.e., it
+Using 'status' filter:
+
+  >>> cprov_archive.getPublishedSources(
+  ...      status=PackagePublishingStatus.PUBLISHED).count()
+  3
+
+  >>> cprov_archive.getPublishedSources(
+  ...      status=active_status).count()
+  3
+
+  >>> cprov_archive.getPublishedSources(
+  ...      status=inactive_status).count()
+  0
+
+Using 'distroseries' filter:
+
+  >>> warty = cprov_archive.distribution['warty']
+  >>> hoary = cprov_archive.distribution['hoary']
+  >>> breezy_autotest = cprov_archive.distribution['breezy-autotest']
+
+  >>> cprov_archive.getPublishedSources(
+  ...      distroseries=warty).count()
+  2
+  >>> cprov_archive.getPublishedSources(
+  ...      distroseries=hoary).count()
+  0
+  >>> cprov_archive.getPublishedSources(
+  ...      distroseries=breezy_autotest).count()
+  1
+
+Combining 'name' and 'distroseries' filters:
+
+  >>> cprov_archive.getPublishedSources(
+  ...      name='ice', distroseries=warty).count()
+  1
+  >>> cprov_archive.getPublishedSources(
+  ...      name='ice', distroseries=breezy_autotest).count()
+  0
+
+  >>> cprov_archive.getPublishedSources(
+  ...      name='cd', distroseries=warty).count()
+  0
+  >>> cprov_archive.getPublishedSources(
+  ...      name='cd', distroseries=breezy_autotest).count()
+  1
+
+
+=== Binary publication lookups ===
+
+'getPublishedOnDiskBinaries' returns only unique publications, i.e., it
 excludes architecture-independent duplications which is necessary for
 having correct publication counters and archive size.
-
-  >>> from canonical.launchpad.database.publishing import (
-  ...     BinaryPackagePublishingHistory)
 
   >>> def check_bin_pubs(pubs):
   ...     """Print binary publication details."""
@@ -88,29 +170,200 @@ having correct publication counters and archive size.
   ...         pub_arch = pub.distroarchseries.architecturetag
   ...         print "%s (%s) -> %s" % (title, arch_spec, pub_arch)
 
-The PPA for cprov contain 3 binary publications, however 'pmount' is
+The PPA for cprov contains only 4 binary publications, however 'pmount' is
 'architecture independent', which means that the same binary (DB) is
 published for all available architectures, i386 & hppa:
 
-  >>> all_cprov_bin_pubs = BinaryPackagePublishingHistory.selectBy(
-  ...      archive=cprov_archive, orderBy=['id'])
+  >>> all_cprov_bin_pubs = cprov_archive.getAllPublishedBinaries()
 
   >>> check_bin_pubs(all_cprov_bin_pubs)
-  mozilla-firefox-1.0 (True) -> i386
-  pmount-0.1-1 (False) -> i386
-  pmount-0.1-1 (False) -> hppa
   mozilla-firefox-1.0 (True) -> hppa
+  mozilla-firefox-1.0 (True) -> i386
+  pmount-0.1-1 (False) -> hppa
+  pmount-0.1-1 (False) -> i386
 
-'getPublishedBinaries' automatically filters multiple publications of
+'getPublishedOnDiskBinaries' automatically filters multiple publications of
 'pmount' considering only the publication to the 'nominatedarchindep'
 (defined for each distroseries).
 
-  >>> unique_cprov_bin_pubs = cprov_archive.getPublishedBinaries()
+  >>> unique_cprov_bin_pubs = cprov_archive.getPublishedOnDiskBinaries()
 
   >>> check_bin_pubs(unique_cprov_bin_pubs)
   mozilla-firefox-1.0 (True) -> i386
   pmount-0.1-1 (False) -> i386
   mozilla-firefox-1.0 (True) -> hppa
+
+'name' filter supporting partial string matching and 'not-found':
+
+  >>> cprov_archive.getPublishedOnDiskBinaries(name='pmou').count()
+  1
+  >>> cprov_archive.getAllPublishedBinaries(name='pmou').count()
+  2
+  >>> cprov_archive.getPublishedOnDiskBinaries(name='foo').count()
+  0
+  >>> cprov_archive.getAllPublishedBinaries(name='foo').count()
+  0
+
+Combining 'name' filter and 'exact_match' flag:
+
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      name='pmou', exact_match=True).count()
+  0
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      name='pmount', exact_match=True).count()
+  2
+  >>> cprov_archive.getPublishedOnDiskBinaries(
+  ...      name='pmou', exact_match=True).count()
+  0
+  >>> cprov_archive.getPublishedOnDiskBinaries(
+  ...      name='pmount', exact_match=True).count()
+  1
+
+It's possible to associate 'name' and 'version' filters:
+
+  >>> cprov_archive.getPublishedOnDiskBinaries(
+  ...      name='moz', version='1.0').count()
+  2
+
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      name='moz', version='1.0').count()
+  2
+
+  >>> cprov_archive.getPublishedOnDiskBinaries(
+  ...      name='moz', version='666').count()
+  0
+
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      name='moz', version='666').count()
+  0
+
+Both methods do not support passing the 'version' filter if the 'name'
+filter is not passed too.
+
+  >>> moz_version_lookup = cprov_archive.getAllPublishedBinaries(
+  ...      version='1.0')
+  Traceback (most recent call last):
+  ...
+  AssertionError: 'version' can be only used when name is set
+
+  >>> moz_version_lookup = cprov_archive.getPublishedOnDiskBinaries(
+  ...      version='1.0')
+  Traceback (most recent call last):
+  ...
+  AssertionError: 'version' can be only used when name is set
+
+Both methods support 'status' filter:
+
+  >>> cprov_archive.getPublishedOnDiskBinaries(
+  ...      status=PackagePublishingStatus.PUBLISHED).count()
+  3
+
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      status=PackagePublishingStatus.PUBLISHED).count()
+  4
+
+  >>> cprov_archive.getPublishedOnDiskBinaries(
+  ...      status=active_status).count()
+  3
+
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      status=active_status).count()
+  4
+
+  >>> cprov_archive.getPublishedOnDiskBinaries(
+  ...      status=inactive_status).count()
+  0
+
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      status=inactive_status).count()
+  0
+
+Using 'distroarchseries' filter:
+
+  >>> warty_i386 = warty['i386']
+  >>> warty_hppa = warty['hppa']
+
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      distroarchseries=warty_i386).count()
+  2
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      distroarchseries=warty_hppa).count()
+  2
+
+  >>> cprov_archive.getPublishedOnDiskBinaries(
+  ...      distroarchseries=warty_i386).count()
+  2
+  >>> cprov_archive.getPublishedOnDiskBinaries(
+  ...      distroarchseries=warty_hppa).count()
+  1
+
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      distroarchseries=[warty_i386, warty_hppa]).count()
+  4
+  >>> cprov_archive.getPublishedOnDiskBinaries(
+  ...      distroarchseries=[warty_i386, warty_hppa]).count()
+  3
+
+Associating 'name' and 'status' filters:
+
+  >>> status_lookup = cprov_archive.getPublishedOnDiskBinaries(
+  ...      name='pmount', status=active_status)
+  >>> status_lookup.count()
+  1
+
+  >>> status_lookup = cprov_archive.getAllPublishedBinaries(
+  ...      name='pmount', status=active_status)
+  >>> status_lookup.count()
+  2
+
+  >>> status_lookup = cprov_archive.getPublishedOnDiskBinaries(
+  ...      name='foo', status=active_status)
+  >>> status_lookup.count()
+  0
+
+  >>> status_lookup = cprov_archive.getAllPublishedBinaries(
+  ...      name='foo', status=active_status)
+  >>> status_lookup.count()
+  0
+
+Associating 'name', 'version' and 'status' filters:
+
+  >>> status_lookup = cprov_archive.getPublishedOnDiskBinaries(
+  ...      name='pmount', version='0.1-1', status=active_status)
+  >>> status_lookup.count()
+  1
+
+  >>> status_lookup = cprov_archive.getAllPublishedBinaries(
+  ...      name='pmount', version='0.1-1', status=active_status)
+  >>> status_lookup.count()
+  2
+
+  >>> status_lookup = cprov_archive.getPublishedOnDiskBinaries(
+  ...      name='pmount', version='666', status=active_status)
+  >>> status_lookup.count()
+  0
+
+  >>> status_lookup = cprov_archive.getAllPublishedBinaries(
+  ...      name='pmount', version='666', status=active_status)
+  >>> status_lookup.count()
+  0
+
+Associating 'name', 'version', 'status' and 'distroarchseries' filters
+and 'exact_match' flag:
+
+  >>> status_lookup = cprov_archive.getAllPublishedBinaries(
+  ...      name='pmount', version='0.1-1', distroarchseries=warty_i386,
+  ...      status=active_status, exact_match=True)
+  >>> status_lookup.count()
+  1
+
+  >>> status_lookup = cprov_archive.getAllPublishedBinaries(
+  ...      name='pmount', version='0.1-1',
+  ...      distroarchseries=[warty_i386, warty_hppa],
+  ...      status=active_status, exact_match=True)
+  >>> status_lookup.count()
+  2
+
 
 == Package Counters ==
 
@@ -172,19 +425,20 @@ This method can return build records for sources matching the given
 
 Or return build records in a specific status:
 
-  >>> from canonical.lp.dbschema import BuildStatus
-  >>> cprov_archive.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
+  >>> from canonical.launchpad.interfaces import BuildStatus
+  >>> cprov_archive.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
   3
 
-  >>> cprov_archive.getBuildRecords(status=BuildStatus.FAILEDTOBUILD).count()
+  >>> cprov_archive.getBuildRecords(
+  ...     build_state=BuildStatus.FAILEDTOBUILD).count()
   1
 
-  >>> cprov_archive.getBuildRecords(status=BuildStatus.NEEDSBUILD).count()
+  >>> cprov_archive.getBuildRecords(build_state=BuildStatus.NEEDSBUILD).count()
   0
 
 And finally build records target to a given pocket:
 
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
   >>> cprov_archive.getBuildRecords(
   ...     pocket=PackagePublishingPocket.RELEASE).count()
   4
@@ -197,7 +451,7 @@ All the attributes can be combined in order to refine the result:
 
   >>> cprov_archive.getBuildRecords(
   ...     name='ice',
-  ...     status=BuildStatus.FULLYBUILT,
+  ...     build_state=BuildStatus.FULLYBUILT,
   ...     pocket=PackagePublishingPocket.RELEASE).count()
   1
 
@@ -281,6 +535,25 @@ A new Archive can be created by passing a name and an owner
   >>> sandbox_archive.owner == name16
   True
 
+IArchiveSet.ensure will either return an existing archive, or make a new
+one if there is no existing one.
+
+  >>> name12 = getUtility(IPersonSet).getByName('name12')
+  >>> name12_archive = archive_set.ensure(
+  ...     owner=name12, distribution=None, purpose=ArchivePurpose.PPA,
+  ...     description="Holy mackerel")
+  >>> name12_archive.description
+  u'Holy mackerel'
+
+Repeating this call with a different description results in the archive
+created above returned instead of a new one:
+
+  >>> name12_archive = archive_set.ensure(
+  ...     owner=name12, distribution=None, purpose=ArchivePurpose.PPA,
+  ...     description="Flaming trousers")
+  >>> name12_archive.description
+  u'Holy mackerel'
+
 An archive is also associated with a distribution.  This can be found on
 the distribution property.  The default distribution is "ubuntu":
 
@@ -295,18 +568,17 @@ An Archive can be retrieved via IPerson.archive property:
 IArchiveSet.getByDistroPurpose retrieves an IArchive given a distribution
 and an ArchivePurpose:
 
-  >>> from canonical.lp.dbschema import ArchivePurpose
-  >>> commercial_archive = getUtility(IArchiveSet).getByDistroPurpose(
-  ...     ubuntutest, ArchivePurpose.COMMERCIAL)
-  >>> commercial_archive.description
-  u'Commercial archive'
-
+  >>> from canonical.launchpad.interfaces import ArchivePurpose
+  >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
+  ...     ubuntutest, ArchivePurpose.PARTNER)
+  >>> partner_archive.description
+  u'Partner archive'
 
 IArchive.archive_url will return a URL for the archive that the builder can
 use to retrieve files from it.
 
-  >>> commercial_archive.archive_url
-  u'http://launchpad.dev/ubuntutest-commercial'
+  >>> partner_archive.archive_url
+  u'http://launchpad.dev/ubuntutest-partner'
 
   >>> sandbox_archive.archive_url
   u'http://ppa.launchpad.dev/name16/ubuntu'
@@ -316,17 +588,45 @@ use to retrieve files from it.
   u'http://launchpad.dev/ubuntutest'
 
 
-The publisher config for COMMERCIAL contains only 'commercial' in its
-components.  This prevents non-commercial being published in the commercial
+The publisher config for PARTNER contains only 'partner' in its
+components.  This prevents non-partner being published in the partner
 archive.
 
   >>> comm_pubconf = removeSecurityProxy(
-  ...     commercial_archive.getPubConfig())
+  ...     partner_archive.getPubConfig())
   >>> for distroseries in comm_pubconf._distroserieses.keys():
   ...     print set(comm_pubconf._distroserieses[distroseries]['components'])
-  set(['commercial'])
-  set(['commercial'])
+  set(['partner'])
+  set(['partner'])
 
+
+IArchive.allowUpdatesToReleasePocket returns whether the archive is allowed
+to publish to the RELEASE pocket no matter what state the distroseries is in.
+
+  >>> partner_archive.allowUpdatesToReleasePocket()
+  True
+
+  >>> cprov_archive.allowUpdatesToReleasePocket()
+  True
+
+  >>> getUtility(IArchiveSet).getByDistroPurpose(
+  ...     ubuntutest, ArchivePurpose.PRIMARY).allowUpdatesToReleasePocket()
+  False
+
+getPPAByDistributionAndOwnerName method allow PPA lookups based on a
+distribution and a person name. This method is used in
+`PackageLocation` to provide a homogeneous way to refer to a Location
+(archive, distribution, distroseries, pocket).
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> cprov_archive == archive_set.getPPAByDistributionAndOwnerName(
+    ...     ubuntu, 'cprov')
+    True
+
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> sabdfl.archive == archive_set.getPPAByDistributionAndOwnerName(
+    ...     ubuntu, 'sabdfl')
+    True
 
 Iteration over the own utility is performed against all archives,
 including the *main_archives*:
@@ -339,4 +639,4 @@ including the *main_archives*:
   ...     else:
   ...          ppas += 1
   >>> main_archives, ppas
-  (9, 4)
+  (9, 5)

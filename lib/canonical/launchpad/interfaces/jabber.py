@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Jabber interfaces."""
 
@@ -31,7 +32,7 @@ class IJabberIDSet(Interface):
 
     def getByJabberID(jabberid, default=None):
         """Return the JabberID with the given jabberid.
-        
+
         Return the default value if not found.
         """
 

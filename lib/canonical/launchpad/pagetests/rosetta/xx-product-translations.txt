@@ -1,0 +1,186 @@
+Each product in Launchpad has a Translations page.
+
+    >>> anon_browser.open('http://translations.launchpad.dev/evolution')
+    >>> print anon_browser.contents
+    <...
+    ...Translations of The Evolution Groupware Application...
+    ...
+    ...For Evolution, Launchpad currently recommends...
+    ...Evolution trunk...
+    ...
+
+This page shows translations for upstream even if there aren't translations
+for a distribution.
+
+    >>> anon_browser.open('http://translations.launchpad.dev/alsa-utils')
+    >>> print find_main_content(anon_browser.contents)
+    <...
+    ...Template "alsa-utils" in alsa-utils trunk...
+
+We even have a language chart table.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'language-chart'))
+    Language Status Untranslated Need review Changed Last Edited By
+    Afrikaans 100.00 3 3 0 &mdash; 0 &mdash; &mdash; &mdash;
+    Sotho, Southern 100.00 3 3 0 &mdash; 0 &mdash; &mdash; &mdash;
+    Xhosa 100.00 3 3 0 &mdash; 0 &mdash; &mdash; &mdash;
+    Zulu 100.00 3 3 0 &mdash; 0 &mdash; &mdash; &mdash;
+
+If a product is not set up for translations in Launchpad, and you are its
+registrant or an admin, the Translations page suggests that you set it up for
+translation, or link the product to a translatable package.
+
+    >>> registrant = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> registrant.open(
+    ...     'http://translations.launchpad.dev/gnomebaker')
+    >>> print find_main_content(registrant.contents)
+    <...
+    ...How to start using Launchpad Translations...
+    ...
+    >>> registrant.getLink(
+    ...     url=('/gnomebaker/trunk/'
+    ...          '+translations-upload')) is not None
+    True
+    >>> registrant.getLink(
+    ...     url='/gnomebaker/+packages'
+    ...     ) is not None
+    True
+
+(The template upload process is tested in xx-translation-import-queue.txt.)
+
+
+If you're logged in as someone else, the Translations page suggests that you
+contact the product's registrant.
+
+    >>> unprivileged = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> unprivileged.open(
+    ...     'http://translations.launchpad.dev/gnomebaker')
+    >>> print unprivileged.contents
+    <...
+    ...talk with...Foo Bar...
+    ...
+
+It omits the registrant-only links ...
+
+    >>> unprivileged.getLink(url='/gnomebaker/trunk/+translations-upload')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+    >>> unprivileged.getLink(url='/gnomebaker/+packages')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+... because you can't do those things.
+
+    >>> unprivileged.open(
+    ...     'http://translations.launchpad.dev/gnomebaker/trunk/'
+    ...     '+translations-upload')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+(In the packages case, you can look at the packages, but you can't link any.)
+
+    >>> unprivileged.open(
+    ...     'http://translations.launchpad.dev/gnomebaker/trunk/+addpackage')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+
+Meanwhile, if you're not logged in at all, you might or might not be the
+registrant, so the text reflects both possibilities.
+
+    >>> anon_browser.open(
+    ...     'http://translations.launchpad.dev/gnomebaker')
+    >>> print find_main_content(anon_browser.contents)
+    <...
+    ...If you&#8217;re Foo Bar,...
+    ...+login"...log in...
+    ...
+    ...Otherwise...
+    ...talk with...Foo Bar...
+    ...
+
+Finally, if a product states that is not officially using Launchpad
+Translations...
+
+    >>> anon_browser.open('http://launchpad.dev/netapplet')
+    >>> content = find_tag_by_id(
+    ...     anon_browser.contents, 'table-details')
+    >>> print extract_text(content)
+    Status:
+    ...
+    Doesn&rsquo;t use Translations
+    ...
+
+... it doesn't show any translation template:
+
+    >>> anon_browser.getLink('Translations').click()
+    >>> print anon_browser.title
+    Translations of Network Applet in Launchpad
+    >>> print find_main_content(anon_browser.contents)
+    <...
+    ...Translation setup needed...
+
+And since the Network Applet isn't currently using Launchpad for
+Translations, there is no language chart show.
+
+    >>> print find_tag_by_id(anon_browser.contents, 'language-chart')
+    None
+
+When browsing it as an admin, we can see that it has some 'obsolete'
+translation templates, which is just that the product is not using
+them anymore.
+
+    >>> admin_browser.open('http://translations.launchpad.dev/netapplet')
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents,
+    ...                    'portlet-obsolete-translatable-series'))
+    All product series with obsolete templates
+    NetApplet Series: trunk
+
+While we can see that anonymous people are not getting such information:
+
+    >>> print find_tag_by_id(anon_browser.contents,
+    ...                'portlet-obsolete-translatable-series')
+    None
+
+If the netapplet project is updated to use Launchpad for translations...
+
+    >>> admin_browser.getLink('Overview').click()
+    >>> print admin_browser.title
+    Network Applet in Launchpad
+    >>> admin_browser.getLink('Change details').click()
+    >>> admin_browser.getControl(
+    ...     'Translations for this project are done in Launchpad').selected
+    False
+    >>> admin_browser.getControl(
+    ...     'Translations for this project are done in Launchpad'
+    ...     ).selected = True
+    >>> admin_browser.getControl('Change').click()
+
+...there are no longer any obsolete entires.
+
+    >>> admin_browser.getLink('Translations').click()
+    >>> print admin_browser.title
+    Translations of Network Applet in Launchpad
+    >>> print find_tag_by_id(admin_browser.contents,
+    ...                'portlet-obsolete-translatable-series')
+    None
+
+Also, we will get some translation status for network applet.
+
+    >>> anon_browser.open('http://translations.launchpad.dev/netapplet')
+    >>> print find_main_content(anon_browser.contents)
+    <...
+    ...Translation overview...
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'language-chart'))
+    Language Status Untranslated Need review Changed Last Edited By
+    Afrikaans 100.00 43 43 0 &mdash; 0 &mdash; &mdash; &mdash;
+    Sotho, Southern 100.00 43 43 0 &mdash; 0 &mdash; &mdash; &mdash;
+    Xhosa 100.00 43 43 0 &mdash; 0 &mdash; &mdash; &mdash;
+    Zulu 100.00 43 43 0 &mdash; 0 &mdash; &mdash; &mdash;

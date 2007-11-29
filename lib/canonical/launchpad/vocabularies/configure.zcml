@@ -6,33 +6,8 @@
     />
 
   <vocabulary
-    name="BountyDifficulty"
-    factory="canonical.launchpad.vocabularies.BountyDifficultyVocabulary"
-    />
-
-  <vocabulary
-    name="BountyStatus"
-    factory="canonical.launchpad.vocabularies.BountyStatusVocabulary"
-    />
-
-  <vocabulary
-    name="BranchReviewStatus"
-    factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
-    />
-
-  <vocabulary
     name="Bug"
     factory="canonical.launchpad.vocabularies.BugVocabulary"
-    />
-
-  <vocabulary
-    name="BugAttachmentType"
-    factory="canonical.launchpad.vocabularies.BugAttachmentTypeVocabulary"
-    />
-
-  <vocabulary
-    name="BugBranchStatus"
-    factory="canonical.launchpad.vocabularies.BugBranchStatusVocabulary"
     />
 
   <vocabulary
@@ -41,33 +16,8 @@
     />
 
   <vocabulary
-    name="BugNominationStatus"
-    factory="canonical.launchpad.vocabularies.BugNominationStatusVocabulary"
-    />
-
-  <vocabulary
-    name="BugRef"
-    factory="canonical.launchpad.vocabularies.BugRefVocabulary"
-    />
-
-  <vocabulary
-    name="BugTaskStatus"
-    factory="canonical.launchpad.vocabularies.BugTaskStatusVocabulary"
-    />
-
-  <vocabulary
-    name="BugTaskImportance"
-    factory="canonical.launchpad.vocabularies.BugTaskImportanceVocabulary"
-    />
-
-  <vocabulary
     name="BugTracker"
     factory="canonical.launchpad.vocabularies.BugTrackerVocabulary"
-    />
-
-  <vocabulary
-    name="BugTrackerType"
-    factory="canonical.launchpad.vocabularies.BugTrackerTypeVocabulary"
     />
 
   <vocabulary
@@ -81,19 +31,9 @@
       />
 
   <vocabulary
-      name="CodeImportReviewStatus"
-      factory="canonical.launchpad.vocabularies.CodeImportReviewStatusVocabulary"
-      />
-
-  <vocabulary
       name="CountryName"
       factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
       />
-
-  <vocabulary
-    name="CveStatus"
-    factory="canonical.launchpad.vocabularies.CveStatusVocabulary"
-    />
 
   <vocabulary
     name="Distribution"
@@ -111,13 +51,13 @@
     />
 
   <vocabulary
-    name="DistroSeriesStatus"
-    factory="canonical.launchpad.vocabularies.DistroSeriesStatusVocabulary"
+    name="FAQ"
+    factory="canonical.launchpad.vocabularies.FAQVocabulary"
     />
 
   <vocabulary
-    name="FAQ"
-    factory="canonical.launchpad.vocabularies.FAQVocabulary"
+    name="FilteredDeltaLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredDeltaLanguagePackVocabulary"
     />
 
    <vocabulary
@@ -131,6 +71,16 @@
     />
 
   <vocabulary
+    name="FilteredFullLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredFullLanguagePackVocabulary"
+    />
+
+  <vocabulary
+    name="FilteredLanguagePack"
+    factory="canonical.launchpad.vocabularies.FilteredLanguagePackVocabulary"
+    />
+
+  <vocabulary
     name="FilteredProductSeries"
     factory="canonical.launchpad.vocabularies.FilteredProductSeriesVocabulary"
     />
@@ -138,11 +88,6 @@
   <vocabulary
     name="FutureSprint"
     factory="canonical.launchpad.vocabularies.FutureSprintVocabulary"
-    />
-
-  <vocabulary
-    name="InfestationStatus"
-    factory="canonical.launchpad.vocabularies.InfestationStatusVocabulary"
     />
 
   <vocabulary
@@ -171,18 +116,8 @@
     />
 
   <vocabulary
-    name="PackagePublishingPocket"
-    factory="canonical.launchpad.vocabularies.PackagePublishingPocketVocabulary"
-    />
-
-  <vocabulary
     name="PackageRelease"
     factory="canonical.launchpad.vocabularies.PackageReleaseVocabulary"
-    />
-
-  <vocabulary
-    name="PackagingType"
-    factory="canonical.launchpad.vocabularies.PackagingTypeVocabulary"
     />
 
   <vocabulary
@@ -198,21 +133,6 @@
   <vocabulary
     name="PersonTeamParticipations"
     factory="canonical.launchpad.vocabularies.person_team_participations_vocabulary_factory"
-    />
-
-  <vocabulary
-    name="PollAlgorithm"
-    factory="canonical.launchpad.vocabularies.PollAlgorithmVocabulary"
-    />
-
-  <vocabulary
-    name="PollSecrecy"
-    factory="canonical.launchpad.vocabularies.PollSecrecyVocabulary"
-    />
-
-  <vocabulary
-    name="POTemplateName"
-    factory="canonical.launchpad.vocabularies.POTemplateNameVocabulary"
     />
 
   <vocabulary
@@ -251,33 +171,8 @@
     />
 
   <vocabulary
-    name="RemoteBugTaskStatus"
-    factory="canonical.launchpad.vocabularies.RemoteBugTaskStatusVocabulary"
-    />
-
-  <vocabulary
-    name="RemoteBugTaskImportance"
-    factory="canonical.launchpad.vocabularies.RemoteBugTaskImportanceVocabulary"
-    />
-
-  <vocabulary
-    name="RevisionControlSystems"
-    factory="canonical.launchpad.vocabularies.RevisionControlSystemsVocabulary"
-    />
-
-  <vocabulary
-    name="Specification"
-    factory="canonical.launchpad.vocabularies.SpecificationVocabulary"
-    />
-
-  <vocabulary
     name="SpecificationDependencies"
     factory="canonical.launchpad.vocabularies.SpecificationDependenciesVocabulary"
-    />
-
-  <vocabulary
-    name="SpecificationImplementationStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationImplementationStatusVocabulary"
     />
 
   <vocabulary
@@ -286,33 +181,8 @@
     />
 
   <vocabulary
-    name="SpecificationPriority"
-    factory="canonical.launchpad.vocabularies.SpecificationPriorityVocabulary"
-    />
-
-  <vocabulary
-    name="SpecificationDefinitionStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationDefinitionStatusVocabulary"
-    />
-
-  <vocabulary
-    name="SpecificationGoalStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationGoalStatusVocabulary"
-    />
-
-  <vocabulary
     name="Sprint"
     factory="canonical.launchpad.vocabularies.SprintVocabulary"
-    />
-
-  <vocabulary
-    name="SprintSpecificationStatus"
-    factory="canonical.launchpad.vocabularies.SprintSpecificationStatusVocabulary"
-    />
-
-  <vocabulary
-    name="TextDirection"
-    factory="canonical.launchpad.vocabularies.TextDirectionVocabulary"
     />
 
   <vocabulary
@@ -321,28 +191,23 @@
     />
 
   <vocabulary
-    name="TranslationFileFormat"
-    factory="canonical.launchpad.vocabularies.TranslationFileFormatVocabulary"
-    />
-
-  <vocabulary
     name="TranslationGroup"
     factory="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
     />
 
   <vocabulary
-    name="TranslationPermission"
-    factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
-    />
-
-  <vocabulary
-    name="UpstreamFileType"
-    factory="canonical.launchpad.vocabularies.UpstreamFileTypeVocabulary"
+    name="TranslationMessage"
+    factory="canonical.launchpad.vocabularies.TranslationMessageVocabulary"
     />
 
   <vocabulary
     name="UserTeamsParticipation"
     factory="canonical.launchpad.vocabularies.UserTeamsParticipationVocabulary"
+    />
+
+  <vocabulary
+    name="ActiveMailingList"
+    factory="canonical.launchpad.vocabularies.ActiveMailingListVocabulary"
     />
 
   <vocabulary

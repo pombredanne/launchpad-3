@@ -194,7 +194,7 @@ We'll choose Ubuntu as a target for the new blueprint:
 By default, new blueprints have the 'New' status:
 
     >>> control('Status').value
-    ['New']
+    ['NEW']
 
 Let's continue by completing the rest of the form:
 
@@ -209,7 +209,7 @@ Let's continue by completing the rest of the form:
     >>> control('Name').value = 'networkmagic'
     >>> control('Title').value = 'Network Magic: Auto Network Detection'
     >>> control('URL').value = 'http://wiki.ubuntu.com/NetworkMagic'
-    >>> control('Status').value = ['Approved']
+    >>> control('Status').value = ['APPROVED']
     >>> control('Summary').value = summary
     >>> control('Assignee').value = 'daf@canonical.com'
     >>> control('Drafter').value = 'carlos@canonical.com'
@@ -562,7 +562,10 @@ permission, the blueprint will be automatically added to the sprint agenda:
 === Names must be unique ===
 
 It's not possible to register a blueprint with the same name as an existing
-blueprint:
+blueprint.
+
+Attempting to register a duplicate blueprint from a target context produces
+an error:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
     >>> control = user_browser.getControl
@@ -573,6 +576,24 @@ blueprint:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+addspec'
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...      print message.renderContents()
+    There is 1 error...already in use by another blueprint...
+
+Attempting to register a duplicate blueprint from a non-target context produces
+the same error:
+
+    >>> url = 'http://blueprints.launchpad.dev/sprints/paris/+addspec'
+    >>> user_browser.open(url)
+    >>> user_browser.getControl('For').value = 'ubuntu'
+    >>> user_browser.getControl('Name').value = 'media-integrity-check'
+    >>> user_browser.getControl('Title').value = (
+    ...     'A blueprint with a name that already exists')
+    >>> user_browser.getControl('Summary').value = (
+    ...     'There is already a blueprint with this name')
+    >>> user_browser.getControl('Register Blueprint').click()
+    >>> print user_browser.url
+    http://blueprints.launchpad.dev/sprints/paris/+addspec
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...      print message.renderContents()
     There is 1 error...already in use by another blueprint...

@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+
 """Definition of the internet servers that Launchpad uses."""
 
 __metaclass__ = type
@@ -11,28 +12,33 @@ from zope.app.form.browser.itemswidgets import  MultiDataHelper
 from zope.app.session.interfaces import ISession
 from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
 from zope.app.publication.interfaces import IRequestPublicationFactory
+from zope.app.publication.requestpublicationregistry import (
+    factoryRegistry as publisher_factory_registry)
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.interface import implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
+from zope.publisher.interfaces import NotFound
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.server.http.commonaccesslogger import CommonAccessLogger
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
-        IShipItApplication, IOpenIdApplication)
+    IFeedsApplication, IPrivateApplication, IOpenIdApplication,
+    IShipItApplication)
 
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest,
-    IBrowserFormNG, INotificationRequest, INotificationResponse,
-    UnexpectedFormData)
+    ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
+    IBasicLaunchpadRequest, IBrowserFormNG, INotificationRequest,
+    INotificationResponse, UnexpectedFormData)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -123,7 +129,7 @@ class ApplicationServerSettingRequestFactory:
 
     Due to the factory-fanatical design of this part of Zope3, we need
     to have a kind of proxying factory here so that we can create an
-    approporiate request and call its setApplicationServer method before it
+    appropriate request and call its setApplicationServer method before it
     is used.
     """
 
@@ -139,136 +145,197 @@ class ApplicationServerSettingRequestFactory:
         request.setApplicationServer(self.host, self.protocol, self.port)
         return request
 
+class VirtualHostRequestPublicationFactory:
+    """An `IRequestPublicationFactory` handling request to a Launchpad vhost.
 
-class LaunchpadRequestPublicationFactory:
-    """An IRequestPublicationFactory which looks at the Host header.
-
-    It chooses the request and publication factories by looking at the
-    Host header and comparing it to the configured site.
+    This factory will accepts requests to a particular Launchpad virtual host
+    that matches a particular port and set of HTTP methods.
     """
-
     implements(IRequestPublicationFactory)
 
-    _request_factory = None
-    _publication_factory = None
-    USE_DEFAULTS = object()
-    UNHANDLED_HOST = object()
+    def __init__(self, vhost_name, request_factory, publication_factory,
+                 port=None, methods=None, handle_default_host=False):
+        """Creates a new factory.
 
-    class VirtualHostRequestPublication:
-        """Data type to represent request publication of a single virtual host.
+        :param vhost_name: The config section defining the virtual host
+             handled by this factory.
+        :param request_factory: The request factory to use for this virtual
+             host's requests.
+        :param publication_factory: The publication factory to use for this
+            virtual host's requests.
+        :param port: The port which is handled by this factory. If
+            this is None, this factory will handle requests that
+            originate on any port.
+        :param methods: A sequence of HTTP methods that this factory handles.
+        :param handle_default_host: Whether or not this factory is
+            capable of handling requests that specify no hostname.
         """
-        def __init__(self, conffilename, requestfactory, publicationfactory):
-            self.conffilename = conffilename
-            self.requestfactory = requestfactory
-            self.publicationfactory = publicationfactory
-            # Add data from launchpad.conf
-            self.vhostconfig = allvhosts.configs[self.conffilename]
-            self.allhostnames = set(self.vhostconfig.althostnames
-                                    + [self.vhostconfig.hostname])
 
-    def __init__(self):
-        # This is run just once at server start-up.
+        self.vhost_name = vhost_name
+        self.request_factory = request_factory
+        self.publication_factory = publication_factory
+        self.port = port
+        if methods  is None:
+            methods = ['GET', 'HEAD', 'POST']
+        self.methods = methods
+        self.handle_default_host = handle_default_host
 
-        vhrps = []
-        # Use a short form of VirtualHostRequestPublication, for clarity.
-        VHRP = self.VirtualHostRequestPublication
-        vhrps.append(VHRP('mainsite', LaunchpadBrowserRequest,
-            MainLaunchpadPublication))
-        vhrps.append(VHRP('blueprints', BlueprintBrowserRequest,
-            BlueprintPublication))
-        vhrps.append(VHRP('code', CodeBrowserRequest, CodePublication))
-        vhrps.append(VHRP('translations', TranslationsBrowserRequest,
-            TranslationsPublication))
-        vhrps.append(VHRP('bugs', BugsBrowserRequest, BugsPublication))
-        vhrps.append(VHRP('answers', AnswersBrowserRequest,
-            AnswersPublication))
-        vhrps.append(VHRP('openid', OpenIdBrowserRequest, OpenIdPublication))
-        vhrps.append(VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
-            ShipItPublication))
-        vhrps.append(VHRP('shipitkubuntu', KubuntuShipItBrowserRequest,
-            ShipItPublication))
-        vhrps.append(VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
-            ShipItPublication))
-        vhrps.append(VHRP('xmlrpc',
-                          PublicXMLRPCRequest, PublicXMLRPCPublication))
-        # Done with using the short form of VirtualHostRequestPublication, so
-        # clean up, as we won't need to use it again later.
-        del VHRP
-
-        # Set up a dict that maps a host name to a
-        # VirtualHostRequestPublication object.
-        self._hostname_vhrp = {}
-
-        # Register hostname and althostnames for each virtual host.
-        for vhrp in vhrps:
-            for hostname in vhrp.allhostnames:
-                assert hostname not in self._hostname_vhrp, (
-                    "The alt host name '%s' was defined more than once.")
-                self._hostname_vhrp[hostname] = vhrp
-
+        self.vhost_config = allvhosts.configs[self.vhost_name]
+        self.all_hostnames = set(self.vhost_config.althostnames
+                                 + [self.vhost_config.hostname])
         self._thread_local = threading.local()
-
-    def _defaultFactories(self):
-        from canonical.launchpad.webapp.publication import (
-            LaunchpadBrowserPublication)
-        return LaunchpadBrowserRequest, LaunchpadBrowserPublication
+        self._thread_local.environment = None
 
     def canHandle(self, environment):
-        """Only configured domains are handled."""
-        if 'HTTP_HOST' not in environment:
-            self._thread_local.host = self.USE_DEFAULTS
-            return True
+        """See `IRequestPublicationFactory`.
 
-        host = environment['HTTP_HOST']
+        Returns true if the HTTP host and port of the incoming request
+        match the ones this factory is equipped to handle.
+        """
+        # We look at the wsgi environment to get the port this request
+        # is coming in over.  The port number can be in one of two
+        # places; either it's on the SERVER_PORT environment variable
+        # or, as is the case with the test suite, it's on the
+        # HTTP_HOST variable after a colon.
+        # Check the former first.
+        host = environment.get('HTTP_HOST')
+        port = environment.get('SERVER_PORT')
         if ":" in host:
             assert len(host.split(':')) == 2, (
                 "Having a ':' in the host name isn't allowed.")
-            host, port = host.split(':')
-        if host not in self._hostname_vhrp:
-            self._thread_local.host = self.UNHANDLED_HOST
+            host, new_port = host.split(':')
+            if port is not None:
+                assert str(port) == new_port, (
+                    "Port specified in SERVER_PORT does not match "
+                    "port specified in HTTP_HOST")
+            port = new_port
+
+        if host == '':
+            if not self.handle_default_host:
+                return False
+        elif host not in self.all_hostnames:
             return False
+        else:
+            # This factory handles this host.
+            pass
+
+        if self.port is not None:
+            if port is not None:
+                try:
+                    port = int(port)
+                except (ValueError):
+                    port = None
+            if self.port != port:
+                return False
+
+        self._thread_local.environment = environment
         self._thread_local.host = host
         return True
 
     def __call__(self):
-        """Return the factories chosen in canHandle()."""
-        host = self._thread_local.host
-        if host is self.USE_DEFAULTS or host == 'localhost':
-            # Don't setApplicationServer here, because we don't have enough
-            # information about exactly what was intended.
-            # Accept 'localhost' here to support running tests, or hitting
-            # the launchpad server directly instead of via Apache.
-            return self._defaultFactories()
-        if host is self.UNHANDLED_HOST:
-            raise AssertionError('unhandled host')
-        if host is None:
-            raise AssertionError('__call__ called before canHandle')
-        self._thread_local.host = None
+        """See `IRequestPublicationFactory`.
 
-        # Call self.setApplicationServer(host, protocol, port) based on
-        # information in the Host header.
-        #
-        # There's a problem: the Host header sent into apache may omit the port
-        # if it is on the default port from the *outside*.  So, we may be
-        # unable to tell if HTTP or HTTPS is appropriate.
-        # It is safest to assume that we get just the host and not the port.
-        # So, we need to have configured all these things...
-        # I have the known hosts in the config, as well as the root urls.  that
-        # gives me enough informaiton to set the setApplicationServer in these
-        # cases.  Where we have an unknown host header, we can just leave
-        # things as is.
+        We know that this factory is the right one for the given host
+        and port. But there might be something else wrong with the
+        request.  For instance, it might have the wrong HTTP method.
+        """
+        environment = self._thread_local.environment
+        if environment is None:
+            raise AssertionError('This factory declined the request.')
 
-        vhrp = self._hostname_vhrp[host]
+        root_url = URI(self.vhost_config.rooturl)
 
-        # Get hostname, protocol and port out of rooturl.
-        rooturlobj = URI(vhrp.vhostconfig.rooturl)
+        real_request_factory, publication_factory = (
+            self.checkRequest(environment))
 
-        requestfactory = ApplicationServerSettingRequestFactory(
-            vhrp.requestfactory,
-            rooturlobj.host,
-            rooturlobj.scheme,
-            rooturlobj.port)
-        return requestfactory, vhrp.publicationfactory
+        if not real_request_factory:
+            real_request_factory = self.request_factory
+            publication_factory = self.publication_factory
+
+
+        host = environment.get('HTTP_HOST').split(':')[0]
+        if host in ['', 'localhost']:
+            # Sometimes requests come in to the default or local host.
+            # If we set the application server for these requests,
+            # they'll be handled as launchpad.net requests, and
+            # responses will go out containing launchpad.net URLs.
+            # That's a little unelegant, so we don't set the application
+            # server for these requests.
+            request_factory = real_request_factory
+        else:
+            request_factory = ApplicationServerSettingRequestFactory(
+                real_request_factory,
+                root_url.host,
+                root_url.scheme,
+                root_url.port)
+
+        self._thread_local.environment = None
+        return (request_factory, publication_factory)
+
+    def checkRequest(self, environment):
+        """Makes sure that the incoming HTTP request is of an expected type.
+
+        This is different from canHandle() because we know the request
+        went to the right place. It's just that it might be an invalid
+        request for this handler.
+
+        :return: An appropriate ProtocolErrorPublicationFactory if the
+            HTTP request doesn't comply with the expected protocol. If
+            the request does comply, (None, None).
+        """
+        method = environment.get('REQUEST_METHOD')
+        if method in self.methods:
+            return None, None
+        else:
+            request_factory = ProtocolErrorRequest
+            publication_factory = ProtocolErrorPublicationFactory(
+                405, headers={'Allow':" ".join(self.methods)})
+            return request_factory, publication_factory
+
+
+class XMLRPCRequestPublicationFactory(VirtualHostRequestPublicationFactory):
+    """A VirtualHostRequestPublicationFactory for XML-RPC.
+
+    This factory only accepts XML-RPC method calls.
+    """
+
+    def __init__(self, vhost_name, request_factory, publication_factory,
+                 port=None):
+        super(XMLRPCRequestPublicationFactory, self).__init__(
+            vhost_name, request_factory, publication_factory, port, ['POST'])
+
+    def checkRequest(self, environment):
+        """See `VirtualHostRequestPublicationFactory`.
+
+        Accept only requests where the MIME type is text/xml.
+        """
+        request_factory, publication_factory = (
+            super(XMLRPCRequestPublicationFactory, self).checkRequest(
+                environment))
+        if request_factory is None:
+            mime_type = environment.get('CONTENT_TYPE')
+            if mime_type != 'text/xml':
+                request_factory = ProtocolErrorRequest
+                # 415 - Unsupported Media Type
+                publication_factory = ProtocolErrorPublicationFactory(415)
+        return request_factory, publication_factory
+
+
+class NotFoundRequestPublicationFactory:
+    """An IRequestPublicationFactory which always yields a 404."""
+
+    def canHandle(self, environment):
+        """See `IRequestPublicationFactory`."""
+        return True
+
+    def __call__(self):
+        """See `IRequestPublicationFactory`.
+
+        Unlike other publication factories, this one doesn't wrap its
+        request factory in an ApplicationServerSettingRequestFactory.
+        That's because it's only triggered when there's no valid hostname.
+        """
+        return (ProtocolErrorRequest, ProtocolErrorPublicationFactory(404))
 
 
 class BasicLaunchpadRequest:
@@ -342,7 +409,7 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
 
 class BrowserFormNG:
     """Wrapper that provides IBrowserFormNG around a regular form dict."""
-    
+
     implements(IBrowserFormNG)
 
     def __init__(self, form):
@@ -356,7 +423,7 @@ class BrowserFormNG:
     def __iter__(self):
         """See IBrowserFormNG."""
         return iter(self.form)
-    
+
     def getOne(self, name, default=None):
         """See IBrowserFormNG."""
         value = self.form.get(name, default)
@@ -364,7 +431,7 @@ class BrowserFormNG:
             raise UnexpectedFormData(
                 'Expected only one value form field %s: %s' % (name, value))
         return value
-    
+
     def getAll(self, name, default=None):
         """See IBrowserFormNG."""
         # We don't want a mutable as a default parameter, so we use None as a
@@ -388,7 +455,7 @@ class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
     """
 
     installed = False
-    
+
     @classmethod
     def install(cls):
         """Install the monkey patch."""
@@ -412,7 +479,7 @@ class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
         SimpleInputWidget._getFormInput = _getFormInput_single
         MultiDataHelper._getFormInput = _getFormInput_multi
         cls.installed = True
-        
+
     @classmethod
     def uninstall(cls):
         """Uninstall the monkey patch."""
@@ -654,6 +721,13 @@ debughttp = wsgi.ServerType(
     True,
     requestFactory=DebugLayerRequestFactory)
 
+privatexmlrpc = wsgi.ServerType(
+    WSGIHTTPServer,
+    WSGIPublisherApplication,
+    LaunchpadAccessLogger,
+    8080,
+    True)
+
 
 # ---- mainsite
 
@@ -716,6 +790,29 @@ class KubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
 class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.ShipItEdUbuntuLayer)
 
+# ---- feeds
+
+class FeedsPublication(LaunchpadBrowserPublication):
+    """The publication used for Launchpad feed requests."""
+
+    root_object_interface = IFeedsApplication
+
+
+class FeedsBrowserRequest(LaunchpadBrowserRequest):
+    """Request type for a launchpad feed."""
+    implements(canonical.launchpad.layers.FeedsLayer)
+
+# ---- openid
+
+class OpenIdPublication(LaunchpadBrowserPublication):
+    """The publication used for OpenId requests."""
+
+    root_object_interface = IOpenIdApplication
+
+
+class OpenIdBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.OpenIdLayer)
+
 # ---- xmlrpc
 
 class PublicXMLRPCPublication(LaunchpadBrowserPublication):
@@ -756,14 +853,142 @@ class PublicXMLRPCResponse(XMLRPCResponse):
         XMLRPCResponse.handleException(self, exc_info)
 
 
-# ---- openid
+class PrivateXMLRPCPublication(PublicXMLRPCPublication):
+    """The publication used for private XML-RPC requests."""
 
-class OpenIdPublication(LaunchpadBrowserPublication):
-    """The publication used for OpenId requests."""
+    root_object_interface = IPrivateApplication
 
-    root_object_interface = IOpenIdApplication
+    def traverseName(self, request, ob, name):
+        """Traverse to an end point or let normal traversal do its thing."""
+        assert isinstance(request, PrivateXMLRPCRequest), (
+            'Not a private XML-RPC request')
+        missing = object()
+        end_point = getattr(ob, name, missing)
+        if end_point is missing:
+            return super(PrivateXMLRPCPublication, self).traverseName(
+                request, ob, name)
+        return end_point
 
 
-class OpenIdBrowserRequest(LaunchpadBrowserRequest):
-    implements(canonical.launchpad.layers.OpenIdLayer)
+class PrivateXMLRPCRequest(PublicXMLRPCRequest):
+    """Request type for doing private XML-RPC in Launchpad."""
+    # For now, the same as public requests.
 
+# ---- Protocol errors
+
+class ProtocolErrorRequest(LaunchpadBrowserRequest):
+    """An HTTP request that happened to result in an HTTP error."""
+
+    def traverse(self, object):
+        """It's already been determined that there's an error. Return None."""
+        return None
+
+
+class ProtocolErrorPublicationFactory:
+    """This class publishes error messages in response to protocol errors."""
+
+    def __init__(self, status, headers=None):
+        """Store the headers and status for turning into a parameterized
+        publication.
+        """
+        if not headers:
+            headers = {}
+        self.status = status
+        self.headers = headers
+
+    def __call__(self, db):
+        """Create a parameterized publication object."""
+        return ProtocolErrorPublication(self.status, self.headers)
+
+
+class ProtocolErrorPublication(LaunchpadBrowserPublication):
+    """Publication used for requests that turn out to be protocol errors."""
+
+    def __init__(self, status, headers):
+        """Prepare to construct a ProtocolErrorException
+
+        :param status: The HTTP status to send
+        :param headers: Any HTTP headers that should be sent.
+        """
+        self.status = status
+        self.headers = headers
+
+    def callObject(self, request, object):
+        """Raise an approprate exception for this protocol error."""
+        if self.status == 404:
+            raise NotFound(self, '', request)
+        else:
+            raise ProtocolErrorException(self.status, self.headers)
+
+
+class ProtocolErrorException(Exception):
+    implements(ILaunchpadProtocolError)
+    """An exception for requests that turn out to be protocol errors."""
+
+    def __init__(self, status, headers):
+        """Store status and headers for rendering in the HTTP response."""
+        self.status = status
+        self.headers = headers
+
+    def __str__(self):
+        """A protocol error can be well-represented by its HTTP status code."""
+        return "Protocol error: %s" % self.status
+
+# ---- End publication classes.
+
+
+def register_launchpad_request_publication_factories():
+    """Register our factories with the Zope3 publisher.
+
+    DEATH TO ZCML!
+    """
+    VHRP = VirtualHostRequestPublicationFactory
+
+    factories = [
+        VHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication,
+             handle_default_host=True),
+        VHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication),
+        VHRP('code', CodeBrowserRequest, CodePublication),
+        VHRP('translations', TranslationsBrowserRequest,
+             TranslationsPublication),
+        VHRP('bugs', BugsBrowserRequest, BugsPublication),
+        VHRP('answers', AnswersBrowserRequest, AnswersPublication),
+        VHRP('openid', OpenIdBrowserRequest, OpenIdPublication),
+        VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
+             ShipItPublication),
+        VHRP('shipitkubuntu', KubuntuShipItBrowserRequest,
+             ShipItPublication),
+        VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
+             ShipItPublication),
+        VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
+        XMLRPCRequestPublicationFactory('xmlrpc', PublicXMLRPCRequest,
+                                        PublicXMLRPCPublication)
+        ]
+
+    # We may also have a private XML-RPC server.
+    private_port = None
+    for server in config.servers:
+        if server.type == 'PrivateXMLRPC':
+            ip, private_port = server.address
+            break
+
+    if private_port is not None:
+        factories.append(XMLRPCRequestPublicationFactory(
+            'xmlrpc_private', PrivateXMLRPCRequest,
+            PrivateXMLRPCPublication, port=private_port))
+
+    # Register those factories, in priority order corresponding to
+    # their order in the list. This means picking a large number for
+    # the first factory and giving each subsequent factory the next
+    # lower number. We need to leave one space left over for the
+    # catch-all handler defined below, so we start at
+    # len(factories)+1.
+    for priority, factory in enumerate(factories):
+        publisher_factory_registry.register(
+            "*", "*", factory.vhost_name, len(factories)-priority+1, factory)
+
+    # Register a catch-all "not found" handler at the lowest priority.
+    publisher_factory_registry.register(
+        "*", "*", "*", 0, NotFoundRequestPublicationFactory())
+
+register_launchpad_request_publication_factories()

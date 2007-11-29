@@ -25,10 +25,14 @@ import psycopg
 from optparse import OptionParser
 from datetime import timedelta
 
+from zope.component import getUtility
+
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
-from canonical.lp import initZopeless, dbschema
+from canonical.lp import initZopeless
 from canonical.config import config
+from canonical.launchpad.interfaces import (
+    IComponentSet, PackagePublishingPocket)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, log)
 
@@ -112,13 +116,14 @@ def run_gina(options, ztm, target_section):
     package_root = target_section.root
     keyrings_root = target_section.keyrings
     distro = target_section.distro
-    # XXX kiko 2005-10-23: I honestly think having a separate distrorelease
-    # bit silly. Can't we construct this based on `distrorelease-pocket`?
-    pocket_distrorelease = target_section.pocketrelease
-    distrorelease = target_section.distrorelease
+    # XXX kiko 2005-10-23: I honestly think having a separate distroseries
+    # bit silly. Can't we construct this based on `distroseries-pocket`?
+    pocket_distroseries = target_section.pocketrelease
+    distroseries = target_section.distroseries
     components = [c.strip() for c in target_section.components.split(",")]
     archs = [a.strip() for a in target_section.architectures.split(",")]
     pocket = target_section.pocket
+    component_override = target_section.componentoverride
     source_only = target_section.source_only
     spnames_only = target_section.sourcepackagenames_only
 
@@ -133,10 +138,12 @@ def run_gina(options, ztm, target_section):
     LIBRPORT = config.librarian.upload_port
 
     log.info("")
-    log.info("=== Processing %s/%s/%s ===" % (distro, distrorelease, pocket))
+    log.info("=== Processing %s/%s/%s ===" % (distro, distroseries, pocket))
     log.debug("Packages read from: %s" % package_root)
     log.debug("Keyrings read from: %s" % keyrings_root)
     log.info("Components to import: %s" % ", ".join(components))
+    if component_override is not None:
+        log.info("Override components to: %s" % component_override)
     log.info("Architectures to import: %s" % ", ".join(archs))
     log.debug("Launchpad database: %s" % LPDB)
     log.debug("Launchpad database host: %s" % LPDB_HOST)
@@ -148,30 +155,37 @@ def run_gina(options, ztm, target_section):
     log.info("Dry run: %s" % (dry_run))
     log.info("")
 
-    if hasattr(dbschema.PackagePublishingPocket, pocket.upper()):
-        pocket = getattr(dbschema.PackagePublishingPocket, pocket.upper())
+    if hasattr(PackagePublishingPocket, pocket.upper()):
+        pocket = getattr(PackagePublishingPocket, pocket.upper())
     else:
         log.error("Could not find a pocket schema for %s" % pocket)
         sys.exit(1)
 
+    if component_override:
+        valid_components = [
+            component.name for component in getUtility(IComponentSet)]
+        if component_override not in valid_components:
+            log.error("Could not find component %s" % component_override)
+            sys.exit(1)
+
     kdb = None
     keyrings = None
     if KTDB:
-        kdb = Katie(KTDB, distrorelease, dry_run)
+        kdb = Katie(KTDB, distroseries, dry_run)
         keyrings = _get_keyring(keyrings_root)
 
     try:
         arch_component_items = ArchiveComponentItems(package_root,
-                                                     pocket_distrorelease,
+                                                     pocket_distroseries,
                                                      components, archs)
     except MangledArchiveError:
-        log.exception("Failed to analyze archive for %s" % pocket_distrorelease)
+        log.exception("Failed to analyze archive for %s" % pocket_distroseries)
         sys.exit(1)
 
     packages_map = PackagesMap(arch_component_items)
-    importer_handler = ImporterHandler(ztm, distro, distrorelease,
+    importer_handler = ImporterHandler(ztm, distro, distroseries,
                                        dry_run, kdb, package_root, keyrings,
-                                       pocket)
+                                       pocket, component_override)
 
     for archtag in archs:
         try:

@@ -19,12 +19,10 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import ProductSeries
-from canonical.launchpad.interfaces import IProductSeriesSet
+from canonical.launchpad.interfaces import IProductSeriesSet, ImportStatus
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp import canonical_url, errorlog
 from canonical.lp import initZopeless
-
-from canonical.lp.dbschema import ImportStatus
 
 
 def _interval_to_seconds(interval):
@@ -144,22 +142,25 @@ def jobsFromDB(slave_home, archive_mirror_dir, autotest, push_prefix):
         jobseries = ProductSeries.select(clause)
         jobs = list(jobsFromSeries(
             jobseries=jobseries,
-            slave_home = slave_home,
+            slave_home=slave_home,
             archive_mirror_dir=archive_mirror_dir,
-            push_prefix = push_prefix))
+            push_prefix=push_prefix,
+            autotest=autotest))
         getTxnManager().abort()
     except:
         tryToAbortTransaction()
         raise
     return jobs
 
-def jobsFromSeries(jobseries, slave_home, archive_mirror_dir, push_prefix):
+def jobsFromSeries(jobseries, slave_home, archive_mirror_dir, push_prefix,
+                   autotest):
     for series in jobseries:
         job = CopyJob()
         job.from_series(series)
         job.slave_home = slave_home
         job.archive_mirror_dir = archive_mirror_dir
         job.push_prefix = push_prefix
+        job.autotest = autotest
         # Record the canonical url of the series now, althought it is only
         # needed for oops reporting, so we can record BuildFailure OOPSes even
         # without database access. To use canonical_url we need to have run

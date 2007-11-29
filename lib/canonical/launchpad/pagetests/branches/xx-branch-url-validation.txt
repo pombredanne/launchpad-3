@@ -2,62 +2,65 @@
 
 First, let's define a helper to post to the Person +addbranch form.
 
->>> add_branch_form = 'http://launchpad.dev/%7Elifeless/+addbranch'
->>> def add_branch(url):
-...     user_browser.open(add_branch_form)
-...     user_browser.getControl('Name').value = 'pyresources'
-...     user_browser.getControl('Branch URL').value = url
-...     user_browser.getControl('Add Branch').click()
-
+    >>> def add_branch(url):
+    ...     user_browser.open('http://launchpad.dev/~lifeless/+addbranch')
+    ...     user_browser.getControl('Name').value = 'pyresources'
+    ...     user_browser.getControl('Branch URL').value = url
+    ...     user_browser.getControl('Add Branch').click()
 
 Try to create a branch with an invalid URL.
 
->>> add_branch('example.com/~lifeless/pyresources/')
->>> user_browser.url == add_branch_form
-True
->>> user_browser.contents
-'...&quot;example.com/~lifeless/pyresources/&quot; is not a valid URI...'
-
+    >>> add_branch('example.com/~lifeless/pyresources/')
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    There is 1 error.
+    &quot;example.com/~lifeless/pyresources/&quot; is not a valid URI
 
 Try to create branches with URLs in bazaar.launchpad.dev.
 
->>> add_branch('http://bazaar.launchpad.dev')
->>> user_browser.url == add_branch_form
-True
->>> user_browser.contents
-'...Don\'t manually register a bzr branch on <code>bazaar.launchpad.dev</code>...'
+    >>> add_branch('http://bazaar.launchpad.dev')
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    There is 1 error.
+    For Launchpad to mirror a branch, the original branch cannot be on
+    launchpad.dev.
 
->>> add_branch('http://bazaar.launchpad.dev/~me/that/this')
->>> user_browser.url == add_branch_form
-True
->>> user_browser.contents
-'...Don\'t manually register a bzr branch on <code>bazaar.launchpad.dev</code>...'
+    >>> add_branch('http://bazaar.launchpad.dev/~me/that/this')
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    There is 1 error.
+    For Launchpad to mirror a branch, the original branch cannot be on
+    launchpad.dev.
 
+    >>> add_branch('sftp://bazaar.launchpad.dev/~me/that/this')
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    There is 1 error.
+    For Launchpad to mirror a branch, the original branch cannot be on
+    launchpad.dev.
 
 Try to create a branch with a URL that is already registered.
 
->>> add_branch('http://example.com/gnome-terminal/main/')
->>> user_browser.url == add_branch_form
-True
->>> user_browser.contents
-'...GNOME Terminal Mainline</a> is already registered with this URL...'
+    >>> add_branch('http://example.com/gnome-terminal/main/')
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    There is 1 error.
+    The bzr branch GNOME Terminal Mainline is already registered with this URL.
 
 
 Try to create a branch without URL
 
->>> add_branch('')
->>> user_browser.url == add_branch_form
-True
->>> user_browser.contents
-'...Required input is missing...'
+    >>> add_branch('')
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    There is 1 error.
+    Branch URLs are required for Mirrored branches.
 
 Try to create a branch using the bzr+ssh URL scheme. Bug 76854 (see also 5573)
 
->>> add_branch('bzr+ssh://example.com/code/branch')
->>> print user_browser.url
-http://code.launchpad.dev/~no-priv/+junk/pyresources
->>> user_browser.contents
-'...These URLs are intended for use with the...'
+    >>> add_branch('bzr+ssh://example.com/code/branch')
+    >>> print user_browser.url
+    http://code.launchpad.dev/~no-priv/+junk/pyresources
 
 
 = The other forms =

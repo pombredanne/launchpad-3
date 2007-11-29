@@ -34,12 +34,10 @@ from canonical.archiveuploader.utils import (
     re_extract_src_version)
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
-    IComponentSet, ISectionSet, IBuildSet, ILibraryFileAliasSet,
-    IBinaryPackageNameSet)
+    ArchivePurpose, BinaryPackageFormat, BuildStatus, IComponentSet,
+    ISectionSet, IBuildSet, ILibraryFileAliasSet, IBinaryPackageNameSet,
+    PackagePublishingPriority, PackageUploadCustomFormat, PackageUploadStatus)
 from canonical.librarian.utils import filechunks
-from canonical.lp.dbschema import (
-    PackagePublishingPriority, PackageUploadCustomFormat,
-    PackageUploadStatus, BinaryPackageFormat, BuildStatus)
 
 
 apt_pkg.InitSystem()
@@ -290,10 +288,18 @@ class PackageUploadFile(NascentUploadFile):
             # were forced to accept a package with a broken section
             # (linux-meta_2.6.12.16_i386). Result: packages with invalid
             # sections now get put into misc -- cprov 20060119
-            default_section = 'misc'
-            self.logger.warn("Unable to grok section %r, overriding it with %s"
-                      % (self.section_name, default_section))
-            self.section_name = default_section
+            if self.policy.archive.purpose == ArchivePurpose.PPA:
+                # PPA uploads should not override because it will probably
+                # make the section inconsistent with the one in the .dsc.
+                raise UploadError(
+                    "%s: Section %r is not valid" % (
+                    self.filename, self.section_name))
+            else:
+                default_section = 'misc'
+                self.logger.warn("Unable to grok section %r, "
+                                 "overriding it with %s"
+                          % (self.section_name, default_section))
+                self.section_name = default_section
 
         if self.component_name not in valid_components:
             raise UploadError(
@@ -612,35 +618,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             yield UploadError(
                 "%s: second chunk is %s, expected control.tar.gz" % (
                 self.filename, control_tar))
-        if data_tar == "data.tar.bz2":
-            # Packages using bzip2 must Pre-Depend on dpkg >= 1.10.24
-            control_pre_depends = self.control.get('Pre-Depends', '')
-            for parsed_dep in apt_pkg.ParseDepends(control_pre_depends):
-                # apt_pkg is weird and returns a list containing lists
-                # containing a single tuple.
-                assert len(parsed_dep) == 1, (
-                    "apt_pkg does not seem to like this dependency line: %r"
-                    % parsed_dep)
-                dep, version, constraint = parsed_dep[0]
-                if dep != "dpkg":
-                    continue
-                if ((constraint == ">=" and
-                     apt_pkg.VersionCompare(version, "1.10.24") < 0) or
-                    (constraint == ">>" and
-                     apt_pkg.VersionCompare(version, "1.10.23") < 0)):
-                    yield UploadError(
-                        "%s uses bzip2 compression but pre-depends "
-                        "on an old version of dpkg: %s"
-                        % (self.filename, version))
-                break
-            else:
-                yield UploadError(
-                    "%s uses bzip2 compression but doesn't Pre-Depend "
-                    "on dpkg (>= 1.10.24)" % self.filename)
-        elif data_tar == "data.tar.gz":
-            # No tests are needed for tarballs, yay
-            pass
-        else:
+        if data_tar not in ("data.tar.gz", "data.tar.bz2"):
             yield UploadError(
                 "%s: third chunk is %s, expected data.tar.gz or "
                 "data.tar.bz2" % (self.filename, data_tar))

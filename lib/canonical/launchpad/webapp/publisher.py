@@ -4,11 +4,23 @@
 """
 
 __metaclass__ = type
-__all__ = ['UserAttributeCache', 'LaunchpadView', 'LaunchpadXMLRPCView',
-           'canonical_url', 'nearest', 'get_current_browser_request',
-           'canonical_url_iterator', 'rootObject', 'Navigation',
-           'stepthrough', 'redirection', 'stepto', 'RedirectionView',
-           'RenamedView']
+__all__ = [
+    'LaunchpadView',
+    'LaunchpadXMLRPCView',
+    'canonical_name',
+    'canonical_url',
+    'canonical_url_iterator',
+    'get_current_browser_request',
+    'nearest',
+    'Navigation',
+    'rootObject',
+    'stepthrough',
+    'redirection',
+    'stepto',
+    'RedirectionView',
+    'RenamedView',
+    'UserAttributeCache',
+    ]
 
 from zope.interface import implements
 from zope.component import getUtility, queryMultiAdapter
@@ -340,6 +352,21 @@ def canonical_url(
     return unicode(root_url + path)
 
 
+def canonical_name(name):
+    """Return the canonical form of a name used in a URL.
+
+    This helps us to deal with common mistypings of URLs.
+    Currently only accounts for uppercase letters.
+
+    >>> canonical_name('ubuntu')
+    'ubuntu'
+    >>> canonical_name('UbUntU')
+    'ubuntu'
+
+    """
+    return name.lower()
+
+
 def get_current_browser_request():
     """Return the current browser request, looked up from the interaction.
 
@@ -438,7 +465,7 @@ class Navigation:
             target = target + '?' + query_string
 
         return RedirectionView(target, self.request, status)
- 
+
     # The next methods are for use by the Zope machinery.
 
     def publishTraverse(self, request, name):

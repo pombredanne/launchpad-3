@@ -1,4 +1,14 @@
-<html metal:use-macro="view/macro:page/default" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/default"
+  i18n:domain="launchpad"
+>
   <body>
     <metal:portlets fill-slot="portlets">
       <div tal:replace="structure context/@@+portlet-lifecycle" />
@@ -6,6 +16,10 @@
     </metal:portlets>
 
 <div metal:fill-slot="main">
+
+  <p id="project-inactive" tal:condition="not: context/active" class="warning message">
+    This project is currently inactive <a href="+review">(change this)</a>
+  </p>
 
   <span tal:replace="structure context/image:mugshot" />
   <h1 tal:content="context/title">Name of project</h1>
@@ -33,11 +47,7 @@
           </a>
         </li>
         <li tal:content="structure context/@@+ask-a-question-button" />
-        <li>
-          <a href="+translations">
-            <img alt="Help translate" src="/+icing/but-sml-helptranslate.gif" />
-          </a>
-        </li>
+        <li tal:content="structure context/@@+help-translate-button" />
         <li tal:define="has_mentoring context/mentoring_offers/count">
           <a href="+mentoring" tal:condition="has_mentoring">
             <img alt="Mentoring available"
@@ -49,14 +59,41 @@
           </a>
         </li>
       </ul>
-      <ul tal:condition="context/homepageurl">
-        <li class="external link">
-          <a tal:attributes="href context/homepageurl">
-            <strong>Visit the <tal:name replace="context/title" />
-            home page &raquo;</strong>
-          </a>
-        </li>
-      </ul>
+      <tal:has-external-links condition="view/has_external_links">
+        <h2 id="external-links-heading">External Resources</h2>
+        <ul>
+          <li class="external link" tal:condition="view/should_display_homepage">
+            <a id="homepageurl-link" tal:attributes="href context/homepageurl">
+              <strong>Home page</strong>
+            </a>
+          </li>
+          <li class="external link" tal:condition="view/sourceforge_url">
+            <a id="sourceforge-link" tal:attributes="href view/sourceforge_url">
+              <strong>Sourceforge project</strong>
+            </a>
+          </li>
+          <li class="external link" tal:condition="view/freshmeat_url">
+            <a id="freshmeat-link" tal:attributes="href view/freshmeat_url">
+              <strong>Freshmeat record</strong>
+            </a>
+          </li>
+          <li class="external link" tal:condition="context/wikiurl">
+            <a id="wikiurl-link" tal:attributes="href context/wikiurl">
+              <strong>Wiki</strong>
+            </a>
+          </li>
+          <li class="external link" tal:condition="context/screenshotsurl">
+            <a id="screenshotsurl-link" tal:attributes="href context/screenshotsurl">
+              <strong>Screenshots</strong>
+            </a>
+          </li>
+          <li class="external link" tal:condition="context/downloadurl">
+            <a id="downloadurl-link" tal:attributes="href context/downloadurl">
+              <strong>External downloads</strong>
+            </a>
+          </li>
+        </ul>
+      </tal:has-external-links>
       <div class="left">
         <div
           class="section"
@@ -66,7 +103,7 @@
           <h2>Timeline</h2>
 
           <div class="project series"
-               tal:repeat="series view/sorted_serieses">
+               tal:repeat="series view/sorted_series_list">
 
             <div tal:define="
                    is_focus python:context.development_focus == series"
@@ -88,7 +125,10 @@
         />
       </div>
       <div class="right">
-        <div tal:replace="structure context/@@+portlet-details" />
+        <div
+          class="two column section"
+          tal:content="structure context/@@+portlet-details"
+        />
         <div
           class="section"
           tal:content="structure context/@@+portlet-top-contributors"

@@ -1,16 +1,28 @@
-<metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+<metal:page
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lpm="http://ns.launchpad.net/lpm" xml:lang="en" lang="en" dir="ltr"
-    tal:attributes="lang view/lang|default_language|default;
-                    xml:lang view/lang|default_language|default;
-                    dir view/dir|string:ltr"
-    tal:define="
-        icingrev string:117;
-        rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-        icingroot string:${rooturl}+icing/rev${icingrev};
-        site_message modules/canonical.config/config/launchpad/site_message;
-        devmode modules/canonical.config/config/devmode;
-        is_demo modules/canonical.config/config/launchpad/is_demo">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:lpm="http://ns.launchpad.net/lpm"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  tal:attributes="lang view/lang|default_language|default;
+                  xml:lang view/lang|default_language|default;
+                  dir view/dir|string:ltr"
+  tal:define="
+      rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
+      revno modules/canonical.launchpad.versioninfo/revno;
+      icingroot string:${rooturl}+icing/rev${revno};
+      site_message modules/canonical.config/config/launchpad/site_message;
+      devmode modules/canonical.config/config/devmode;
+      is_demo modules/canonical.config/config/launchpad/is_demo"
+>
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad style sheet -->
@@ -24,18 +36,13 @@
       media="screen, print"
       tal:condition="devmode"
       tal:content="string:@import url(${icingroot}/style.css);"/>
-    <style
-      type="text/css"
-      tal:condition="view/isPrivate | CONTEXTS/lp:immediate_object_is_private"
-      id="privatestyle"
-    >#nonheader {background: url(/@@/private-bg) top left repeat-x;}</style>
     <style tal:condition="is_demo" type="text/css"
     >html, body {background-image: url(/@@/demo) !important;}</style>
     <style tal:condition="site_message" type="text/css"
     >#help {top: 47px !important;}</style>
     <!--[if IE 7]>
       <style type="text/css">
-        #container {margin-top: 48px;}
+        #container {margin-top: 28px; position: static;}
         #portlets {left: 20px;}
       </style>
     <![endif]-->
@@ -97,9 +104,6 @@
         </tr>
       </table>
     </div>
-
-    <div id="nonheader">
-
     <div id="nonhelp">
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <table
@@ -165,7 +169,7 @@
                       <div
                         tal:condition="not:view/macro:pagehas/applicationtabs"
                         id="noapplicationchooser"
-                      >&nbsp;</div>
+                      ></div>
                       <tal:applicationtabs
                         condition="view/macro:pagehas/applicationtabs"
                       >
@@ -212,13 +216,10 @@
                           </tal:facet>
                         </ul>
                       </tal:applicationtabs>
-                      <!-- this br is conditional so that it does not show
-                           on applicationhomes, where it causes a large
-                           white space at the top of the page content area
-                           -->
-                      <br class="clear"
-                          tal:condition="view/macro:pagehas/pageheading"/>
-                      <div id="container">
+                      <div
+                        id="container"
+                        tal:attributes="class python:path('view/isPrivate | CONTEXTS/lp:immediate_object_is_private') and 'private' or None"
+                      >
                         <div id="maincontent">
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
@@ -233,13 +234,6 @@
                               use-macro="context/@@+main-template-macros/notifications" />
                           </tal:notifications>
                           <metal:block define-slot="main" />
-                          <tal:no_children replace="nothing">
-                          <div
-                            tal:define="structuralfooterobject CONTEXTS/lp:structuralfooterobject" 
-                            tal:condition="structuralfooterobject"
-                            tal:replace="structure structuralfooterobject/@@+structural-footer"
-                            />
-                          </tal:no_children>
                         </div>
                         <div
                           id="portlets" xml:lang="en" lang="en" dir="ltr"
@@ -289,13 +283,13 @@
         <div id="colophon">
           <a href="/legal">Terms&nbsp;of&nbsp;Use</a> |
           <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> |
-          <a href="/faq">FAQ</a>
+          <a href="/faq">FAQ</a> |
+          <a href="https://help.launchpad.net/">Documentation</a>
         </div>
         <div id="copyright">
             Copyright&nbsp;2004-2007&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
-          <tal:block
-              define="revno modules/canonical.launchpad.versioninfo/revno">
+          <tal:block>
               | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
@@ -355,14 +349,12 @@
         <li class="item"><a href="/distros">Distributions</a></li>
         <li class="item"><a href="/people">People</a></li>
         <li class="item"><a href="/sprints">Meetings</a></li>
+      </ul>
     </div>
-
-    </div><!--id="nonheader"-->
   </body>
 </html>
 <tal:requestlog
     define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
-    replace="structure string:<!-- at least ${log} -->" />
+    replace="structure string:&lt;!-- at least ${log} --&gt;" />
 </metal:page>
-<!-- 1-0 inprogress Help panel wrong in IE/Win; portlets wrong in IE/Mac -->
-
+<!-- 1-0 inprogress portlets wrong in IE/Mac -->

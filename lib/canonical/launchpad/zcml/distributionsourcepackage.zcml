@@ -8,7 +8,7 @@
   <content class="canonical.launchpad.database.DistributionSourcePackage">
     <allow
       attributes="distribution sourcepackagename name displayname title
-                  distro by_distroseriess subscribers currentrelease
+                  distro get_distroseries_packages subscribers currentrelease
                   releases publishing_history binary_package_names
                   current_publishing_records
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
@@ -27,8 +27,11 @@
       getSupportedLanguages getQuestionLanguages getAnswerContactsForLanguage
       getAnswerContactRecipients"
       />
-    <require permission="launchpad.AnyPerson"
-      attributes="newQuestion addAnswerContact removeAnswerContact" />
+    <require
+      permission="launchpad.AnyPerson"
+      attributes="newQuestion createQuestionFromBug addAnswerContact
+                  removeAnswerContact"
+      />
   </content>
   <adapter
     provides="canonical.launchpad.interfaces.IFAQTarget"
@@ -75,11 +78,16 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    class="canonical.launchpad.browser.DistributionSourcePackageView"
     permission="zope.Public">
     <browser:page
       name="+index"
       facet="overview"
       template="../templates/distributionsourcepackage-index.pt" />
+    <browser:page
+      name="+publishinghistory"
+      facet="overview"
+      template="../templates/distributionsourcepackage-publishinghistory.pt" />
 
     <!-- DistributionSourcePackage Portlets -->
     <browser:page

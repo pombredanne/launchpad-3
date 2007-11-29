@@ -16,10 +16,6 @@ __all__ = [
 import os
 import threading
 import atexit
-import sys
-import re
-import time
-from optparse import OptionParser
 
 import zope.app.appsetup
 import zope.app.mail.delivery
@@ -37,11 +33,11 @@ from canonical.launchpad.scripts.logger import (
         logger_options, logger, log, FakeLogger
         )
 
-# XXX StuartBishop 2005-06-02: 
+# XXX StuartBishop 2005-06-02:
 # We should probably split out all the stuff in this directory that
 # doesn't rely on Zope and migrate it to canonical/scripts.
 
-# XXX SteveAlexander 2005-04-11: 
+# XXX SteveAlexander 2005-04-11:
 # This is a total mess.  I need to work out what this all means.
 
 class NullItem:
@@ -69,7 +65,7 @@ class CustomMachine(ConfigurationMachine):
         # Hackery to remove 'browser:xxx' directives from being processed.
         # This is needed to avoid page directives, which screw up when you
         # parse the zcml from a cwd that isn't the launchpad root.
-        # XXX: Bjorn Tillenius 2005-07-14: 
+        # XXX: Bjorn Tillenius 2005-07-14:
         #      I added a workaround so that browser:url directives get
         #      processed, though. SteveA said he will fix it better when
         #      he lands the navigation stuff.
@@ -83,7 +79,7 @@ class CustomMachine(ConfigurationMachine):
 
 def execute_zcml_for_scripts(use_web_security=False):
     """Execute the zcml rooted at launchpad/script.zcml
-    
+
     If use_web_security is True, the same security policy as the web
     application uses will be used. Otherwise everything protected by a
     permission is allowed, and everything else denied.

@@ -1,4 +1,5 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces for things which have Questions."""
 
@@ -41,6 +42,21 @@ class IQuestionTarget(ISearchableByQuestionOwner):
                  is assumed to be created in English.
         :datecreated:  A datetime object that will be used for the datecreated
                 attribute. Defaults to canonical.database.constants.UTC_NOW.
+        """
+
+    def createQuestionFromBug(bug):
+        """Create and return a Question from a Bug.
+
+        The bug's title and description are used as the question title and
+        description. The bug owner is the question owner. The question
+        is automatically linked to the bug.
+
+        Note that bug messages are copied to the question, but attachments
+        are not. The question is the same age as the bug, though its
+        datelastresponse attribute is current to signify the question is
+        active.
+
+        :bug: An IBug.
         """
 
     def getQuestion(question_id):
@@ -92,7 +108,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :language: an ILanguage or None. When language is none, all
                    answer contacts are returned.
 
-        Return an INotificationRecipientSet of the answer contacts and the 
+        Return an INotificationRecipientSet of the answer contacts and the
         reason they are recipients of an email. The answer contacts are
         selected by their language and the fact that they are answer contacts
         for the QuestionTarget.

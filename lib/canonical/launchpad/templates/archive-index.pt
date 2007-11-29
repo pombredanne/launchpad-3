@@ -1,17 +1,22 @@
 <html 
-  xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
   >
 <body>
 
     <metal:heading fill-slot="pageheading">
-      <h1 tal:content="context/title">Foo Bar PPA</h1>
+      <h2 style="margin-top: 0">URL: <a tal:attributes="href context/archive_url"
+       tal:content="context/archive_url">url</a></h2>
     </metal:heading>
 
     <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure context/owner/@@+portlet-details" />
     </metal:leftportlets>
 
     <div metal:fill-slot="main">
@@ -26,68 +31,61 @@
       </tal:whiteboard>
 
       <div id="description">
-         <p>PPA description:</p>
          <tal:archive-description condition="context/description"
             replace="structure context/description/fmt:text-to-html" />
-         <p class="informational" tal:condition="not:context/description"
-            >No description available.</p>
       </div>
 
-      <p>For more information about how to configure your system to
-        use packages from this PPA see
-        <a href="https://help.launchpad.net/PPAQuickStart"
-        >quick-start guide</a>.</p>
+      <tal:entries replace="structure view/sources_list_entries" />
 
       <h2>Packages</h2>
 
       <p tal:condition="not:context/number_of_sources">
-        This PPA does not contain any package yet.
+        This PPA does not contain any packages yet.
       </p>
+
+      <h2>apt sources.list entries</h2>
 
       <tal:active_ppa condition="context/number_of_sources">
 
       <div>
         <ul id="package_counters">
           <li id="source_counter">
-             <span tal:replace="context/number_of_sources"/> Sources
+             <span tal:replace="view/source_count_text" />
              (<span tal:replace="context/sources_size/fmt:bytes" />)</li>
           <li id="binary_counter">
-             <span tal:replace="context/number_of_binaries"/> Binaries
+             <span tal:replace="view/binary_count_text" />
              (<span tal:replace="context/binaries_size/fmt:bytes" />)</li>
-	  <li id="total_size">
+          <li id="total_size">
              Estimated archive size:
              <span tal:replace="context/estimated_size/fmt:bytes" /></li>
-        <ul>
+        </ul>
       </div>
-
-      <p>Browse the archive in
-         <a tal:attributes="href context/archive_url"
-            tal:content="context/archive_url" />.</p>
 
       <div>
         <form name="package_search" action="" method="GET">
-           <label for="name"> Packages with name containing:</label>
-           <input id="name" title="Package Name" size="20"
-                  type="text" name="name_filter"
+           <label for="name">Package name contains:</label>
+           <input id="field.name_filter" title="Package Name" size="20"
+                  type="text" name="field.name_filter"
                   tal:attributes="value view/name_filter"/>
+           <span tal:replace="structure view/plain_status_filter_widget" />
            <input type="submit" value="Search" />
         </form>
       </div>
 
-      <div tal:define="batch view/search_results">
+      <div style="padding-top: 1em;" tal:define="batch view/search_results">
 
       <tal:navigation_top
+           condition="python: view.name_filter is not None"
            replace="structure view/batchnav/@@+navigation-links-upper" />
 
-      <table class="listing sortable" id="packages_list" tal:condition="batch">
+      <table class="listing" id="packages_list" tal:condition="batch">
         <thead>
           <tr>
-            <th>Source</th>
+            <th colspan="2">Source</th>
+            <th tal:condition="context/owner/isTeam">Uploader</th>
             <th>Published</th>
             <th>Status</th>
-            <th>Target</th>
-            <th>Pocket</th>
-            <th>Component</th>
+            <th>Series</th>
             <th>Section</th>
           </tr>
         </thead>
@@ -99,6 +97,7 @@
       </table>
 
       <tal:navigation_bottom
+           condition="python: view.name_filter is not None"
            replace="structure view/batchnav/@@+navigation-links-lower" />
 
         <div id="empty-result" tal:condition="not: batch">
@@ -114,9 +113,17 @@
     </div>
 
     <p metal:fill-slot="help">
-      Here you can find information about the source packages
-      currently published in the PPA in question. This page also
-      provides estimated archive sizes.
+      You can view the current
+      <a href="https://help.launchpad.net/PPATermsofUse"
+      >Terms of Use</a> for the Launchpad PPA service.
+
+      <br />
+      <br />
+      For more information about how to configure your system to
+      use packages from this PPA see
+      <a href="https://help.launchpad.net/PPAQuickStart"
+      >quick-start guide</a>.
+
     </p>
 
   </body>

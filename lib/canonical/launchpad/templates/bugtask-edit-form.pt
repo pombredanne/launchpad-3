@@ -1,4 +1,6 @@
 <form
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   action="#"
   tal:attributes="action string:${context/fmt:url}/+editstatus"
   method="post"
@@ -28,6 +30,12 @@
     <tal:context replace="context/bugtargetdisplayname">project</tal:context>,
     and therefore cannot edit this bug's status.
   </p>
+  <tal:has_watch condition="context/bugwatch">
+    <p tal:condition="context/bugwatch/last_error_type"
+        class="error message"
+        tal:content="context/bugwatch/getLastErrorMessage"
+    />
+  </tal:has_watch>
   <table class="summary">
     <tr>
       <th>Affecting:</th>
@@ -189,7 +197,8 @@
         </td>
       </tr>
       <tr>
-        <td nowrap tal:content="structure view/widgets/assignee" colspan="2" />
+        <td tal:content="structure view/widgets/assignee"
+          colspan="2" style="white-space: nowrap" />
       </tr>
     </table>
     <table tal:condition="not:context/target_uses_malone">
@@ -202,7 +211,8 @@
         </td>
       </tr>
       <tr>
-        <td nowrap tal:content="structure view/widgets/bugwatch" colspan="2" />
+        <td tal:content="structure view/widgets/bugwatch"
+          colspan="2" style="white-space: nowrap" />
       </tr>
       <tr>
         <td class="formHelp" colspan="2">
@@ -211,12 +221,12 @@
         <tal:has_bugwatch tal:condition="context/bugwatch">
           <tal:has_been_pulled 
               tal:condition="context/bugwatch/lastchecked">
-            This information was last pulled
-            <b
-              tal:attributes="title context/bugwatch/lastchecked/fmt:datetime"
-              tal:content="context/bugwatch/lastchecked/fmt:displaydate">
-              3 minutes ago
-            </b>.
+              This information was last pulled
+              <b
+                tal:attributes="title context/bugwatch/lastchecked/fmt:datetime"
+                tal:content="context/bugwatch/lastchecked/fmt:displaydate">
+                3 minutes ago
+              </b>.
           </tal:has_been_pulled>
           <tal:has_not_been_pulled 
               tal:condition="not:context/bugwatch/lastchecked">

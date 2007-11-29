@@ -17,37 +17,59 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    ITranslationFormatImporter, ITranslationMessage,
-    TranslationConstants, TranslationFormatInvalidInputError,
+    ITranslationFormatImporter, ITranslationHeaderData, TranslationConstants,
+    TranslationFileFormat, TranslationFormatInvalidInputError,
     TranslationFormatSyntaxError)
+from canonical.launchpad.translationformat.translation_common_format import (
+    TranslationFileData, TranslationMessageData)
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.lp.dbschema import TranslationFileFormat
 
 
-class XpiMessage:
-    """Mozilla XPI implementation for `ITranslationMessage`."""
+class MozillaHeader:
+    implements(ITranslationHeaderData)
 
-    implements(ITranslationMessage)
-
-    def __init__(self):
-        self.msgid = None
-        self.msgid_plural = None
-        self.msgctxt = None
-        self.translations = []
+    def __init__(self, header_content):
+        self._raw_content = header_content
+        self.is_fuzzy = False
+        self.template_creation_date = None
+        self.translation_revision_date = None
+        self.language_team = None
+        self.has_plural_forms = False
+        self.number_plural_forms = 0
+        self.plural_form_expression = None
+        self.charset = 'UTF-8'
+        self.launchpad_export_date = None
         self.comment = None
-        self.source_comment = None
-        self.file_references = None
-        self.flags = ()
-        self.obsolete = False
-        self.nplurals = None
-        self.pluralExpr = None
 
-    def flagsText(self, flags=None):
-        """See `ITranslationMessage`."""
-        if flags is not None:
-            return flags
+    def getRawContent(self):
+        """See `ITranslationHeaderData`."""
+        return self._raw_content
 
-        return u''
+    def updateFromTemplateHeader(self, template_header):
+        """See `ITranslationHeaderData`."""
+        # Nothing to do for this format.
+        return
+
+    def getLastTranslator(self):
+        """See `ITranslationHeaderData`."""
+        name = None
+        email = None
+        for event, elem in cElementTree.iterparse(StringIO(self._raw_content)):
+            if elem.tag == "{http://www.mozilla.org/2004/em-rdf#}contributor":
+                # This file would have more than one contributor, but
+                # we are only getting latest one.
+                name, email = parseaddr(elem.text)
+
+        return name, email
+
+    def setLastTranslator(self, email, name=None):
+        """Set last translator information.
+
+        :param email: A string with the email address for last translator.
+        :param name: The name for the last translator or None.
+        """
+        # Nothing to do for this format.
+        return
 
 
 class MozillaZipFile:
@@ -79,18 +101,10 @@ class MozillaZipFile:
                 self.extend(jarf.messages)
             elif entry == 'install.rdf':
                 data = zip.read(entry)
-                for event, elem in cElementTree.iterparse(StringIO(data)):
-                    if elem.tag == "{http://www.mozilla.org/2004/em-rdf#}contributor":
-                        # This file would have more than one contributor, but
-                        # we are only getting latest one.
-                        self.last_translator = elem.text
+                self.header = MozillaHeader(data)
             else:
                 # Ignore this file, we don't need to do anything with it.
                 continue
-
-    def getLastTranslator(self):
-        """Return a string representing last translator name and email."""
-        return self.last_translator
 
     def _updateMessageFileReferences(self, message):
         """Update message's file_references with full path."""
@@ -110,14 +124,15 @@ class MozillaZipFile:
             self.filename is not None and
             self.filename.startswith('en-US.xpi') and
             message.translations and (
-                message.msgid.endswith('.accesskey') or
-                message.msgid.endswith('.commandkey')))
+                message.msgid_singular.endswith('.accesskey') or
+                message.msgid_singular.endswith('.commandkey')))
 
     def extend(self, newdata):
         """Append 'newdata' messages to self.messages."""
         for message in newdata:
-            if message.msgid in self._msgids:
-                logging.info("Duplicate message ID '%s'." % message.msgid)
+            if message.msgid_singular in self._msgids:
+                logging.info(
+                    "Duplicate message ID '%s'." % message.msgid_singular)
                 continue
 
             self._updateMessageFileReferences(message)
@@ -128,9 +143,9 @@ class MozillaZipFile:
             if self._isKeyShortcutMessage(message):
                 message.source_comment = u"Default key in en_US: '%s'" % (
                     message.translations[TranslationConstants.SINGULAR_FORM])
-                message.translations = []
+                message.resetAllTranslations()
 
-            self._msgids.append(message.msgid)
+            self._msgids.append(message.msgid_singular)
             self.messages.append(message)
 
 
@@ -173,13 +188,13 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
         if not self.started:
             return
 
-        message = XpiMessage()
-        message.msgid = name
+        message = TranslationMessageData()
+        message.msgid_singular = name
         # CarlosPerelloMarin 20070326: xmldtd parser does an inline
         # parsing which means that the content is all in a single line so we
         # don't have a way to show the line number with the source reference.
         message.file_references_list = ["%s(%s)" % (self.filename, name)]
-        message.translations = [value]
+        message.addTranslation(TranslationConstants.SINGULAR_FORM, value)
         message.source_comment = self.last_comment
         self.messages.append(message)
         self.started += 1
@@ -244,7 +259,7 @@ class PropertyFile:
         """Parse given content as a property file.
 
         Once the parse is done, self.messages has a list of the available
-        ITranslationMessages.
+        `ITranslationMessageData`s.
         """
 
         # .properties files are supposed to be unicode-escaped, but we know
@@ -374,11 +389,13 @@ class PropertyFile:
                     last_comment = None
                     ignore_comment = False
 
-                message = XpiMessage()
-                message.msgid = key
+                message = TranslationMessageData()
+                message.msgid_singular = key
                 message.file_references_list = [
                     "%s:%d(%s)" % (self.filename, line_num, key)]
-                message.translations = [translation.strip()]
+                message.addTranslation(
+                    TranslationConstants.SINGULAR_FORM,
+                    translation.strip())
                 message.source_comment = last_comment
                 self.messages.append(message)
 
@@ -401,34 +418,25 @@ class MozillaXpiImporter:
         self.sourcepackagename = None
         self.is_published = False
         self.content = None
-        self.header = None
-        self.messages = []
-        self.last_translator_text = None
+        self._translation_file = None
 
-    @property
-    def format(self):
+    def getFormat(self, file_contents):
         """See `ITranslationFormatImporter`."""
         return TranslationFileFormat.XPI
 
-    @property
-    def content_type(self):
-        """See `ITranslationFormatImporter`."""
-        # using "application/x-xpinstall" would trigger installation in
-        # firefox.
-        return 'application/zip'
+    priority = 0
 
-    @property
-    def file_extensions(self):
-        """See `ITranslationFormatImporter`."""
-        return ['.xpi']
+    # using "application/x-xpinstall" would trigger installation in
+    # firefox.
+    content_type = 'application/zip'
 
-    @property
-    def has_alternative_msgid(self):
-        """See `ITranslationFormatImporter`."""
-        return True
+    file_extensions = ['.xpi']
+
+    uses_source_string_msgids = True
 
     def parse(self, translation_import_queue_entry):
         """See `ITranslationFormatImporter`."""
+        self._translation_file = TranslationFileData()
         self.basepath = translation_import_queue_entry.path
         self.productseries = translation_import_queue_entry.productseries
         self.distroseries = translation_import_queue_entry.distroseries
@@ -442,16 +450,11 @@ class MozillaXpiImporter:
 
         parser = MozillaZipFile(self.basepath, self.content.read())
 
-        self.header = parser.header
-        self.messages = parser.messages
+        self._translation_file.header = parser.header
+        self._translation_file.messages = parser.messages
 
-        self.last_translator_text = parser.getLastTranslator()
+        return self._translation_file
 
-    def getLastTranslator(self):
+    def getHeaderFromString(self, header_string):
         """See `ITranslationFormatImporter`."""
-        # At this point we don't have a way to figure this information from
-        # the XPI file format.
-        if self.last_translator_text is None:
-            return None, None
-
-        return parseaddr(self.last_translator_text)
+        return MozillaHeader(header_string)

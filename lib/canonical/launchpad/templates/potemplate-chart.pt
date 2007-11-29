@@ -1,10 +1,17 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <table tal:condition="view/has_pofiles"
        class="sortable listing" id="language-chart" width="100%">
   <thead>
     <tr>
       <th>Language</th>
-      <th class="amount">Untranslated</th>
       <th>Status</th>
+      <th class="amount">Untranslated</th>
+      <th class="amount">Need review</th>
+      <th class="amount">Changed</th>
       <th>Last Edited</th>
       <th>By</th>
     </tr>
@@ -19,27 +26,53 @@
              Language Name
           </a>
         </td>
-        <td class="amount" tal:content="pf/untranslatedCount">0</td>
         <td style="white-space: nowrap">
           <div tal:replace="structure pf/@@+barchart" />
         </td>
         <td>
+          <span class="sortkey" tal:content="pf/untranslatedCount">0</span>
+          <tal:count
+            tal:condition="pf/untranslatedCount"
+            tal:replace="pf/untranslatedCount">0</tal:count>
+          <tal:count condition="not: pf/untranslatedCount">
+            &mdash;
+          </tal:count>
+        </td>
+        <td>
+          <span class="sortkey" tal:content="pf/unreviewedCount">0</span>
+          <tal:count
+            tal:condition="pf/unreviewedCount"
+            tal:replace="pf/unreviewedCount">0</tal:count>
+          <tal:count condition="not: pf/unreviewedCount">
+            &mdash;
+          </tal:count>
+        </td>
+        <td>
+          <span class="sortkey" tal:content="pf/updatesCount">0</span>
+          <tal:count
+            tal:condition="pf/updatesCount"
+            tal:replace="pf/updatesCount">0</tal:count>
+          <tal:count condition="not: pf/updatesCount">
+            &mdash;
+          </tal:count>
+        </td>
+        <td>
           <span class="sortkey"
-            tal:condition="pf/last_touched_pomsgset"
+            tal:condition="pf/date_changed"
             tal:content="
-              pf/last_touched_pomsgset/latest_change_date/fmt:datetime">
+              pf/date_changed/fmt:datetime">
             time sort key
           </span>
           <span
-            tal:condition="pf/last_touched_pomsgset"
+            tal:condition="pf/date_changed"
             tal:attributes="
-              title pf/last_touched_pomsgset/latest_change_date/fmt:datetime"
+              title pf/date_changed/fmt:datetime"
             tal:content="
-              pf/last_touched_pomsgset/latest_change_date/fmt:approximatedate"
+              pf/date_changed/fmt:approximatedate"
             >
             2007-02-10
           </span>
-          <tal:block condition="not: pf/last_touched_pomsgset">
+          <tal:block condition="not: pf/date_changed">
               &mdash;
           </tal:block>
         </td>
@@ -49,12 +82,12 @@
                   This code is exactly the same
                   as in distroserieslanguage-index.pt -->
           </tal:comment>
-          <tal:block condition="pf/last_touched_pomsgset">
+          <tal:block condition="pf/lasttranslator">
             <a tal:attributes="
-                 href pf/last_touched_pomsgset/latest_change_person/fmt:url"
-               tal:content="pf/last_touched_pomsgset/latest_change_person/browsername/fmt:shorten/25"></a>
+                 href pf/lasttranslator/fmt:url"
+               tal:content="pf/lasttranslator/browsername/fmt:shorten/25"></a>
           </tal:block>
-          <tal:block condition="not: pf/last_touched_pomsgset">
+          <tal:block condition="not: pf/lasttranslator">
               &mdash;
           </tal:block>
         </td>
@@ -62,4 +95,4 @@
     </tr>
   </tbody>
 </table>
-
+</tal:root>

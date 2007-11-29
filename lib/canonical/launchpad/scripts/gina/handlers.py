@@ -30,9 +30,6 @@ from canonical.archiveuploader.tagfiles import parse_tagfile
 
 from canonical.database.sqlbase import sqlvalues
 
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, BuildStatus, SourcePackageFormat)
-
 from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina.library import getLibraryAlias
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
@@ -46,7 +43,8 @@ from canonical.launchpad.database import (Distribution, DistroSeries,
     SecureSourcePackagePublishingHistory, BinaryPackageFile)
 
 from canonical.launchpad.interfaces import (
-    IPersonSet, IBinaryPackageNameSet, PersonCreationRationale)
+    BuildStatus, IPersonSet, IBinaryPackageNameSet, PersonCreationRationale,
+    PackagePublishingStatus, SourcePackageFormat)
 from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
 
 
@@ -108,9 +106,10 @@ class ImporterHandler:
     This class is used to handle the import process.
     """
     def __init__(self, ztm, distro_name, distroseries_name, dry_run,
-                 ktdb, archive_root, keyrings, pocket):
+                 ktdb, archive_root, keyrings, pocket, component_override):
         self.dry_run = dry_run
         self.pocket = pocket
+        self.component_override = component_override
         self.ztm = ztm
 
         self.distro = self._get_distro(distro_name)
@@ -121,11 +120,12 @@ class ImporterHandler:
         self.imported_bins = {}
 
         self.sphandler = SourcePackageHandler(ktdb, archive_root, keyrings,
-                                              pocket)
+                                              pocket, component_override)
         self.bphandler = BinaryPackageHandler(self.sphandler, archive_root,
                                               pocket)
 
-        self.sppublisher = SourcePackagePublisher(self.distroseries, pocket)
+        self.sppublisher = SourcePackagePublisher(
+            self.distroseries, pocket, self.component_override)
         # This is initialized in ensure_archinfo
         self.bppublishers = {}
 
@@ -164,7 +164,8 @@ class ImporterHandler:
         info = {'distroarchseries': dar, 'processor': processor}
         self.archinfo[archtag] = info
 
-        self.bppublishers[archtag] = BinaryPackagePublisher(dar, self.pocket)
+        self.bppublishers[archtag] = BinaryPackagePublisher(
+            dar, self.pocket, self.component_override)
         self.imported_bins[archtag] = []
 
     #
@@ -348,7 +349,7 @@ class DistroHandler:
     def __init__(self):
         # Components and sections are cached to avoid redoing the same
         # database queries over and over again.
-        self.compcache = {} 
+        self.compcache = {}
         self.sectcache = {}
 
     def getComponentByName(self, component):
@@ -385,12 +386,14 @@ class SourcePackageHandler:
     This class has methods to make the sourcepackagerelease access
     on the launchpad db a little easier.
     """
-    def __init__(self, KTDB, archive_root, keyrings, pocket):
+    def __init__(self, KTDB, archive_root, keyrings, pocket,
+                 component_override):
         self.distro_handler = DistroHandler()
         self.ktdb = KTDB
         self.archive_root = archive_root
         self.keyrings = keyrings
         self.pocket = pocket
+        self.component_override = component_override
 
     def ensureSourcePackageName(self, name):
         return SourcePackageName.ensure(name)
@@ -438,7 +441,8 @@ class SourcePackageHandler:
         # the binary import is started. Thusly since this source is
         # being imported "late" in the process, we publish it immediately
         # to make sure it doesn't get lost.
-        SourcePackagePublisher(distroseries, self.pocket).publish(spr, sp_data)
+        SourcePackagePublisher(distroseries, self.pocket,
+                               self.component_override).publish(spr, sp_data)
         return spr
 
     def _getSourcePackageDataFromDSC(self, sp_name, sp_version,
@@ -464,7 +468,7 @@ class SourcePackageHandler:
 
         # the dsc doesn't list itself so add it ourselves
         if 'files' not in dsc_contents:
-            log.error('DSC for %s didn\'t contain a files entry: %r' % 
+            log.error('DSC for %s didn\'t contain a files entry: %r' %
                       (dsc_name, dsc_contents))
             return None
         if not dsc_contents['files'].endswith("\n"):
@@ -510,15 +514,15 @@ class SourcePackageHandler:
                 SourcePackageRelease.version = %s AND
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
-                SourcePackagePublishingHistory.distrorelease = 
-                    DistroRelease.id AND
+                SourcePackagePublishingHistory.distroseries =
+                    DistroSeries.id AND
                 SourcePackagePublishingHistory.archive = %s AND
-                DistroRelease.distribution = %s
+                DistroSeries.distribution = %s
                 """ % sqlvalues(sourcepackagename, version,
                                 distroseries.main_archive,
                                 distroseries.distribution)
         ret = SourcePackageRelease.select(query,
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
             orderBy=["-SourcePackagePublishingHistory.datecreated"])
         if not ret:
             return None
@@ -535,7 +539,7 @@ class SourcePackageHandler:
 
         # XXX Debonzi 2005-05-16: Check it later.
         #         if src.dsc_signing_key_owner:
-        #             key = self.getGPGKey(src.dsc_signing_key, 
+        #             key = self.getGPGKey(src.dsc_signing_key,
         #                                  *src.dsc_signing_key_owner)
         #         else:
         key = None
@@ -559,7 +563,6 @@ class SourcePackageHandler:
             sourcepackagename=name.id,
             maintainer=maintainer.id,
             dscsigningkey=key,
-            manifest=None,
             urgency=urgencymap[src.urgency],
             dateuploaded=src.date_uploaded,
             dsc=src.dsc,
@@ -570,7 +573,7 @@ class SourcePackageHandler:
             builddependsindep=src.build_depends_indep,
             architecturehintlist=src.architecture,
             format=SourcePackageFormat.DPKG,
-            uploaddistroseries=distroseries.id,
+            upload_distroseries=distroseries.id,
             dsc_format=src.format,
             dsc_maintainer_rfc822=maintainer_line,
             dsc_standards_version=src.standards_version,
@@ -594,10 +597,11 @@ class SourcePackageHandler:
 class SourcePackagePublisher:
     """Class to handle the sourcepackagerelease publishing process."""
 
-    def __init__(self, distroseries, pocket):
+    def __init__(self, distroseries, pocket, component_override):
         # Get the distroseries where the sprelease will be published.
         self.distroseries = distroseries
         self.pocket = pocket
+        self.component_override = component_override
         self.distro_handler = DistroHandler()
 
     def publish(self, sourcepackagerelease, spdata):
@@ -605,7 +609,16 @@ class SourcePackagePublisher:
         # Check if the sprelease is already published and if so, just
         # report it.
 
-        component = self.distro_handler.getComponentByName(spdata.component)
+        if self.component_override:
+            component = self.distro_handler.getComponentByName(
+                self.component_override)
+            log.info('Overriding source %s component' %
+                sourcepackagerelease.sourcepackagename.name)
+        else:
+            component = self.distro_handler.getComponentByName(
+                spdata.component)
+        archive = self.distroseries.distribution.getArchiveByComponent(
+            component.name)
         section = self.distro_handler.ensureSection(spdata.section)
 
         source_publishinghistory = self._checkPublishing(sourcepackagerelease)
@@ -616,7 +629,7 @@ class SourcePackagePublisher:
                 # If nothing has changed in terms of publication
                 # (overrides) we are free to let this one go
                 log.info('SourcePackageRelease already published with no '
-                         'changes as %s' % 
+                         'changes as %s' %
                          source_publishinghistory.status.title)
                 return
 
@@ -631,7 +644,7 @@ class SourcePackagePublisher:
             datecreated=UTC_NOW,
             datepublished=UTC_NOW,
             pocket=self.pocket,
-            archive=self.distroseries.main_archive
+            archive=archive
             )
         log.info('Source package %s (%s) published' % (
             entry.sourcepackagerelease.sourcepackagename.name,
@@ -641,7 +654,7 @@ class SourcePackagePublisher:
         """Query for the publishing entry"""
         ret = SecureSourcePackagePublishingHistory.select(
                 """sourcepackagerelease = %s
-                   AND distrorelease = %s
+                   AND distroseries = %s
                    AND archive = %s
                    AND status in (%s, %s)""" %
                 sqlvalues(sourcepackagerelease, self.distroseries,
@@ -676,8 +689,8 @@ class BinaryPackageHandler:
         version = binarypackagedata.version
         architecture = binarypackagedata.architecture
 
-        clauseTables = ["BinaryPackageRelease", "DistroRelease", "Build",
-                        "DistroArchRelease"]
+        clauseTables = ["BinaryPackageRelease", "DistroSeries", "Build",
+                        "DistroArchSeries"]
         distroseries = distroarchinfo['distroarchseries'].distroseries
 
         # When looking for binaries, we need to remember that they are
@@ -687,14 +700,14 @@ class BinaryPackageHandler:
         query = ("BinaryPackageRelease.binarypackagename=%s AND "
                  "BinaryPackageRelease.version=%s AND "
                  "BinaryPackageRelease.build = Build.id AND "
-                 "Build.distroarchrelease = DistroArchRelease.id AND "
-                 "DistroArchRelease.distrorelease = DistroRelease.id AND "
-                 "DistroRelease.distribution = %d" %
+                 "Build.distroarchseries = DistroArchSeries.id AND "
+                 "DistroArchSeries.distroseries = DistroSeries.id AND "
+                 "DistroSeries.distribution = %d" %
                  (binaryname.id, quote(version),
                   distroseries.distribution.id))
 
         if architecture != "all":
-            query += ("AND DistroArchRelease.architecturetag = %s" %
+            query += ("AND DistroArchSeries.architecturetag = %s" %
                       quote(architecture))
 
         try:
@@ -759,9 +772,9 @@ class BinaryPackageHandler:
         """Ensure a build record."""
         distroarchseries = distroarchinfo['distroarchseries']
         distribution = distroarchseries.distroseries.distribution
-        clauseTables = ["Build", "DistroArchRelease", "DistroRelease"]
+        clauseTables = ["Build", "DistroArchSeries", "DistroSeries"]
 
-        # XXX kiko 2006-02-03: 
+        # XXX kiko 2006-02-03:
         # This method doesn't work for real bin-only NMUs that are
         # new versions of packages that were picked up by Gina before.
         # The reason for that is that these bin-only NMUs' corresponding
@@ -770,13 +783,13 @@ class BinaryPackageHandler:
         # doing it the second time.
 
         query = ("Build.sourcepackagerelease = %d AND "
-                 "Build.distroarchrelease = DistroArchRelease.id AND " 
-                 "DistroArchRelease.distrorelease = DistroRelease.id AND "
-                 "DistroRelease.distribution = %d"
+                 "Build.distroarchseries = DistroArchSeries.id AND "
+                 "DistroArchSeries.distroseries = DistroSeries.id AND "
+                 "DistroSeries.distribution = %d"
                  % (srcpkg.id, distribution.id))
 
         if archtag != "all":
-            query += ("AND DistroArchRelease.architecturetag = %s" 
+            query += ("AND DistroArchSeries.architecturetag = %s"
                       % quote(archtag))
 
         try:
@@ -797,7 +810,7 @@ class BinaryPackageHandler:
 
             # XXX Debonzi 2005-05-16: Check it later
             #         if bin.gpg_signing_key_owner:
-            #             key = self.getGPGKey(bin.gpg_signing_key, 
+            #             key = self.getGPGKey(bin.gpg_signing_key,
             #                                  *bin.gpg_signing_key_owner)
             #         else:
             key = None
@@ -818,9 +831,10 @@ class BinaryPackageHandler:
 
 class BinaryPackagePublisher:
     """Binarypackage publisher class."""
-    def __init__(self, distroarchseries, pocket):
+    def __init__(self, distroarchseries, pocket, component_override):
         self.distroarchseries = distroarchseries
         self.pocket = pocket
+        self.component_override = component_override
         self.distro_handler = DistroHandler()
 
     def publish(self, binarypackage, bpdata):
@@ -829,7 +843,16 @@ class BinaryPackagePublisher:
         # binary package release: the data represents data from /this
         # specific distroseries/, whereas the package represents data
         # from when it was first built.
-        component = self.distro_handler.getComponentByName(bpdata.component)
+        if self.component_override is not None:
+            component = self.distro_handler.getComponentByName(
+                self.component_override)
+            log.info('Overriding binary %s component' %
+                binarypackage.binarypackagename.name)
+        else:
+            component = self.distro_handler.getComponentByName(
+                bpdata.component)
+        distribution = self.distroarchseries.distroseries.distribution
+        archive = distribution.getArchiveByComponent(component.name)
         section = self.distro_handler.ensureSection(bpdata.section)
         priority = prioritymap[bpdata.priority]
 
@@ -844,7 +867,7 @@ class BinaryPackagePublisher:
                 # If nothing has changed in terms of publication
                 # (overrides) we are free to let this one go
                 log.info('BinaryPackageRelease already published with no '
-                         'changes as %s' % 
+                         'changes as %s' %
                          binpkg_publishinghistory.status.title)
                 return
 
@@ -864,7 +887,7 @@ class BinaryPackagePublisher:
             supersededby = None,
             datemadepending = None,
             dateremoved = None,
-            archive=self.distroarchseries.main_archive
+            archive=archive
             )
 
         log.info('BinaryPackage %s-%s published into %s.' % (
@@ -875,7 +898,7 @@ class BinaryPackagePublisher:
         """Query for the publishing entry"""
         ret = SecureBinaryPackagePublishingHistory.select(
                 """binarypackagerelease = %s
-                   AND distroarchrelease = %s
+                   AND distroarchseries = %s
                    AND archive = %s
                    AND status in (%s, %s)""" %
                 sqlvalues(binarypackage, self.distroarchseries,

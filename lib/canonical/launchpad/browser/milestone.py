@@ -93,11 +93,27 @@ class MilestoneView(LaunchpadView):
                     orderby=['-importance', 'datecreated', 'id'],
                     omit_dupes=True)
         tasks = getUtility(IBugTaskSet).search(params)
-        # Bug tasks that are explicitly targeted to a development focus series
-        # exist in a conjoined master-slave relationship. To prevent such bugs
-        # from appearing twice in the listing, we remove all bug tasks with a
-        # conjoined master:
+        # XXX kiko 2007-08-27: Doing this in the callsite is
+        # particularly annoying, but it's not easy to do the filtering
+        # in BugTaskSet.search() unfortunately. Can we find a good way
+        # of filtering conjoined in database queries?
         return [task for task in tasks if task.conjoined_master is None]
+
+    @property
+    def bugtask_count_text(self):
+        count = len(self.bugtasks)
+        if count == 1:
+            return "1 bug targeted"
+        else:
+            return "%d bugs targeted" % count
+
+    @property
+    def specification_count_text(self):
+        count = len(self.specifications)
+        if count == 1:
+            return "1 blueprint targeted"
+        else:
+            return "%d blueprints targeted" % count
 
     @property
     def is_project_milestone(self):
@@ -107,12 +123,17 @@ class MilestoneView(LaunchpadView):
         else return False."""
         return IProjectMilestone.providedBy(self.context)
 
+    @property
+    def has_bugs_or_specs(self):
+        return self.bugtasks or self.specifications
+
 
 class MilestoneAddView:
-    def create(self, name, dateexpected=None):
+    def create(self, name, dateexpected=None, description=None):
         """We will use the newMilestone method on the ProductSeries or
         DistroSeries context to make the milestone."""
-        return self.context.newMilestone(name, dateexpected=dateexpected)
+        return self.context.newMilestone(
+            name, dateexpected=dateexpected, description=description)
 
     def add(self, content):
         """Skipping 'adding' this content to a container, because
@@ -127,3 +148,4 @@ class MilestoneEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect('../..')
+

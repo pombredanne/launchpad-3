@@ -8,6 +8,7 @@ __all__ = [
     'ProjectAddProductView',
     'ProjectAddQuestionView',
     'ProjectAddView',
+    'ProjectBranchesView',
     'ProjectBrandingView',
     'ProjectNavigation',
     'ProjectDynMenu',
@@ -39,10 +40,10 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
-    NotFoundError)
+    IBranchSet, IProductSet, IProject, IProjectSet, NotFoundError)
+from canonical.launchpad.browser.product import ProductAddViewBase
+from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
-from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
 from canonical.launchpad.browser.questiontarget import (
@@ -55,7 +56,7 @@ from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.helpers import shortlist
 
 
-class ProjectNavigation(Navigation, CalendarTraversalMixin):
+class ProjectNavigation(Navigation):
 
     usedfor = IProject
 
@@ -176,15 +177,12 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = IProject
 
-    enable_only = [
-        'overview', 'bugs', 'specifications', 'answers', 'translations']
+    enable_only = ['overview', 'branches', 'bugs', 'specifications',
+                   'answers', 'translations']
 
-    def calendar(self):
-        target = '+calendar'
-        text = 'Calendar'
-        # only link to the calendar if it has been created
-        enabled = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, enabled=enabled)
+    def branches(self):
+        text = 'Code'
+        return Link('', text, enabled=self.context.hasProducts())
 
     def bugs(self):
         site = 'bugs'
@@ -250,7 +248,7 @@ class ProjectOverviewMenu(ApplicationMenu):
         # We disable this link if the project has no products. This is for
         # consistency with the way the overview buttons behave in the same
         # circumstances.
-        return Link('+mentoring', text, icon='info', 
+        return Link('+mentoring', text, icon='info',
                     enabled=self.context.hasProducts())
 
     def rdf(self):
@@ -339,7 +337,7 @@ class ProjectTranslationsMenu(ApplicationMenu):
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
-    label = "Change project details"
+    label = "Change project group details"
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
@@ -368,17 +366,7 @@ class ProjectReviewView(ProjectEditView):
     field_names = ['name', 'owner', 'active', 'reviewed']
 
 
-class ProjectAddProductView(LaunchpadFormView):
-
-    schema = IProduct
-    field_names = ['name', 'displayname', 'title', 'summary', 'description',
-                   'homepageurl', 'sourceforgeproject', 'freshmeatproject',
-                   'wikiurl', 'screenshotsurl', 'downloadurl',
-                   'programminglang']
-    custom_widget('homepageurl', TextWidget, displayWidth=30)
-    custom_widget('screenshotsurl', TextWidget, displayWidth=30)
-    custom_widget('wikiurl', TextWidget, displayWidth=30)
-    custom_widget('downloadurl', TextWidget, displayWidth=30)
+class ProjectAddProductView(ProductAddViewBase):
 
     label = "Register a new project that is part of this initiative"
     product = None
@@ -405,13 +393,11 @@ class ProjectAddProductView(LaunchpadFormView):
             sourceforgeproject=data['sourceforgeproject'],
             programminglang=data['programminglang'],
             project=self.context,
-            owner=self.user)
+            owner=self.user,
+            licenses = data['licenses'],
+            license_info=data['license_info'])
+        self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
-
-    @property
-    def next_url(self):
-        assert self.product is not None, 'No product has been created'
-        return canonical_url(self.product)
 
 
 class ProjectSetView(object):
@@ -524,7 +510,7 @@ class ProjectAddQuestionView(QuestionAddView):
         # Add a 'product' field to the beginning of the form.
         QuestionAddView.setUpFields(self)
         self.form_fields = self.createProductField() + self.form_fields
-        
+
     def setUpWidgets(self):
         # Only setup the widgets that needs validation
         if not self.add_action.submitted():
@@ -534,7 +520,7 @@ class ProjectAddQuestionView(QuestionAddView):
 
         # We need to initialize the widget in two phases because
         # the language vocabulary factory will try to access the product
-        # widget to find the final context.        
+        # widget to find the final context.
         self.widgets = form.setUpWidgets(
             fields.select('product'),
             self.prefix, self.context, self.request,
@@ -571,3 +557,30 @@ class ProjectAddQuestionView(QuestionAddView):
         else:
             return None
 
+
+class ProjectBranchesView(BranchListingView):
+    """View for branch listing for a project."""
+
+    extra_columns = ('author', 'product')
+
+    def _branches(self, lifecycle_status):
+        return getUtility(IBranchSet).getBranchesForProject(
+            self.context, lifecycle_status, self.user, self.sort_by)
+
+    @property
+    def no_branch_message(self):
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
+            message = (
+                'There are branches registered for %s '
+                'but none of them match the current filter criteria '
+                'for this page. Try filtering on "Any Status".')
+        else:
+            message = (
+                'There are no branches registered for %s '
+                'in Launchpad today. We recommend you visit '
+                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
+                'for more information about how you can use the Bazaar '
+                'revision control system to improve community participation '
+                'in this project group.')
+        return message % self.context.displayname

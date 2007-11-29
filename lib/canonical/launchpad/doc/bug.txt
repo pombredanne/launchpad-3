@@ -1,4 +1,4 @@
-= Bugs in Malone = 
+= Bugs in Malone =
 
 This document describes what a Bug is in Malone, and provides some (currently
 rather incomplete) info on how to poke at bugs through the Component
@@ -41,9 +41,8 @@ raised:
 
 It is guaranteed to implement the correct interface, too:
 
-    >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.database import Bug
-    >>> verifyObject(IBug, Bug.get(6))
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(IBug, firefox_crashes)
     True
 
 (We grab the object directly from the database here to avoid it being
@@ -105,7 +104,12 @@ private. A bug cannot be made private by an anonymous user.
     >>> firefox_crashes.private = True
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'private', 'launchpad.Edit')
+    ForbiddenAttribute: ('private', ...)
+
+    >>> firefox_crashes.setPrivate(True, current_user())
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (..., 'setPrivate', 'launchpad.Edit')
 
 We have to be logged in, so let's do that:
 
@@ -114,7 +118,7 @@ We have to be logged in, so let's do that:
 There are currently no people subscribed to this bug:
 
     >>> print firefox_crashes.subscriptions.count()
-    0 
+    0
 
 The rule with private bugs is that only direct subscribers can view the
 bug after it's been marked private. So, if Sample Person is to mark the
@@ -124,30 +128,45 @@ subscribed to the bug!
     >>> sample_person = current_user()
     >>> subscription = firefox_crashes.subscribe(sample_person)
 
-Now we can mark bug #6 private:
+Even though we are logged in and subscribed to the bug, we are
+prevented from using the private attribute to mark bug #6 private:
+
+    >>> firefox_crashes.private = True
+    Traceback (most recent call last):
+      ...
+    ForbiddenAttribute: ('private', ...)
+
+We must use setPrivate:
 
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import (
-    ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
-    ...     SQLObjectCreatedEvent)
+    ...     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet)
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
-    >>> new_values = {"private" : True}
-    >>> bug_will_be_set_private = SQLObjectToBeModifiedEvent(
-    ...     firefox_crashes, new_values)
-
-    >>> notify(bug_will_be_set_private)
-
     >>> old_state = Snapshot(firefox_crashes, providing=IBug)
-    >>> firefox_crashes.private = True
+    >>> firefox_crashes.setPrivate(True, current_user())
+    True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     firefox_crashes, old_state,
     ...     ["id", "title", "private"])
 
     >>> notify(bug_set_private)
     >>> flush_database_updates()
+
+Trying to mark a private bug as private is a no-op, as is marking a
+non-private bug as non-private. The return value from setPrivate is an
+indicator that it modified the bug.
+
+    >>> firefox_crashes.setPrivate(False, current_user())
+    True
+    >>> firefox_crashes.setPrivate(False, current_user())
+    False
+    >>> firefox_crashes.setPrivate(True, current_user())
+    True
+    >>> firefox_crashes.setPrivate(True, current_user())
+    False
 
 === How Privacy Affects Access to a Bug ===
 
@@ -161,12 +180,16 @@ firefox_crashes bug, we can still access properties of this bug:
     >>> firefox_crashes.title
     u'Firefox crashes when Save As dialog for a nonexistent window is closed'
 
-Note that a search will return all the bugs, as well:
+Note that a search will return all public bugs, omitting bug 14 which is
+private:
 
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+
+(This test breaks if you add a new public bug to sampledata; rely on it
+to ensure it worked!)
 
 Likewise Foo Bar, an admin, can access the bug.
 
@@ -180,12 +203,15 @@ Likewise Foo Bar, an admin, can access the bug.
     >>> firefox_crashes.title
     u'Firefox crashes when Save As dialog for a nonexistent window is closed'
 
-Bug #6 is returned by the search results for an admin as well:
+Bug 14, which is private, is  returned by the search results for an
+admin as well:
 
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+
+(This test breaks if you add any bug to sampledata.)
 
 As one would expect, the permissions are team aware. So, let's retrieve a bug
 and set it private (as Foo Bar again who, of course, is an admin.)
@@ -194,14 +220,9 @@ and set it private (as Foo Bar again who, of course, is an admin.)
 
 And again, let's fake setting the bug private:
 
-    >>> new_values = {"private" : True}
-    >>> bug_will_be_set_private = SQLObjectToBeModifiedEvent(
-    ...     blackhole_trash_folder, new_values)
-
-    >>> notify(bug_will_be_set_private)
-
     >>> old_state = Snapshot(blackhole_trash_folder, providing=IBug)
-    >>> blackhole_trash_folder.private = True
+    >>> blackhole_trash_folder.setPrivate(True, current_user())
+    True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     blackhole_trash_folder, old_state,
     ...     ["id", "title", "private"])
@@ -235,7 +256,7 @@ and see it (bug #2) in searches:
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12]
+    [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13]
 
 If we login as someone who *isn't* a member of the Ubuntu Team (and
 isn't otherwise someone who should be allowed to access the properties
@@ -257,7 +278,7 @@ And, as you might have guessed, is once again invisible in searches
     >>> all_bugs = bugset.searchAsUser(
     ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
-    [1, 3, 4, 5, 7, 8, 9, 10, 11, 12]
+    [1, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13]
 
 === Filing Public vs. Private Bugs ===
 
@@ -370,12 +391,27 @@ them, e.g. IDistroSeries and ISourcePackage.
     Traceback (most recent call last):
       ...
     NotImplementedError: A new bug cannot be filed directly...
-    >>> params = CreateBugParams
+    >>> params = CreateBugParams(
     ...     owner=current_user(), title="test", comment="test")
     >>> ubuntu_warty_firefox.createBug(params)
     Traceback (most recent call last):
       ...
     NotImplementedError: A new bug cannot be filed directly...
+
+
+== Prevent reporter from being subscribed to filed bugs ==
+
+If necessary, subscriber_reporter may be specified when creating a bug,
+to prevent the reporter from being subscribed to the bug. This is useful
+when importing bugs.
+
+    >>> params = CreateBugParams(
+    ...     owner=current_user(), title="test", comment="test",
+    ...     subscribe_reporter=False)
+    >>> bug = ubuntu.createBug(params)
+    >>> [person.name for person in bug.getDirectSubscribers()]
+    []
+
 
 == Date Last Updated ==
 
@@ -446,8 +482,8 @@ Changing the description.
 
 Modifying a bugtask will update IBug.date_last_updated.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
-    >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskImportance, BugTaskStatus, IUpstreamBugTask)
 
     >>> firefox_task = firefox_bug.bugtasks[0]
 
@@ -464,7 +500,7 @@ Modifying a bugtask will update IBug.date_last_updated.
 
     >>> firefox_task.importance = BugTaskImportance.CRITICAL
     >>> firefox_task.transitionToStatus(
-    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
+    ...     BugTaskStatus.CONFIRMED, current_user())
 
     >>> bugtask_modified = SQLObjectModifiedEvent(
     ...     firefox_task, bugtask_before_modification,
@@ -502,7 +538,8 @@ Changing bug visibility.
 
     >>> firefox_bug.private
     False
-    >>> firefox_bug.private = True
+    >>> firefox_bug.setPrivate(True, current_user())
+    True
 
     >>> bug_visibility_changed = SQLObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification, ["private"])
@@ -616,7 +653,7 @@ Adding a branch.
     >>> branch_one = getUtility(IBranchSet).get(1)
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> bug_branch = firefox_bug.addBranch(branch_one)
+    >>> bug_branch = firefox_bug.addBranch(branch_one, foobar)
 
     >>> firefox_bug.bug_branches.count()
     1
@@ -625,8 +662,7 @@ Adding a branch.
 
 Editing a branch.
 
-    >>> from canonical.launchpad.interfaces import IBugBranch
-    >>> from canonical.lp.dbschema import BugBranchStatus
+    >>> from canonical.launchpad.interfaces import BugBranchStatus, IBugBranch
 
     >>> branch_before_modification = Snapshot(
     ...     bug_branch, providing=IBugBranch)
@@ -762,6 +798,7 @@ incomplete, and show the status of each of the tasts:
     Mozilla Firefox False
     mozilla-firefox (Debian) True
 
+
 == Bug Tasks ==
 
 A bug can be targeted to more than one product, distribution, or source
@@ -822,6 +859,102 @@ If the bug isn't targeted to the target, None is returned.
 
     >>> bug_two.getBugTask(debian) is None
     True
+
+
+== Bug Expiration ==
+
+Incomplete bug reports may expire when they become inactive. Expiration
+is only available to projects that use Launchpad to track bugs. There
+two properties related to expiration. IBug.permits_expiration tests
+that the state of the bug permits expiration, and returns True or False.
+IBug.can_expire property returns True or False as to whether the bug
+will expire if it becomes inactive because of a bugtask.
+
+`bugtask-expiration.txt` outlines the complete list of constraints that
+govern expiration. In general, a bug that is not valid anywhere,
+that has a single unattended Incomplete bugtask whose pillar uses
+Launchpad to track bugs is expirable. Once an bug is recognised to be
+valid for one bugtask (confirmed), or attended (is assigned or has a
+milestone), the bug will not permit expiration.
+
+The thunderbird project does not use Launchpad to track bugs. Incomplete
+bug reports cannot ever expire for this project.
+
+    >>> # create_old_bug creates an bug with a bugtask that is eligible for
+    >>> # expiration, so long as the pillar object has enabled bug expiration.
+    >>> # Every change to a bug or bugtask must be synced back to the
+    >>> # database to test can_expire.
+    >>> from canonical.launchpad.ftests.bug import (
+    ...     create_old_bug, sync_bugtasks)
+
+    >>> upstream_bugtask = create_old_bug('bug a', 1, thunderbird)
+    >>> sync_bugtasks(upstream_bugtask)
+    >>> upstream_bugtask.status.name
+    'INCOMPLETE'
+    >>> upstream_bugtask.pillar.official_malone
+    False
+    >>> upstream_bugtask.bug.permits_expiration
+    False
+    >>> upstream_bugtask.bug.can_expire
+    False
+
+Ubuntu uses launchpad to track bug. Incomplete bugs can be expired, but
+the bug must have a message sent in response to the first bug message.
+
+    >>> expirable_bugtask = create_old_bug(
+    ...     'bug c', 1, ubuntu, with_message=False)
+    >>> sync_bugtasks(expirable_bugtask)
+
+    >>> expirable_bugtask.status.name
+    'INCOMPLETE'
+    >>> expirable_bugtask.pillar.official_malone
+    True
+    >>> expirable_bugtask.bug.messages.count()
+    1
+    >>> expirable_bugtask.bug.permits_expiration
+    False
+    >>> expirable_bugtask.bug.can_expire
+    False
+
+When the bug is responded to with another message, expiration is
+permitted, and the bug can expire because the bugtask is is an
+expirable state.
+
+    >>> message = expirable_bugtask.bug.newMessage(
+    ...     owner=sample_person, subject='Something is broken.',
+    ...     content='Can you provide more information?')
+    >>> expirable_bugtask.bug.messages.count()
+    2
+    >>> expirable_bugtask.bug.permits_expiration
+    True
+    >>> expirable_bugtask.bug.can_expire
+    True
+
+When the expirable_bugtask assigned, the bugtask is no longer in
+an expirable state, thus the bug cannot expire even though
+bug permits expiration.
+
+    >>> expirable_bugtask.transitionToAssignee(sample_person)
+    >>> sync_bugtasks(expirable_bugtask)
+    >>> expirable_bugtask.bug.permits_expiration
+    True
+    >>> expirable_bugtask.bug.can_expire
+    False
+
+Changing the status of the bug's single bugtask to any value other
+than Incomplete, will cause the bug to not permit expiration.
+
+    >>> expirable_bugtask.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, sample_person)
+    >>> sync_bugtasks(expirable_bugtask)
+    >>> expirable_bugtask.bug.permits_expiration
+    False
+    >>> expirable_bugtask.bug.can_expire
+    False
+
+See `bugtask-expiration.txt` for a more comprehensive set of bugs
+that can or cannot expire.
+
 
 == Bug Comments ==
 

@@ -95,6 +95,7 @@ be rejecting from unapproved or new, fix bug #54649):
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "accepted",
   ...                             "-s", "breezy-autotest", "reject", "dist",
   ...                             "-d", "ubuntutest", "-M"],
+  ...                            stderr=subprocess.PIPE,
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
@@ -103,15 +104,6 @@ be rejecting from unapproved or new, fix bug #54649):
   Initialising connection to queue accepted
   ...
   Rejecting dist-upgrader_20060302.0120_all.tar.gz
-  Would be sending a mail:
-     Subject: dist-upgrader_20060302.0120_all.changes rejected
-     Sender: Foo Bar <foo.bar@canonical.com>
-     Recipients: foo.bar@canonical.com
-     Bcc: Root <root@localhost>
-     Body:
-  Rejected:
-  dist-upgrader_20060302.0120_all.tar.gz (http://localhost:58000/.../dist-upgrader_20060302.0120_all.tar.gz) was REJECTED
-  <BLANKLINE>
   ...
 
 
@@ -121,6 +113,7 @@ very unlikely, however it's only for testing purpose, fix #54649):
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "rejected",
   ...                             "-s", "breezy-autotest", "accept", "dist",
   ...                             "-d", "ubuntutest", "-M"],
+  ...                            stderr=subprocess.PIPE,
   ...                            stdout=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
@@ -129,14 +122,6 @@ very unlikely, however it's only for testing purpose, fix #54649):
   Initialising connection to queue rejected
   ...
   Accepting dist-upgrader_20060302.0120_all.tar.gz
-  Would be sending a mail:
-     Subject: Accepted dist-upgrader_20060302.0120_all.tar.gz - (raw-dist-upgrader)
-     Sender: Foo Bar <foo.bar@canonical.com>
-     Recipients: foo.bar@canonical.com
-     Bcc: Root <root@localhost>, dist-upgrader_20060302.0120_all.tar.gz_derivatives@packages.qa.debian.org
-     Body:
-  Accepted:
-  dist-upgrader_20060302.0120_all.tar.gz (http://localhost:58000/.../dist-upgrader_20060302.0120_all.tar.gz) was ACCEPTED
   ...
 
 
@@ -177,7 +162,7 @@ Cleanup the mess:
 Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
 previous upload:
 
-  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> queue_item = breezy_autotest.getQueueItems(
   ...      status=PackageUploadStatus.ACCEPTED)[0]
   >>> queue_item.customfiles[0].libraryfilealias.filename
@@ -289,8 +274,7 @@ Custom uploads for PPAs should works as expected, i.e, publish its
 files in the respective PPA location.
 
   >>> from canonical.launchpad.interfaces import (
-  ...     IPersonSet, IArchiveSet, ILaunchpadCelebrities)
-  >>> from canonical.lp.dbschema import ArchivePurpose
+  ...     ArchivePurpose, IPersonSet, IArchiveSet, ILaunchpadCelebrities)
 
   >>> beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
   >>> admin = getUtility(ILaunchpadCelebrities).admin
@@ -323,7 +307,7 @@ files in the respective PPA location.
   DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
   DEBUG: Sent a mail:
   ...
-  DEBUG: signer of the above package.
+  DEBUG: PPA package.
 
   >>> transaction.commit()
 

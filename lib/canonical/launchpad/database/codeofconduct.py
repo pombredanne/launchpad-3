@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 """A module for CodeOfConduct (CoC) related classes.
 
 https://launchpad.canonical.com/CodeOfConduct
@@ -142,7 +143,7 @@ class CodeOfConductSet:
 
     @property
     def current_code_of_conduct(self):
-        # XXX kiko 2006-08-01: 
+        # XXX kiko 2006-08-01:
         # What a hack, but this whole file needs cleaning up.
         currentrelease = getUtility(ICodeOfConductConf).currentrelease
         for code in self:
@@ -268,7 +269,7 @@ class SignedCodeOfConductSet:
             return ('You (%s) do not seem to be the owner of this OpenPGP key '
                     '(<code>%s</code>).'
                     % (user.displayname, gpg.owner.displayname))
-        
+
         if not gpg.active:
             return ('The OpenPGP key used (<code>%s</code>) has been '
                     'deactivated. '
@@ -286,7 +287,7 @@ class SignedCodeOfConductSet:
                     'Make sure that you signed the correct text (white '
                     'space differences are acceptable).')
 
-        # Store the signature 
+        # Store the signature
         signed = SignedCodeOfConduct(owner=user, signingkey=gpg,
                                      signedcode=signedcode, active=True)
 
@@ -330,7 +331,7 @@ class SignedCodeOfConductSet:
 
     def searchByUser(self, user_id, active=True):
         """See ISignedCodeOfConductSet."""
-        # XXX kiko 2006-08-14: 
+        # XXX kiko 2006-08-14:
         # What is this user_id nonsense? Use objects!
         return SignedCodeOfConduct.selectBy(ownerID=user_id,
                                             active=active)

@@ -10,7 +10,6 @@ from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.schema import Int, Text, Object, Datetime, TextLine, Bool
-from zope.security.interfaces import Forbidden
 
 from canonical.launchpad import _
 
@@ -27,6 +26,13 @@ class UnexpectedFormData(AssertionError):
     """Got form data that is not what is expected by a form handler."""
 
 
+class POSTToNonCanonicalURL(UnexpectedFormData):
+    """Got a POST to an incorrect URL.
+
+    One example would be a URL containing uppercase letters.
+    """
+
+
 class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
     """Marker interface for the root object of Launchpad."""
 
@@ -40,6 +46,8 @@ class ILaunchpadApplication(Interface):
     """
     title = Attribute('Title')
 
+class ILaunchpadProtocolError(Interface):
+    """Marker interface for a Launchpad protocol error exception."""
 
 class IAuthorization(Interface):
     """Authorization policy for a particular object and permission."""
@@ -392,7 +400,7 @@ class IBrowserFormNG(Interface):
         If the field wasn't submitted return the default value. (If default
         is None, an empty list will be returned. It is an error to use
         something else than None or a list as default value.
-        
+
         This method should always return a list, if only one value was
         submitted, it will be returned in a list.
         """
@@ -525,7 +533,7 @@ class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
     """The Launchpad customized database adapter"""
     def readonly():
         """Set the connection to read only.
-        
+
         This should only be called at the start of the transaction to
         avoid confusing code that defers making database changes until
         transaction commit time.
@@ -534,7 +542,7 @@ class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
     def switchUser(self, dbuser=None):
         """Change the PostgreSQL user we are connected as, defaulting to the
         default Launchpad user.
-       
+
         This involves closing the existing connection and reopening it;
         uncommitted changes will be lost. The new connection will also open
         in read/write mode so calls to readonly() will need to be made
@@ -641,21 +649,28 @@ class INotificationResponse(Interface):
         are preserved.
         """
 
- 
+
 class IErrorReport(Interface):
-    id = TextLine(description=u"the name of this error report")
-    type = TextLine(description=u"the type of the exception that occurred")
-    value = TextLine(description=u"the value of the exception that occurred")
-    time = Datetime(description=u"the time at which the exception occurred")
-    tb_text = Text(description=u"a text version of the traceback")
-    username = TextLine(description=u"the user associated with the request")
-    url = TextLine(description=u"the URL for the failed request")
-    req_vars = Attribute('the request variables')
+    id = TextLine(description=u"The name of this error report.")
+    type = TextLine(description=u"The type of the exception that occurred.")
+    value = TextLine(description=u"The value of the exception that occurred.")
+    time = Datetime(description=u"The time at which the exception occurred.")
+    pageid = TextLine(
+        description=u"""
+            The context class plus the page template where the exception
+            occurred.
+            """)
+    branch_nick = TextLine(description=u"The branch nickname.")
+    revno = TextLine(description=u"The revision number of the branch.")
+    tb_text = Text(description=u"A text version of the traceback.")
+    username = TextLine(description=u"The user associated with the request.")
+    url = TextLine(description=u"The URL for the failed request.")
+    req_vars = Attribute("The request variables.")
 
 
 class IErrorReportRequest(Interface):
     oopsid = TextLine(
-        description=u"""an identifier for the exception, or None if no 
+        description=u"""an identifier for the exception, or None if no
         exception has occurred""")
 
 #

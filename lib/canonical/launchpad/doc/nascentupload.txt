@@ -12,10 +12,10 @@ We need to be logged into the security model in order to get any further
 For the purpose of this test, hoary needs to be an open (development)
 distroseries so that we can upload to it.
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.launchpad.interfaces import (
+  ...     DistroSeriesStatus, IDistributionSet)
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
-  >>> from canonical.lp.dbschema import DistroSeriesStatus
   >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
 
 A NascentUpload is a collection of files in a directory. They
@@ -355,7 +355,6 @@ separated by space:
   >>> ed_spr.dsc_binaries
   u'ed'
 
-
 The content of 'debian/copyright' is stored as the 'copyright'
 attribute of SourcePackageRelease (note that its content is filtered
 with encoding.guess()).
@@ -370,6 +369,48 @@ The ed source would be in NEW, so punt it into accepted.
   >>> ed_src.queue_root.setAccepted()
   >>> from canonical.launchpad.ftests import syncUpdate
   >>> syncUpdate(ed_src.queue_root)
+
+
+=== Allow uploads missing debian/copyright file ===
+
+Some source uploads use a fancy approach to build debian/copyright
+on-the-fly for each binary they generate, sometimes using templates or
+another similar feature.
+
+Soyuz is prepared to accept those uploads (and avoid extra work on
+maintainer's side), however it cannot store a proper
+SourcePackageRelease.copyright content. See bug #134567.
+
+  >>> nocopyright_src = NascentUpload(
+  ...     datadir('suite/nocopyright_1.0-1/nocopyright_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> nocopyright_src.process()
+
+  >>> nocopyright_src.is_rejected
+  False
+  >>> success = nocopyright_src.do_accept()
+  >>> success
+  True
+
+On the absence of debian/copyright a warning is issued in the upload
+processing log messages, then it can be further checked in Soyuz
+production mailbox.
+
+  >>> print nocopyright_src.warning_message
+  No copyright file found.
+
+Nothing is stored in the SPR.copyright field.
+
+  >>> nocopyright_queue = nocopyright_src.queue_root
+  >>> nocopyright_spr = nocopyright_queue.sources[0].sourcepackagerelease
+
+  >>> nocopyright_spr.copyright is None
+  True
+
+Let's reject the upload to avoid confusion during the next tests:
+
+  >>> nocopyright_queue.setRejected()
+  >>> syncUpdate(nocopyright_queue)
 
 
 === Refuse to ACCEPT duplicated sources ===
@@ -418,7 +459,7 @@ The upload will be rejected.
 We rely on process-upload transaction rollback to not store bogus
 queue entry in the database.
 
-  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> hoary.getQueueItems(PackageUploadStatus.NEW).count()
   1
 
@@ -524,7 +565,7 @@ simplicity and claim 'build from ACCEPTED' feature.
 
 Build creation is done based on the SourcePackageRelease object, step 5:
 
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
   >>> multibar_build = multibar_spr.createBuild(
   ...     hoary['i386'], PackagePublishingPocket.RELEASE,
   ...     multibar_src_queue.archive)
@@ -712,7 +753,7 @@ sigining key reference as an IGPGKey:
   >>> bar_ok.is_rejected
   False
 
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.launchpad.interfaces import (
   ...    IGPGKey, IPersonSet)
 
@@ -769,26 +810,4 @@ for further checks:
   True
   >>> bar_failed.changes.signingkey.fingerprint == uploader_key.fingerprint
   True
-
-
-== DEB packages using BZIP ==
-
-Deb packages can compress their contents in a bzip tar file. But
-in these case, the control file should state that the package
-Pre-depends on a newer version of dpkg. NascentUploadFile enforces
-that constraint.
-
-  >>> binary_sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distroseries='hoary')
-  >>> binary_sync_policy.can_upload_binaries = True
-  >>> binary_sync_policy.can_upload_mixed = True
-
-  >>> foo_failed = NascentUpload(
-  ...     datadir('suite/foo_1.0-1_mixed/foo_1.0-1_i386.changes'),
-  ...     binary_sync_policy, mock_logger_quiet)
-  >>> foo_failed.process()
-
-  >>> print foo_failed.rejection_message
-  foo_1.0-1_i386.deb uses bzip2 compression but pre-depends on an old version of dpkg: 1.10.20
-
 

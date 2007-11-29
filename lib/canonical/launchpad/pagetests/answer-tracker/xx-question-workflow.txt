@@ -6,27 +6,21 @@ the Firefox product which was filed by 'Sample Person'.
 
     # We will use one browser objects for the owner, and one for the user
     # providing support, 'No Privileges Person' here.
-    >>> from zope.testbrowser.testing import Browser
-    >>> owner_browser = Browser()
-    >>> owner_browser.handleErrors = False
-    >>> owner_browser.addHeader(
-    ...     "Authorization", 'Basic test@canonical.com:test')
+    >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
 
-    >>> support_browser = Browser()
-    >>> support_browser.handleErrors = False
-    >>> support_browser.addHeader(
-    ...     'Authorization', 'Basic no-priv@canonical.com:test')
+    >>> support_browser = setupBrowser(
+    ...     auth='Basic no-priv@canonical.com:test')
 
     # Define some utility functions to retrieve easily the last comment
     # added and the status of the question.
-    >>> from BeautifulSoup import BeautifulSoup
     >>> def find_request_status(contents):
-    ...     soup = BeautifulSoup(contents)
+    ...     soup = find_tag_by_id(contents, 'portlet-details')
     ...     return soup.find('b', text='Status:').next.strip()
     ...
     >>> def  find_last_comment(contents):
-    ...     soup = BeautifulSoup(contents)
+    ...     soup = find_main_content(contents)
     ...     return soup.fetch('div', 'boardCommentBody')[-1]
+
 
 == Logging In ==
 
@@ -38,6 +32,7 @@ To participate in a question, the user must be logged in.
     ...
     To post a message you must <a href="+login">log in</a>.
     ...
+
 
 == Requesting for More Information ==
 
@@ -75,9 +70,10 @@ Of course, if you don't add a message, clicking on the button will give
 you an error.
 
     >>> support_browser.getControl('Add Information Request').click()
-    >>> soup = BeautifulSoup(support_browser.contents)
+    >>> soup = find_main_content(support_browser.contents)
     >>> print soup.first('div', 'message').renderContents()
     Please enter a message.
+
 
 == Answering with More Information ==
 
@@ -110,6 +106,7 @@ discussion.
     <p>The following SVG doesn't display properly:<br />
     <a rel="nofollow" href="http://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg">...</a></p>
 
+
 == Giving an Answer ==
 
 Once the question is clarified, it is easier for a user to give an
@@ -133,6 +130,7 @@ answer to the end of the discussion:
     <p>New version of the firefox package are available with SVG support
     enabled. You can use apt-get or adept to upgrade.</p>
 
+
 == Confirming an Answer ==
 
 When the owner comes back on the question page, he will now see a new
@@ -140,7 +138,7 @@ When the owner comes back on the question page, he will now see a new
 
     >>> owner_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_main_content(owner_browser.contents)
     >>> soup.fetch('div', 'boardComment')[-1].first('input', type='submit')
     <input type="submit" name="field.actions.confirm"
      value="This Solved My Problem" />
@@ -166,7 +164,7 @@ This changes the status of the question to 'Solved' and mark
 
     >>> print find_request_status(owner_browser.contents)
     Solved
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_tag_by_id(owner_browser.contents, 'portlet-details')
     >>> np = 'No Privileges Person'
     >>> np in extract_text(soup.first('b', text='Solved by:').findNext('a'))
     True
@@ -179,6 +177,7 @@ confirmation message was appended to the question discussion:
 
 The confirmed answer is also highlighted.
 
+    >>> soup = find_main_content(owner_browser.contents)
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-2]
     >>> print bestAnswer.first('img')
     <img src="/@@/favourite-yes" ... title="Marked as best answer" />
@@ -186,6 +185,7 @@ The confirmed answer is also highlighted.
     ...     'div', 'boardCommentBody highlighted').renderContents()
     <p>New version of the firefox package are available with SVG support
     enabled. You can use apt-get or adept to upgrade.</p>
+
 
 == Adding a Comment ==
 
@@ -204,6 +204,7 @@ status:
     Solved
     >>> print find_last_comment(owner_browser.contents).renderContents()
     <p>The example now displays correctly. Thanks.</p>
+
 
 == Reopening ==
 
@@ -233,7 +234,7 @@ its status back to 'Open'.
 This also removes the highlighting from the previous answer and sets
 the answerer back to None.
 
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_main_content(owner_browser.contents)
     >>> soup.first('b', text='Solved by:') is None
     True
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-4]
@@ -252,6 +253,7 @@ reopening portlet.
     >>> 'Sample Person' in extract_text(portlet.fetch('a')[-1])
     True
 
+
 == Self-Answer ==
 
 The owner can also gives the solution to his own question. He simply
@@ -269,9 +271,10 @@ message as the "Best answer".
 
     >>> print find_request_status(owner_browser.contents)
     Solved
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_tag_by_id(owner_browser.contents, 'portlet-details')
     >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
     Sample Person
+    >>> soup = find_main_content(owner_browser.contents)
     >>> bestAnswer = soup.first('img', {'title': 'Marked as best answer'})
     >>> None == bestAnswer
     True
@@ -291,12 +294,13 @@ is attributed as the answerer.
     >>> owner_browser.getControl('This Solved My Problem').click()
     >>> print find_request_status(owner_browser.contents)
     Solved
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_tag_by_id(owner_browser.contents, 'portlet-details')
     >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
     No Privileges Person
 
 The answer's message is also highlighted as the best answer.
 
+    >>> soup = find_main_content(owner_browser.contents)
     >>> bestAnswer = soup.find('img', {'title' : 'Marked as best answer'})
     >>> print bestAnswer
     <img src="/@@/favourite-yes" ... title="Marked as best answer" />
@@ -322,7 +326,7 @@ The history of the question is available on the 'History' page.
 
 It lists all the actions performed through workflow on the question:
 
-    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> soup = find_main_content(anon_browser.contents)
     >>> action_listing = soup.first('table', 'listing')
     >>> for header in action_listing.fetch('th'):
     ...     print header.renderContents()
@@ -357,10 +361,7 @@ He is able to solve the problem on his own, and submits the solution
 for other users with similar problems. He does not see a notice about
 choosing an answer that helped him solve his problem. 
 
-    >>> carlos_browser = Browser()
-    >>> carlos_browser.handleErrors = False
-    >>> carlos_browser.addHeader(
-    ...     'Authorization', 'Basic carlos@canonical.com:test')
+    >>> carlos_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> carlos_browser.open('http://launchpad.dev/firefox/+question/12')
     >>> print find_request_status(carlos_browser.contents)
     Open
@@ -381,6 +382,7 @@ choosing an answer that helped him solve his problem.
     >>> messages
     []
 
+
 == Asking a separate question ==
 
 A user that is new to Answers is not familiar with the workflow. He
@@ -393,9 +395,12 @@ the Firefox question. The solution does not work, but he thinks he has
 a similar problem so he asks his own question.
 
     >>> user_browser.open('http://launchpad.dev/firefox/+question/2')
-    >>> content = find_tag_by_id(
-    ...     user_browser.contents, 'ask-your-own-question')
-    >>> print content.h2.renderContents()
+ 
+    >>> content = find_main_content(user_browser.contents)
+    >>> print content.find(id='can-you-help-with-this-problem')
+    None
+ 
+    >>> print content.find(id='ask-your-own-question').h2.renderContents()
     Got a question of your own?
     
     >>> user_browser.getLink('ask your own question separately').click()

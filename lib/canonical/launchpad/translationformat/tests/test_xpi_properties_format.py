@@ -19,7 +19,7 @@ class PropertyFileFormatTestCase(unittest.TestCase):
 
         expected = {u'default-first-title-mac': [u'Introducci\xf3n'],
                     u'default-last-title-mac': [u'Conclusi\xf3n']}
-        parsed = dict([(message.msgid, message.translations)
+        parsed = dict([(message.msgid_singular, message.translations)
                    for message in property_file.messages])
         self.assertEquals(expected, parsed)
 
@@ -62,7 +62,7 @@ ucci\u00F3n
         property_file = PropertyFile('test.properties', dedent(content))
 
         expected = {u'default-first-title-mac': [u'Introducci\xf3n']}
-        parsed = dict([(message.msgid, message.translations)
+        parsed = dict([(message.msgid_singular, message.translations)
                    for message in property_file.messages])
         self.assertEquals(expected, parsed)
 
@@ -76,7 +76,7 @@ ucci\u00F3n
         property_file = PropertyFile('test.properties', dedent(content))
 
         expected = {u'default-first-title-mac': [u'\'Something\' \"more\"']}
-        parsed = dict([(message.msgid, message.translations)
+        parsed = dict([(message.msgid_singular, message.translations)
                    for message in property_file.messages])
         self.assertEquals(expected, parsed)
 
@@ -94,7 +94,7 @@ ucci\u00F3n
         property_file = PropertyFile('test.properties', dedent(content))
         expected = {u'default-first-title-mac': u'Foo bar comment.',
                     u'foo': None}
-        parsed = dict([(message.msgid, message.source_comment)
+        parsed = dict([(message.msgid_singular, message.source_comment)
                    for message in property_file.messages])
         self.assertEquals(expected, parsed)
 
@@ -113,7 +113,7 @@ ucci\u00F3n
             u'default-first-title-mac': u'Foo bar comment.',
             u'foo': u'Something'
             }
-        parsed_comments = dict([(message.msgid, message.source_comment)
+        parsed_comments = dict([(message.msgid_singular, message.source_comment)
                    for message in property_file.messages])
 
         self.assertEquals(expected_comments, parsed_comments)
@@ -122,7 +122,8 @@ ucci\u00F3n
             u'default-first-title-mac': [u'blah'],
             u'foo': [u'bar']
             }
-        parsed_translations = dict([(message.msgid, message.translations)
+        parsed_translations = dict([(message.msgid_singular,
+                                     message.translations)
                    for message in property_file.messages])
 
         self.assertEquals(expected_translations, parsed_translations)
@@ -154,7 +155,7 @@ ucci\u00F3n
                 u' multiline comment:\n# fooo\nfoos = bar\n' +
                 u'something = else // Comment me!')
             }
-        parsed = dict([(message.msgid, message.source_comment)
+        parsed = dict([(message.msgid_singular, message.source_comment)
                    for message in property_file.messages])
         self.assertEquals(expected, parsed)
 
@@ -172,7 +173,7 @@ ucci\u00F3n
         property_file = PropertyFile('test.properties', dedent(content))
         expected = {u'default-first-title-mac': u'Foo bar comment.',
                     u'foo': None}
-        parsed = dict([(message.msgid, message.source_comment)
+        parsed = dict([(message.msgid_singular, message.source_comment)
                    for message in property_file.messages])
         self.assertEquals(expected, parsed)
 

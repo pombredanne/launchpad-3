@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['TeamMembership', 'TeamMembershipSet', 'TeamParticipation']
@@ -12,7 +13,8 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    flush_database_updates, SQLBase, sqlvalues)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -266,6 +268,11 @@ class TeamMembership(SQLBase):
         else:
             _cleanTeamParticipation(self.person, self.team)
 
+        # Flush all updates to ensure any subsequent calls to this method on
+        # the same transaction will operate on the correct data.  That is the
+        # case with our script to expire team memberships.
+        flush_database_updates()
+
         # When a member proposes himself, a more detailed notification is
         # sent to the team admins by a subscriber of JoinTeamEvent; that's
         # why we don't send anything here.
@@ -300,12 +307,14 @@ class TeamMembership(SQLBase):
             reviewer_name = 'the user himself'
 
         if self.reviewercomment:
-            comment = ("Comment:\n%s\n\n" % self.reviewercomment.strip())
+            comment = ("\n%s said:\n %s\n" %
+                       (reviewer.displayname, self.reviewercomment.strip()))
         else:
             comment = ""
 
         replacements = {
             'member_name': member.unique_displayname,
+            'member_greeting_name': member.displayname,
             'team_name': team.unique_displayname,
             'old_status': old_status.title,
             'new_status': new_status.title,
@@ -461,12 +470,12 @@ def _fillTeamParticipation(member, team):
     """Add relevant entries in TeamParticipation for given member and team.
 
     Add a tuple "member, team" in TeamParticipation for the given team and all
-    of its superteams. More information on how to use the TeamParticipation 
+    of its superteams. More information on how to use the TeamParticipation
     table can be found in the TeamParticipationUsage spec.
     """
     members = [member]
     if member.isTeam():
-        # The given member is, in fact, a team, and in this case we must 
+        # The given member is, in fact, a team, and in this case we must
         # add all of its members to the given team and to its superteams.
         members.extend(member.allmembers)
 

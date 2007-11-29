@@ -85,8 +85,8 @@ So the offer of mentoring is NOT relevant to Firefox, and should not
 show up there.
 
     >>> firefox = productset.getByName('firefox')
-    >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance)
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskImportance, BugTaskStatus, IBugTaskSet)
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> ff_task = bugtaskset.createTask(
     ...     bug=bug2, product=firefox, owner=sabdfl,
@@ -130,7 +130,8 @@ When a bug is marked private, it drops off the mentoring lists.
 
    >>> bug2.private
    False
-   >>> bug2.private = True
+   >>> bug2.setPrivate(True, getUtility(ILaunchBag).user)
+   True
    >>> syncUpdate(bug2)
    >>> bug2.private
    True
@@ -188,7 +189,8 @@ OK, let's mark the bug public again:
 
    >>> bug2.private
    True
-   >>> bug2.private = False
+   >>> bug2.setPrivate(False, getUtility(ILaunchBag).user)
+   True
    >>> syncUpdate(bug2)
    >>> bug2.private
    False
@@ -198,8 +200,8 @@ OK, let's mark the bug public again:
 
 When a spec or a bug is completed, it drops off the mentoring lists.
 
-   >>> from canonical.lp.dbschema import BugTaskStatus
-   >>> from canonical.lp.dbschema import SpecificationImplementationStatus
+   >>> from canonical.launchpad.interfaces import (
+   ...     BugTaskStatus, SpecificationImplementationStatus)
    >>> bug2.is_complete
    False
    >>> from canonical.database.sqlbase import flush_database_updates

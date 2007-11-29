@@ -10,7 +10,6 @@ __all__ = [
 
 import datetime
 import pytz
-import os
 
 import transaction
 
@@ -20,24 +19,25 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
-from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchType, IBranchSet, IPersonSet, IProductSet)
+    BranchCreationException, BranchType, IBranchSet, IPersonSet, IProductSet,
+    UnknownBranchTypeError)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.database.sqlbase import clear_current_connection_cache
-from canonical.config import config
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
-    IUserDetailsStorageV2, READ_ONLY, WRITABLE)
+    IUserDetailsStorageV2, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
+    READ_ONLY, WRITABLE)
 
 from twisted.internet.threads import deferToThread
 from twisted.python.util import mergeFunctionMetadata
+from twisted.web.xmlrpc import Fault
+
 
 UTC = pytz.timezone('UTC')
-
 
 def utf8(x):
     if isinstance(x, unicode):
@@ -354,21 +354,28 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
         See `IHostedBranchStorage`.
         """
+
+        owner = getUtility(IPersonSet).getByName(personName)
+        if owner is None:
+            raise Fault(
+                NOT_FOUND_FAULT_CODE,
+                "User/team %r does not exist." % personName)
+
         if productName == '+junk':
             product = None
         else:
             product = getUtility(IProductSet).getByName(productName)
+            if product is None:
+                raise Fault(
+                    NOT_FOUND_FAULT_CODE,
+                    "Project %r does not exist." % productName)
 
-        person_set = getUtility(IPersonSet)
-        owner = person_set.getByName(personName)
-
-        branch_set = getUtility(IBranchSet)
         try:
-            branch = branch_set.new(
+            branch = getUtility(IBranchSet).new(
                 BranchType.HOSTED, branchName, requester, owner,
                 product, None, None, author=requester)
-        except BranchCreationForbidden:
-            return ''
+        except (BranchCreationException, LaunchpadValidationError), e:
+            raise Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
         else:
             return branch.id
 
@@ -411,6 +418,9 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         if (requester.inTeam(branch.owner)
             and branch.branch_type == BranchType.HOSTED):
             return branch_id, WRITABLE
+        elif branch.branch_type == BranchType.REMOTE:
+            # Can't even read remote branches.
+            return '', ''
         else:
             return branch_id, READ_ONLY
 
@@ -438,35 +448,29 @@ class DatabaseBranchDetailsStorage:
             `url` is the URL to pull from and `unique_name` is the
             `unique_name` property without the initial '~'.
         """
-        if branch.branch_type == BranchType.MIRRORED:
-            # This is a pull branch, hosted externally.
-            pull_url = branch.url
-        elif branch.branch_type == BranchType.IMPORTED:
-            # This is an import branch, imported into bzr from
-            # another RCS system such as CVS.
-            prefix = config.launchpad.bzr_imports_root_url
-            pull_url = urlappend(prefix, '%08x' % branch.id)
-        else:
-            # This is a push branch, hosted on the supermirror
-            # (pushed there by users via SFTP).
-            prefix = config.codehosting.branches_root
-            pull_url = os.path.join(prefix, split_branch_id(branch.id))
-        return (branch.id, pull_url, branch.unique_name[1:])
+        branch = removeSecurityProxy(branch)
+        if branch.branch_type == BranchType.REMOTE:
+            raise AssertionError(
+                'Remote branches should never be in the pull queue.')
+        return (branch.id, branch.getPullURL(), branch.unique_name[1:])
 
-    def getBranchPullQueue(self):
+    def getBranchPullQueue(self, branch_type):
         """See `IBranchDetailsStorage`."""
-        return deferToThread(self._getBranchPullQueueInteraction)
+        return deferToThread(self._getBranchPullQueueInteraction, branch_type)
 
     @read_only_transaction
-    def _getBranchPullQueueInteraction(self):
+    def _getBranchPullQueueInteraction(self, branch_type):
         """The synchronous implementation for `getBranchPullQueue`.
 
         See `IBranchDetailsStorage`.
         """
-        branches = getUtility(IBranchSet).getPullQueue()
-        return [
-            self._getBranchPullInfo(removeSecurityProxy(branch))
-            for branch in branches]
+        try:
+            branch_type = BranchType.items[branch_type]
+        except KeyError:
+            raise UnknownBranchTypeError(
+                'Unknown branch type: %r' % (branch_type,))
+        branches = getUtility(IBranchSet).getPullQueue(branch_type)
+        return [self._getBranchPullInfo(branch) for branch in branches]
 
     def startMirroring(self, branchID):
         """See `IBranchDetailsStorage`."""

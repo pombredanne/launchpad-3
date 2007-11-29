@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+"""Classes that implement ICelebrity interfaces."""
 
 __metaclass__ = type
 __all__ = ['LaunchpadCelebrities']
@@ -78,14 +79,14 @@ class CelebrityDescriptor:
 
 
 class LaunchpadCelebrities:
-    """See ILaunchpadCelebrities"""
+    """See `ILaunchpadCelebrities`."""
     implements(ILaunchpadCelebrities)
 
     admin = CelebrityDescriptor(IPersonSet, 'admins')
     ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
     debian = CelebrityDescriptor(IDistributionSet, 'debian')
-    rosetta_expert = CelebrityDescriptor(IPersonSet, 'rosetta-admins')
-    bazaar_expert = CelebrityDescriptor(IPersonSet, 'vcs-imports')
+    rosetta_experts = CelebrityDescriptor(IPersonSet, 'rosetta-admins')
+    bazaar_experts = CelebrityDescriptor(IPersonSet, 'vcs-imports')
     vcs_imports = CelebrityDescriptor(IPersonSet, 'vcs-imports')
     debbugs = CelebrityDescriptor(IBugTrackerSet, 'debbugs')
     sourceforge_tracker = CelebrityDescriptor(IBugTrackerSet, 'sf')
@@ -93,19 +94,19 @@ class LaunchpadCelebrities:
     buildd_admin = CelebrityDescriptor(IPersonSet, 'launchpad-buildd-admins')
     launchpad_developers = CelebrityDescriptor(IPersonSet, 'launchpad')
     ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
-    registry = CelebrityDescriptor(IPersonSet, 'registry')
+    registry_experts = CelebrityDescriptor(IPersonSet, 'registry')
     bug_watch_updater = CelebrityDescriptor(IPersonSet, 'bug-watch-updater')
     bug_importer = CelebrityDescriptor(IPersonSet, 'bug-importer')
     launchpad = CelebrityDescriptor(IProductSet, 'launchpad')
-    answer_tracker_janitor = CelebrityDescriptor(
-        IPersonSet, 'answer-tracker-janitor')
-    team_membership_janitor = CelebrityDescriptor(
-        IPersonSet, 'team-membership-janitor')
     launchpad_beta_testers = CelebrityDescriptor(
         IPersonSet, 'launchpad-beta-testers')
+    janitor = CelebrityDescriptor(IPersonSet, 'janitor')
+    mailing_list_experts = CelebrityDescriptor(
+        IPersonSet, 'mailing-list-experts')
 
     @property
     def ubuntu_archive_mirror(self):
+        """See `ILaunchpadCelebrities`."""
         mirror = getUtility(IDistributionMirrorSet).getByHttpUrl(
             'http://archive.ubuntu.com/ubuntu/')
         if mirror is None:
@@ -115,6 +116,7 @@ class LaunchpadCelebrities:
 
     @property
     def ubuntu_cdimage_mirror(self):
+        """See `ILaunchpadCelebrities`."""
         mirror = getUtility(IDistributionMirrorSet).getByHttpUrl(
             'http://releases.ubuntu.com/')
         if mirror is None:

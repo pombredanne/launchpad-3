@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
 <body>
   <metal:portlets fill-slot="portlets">
@@ -12,9 +18,9 @@
 
     <h1><span tal:replace="context/displayname" /> Timeline</h1>
 
-    <div tal:repeat="series view/sorted_serieses">
+    <div tal:repeat="series view/sorted_series_list">
       <div tal:define="is_focus python:context.development_focus == series"
-           tal:attributes="class 
+           tal:attributes="class
               python:is_focus and 'highlighted' or 'unhighlighted'">
         <metal:series use-macro="series/@@+macros/detailed_display">
           <div metal:fill-slot="extra"

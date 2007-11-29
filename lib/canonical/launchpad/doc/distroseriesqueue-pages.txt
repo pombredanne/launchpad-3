@@ -24,7 +24,7 @@ View parameters need to be set properly before start:
 After setup we have a 'batched' list:
 
   >>> from canonical.launchpad.webapp.interfaces import IBatchNavigator
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> verifyObject(IBatchNavigator, queue_view.batchnav)
   True
 
@@ -43,7 +43,7 @@ A list of available actions in this queue:
 
 Let's instantiate the view for a specific queue:
 
-  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> request = TestRequest(
   ...     form={'queue_state': PackageUploadStatus.DONE.value})
   >>> warty = ubuntu['warty']
@@ -107,6 +107,11 @@ It accepts the 'Accept'/'Reject' and 'QUEUE_ID' arguments via POST.
   >>> queue_view = queryView(breezy_autotest, "+queue", request)
   >>> queue_view.setupQueueList()
 
+Add fake librarian files so that email notifications work:
+
+  >>> from canonical.archiveuploader.tests import (
+  ...     insertFakeChangesFileForAllPackageUploads)
+  >>> insertFakeChangesFileForAllPackageUploads()
 
   >>> queue_view.performQueueAction()
   u'Accepting Results:<br><br>OK: mozilla-firefox, OK: netapplet'
@@ -136,3 +141,9 @@ It accepts the 'Accept'/'Reject' and 'QUEUE_ID' arguments via POST.
 
   >>> target.status.name
   'REJECTED'
+
+
+We created librarian files that need cleaining up:
+
+  >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
+  >>> cleanupLibrarianFiles()

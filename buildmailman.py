@@ -7,6 +7,7 @@ import grp
 import pwd
 import sys
 import errno
+import tempfile
 import subprocess
 
 from canonical.config import config
@@ -117,6 +118,12 @@ def build_mailman():
             print >> sys.stderr, 'Could not create site list'
             return retcode
 
+    retcode = configure_site_list(
+        mailman_bin, Mailman.mm_cfg.MAILMAN_SITE_LIST)
+    if retcode:
+        print >> sys.stderr, 'Could not configure site list'
+        return retcode
+
     # Create a directory to hold the gzip'd tarballs for the directories of
     # deactivated lists.
     try:
@@ -126,6 +133,26 @@ def build_mailman():
             raise
 
     return 0
+
+
+def configure_site_list(mailman_bin, site_list_name):
+    """Configure the site list.
+
+    Currently, the only thing we want to set is to not advertise the site list.
+    """
+    fd, config_file_name = tempfile.mkstemp()
+    try:
+        os.close(fd)
+        config_file = open(config_file_name, 'w')
+        try:
+            print >> config_file, 'advertised = False'
+        finally:
+            config_file.close()
+        return subprocess.call(
+            ('./config_list', '-i', config_file_name, site_list_name),
+            cwd=mailman_bin)
+    finally:
+        os.remove(config_file_name)
 
 
 def main():

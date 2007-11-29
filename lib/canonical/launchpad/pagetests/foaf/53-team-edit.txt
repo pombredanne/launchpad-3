@@ -80,3 +80,45 @@ policy other than None and don't specify a default renewal period.
     There is 1 error.
     You must specify a default renewal period greater than 0.
 
+
+== Teams with mailing lists may not be renamed ==
+
+Because renaming mailing lists is non-trivial in Mailman 2.1, renaming teams
+with mailing lists is prohibited.  This is done by making the 'name' field of
+such team pages read-only.
+
+    >>> browser.open('http://launchpad.dev/~landscape-developers')
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+
+    # Approval of mailing lists is not yet exposed through the web.
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     MailingListStatus, ILaunchpadCelebrities)
+    >>> from canonical.launchpad.database.mailinglist import MailingListSet
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    >>> admin = list(experts.allmembers)[0]
+    >>> mailing_list = MailingListSet().get('landscape-developers')
+    >>> mailing_list.review(admin, MailingListStatus.APPROVED)
+    >>> mailing_list.syncUpdate()
+    >>> logout()
+
+Because the 'name' field is read-only, it's not a control that we can get
+a hold of to change.
+
+    >>> browser.getLink('Change details').click()
+    >>> browser.getControl(name='field.name').value
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.name'
+
+Of course, teams without mailing lists still have an editable name field.
+
+    >>> print MailingListSet().get('guadamen')
+    None
+    >>> browser.open('http://launchpad.dev/~guadamen')
+    >>> browser.getLink('Change details').click()
+    >>> browser.getControl(name='field.name').value
+    'guadamen'

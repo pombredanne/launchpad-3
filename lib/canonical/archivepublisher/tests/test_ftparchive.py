@@ -16,15 +16,14 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.archivepublisher.config import Config
 from canonical.archivepublisher.diskpool import DiskPool
-from canonical.lp.dbschema import (
-    PackagePublishingPriority, PackagePublishingPocket)
 from canonical.archivepublisher.tests.util import (
     FakeSourcePublishing, FakeSourceFilePublishing,
     FakeBinaryPublishing, FakeBinaryFilePublishing, FakeLogger)
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IDistributionSet)
+    ILibraryFileAliasSet, IDistributionSet, PackagePublishingPriority,
+    PackagePublishingPocket)
 from canonical.librarian.client import LibrarianClient
 
 
@@ -43,7 +42,7 @@ def sanitize_feisty_apt_ftparchive_output(text):
 
 
 class TestFTPArchive(LaunchpadZopelessTestCase):
-    dbuser = 'lucille'
+    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         LaunchpadZopelessTestCase.setUp(self)
@@ -145,12 +144,12 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         from canonical.archivepublisher.ftparchive import FTPArchiveHandler
         FTPArchiveHandler(self._logger, self._config, self._dp,
                    self._distribution, set())
-                  
+
     def testGetSourcesForOverrides(self):
         """Ensure Publisher.getSourcesForOverrides works.
-        
-        FTPArchiveHandler.getSourcesForOverride should be returning 
-        SourcePackagePublishingHistory rows that match the distrorelease,
+
+        FTPArchiveHandler.getSourcesForOverride should be returning
+        SourcePackagePublishingHistory rows that match the distroseries,
         its main_archive, the supplied pocket and have a status of PUBLISHED.
         """
         fa = self._setUpFTPArchiveHandler()
@@ -158,7 +157,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         spphs = fa.getSourcesForOverrides(
             ubuntuwarty, PackagePublishingPocket.RELEASE)
 
-        # For the above query, we are depending on the sample data to 
+        # For the above query, we are depending on the sample data to
         # contain seven rows of SourcePackagePublishghistory data.
         expectedSources = [
             ('evolution', '1.0'),
@@ -177,9 +176,9 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
 
     def testGetBinariesForOverrides(self):
         """Ensure Publisher.getBinariesForOverrides works.
-        
+
         FTPArchiveHandler.getBinariesForOverride should be returning
-        BinaryPackagePublishingHistory rows that match the distrorelease,
+        BinaryPackagePublishingHistory rows that match the distroseries,
         its main_archive, the supplied pocket and have a status of PUBLISHED.
         """
         fa = self._setUpFTPArchiveHandler()
@@ -263,7 +262,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         # check'. Although they should remain active in PQM to avoid possible
         # regressions.
         assert fa.runApt(apt_conf) == 0
-        # XXX barry 2007-05-18 bug=116048: 
+        # XXX barry 2007-05-18 bug=116048:
         # This is a hack to make this test pass on dapper and feisty.
         # Feisty's apt-ftparchive outputs SHA256 and MD5 hash
         # lines which don't appear in dapper's version.  We can't change the

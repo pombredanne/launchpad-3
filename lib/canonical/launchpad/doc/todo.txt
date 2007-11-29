@@ -1,0 +1,8 @@
+
+= Ensure there are no outstanding TODO's =
+
+ >>> todos = open('BRANCH.TODO').read().strip()
+ >>> print todos
+ # Put your TODOs for this branch here, then make sure it is empty before
+ # landing. There is a test to ensure it is empty in trunk.
+

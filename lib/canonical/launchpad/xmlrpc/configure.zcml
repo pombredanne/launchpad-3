@@ -1,6 +1,27 @@
 <configure
-    xmlns="http://namespaces.zope.org/zope"
-    >
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+  >
+
+  <securedutility
+      class="canonical.launchpad.xmlrpc.PrivateApplication"
+      provides="canonical.launchpad.interfaces.IPrivateApplication">
+      <allow interface="canonical.launchpad.interfaces.IPrivateApplication"/>
+  </securedutility>
+
+  <securedutility
+    class="canonical.launchpad.systemhomes.AuthServerApplication"
+    provides="canonical.launchpad.interfaces.IAuthServerApplication">
+    <allow interface="canonical.launchpad.interfaces.IAuthServerApplication"/>
+  </securedutility>
+
+  <xmlrpc:view
+    for="canonical.launchpad.interfaces.IAuthServerApplication"
+    interface="canonical.authserver.interfaces.IUserDetailsStorageV2"
+    class="canonical.launchpad.xmlrpc.AuthServerAPIView"
+    permission="zope.Public"
+    />
 
   <class class="canonical.launchpad.xmlrpc.faults.BranchAlreadyRegistered">
     <require like_class="xmlrpclib.Fault" />
@@ -29,6 +50,10 @@
   </class>
 
   <class class="canonical.launchpad.xmlrpc.faults.NoSuchPerson">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchPersonWithUsername">
     <require like_class="xmlrpclib.Fault" />
   </class>
 
@@ -65,6 +90,18 @@
   </class>
 
   <class class="canonical.launchpad.xmlrpc.faults.BadStatus">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoBranchForSeries">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchSeries">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidBranchIdentifier">
     <require like_class="xmlrpclib.Fault" />
   </class>
 

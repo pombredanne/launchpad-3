@@ -1,9 +1,12 @@
 <div
-    xmlns="http://www.w3.org/1999/xhtml"
-    xmlns:tal="http://xml.zope.org/namespaces/tal"
-    xmlns:metal="http://xml.zope.org/namespaces/metal"
-    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-    i18n:domain="launchpad" xml:lang="en">
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  i18n:domain="launchpad">
 
   <div metal:define-macro="form">
 
@@ -87,9 +90,10 @@
                   show_optional python:view.showOptionalMarker(field_name)">
     <tal:is-visible condition="widget/visible">
       <tr tal:condition="python: view.isSingleLineLayout(field_name)">
-        <th><label tal:attributes="for widget/name"
-                   tal:content="string:${widget/label}:">
-          Label</label></th>
+        <th tal:condition="display_label|python:True">
+          <label tal:attributes="for widget/name"
+                 tal:content="string:${widget/label}:">Label</label>
+        </th>
         <td tal:attributes="class error_class" width="100%">
           <div>
             <input tal:replace="structure widget" />

@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Module docstring goes here."""
 
@@ -25,15 +26,14 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.archivepublisher.diskpool import poolify
 
-from canonical.lp.dbschema import (
-    BinaryPackageFileType, PackagePublishingPocket, PackagePublishingStatus,
-    SourcePackageFileType)
-
 from canonical.launchpad.interfaces import (
-    IDistributionMirrorSet, IDistributionMirror, IDistroArchSeries,
-    IDistroSeries, ILaunchpadCelebrities, IMirrorCDImageDistroSeries,
-    IMirrorDistroArchSeries, IMirrorDistroSeriesSource, IMirrorProbeRecord,
-    MirrorContent, MirrorSpeed, MirrorStatus, pocketsuffix, PROBE_INTERVAL)
+    BinaryPackageFileType, IDistributionMirrorSet, IDistributionMirror,
+    IDistroArchSeries, IDistroSeries, ILaunchpadCelebrities,
+    IMirrorCDImageDistroSeries, IMirrorDistroArchSeries,
+    IMirrorDistroSeriesSource, IMirrorProbeRecord, MirrorContent, MirrorSpeed,
+    MirrorStatus, PackagePublishingPocket,
+    PackagePublishingStatus, pocketsuffix, PROBE_INTERVAL,
+    SourcePackageFileType)
 from canonical.launchpad.database.country import Country
 from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
@@ -129,7 +129,7 @@ class DistributionMirror(SQLBase):
 
     def getOverallStatus(self):
         """See IDistributionMirror"""
-        # XXX Guilherme Salgado 2006-08-16: 
+        # XXX Guilherme Salgado 2006-08-16:
         # We shouldn't be using MirrorStatus to represent the overall
         # status of a mirror, but for now it'll do the job and we'll use the
         # UNKNOWN status to represent a mirror without any content (which may
@@ -143,7 +143,7 @@ class DistributionMirror(SQLBase):
         elif self.content == MirrorContent.ARCHIVE:
             # Return the worst (i.e. highest valued) mirror status out of all
             # mirrors (binary and source) for this distribution mirror.
-            query = ("distribution_mirror = %s AND status != %s" 
+            query = ("distribution_mirror = %s AND status != %s"
                      % sqlvalues(self, MirrorStatus.UNKNOWN))
             arch_mirror = MirrorDistroArchSeries.selectFirst(
                 query, orderBy='-status')
@@ -166,7 +166,7 @@ class DistributionMirror(SQLBase):
             raise AssertionError(
                 'DistributionMirror.content is not ARCHIVE nor RELEASE: %r'
                 % self.content)
- 
+
     def isOfficial(self):
         """See IDistributionMirror"""
         return self.official_candidate and self.official_approved
@@ -293,6 +293,11 @@ class DistributionMirror(SQLBase):
             mirror.destroySelf()
 
     @property
+    def arch_serieses(self):
+        """See IDistributionMirror"""
+        return MirrorDistroArchSeries.selectBy(distribution_mirror=self)
+
+    @property
     def cdimage_serieses(self):
         """See IDistributionMirror"""
         return MirrorCDImageDistroSeries.selectBy(distribution_mirror=self)
@@ -305,41 +310,36 @@ class DistributionMirror(SQLBase):
     def getSummarizedMirroredSourceSerieses(self):
         """See IDistributionMirror"""
         query = """
-            MirrorDistroReleaseSource.id IN (
-              SELECT DISTINCT ON (MirrorDistroReleaseSource.distribution_mirror,
-                                  MirrorDistroReleaseSource.distrorelease)
-                     MirrorDistroReleaseSource.id
-              FROM MirrorDistroReleaseSource, DistributionMirror
-              WHERE DistributionMirror.id = 
-                         MirrorDistroReleaseSource.distribution_mirror
+            MirrorDistroSeriesSource.id IN (
+              SELECT DISTINCT ON (MirrorDistroSeriesSource.distribution_mirror,
+                                  MirrorDistroSeriesSource.distroseries)
+                     MirrorDistroSeriesSource.id
+              FROM MirrorDistroSeriesSource, DistributionMirror
+              WHERE DistributionMirror.id =
+                         MirrorDistroSeriesSource.distribution_mirror
                     AND DistributionMirror.id = %(mirrorid)s
                     AND DistributionMirror.distribution = %(distribution)s
-              ORDER BY MirrorDistroReleaseSource.distribution_mirror, 
-                       MirrorDistroReleaseSource.distrorelease, 
-                       MirrorDistroReleaseSource.status DESC)
+              ORDER BY MirrorDistroSeriesSource.distribution_mirror,
+                       MirrorDistroSeriesSource.distroseries,
+                       MirrorDistroSeriesSource.status DESC)
             """ % sqlvalues(distribution=self.distribution, mirrorid=self)
         return MirrorDistroSeriesSource.select(query)
-
-    @property
-    def arch_serieses(self):
-        """See IDistributionMirror"""
-        return MirrorDistroArchSeries.selectBy(distribution_mirror=self)
 
     def getSummarizedMirroredArchSerieses(self):
         """See IDistributionMirror"""
         query = """
-            MirrorDistroArchRelease.id IN (
-                SELECT DISTINCT ON (MirrorDistroArchRelease.distribution_mirror,
-                                    MirrorDistroArchRelease.distro_arch_release)
-                       MirrorDistroArchRelease.id
-                FROM MirrorDistroArchRelease, DistributionMirror
-                WHERE DistributionMirror.id = 
-                            MirrorDistroArchRelease.distribution_mirror
+            MirrorDistroArchSeries.id IN (
+                SELECT DISTINCT ON (MirrorDistroArchSeries.distribution_mirror,
+                                    MirrorDistroArchSeries.distroarchseries)
+                       MirrorDistroArchSeries.id
+                FROM MirrorDistroArchSeries, DistributionMirror
+                WHERE DistributionMirror.id =
+                            MirrorDistroArchSeries.distribution_mirror
                       AND DistributionMirror.id = %(mirrorid)s
                       AND DistributionMirror.distribution = %(distribution)s
-                ORDER BY MirrorDistroArchRelease.distribution_mirror, 
-                         MirrorDistroArchRelease.distro_arch_release, 
-                         MirrorDistroArchRelease.status DESC)
+                ORDER BY MirrorDistroArchSeries.distribution_mirror,
+                         MirrorDistroArchSeries.distroarchseries,
+                         MirrorDistroArchSeries.status DESC)
             """ % sqlvalues(distribution=self.distribution, mirrorid=self)
         return MirrorDistroArchSeries.select(query)
 
@@ -350,7 +350,7 @@ class DistributionMirror(SQLBase):
             for pocket, suffix in pocketsuffix.items():
                 for component in series.components:
                     for arch_series in series.architectures:
-                        # XXX Guilherme Salgado 2006-08-01 bug=54791: 
+                        # XXX Guilherme Salgado 2006-08-01 bug=54791:
                         # This hack is a cheap attempt to try and avoid
                         # bug 54791 from biting us.
                         if arch_series.architecturetag in ('hppa', 'ia64'):
@@ -429,7 +429,7 @@ class DistributionMirrorSet:
         """See IDistributionMirrorSet"""
         query = """
             SELECT distributionmirror.id, MAX(mirrorproberecord.date_created)
-            FROM distributionmirror 
+            FROM distributionmirror
             LEFT OUTER JOIN mirrorproberecord
                 ON mirrorproberecord.distribution_mirror = distributionmirror.id
             WHERE distributionmirror.content = %s
@@ -441,7 +441,7 @@ class DistributionMirrorSet:
         if not ignore_last_probe:
             query += """
                 HAVING MAX(mirrorproberecord.date_created) IS NULL
-                    OR MAX(mirrorproberecord.date_created) 
+                    OR MAX(mirrorproberecord.date_created)
                         < %s - '%s hours'::interval
                 """ % sqlvalues(UTC_NOW, PROBE_INTERVAL)
 
@@ -559,7 +559,7 @@ class _MirrorSeriesMixIn:
                 continue
             if latest_upload.datepublished < end:
                 end = latest_upload.datepublished
-                    
+
             time_interval = (start, end)
             upload = self.getLatestPublishingEntry(time_interval)
 
@@ -578,14 +578,14 @@ class MirrorCDImageDistroSeries(SQLBase):
     """See IMirrorCDImageDistroSeries"""
 
     implements(IMirrorCDImageDistroSeries)
-    _table = 'MirrorCDImageDistroRelease'
+    _table = 'MirrorCDImageDistroSeries'
     _defaultOrder = 'id'
 
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
         notNull=True)
     distroseries = ForeignKey(
-        dbName='distrorelease', foreignKey='DistroSeries', notNull=True)
+        dbName='distroseries', foreignKey='DistroSeries', notNull=True)
     flavour = StringCol(notNull=True)
 
 
@@ -593,15 +593,15 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
     """See IMirrorDistroArchSeries"""
 
     implements(IMirrorDistroArchSeries)
-    _table = 'MirrorDistroArchRelease'
+    _table = 'MirrorDistroArchSeries'
     _defaultOrder = [
-        'distro_arch_release', 'component', 'pocket', 'status', 'id']
+        'distroarchseries', 'component', 'pocket', 'status', 'id']
 
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
         notNull=True)
     distro_arch_series = ForeignKey(
-        dbName='distro_arch_release', foreignKey='DistroArchSeries',
+        dbName='distroarchseries', foreignKey='DistroArchSeries',
         notNull=True)
     component = ForeignKey(
         dbName='component', foreignKey='Component', notNull=True)
@@ -619,12 +619,12 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
                    BinaryPackageFileType.DEB.
         """
         query = """
-            SecureBinaryPackagePublishingHistory.pocket = %s 
-            AND SecureBinaryPackagePublishingHistory.component = %s 
-            AND SecureBinaryPackagePublishingHistory.distroarchrelease = %s
+            SecureBinaryPackagePublishingHistory.pocket = %s
+            AND SecureBinaryPackagePublishingHistory.component = %s
+            AND SecureBinaryPackagePublishingHistory.distroarchseries = %s
             AND SecureBinaryPackagePublishingHistory.archive = %s
             AND SecureBinaryPackagePublishingHistory.status = %s
-            """ % sqlvalues(self.pocket, self.component, 
+            """ % sqlvalues(self.pocket, self.component,
                             self.distro_arch_series,
                             self.distro_arch_series.main_archive,
                             PackagePublishingStatus.PUBLISHED)
@@ -646,7 +646,7 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
 
 
     def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
-        """Given a SecureBinaryPackagePublishingHistory, return the URL on 
+        """Given a SecureBinaryPackagePublishingHistory, return the URL on
         this mirror from where the BinaryPackageRelease file can be downloaded.
         """
         bpr = publishing_record.binarypackagerelease
@@ -662,14 +662,14 @@ class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
     """See IMirrorDistroSeriesSource"""
 
     implements(IMirrorDistroSeriesSource)
-    _table = 'MirrorDistroReleaseSource'
-    _defaultOrder = ['distrorelease', 'component', 'pocket', 'status', 'id']
+    _table = 'MirrorDistroSeriesSource'
+    _defaultOrder = ['distroseries', 'component', 'pocket', 'status', 'id']
 
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
         notNull=True)
     distroseries = ForeignKey(
-        dbName='distrorelease', foreignKey='DistroSeries',
+        dbName='distroseries', foreignKey='DistroSeries',
         notNull=True)
     component = ForeignKey(
         dbName='component', foreignKey='Component', notNull=True)
@@ -680,12 +680,12 @@ class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
 
     def getLatestPublishingEntry(self, time_interval):
         query = """
-            SecureSourcePackagePublishingHistory.pocket = %s 
-            AND SecureSourcePackagePublishingHistory.component = %s 
-            AND SecureSourcePackagePublishingHistory.distrorelease = %s
+            SecureSourcePackagePublishingHistory.pocket = %s
+            AND SecureSourcePackagePublishingHistory.component = %s
+            AND SecureSourcePackagePublishingHistory.distroseries = %s
             AND SecureSourcePackagePublishingHistory.archive = %s
             AND SecureSourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(self.pocket, self.component, 
+            """ % sqlvalues(self.pocket, self.component,
                             self.distroseries,
                             self.distroseries.main_archive,
                             PackagePublishingStatus.PUBLISHED)
@@ -699,7 +699,7 @@ class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
             query, orderBy='-datepublished')
 
     def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
-        """Given a SecureSourcePackagePublishingHistory, return the URL on 
+        """Given a SecureSourcePackagePublishingHistory, return the URL on
         this mirror from where the SourcePackageRelease file can be downloaded.
         """
         spr = publishing_record.sourcepackagerelease

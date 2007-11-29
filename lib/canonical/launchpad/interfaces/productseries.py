@@ -1,15 +1,18 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Product series interfaces."""
 
 __metaclass__ = type
 
 __all__ = [
+    'ImportStatus',
     'IProductSeries',
     'IProductSeriesSet',
     'IProductSeriesSourceAdmin',
     'validate_cvs_root',
     'validate_cvs_module',
+    'RevisionControlSystems',
     ]
 
 import re
@@ -20,13 +23,106 @@ from zope.interface import Interface, Attribute
 from CVS.protocol import CVSRoot, CvsRootError
 
 from canonical.launchpad.fields import ContentNameField, URIField
-from canonical.launchpad.interfaces import (
-    IBugTarget, ISpecificationGoal, IHasAppointedDriver, IHasOwner,
-    IHasDrivers, validate_url)
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.launchpad import (
+    IHasAppointedDriver, IHasOwner, IHasDrivers)
+from canonical.launchpad.interfaces.specificationtarget import (
+    ISpecificationGoal)
+from canonical.launchpad.interfaces.validation import validate_url
 
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad import _
+
+from canonical.lazr.enum import DBEnumeratedType, DBItem
+
+
+class ImportStatus(DBEnumeratedType):
+    """This schema describes the states that a SourceSource record can take
+    on."""
+
+    DONTSYNC = DBItem(1, """
+        Do Not Import
+
+        Launchpad will not attempt to make a Bazaar import.
+        """)
+
+    TESTING = DBItem(2, """
+        Testing
+
+        Launchpad has not yet attempted this import. The vcs-imports operator
+        will review the source details and either mark the series \"Do not
+        sync\", or perform a test import. If the test import is successful, a
+        public import will be created. After the public import completes, it
+        will be updated automatically.
+        """)
+
+    TESTFAILED = DBItem(3, """
+        Test Failed
+
+        The test import has failed. We will do further tests, and plan to
+        complete this import eventually, but it may take a long time. For more
+        details, you can ask on the launchpad-users@canonical.com mailing list
+        or on IRC in the #launchpad channel on irc.freenode.net.
+        """)
+
+    AUTOTESTED = DBItem(4, """
+        Test Successful
+
+        The test import was successful. The vcs-imports operator will lock the
+        source details for this series and perform a public Bazaar import.
+        """)
+
+    PROCESSING = DBItem(5, """
+        Processing
+
+        The public Bazaar import is being created. When it is complete, a
+        Bazaar branch will be published and updated automatically. The source
+        details for this series are locked and can only be modified by
+        vcs-imports members and Launchpad administrators.
+        """)
+
+    SYNCING = DBItem(6, """
+        Online
+
+        The Bazaar import is published and automatically updated to reflect the
+        upstream revision control system. The source details for this series
+        are locked and can only be modified by vcs-imports members and
+        Launchpad administrators.
+        """)
+
+    STOPPED = DBItem(7, """
+        Stopped
+
+        The Bazaar import has been suspended and is no longer updated. The
+        source details for this series are locked and can only be modified by
+        vcs-imports members and Launchpad administrators.
+        """)
+
+
+class RevisionControlSystems(DBEnumeratedType):
+    """Revision Control Systems
+
+    Bazaar brings code from a variety of upstream revision control
+    systems into bzr. This schema documents the known and supported
+    revision control systems.
+    """
+
+    CVS = DBItem(1, """
+        Concurrent Version System
+
+        The Concurrent Version System is very widely used among
+        older open source projects, it was the first widespread
+        open source version control system in use.
+        """)
+
+    SVN = DBItem(2, """
+        Subversion
+
+        Subversion aims to address some of the shortcomings in
+        CVS, but retains the central server bottleneck inherent
+        in the CVS design.
+        """)
 
 
 class ProductSeriesNameField(ContentNameField):
@@ -56,6 +152,7 @@ def validate_cvs_root(cvsroot):
             'Please use a fully qualified host name.')
     return True
 
+
 def validate_cvs_module(cvsmodule):
     valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.+-]*$')
     if not valid_module.match(cvsmodule):
@@ -65,11 +162,13 @@ def validate_cvs_module(cvsmodule):
         raise LaunchpadValidationError('A CVS module can not be called "CVS".')
     return True
 
+
 def validate_cvs_branch(branch):
     if branch and re.match('^[a-zA-Z][a-zA-Z0-9_-]*$', branch):
         return True
     else:
         raise LaunchpadValidationError('Your CVS branch name is invalid.')
+
 
 def validate_release_glob(value):
     if validate_url(value, ["http", "https", "ftp"]):
@@ -121,11 +220,6 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     release_files = Attribute("An iterator over the release files in this "
         "Series, sorted with latest release first.")
 
-    potemplates = Attribute(
-        _("Return an iterator over this series' PO templates."))
-    currentpotemplates = Attribute(
-        _("Return an iterator over this series' PO templates that "
-          "have the 'iscurrent' flag set'."))
     packagings = Attribute("An iterator over the Packaging entries "
         "for this product series.")
     specifications = Attribute("The specifications targeted to this "
@@ -195,7 +289,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getPOTemplate(name):
         """Return the POTemplate with this name for the series."""
 
-    def newMilestone(name, dateexpected=None):
+    def newMilestone(name, dateexpected=None, description=None):
         """Create a new milestone for this DistroSeries."""
 
     # revision control items
@@ -214,7 +308,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "will reflect our current status for importing and syncing the "
         "upstream code and publishing it as a Bazaar branch.")
     rcstype = Choice(title=_("Type of RCS"),
-        required=False, vocabulary='RevisionControlSystems',
+        required=False, vocabulary=RevisionControlSystems,
         description=_("The type of revision control used for "
         "the upstream branch of this series. Can be CVS or Subversion."))
     cvsroot = TextLine(title=_("Repository"), required=False,
@@ -302,15 +396,15 @@ class IProductSeriesSourceAdmin(Interface):
     def markTestFailed():
         """Mark this import as TESTFAILED.
 
-        See `dbschema.ImportStatus` for what this means.  This method also
-        clears timestamps and other ancillary data.
+        See `ImportStatus` for what this means.  This method also clears
+        timestamps and other ancillary data.
         """
 
     def markDontSync():
         """Mark this import as DONTSYNC.
 
-        See `dbschema.ImportStatus` for what this means.  This method also
-        clears timestamps and other ancillary data.
+        See `ImportStatus` for what this means.  This method also clears
+        timestamps and other ancillary data.
         """
 
     def deleteImport():
@@ -339,16 +433,17 @@ class IProductSeriesSet(Interface):
         Return the default value if there is no such series.
         """
 
-    def search(ready=None, text=None, forimport=None, importstatus=None,
-               start=None, length=None):
-        """return a list of series matching the arguments, which are passed
-        through to _querystr to generate the query."""
+    def searchImports(text=None, importstatus=None):
+        """Search through all series that have import data.
 
-    def importcount(status=None):
-        """Return the number of series that are in the process of being
-        imported and published as baz branches. If status is None then all
-        the statuses are included, otherwise the count reflects the number
-        of branches with that importstatus."""
+        This method will never return a series for a deactivated product.
+
+        :param text: If specifed, limit to the results to those that contain
+            ``text`` in the product or project titles and descriptions.
+        :param importstatus: If specified, limit the list to series which have
+            the given import status; if not specified or None, limit to series
+            with non-NULL import status.
+        """
 
     def getByCVSDetails(cvsroot, cvsmodule, cvsbranch, default=None):
         """Return the ProductSeries with the given CVS details.

@@ -1,0 +1,368 @@
+= Code Import Events =
+
+The code-import events record the audit trail of the the code import
+system. Events record a log that can be used to diagnose the interaction
+of the multiple moving parts that form the code-import system and to
+measure the quality of the service.
+
+CodeImports are hidden from regular users currently. David Allouche is a
+member of the vcs-imports team and can access the objects freely.
+
+    >>> login('david.allouche@canonical.com')
+
+
+== Creating Events ==
+
+Events of each type are created by separate methods in the
+ICodeImportEventSet utility.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces import ICodeImportEventSet
+    >>> event_set = getUtility(ICodeImportEventSet)
+    >>> verifyObject(ICodeImportEventSet, removeSecurityProxy(event_set))
+    True
+
+To easily verify objects returned by the individual event creation
+methods, we define a small helper function:
+
+    >>> from canonical.launchpad.interfaces import ICodeImportEvent
+    >>> def verify_event(event):
+    ...     if verifyObject(ICodeImportEvent, removeSecurityProxy(event)):
+    ...         print event.event_type.name
+    ...     else:
+    ...         print "verifyObject failed"
+
+To help us test the output of the items() method, we define a helper
+function that do not print values which are potentially unstable
+database ids.
+
+    >>> def print_items(event):
+    ...     if len(event.items()) == 0:
+    ...         print '<nothing>'
+    ...     for k, v in sorted(event.items()):
+    ...         if k.name == 'CODE_IMPORT':
+    ...             print k.name, '<muted>'
+    ...         else:
+    ...             print k.name, repr(v)
+
+We want to concisely check that calling the CodeImportEventSet factory
+methods with required arguments set to None raise an AssertionError.
+
+The assert_raises helper prints nothing if the callable raises an
+exception of the specified type. If the callable raises an exception
+that does not match, it re-raises it. If it does not raises, it prints a
+message.
+
+    >>> import sys
+    >>> def assert_raises(exc_type, callable, *args, **kwargs):
+    ...     try:
+    ...         callable(*args, **kwargs)
+    ...     except:
+    ...         if sys.exc_info()[0] == exc_type:
+    ...             return
+    ...         else:
+    ...             raise
+    ...     else:
+    ...         print "No exception raised, expected: %s" % (exc_type,)
+
+All CodeImportEvent creation methods explicitly check that their
+arguments are not None. See the implementation of CodeImportEventSet for
+the rationale.
+
+    >>> def fail_if_argument_is_none(callable, *args):
+    ...     """Callable must fails if given at least one None argument."""
+    ...     assert_raises(AssertionError, callable, *args)
+
+
+=== CREATE ===
+
+When a CodeImport is created, a CREATE event should be recorded. Any
+authenticated user can create a CodeImport.
+
+Creating a CodeImport is complicated, and we will create two of them, so
+we define a helper function. Since CodeImportSet.new should record the
+CodeImportEvent, we need to use the CodeImport constructor directly.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     CodeImportEventDataType, BranchType, ILaunchpadCelebrities,
+    ...     IBranchSet, IPersonSet, IProductSet)
+    >>> from canonical.launchpad.database import CodeImport
+
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+
+    >>> def new_code_import(name, **kw_details):
+    ...     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    ...     product = getUtility(IProductSet).getByName('firefox')
+    ...     import_branch = getUtility(IBranchSet).new(
+    ...         BranchType.IMPORTED,
+    ...         name, vcs_imports, vcs_imports, product,
+    ...         None, 'Import branch')
+    ...     return CodeImport(
+    ...         registrant=nopriv, owner=nopriv, branch=import_branch,
+    ...         **kw_details)
+
+First we create a Subversion import.
+
+    >>> from canonical.launchpad.interfaces import RevisionControlSystems
+    >>> svn_url = 'svn://svn.example.com/trunk'
+    >>> svn_import = new_code_import('svn-trunk',
+    ...     rcs_type=RevisionControlSystems.SVN, svn_branch_url=svn_url)
+
+CodeImportSet.newCreate creates an event from the new CodeImport object
+and the person that created it. Here, the creator is the nopriv user.
+
+    >>> fail_if_argument_is_none(event_set.newCreate, None, nopriv)
+    >>> fail_if_argument_is_none(event_set.newCreate, svn_import, None)
+
+    >>> svn_create_event = event_set.newCreate(svn_import, nopriv)
+    >>> verify_event(svn_create_event)
+    CREATE
+    >>> print svn_create_event.person.name
+    no-priv
+    >>> svn_create_event.code_import == svn_import
+    True
+
+The initial import details are recorded in the event, and can be
+retrieved using the items() method.
+
+    >>> print_items(svn_create_event)
+    CODE_IMPORT <muted>
+    OWNER u'52'
+    REVIEW_STATUS u'NEW'
+    ASSIGNEE None
+    UPDATE_INTERVAL None
+    SVN_BRANCH_URL u'svn://svn.example.com/trunk'
+
+The database IDs of the CodeImport is also recorded. It is useful to
+collate events associated to deleted CodeImport objects.
+
+    >>> event_dict = dict(svn_create_event.items())
+    >>> event_dict[CodeImportEventDataType.CODE_IMPORT] == (
+    ...     unicode(svn_import.id))
+    True
+
+Different source details are recorded according to the type of the
+import source. For a CVS import, CVS details are recorded instead of the
+Subversion URL.
+
+    >>> cvs_import = new_code_import('cvs-main',
+    ...     rcs_type=RevisionControlSystems.CVS,
+    ...     cvs_root=':pserver:anonymous@cvs.example.com:/cvsroot',
+    ...     cvs_module='hello')
+    >>> cvs_create_event = event_set.newCreate(cvs_import, nopriv)
+    >>> print_items(cvs_create_event)
+    CODE_IMPORT <muted>
+    OWNER u'52'
+    REVIEW_STATUS u'NEW'
+    ASSIGNEE None
+    UPDATE_INTERVAL None
+    CVS_ROOT u':pserver:anonymous@cvs.example.com:/cvsroot'
+    CVS_MODULE u'hello'
+
+
+== MODIFY ==
+
+When a code import is modified, the ICodeImportEventSet utility should
+be used to create an event describing the changes.
+
+Application code should not modify CodeImport objects directly, instead
+they should call the appropriate mutator methods of CodeImport. This
+allows CodeImportEvent objects to be transparently created when needed.
+This is enforced by not defining a set_schema for ICodeImport.
+
+In this document, we are testing the CodeImportEvent creation
+infrastructure used by those mutator methods, so we need to directly
+modify the state of CodeImport objects. We can do this because we are
+working on unproxied database objects.
+
+ICodeImportEventSet defines a protocol so it is able to find changes
+applied to the code import. Before making any change, the beginModify
+method must be called. It returns a token that captures the initial
+state of the the code import.
+
+    >>> fail_if_argument_is_none(event_set.beginModify, None)
+
+    >>> token = event_set.beginModify(svn_import)
+
+Then changes can be applied.
+
+    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
+    >>> svn_import.review_status = CodeImportReviewStatus.REVIEWED
+
+After applying changes, the newModify method can create an event that
+details the changes that have been applied.
+
+    >>> fail_if_argument_is_none(
+    ...     event_set.newModify, None, nopriv, token)
+    >>> fail_if_argument_is_none(
+    ...     event_set.newModify, svn_import, None, token)
+    >>> fail_if_argument_is_none(
+    ...     event_set.newModify, svn_import, nopriv, None)
+
+    >>> modify_event = event_set.newModify(svn_import, nopriv, token)
+    >>> verify_event(modify_event)
+    MODIFY
+    >>> print modify_event.person.name
+    no-priv
+    >>> modify_event.code_import == svn_import
+    True
+
+The event records all the current values, and the old value of
+attributes that have changed. This produces redundant data that makes
+it possible to validate the historical trail for integrity and to detect
+when changes were made without creating a correponding event.
+
+    >>> print_items(modify_event)
+    CODE_IMPORT <muted>
+    OWNER u'52'
+    REVIEW_STATUS u'REVIEWED'
+    OLD_REVIEW_STATUS u'NEW'
+    ASSIGNEE None
+    UPDATE_INTERVAL None
+    SVN_BRANCH_URL u'svn://svn.example.com/trunk'
+
+If no change of interest are found, no event is created.
+
+    >>> old_event_set_len = len(list(event_set.getAll()))
+    >>> token = event_set.beginModify(svn_import)
+    >>> print event_set.newModify(svn_import, nopriv, token)
+    None
+    >>> len(list(event_set.getAll())) == old_event_set_len
+    True
+
+In most events, only the source details for the selected version control
+system are recorded. If the rcs_type changes, we record old and new
+values for all changed attributes to explicitly represent transitions to
+None and from None.
+
+    >>> token = event_set.beginModify(cvs_import)
+    >>> cvs_import.rcs_type = RevisionControlSystems.SVN
+    >>> cvs_import.svn_branch_url = u'svn://svn.example.com/from-cvs'
+    >>> cvs_import.cvs_root = None
+    >>> cvs_import.cvs_module = None
+    >>> modify_event = event_set.newModify(cvs_import, nopriv, token)
+    >>> print_items(modify_event)
+    CODE_IMPORT <muted>
+    OWNER u'52'
+    REVIEW_STATUS u'NEW'
+    ASSIGNEE None
+    UPDATE_INTERVAL None
+    CVS_ROOT None
+    CVS_MODULE None
+    OLD_CVS_ROOT u':pserver:anonymous@cvs.example.com:/cvsroot'
+    OLD_CVS_MODULE u'hello'
+    SVN_BRANCH_URL u'svn://svn.example.com/from-cvs'
+    OLD_SVN_BRANCH_URL None
+
+Aside from source details changes, MODIFY events can record changes to
+the owner, the review_status, the assignee, and the update_interval of a
+code import.
+
+    >>> from datetime import timedelta
+    >>> sample_owner = getUtility(IPersonSet).getByName('name12')
+    >>> sample_assignee = getUtility(IPersonSet).getByName('ddaa')
+    >>> token = event_set.beginModify(svn_import)
+    >>> svn_import.owner = sample_owner
+    >>> svn_import.review_status = CodeImportReviewStatus.SUSPENDED
+    >>> svn_import.assignee = sample_assignee
+    >>> svn_import.update_interval = timedelta(hours=1)
+    >>> modify_event = event_set.newModify(svn_import, nopriv, token)
+    >>> print_items(modify_event)
+    CODE_IMPORT <muted>
+    OWNER u'12'
+    OLD_OWNER u'52'
+    REVIEW_STATUS u'SUSPENDED'
+    OLD_REVIEW_STATUS u'REVIEWED'
+    ASSIGNEE u'23'
+    OLD_ASSIGNEE None
+    UPDATE_INTERVAL u'1:00:00'
+    OLD_UPDATE_INTERVAL None
+    SVN_BRANCH_URL u'svn://svn.example.com/trunk'
+
+
+=== ONLINE ===
+
+Execution of import jobs is controlled by code-import-controller daemons
+on multiple machines.
+
+    >>> from canonical.launchpad.interfaces import ICodeImportMachineSet
+    >>> machine_set = getUtility(ICodeImportMachineSet)
+    >>> machine = machine_set.getByHostname('bazaar-importer')
+
+When a controller daemon starts, it calls a mutator method on
+CodeImportMachine that marks this machine as accepting jobs. This method
+logs the change by creating an ONLINE event using the
+ICodeImportEventSet.newOnline method.
+
+    >>> fail_if_argument_is_none(event_set.newOnline, None)
+
+    >>> online_event = event_set.newOnline(machine)
+    >>> verify_event(online_event)
+    ONLINE
+    >>> print online_event.machine.hostname
+    bazaar-importer
+    >>> print_items(online_event)
+    <nothing>
+
+
+=== OFFLINE ===
+
+When a controller daemon goes offline, a mutator method on
+CodeImportMachine is called to mark it as no longer running. This method
+logs the change by creating an OFFLINE event using the
+ICodeImportSet.newOffline method.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     CodeImportMachineOfflineReason)
+    >>> QUIESCED = CodeImportMachineOfflineReason.QUIESCED
+
+    >>> fail_if_argument_is_none(event_set.newOffline, None, QUIESCED)
+    >>> fail_if_argument_is_none(event_set.newOffline, machine, None)
+
+    >>> offline_event = event_set.newOffline(machine, QUIESCED)
+    >>> verify_event(offline_event)
+    OFFLINE
+    >>> print offline_event.machine.hostname
+    bazaar-importer
+    >>> print_items(offline_event)
+    OFFLINE_REASON u'QUIESCED'
+
+The offline reason must be a value of the CodeImportMachineOfflineReason
+enum. Since it is internally stored as a string, we need to manually
+check that it is a legal value.
+
+    >>> event_set.newOffline(machine, CodeImportReviewStatus.SUSPENDED)
+    Traceback (most recent call last):
+    ...
+    AssertionError: reason must be a CodeImportMachineOfflineReason value,
+    but was: ...
+
+
+=== QUIESCE ===
+
+When an operator quiesces a machine (this is an administrative
+operation), a QUIESCE event should be created to record the operator's
+identity, the affected machine, and a user-provided message explaining
+why quiescing was requested.
+
+    >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
+
+    >>> fail_if_argument_is_none(
+    ...     event_set.newQuiesce, None, ddaa, 'Message.')
+    >>> fail_if_argument_is_none(
+    ...     event_set.newQuiesce, machine, None, 'Message.')
+    >>> fail_if_argument_is_none(
+    ...     event_set.newQuiesce, machine, ddaa, None)
+
+    >>> quiesce_event = event_set.newQuiesce(
+    ...     machine, ddaa, 'Production rollout.')
+    >>> verify_event(quiesce_event)
+    QUIESCE
+    >>> print quiesce_event.machine.hostname
+    bazaar-importer
+    >>> print quiesce_event.person.name
+    ddaa
+    >>> print_items(quiesce_event)
+    MESSAGE u'Production rollout.'

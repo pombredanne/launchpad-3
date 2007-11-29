@@ -1,16 +1,15 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
 <body>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
   <h1 tal:content="view/heading">Archive Mirrors</h1>
@@ -22,8 +21,8 @@
 
   <div tal:condition="not: mirrors_by_country">
     <p tal:condition="not: mirrors_by_country">
-      We don't know about any <span tal:replace="view/heading">Archive
-      Mirrors</span> of this distribution. If you know any, please
+      We don't know of any <span tal:replace="view/heading">Archive
+      Mirrors</span> of this distribution. If you know of one, please
       <a tal:attributes="href string:${context/fmt:url}/+newmirror">register
       it</a>.
     </p>
@@ -33,6 +32,11 @@
        tal:define="show_status view/show_status">
     <metal:mirror-list
       use-macro="context/@@+distributionmirror-macros/mirrors-table" />
+    <p>
+      <tal:total_number replace="view/mirror_count" />
+      mirror(s) registered with a total throughput of
+      <tal:total_throughput replace="view/total_throughput" />.
+    </p>
   </div>
 
   </tal:block>

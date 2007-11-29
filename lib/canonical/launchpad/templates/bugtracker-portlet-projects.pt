@@ -1,20 +1,23 @@
-<div class="portlet" id="portlet-projects">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-projects">
 
   <h2>Related projects</h2>
 
   <div class="portletBody portletContent">
 
-    You can link a registered bug tracker with a 
-    <a href="/projects/">registered project</a> in
-    Launchpad:
-	
-    <ul>
-      <li tal:repeat="project context/projects"
+    You can link a registered bug tracker with a
+    <a href="/projects/">registered project</a> in Launchpad:
+
+    <ul tal:define="related_projects view/related_projects">
+      <li tal:repeat="project related_projects"
           class="info">
         <a tal:attributes="href project/fmt:url"
            tal:content="project/title">The Mozilla Project</a>
       </li>
-      <li tal:condition="not: context/projects">
+      <li tal:condition="not: related_projects">
         <i>There are no projects linked to this bug tracker.</i>
       </li>
     </ul>

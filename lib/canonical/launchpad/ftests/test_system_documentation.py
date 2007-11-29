@@ -1,40 +1,67 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """
 Test the examples included in the system documentation in
 lib/canonical/launchpad/doc.
 """
+# pylint: disable-msg=C0103
 
-import unittest
 import logging
 import os
-
 import transaction
+import unittest
 
-from zope.component import getUtility
-from zope.security.management import getSecurityPolicy, setSecurityPolicy
+from zope.component import getUtility, getView
+from zope.security.management import setSecurityPolicy
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.testing.doctest import DocFileSuite
 
-from canonical.authserver.ftests.harness import AuthserverTacTestSetup
+from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.config import config
 from canonical.database.sqlbase import (
-    flush_database_updates, READ_COMMITTED_ISOLATION)
+    commit, flush_database_updates, READ_COMMITTED_ISOLATION)
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
-from canonical.launchpad.ftests import login, ANONYMOUS, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import mailinglists_helper
+from canonical.launchpad.ftests.bug import (
+    create_old_bug, summarize_bugtasks, sync_bugtasks)
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
-    IPersonSet, TeamSubscriptionPolicy)
+    IPersonSet)
+from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
-        LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
-        FunctionalLayer)
+    LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
+    FunctionalLayer)
+
 
 here = os.path.dirname(os.path.realpath(__file__))
 
 default_optionflags = REPORT_NDIFF | NORMALIZE_WHITESPACE | ELLIPSIS
 
 
+def create_view(context, name, form=None, layer=None, server_url=None,
+                method='GET'):
+    """Return a view based on the given arguments.
+
+    :param context: The context for the view.
+    :param name: The web page the view should handle.
+    :param form: A dictionary with the form keys.
+    :param layer: The layer where the page we are interested in is located.
+    :param server_url: The URL from where this request was done.
+    :param method: The method used in the request. Defaults to 'GET'.
+    :return: The view class for the given context and the name.
+    """
+    request = LaunchpadTestRequest(
+        form=form, SERVER_URL=server_url, method=method)
+    if layer is not None:
+        setFirstLayer(request, layer)
+    return getView(context, name, request)
+
+
 def setGlobs(test):
+    """Add the common globals for testing system documentation."""
     test.globs['ANONYMOUS'] = ANONYMOUS
     test.globs['login'] = login
     test.globs['logout'] = logout
@@ -42,56 +69,68 @@ def setGlobs(test):
     test.globs['getUtility'] = getUtility
     test.globs['transaction'] = transaction
     test.globs['flush_database_updates'] = flush_database_updates
+    test.globs['create_view'] = create_view
 
 
 def setUp(test):
+    """Setup the common globals and login for testing system documentation."""
     setGlobs(test)
     # Set up an anonymous interaction.
     login(ANONYMOUS)
 
 
 def tearDown(test):
+    """Tear down the common system documentation test."""
     logout()
 
+def checkwatchesSetUp(test):
+    """Setup the check watches script tests."""
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
 def poExportSetUp(test):
+    """Setup the PO export script tests."""
     LaunchpadZopelessLayer.switchDbUser('poexport')
     setUp(test)
 
 def poExportTearDown(test):
+    """Tear down the PO export script tests."""
+    # XXX sinzui 2007-11-14:
+    # This function is not needed. The test should be switched to tearDown.
     tearDown(test)
 
 def uploaderSetUp(test):
+    """setup the package uploader script tests."""
     setUp(test)
     LaunchpadZopelessLayer.switchDbUser('uploader')
 
 def uploaderTearDown(test):
+    """Tear down the package uploader script tests."""
+    # XXX sinzui 2007-11-14:
+    # This function is not needed. The test should be switched to tearDown.
     tearDown(test)
 
 def builddmasterSetUp(test):
+    """Setup the connection for the build master tests."""
     LaunchpadZopelessLayer.alterConnection(
         dbuser=config.builddmaster.dbuser,
         isolation=READ_COMMITTED_ISOLATION)
     setGlobs(test)
 
 def branchscannerSetUp(test):
+    """Setup the user for the branch scanner tests."""
     LaunchpadZopelessLayer.switchDbUser('branchscanner')
     setUp(test)
 
 def branchscannerTearDown(test):
+    """Tear down the branch scanner tests."""
+    # XXX sinzui 2007-11-14:
+    # This function is not needed. The test should be switched to tearDown.
     tearDown(test)
 
-def answerTrackerSetUp(test):
-    setGlobs(test)
-    # The Zopeless environment usually runs using the PermissivePolicy
-    # but the process-mail.py script in which the tested code runs
-    # use the regular web policy.
-    test.old_security_policy = getSecurityPolicy()
-    setSecurityPolicy(LaunchpadSecurityPolicy)
-
-def answerTrackerTearDown(test):
-    setSecurityPolicy(test.old_security_policy)
 
 def peopleKarmaTearDown(test):
+    """Restore the database after testing karma."""
     # We can't detect db changes made by the subprocess (yet).
     DatabaseLayer.force_dirty_database()
     tearDown(test)
@@ -169,11 +208,13 @@ def _createUbuntuBugTaskLinkedToQuestion():
     bug = ubuntu.createBug(params)
     ubuntu_question.linkBug(bug)
     [ubuntu_bugtask] = bug.bugtasks
-    bugtask_id = ubuntu_bugtask.id
     login(ANONYMOUS)
+    # Remove the notifcations for the newly created question.
+    notifications = pop_notifications()
     return ubuntu_bugtask.id
 
 def bugLinkedToQuestionSetUp(test):
+    """Setup the question and linked bug for testing."""
     def get_bugtask_linked_to_question():
         return getUtility(IBugTaskSet).get(bugtask_id)
     setUp(test)
@@ -183,6 +224,17 @@ def bugLinkedToQuestionSetUp(test):
     # Log in here, since we don't want to set up an non-anonymous
     # interaction in the test.
     login('no-priv@canonical.com')
+
+
+def bugtaskExpirationSetUp(test):
+    """Setup globs for bug expiration."""
+    setUp(test)
+    test.globs['create_old_bug'] = create_old_bug
+    test.globs['summarize_bugtasks'] = summarize_bugtasks
+    test.globs['sync_bugtasks'] = sync_bugtasks
+    test.globs['commit'] = commit
+    login('test@canonical.com')
+
 
 def uploaderBugLinkedToQuestionSetUp(test):
     LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -199,55 +251,6 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
     login(ANONYMOUS)
 
 
-def mailingListPrintActions(pending_actions):
-    """A helper function for the mailinglist-xmlrpc.txt doctest.
-
-    This helps print the data structure returned from .getPendingActions() in
-    a more succinct way so as to produce a more readable doctest.  It also
-    eliminates trivial representational differences caused by the doctest
-    being run both with an internal view and via an XMLRPC proxy.
-
-    The problem is that the types of the values in the pending_actions
-    dictionary will be different depending on which way the doctest is run.
-    The contents will be the same but when run via an XMLRPC proxy, the values
-    will be strs, and when run via the internal view, they will be unicodes.
-    If you don't coerce the values, they'll print differently, superficially
-    breaking the doctest.  For example, unicodes will print with a u-prefix
-    (e.g. u'Welcome to Team One') while the strs will print without a prefix
-    (e.g. 'Welcome to Team One').
-
-    The only way to write a doctest so that both correct results will pass is
-    to coerce one string type to the other, and coercing to unicodes seems
-    like the most straightforward thing to do.  The keys of the dictionary do
-    not need to be coerced because they will be strs in both cases.
-    """
-    for action in sorted(pending_actions):
-        for team in sorted(pending_actions[action]):
-            if action in ('create', 'modify'):
-                team, modification = team
-                modification = dict((k, unicode(v))
-                                    for k, v in modification.items())
-                print team, '-->', action, modification
-            else:
-                print team, '-->', action
-
-
-def mailingListNewTeam(team_name):
-    """A helper function for the mailinglist-xmlrpc.txt doctest.
-
-    This just provides a convenience function for creating the kinds of teams
-    we need to use in the doctest.
-    """
-    displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
-    # XXX BarryWarsaw Set the team's subscription policy to OPEN because of
-    # bug 125505.
-    policy = TeamSubscriptionPolicy.OPEN
-    personset = getUtility(IPersonSet)
-    ddaa = personset.getByName('ddaa')
-    return personset.newTeam(ddaa, team_name, displayname,
-                             subscriptionpolicy=policy)
-
-
 # XXX BarryWarsaw 15-Aug-2007: See bug 132784 as a placeholder for improving
 # the harness for the mailinglist-xmlrpc.txt tests, or improving things so
 # that all this cruft isn't necessary.
@@ -258,42 +261,26 @@ def mailingListXMLRPCInternalSetUp(test):
     # architecture.  Don't use ServerProxy.  We do this because it's easier to
     # debug because when things go horribly wrong, you see the errors on
     # stdout instead of in an OOPS report living in some log file somewhere.
-    #
-    # There's one gotcha here: when running the same doctest with the
-    # ServerProxy, faults are turned into exceptions by the XMLRPC machinery,
-    # but with the direct view the faults are just returned.  This causes an
-    # impedence mismatch with exception display in the doctest that cannot be
-    # papered over by using ellipses.  So to make this work in a consistent
-    # way, a subclass of the view class is used which prints faults to match
-    # the output of ServerProxy (proper exceptions aren't really necessary).
-    import xmlrpclib
-    def adapter(func):
-        def caller(self, *args, **kws):
-            result = func(self, *args, **kws)
-            if isinstance(result, xmlrpclib.Fault):
-                # Fake this to look like exception output.  The second line is
-                # necessary to match ellipses in the doctest, but its contents
-                # are completely ignored; /something/ just has to be there.
-                print 'Traceback (most recent call last):'
-                print 'ignore'
-                print 'Fault:', result
-            else:
-                return result
-        return caller
-    from canonical.launchpad.xmlrpc import RequestedMailingListAPI
-    class ImpedenceMatchingView(RequestedMailingListAPI):
-        @adapter
+    from canonical.launchpad.xmlrpc import MailingListAPIView
+    class ImpedenceMatchingView(MailingListAPIView):
+        @mailinglists_helper.fault_catcher
         def getPendingActions(self):
             return super(ImpedenceMatchingView, self).getPendingActions()
-        @adapter
+        @mailinglists_helper.fault_catcher
         def reportStatus(self, statuses):
             return super(ImpedenceMatchingView, self).reportStatus(statuses)
+        @mailinglists_helper.fault_catcher
+        def getMembershipInformation(self, teams):
+            return super(
+                ImpedenceMatchingView, self).getMembershipInformation(teams)
+        @mailinglists_helper.fault_catcher
+        def isLaunchpadMember(self, address):
+            return super(ImpedenceMatchingView, self).isLaunchpadMember(
+                address)
     # Expose in the doctest's globals, the view as the thing with the
-    # IRequestedMailingListAPI interface.  Also expose the helper functions.
+    # IMailingListAPI interface.  Also expose the helper functions.
     mailinglist_api = ImpedenceMatchingView(context=None, request=None)
     test.globs['mailinglist_api'] = mailinglist_api
-    test.globs['print_actions'] = mailingListPrintActions
-    test.globs['new_team'] = mailingListNewTeam
     # Expose different commit() functions to handle the 'external' case below
     # where there is more than one connection.  The 'internal' case here has
     # just one coneection so the flush is all we need.
@@ -308,16 +295,32 @@ def mailingListXMLRPCExternalSetUp(test):
     from canonical.functional import XMLRPCTestTransport
     from xmlrpclib import ServerProxy
     mailinglist_api = ServerProxy(
-        'http://test@canonical.com:test@xmlrpc.launchpad.dev/mailinglists/',
+        'http://xmlrpc-private.launchpad.dev:8087/mailinglists/',
         transport=XMLRPCTestTransport())
     test.globs['mailinglist_api'] = mailinglist_api
     # See above; right now this is the same for both the internal and external
     # tests, but if we're able to resolve the big XXX above the
     # mailinglist-xmlrpc.txt-external declaration below, I suspect that these
     # two globals will end up being different functions.
-    test.globs['print_actions'] = mailingListPrintActions
-    test.globs['new_team'] = mailingListNewTeam
+    test.globs['mailinglist_api'] = mailinglist_api
     test.globs['commit'] = flush_database_updates
+
+
+def zopelessLaunchpadSecuritySetUp(test):
+    """Set up a LaunchpadZopelessLayer test to use LaunchpadSecurityPolicy.
+
+    To be able to use LaunchpadZopelessLayer.switchDbUser in a test, we need
+    to run in the Zopeless environment. The Zopeless environment normally runs
+    using the PermissiveSecurityPolicy. If we want the test to cover
+    functionality used in the webapp, it needs to use the
+    LaunchpadSecurityPolicy.
+    """
+    setGlobs(test)
+    test.old_security_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
+
+
+def zopelessLaunchpadSecurityTearDown(test):
+    setSecurityPolicy(test.old_security_policy)
 
 
 def LayeredDocFileSuite(*args, **kw):
@@ -367,11 +370,7 @@ special = {
             optionflags=default_optionflags, setUp=setGlobs
             ),
 
-    # And these tests want minimal environments too.
-    'poparser.txt': DocFileSuite(
-            '../doc/poparser.txt', optionflags=default_optionflags
-            ),
-
+    # And this test want minimal environment too.
     'package-relationship.txt': DocFileSuite(
             '../doc/package-relationship.txt',
             optionflags=default_optionflags
@@ -380,17 +379,6 @@ special = {
     # POExport stuff is Zopeless and connects as a different database user.
     # poexport-distroseries-(date-)tarball.txt is excluded, since they add
     # data to the database as well.
-    'poexport.txt': LayeredDocFileSuite(
-            '../doc/poexport.txt',
-            setUp=poExportSetUp, tearDown=poExportTearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
-            stdout_logging=False
-            ),
-    'poexport-template-tarball.txt': LayeredDocFileSuite(
-            '../doc/poexport-template-tarball.txt',
-            setUp=poExportSetUp, tearDown=poExportTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
     'poexport-queue.txt': FunctionalDocFileSuite(
             '../doc/poexport-queue.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
@@ -423,16 +411,16 @@ special = {
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
             stdout_logging_level=logging.WARNING
             ),
+    'buildd-scoring.txt': LayeredDocFileSuite(
+            '../doc/buildd-scoring.txt',
+            setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
+            stdout_logging_level=logging.DEBUG
+            ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
             setUp=branchscannerSetUp, tearDown=branchscannerTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
-            ),
-    'answer-tracker-emailinterface.txt': LayeredDocFileSuite(
-            '../doc/answer-tracker-emailinterface.txt',
-            setUp=answerTrackerSetUp, tearDown=answerTrackerTearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
-            stdout_logging=False
             ),
     'person-karma.txt': FunctionalDocFileSuite(
             '../doc/person-karma.txt',
@@ -467,11 +455,6 @@ special = {
     'rosetta-karma.txt': FunctionalDocFileSuite(
             '../doc/rosetta-karma.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
-            ),
-    'incomingmail.txt': FunctionalDocFileSuite(
-            '../doc/incomingmail.txt',
-            setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer,
-            stdout_logging_level=logging.WARNING
             ),
     'launchpadform.txt': FunctionalDocFileSuite(
             '../doc/launchpadform.txt',
@@ -521,6 +504,12 @@ special = {
             tearDown=uploadQueueTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
+    'bugtask-expiration.txt': LayeredDocFileSuite(
+            '../doc/bugtask-expiration.txt',
+            setUp=bugtaskExpirationSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
     'bugmessage.txt': LayeredDocFileSuite(
             '../doc/bugmessage.txt',
             setUp=noPrivSetUp, tearDown=tearDown,
@@ -550,12 +539,13 @@ special = {
             setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
             optionflags=default_optionflags, layer=LaunchpadFunctionalLayer
             ),
-    'answer-tracker-notifications-linked-bug.txt-uploader': LayeredDocFileSuite(
-            '../doc/answer-tracker-notifications-linked-bug.txt',
-            setUp=uploaderBugLinkedToQuestionSetUp,
-            tearDown=tearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
-            ),
+    'answer-tracker-notifications-linked-bug.txt-uploader':
+            LayeredDocFileSuite(
+                '../doc/answer-tracker-notifications-linked-bug.txt',
+                setUp=uploaderBugLinkedToQuestionSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
     'answer-tracker-notifications-linked-bug.txt-queued': LayeredDocFileSuite(
             '../doc/answer-tracker-notifications-linked-bug.txt',
             setUp=uploadQueueBugLinkedToQuestionSetUp,
@@ -576,7 +566,182 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer,
             ),
+    'externalbugtracker-bugzilla.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-bugzilla.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-bugzilla-oddities.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-bugzilla-oddities.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-checkwatches.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-checkwatches.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-debbugs.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-debbugs.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-mantis-csv.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-mantis-csv.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-mantis.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-mantis.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-python.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-python.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-roundup.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-roundup.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-sourceforge.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-sourceforge.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-trac.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-trac.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'mailinglist-subscriptions-xmlrpc.txt': FunctionalDocFileSuite(
+            '../doc/mailinglist-subscriptions-xmlrpc.txt',
+            setUp=mailingListXMLRPCInternalSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadFunctionalLayer
+            ),
+    'mailinglist-subscriptions-xmlrpc.txt-external': FunctionalDocFileSuite(
+            '../doc/mailinglist-subscriptions-xmlrpc.txt',
+            setUp=mailingListXMLRPCExternalSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadFunctionalLayer,
+            ),
+    'codeimport-machine.txt': LayeredDocFileSuite(
+            '../doc/codeimport-machine.txt',
+            setUp=zopelessLaunchpadSecuritySetUp,
+            tearDown=zopelessLaunchpadSecurityTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
+            ),
+    # Also run the pillar.txt doctest under the Zopeless layer.
+    # This exposed bug #149632.
+    'pillar.txt-zopeless': LayeredDocFileSuite(
+            '../doc/pillar.txt',
+            setUp=setUp, tearDown=tearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadZopelessLayer
+            ),
     }
+
+
+class ProcessMailLayer(LaunchpadZopelessLayer):
+    """Layer containing the tests running inside process-mail.py."""
+
+
+    @classmethod
+    def testSetUp(cls):
+        """Fixture replicating the process-mail.py environment.
+
+        This zopeless script uses the regular security policy and
+        connects as a specific DB user.
+        """
+        cls._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
+        LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+
+    @classmethod
+    def testTearDown(cls):
+        """Tear down the test fixture."""
+        setSecurityPolicy(cls._old_policy)
+
+    doctests_without_logging = [
+        'answer-tracker-emailinterface.txt',
+        'bugs-emailinterface.txt',
+        'bugs-email-affects-path.txt',
+        'emailauthentication.txt',
+    ]
+
+    doctests_with_logging = [
+        'incomingmail.txt',
+        'spec-mail-exploder.txt'
+    ]
+
+    @classmethod
+    def addTestsToSpecial(cls):
+        """Adds all the tests related to process-mail.py to special"""
+        for filename in cls.doctests_without_logging:
+            special[filename] = cls.createLayeredDocFileSuite(filename)
+
+        for filename in cls.doctests_with_logging:
+            special[filename] = cls.createLayeredDocFileSuite(
+                filename, stdout_logging=True)
+
+        # Adds a copy of some bug doctests that will be run with
+        # the processmail user.
+        def bugSetStatusSetUp(test):
+            setUp(test)
+            test.globs['test_dbuser'] = config.processmail.dbuser
+
+        special['bug-set-status.txt-processmail'] = LayeredDocFileSuite(
+                '../doc/bug-set-status.txt',
+                setUp=bugSetStatusSetUp, tearDown=tearDown,
+                optionflags=default_optionflags, layer=cls,
+                stdout_logging=False)
+
+        def bugmessageSetUp(test):
+            setUp(test)
+            login('no-priv@canonical.com')
+
+        special['bugmessage.txt-processmail'] = LayeredDocFileSuite(
+                '../doc/bugmessage.txt',
+                setUp=bugmessageSetUp, tearDown=tearDown,
+                optionflags=default_optionflags, layer=cls,
+                stdout_logging=False)
+
+    @classmethod
+    def createLayeredDocFileSuite(cls, filename, stdout_logging=False):
+        """Helper to create a doctest using this layer."""
+        return LayeredDocFileSuite(
+            "../doc/%s" % filename,
+            setUp=setUp, tearDown=tearDown,
+            optionflags=default_optionflags, layer=cls,
+            stdout_logging=stdout_logging,
+            stdout_logging_level=logging.WARNING)
+
+
+ProcessMailLayer.addTestsToSpecial()
 
 
 def test_suite():
@@ -616,6 +781,7 @@ def test_suite():
         suite.addTest(one_test)
 
     return suite
+
 
 if __name__ == '__main__':
     unittest.main(test_suite())

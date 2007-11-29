@@ -240,7 +240,7 @@ class SignedCodeOfConductAdminView:
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         self.results = sCoC_util.searchByDisplayname(name,
                                                      searchfor=searchfor)
-            
+
         return True
 
 

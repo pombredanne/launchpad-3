@@ -1,197 +1,267 @@
 Test that the page to add a new product loads.
 
->>> user_browser.open("http://launchpad.dev/projects/+new")
->>> print find_main_content(user_browser.contents).find('h1').renderContents()
-Register an upstream open source project
->>> for tag in find_tags_by_class(user_browser.contents, 'documentDescription'):
-...     print extract_text(tag)
-Use this page to register a project, so that you can track translations, bugs
-or specifications for it.
+    >>> user_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> user_browser.open("http://launchpad.dev/projects/+new")
+    >>> h1 = find_main_content(user_browser.contents).find('h1')
+    >>> print h1.renderContents()
+    Register an upstream open source project
+    >>> tags = find_tags_by_class(user_browser.contents, 
+    ...     'documentDescription')
+    >>> for tag in tags:
+    ...     print extract_text(tag)
+    Use this page to register a project, so that you can track translations, bugs
+    or specifications for it.
 
 Tests if the validator is working for the URL fields
 
->>> user_browser.getControl('Part of').value = 'mozilla'
->>> user_browser.getControl('Name', index=0).value = 'testing'
->>> user_browser.getControl('Display Name').value = 'Test Product'
->>> user_browser.getControl('Title').value = 'This is a Test Product'
->>> user_browser.getControl('Description').value = (
-...     'If you were describing a Test Product this would be a little '
-...     'short but sweet.'
-...     )
->>> user_browser.getControl('Homepage URL').value = 'www.test.test.com/'
->>> user_browser.getControl('Sourceforge Project').value = 'testing'
->>> user_browser.getControl('Freshmeat Project').value = 'testmeat'
->>> user_browser.getControl('Wiki URL').value = 'http://wiki.testing.com/'
->>> user_browser.getControl(
-...     'Screenshots URL').value = 'http://www.testing.com/screenshots/'
->>> user_browser.getControl(
-...     'Download URL').value = 'http://www.testing.com/download/'
->>> user_browser.getControl(
-...     'Programming Language').value = 'Visual Python++, C'
->>> user_browser.getControl('Summary').value = 'This is the summary'
->>> user_browser.getControl('Add').click()
->>> user_browser.url
-'http://launchpad.dev/projects/+new'
->>> for message in find_tags_by_class(user_browser.contents, 'message'):
-...     print message.renderContents()
-There is 1 error.
-"www.test.test.com/" is not a valid URI
+    >>> user_browser.getControl('Part of').value = 'mozilla'
+    >>> user_browser.getControl('Name', index=0).value = 'testing'
+    >>> user_browser.getControl('Display Name').value = 'Test Product'
+    >>> user_browser.getControl('Title').value = 'This is a Test Product'
+    >>> user_browser.getControl(name='field.description').value = (
+    ...     'If you were describing a Test Product this would be a little '
+    ...     'short but sweet.'
+    ...     )
+    >>> user_browser.getControl('Homepage URL').value = 'www.test.test.com/'
+    >>> user_browser.getControl('Sourceforge Project').value = 'testing'
+    >>> user_browser.getControl('Freshmeat Project').value = 'testmeat'
+    >>> user_browser.getControl('Wiki URL').value = 'http://wiki.testing.com/'
+    >>> user_browser.getControl(
+    ...     'Screenshots URL').value = 'http://www.testing.com/screenshots/'
+    >>> user_browser.getControl(
+    ...     'Download URL').value = 'http://www.testing.com/download/'
+    >>> user_browser.getControl(
+    ...     'Programming Language').value = 'Visual Python++, C'
+    >>> user_browser.getControl('Summary').value = 'This is the summary'
+    >>> user_browser.getControl(name='field.licenses').value = ['GPL']
+    >>> user_browser.getControl(name='field.license_info').value = 'foo'
+    >>> user_browser.getControl('Add').click()
+    >>> user_browser.url
+    'http://launchpad.dev/projects/+new'
+    >>> print "\n".join(get_feedback_messages(user_browser.contents))
+    There is 1 error.
+    "www.test.test.com/" is not a valid URI
 
 And just 'http://' for the url
 
->>> user_browser.getControl('Homepage URL').value = 'http://'
->>> user_browser.getControl('Add').click()
->>> user_browser.url
-'http://launchpad.dev/projects/+new'
->>> for message in find_tags_by_class(user_browser.contents, 'message'):
-...     print message.renderContents()
-There is 1 error.
-http URIs must have a host name
+    >>> user_browser.getControl('Homepage URL').value = 'http://'
+    >>> user_browser.getControl('Add').click()
+    >>> user_browser.url
+    'http://launchpad.dev/projects/+new'
+    >>> print "\n".join(get_feedback_messages(user_browser.contents))
+    There is 1 error.
+    http URIs must have a host name
 
 
 Test that the page to add a new product works.
 
->>> user_browser.getControl('Homepage URL').value = 'http://www.test.test.com/'
->>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Homepage URL').value = 'http://www.test.test.com/'
+    >>> user_browser.getControl('Add').click()
 
->>> user_browser.url
-'http://launchpad.dev/testing'
+    >>> user_browser.url
+    'http://launchpad.dev/testing'
 
 
 Test if we can see the page of the added product and tests if we can see the
 Project.
 
->>> anon_browser.open('http://launchpad.dev/testing')
->>> 'This is a Test Product' in anon_browser.contents
-True
->>> 'The Mozilla Project' in anon_browser.contents
-True
+    >>> anon_browser.open('http://launchpad.dev/testing')
+    >>> 'This is a Test Product' in anon_browser.contents
+    True
+    >>> 'The Mozilla Project' in anon_browser.contents
+    True
 
 
 We should have an automatic trunk series for this new product too.
 
->>> anon_browser.open("http://launchpad.dev/testing/trunk")
->>> 'Release series overview' in anon_browser.contents
-True
+    >>> anon_browser.open("http://launchpad.dev/testing/trunk")
+    >>> 'Release series overview' in anon_browser.contents
+    True
 
 
 Now we test if we leave the Home-page field empty. This should work,
 since the field is not required.
 
->>> user_browser.open('http://launchpad.dev/projects/+new')
->>> user_browser.getControl('Part of').value = 'mozilla'
->>> user_browser.getControl('Name', index=0).value = 'testing2'
->>> user_browser.getControl('Display Name').value = 'Test Product'
->>> user_browser.getControl('Title').value = 'This is a Test Product'
->>> user_browser.getControl('Description').value = (
-...     'If you were describing a Test Product this would be a little '
-...     'short but sweet.'
-...     )
->>> user_browser.getControl('Sourceforge Project').value = 'testing'
->>> user_browser.getControl('Freshmeat Project').value = 'testmeat'
->>> user_browser.getControl('Wiki URL').value = 'http://wiki.testing.com/'
->>> user_browser.getControl(
-...     'Screenshots URL').value = 'http://www.testing.com/screenshots/'
->>> user_browser.getControl(
-...     'Download URL').value = 'http://www.testing.com/download/'
->>> user_browser.getControl(
-...     'Programming Language').value = 'Visual Python++, C'
->>> user_browser.getControl('Summary').value = 'This is the summary'
->>> user_browser.getControl('Add').click()
->>> user_browser.url
-'http://launchpad.dev/testing2'
->>> 'Test Product' in user_browser.contents
-True
+    >>> user_browser.open('http://launchpad.dev/projects/+new')
+    >>> user_browser.getControl('Part of').value = 'mozilla'
+    >>> user_browser.getControl('Name', index=0).value = 'testing2'
+    >>> user_browser.getControl('Display Name').value = 'Test Product'
+    >>> user_browser.getControl('Title').value = 'This is a Test Product'
+    >>> user_browser.getControl(name='field.description').value = (
+    ...     'If you were describing a Test Product this would be a little '
+    ...     'short but sweet.'
+    ...     )
+    >>> user_browser.getControl('Sourceforge Project').value = 'testing'
+    >>> user_browser.getControl('Freshmeat Project').value = 'testmeat'
+    >>> user_browser.getControl('Wiki URL').value = 'http://wiki.testing.com/'
+    >>> user_browser.getControl(
+    ...     'Screenshots URL').value = 'http://www.testing.com/screenshots/'
+    >>> user_browser.getControl(
+    ...     'Download URL').value = 'http://www.testing.com/download/'
+    >>> user_browser.getControl(
+    ...     'Programming Language').value = 'Visual Python++, C'
+    >>> user_browser.getControl('Summary').value = 'This is the summary'
+    >>> user_browser.getControl(name='field.licenses').value = [
+    ...     'OTHER_PROPRIETARY']
+    >>> user_browser.getControl(name='field.license_info').value = 'foo'
+    >>> user_browser.getControl('Add').click()
+    >>> user_browser.url
+    'http://launchpad.dev/testing2'
+    >>> 'Test Product' in user_browser.contents
+    True
 
+When a product is created with the license OTHER_PROPRIETARY an email
+is sent to feedback@canonical.com.
+
+The mail is sent when the transaction gets commited:
+
+    >>> import transaction
+    >>> transaction.commit()
+    >>> import email
+    >>> from canonical.launchpad.mail import stub
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['To']
+    'feedback@launchpad.net'
+    >>> msg['From']
+    'Launchpad <noreply@launchpad.net>'
+    >>> msg['Subject']
+    'Project License Submitted'
+    >>> msg['Reply-To']
+    'Sample Person <test@canonical.com>'
+    >>> msg.get_payload()
+    "...Other/Proprietary...
+
+When a product is created with the license OTHER_OPEN_SOURCE an email
+is also sent to feedback@canonical.com.
+
+    >>> user_browser.open('http://launchpad.dev/projects/+new')
+    >>> user_browser.getControl('Part of').value = 'mozilla'
+    >>> user_browser.getControl('Name', index=0).value = 'foss'
+    >>> user_browser.getControl('Display Name').value = 'Test Other'
+    >>> user_browser.getControl('Title').value = 'This is a Test Product'
+    >>> user_browser.getControl(name='field.description').value = (
+    ...     'If you were describing a Test Product this would be a little '
+    ...     'short but sweet.'
+    ...     )
+    >>> user_browser.getControl('Summary').value = 'This is the summary'
+    >>> user_browser.getControl(name='field.licenses').value = [
+    ...     'OTHER_OPEN_SOURCE']
+    >>> user_browser.getControl(name='field.license_info').value = 'foo'
+    >>> user_browser.getControl('Add').click()
+    >>> user_browser.url
+    'http://launchpad.dev/foss'
+    >>> 'Test Product' in user_browser.contents
+    True
+
+The mail is sent when the transaction gets commited:
+
+    >>> transaction.commit()
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['To']
+    'feedback@launchpad.net'
+    >>> msg['From']
+    'Launchpad <noreply@launchpad.net>'
+    >>> msg['Subject']
+    'Project License Submitted'
+    >>> msg['Reply-To']
+    'Sample Person <test@canonical.com>'
+    >>> msg.get_payload()
+    "...Other/Open Source...
 
 Now let's try to insert a product with the same name (testing).
 
->>> user_browser.open('http://launchpad.dev/projects/+new')
->>> user_browser.getControl('Part of').value = 'mozilla'
->>> user_browser.getControl('Name', index=0).value = 'testing'
->>> user_browser.getControl('Display Name').value = 'Test Product'
->>> user_browser.getControl('Title').value = 'This is a Test Product'
->>> user_browser.getControl('Description').value = (
-...     'If you were describing a Test Product this would be a little '
-...     'short but sweet.'
-...     )
->>> user_browser.getControl('Summary').value = 'This is the summary'
->>> user_browser.getControl('Add').click()
->>> user_browser.url
-'http://launchpad.dev/projects/+new'
->>> for message in find_tags_by_class(user_browser.contents, 'message'):
-...     print message.renderContents()
-There is 1 error.
-testing is already in use by another project
+    >>> user_browser.open('http://launchpad.dev/projects/+new')
+    >>> user_browser.getControl('Part of').value = 'mozilla'
+    >>> user_browser.getControl('Name', index=0).value = 'testing'
+    >>> user_browser.getControl('Display Name').value = 'Test Product'
+    >>> user_browser.getControl('Title').value = 'This is a Test Product'
+    >>> user_browser.getControl(name='field.description').value = (
+    ...     'If you were describing a Test Product this would be a little '
+    ...     'short but sweet.'
+    ...     )
+    >>> user_browser.getControl('Summary').value = 'This is the summary'
+    >>> user_browser.getControl(name='field.licenses').value = ['GPL']
+    >>> user_browser.getControl(name='field.license_info').value = 'foo'
+    >>> user_browser.getControl('Add').click()
+    >>> user_browser.url
+    'http://launchpad.dev/projects/+new'
+    >>> print "\n".join(get_feedback_messages(user_browser.contents))
+    There is 1 error.
+    testing is already used by another project
 
 
 Normal users don't get to see the owner and reviewed fields
 
->>> user_browser.open('http://launchpad.dev/projects/+new')
->>> user_browser.getControl('Reviewed')
-Traceback (most recent call last):
-...
-LookupError:...
->>> user_browser.getControl('Owner')
-Traceback (most recent call last):
-...
-LookupError:...
+    >>> user_browser.open('http://launchpad.dev/projects/+new')
+    >>> user_browser.getControl('Reviewed')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+    >>> user_browser.getControl('Owner')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
 
 
 And now, test with the David Allouche user, who is a member of the
 vcs-imports team. This should fail suggesting an invalid owner, and
 the reviewed value should be on.
 
-  >>> browser.addHeader('Authorization',
-  ...                   'Basic david.allouche@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/projects/+new')
-  >>> browser.getControl('Name', index=0).value = 'warpage'
-  >>> browser.getControl('Owner').value = 'XXX'
-  >>> browser.getControl('Display Name').value = 'dname'
-  >>> browser.getControl('Title').value = 'title'
-  >>> browser.getControl('Summary').value = 'summary'
-  >>> browser.getControl('Description').value = 'description'
-  >>> browser.getControl('Reviewed').click()
-  >>> browser.getControl('Add').click()
-  >>> print browser.url
-  http://launchpad.dev/projects/+new
+    >>> browser = setupBrowser(auth='Basic david.allouche@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/projects/+new')
+    >>> browser.getControl('Name', index=0).value = 'warpage'
+    >>> browser.getControl('Owner').value = 'XXX'
+    >>> browser.getControl('Display Name').value = 'dname'
+    >>> browser.getControl('Title').value = 'title'
+    >>> browser.getControl('Summary').value = 'summary'
+    >>> browser.getControl(name='field.description').value = 'description'
+    >>> browser.getControl(name='field.licenses').value = ['GPL']
+    >>> browser.getControl(name='field.license_info').value = 'foo'
+    >>> browser.getControl('Reviewed').click()
+    >>> browser.getControl('Add').click()
+    >>> print browser.url
+    http://launchpad.dev/projects/+new
 
-  >>> '<p class="error message">There is 1 error.</p>' in browser.contents
-  True
-  >>> browser.getControl('Reviewed').selected
-  True
+    >>> '<p class="error message">There is 1 error.</p>' in browser.contents
+    True
+    >>> browser.getControl('Reviewed').selected
+    True
 
 
 And finally, submit a successful creation by an admin.
 
-  >>> browser.getControl('Owner').value = 'sabdfl'
-  >>> browser.getControl('Add').click()
-  >>> print browser.url
-  http://launchpad.dev/warpage
+    >>> browser.getControl('Owner').value = 'sabdfl'
+    >>> browser.getControl('Add').click()
+    >>> print browser.url
+    http://launchpad.dev/warpage
 
 And now check it was correctly created:
 
-  >>> from canonical.launchpad.database import Product
-  >>> product = Product.selectOneBy(name="warpage")
-  >>> print product.owner.name
-  sabdfl
-  >>> print product.reviewed
-  True
+    >>> from canonical.launchpad.database import Product
+    >>> product = Product.selectOneBy(name="warpage")
+    >>> print product.owner.name
+    sabdfl
+    >>> print product.reviewed
+    True
 
 It's also possible to set the product's icon/emblem at creation time.
 
->>> user_browser.open('http://launchpad.dev/projects/+new')
->>> user_browser.getControl('Part of').value = 'mozilla'
->>> user_browser.getControl('Name', index=0).value = 'testing3'
->>> user_browser.getControl('Display Name').value = 'Test Product #3'
->>> user_browser.getControl('Title').value = 'This is a Test Product #3'
->>> user_browser.getControl('Description').value = (
-...     'If you were describing a Test Product this would be a little '
-...     'short but sweet.'
-...     )
->>> user_browser.getControl('Summary').value = 'This is the summary'
+    >>> user_browser.open('http://launchpad.dev/projects/+new')
+    >>> user_browser.getControl('Part of').value = 'mozilla'
+    >>> user_browser.getControl('Name', index=0).value = 'testing3'
+    >>> user_browser.getControl('Display Name').value = 'Test Product #3'
+    >>> user_browser.getControl('Title').value = 'This is a Test Product #3'
+    >>> user_browser.getControl(name='field.description').value = (
+    ...     'If you were describing a Test Product this would be a little '
+    ...     'short but sweet.'
+    ...     )
+    >>> user_browser.getControl('Summary').value = 'This is the summary'
+    >>> user_browser.getControl(name='field.licenses').value = ['GPL']
+    >>> user_browser.getControl(name='field.license_info').value = 'foo'
 
->>> user_browser.getControl('Add').click()
->>> user_browser.url
-'http://launchpad.dev/testing3'
+    >>> user_browser.getControl('Add').click()
+    >>> user_browser.url
+    'http://launchpad.dev/testing3'
 

@@ -24,6 +24,7 @@ default: inplace
 
 schema: build
 	$(MAKE) -C database/schema
+	$(PYTHON) ./utilities/make-dummy-hosted-branches
 
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
@@ -34,6 +35,12 @@ check_sourcecode_dependencies:
 	# Use the check_for_launchpad rule which runs tests over a smaller
 	# set of libraries, for performance and reliability reasons.
 	$(MAKE) -C sourcecode check_for_launchpad PYTHON=${PYTHON} \
+		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
+
+check_loggerhead_on_merge:
+	# Loggerhead doesn't depend on anything else in rocketfuel and nothing
+	# depends on it (yet).
+	make -C sourcecode/loggerhead check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 dbfreeze_check:
@@ -77,6 +84,12 @@ check: build
 
 lint:
 	@bash ./utilities/lint.sh
+
+lint-verbose:
+	@bash ./utilities/lint.sh -v
+
+check-configs:
+	${PYTHON} utilities/check-configs.py 'canonical/pid_dir=/tmp'
 
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages
@@ -125,6 +138,23 @@ run_all: inplace stop bzr_version_info
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp,mailman \
 		 -C $(CONFFILE)
+
+pull_branches: bzr_version_info
+	# Mirror the hosted branches in the development upload area to the
+	# mirrored area.
+	$(PYTHON) cronscripts/supermirror-pull.py upload
+
+rewritemap:
+	# Build rewrite map that maps friendly branch names to IDs. Necessary
+	# for http access to branches and for the branch scanner.
+	mkdir -p /var/tmp/sm-ng/config
+	$(PYTHON) cronscripts/supermirror_rewritemap.py /var/tmp/sm-ng/config/launchpad-lookup.txt
+
+scan_branches: rewritemap
+	# Scan branches from the filesystem into the database.
+	$(PYTHON) cronscripts/branch-scanner.py
+
+sync_branches: pull_branches scan_branches
 
 bzr_version_info:
 	rm -f bzr-version-info.py bzr-version-info.pyc
@@ -198,5 +228,6 @@ tags:
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \
 		check importdcheck check_merge schema default launchpad.pot \
-		check_launchpad_on_merge check_merge_ui
+		check_launchpad_on_merge check_merge_ui pull rewritemap scan \
+		sync_branches check_loggerhead_on_merge
 

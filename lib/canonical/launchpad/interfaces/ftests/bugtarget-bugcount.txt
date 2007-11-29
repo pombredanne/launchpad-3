@@ -22,7 +22,7 @@ anonymous user, i.e. no private bugs will be included in the counts.
 
 It's possible to limit which statuses to return.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> bug_counts = bugtarget.getBugCounts(
     ...     None, [BugTaskStatus.NEW, BugTaskStatus.CONFIRMED])
     >>> for status in sorted(bug_counts.keys()):
@@ -89,7 +89,8 @@ count, but not No Privileges Person or the anonymous user.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> old_counts = bugtarget.getBugCounts(None)
-    >>> bug.private = True
+    >>> bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(bug)
     >>> sample_person_counts = bugtarget.getBugCounts(
     ...     getUtility(IPersonSet).getByEmail('test@canonical.com'))
@@ -108,7 +109,8 @@ count, but not No Privileges Person or the anonymous user.
     >>> print_count_difference(anon_counts, old_counts, BugTaskStatus.INCOMPLETE)
     INCOMPLETE: 1 bug(s) less
 
-    >>> bug.private = False
+    >>> bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(bug)
 
 == Duplicate Bugs ==

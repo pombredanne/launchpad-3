@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -10,6 +10,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesBugsMenu',
            'ProductSeriesSpecificationsMenu',
            'ProductSeriesTranslationMenu',
+           'ProductSeriesTranslationsExportView',
            'ProductSeriesView',
            'ProductSeriesEditView',
            'ProductSeriesSourceView',
@@ -30,31 +31,29 @@ from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
-from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
-from canonical.launchpad.helpers import browserLanguages, is_tar_filename
-from canonical.launchpad.interfaces import (
-    ICountry, IPOTemplateSet, ILaunchpadCelebrities,
-    ISourcePackageNameSet, IProductSeries, ITranslationImporter,
-    ITranslationImportQueue, IProductSeriesSet, NotFoundError)
+from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.launchpad import (
-    StructuralObjectPresentation, DefaultShortLink)
-from canonical.launchpad.browser.rosetta import TranslationsMixin
+    DefaultShortLink, StructuralObjectPresentation)
+from canonical.launchpad.browser.poexportrequest import BaseExportView
+from canonical.launchpad.browser.translations import TranslationsMixin
+from canonical.launchpad.helpers import browserLanguages, is_tar_filename
+from canonical.launchpad.interfaces import (
+    ICountry, ILaunchpadCelebrities, ImportStatus, IPOTemplateSet,
+    IProductSeries, IProductSeriesSet, ISourcePackageNameSet,
+    ITranslationImporter, ITranslationImportQueue, NotFoundError,
+    RevisionControlSystems)
 from canonical.launchpad.webapp import (
-    Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
-    canonical_url, LaunchpadView, StandardLaunchpadFacets,
-    LaunchpadEditFormView, action, custom_widget
-    )
-from canonical.launchpad.webapp.batching import BatchNavigator
+    action, ApplicationMenu, canonical_url, custom_widget,
+    enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
+    Link, Navigation, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu
-
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
-
-from canonical.launchpad import _
+from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 
 
 def quote(text):
@@ -116,9 +115,10 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'overview'
-    links = ['edit', 'driver', 'editsource', 'ubuntupkg',
-             'add_package', 'add_milestone', 'add_release',
-             'add_potemplate', 'rdf', 'review']
+    links = [
+        'edit', 'driver', 'editsource', 'ubuntupkg', 'add_package',
+        'add_milestone', 'add_release', 'rdf', 'review'
+        ]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -157,11 +157,6 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     def rdf(self):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
-
-    @enabled_with_permission('launchpad.Admin')
-    def add_potemplate(self):
-        text = 'Add translation template'
-        return Link('+addpotemplate', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def review(self):
@@ -239,7 +234,7 @@ class ProductSeriesTranslationMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'translations'
-    links = ['translationupload', 'imports']
+    links = ['translationupload', 'imports', 'translationdownload']
 
     def imports(self):
         text = 'See import queue'
@@ -248,6 +243,32 @@ class ProductSeriesTranslationMenu(ApplicationMenu):
     def translationupload(self):
         text = 'Upload translations'
         return Link('+translations-upload', text, icon='add')
+
+    def translationdownload(self):
+        text = 'Download translations'
+        return Link('+export', text, icon='download')
+
+
+class ProductSeriesTranslationsExportView(BaseExportView):
+    """Request tarball export of productseries' complete translations.
+
+    Only complete downloads are supported for now; there is no option to
+    select languages, and templates are always included.
+    """
+
+    def processForm(self):
+        """Process form submission requesting translations export."""
+        pofiles = []
+        translation_templates = self.context.getCurrentTranslationTemplates()
+        for translation_template in translation_templates:
+            pofiles += list(translation_template.pofiles)
+        return (translation_templates, pofiles)
+
+    def getDefaultFormat(self):
+        templates = self.context.getCurrentTranslationTemplates()
+        if len(templates) == 0:
+            return None
+        return templates[0].source_file_format
 
 
 def get_series_branch_error(product, branch):
@@ -276,7 +297,8 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         self.has_errors = False
 
         # Whether there is more than one PO template.
-        self.has_multiple_templates = len(self.context.currentpotemplates) > 1
+        self.has_multiple_templates = len(
+            self.context.getCurrentTranslationTemplates()) > 1
 
         # let's find out what source package is associated with this
         # productseries in the current release of ubuntu
@@ -400,7 +422,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
         root, ext = os.path.splitext(filename)
         translation_importer = getUtility(ITranslationImporter)
-        if (ext in translation_importer.file_extensions_with_importer):
+        if (ext in translation_importer.supported_file_extensions):
             # Add it to the queue.
             translation_import_queue_set.addOrUpdateEntry(
                 filename, content, True, self.user,
@@ -536,7 +558,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     custom_widget('cvsroot', StrippedTextWidget, displayWidth=50)
     custom_widget('cvsmodule', StrippedTextWidget, displayWidth=20)
     custom_widget('cvsbranch', StrippedTextWidget, displayWidth=20)
-    custom_widget('svnrepository', StrippedTextWidget, displayWidth=50)
+    custom_widget('svnrepository', URIWidget, displayWidth=50)
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)
@@ -625,7 +647,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         # all such actions the same though, so we ignore it.
         return check_permission('launchpad.Admin', self.context)
 
-    @action(_('Update RCS Details'), name='update')
+    @action(_('Update Details'), name='update')
     def update_action(self, action, data):
         old_rcstype = self.context.rcstype
         self.updateContextFromData(data)
@@ -636,7 +658,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                                       self.context.rcstype is not None):
                 self.context.importstatus = ImportStatus.TESTING
         self.request.response.addInfoNotification(
-            'Upstream RCS details updated.')
+            'Upstream source details updated.')
 
     def allowResetToAutotest(self, action):
         return self.isAdmin() and self.context.autoTestFailed()
@@ -741,7 +763,6 @@ class ProductSeriesSourceSetView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.ready = request.form.get('ready', None)
         self.text = request.form.get('text', None)
         try:
             self.importstatus = int(request.form.get('state', None))
@@ -749,15 +770,11 @@ class ProductSeriesSourceSetView:
             self.importstatus = None
         # setup the initial values if there was no form submitted
         if request.form.get('search', None) is None:
-            self.ready = 'on'
             self.importstatus = ImportStatus.TESTING.value
 
-        self.batchnav = BatchNavigator(self.search(), request)
-
-    def search(self):
-        return self.context.search(ready=self.ready, text=self.text,
-                                   forimport=True,
-                                   importstatus=self.importstatus)
+        results = self.context.searchImports(
+            text=self.text, importstatus=self.importstatus)
+        self.batchnav = BatchNavigator(results, request)
 
     def sourcestateselector(self):
         html = '<select name="state">\n'
@@ -772,30 +789,6 @@ class ProductSeriesSourceSetView:
             html += '>' + str(enum.title) + '</option>\n'
         html += '</select>\n'
         return html
-        html += '  <option value="DONTSYNC"'
-        if self.importstatus == 'DONTSYNC':
-            html += ' selected'
-        html += '>Do Not Sync</option>\n'
-        html += '  <option value="TESTING"'
-        if self.importstatus == 'TESTING':
-            html += ' selected'
-        html += '>Testing</option>\n'
-        html += '  <option value="AUTOTESTED"'
-        if self.importstatus == 'AUTOTESTED':
-            html += ' selected'
-        html += '>Auto-Tested</option>\n'
-        html += '  <option value="PROCESSING"'
-        if self.importstatus == 'PROCESSING':
-            html += ' selected'
-        html += '>Processing</option>\n'
-        html += '  <option value="SYNCING"'
-        if self.importstatus == 'SYNCING':
-            html += ' selected'
-        html += '>Syncing</option>\n'
-        html += '  <option value="STOPPED"'
-        if self.importstatus == 'STOPPED':
-            html += ' selected'
-        html += '>Stopped</option>\n'
 
 
 class ProductSeriesShortLink(DefaultShortLink):

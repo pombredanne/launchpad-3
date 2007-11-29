@@ -10,11 +10,6 @@ __all__ = [
 
 from operator import itemgetter
 
-from canonical.lp.dbschema import (
-    SpecificationFilter,
-    SpecificationSort,
-    )
-
 from canonical.launchpad.interfaces import (
     IDistribution,
     IDistroSeries,
@@ -25,6 +20,8 @@ from canonical.launchpad.interfaces import (
     IProject,
     ISprint,
     ISpecificationTarget,
+    SpecificationFilter,
+    SpecificationSort,
     )
 
 from canonical.config import config
@@ -34,7 +31,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
-from zope.component import queryMultiAdapter        
+from zope.component import queryMultiAdapter
 
 class HasSpecificationsView(LaunchpadView):
     """Base class for several context-specific views that involve lists of
@@ -109,7 +106,6 @@ class HasSpecificationsView(LaunchpadView):
         """Quick hack for mdz, to get csv dump of specs."""
         import csv
         from StringIO import StringIO
-        from canonical.launchpad.webapp import canonical_url
         output = StringIO()
         writer = csv.writer(output)
         headings = [

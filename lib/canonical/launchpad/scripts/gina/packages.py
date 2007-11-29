@@ -23,10 +23,9 @@ from canonical.archivepublisher.diskpool import poolify
 from canonical.launchpad.scripts.gina.changelog import parse_changelog
 
 from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import (
-    PackagePublishingPriority, SourcePackageUrgency)
 
-from canonical.launchpad.interfaces import GPGKeyAlgorithm
+from canonical.launchpad.interfaces import (
+    GPGKeyAlgorithm, PackagePublishingPriority, SourcePackageUrgency)
 from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina import call
 
@@ -42,7 +41,7 @@ urgencymap = {
     "medium": SourcePackageUrgency.MEDIUM,
     "high": SourcePackageUrgency.HIGH,
     "emergency": SourcePackageUrgency.EMERGENCY,
-    }   
+    }
 
 prioritymap = {
     "required": PackagePublishingPriority.REQUIRED,

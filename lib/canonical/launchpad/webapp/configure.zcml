@@ -167,6 +167,15 @@
         name="image"
         />
 
+    <!-- TALES badges: namespace -->
+
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BadgeDisplayAPI"
+        name="badges"
+        />
+
     <!-- TALES fmt: namespace -->
 
     <!-- The next directive is registered for all dicts, but we really only
@@ -250,9 +259,23 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.IBug"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IBranch"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BranchFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugTask"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTaskFormatterAPI"
         name="fmt"
         />
 
@@ -389,17 +412,6 @@
             />
     </content>
 -->
-    <!-- Launchpad publication machinery. We have customized publication
-    and requests that need to be hooked up.
-    -->
-    <publisher
-        name="BROWSER"
-        factory="canonical.launchpad.webapp.servers.LaunchpadRequestPublicationFactory"
-        methods="GET POST HEAD"
-        mimetypes="*"
-        priority="15"
-        />
-
     <!-- LaunchpadBrowserResponse needs to be able to find the session -->
     <adapter
         for="canonical.launchpad.webapp.servers.LaunchpadBrowserResponse"

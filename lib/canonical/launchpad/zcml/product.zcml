@@ -8,7 +8,6 @@
   <!-- Product -->
   <content class="canonical.launchpad.database.Product">
     <allow interface="canonical.launchpad.interfaces.IProduct" />
-    <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <require
       permission="launchpad.Edit"
@@ -18,9 +17,10 @@
                       downloadurl programminglang
                       sourceforgeproject freshmeatproject
                       translationgroup translationpermission
-                      official_malone official_rosetta official_answers
+                      official_malone official_answers
                       releaseroot development_focus bugtracker
-                      homepage_content icon logo mugshot"
+                      homepage_content icon logo mugshot 
+                      license_info licenses"
       />
 <!-- sabdfl 2006-04-10 I put "name" in the admin group because
       with Bazaar now in place, lots of people can have personal
@@ -34,6 +34,12 @@
       permission="launchpad.Admin"
       set_attributes="name active reviewed autoupdate private_bugs"
       />
+    <!-- Changes to official_rosetta must be available to Launchpad
+         Translations admins so we need its own permission. -->
+    <require
+      permission="launchpad.TranslationsAdmin"
+      set_attributes="official_rosetta"
+      />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getSupportedLanguages
@@ -42,7 +48,8 @@
       />
     <require
       permission="launchpad.AnyPerson"
-      attributes="newQuestion addAnswerContact removeAnswerContact"
+      attributes="newQuestion createQuestionFromBug addAnswerContact
+                  removeAnswerContact"
       />
     <!-- IFAQTarget -->
     <allow
@@ -164,6 +171,48 @@
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
+  <browser:page
+    name="+help-translate-button"
+    facet="translations"
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.HelpTranslateButtonView"
+    permission="zope.Public"
+    />
+
+  <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProduct"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.ProductView"
+    layer="canonical.launchpad.layers.TranslationsLayer" >
+    <browser:page
+      name="+translations"
+      facet="translations"
+      template="../templates/product-translations.pt"
+      />
+    <browser:page
+      name="+portlet-translations"
+      facet="translations"
+      template="../templates/product-portlet-translations.pt"
+      />
+    <browser:page
+      name="+portlet-translatables"
+      facet="translations"
+      template="../templates/product-portlet-translatables.pt"
+      />
+    <browser:page
+      name="+portlet-obsolete-translatables"
+      facet="translations"
+      template="../templates/product-portlet-obsolete-translatables.pt"
+      />
+  </browser:pages>
+
   <browser:pages
     for="canonical.launchpad.interfaces.IProduct"
     permission="zope.Public"
@@ -172,11 +221,6 @@
       name="+index"
       facet="overview"
       template="../templates/product-index.pt"
-      />
-    <browser:page
-      name="+translations"
-      facet="translations"
-      template="../templates/product-translations.pt"
       />
     <browser:page
       name="+packages"
@@ -218,11 +262,6 @@
       template="../templates/product-portlet-series.pt"
       />
     <browser:page
-      name="+portlet-translations"
-      facet="translations"
-      template="../templates/product-portlet-translations.pt"
-      />
-    <browser:page
       name="+portlet-milestones"
       facet="overview"
       template="../templates/object-portlet-milestones.pt"
@@ -251,11 +290,6 @@
       name="+portlet-summary"
       facet="overview"
       template="../templates/object-portlet-summary.pt"
-      />
-    <browser:page
-      name="+portlet-translatables"
-      facet="translations"
-      template="../templates/product-portlet-translatables.pt"
       />
     <browser:page
       name="+portlet-aboutcve"
@@ -301,17 +335,6 @@
     <browser:page
       name="+reassign"
       template="../templates/object-reassignment.pt"
-      />
-  </browser:pages>
-
-  <browser:pages
-    for="canonical.launchpad.interfaces.IProduct"
-    permission="launchpad.Admin"
-    class="canonical.launchpad.browser.ProductView" >
-    <browser:page
-      name="+potemplatenames"
-      facet="translations"
-      template="../templates/object-potemplatenames.pt"
       />
   </browser:pages>
 
@@ -368,6 +391,7 @@
     class="canonical.launchpad.browser.ProductChangeTranslatorsView"
     permission="launchpad.Edit"
     template="../templates/product-translators.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <browser:addform
@@ -482,7 +506,7 @@
     for="canonical.launchpad.interfaces.IProductSet"
     class="canonical.launchpad.browser.ProductSetView"
     facet="overview"
-    permission="launchpad.AnyPerson">
+    permission="launchpad.Admin">
     <browser:page
       name="+review"
       template="../templates/registry-review.pt"

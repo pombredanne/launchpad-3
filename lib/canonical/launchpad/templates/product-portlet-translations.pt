@@ -1,4 +1,10 @@
-<div class="portlet" id="portlet-translations
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-translations"
      tal:define="translatable view/primary_translatable">
 
   <h2>Translations for <span tal:replace="context/displayname" /></h2>
@@ -9,7 +15,7 @@
 
       <ul>
         <li class="translations"
-            tal:repeat="template translatable/potemplates">
+            tal:repeat="template translatable/getCurrentTranslationTemplates">
           <a tal:attributes="href template/fmt:url"
              tal:content="template/title">template title</a>
         </li>
@@ -32,3 +38,4 @@
   </div>
 
 </div>
+</tal:root>

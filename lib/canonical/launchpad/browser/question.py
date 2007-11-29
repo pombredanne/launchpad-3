@@ -45,8 +45,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
-from canonical.launchpad.event import (
-    SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.helpers import (
     is_english_variant, preferred_or_request_languages)
 
@@ -61,6 +60,7 @@ from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     LaunchpadView, action, LaunchpadFormView, LaunchpadEditFormView,
     custom_widget, redirection, safe_action, smartquote)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets import LaunchpadRadioWidget
@@ -106,10 +106,16 @@ class QuestionSetView(LaunchpadFormView):
     @action('Find Answers', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""
-        scope = data['scope']
-        if scope is None:
+        # For the scope to be absent from the form, the user must
+        # build the query string themselves - most likely because they
+        # are a bot. In that case we just assume they want to search
+        # all projects.
+        scope = self.widgets['scope'].getScope()
+        if scope is None or scope == 'all':
             # Use 'All projects' scope.
             scope = self.context
+        else:
+            scope = self.widgets['scope'].getInputValue()
         self.next_url = "%s/+tickets?%s" % (
             canonical_url(scope), self.request['QUERY_STRING'])
 
@@ -362,7 +368,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     # The similar items will be held in the following properties.
     similar_questions = None
     similar_faqs = None
-    
+
     def setUpFields(self):
         """Set up the form_fields from the schema and custom_widgets."""
         # Add our language field with a vocabulary specialized for
@@ -415,7 +421,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
                 self.form_fields.select('description'), self.prefix,
                  self.context, self.request, data=self.initial_values,
                  ignore_request=False)
-        
+
         faqs = IFAQTarget(self.question_target).findSimilarFAQs(data['title'])
         self.similar_faqs = list(faqs[:self._MAX_SIMILAR_FAQS])
 
@@ -450,9 +456,6 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
 
         question = self.question_target.newQuestion(
             self.user, data['title'], data['description'], data['language'])
-
-        # XXX flacoste 2006-07-25: This should be moved to newQuestion().
-        notify(SQLObjectCreatedEvent(question))
 
         self.request.response.redirect(canonical_url(question))
         return ''
@@ -677,6 +680,12 @@ class QuestionWorkflowView(LaunchpadFormView):
         self._addNotificationAndHandlePossibleSubscription(
             _('Thanks for your comment.'), data)
 
+    @property
+    def show_call_to_answer(self):
+        """Return whether the call to answer should be displayed."""
+        return (self.user != self.context.owner and
+                self.context.can_give_answer)
+
     def canAddAnswer(self, action):
         """Return whether the answer action should be displayed."""
         return (self.user is not None and
@@ -806,6 +815,16 @@ class QuestionWorkflowView(LaunchpadFormView):
         return '%s/+addquestion' % canonical_url(self.context.target,
                                                  rootsite='answers')
 
+    @property
+    def original_bug(self):
+        """Return the bug that the question was created from or None."""
+        for buglink in self.context.bug_links:
+            if (check_permission('launchpad.View',  buglink.bug)
+                and buglink.bug.owner == self.context.owner
+                and buglink.bug.datecreated == self.context.datecreated):
+                return buglink.bug
+
+        return None
 
 
 class QuestionConfirmAnswerView(QuestionWorkflowView):
@@ -993,12 +1012,12 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
     select an element from this set using the radio buttons.
     """
 
-    _messageNoValue=_('No existing FAQs are relevant')
+    _messageNoValue = _('No existing FAQs are relevant')
 
     searchDisplayWidth = 30
 
     searchButtonLabel = _('Search')
-    
+
     @property
     def search_field_name(self):
         """Return the name to use for the search field."""
@@ -1112,7 +1131,7 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
             }
 
     def setUpWidgets(self):
-        """Sets the default query on the search widget to the question title."""
+        """Set the query on the search widget to the question title."""
         super(QuestionLinkFAQView, self).setUpWidgets()
         self.widgets['faq'].default_query = self.context.title
 
@@ -1212,9 +1231,8 @@ class QuestionContextMenu(ContextMenu):
     def linkfaq(self):
         """Link for This is a FAQ."""
         text = 'This is a FAQ'
-        summary = 'Answer this question using a FAQ.'
-        can_give_answer = self.context.can_give_answer
-        return Link('+linkfaq', text, summary, enabled=can_give_answer)
+        summary = 'Answer this question using a FAQ, or add one as a comment.'
+        return Link('+linkfaq', text, summary)
 
 
 class QuestionSetContextMenu(ContextMenu):

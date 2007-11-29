@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['BinaryPackageRelease', 'BinaryPackageReleaseSet']
@@ -11,13 +12,13 @@ from sqlobject import StringCol, ForeignKey, IntCol, SQLMultipleJoin, BoolCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 
 from canonical.launchpad.interfaces import (
-    IBinaryPackageRelease, IBinaryPackageReleaseSet)
+    BinaryPackageFileType, BinaryPackageFormat, IBinaryPackageRelease,
+    IBinaryPackageReleaseSet, PackagePublishingPriority,
+    PackagePublishingStatus)
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
-from canonical.lp import dbschema
 
 from canonical.launchpad.database.files import BinaryPackageFile
 from canonical.launchpad.helpers import shortlist
@@ -34,12 +35,12 @@ class BinaryPackageRelease(SQLBase):
     description = StringCol(dbName='description', notNull=True)
     build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
     binpackageformat = EnumCol(dbName='binpackageformat', notNull=True,
-                               schema=dbschema.BinaryPackageFormat)
+                               schema=BinaryPackageFormat)
     component = ForeignKey(dbName='component', foreignKey='Component',
                            notNull=True)
     section = ForeignKey(dbName='section', foreignKey='Section', notNull=True)
     priority = EnumCol(dbName='priority', notNull=True,
-                       schema=dbschema.PackagePublishingPriority)
+                       schema=PackagePublishingPriority)
     shlibdeps = StringCol(dbName='shlibdeps')
     depends = StringCol(dbName='depends')
     recommends = StringCol(dbName='recommends')
@@ -104,7 +105,7 @@ class BinaryPackageRelease(SQLBase):
 
         # Daniel Debonzi: To get the lastest versions of a BinaryPackage
         # Im suposing that one BinaryPackage is build for only one
-        # DistroSeries (Each DistroSeries compile all its Packages). 
+        # DistroSeries (Each DistroSeries compile all its Packages).
         # (BinaryPackage.build.distroarchseries = \
         # PackagePublishing.distroarchseries
         # where PackagePublishing.binarypackage = BinaryPackage.id)
@@ -119,14 +120,14 @@ class BinaryPackageRelease(SQLBase):
         BinaryPackageRelease.binarypackagename =
             BinaryPackageName.id AND
         BinaryPackageName.id = %s AND
-        BinaryPackagePublishingHistory.distroarchrelease = %s AND
+        BinaryPackagePublishingHistory.distroarchseries = %s AND
         BinaryPackagePublishingHistory.archive IN %s AND
         BinaryPackagePublishingHistory.status = %s
         """ % sqlvalues(
             self.binarypackagename,
             self.build.distroarchseries,
             self.build.distribution.all_distro_archive_ids,
-            dbschema.PackagePublishingStatus.SUPERSEDED)
+            PackagePublishingStatus.SUPERSEDED)
 
         return shortlist(BinaryPackageRelease.select(
             query, clauseTables=clauseTables, distinct=True))
@@ -135,11 +136,11 @@ class BinaryPackageRelease(SQLBase):
         """See `IBinaryPackageRelease`."""
         determined_filetype = None
         if file.filename.endswith(".deb"):
-            determined_filetype = dbschema.BinaryPackageFileType.DEB
+            determined_filetype = BinaryPackageFileType.DEB
         elif file.filename.endswith(".rpm"):
-            determined_filetype = dbschema.BinaryPackageFileType.RPM
+            determined_filetype = BinaryPackageFileType.RPM
         elif file.filename.endswith(".udeb"):
-            determined_filetype = dbschema.BinaryPackageFileType.UDEB
+            determined_filetype = BinaryPackageFileType.UDEB
 
         return BinaryPackageFile(binarypackagerelease=self,
                                  filetype=determined_filetype,
@@ -176,7 +177,7 @@ class BinaryPackageReleaseSet:
         queries.append(match_query)
 
         if archtag:
-            queries.append('DistroArchRelease.architecturetag=%s'
+            queries.append('DistroArchSeries.architecturetag=%s'
                            % sqlvalues(archtag))
 
         query = " AND ".join(queries)
@@ -199,12 +200,12 @@ class BinaryPackageReleaseSet:
             queries.append('BinaryPackageRelease.version = %s'
                          % sqlvalues(version))
         else:
-            status_published = dbschema.PackagePublishingStatus.PUBLISHED
+            status_published = PackagePublishingStatus.PUBLISHED
             queries.append('BinaryPackagePublishingHistory.status = %s'
                          % sqlvalues(status_published))
 
         if archtag:
-            queries.append('DistroArchRelease.architecturetag = %s'
+            queries.append('DistroArchSeries.architecturetag = %s'
                          % sqlvalues(archtag))
 
         query = " AND ".join(queries)
@@ -216,19 +217,18 @@ class BinaryPackageReleaseSet:
         query = """
         BinaryPackagePublishingHistory.binarypackagerelease =
            BinaryPackageRelease.id AND
-        BinaryPackagePublishingHistory.distroarchrelease =
-           DistroArchRelease.id AND
+        BinaryPackagePublishingHistory.distroarchseries =
+           DistroArchSeries.id AND
         BinaryPackagePublishingHistory.archive IN %s AND
-        DistroArchRelease.distrorelease = %s AND
+        DistroArchSeries.distroseries = %s AND
         BinaryPackageRelease.binarypackagename =
            BinaryPackageName.id AND
-        BinaryPackagePublishingHistory.status != %s
+        BinaryPackagePublishingHistory.dateremoved is NULL
         """ % sqlvalues([archive.id for archive in
-                            distroseries.distribution.all_distro_archives],
-                        distroseries,
-                        dbschema.PackagePublishingStatus.REMOVED)
+                         distroseries.distribution.all_distro_archives],
+                        distroseries)
 
-        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
+        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries',
                         'BinaryPackageRelease', 'BinaryPackageName']
 
         return query, clauseTables

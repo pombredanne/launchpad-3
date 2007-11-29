@@ -1,8 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-
-from zope.schema import TextLine, Text, Field, Choice
-from zope.interface import Interface, Attribute
-from canonical.launchpad.interfaces.rosettastats import IRosettaStats
+# pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
 
@@ -12,84 +9,148 @@ __all__ = [
     'IPOFile',
     'IPOFileTranslator',
     'IPOFileAlternativeLanguage',
-    'EXPORT_DATE_HEADER'
     ]
 
-EXPORT_DATE_HEADER = 'X-Rosetta-Export-Date'
+from zope.component import getUtility
+from zope.interface import Attribute, implements, Interface
+from zope.schema import (
+    Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
+from zope.schema.interfaces import IContextSourceBinder
+from zope.schema.vocabulary import (
+    getVocabularyRegistry, SimpleTerm, SimpleVocabulary)
+
+from canonical.launchpad import _
+from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces.potemplate import IPOTemplate
+from canonical.launchpad.interfaces.rosettastats import IRosettaStats
+from canonical.launchpad.interfaces.translationgroup import (
+    TranslationPermission)
+
 
 class ZeroLengthPOExportError(Exception):
     """An exception raised when a PO file export generated an empty file."""
 
 
 class IPOFile(IRosettaStats):
-    """A PO File."""
+    """A translation file."""
 
-    id = Attribute("This PO file's id.")
+    id = Int(
+        title=_('The translation file id.'), required=True, readonly=True)
 
-    potemplate = Attribute("This PO file's template.")
+    potemplate = Object(
+        title=_('The translation file template.'),
+        required=True, readonly=True, schema=IPOTemplate)
 
     language = Choice(
-        title=u'Language of this PO file.',
-        vocabulary='Language',
-        required=True)
+        title=_('Language of this PO file.'),
+        vocabulary='Language', required=True)
 
-    title = Attribute("A title for this PO file.")
+    variant = TextLine(
+        title=_('The language variant for this translation file.'))
 
-    description = Attribute("PO file description.")
+    title = TextLine(
+        title=_('The translation file title.'), required=True, readonly=True)
 
-    topcomment = Attribute("The main comment for this .po file.")
+    description = Text(
+        title=_('The translation file description.'), required=True)
+
+    topcomment = Text(
+        title=_('A comment about this translation file.'), required=True)
 
     header = Text(
-        title=u'The header of this .po file.',
+        title=_('Header'),
+        description=_(
+            'The standard translation header in its native format.'),
         required=False)
 
-    fuzzyheader = Attribute("Whether the header is fuzzy or not.")
-
-    lasttranslator = Attribute("The last person that translated a string here.")
-
-    license = Attribute("The license under this translation is done.")
-
-    lastparsed = Attribute("Last time this pofile was parsed.")
-
-    owner = Attribute("The owner for this pofile.")
-
-    variant = Attribute("The language variant for this PO file.")
-
-    path = TextLine(
-        title=u'The path to the file that was imported',
+    fuzzyheader = Bool(
+        title=_('A flag indicating whether the header is fuzzy.'),
         required=True)
 
-    exportfile = Attribute("The Librarian alias of the last cached export.")
+    lasttranslator = Object(
+        title=_('Last person that translated a message.'), schema=IPerson)
 
-    datecreated = Attribute("The date this file was created.")
+    date_changed = Datetime(
+        title=_('When this file was last changed.'), readonly=False,
+        required=True)
 
-    last_touched_pomsgset = Field(
-        title=u'Translation message which was most recently touched.',
-        description=(u'Translation message which was most recently touched,'
-            u' or None if there are no translations active in this IPOFile.'),
-        required=False)
+    license = Int(title=_('The license under this translation is done.'))
 
-    translators = Attribute("A list of Translators that have been "
-        "designated as having permission to edit these files in this "
-        "language.")
+    lastparsed = Datetime(title=_('Last time this pofile was parsed.'))
 
-    contributors = Attribute("A list of all the people who have made "
-        "some sort of contribution to this PO file.")
+    owner = Choice(
+        title=_('Translation file owner'),
+        required=True,
+        description=_('''
+            The owner of the translation file in Launchpad can edit its
+            translations and upload new versions.
+            '''),
+        vocabulary="ValidOwner")
 
-    translationpermission = Attribute("The permission system which "
-        "is used for this pofile. This is inherited from the product, "
-        "project and/or distro in which the pofile is found.")
+    path = TextLine(
+        title=_('The path to the file that was imported'),
+        required=True)
 
-    fuzzy_count = Attribute("The number of 'fuzzy' messages in this po file.")
+    exportfile = Object(
+        title=_('Last cached export file'),
+        required=True, schema=ILibraryFileAlias)
+
+    is_cached_export_valid = Bool(
+        title=_(
+            "Whether this translation file have an up to date cached export"),
+        readonly=True, required=True)
+
+    datecreated = Datetime(
+        title=_('When this translation file was created.'), required=True)
+
+    translators = List(
+        title=_('Translators that have edit permissions.'),
+        description=_('''
+            Translators designated as having permission to edit these files
+            in this language.
+            '''), required=True, readonly=True)
+
+    contributors = List(
+        title=_('Translators who have made any contribution to this file.'),
+        required=True, readonly=True)
+
+    translationpermission = Choice(
+        title=_('Translation permission'),
+        required=True,
+        description=_('''
+            The permission system which is used for this translation file.
+            This is inherited from the product, project and/or distro in which
+            the pofile is found.
+            '''),
+        vocabulary=TranslationPermission)
+
+    fuzzy_count = Int(
+        title=_('The number of fuzzy messages in this po file.'),
+        required=True, readonly=True)
 
     from_sourcepackagename = Field(
-        title=u'The source package this pofile comes from.',
-        description=(u'The source package this pofile comes from (set it only'
-            u' if it\'s different from IPOFile.potemplate.sourcepackagename).'
-            ),
+        title=_('The source package this pofile comes from.'),
+        description=_('''
+            The source package this pofile comes from (set it only if it\'s
+            different from IPOFile.potemplate.sourcepackagename).
+            '''),
         required=False)
 
-    pomsgsets = Attribute("All IPOMsgset objects related to this IPOFile.")
+    translation_messages = Attribute(_(
+        'All `ITranslationMessage` objects related to this translation file.'
+        ))
+
+    plural_forms = Int(
+        title=_('Number of plural forms for the language of this PO file.'),
+        description=_('''
+            Number of plural forms is a number of translations provided for
+            each plural form message.  If `IPOFile.language` does not specify
+            plural forms, it defaults to 2, which is the most common number
+            of plural forms.
+            '''),
+        required=True, readonly=True)
 
     def translatedCount():
         """
@@ -114,67 +175,48 @@ class IPOFile(IRosettaStats):
         """
 
     def __iter__():
-        """Return an iterator over Current IPOMessageSets in this PO file."""
+        """Return an iterator over Current `IPOMessageSets` in this PO file."""
 
-    def getPOMsgSet(msgid_text, only_current=False, context=None):
-        """Return the IPOMsgSet in this IPOFile by msgid_text or None.
+    def getHeader():
+        """Return an `ITranslationHeaderData` representing its header."""
+
+    def getCurrentTranslationMessage(msgid_text, context=None,
+                                     ignore_obsolete=False):
+        """Return the `ITranslationMessage` in this `IPOFile` by msgid_text.
 
         :param msgid_text: is an unicode string.
-        :param only_current: Whether we should look only on current entries.
         :param context: Disambiguating context for the message set.
+        :param ignore_obsolete: Whether we should ignore obsolete entries.
+        :return: The `ITranslationMessage` for `msgid_text` or None.
         """
 
-    def getPOMsgSetFromPOTMsgSet(potmsgset, only_current=False):
-        """Return the IPOMsgSet in this IPOFile by potmsgset or None.
+    def getCurrentTranslationMessageFromPOTMsgSet(potmsgset,
+                                                  ignore_obsolete=False):
+        """Return mapping between potmsgset and `ITranslationMessage`.
 
-        :param potmsgset: is an instance of POTMsgSet.
-        :param only_current: Whether we should look only on current entries.
-        """
-
-    def getMsgSetsForPOTMsgSets(potmsgsets):
-        """Return mapping from each of potmsgsets to matching POMsgSet.
-
-        The result is a dict.  Any POTMsgSets in potmsgsets that have no
-        translation in pofile yet will come with matching DummyPOMsgSets.
-        Both dummy and pre-existing POMsgSets will have their submissions
-        caches populated.
+        :param potmsgset: An `IPOTMsgSet`.
+        :param ignore_obsolete: Whether we should ignore obsolete messages
+            when looking for the current translation message.
+        :return: The translation message for this translation file and the
+            given potmsgset or None.
         """
 
     def __getitem__(msgid_text):
-        """Return the active IPOMsgSet in this IPOFile identified by msgid_text.
+        """Return the current `ITranslationMessage` by msgid_text.
 
         :param msgid_text: is an unicode string.
 
         Raise NotFoundError if it does not exist.
         """
 
-    def getPOMsgSetsNotInTemplate():
-        """
-        Return an iterator over message sets in this PO file that do not
-        correspond to a message set in the template; eg, the template
-        message set has sequence=0.
-        """
+    def getPOTMsgSetTranslated():
+        """Get pot messages that are translated for this translation file."""
 
-    def getPOTMsgSetTranslated(slice=None):
-        """Get pot message sets that are translated in this PO file.
+    def getPOTMsgSetFuzzy():
+        """Get pot message sets with a translation that must be checked."""
 
-        'slice' is a slice object that selects a subset of POTMsgSets.
-        Return the message sets using 'slice' or all of them if slice is None.
-        """
-
-    def getPOTMsgSetFuzzy(slice=None):
-        """Get pot message sets that have POMsgSet.fuzzy set in this PO file.
-
-        'slice' is a slice object that selects a subset of POTMsgSets.
-        Return the message sets using 'slice' or all of them if slice is None.
-        """
-
-    def getPOTMsgSetUntranslated(slice=None):
-        """Get pot message sets that are untranslated in this PO file.
-
-        'slice' is a slice object that selects a subset of POTMsgSets.
-        Return the message sets using 'slice' or all of them if slice is None.
-        """
+    def getPOTMsgSetUntranslated():
+        """Get pot message sets that are untranslated for this file."""
 
     def getPOTMsgSetWithNewSuggestions():
         """Get pot message sets with suggestions submitted after last review.
@@ -187,26 +229,8 @@ class IPOFile(IRosettaStats):
         initially imported, but then got overridden in Launchpad.
         """
 
-    def getPOTMsgSetWithErrors(slice=None):
-        """Get pot message sets that have translations published with errors.
-
-        'slice' is a slice object that selects a subset of POTMsgSets.
-        Return the message sets using 'slice' or all of them if slice is None.
-        """
-
-    def hasMessageID(msgid):
-        """Return whether a given message ID exists within this PO file."""
-
-    def validExportCache():
-        """Does this PO file have a cached export that is up to date?
-
-        Using stale cache can result in exporting outdated data (eg.
-        translations which have been changed or deactivated in the
-        meantime would end up exported).
-
-        So, 'False' is the more conservative choice: if we're not sure
-        if the cache is valid, returning False is the way to go.
-        """
+    def getPOTMsgSetWithErrors():
+        """Get message sets that have translations imported with errors."""
 
     def updateExportCache(contents):
         """Update this PO file's export cache with a string."""
@@ -214,16 +238,10 @@ class IPOFile(IRosettaStats):
     def export():
         """Export this PO file as a string."""
 
-    def exportToFileHandle(filehandle, included_obsolete=True):
-        """Export this PO file to the given filehandle.
-
-        If the included_obsolete argument is set to False, the export does not
-        include the obsolete messages."""
-
-    def uncachedExport(included_obsolete=True, export_utf8=False):
+    def uncachedExport(ignore_obsolete=False, export_utf8=False):
         """Export this PO file as string without using any cache.
 
-        :param included_obsolete: Whether the exported PO file does not have
+        :param ignore_obsolete: Whether the exported PO file does not have
             obsolete entries.
         :param export_utf8: Whether the exported PO file should be exported as
             UTF-8.
@@ -236,7 +254,8 @@ class IPOFile(IRosettaStats):
         """Add Launchpad contributors to translation credit strings.
 
         It adds to the translation for `potmsgset` if it exists, trying
-        not to repeat same people who are already credited."""
+        not to repeat same people who are already credited.
+        """
 
     def canEditTranslations(person):
         """Whether the given person is able to add/edit translations."""
@@ -244,19 +263,17 @@ class IPOFile(IRosettaStats):
     def canAddSuggestions(person):
         """Whether the given person is able to add new suggestions."""
 
-    def expireAllMessages():
-        """Mark our of our message sets as not current (sequence=0)"""
+    def getStatistics():
+        """Summarize this file's cached translation statistics.
+
+        Returns tuple of (currentcount, updatescount, rosettacount,
+        unreviewed_count).
+        """
 
     def updateStatistics():
         """Update the statistics fields - rosettaCount, updatesCount and
         currentCount - from the messages currently known.
         Return a tuple (rosettaCount, updatesCount, currentCount)."""
-
-    def createMessageSetFromMessageSet(potmsgset):
-        """Creates in the database a new message set.
-
-        Returns the newly created message set.
-        """
 
     def updateHeader(new_header):
         """Update the header information.
@@ -264,10 +281,8 @@ class IPOFile(IRosettaStats):
         new_header is a POHeader object.
         """
 
-    def isPORevisionDateOlder(header):
-        """Return if the given header has a less current field
-        'PORevisionDate' than IPOFile.header.
-        """
+    def isTranslationRevisionDateOlder(header):
+        """Whether given header revision date is newer then self one."""
 
     def getNextToImport():
         """Return the next entry on the import queue to be imported."""
@@ -279,6 +294,65 @@ class IPOFile(IRosettaStats):
         import will be logged there.
         """
 
+    def getCurrentSuggestions(potmsgsets):
+        """Return a dictionary with all suggestions per potmsgset.
+
+        :param potmsgsets: A list of `IPOTMsgSet` objects.
+        :param language: Language we are interested on for the suggestions.
+        :return: A dictionary indexed by potmsgset of all suggestions that are
+            done in other contexts and are used right now.
+        """
+
+    def getExternalSuggestions(potmsgsets):
+        """Return a dictionary with all suggestions used per potmsgset.
+
+        :param potmsgsets: A list of `IPOTMsgSet` objects.
+        :param language: Language we are interested on for the suggestions.
+        :return: A dictionary indexed by potmsgset of all suggestions that are
+            done in other contexts but are not yet used.
+        """
+
+
+class AlternativeLanguageVocabularyFactory:
+    """Gets vocab for user's preferred languages, or all languages if not set.
+
+    This is an `IContextSourceBinder` returning a `Vocabulary`.  It's meant to
+    present a short but complete list of languages a user might want to
+    translate to or get suggestions from.
+
+    Guessing based on browser languages is probably not a good idea: that list
+    may easily be incomplete, and its origin is not obvious.  From the user's
+    point of view it would be Launchpad behaviour that cannot be changed by
+    pushing buttons in Launchpad.  And even in cases where a guess based on
+    browser settings is reasonable, it would mask the need for a useful
+    Preferred Languages setting.  We can't encourage people to manage their
+    languages shortlist in Launchpad through their global browser
+    configuration.
+
+    Instead, if no preferred-languages setting is available (e.g. because the
+    visitor is not logged in), this will fall back to a vocabulary containing
+    all known translatable languages.
+    """
+    # XXX: JeroenVermeulen 2007-09-03: It doesn't seem right to define this
+    # class in an interface, but it's needed from inside another interface
+    # definition.  A factory is definitely the right approach though, since
+    # the two kinds of vocabulary are completely different in implementation
+    # and class derivation.  Also of course, the distinction applies unchanged
+    # throughout the vocabulary object's lifetime.  See interfaces.buglink.py
+    # for an example of the same implementation pattern.
+    implements(IContextSourceBinder)
+
+    def __call__(self, context):
+        """See `IContextSourceBinder`."""
+        user = getUtility(ILaunchBag).user
+        if user is not None and user.languages:
+            terms = [
+                SimpleTerm(language, language.code, language.displayname)
+                for language in user.translatable_languages]
+            if terms:
+                return SimpleVocabulary(terms)
+        return getVocabularyRegistry().get(None, "TranslatableLanguage")
+
 
 class IPOFileAlternativeLanguage(Interface):
     """A PO File's alternative language."""
@@ -287,7 +361,7 @@ class IPOFileAlternativeLanguage(Interface):
         title=u'Alternative language',
         description=(u'Language from where we could get alternative'
                      u' translations for this PO file.'),
-        vocabulary='TranslatableLanguage',
+        source=AlternativeLanguageVocabularyFactory(),
         required=False)
 
 
@@ -302,20 +376,38 @@ class IPOFileSet(Interface):
 
     def getPOFileByPathAndOrigin(path, productseries=None,
         distroseries=None, sourcepackagename=None):
-        """Return an IPOFile that is stored at 'path' in source code.
+        """Return an `IPOFile` that is stored at 'path' in source code.
 
-        We filter the IPOFiles to check only the ones related to the given
-        arguments 'productseries', 'distroseries' and 'sourcepackagename'
+        We filter the `IPOFile` objects to check only the ones related to the
+        given arguments 'productseries', 'distroseries' and
+        'sourcepackagename'.
 
         Return None if there is not such IPOFile.
         """
 
+    def getBatch(starting_id, batch_size):
+        """Read up to batch_size `POFile`s, starting at given id.
+
+        Returns a sequence of consecutive `POFile`s (ordered by id), starting
+        the smallest id that is no greater than starting_id.
+
+        The number of items in the sequence will only be less than batch_size
+        if the end of the table has been reached.
+        """
 
 class IPOFileTranslator(Interface):
     """Represents contributions from people to POFiles."""
 
-    person = Attribute("The Person this record represents.")
-    pofile = Attribute("The POFile modified by the translator.")
-    latest_posubmission = Attribute("Latest POSubmission added to this POFile.")
-    date_last_touched = Attribute("Date the latest POSubmission was added.")
+    person = Object(
+        title=_('The Person this record represents'), required=True,
+        schema=IPerson)
 
+    pofile = Object(
+        title=_('The `IPOFile` modified by the translator'), required=True,
+        schema=IPOFile)
+
+    latest_message = Attribute(
+        _("Latest translation message added to the translation file."))
+
+    date_last_touched = Datetime(
+        title=_('When was added latest translation message'), required=True)

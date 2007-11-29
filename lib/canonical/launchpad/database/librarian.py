@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['LibraryFileContent', 'LibraryFileAlias', 'LibraryFileAliasSet']
@@ -40,7 +41,7 @@ class LibraryFileAlias(SQLBase):
     implements(ILibraryFileAlias)
 
     _table = 'LibraryFileAlias'
-
+    date_created = UtcDateTimeCol(notNull=False, default=DEFAULT)
     content = ForeignKey(
             foreignKey='LibraryFileContent', dbName='content', notNull=True,
             )

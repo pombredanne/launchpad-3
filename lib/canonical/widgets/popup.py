@@ -5,8 +5,11 @@
 
 __metaclass__ = type
 
+import cgi
+
 from zope.interface import Attribute, implements, Interface
 from zope.app import zapi
+from zope.schema import TextLine
 from zope.app.form.browser.interfaces import ISimpleInputWidget
 from zope.app.form.browser.itemswidgets import ItemsWidgetBase, SingleDataHelper
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -14,6 +17,7 @@ from zope.app.schema.vocabulary import IVocabularyFactory
 from zope.publisher.interfaces import NotFound
 from zope.component.interfaces import ComponentLookupError
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from canonical.launchpad.interfaces import UnexpectedFormData
@@ -27,6 +31,8 @@ class ISinglePopupWidget(ISimpleInputWidget):
                               as text in input is changed''')
     cssClass = Attribute('''CSS class to be assigned to the input widget''')
     style = Attribute('''CSS style to be applied to the input widget''')
+    popup_name = TextLine(
+        title=u'The name our popup page is registered with.')
     def formToken():
         'The token representing the value to display, possibly invalid'
     def chooseLink():
@@ -59,6 +65,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     onKeyPress = ''
     style = ''
     cssClass = ''
+    popup_name = 'popup-window'
 
     @cachedproperty
     def matches(self):
@@ -98,7 +105,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
 
     def inputField(self):
         d = {
-            'formToken' : self.formToken,
+            'formToken' : cgi.escape(self.formToken, quote=True),
             'name': self.name,
             'displayWidth': self.displayWidth,
             'displayMaxWidth': self.displayMaxWidth,
@@ -115,7 +122,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     def chooseLink(self):
         return """(<a href="%s">Choose&hellip;</a>)
 
-            <iframe style="display: none" 
+            <iframe style="display: none"
                     id="popup_iframe_%s"
                     name="popup_iframe_%s"></iframe>
         """ % (self.popupHref(), self.name, self.name)
@@ -123,11 +130,12 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     def popupHref(self):
         template = (
             '''javascript:'''
-            '''popup_window('@@popup-window?'''
+            '''popup_window('@@%s?'''
             '''vocabulary=%s&field=%s&search='''
             ''''+escape(document.getElementById('%s').value),'''
             ''''%s','300','420')'''
-            ) % (self.context.vocabularyName, self.name, self.name, self.name)
+            ) % (self.popup_name, self.context.vocabularyName, self.name,
+                 self.name, self.name)
         if self.onKeyPress:
             # XXX kiko 2005-09-27: I suspect onkeypress() here is
             # non-standard, but it works for me, and enough researching for
@@ -141,6 +149,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
 class ISinglePopupView(Interface):
 
     batch = Attribute('The BatchNavigator of the current results to display')
+    page_name = TextLine(title=u'The name this page is registered with.')
 
     def title():
         """Title to use on the popup page"""
@@ -160,6 +169,7 @@ class SinglePopupView(object):
 
     _batchsize = 10
     batch = None
+    page_name = 'popup-window'
 
     def __init__(self, context, request):
         if ("vocabulary" not in request.form or
@@ -187,18 +197,44 @@ class SinglePopupView(object):
         vocabulary = factory(self.context)
 
         if not IHugeVocabulary.providedBy(vocabulary):
-            raise UnexpectedFormData('Non-huge vocabulary %s' % vocabulary_name)
+            raise UnexpectedFormData(
+                'Non-huge vocabulary %s' % vocabulary_name)
 
         return vocabulary
 
     def search(self):
         """See ISinglePopupView"""
         search_text = self.request.get('search', None)
-        self.batch = BatchNavigator(self.vocabulary().searchForTerms(search_text),
-                                    self.request, size=self._batchsize)
+        self.batch = BatchNavigator(
+            self.vocabulary().searchForTerms(search_text), self.request,
+            size=self._batchsize)
         return self.batch
 
     def hasMoreThanOnePage(self):
         """See ISinglePopupView"""
         return len(self.batch.batchPageURLs()) > 1
+
+
+class SearchForUpstreamPopupWidget(SinglePopupWidget):
+    """A SinglePopupWidget whose 'Choose' link opens a different page.
+
+    This widget is used only when searching for an upstream that is also
+    affected by a given bug as the page it links to includes a link which
+    allows the user to register the upstream if it doesn't exist.
+    """
+    popup_name = 'popup-search-upstream'
+
+
+class SearchForUpstreamPopupView(SinglePopupView):
+
+    page_name = 'popup-search-upstream'
+
+    @property
+    def extra_bottom(self):
+        search_text = self.request.get('search')
+        if not search_text:
+            return ''
+        return ("Didn't find the project you were looking for? "
+                '<a href="%s/+affects-new-product" target="_parent">'
+                'Register it</a>.' % canonical_url(self.context))
 

@@ -1,16 +1,22 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
-<body>
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad" >
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure request/@@+portlet-preflangs" />
-</metal:rightportlets>
+  <body>
+    <metal:portlets fill-slot="portlets">
+      <tal:portlet
+        condition="context/official_rosetta"
+        replace="structure context/@@+portlet-translation-groups-and-permission"
+      />
+      <tal:portlet replace="structure context/@@+portlet-preflangs" />
+    </metal:portlets>
 
 <metal:heading fill-slot="pageheading">
   <h1>Translations</h1>
@@ -18,7 +24,7 @@
 
 <div metal:fill-slot="main">
 
-  <tal:block condition="view/translation_focus">
+  <tal:translation_focus condition="view/translation_focus">
     <p>
       The current translation focus for
       <span tal:replace="context/displayname">Ubuntu</span> is
@@ -34,9 +40,9 @@
       </span>
     </h2>
     <div tal:replace="structure view/translation_focus/@@+langchart" />
-  </tal:block>
+  </tal:translation_focus>
 
-  <tal:block condition="view/secondary_translatable_serieses">
+  <tal:secondary condition="view/secondary_translatable_serieses">
     <h2 tal:condition="view/translation_focus">
       Other versions of <span tal:replace="context/displayname">Ubuntu</span>
     </h2>
@@ -49,7 +55,15 @@
                 >5.04 The Hoary Hedgehog Release</a>
       </li>
     </ul>
-  </tal:block>
+  </tal:secondary>
+
+  <tal:untranslatable condition="not: view/translation_focus">
+    <p>
+      This distribution does not have any series to be translated.  Once
+      <span tal:replace="context/displayname">Ubuntu</span> has created a
+      distroseries, you will be able to find or create its translations here.
+    </p>
+  </tal:untranslatable>
 
 </div>
 

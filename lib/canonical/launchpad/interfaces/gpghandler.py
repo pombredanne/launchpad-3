@@ -1,3 +1,6 @@
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
+
 from zope.interface import Interface, Attribute
 
 __all__ = ['IGPGHandler', 'IPymeSignature', 'IPymeKey', 'IPymeUserId',
@@ -31,7 +34,7 @@ class IGPGHandler(Interface):
 
     def verifySignature(content, signature=None):
         """Returns a PymeSignature object if content is correctly signed
-        or None. 
+        or None.
 
         If signature is None, we assume content is clearsigned. Otherwise
         it stores the detached signature and content should contain the
@@ -81,7 +84,7 @@ class IGPGHandler(Interface):
 
     def importPublicKey(content):
         """Import the public key with the given content into our local keyring.
-        
+
         Return a PymeKey object referring to the public key imported.
 
         :content: Public key ASCII armored content (must be an ASCII string;
@@ -107,7 +110,7 @@ class IGPGHandler(Interface):
         """Return the encrypted content or None if failed.
 
         content must be a traditional string. It's up to the caller to
-        encode or decode properly. Fingerprint must be hexadecimal string. 
+        encode or decode properly. Fingerprint must be hexadecimal string.
 
         :content: the Unicode content to be encrypted.
         :fingerprint: the OpenPGP key's fingerprint.
@@ -116,7 +119,7 @@ class IGPGHandler(Interface):
     def retrieveKey(fingerprint):
         """Return a PymeKey object containing the key information from the
         local keyring.
-        
+
         :fingerprint: The key fingerprint, which must be an hexadecimal
                       string.
 

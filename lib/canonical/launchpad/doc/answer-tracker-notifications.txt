@@ -15,7 +15,6 @@ notification looks like:
     >>> ubuntu_question = ubuntu.newQuestion(
     ...     sample_person, "Can't install Ubuntu",
     ...    "I insert the install CD in the CD-ROM drive, but it won't boot.")
-    >>> notify(SQLObjectCreatedEvent(ubuntu_question))
 
 The notifications get sent to the question's subscribers, the question's
 target answer contacts as well as to the question's assignee. Initially,
@@ -31,9 +30,19 @@ sent:
     >>> len(notifications)
     1
 
+Note that the From address uses the submitter's name with the
+question's email address. Answer's uses real names to help the
+questioner and the answerers communicate. The Reply-To address
+is the question's address. When using the mail client's reply
+feature, the user should clearly see that he is replying to the
+question and not the user.
+[sic] Kiko and Danilo have a story worth telling.
+
     >>> add_notification = notifications[0]
     >>> add_notification['From']
     'Sample Person <question...@answers.launchpad.net>'
+    >>> add_notification['Reply-To']
+    'question...@answers.launchpad.net'
     >>> add_notification['To']
     'test@canonical.com'
     >>> add_notification['Subject']
@@ -238,8 +247,8 @@ A notification is also sent when a bug is unlinked from the question:
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
-        Removed link to bug: #13
-        http://.../bugs/13
+        Removed link to bug: #...
+        http://.../bugs/...
         "Installer fails on a Mac PPC"
     <BLANKLINE>
     --...
@@ -770,6 +779,34 @@ If the FAQ is unlinked, the notification will look like:
     --...
 
 
+== Notifications for convertToQuestion() ==
+
+Answer contacts and the bug owner is notified when questions are
+created from bugs just like when a question is normally created.
+
+    >>> bug_question = ubuntu.createQuestionFromBug(bug)
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    2
+
+    >>> [email_msg['To'] for email_msg in notifications]
+    ['no-priv@canonical.com', 'support@ubuntu.com']
+
+    >>> notifications[1]['Subject']
+    '[Question #...]: Installer fails on a Mac PPC'
+
+    >>> notification_body = notifications[1].get_payload(decode=True)
+    >>> print notification_body
+    New question #... on Ubuntu:
+    http://answers.launchpad.dev/ubuntu/+question/...
+    <BLANKLINE>
+    I insert the install CD in the CD-ROM drive, but it won't boot.
+    <BLANKLINE>
+    It boots straight into MacOS 9.
+    <BLANKLINE>
+    --...
+
+
 == Notifications and Teams ==
 
 When a team is subscribed to a question, there are two cases two consider.
@@ -831,7 +868,6 @@ receive notifications related to it.
     ...         u'corretamente e mostra a minha versao do java. No entanto, '
     ...         u'mover o mouse na pagina faz com que o firefox quebre.'),
     ...     language=getUtility(ILanguageSet)['pt_BR'])
-    >>> notify(SQLObjectCreatedEvent(pt_BR_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['guilherme.salgado@canonical.com', 'test@canonical.com']
@@ -864,7 +900,6 @@ sent to the support list about that question:
     ...     sample_person, title="Impossible d'installer Ubuntu",
     ...     description=u"Le CD ne semble pas fonctionn\xe9.",
     ...     language=french)
-    >>> notify(SQLObjectCreatedEvent(french_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['guilherme.salgado@canonical.com', 'support@ubuntu.com',
@@ -974,7 +1009,6 @@ contacts too.
     ...     sample_person, title="Necesidad ayuda con Firefox",
     ...     description="No puedo acceso al Internet en Firefox.",
     ...     language=spanish)
-    >>> notify(SQLObjectCreatedEvent(spanish_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['carlos@canonical.com', 'test@canonical.com']
@@ -987,6 +1021,8 @@ be used. So, if the team only officially speaks French, it will only
 receive notifications about French (and English) questions.
 
     >>> rosetta_admins.addLanguage(french)
+
+    # Resend the new message notification
     >>> notify(SQLObjectCreatedEvent(french_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
@@ -1007,7 +1043,9 @@ if the team supported languages includes the question language:
     >>> ubuntu.addAnswerContact(launchpad_devs)
     True
 
+    # Resend the new message notification
     >>> notify(SQLObjectCreatedEvent(spanish_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['foo.bar@canonical.com', 'test@canonical.com']
+

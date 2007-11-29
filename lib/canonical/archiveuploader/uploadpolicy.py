@@ -8,11 +8,9 @@ __all__ = ["findPolicyByName", "findPolicyByOptions", "UploadPolicyError"]
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.nascentuploadfile import UploadError
 from canonical.launchpad.interfaces import (
-    IDistributionSet, ILaunchpadCelebrities)
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, DistroSeriesStatus)
+    ArchivePurpose, DistroSeriesStatus, IDistributionSet,
+    ILaunchpadCelebrities, PackagePublishingPocket)
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
@@ -23,25 +21,30 @@ def policy_options(optparser):
     objects herein.
     """
 
-    optparser.add_option("-C", "--context", action="store",
-                         dest="context", metavar="CONTEXT", default="insecure",
-                         help="The context in which to consider the upload.")
+    optparser.add_option(
+        "-C", "--context", action="store", dest="context",
+        metavar="CONTEXT", default="insecure",
+        help="The context in which to consider the upload.")
 
-    optparser.add_option("-d", "--distro", action="store",
-                         dest="distro", metavar="DISTRO", default="ubuntu",
-                         help="Distribution to give back from")
+    optparser.add_option(
+        "-d", "--distro", action="store",
+        dest="distro", metavar="DISTRO", default="ubuntu",
+        help="Distribution to give back from")
 
-    optparser.add_option("-s", "--series", action="store", default=None,
-                         dest="distroseries", metavar="DISTROSERIES",
-                         help="Distro series to give back from.")
+    optparser.add_option(
+        "-s", "--series", action="store", default=None,
+        dest="distroseries", metavar="DISTROSERIES",
+        help="Distro series to give back from.")
 
-    optparser.add_option("-b", "--buildid", action="store", type="int",
-                         dest="buildid", metavar="BUILD",
-                         help="The build ID to which to attach this upload.")
+    optparser.add_option(
+        "-b", "--buildid", action="store", type="int",
+        dest="buildid", metavar="BUILD",
+        help="The build ID to which to attach this upload.")
 
-    optparser.add_option("-a", "--announce", action="store",
-                         dest="announcelist", metavar="ANNOUNCELIST",
-                         help="Override the announcement list")
+    optparser.add_option(
+        "-a", "--announce", action="store",
+        dest="announcelist", metavar="ANNOUNCELIST",
+        help="Override the announcement list")
 
 
 class UploadPolicyError(Exception):
@@ -119,10 +122,20 @@ class AbstractUploadPolicy:
             if self.pocket != PackagePublishingPocket.RELEASE:
                 upload.reject(
                     "PPA uploads must be for the RELEASE pocket.")
+        elif (self.archive.purpose == ArchivePurpose.PARTNER and
+              self.pocket != PackagePublishingPocket.RELEASE and
+              self.pocket != PackagePublishingPocket.PROPOSED):
+            # Partner uploads can only go to the release or proposed
+            # pockets.
+            upload.reject(
+                "Partner uploads must be for the RELEASE or PROPOSED pocket.")
         else:
+            # Uploads to the partner archive are allowed in any distroseries
+            # state.
             # XXX julian 2005-05-29 bug=117557:
             # This is a greasy hack until bug #117557 is fixed.
             if (self.distroseries and
+                self.archive.purpose != ArchivePurpose.PARTNER and
                 not self.distroseries.canUploadToPocket(self.pocket)):
                 upload.reject(
                     "Not permitted to upload to the %s pocket in a "
@@ -132,33 +145,8 @@ class AbstractUploadPolicy:
         # reject PPA uploads by default
         self.rejectPPAUploads(upload)
 
-        # Ensure that the archive for binary uploads matches that of the
-        # source upload.
-        self.checkArchiveConsistency(upload)
-
         # execute policy specific checks
         self.policySpecificChecks(upload)
-
-    def checkArchiveConsistency(self, upload):
-        """Reject binary uploads whose archive differs from its source's.
-
-        If a build generates binaries which would end up in a different
-        archive to the source, then the upload is rejected.
-        """
-        if upload.sourceful and upload.binaryful:
-            # Mixed mode uploads do not need this check, there is no existing
-            # source package.
-            return
-
-        for binary_package_file in upload.changes.binary_package_files:
-            try:
-                spr = binary_package_file.findSourcePackageRelease()
-            except UploadError:
-                # The binary has no source package.
-                continue
-            if self.archive != spr.upload_archive:
-                upload.reject(
-                    "Archive for binary differs to the source's archive.")
 
     def rejectPPAUploads(self, upload):
         """Reject uploads targeted to PPA.
@@ -257,7 +245,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
             # flag). This code will be revisited before releasing PPA
             # publicly.
             self.checkSignerIsUbuntero(upload)
-            self.checkSignerIsBetaTester(upload)
+            #self.checkSignerIsBetaTester(upload)
         else:
             if self.pocket == PackagePublishingPocket.SECURITY:
                 upload.reject(
@@ -266,8 +254,14 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def autoApprove(self, upload):
         """The insecure policy only auto-approves RELEASE pocket stuff.
 
-        Additionally, we only auto-approve if the distroseries is not FROZEN.
+        PPA uploads are always auto-approved.
+        Other uploads (to main archives) are only auto-approved if the
+        distroseries is not FROZEN (note that we already performed the
+        IDistroSeries.canUploadToPocket check in the checkUpload base method).
         """
+        if upload.is_ppa:
+            return True
+
         if self.pocket == PackagePublishingPocket.RELEASE:
             if (self.distroseries.status !=
                 DistroSeriesStatus.FROZEN):
@@ -311,7 +305,7 @@ AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)
 
 
 class SyncUploadPolicy(AbstractUploadPolicy):
-    """This policy is invoked when processing uploads from the sync process."""
+    """This policy is invoked when processing sync uploads."""
 
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
@@ -371,7 +365,10 @@ AbstractUploadPolicy._registerPolicy(AbsolutelyAnythingGoesUploadPolicy)
 
 
 class SecurityUploadPolicy(AbstractUploadPolicy):
-    """The security-upload policy allows unsigned changes and binary uploads."""
+    """The security-upload policy.
+
+    It allows unsigned changes and binary uploads.
+    """
 
     def __init__(self):
         AbstractUploadPolicy.__init__(self)

@@ -1,5 +1,4 @@
-Introduction
-============
+= Introduction =
 
 Bugs are problems in software. When a bug gets assigned to a specific
 upstream or distro/sourcepackagename, a bug /task/ is created. In
@@ -7,11 +6,11 @@ essence, a bug task is a bug that needs to be fixed in a specific
 place. Where a bug has things like a title, comments and subscribers,
 it's the bug task that tracks importance, assignee, etc.
 
-Working with Bug Tasks in Launchpad
-===================================
+= Working with Bug Tasks in Launchpad =
 
-Creating Bug Tasks
-------------------
+
+== Creating Bug Tasks ==
+
 
 All BugTask creation and retrieval is done through an IBugTaskSet utility.
 
@@ -43,7 +42,8 @@ to access those other objects:
 
 Next, we need to grab some values to provide for importance and status.
 
-    >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance)
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskImportance, BugTaskStatus)
     >>> STATUS_NEW = BugTaskStatus.NEW
     >>> STATUS_CONFIRMED = BugTaskStatus.CONFIRMED
     >>> STATUS_FIXRELEASED = BugTaskStatus.FIXRELEASED
@@ -90,29 +90,21 @@ Next, we need to grab some values to provide for importance and status.
     True
 
 The created bugtasks are guaranteed to implement the correct interface.
-(We need to refetch them from the database to ensure we get
-non-security-proxied objects.)
 
-    >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.database.bugtask import BugTask
-    >>> verifyObject(IDistroSeriesBugTask,
-    ...              BugTask.get(distro_series_task.id))
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(IDistroSeriesBugTask, distro_series_task)
     True
-    >>> verifyObject(IDistroBugTask,
-    ...              BugTask.get(distro_task.id))
+    >>> verifyObject(IDistroBugTask, distro_task)
     True
-    >>> verifyObject(IUpstreamBugTask,
-    ...              BugTask.get(upstream_task.id))
+    >>> verifyObject(IUpstreamBugTask, upstream_task)
     True
-
 
 # XXX: Brad Bollenbach 2005-02-24: See the bottom of this file for a chunk of
 # test documentation that is missing from here, due to problems with resetting
 # the connection after a ProgrammingError is raised. ARGH.
 
 
-Bug Task Targets
-----------------
+== Bug Task Targets ==
 
 The "target" of an IBugTask is one of the following things:
 
@@ -120,6 +112,8 @@ The "target" of an IBugTask is one of the following things:
 
     >>> upstream_task.target == evolution
     True
+    >>> print upstream_task.getPackageComponent()
+    None
 
   * a product series
 
@@ -130,6 +124,8 @@ The "target" of an IBugTask is one of the following things:
 
     >>> productseries_task = bugtaskset.createTask(
     ...     owner=sabdfl, bug=bug_one, productseries=firefox_1_0)
+    >>> print productseries_task.getPackageComponent()
+    None
     >>> IProductSeriesBugTask.providedBy(productseries_task)
     True
 
@@ -140,17 +136,26 @@ The "target" of an IBugTask is one of the following things:
 
     >>> distro_task.target == ubuntu
     True
+    >>> print distro_task.getPackageComponent()
+    None
 
   * a distroseries
 
     >>> distro_series_task.target == warty
     True
+    >>> print distro_series_task.getPackageComponent()
+    None
 
   * a distribution sourcepackage
 
     >>> from canonical.launchpad.database.distributionsourcepackage import DistributionSourcePackage
     >>> from canonical.launchpad.interfaces import IDistributionSourcePackage
+    >>> distro_sp_task = bugtaskset.get(17)
+    >>> print distro_sp_task.getPackageComponent().name
+    main
     >>> distro_sp_task = bugtaskset.get(4)
+    >>> print distro_sp_task.getPackageComponent()
+    None
     >>> expected_target = DistributionSourcePackage(
     ...     distro_sp_task.distribution,
     ...     distro_sp_task.sourcepackagename)
@@ -167,6 +172,8 @@ The "target" of an IBugTask is one of the following things:
     >>> from canonical.launchpad.database import SourcePackage
     >>> from canonical.launchpad.interfaces import ISourcePackage
     >>> distro_series_sp_task = bugtaskset.get(16)
+    >>> print distro_series_sp_task.getPackageComponent().name
+    main
     >>> expected_target = SourcePackage(
     ...     distroseries=distro_series_sp_task.distroseries,
     ...     sourcepackagename=distro_series_sp_task.sourcepackagename)
@@ -199,14 +206,14 @@ the name of the source package (if any); and the name of the binary
 package (but only if it's named differently from the source
 package).
 
-Editing Bug Tasks
------------------
+
+== Editing Bug Tasks ==
 
 When changing status we must pass the user making the change. Some
 statuses are restricted to Bug Contacts only.
 
-Upstream Bug Tasks
-^^^^^^^^^^^^^^^^^^
+
+=== Upstream Bug Tasks ===
 
 To edit an upstream task, you must be logged in. Anonymous users
 cannot edit upstream tasks.
@@ -224,8 +231,8 @@ Let's login and try again.
     >>> upstream_task.transitionToStatus(
     ...     STATUS_FIXRELEASED, getUtility(ILaunchBag).user)
 
-Distro and Distro Series Bug Tasks
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+=== Distro and Distro Series Bug Tasks ===
 
 Any logged-in user can edit tasks filed on distros as long as the bug
 is not marked private. So, as an anonymous user, we can edit anything:
@@ -253,8 +260,8 @@ We can edit the task:
     ...     STATUS_FIXRELEASED, getUtility(ILaunchBag).user)
     >>> distro_series_task.transitionToAssignee(sample_person)
 
-Conjoined Bug Tasks
--------------------
+
+=== Conjoined Bug Tasks ===
 
 A bugtask open on the current development series for a distro is kept
 in sync with the "generic" bugtask for that distro, because they
@@ -628,8 +635,8 @@ is therefore Invalid also. In other words, conjoined again.
     >>> current_series_netapplet_task.date_closed is None
     False
 
-Null Bug Tasks
---------------
+
+== Null Bug Tasks ==
 
 Sometimes we need to be able to render a page for a bug in a context,
 when the bug hasn't actually been filed yet in that context. For cases
@@ -702,8 +709,8 @@ two more examples:
     >>> IDistroSeriesBugTask.providedBy(warty_null_bugtask)
     True
 
-Bug Privacy
-===========
+
+= Bug Privacy =
 
 A bug is either private or public. Private bugs are only visible (e.g. in search
 listings) to explicit subscribers and Launchpad admins. Public bugs are visible
@@ -711,11 +718,10 @@ to anyone.
 
     >>> from zope.event import notify
     >>> from zope.publisher.browser import TestRequest
-    >>> from canonical.launchpad.event.sqlobjectevent import (
-    ...     SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
+    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
 
-Privacy and Unpriviledged Users
--------------------------------
+
+== Privacy and Unprivileged Users ==
 
 Let's log in as the user Foo Bar (to be allowed to edit bugs):
 
@@ -736,12 +742,11 @@ entitled _Privacy and Team Awareness_):
     >>> subscription = bug_upstream_firefox_no_svg_support.bug.subscribe(
     ...     ubuntu_team)
 
-    >>> notify(SQLObjectToBeModifiedEvent(
-    ...     bug_upstream_firefox_no_svg_support.bug, {'private' : True}))
-
     >>> old_state = Snapshot(
     ...     bug_upstream_firefox_no_svg_support.bug, providing=IBug)
-    >>> bug_upstream_firefox_no_svg_support.bug.private = True
+    >>> bug_upstream_firefox_no_svg_support.bug.setPrivate(
+    ...     True, getUtility(ILaunchBag).user)
+    True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, old_state,
     ...     ["id", "title", "private"])
@@ -793,8 +798,8 @@ maintained by Foo Bar.
     >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
     [2]
 
-Privacy and Priviledged Users
------------------------------
+
+== Privacy and Priviledged Users ==
 
 Now, we'll log in as Mark Shuttleworth, who was assigned to this bug
 when it was marked private:
@@ -809,8 +814,8 @@ And note that he can access and set the bugtask attributes:
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
-Privacy and Team Awareness
---------------------------
+
+== Privacy and Team Awareness ==
 
 No Privileges Person can't see the private bug, because he's not a subscriber:
 
@@ -843,10 +848,10 @@ if we query logged in as a user who can't see that bug).
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
     ...     sample_person, user=foobar)
     >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
-    [1, 4, 5, 7]
+    [1, 4, 5, 7, 13]
 
-Privacy and Launchpad Admins
-----------------------------
+
+== Privacy and Launchpad Admins ==
 
 Let's log in as Daniel Henrique Debonzi:
 
@@ -871,7 +876,7 @@ we'll also see bug 1 again in the results, even though it's private.
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
     ...     sample_person, user=debonzi)
     >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
-    [1, 4, 5, 7]
+    [1, 4, 5, 7, 13]
 
 Trying to retrieve the bug directly will work fine:
 
@@ -889,8 +894,10 @@ And attribute setting:
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
-Sorting Bug Tasks
------------------
+
+
+== Sorting Bug Tasks ==
+
 
 Bug tasks need to sort in a very particular order. We want product tasks
 first, then ubuntu tasks, then other distro-related tasks. In the
@@ -913,8 +920,8 @@ Let's just make sure that the tasks on bug_one sort correctly.
     Ubuntu Warty
     mozilla-firefox (Debian)
 
-BugTask Adaptation
-------------------
+
+== BugTask Adaptation ==
 
 An IBugTask can be adapted to an IBug.
 
@@ -925,8 +932,8 @@ An IBugTask can be adapted to an IBug.
    >>> bug.title
    u'Firefox does not support SVG'
 
-The targetnamecache attribute of BugTask
-----------------------------------------
+
+== The targetnamecache attribute of BugTask ==
 
 The BugTask table has this targetnamecache attribute which stores a computed
 value to allow us to sort and search on that value without having to do lots
@@ -978,8 +985,8 @@ Of course, it's also computed and set when a bugtask is created.
     >>> bugtaskset.get(upstream_task_id).bugtargetdisplayname
     u'Mozilla Thunderbird NG'
 
-Target Uses Malone
-------------------
+
+== Target Uses Malone ==
 
 Bug tasks have a flag, target_uses_malone, that says whether the bugtask
 target uses Malone as its official bugtracker.
@@ -996,8 +1003,8 @@ target uses Malone as its official bugtracker.
     Ubuntu Warty                   True
     mozilla-firefox (Debian)       False
 
-Handling IntegrityError and ProgrammingError
---------------------------------------------
+
+== Handling IntegrityError and ProgrammingError ==
 
 # XXX: Brad Bollenbach 2005-02-24: This bit testing the IntegrityError
 # should be higher up in the file (under the explanation about creating

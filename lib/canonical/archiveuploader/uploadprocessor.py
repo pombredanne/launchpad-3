@@ -49,15 +49,16 @@ __metaclass__ = type
 
 import os
 import shutil
+import stat
 
 from zope.component import getUtility
 
 from canonical.archiveuploader.nascentupload import (
-    NascentUpload, FatalUploadError)
+    NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, NotFoundError)
+    ArchivePurpose, IDistributionSet, IPersonSet, NotFoundError)
 
 from contrib.glock import GlobalLock
 
@@ -79,6 +80,9 @@ class UploadStatusEnum:
 
 class UploadPathError(Exception):
     """This exception happened when parsing the upload path."""
+
+class PPAUploadPathError(Exception):
+    """Exception when parsing a PPA upload path."""
 
 class UploadProcessor:
     """Responsible for processing uploads. See module docstring."""
@@ -180,12 +184,18 @@ class UploadProcessor:
         # Protecting listdir by a lock ensures that we only get
         # completely finished directories listed. See
         # PoppyInterface for the other locking place.
-        fsroot_lock = GlobalLock(os.path.join(fsroot, ".lock"))
+        lockfile_path = os.path.join(fsroot, ".lock")
+        fsroot_lock = GlobalLock(lockfile_path)
+        # see client_done_hook method in poppyinterface.py.
+        mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
+        os.chmod(lockfile_path, mode | stat.S_IWGRP)
+
         try:
             fsroot_lock.acquire(blocking=True)
             dir_names = os.listdir(fsroot)
         finally:
-            fsroot_lock.release()
+            # Skip lockfile deletion, see similar code in poppyinterface.py.
+            fsroot_lock.release(skip_delete=True)
 
         dir_names = [dir_name for dir_name in dir_names if
                      os.path.isdir(os.path.join(fsroot, dir_name))]
@@ -240,6 +250,16 @@ class UploadProcessor:
             suite_name = None
             archive = distribution.main_archive
             error = str(e)
+        except PPAUploadPathError, e:
+            # Again, pick some defaults but leave a hint for the rejection
+            # emailer that it was a PPA failure.
+            distribution = getUtility(IDistributionSet)['ubuntu']
+            suite_name = None
+            archive = distribution.main_archive
+            # This is fine because the transaction will be aborted when
+            # the rejection happens.
+            archive.purpose = ArchivePurpose.PPA
+            error = str(e)
 
         self.log.debug("Finding fresh policy")
         self.options.distro = distribution.name
@@ -281,6 +301,12 @@ class UploadProcessor:
                                exc_info=True)
             except (KeyboardInterrupt, SystemExit):
                 raise
+            except EarlyReturnUploadError:
+                # An error occurred that prevented further error collection,
+                # add this fact to the list of errors.
+                upload.reject(
+                    "Further error processing not possible because of "
+                    "a critical previous error.")
             except Exception, e:
                 # In case of unexpected unhandled exception, we'll
                 # *try* to reject the upload. This may fail and cause
@@ -405,34 +431,34 @@ class UploadProcessor:
         # PPA upload (~<person>/<distro>/[distroseries])
         elif len(parts) <= 3:
             if not first_path.startswith('~'):
-                raise UploadPathError(
+                raise PPAUploadPathError(
                     "PPA upload path must start with '~'.")
 
             # Skip over ~
             person_name = first_path[1:]
             person = getUtility(IPersonSet).getByName(person_name)
             if person is None:
-                raise UploadPathError(
+                raise PPAUploadPathError(
                     "Could not find person '%s'" % person_name)
 
             distribution_name = parts[1]
             distribution = getUtility(IDistributionSet).getByName(
                 distribution_name)
             if distribution is None:
-                raise UploadPathError(
+                raise PPAUploadPathError(
                     "Could not find distribution '%s'" % distribution_name)
 
             archive = person.archive
             if archive is None:
-                raise UploadPathError(
+                raise PPAUploadPathError(
                     "Could not find PPA for '%s'" % person_name)
 
             if not archive.enabled:
-                raise UploadPathError(
+                raise PPAUploadPathError(
                     "%s is disabled" % archive.title)
 
             if archive.distribution != distribution:
-                raise UploadPathError(
+                raise PPAUploadPathError(
                     "%s only supports uploads to '%s'"
                     % (archive.title, archive.distribution.name))
 
@@ -443,7 +469,7 @@ class UploadProcessor:
                 try:
                     suite = distribution.getDistroSeriesAndPocket(suite_name)
                 except NotFoundError:
-                    raise UploadPathError(
+                    raise PPAUploadPathError(
                         "Could not find suite '%s'" % suite_name)
         else:
             raise UploadPathError(

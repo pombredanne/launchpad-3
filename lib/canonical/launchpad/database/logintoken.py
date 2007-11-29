@@ -1,4 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['LoginToken', 'LoginTokenSet']
@@ -96,7 +97,7 @@ class LoginToken(SQLBase):
         template = get_email_template('validate-gpg.txt')
         replacements = {'requester': self.requester.browsername,
                         'requesteremail': self.requesteremail,
-                        'displayname': key.displayname, 
+                        'displayname': key.displayname,
                         'fingerprint': key.fingerprint,
                         'uids': formatted_uids,
                         'token_url': canonical_url(self)}
@@ -104,10 +105,7 @@ class LoginToken(SQLBase):
         token_text = template % replacements
         salutation = 'Hello,\n\n'
         instructions = ''
-        closing = """
-Thanks,
-
-The Launchpad Team"""
+        closing = "Thanks,\n\nThe Launchpad Team"
 
         # Encrypt this part's content if requested.
         if key.can_encrypt:
@@ -217,11 +215,27 @@ The Launchpad Team"""
         profile = getUtility(IPersonSet).getByEmail(self.email)
         replacements = {'profile_name': (
                             "%s (%s)" % (profile.browsername, profile.name)),
-                        'email': self.email, 
+                        'email': self.email,
                         'token_url': canonical_url(self)}
         message = template % replacements
 
         subject = "Launchpad: Claim Profile"
+        simple_sendmail(fromaddress, str(self.email), subject, message)
+
+    def sendClaimTeamEmail(self):
+        """See `ILoginToken`."""
+        template = get_email_template('claim-team.txt')
+        fromaddress = format_address("Launchpad", config.noreply_from_address)
+        profile = getUtility(IPersonSet).getByEmail(self.email)
+        replacements = {'profile_name': (
+                            "%s (%s)" % (profile.browsername, profile.name)),
+                        'requester_name': (
+                            "%s (%s)" % (self.requester.browsername,
+                                         self.requester.name)),
+                        'email': self.email,
+                        'token_url': canonical_url(self)}
+        message = template % replacements
+        subject = "Launchpad: Claim existing team"
         simple_sendmail(fromaddress, str(self.email), subject, message)
 
 

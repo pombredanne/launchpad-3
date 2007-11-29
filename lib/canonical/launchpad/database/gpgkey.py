@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['GPGKey', 'GPGKeySet']
@@ -74,11 +75,11 @@ class GPGKeySet:
         """See IGPGKeySet"""
         if active is False:
             query = """
-                active = false 
-                AND fingerprint NOT IN 
-                    (SELECT fingerprint FROM LoginToken 
-                     WHERE fingerprint IS NOT NULL 
-                           AND requester = %s 
+                active = false
+                AND fingerprint NOT IN
+                    (SELECT fingerprint FROM LoginToken
+                     WHERE fingerprint IS NOT NULL
+                           AND requester = %s
                            AND date_consumed is NULL
                     )
                 """ % sqlvalues(ownerid)

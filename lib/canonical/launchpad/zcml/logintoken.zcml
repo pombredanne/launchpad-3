@@ -8,8 +8,8 @@
 
     <!-- LoginToken -->
     <content class="canonical.launchpad.database.LoginToken">
-        <require 
-            permission="zope.Public" 
+        <require
+            permission="zope.Public"
             interface="canonical.launchpad.interfaces.ILoginToken" />
     </content>
 
@@ -26,7 +26,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
         name="+index"
-        permission="zope.Public" 
+        permission="zope.Public"
         class="canonical.launchpad.browser.LoginTokenView"
         template="../templates/logintoken-index.pt"
         />
@@ -85,6 +85,13 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ClaimProfileView"
         template="../templates/logintoken-claimprofile.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILoginToken"
+        name="+claimteam"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.ClaimTeamView"
+        template="../templates/logintoken-claimteam.pt" />
 
     <browser:page
         name="+newaccount"

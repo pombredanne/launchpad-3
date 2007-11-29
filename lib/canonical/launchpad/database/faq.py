@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """FAQ document models."""
 
@@ -112,7 +113,7 @@ class FAQ(SQLBase):
         if not fti_search:
             # No useful words to search on in that summary.
             return FAQ.select('1 = 2')
-        
+
         return FAQ.select(
             '%s AND FAQ.fti @@ %s' % (target_constraint, quote(fti_search)),
             orderBy=[
@@ -147,7 +148,7 @@ class FAQSearch:
     product = None
     distribution = None
     project = None
-    
+
     def __init__(self, search_text=None, owner=None, sort=None, product=None,
                  distribution=None, project=None):
         """Initialize a new FAQ search.
@@ -232,7 +233,7 @@ class FAQSearch:
             return ['Product']
         else:
             return []
-    
+
     def getOrderByClause(self):
         """Return the ORDER BY clause to sort the results."""
         sort = self.sort

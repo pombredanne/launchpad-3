@@ -57,11 +57,7 @@ When there is no logged in user, only public branches should be visible.
 Logged in users should only be able to see public branches, and private
 branches that they are subscribed to or are the owner of.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> no_priv_browser = Browser()
-    >>> no_priv_browser.addHeader(
-    ...     'Authorization', 'Basic no-priv@canonical.com:test')
-
+    >>> no_priv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> print_recently_registered_branches(no_priv_browser)
     '...A Private Branch...<img...src="/@@/private"...'
     '...~sabdfl/+junk/testdoc...'
@@ -73,10 +69,8 @@ The private branches in the sample data belong to Landscape, and are
 subscribed to by Landscape developers.  Sample Person is a Landscape
 developer.
 
-    >>> landscape_dev_browser = Browser()
-    >>> landscape_dev_browser.addHeader(
-    ...     'Authorization', 'Basic test@canonical.com:test')
-
+    >>> landscape_dev_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
     >>> print_recently_registered_branches(landscape_dev_browser)
     '...~name12/landscape/feature-x...<img...src="/@@/private"...'
     '...Landscape trunk...<img...src="/@@/private"...'
@@ -136,9 +130,8 @@ listing tab.
     ...         print extract_text(row)
 
     >>> print_landscape_code_listing(anon_browser)
-    There may be branches registered for The Landscape Project but none
-    of them match the current filter criteria for this page. Try
-    filtering on "Any Status".
+    There are no branches registered for The Landscape Project in Launchpad
+    today...
 
     >>> print_landscape_code_listing(no_priv_browser)
     testing-branch             ... New
@@ -218,10 +211,16 @@ visible to those that would be able to see the branch.
 
 There are no branches linked to this bug.
 
-    >>> branch_table = find_tag_by_id(
-    ...     landscape_dev_browser.contents, 'bug_branch_details')
-    >>> print branch_table
-    None
+    >>> def printBugBranchLinks(browser):
+    ...     tags = find_tags_by_class(browser.contents, 'bug-branch-summary')
+    ...     if len(tags) == 0:
+    ...         print 'No bug branch links'
+    ...     else:
+    ...         for tag in tags:
+    ...             print extract_text(tag)
+
+    >>> printBugBranchLinks(landscape_dev_browser)
+    No bug branch links
 
 Now link to a private branch.
 
@@ -229,20 +228,15 @@ Now link to a private branch.
     >>> landscape_dev_browser.getControl('Branch').value = (
     ...     '~landscape-developers/landscape/trunk')
     >>> landscape_dev_browser.getControl('Continue').click()
-    >>> branch_table = find_tag_by_id(
-    ...     landscape_dev_browser.contents, 'bug_branch_details')
-    >>> print extract_text(branch_table)
-    Related branch    Developer             Status for this bug
-    Landscape trunk   Landscape Developers  Fix In Progress
+    >>> printBugBranchLinks(landscape_dev_browser)
+    ~landscape-developers/landscape/trunk (New) - Fix In Progress
 
-Since the link is to a private branch, the entire table is not
+Since the link is to a private branch, the entire section is not
 visible to a user that isn't able to see the branch itself.
 
     >>> anon_browser.open('http://launchpad.dev/bugs/10')
-    >>> branch_table = find_tag_by_id(
-    ...     anon_browser.contents, 'bug_branch_details')
-    >>> print branch_table
-    None
+    >>> printBugBranchLinks(anon_browser)
+    No bug branch links
 
 
 == Blueprint branch links ==

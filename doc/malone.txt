@@ -82,11 +82,11 @@ not associated with a sourcepackage can be thought of as "untriaged" bugs.
 In some cases, we should be able to know not only which source package, but
 also the precise binary package that manifests the bug.
 
-Milestones and DistroReleases
+Milestones and DistroSeries
 
 In addition, it's important to be able to know which bugs need to be fix for
 a given release of the distribution, or a given milestone upstream. Malone
-allows us to specify a milestone or a distrorelease by which a bug needs to
+allows us to specify a milestone or a distroseries by which a bug needs to
 be fixed, which allows QA teams to keep track of the progress they are
 making towards a release.
 

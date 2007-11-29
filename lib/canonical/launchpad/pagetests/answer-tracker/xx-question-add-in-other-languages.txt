@@ -97,9 +97,7 @@ the language in the question details portlet.
 It's also possible that the user chose English in the first page but
 then changed his mind on the second page.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
+    >>> browser = setupBrowser(auth='Basic daf@canonical.com:daf')
     >>> browser.open('http://launchpad.dev/ubuntu/+addquestion')
 
     >>> browser.getControl('Language').value = ['en']
@@ -158,6 +156,6 @@ new question.
     '.../ubuntu/+question/...'
     >>> browser.title.decode('utf-8')
     u'Ubuntu question #...\u52a9\u3051\u306e\u8981\u6c42...'
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> print soup.find('b', text='Language:').next.strip()
+    >>> portlet = find_tag_by_id(browser.contents, 'portlet-details')
+    >>> print portlet.find('b', text='Language:').next.strip()
     Japanese

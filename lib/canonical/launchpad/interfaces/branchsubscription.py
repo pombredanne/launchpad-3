@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Bug subscription interfaces."""
 
@@ -97,6 +98,7 @@ class BranchSubscriptionNotificationLevel(DBEnumeratedType):
 class IBranchSubscription(Interface):
     """The relationship between a person and a branch."""
 
+    id = Int(title=_('ID'), readonly=True, required=True)
     person = Choice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_('Enter the launchpad id, or email '

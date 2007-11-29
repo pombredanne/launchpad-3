@@ -68,9 +68,27 @@
         </tbody>
       </table>
 
+      <tal:user condition="view/user">
+        <tal:description
+          define="global description context/description/fmt:text-to-html" />
+      </tal:user>
+      <tal:not-user condition="not:view/user">
+        <tal:description
+          define="global description context/description/fmt:obfuscate-email/fmt:text-to-html" />
+      </tal:not-user>
+
+      <p id="original-bug"
+        tal:define="bug view/original_bug"
+        tal:condition="bug">
+        This question was originally filed as
+        <a href="#"
+          tal:attributes="href bug/fmt:url">bug
+          #<tal:num replace="bug/id" /></a>.
+      </p>
+
       <div
-        class="report" 
-        tal:content="structure context/description/fmt:text-to-html" 
+        class="report"
+        tal:content="structure description"
         />
 
       <div id="related-faq" tal:condition="context/faq">
@@ -86,7 +104,7 @@
 
       <div xml:lang="en" lang="en" dir="ltr">
         <div id="can-you-help-with-this-problem"
-          tal:condition="not: view/is_question_owner">
+          tal:condition="view/show_call_to_answer">
           <h2>
             Can you help with this problem?
           </h2>

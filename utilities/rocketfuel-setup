@@ -47,7 +47,7 @@ if [ $? -ne 0 ]; then
   echo "launchpad.dev added to /etc/hosts"
 fi
 
-for hostname in code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev shipit.ubuntu.dev shipit.kubuntu.dev shipit.edubuntu.dev; do
+for hostname in code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev bazaar.launchpad.dev shipit.ubuntu.dev shipit.kubuntu.dev shipit.edubuntu.dev feeds.launchpad.dev; do
   dev_host;
 done
 
@@ -179,9 +179,11 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "
+NameVirtualHost 127.0.0.88:80
+
 <VirtualHost 127.0.0.88:80>
   ServerName launchpad.dev
-  ServerAlias *.launchpad.dev
+  ServerAlias code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev feeds.launchpad.dev
   <Proxy *>
     Order deny,allow
     Allow from 127.0.0.0/255.0.0.0
@@ -190,6 +192,66 @@ echo "
   ProxyPass / http://localhost:8086/ retry=1
 </VirtualHost>
 " | sudo tee /etc/apache2/sites-available/launchpad.dev > /dev/null
+
+echo "
+<VirtualHost 127.0.0.88:80>
+  ServerName bazaar.launchpad.dev
+
+  ProxyRequests off
+  <Proxy *>
+    Order deny,allow
+    Allow from localhost 127.0.0.0/255.0.0.0
+  </Proxy>
+  ProxyTimeout 20
+
+  # The ACLs here are... complex:
+
+  # (1) People hitting the frontpage (i.e. /) are redirected to the Launchpad frontpage
+  # (2) Anything mapped in the launchpad-lookup.txt file is public, so we proxy it
+  # (3) Anything of the form /+branches/nnnnnnnn/ is only allowed from the branch scanner and proxied
+  # (4) Anything of the form /nn/nn/nn/nn/ is only allowed from ourselves (i.e. via a proxy from the above 2 rules)
+  # (5) The /robots.txt file is served normally.
+  # (6) Everything else is redirected to a non-existent page to give the user a 404
+
+  RewriteEngine On
+
+  # Generate this file using 'make rewritemap'.
+  RewriteMap branch-list txt:/var/tmp/sm-ng/config/launchpad-lookup.txt
+
+  # (1) / -> Launchpad frontpage
+  RewriteRule ^/$ http://launchpad.dev [L]
+
+  # (2) This turns things like ~mdz/branches/branchname into the actual dir
+  RewriteRule ^/(~[^/]+/[^/]+/[^/]+)(|/.*)$ /${branch-list:$1|notfound}$2 [L,P]
+
+  # (3) This is for e.g. http://bazaar.launchpad.net/+branches/0000f22a from the branch scanner
+  RewriteRule ^/\+branches/([[:xdigit:]]{2})([[:xdigit:]]{2})([[:xdigit:]]{2})([[:xdigit:]]{2})/(.*) /$1/$2/$3/$4/$5 [L,P]
+
+  # (4) Proxied access to the directory structure (4 levels of 2 digit hex directories)
+  RewriteRule ^/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/.*$ - [L]
+
+  # (5) The /robots.txt file is served normally.
+  RewriteRule ^/robots.txt$ - [L]
+
+  # (6) Anything else is not allowed
+  RewriteRule ^.*$ /notfound [L]
+
+  DocumentRoot /var/tmp/sm-ng/mirrors
+  <Directory /var/tmp/sm-ng/mirrors/>
+    Options SymLinksIfOwnerMatch
+    AllowOverride None
+    Options Indexes
+  </Directory>
+
+</VirtualHost>
+" | sudo tee /etc/apache2/sites-available/bazaar.launchpad.dev > /dev/null
+
+# Create the document root to avoid Apache warnings
+mkdir -p /var/tmp/sm-ng/mirrors
+
+# Create an empty rewritemap file so that Apache will start.
+mkdir -p /var/tmp/sm-ng/config
+touch /var/tmp/sm-ng/config/launchpad-lookup.txt
 
 sudo a2enmod proxy > /dev/null
 if [ $? -ne 0 ]; then
@@ -203,9 +265,21 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+sudo a2enmod rewrite > /dev/null
+if [ $? -ne 0 ]; then
+  echo "ERROR: Unable to enable rewrite module in Apache2"
+  exit 1
+fi
+
 sudo a2ensite launchpad.dev > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to enable launchpad.dev"
+  exit 1
+fi
+
+sudo a2ensite bazaar.launchpad.dev > /dev/null
+if [ $? -ne 0 ]; then
+  echo "ERROR: Unable to enable bazaar.launchpad.dev"
   exit 1
 fi
 
@@ -217,7 +291,7 @@ fi
 
 
 echo "Setting up devpad repository..."
-ssh devpad.canonical.com ~mark/devpad-setup
+ssh devpad.canonical.com /code/rocketfuel-built/launchpad/utilities/devpad-setup
 
 
 # Create the local branch structure we will use for managing Launchpad code
@@ -259,6 +333,13 @@ if [ ! `bzr info | grep -i "parent branch" | cut -d: -f3` = \
 fi
 
 # Setup Bazaar locations configuration
+if [ ! -d ~/.bazaar ]; then
+  mkdir ~/.bazaar
+  if [ $? -ne 0 ]; then
+    echo "Unable to create ~/.bazaar/ directory"
+    exit 1
+  fi
+fi
 if [ ! -e ~/.bazaar/locations.conf ]; then
   touch ~/.bazaar/locations.conf
 fi
@@ -267,7 +348,7 @@ if [ $? -ne 0 ]; then
   branchloc=$(eval echo "~/canonical/lp-branches")
   echo "
 [${branchloc}]
-pqm_email = Canonical PQM <pqm@pqm.ubuntu.com>
+pqm_email = Launchpad PQM <launchpad@pqm.canonical.com>
 pqm_branch = sftp://devpad.canonical.com/code/rocketfuel/launchpad/devel
 public_branch = bzr+ssh://devpad.canonical.com/code/${whoami}/launchpad
 public_branch:policy = appendpath
@@ -320,6 +401,14 @@ if [ $? -ne 0 ]; then
   echo "WARNING: /usr/local/bin/rocketfuel-status should be deleted so I can
          recreate it."
 fi
+if [ ! -e rocketfuel-push ]; then
+  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-push
+fi
+ls -l rocketfuel-push | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+if [ $? -ne 0 ]; then
+  echo "WARNING: /usr/local/bin/rocketfuel-push should be deleted so I can
+         recreate it."
+fi
 
 
 # Make sure we have all the right code in place for source dependencies
@@ -329,11 +418,25 @@ echo "
 Thank you for using this script. You can improve it for everyone by
 committing changes to LP in utilities/rocketfuel-setup.
 
-Now you can use "rocketfuel-branch foo" to create a new branch of LP called
-"foo", with all the source dependencies properly linked in.
+You should use the following commands to manage your Rocketfuel:
 
-And you can use "rocketfuel-get" to update your copy of trunk and the
-necessary source dependencies.
+ rocketfuel-branch foo
+    Create a new branch of LP called "foo" in ~/canonical/lp-branches/foo,
+    with all the source dependencies properly linked in.
+
+ rocketfuel-get
+    Update your copy of trunk and the necessary source dependencies, and
+    make sure all source dependencies are properly linked in to all the
+    branches you are working on.
+
+ rocketfuel-status
+    Check each of the branches in ~/canonical/lp-branches/ and show which of
+    them have uncommitted changes, also check which ones have revisions that
+    have not yet landed on trunk.
+
+ rocketfuel-push
+    Push all of your branches to devpad, so that you have a server-side
+    backup of everything.
 
 Happy hacking!
 "

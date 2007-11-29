@@ -17,7 +17,6 @@ Anyone logged in is able to register a new bug tracker.
   >>> user_browser.title
   'Register an external bug tracker'
 
-
 Supported external bug tracker types include Bugzilla, Debbugs,
 Roundup, SourceForge and Trac.  We don't provide all of these as
 options to the user.  We don't provide Debbugs because the status
@@ -47,9 +46,10 @@ aren't allowed.
   'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
   >>> for message in find_tags_by_class(user_browser.contents, 'message'):
   ...     print extract_text(message)
-  An error occurred.
-  Invalid name 'testttrac!'. Names must start with a letter or number
-  and be lowercase. The characters +, - and . are also allowed after the
+  There is 1 error.
+  Invalid name 'testttrac!'. Names must start with a letter or
+  number and be lowercase. The characters +,
+  - and . are also allowed after the
   first character.
 
 If a bug tracker is already registered with the same URL, the user is
@@ -63,7 +63,7 @@ informed about it.
   'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
   >>> for message in find_tags_by_class(user_browser.contents, 'message'):
   ...     print extract_text(message)
-  An error occurred.
+  There is 1 error.
   http://bugzilla.mozilla.org/ is already registered in Launchpad.
 
 After successfully registering the bug tracker, the user is redirect to
@@ -96,8 +96,7 @@ bugtracker without them is acceptable.
   'http://launchpad.dev/bugs/bugtrackers/test-bugzilla'
 
   >>> from zope.component import getUtility
-  >>> from canonical.lp.dbschema import BugTrackerType
-  >>> from canonical.launchpad.interfaces import IBugTrackerSet
+  >>> from canonical.launchpad.interfaces import BugTrackerType, IBugTrackerSet
   >>> from canonical.launchpad.ftests import login, logout
   >>> login('test@canonical.com')
   >>> bugtrackerset = getUtility(IBugTrackerSet)
@@ -125,7 +124,7 @@ a nice error message.
   >>> message in user_browser.contents
   True
 
-And lets see if we can edit the newly added bugtracker.
+We can edit the details of the newly added bugtracker.
 
   >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/testtrac/')
   >>> user_browser.getLink('Change details').click()
@@ -136,6 +135,7 @@ And lets see if we can edit the newly added bugtracker.
   >>> user_browser.title
   'Change details for \xe2\x80\x9cTest Trac Tracker\xe2\x80\x9d bug tracker'
 
+  >>> user_browser.getControl('Name').value = 'testbugzilla'
   >>> user_browser.getControl('Title').value = 'A test Bugzilla Tracker'
   >>> user_browser.getControl('Bug Tracker Type').getControl('Bugzilla').click()
   >>> user_browser.getControl(
@@ -149,22 +149,20 @@ tracker uses.
 
   >>> user_browser.url
   'http://launchpad.dev/bugs/bugtrackers/testtrac/+edit'
-  >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-  ...     print extract_text(message)
-  An error occurred.
-  There is a problem with the information you entered.
-  Please fix it and try again.
+  >>> for message in get_feedback_messages(user_browser.contents):
+  ...     print message
+  There is 1 error.
   http://bugzilla.mozilla.org/ is already registered in Launchpad.
 
-
 After successfully editing the bug tracker information, the user is
-redirect to the bug tracker page.
+redirected to the bug tracker page. Note that the change we made to
+the bugtracker name is reflected in the url.
 
   >>> user_browser.getControl('Base URL').value = url
   >>> user_browser.getControl('Change').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/testtrac'
+  'http://launchpad.dev/bugs/bugtrackers/testbugzilla'
 
 And now the test tracker should have been updated:
 
@@ -174,8 +172,41 @@ And now the test tracker should have been updated:
   True
 
   >>> login('test@canonical.com')
-  >>> test_tracker = bugtrackerset.getByName('testtrac')
+  >>> test_tracker = bugtrackerset.getByName('testbugzilla')
   >>> test_tracker.bugtrackertype == BugTrackerType.BUGZILLA
   True
 
   >>> logout()
+
+== Related projects portlet ==
+
+Related projects and project groups are shown in a portlet on the bug
+tracker page.
+
+First we need to change a project group and a project to use our new
+bug tracker:
+
+  >>> admin_browser.open('http://launchpad.dev/mozilla/+edit')
+  >>> admin_browser.getControl('Bug Tracker:').displayValue = [
+  ...     'A test Bugzilla Tracker']
+  >>> admin_browser.getControl('Change Details').click()
+
+  >>> admin_browser.open('http://launchpad.dev/jokosher/+edit')
+  >>> admin_browser.getControl(name='field.bugtracker'
+  ...     ).displayValue = ['In a registered bug tracker:']
+  >>> admin_browser.getControl(name='field.bugtracker.bugtracker'
+  ...     ).displayValue = ['A test Bugzilla Tracker']
+  >>> admin_browser.getControl('Change').click()
+
+Now the Mozilla Project and Jokosher will appear in the Related
+projects portlet on the bug tracker page:
+
+  >>> admin_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/testbugzilla')
+  >>> print extract_text(find_portlet(
+  ...     admin_browser.contents, 'Related projects'))
+  Related projects
+    You can link a registered bug tracker with a registered project in
+    Launchpad:
+      The Mozilla Project
+      Jokosher Audio Editor

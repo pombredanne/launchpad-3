@@ -28,13 +28,11 @@ import pytz
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, IBugSet, IBugTaskSet,
-    IBugExternalRefSet, IBugAttachmentSet, IMessageSet,
-    ILibraryFileAliasSet, ICveSet, IBugWatchSet, PersonCreationRationale,
-    ILaunchpadCelebrities, NotFoundError, CreateBugParams)
+    BugAttachmentType, BugTaskImportance, BugTaskStatus, CreateBugParams,
+    IBugAttachmentSet, IBugSet, IBugTaskSet, IBugWatchSet, ICveSet,
+    IEmailAddressSet, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IMessageSet, IPersonSet, NotFoundError, PersonCreationRationale)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType)
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugzilla')
 
@@ -150,8 +148,14 @@ class BugzillaBackend:
                      mimetype, ispatch, filename, thedata,
                      submitter_id) in self.cursor.fetchall()]
 
-    def findBugs(self, product=[], component=[], status=[]):
+    def findBugs(self, product=None, component=None, status=None):
         """Returns the requested bug IDs as a list"""
+        if product is None:
+            product = []
+        if component is None:
+            component = []
+        if status is None:
+            status = []
         joins = []
         conditions = []
         if product:
@@ -238,7 +242,7 @@ class Bug:
         to the bug task's status explanation.
         """
         bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
-        
+
         if self.bug_status == 'ASSIGNED':
             bugtask.transitionToStatus(
                 BugTaskStatus.CONFIRMED, bug_importer)
@@ -291,7 +295,6 @@ class Bugzilla:
         self.bugtaskset = getUtility(IBugTaskSet)
         self.bugwatchset = getUtility(IBugWatchSet)
         self.cveset = getUtility(ICveSet)
-        self.extrefset = getUtility(IBugExternalRefSet)
         self.personset = getUtility(IPersonSet)
         self.emailset = getUtility(IEmailAddressSet)
         self.person_mapping = {}
@@ -328,7 +331,7 @@ class Bugzilla:
             assert emailaddr is not None
             if person.preferredemail != emailaddr:
                 person.validateAndEnsurePreferredEmail(emailaddr)
-                
+
             self.person_mapping[bugzilla_id] = person.id
 
         return person
@@ -351,7 +354,7 @@ class Bugzilla:
                 pkgname = 'linux-source-2.6.15'
         else:
             pkgname = bug.component.encode('ASCII')
-        
+
         try:
             srcpkg, binpkg = self.ubuntu.guessPackageNames(pkgname)
         except NotFoundError, e:
@@ -429,7 +432,7 @@ class Bugzilla:
         a bug watch), it is skipped.
         """
         logger.info('Handling Bugzilla bug %d', bug_id)
-        
+
         # is there a bug watch on the bug?
         lp_bug = self.bugset.queryByRemoteBug(self.bugtracker, bug_id)
 
@@ -447,7 +450,10 @@ class Bugzilla:
         msgset = getUtility(IMessageSet)
         who, when, text = comments.pop(0)
         text = self._bug_re.sub(self.replaceBugRef, text)
-        # the initial comment can't be empty
+        # If a URL is associated with the bug, add it to the description:
+        if bug.bug_file_loc:
+            text = text + '\n\n' + bug.bug_file_loc
+        # the initial comment can't be empty:
         if not text.strip():
             text = '<empty comment>'
         msg = msgset.fromText(bug.short_desc, text, self.person(who), when)
@@ -476,12 +482,6 @@ class Bugzilla:
             lp_bug.subscribe(self.person(bug.qa_contact))
         for cc in bug.ccs:
             lp_bug.subscribe(self.person(cc))
-
-        # if a URL is associated with the bug, add it:
-        if bug.bug_file_loc:
-            self.extrefset.createBugExternalRef(lp_bug, bug.bug_file_loc,
-                                                bug.bug_file_loc,
-                                                lp_bug.owner)
 
         # translate bugzilla status and severity to LP equivalents
         task = lp_bug.bugtasks[0]
@@ -619,13 +619,20 @@ class Bugzilla:
                 lpdupe.duplicateof = lpdupe_of
             trans.commit()
 
-    def importBugs(self, trans, product=[], component=[], status=[]):
+    def importBugs(self, trans, product=None, component=None, status=None):
         """Import Bugzilla bugs matching the given constraints.
 
         Each of product, component and status gives a list of
         products, components or statuses to limit the import to.  An
         empty list matches all products, components or statuses.
         """
+        if product is None:
+            product = []
+        if component is None:
+            component = []
+        if status is None:
+            status = []
+
         bugs = self.backend.findBugs(product=product,
                                      component=component,
                                      status=status)

@@ -11,11 +11,13 @@ import zipfile
 from zope.component import getUtility
 
 import canonical.launchpad
-from canonical.database.sqlbase import commit, flush_database_caches
+from canonical.database.sqlbase import commit
+from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces import (
-    IPersonSet, IProductSet, IPOTemplateNameSet, IPOTemplateSet,
-    ITranslationImportQueue)
-from canonical.lp.dbschema import RosettaImportStatus, TranslationFileFormat
+    IPersonSet, IProductSet, IPOTemplateSet, ITranslationImportQueue,
+    RosettaImportStatus)
+from canonical.launchpad.translationformat.mozilla_xpi_importer import (
+    MozillaXpiImporter)
 from canonical.testing import LaunchpadZopelessLayer
 
 def get_en_US_xpi_file_to_import():
@@ -75,15 +77,13 @@ class XpiTestCase(unittest.TestCase):
         # Get the Firefox template.
         firefox_product = getUtility(IProductSet).getByName('firefox')
         firefox_productseries = firefox_product.getSeries('trunk')
-        firefox_potemplatename = getUtility(IPOTemplateNameSet)['firefox']
         firefox_potemplate_subset = getUtility(IPOTemplateSet).getSubset(
             productseries=firefox_productseries)
         self.firefox_template = firefox_potemplate_subset.new(
-            potemplatename=firefox_potemplatename,
+            name='firefox',
+            translation_domain='firefox',
             path='en-US.xpi',
             owner=self.importer)
-        self.firefox_template = (
-            firefox_potemplate_subset.getPOTemplateByName('firefox'))
         self.spanish_firefox = self.firefox_template.newPOFile('es')
 
     def setUpTranslationImportQueueForTemplate(self):
@@ -104,9 +104,6 @@ class XpiTestCase(unittest.TestCase):
         # The file data is stored in the Librarian, so we have to commit the
         # transaction to make sure it's stored properly.
         commit()
-        # We need this flush call here to prevent random failures of the tests
-        # because it was showing a non importing template.
-        flush_database_caches()
 
         return entry
 
@@ -130,9 +127,6 @@ class XpiTestCase(unittest.TestCase):
         # The file data is stored in the Librarian, so we have to commit the
         # transaction to make sure it's stored properly.
         commit()
-        # We need this flush call here to prevent random failures of the tests
-        # because it was showing a non importing template.
-        flush_database_caches()
 
         return entry
 
@@ -141,11 +135,11 @@ class XpiTestCase(unittest.TestCase):
         # msgid and singular_text are always different except for the keyboard
         # shortcuts which are the 'accesskey' and 'commandkey' ones.
         self.failIf(
-            (message.msgid == message.singular_text and
-             message.msgid not in (
+            (message.msgid_singular.msgid == message.singular_text and
+             message.msgid_singular.msgid not in (
                 u'foozilla.menu.accesskey', u'foozilla.menu.commandkey')),
             'msgid and singular_text should be different but both are %s' % (
-                message.msgid))
+                message.msgid_singular.msgid))
 
         # Plural forms should be None as this format is not able to handle that.
         self.assertEquals(message.msgid_plural, None)
@@ -154,7 +148,7 @@ class XpiTestCase(unittest.TestCase):
         # There is no way to know whether a comment is from a
         # translator or a developer comment, so we have comenttext
         # always as None and store all comments as source comments.
-        self.assertEquals(message.commenttext, None)
+        self.assertEquals(message.commenttext, u'')
 
         # This format doesn't support any functionality like .po flags.
         self.assertEquals(message.flagscomment, u'')
@@ -168,6 +162,7 @@ class XpiTestCase(unittest.TestCase):
         self.firefox_template.importFromQueue()
 
         # The status is now IMPORTED:
+        sync(entry)
         self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
 
         # Let's validate the content of the messages.
@@ -175,12 +170,12 @@ class XpiTestCase(unittest.TestCase):
 
         messages_msgid_list = []
         for message in potmsgsets:
-            messages_msgid_list.append(message.msgid)
+            messages_msgid_list.append(message.msgid_singular.msgid)
 
             # Check the common values for all messages.
             self._assertXpiMessageInvariant(message)
 
-            if message.msgid == u'foozilla.name':
+            if message.msgid_singular.msgid == u'foozilla.name':
                 # It's a normal message that lacks any comment.
 
                 self.assertEquals(message.singular_text, u'FooZilla!')
@@ -189,7 +184,7 @@ class XpiTestCase(unittest.TestCase):
                     u'en-US.xpi/chrome/en-US.jar/test1.dtd(foozilla.name)')
                 self.assertEquals(message.sourcecomment, None)
 
-            elif message.msgid == u'foozilla.play.fire':
+            elif message.msgid_singular.msgid == u'foozilla.play.fire':
                 # This one is also a normal message that has a comment.
 
                 self.assertEquals(
@@ -202,7 +197,7 @@ class XpiTestCase(unittest.TestCase):
                     message.sourcecomment,
                     u"Translators, don't play with fire!")
 
-            elif message.msgid == u'foozilla.utf8':
+            elif message.msgid_singular.msgid == u'foozilla.utf8':
                 # Now, we can see that special UTF-8 chars are extracted
                 # correctly.
                 self.assertEquals(
@@ -212,7 +207,7 @@ class XpiTestCase(unittest.TestCase):
                     u'en-US.xpi/chrome/en-US.jar/test1.properties:5' +
                         u'(foozilla.utf8)')
                 self.assertEquals(message.sourcecomment, None)
-            elif message.msgid == u'foozilla.menu.accesskey':
+            elif message.msgid_singular.msgid == u'foozilla.menu.accesskey':
                 # access key is a special notation that is supposed to be
                 # translated with a key shortcut.
                 self.assertEquals(
@@ -225,7 +220,7 @@ class XpiTestCase(unittest.TestCase):
                 # which is noted as the en_US translation.
                 self.assertEquals(
                     message.sourcecomment, u"Default key in en_US: 'M'")
-            elif message.msgid == u'foozilla.menu.commandkey':
+            elif message.msgid_singular.msgid == u'foozilla.menu.commandkey':
                 # command key is a special notation that is supposed to be
                 # translated with a key shortcut.
                 self.assertEquals(
@@ -260,17 +255,16 @@ class XpiTestCase(unittest.TestCase):
         self.spanish_firefox.importFromQueue()
 
         # The status is now IMPORTED:
+        sync(translation_entry)
+        sync(template_entry)
         self.assertEquals(translation_entry.status, RosettaImportStatus.IMPORTED)
         self.assertEquals(template_entry.status, RosettaImportStatus.IMPORTED)
 
         # Let's validate the content of the messages.
         potmsgsets = list(self.firefox_template.getPOTMsgSets())
 
-        messages = {}
-        for message in potmsgsets:
-            translation = self.spanish_firefox.getPOMsgSetFromPOTMsgSet(message)
-            messages[message.msgid] = (message, translation)
-
+        messages = [message.msgid_singular.msgid for message in potmsgsets]
+        messages.sort()
         self.assertEquals(
             [u'foozilla.happytitle',
              u'foozilla.menu.accesskey',
@@ -283,48 +277,67 @@ class XpiTestCase(unittest.TestCase):
              u'foozilla.title',
              u'foozilla.utf8',
              u'foozilla_something'],
-            sorted(messages.keys()))
+            messages)
 
-        msg, trans = messages[u'foozilla.name']
+        potmsgset = self.firefox_template.getPOTMsgSetByMsgIDText(
+            u'foozilla.name')
+        translation = potmsgset.getCurrentTranslationMessage(
+            self.spanish_firefox.language)
+
         # It's a normal message that lacks any comment.
+        self.assertEquals(potmsgset.singular_text, u'FooZilla!')
 
-        self.assertEquals(msg.singular_text, u'FooZilla!')
-        # Translation will match singular_text because we are using
-        # the same file for the template and translation.
-        self.assertEquals(
-            trans.published_texts,
-            trans.published_texts)
         # With this first import, published and active texts must
         # match.
         self.assertEquals(
-            trans.published_texts,
-            trans.active_texts)
+            translation.translations,
+            potmsgset.getImportedTranslationMessage(
+                self.spanish_firefox.language).translations)
 
-        msg, trans = messages[u'foozilla.menu.accesskey']
+        potmsgset = self.firefox_template.getPOTMsgSetByMsgIDText(
+            u'foozilla.menu.accesskey')
+
         # access key is a special notation that is supposed to be
         # translated with a key shortcut.
         self.assertEquals(
-            msg.singular_text, u'foozilla.menu.accesskey')
+            potmsgset.singular_text, u'foozilla.menu.accesskey')
         # The comment shows the key used when there is no translation,
         # which is noted as the en_US translation.
         self.assertEquals(
-            msg.sourcecomment, u"Default key in en_US: 'M'")
+            potmsgset.sourcecomment, u"Default key in en_US: 'M'")
         # But for the translation import, we get the key directly.
         self.assertEquals(
-            trans.published_texts, [u'M'])
+            potmsgset.getImportedTranslationMessage(
+                self.spanish_firefox.language).translations,
+            [u'M'])
 
-        msg, trans = messages[u'foozilla.menu.commandkey']
+        potmsgset = self.firefox_template.getPOTMsgSetByMsgIDText(
+            u'foozilla.menu.commandkey')
         # command key is a special notation that is supposed to be
         # translated with a key shortcut.
         self.assertEquals(
-            msg.singular_text, u'foozilla.menu.commandkey')
+            potmsgset.singular_text, u'foozilla.menu.commandkey')
         # The comment shows the key used when there is no translation,
         # which is noted as the en_US translation.
         self.assertEquals(
-            msg.sourcecomment, u"Default key in en_US: 'm'")
+            potmsgset.sourcecomment, u"Default key in en_US: 'm'")
         # But for the translation import, we get the key directly.
         self.assertEquals(
-            trans.published_texts, [u'm'])
+            potmsgset.getImportedTranslationMessage(
+                self.spanish_firefox.language).translations,
+            [u'm'])
+
+    def testGetLastTranslator(self):
+        """Tests whether we extract last translator information correctly."""
+        translation_entry = self.setUpTranslationImportQueueForTranslation()
+        importer = MozillaXpiImporter()
+        translation_file = importer.parse(translation_entry)
+
+        # Let's try with the translation file, it has valid Last Translator
+        # information.
+        name, email = translation_file.header.getLastTranslator()
+        self.assertEqual(name, u'Carlos Perell\xf3 Mar\xedn')
+        self.assertEqual(email, u'carlos@canonical.com')
 
 
 def test_suite():

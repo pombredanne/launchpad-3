@@ -12,7 +12,7 @@ Here are some imports we need to get this test running.
 
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.interfaces import (
-  ...     IPersonSet, IPOTemplateNameSet, ITranslationImportQueue)
+  ...     IPersonSet, ITranslationImportQueue)
   >>> from canonical.launchpad.database import POTemplateSubset
   >>> import datetime
   >>> import pytz
@@ -25,7 +25,7 @@ We need this for the Librarian to work properly.
 
 And also, the DBSchema to change the imports status
 
-  >>> from canonical.lp.dbschema import RosettaImportStatus
+  >>> from canonical.launchpad.interfaces import RosettaImportStatus
 
 Then, let's get a handle to our mailer. This is the thing we'll examine to show
 what email has been sent, to whom, and what the body of the message contains:
@@ -49,10 +49,10 @@ Now, is time to create the new potemplate
   >>> release.productseries.product.name
   u'firefox'
   >>> series = release.productseries
-  >>> ptn = getUtility(IPOTemplateNameSet)['firefox']
   >>> subset = POTemplateSubset(productseries=series)
   >>> potemplate = subset.new(
-  ...     potemplatename=ptn,
+  ...     name='firefox',
+  ...     translation_domain='firefox',
   ...     path='po/firefox.pot',
   ...     owner=person)
 
@@ -98,6 +98,7 @@ We can see that the header has the same 'PO-Revision-Date' than the file we
 just imported.
 
     >>> print pofile.header
+    Project-Id-Version:...
     PO-Revision-Date: 2005-05-03 20:41+0100
     ...
 
@@ -154,7 +155,7 @@ The status is now FAILED:
 We can see that the header remains unchanged
 
     >>> print pofile.header
-    ...
+    Project-Id-Version:...
     PO-Revision-Date: 2005-05-03 20:41+0100
     ...
 

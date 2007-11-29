@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Person interfaces."""
 
@@ -6,25 +7,30 @@ __metaclass__ = type
 
 __all__ = [
     'AccountStatus',
-    'IAdminRequestPeopleMerge',
+    'IAdminPeopleMergeSchema',
+    'IAdminTeamMergeSchema',
+    'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'IObjectReassignment',
+    'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
     'IPersonSet',
-    'IPerson',
     'IRequestPeopleMerge',
+    'ITeam',
+    'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
-    'ITeam',
     'JoinNotAllowed',
     'PersonCreationRationale',
+    'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamMembershipStatus',
     'TeamSubscriptionPolicy',
     ]
 
 
+from zope.formlib.form import NoInputData
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
@@ -32,7 +38,7 @@ from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, StrippedTextLine)
@@ -77,6 +83,10 @@ class AccountStatus(DBEnumeratedType):
         The account associated with this Person has been suspended by a
         Launchpad admin.
         """)
+
+
+INACTIVE_ACCOUNT_STATUSES = [
+    AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED]
 
 
 class PersonCreationRationale(DBEnumeratedType):
@@ -185,6 +195,12 @@ class PersonCreationRationale(DBEnumeratedType):
         directed to Launchpad to create an account.
         """)
 
+    OWNER_SUBMITTED_HARDWARE_TEST = DBItem(14, """
+        Created by a submission to the hardware database.
+
+        Somebody without a Launchpad account made a submission to the
+        hardware database.
+        """)
 
 class TeamMembershipRenewalPolicy(DBEnumeratedType):
     """TeamMembership Renewal Policy.
@@ -226,8 +242,9 @@ class TeamMembershipStatus(DBEnumeratedType):
     PROPOSED = DBItem(1, """
         Proposed
 
-        You are a proposed member of this team. To become an active member your
-        subscription has to be approved by one of the team's administrators.
+        You are a proposed member of this team. To become an active member
+        your subscription has to be approved by one of the team's
+        administrators.
         """)
 
     APPROVED = DBItem(2, """
@@ -286,7 +303,7 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
     MODERATED = DBItem(1, """
         Moderated Team
 
-        All subscriptions for this team are subjected to approval by one of
+        All subscriptions for this team are subject to approval by one of
         the team's administrators.
         """)
 
@@ -304,14 +321,17 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
 
 
 class PersonNameField(BlacklistableContentNameField):
+    """A Person's name, which is unique."""
 
     errormessage = _("%s is already in use by another person or team.")
 
     @property
     def _content_iface(self):
+        """Return the interface this field belongs to."""
         return IPerson
 
     def _getByName(self, name):
+        """Return a Person by looking up his name."""
         return getUtility(IPersonSet).getByName(name, ignore_merged=False)
 
 
@@ -443,6 +463,8 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             description=_('The Organization requesting the CDs')
             )
     languages = Attribute(_('List of languages known by this person'))
+    translatable_languages = Attribute(
+        _('Languages this person knows, apart from English'))
 
     hide_email_addresses = Bool(
         title=_("Hide my email addresses from other Launchpad users"),
@@ -464,7 +486,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "exception to this is when we allow users to create Launchpad "
             "profiles through the /people/+newperson page."),
         required=False, readonly=False)
-    # XXX Guilherme Salgado 2006-11-10: 
+    # XXX Guilherme Salgado 2006-11-10:
     # We can't use a Choice field here because we don't have a vocabulary
     # which contains valid people but not teams, and we don't really need one
     # appart from here.
@@ -473,7 +495,8 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     ownedBounties = Attribute('Bounties issued by this person.')
     reviewerBounties = Attribute('Bounties reviewed by this person.')
     claimedBounties = Attribute('Bounties claimed by this person.')
-    subscribedBounties = Attribute('Bounties to which this person subscribes.')
+    subscribedBounties = Attribute(
+        'Bounties to which this person subscribes.')
 
     sshkeys = Attribute(_('List of SSH keys'))
 
@@ -561,12 +584,17 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         "including subteams.")
     adminmembers = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
+    expired_member_count = Attribute("Number of EXPIRED members.")
     approvedmembers = Attribute("List of members with APPROVED status")
     proposedmembers = Attribute("List of members with PROPOSED status")
+    proposed_member_count = Attribute("Number of PROPOSED members")
     inactivemembers = Attribute(
         "List of members with EXPIRED or DEACTIVATED status")
+    inactive_member_count = Attribute("Number of inactive members")
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
+    deactivated_member_count = Attribute("Number of deactivated members")
     invited_members = Attribute("List of members with INVITED status")
+    invited_member_count = Attribute("Number of members with INVITED status")
     pendingmembers = Attribute(
         "List of members with INVITED or PROPOSED status")
     specifications = Attribute(
@@ -604,6 +632,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         title=_("Preferred Email Address"),
         description=_("The preferred email address for this person. The one "
                       "we'll use to communicate with them."),
+        readonly=True)
+
+    safe_email_or_blank = TextLine(
+        title=_("Safe email for display"),
+        description=_("The person's preferred email if they have"
+                      "one and do not choose to hide it. Otherwise"
+                      "the empty string."),
         readonly=True)
 
     preferredemail_sha1 = TextLine(
@@ -684,7 +719,8 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     @invariant
     def personCannotHaveIcon(person):
-        # XXX Guilherme Salgado 2007-05-28: 
+        """Only Persons can have icons."""
+        # XXX Guilherme Salgado 2007-05-28:
         # This invariant is busted! The person parameter provided to this
         # method will always be an instance of zope.formlib.form.FormData
         # containing only the values of the fields included in the POSTed
@@ -696,16 +732,37 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     @invariant
     def defaultRenewalPeriodIsRequiredForSomeTeams(person):
-        """Teams for which memberships can be renewed automatically or by
-        the members themselves must specify a default renewal period.
+        """Teams may specify a default renewal period.
+
+        The team renewal period cannot be less than 1 day, and when the
+        renewal policy is is 'On Demand' or 'Automatic', it cannot be None.
         """
+        # The person arg is a zope.formlib.form.FormData instance.
+        # Instead of checking 'not person.isTeam()' or 'person.teamowner',
+        # we check for a field in the schema to identify this as a team.
+        try:
+            renewal_policy = person.renewal_policy
+        except NoInputData:
+            # This is not a team.
+            return
+
+        renewal_period = person.defaultrenewalperiod
         automatic, ondemand = [TeamMembershipRenewalPolicy.AUTOMATIC,
                                TeamMembershipRenewalPolicy.ONDEMAND]
-        if (person.teamowner is not None
-                and person.renewal_policy in [automatic, ondemand]
-                and person.defaultrenewalperiod <= 0):
+        cannot_be_none = renewal_policy in [automatic, ondemand]
+        if ((renewal_period is None and cannot_be_none)
+            or (renewal_period is not None and renewal_period <= 0)):
             raise Invalid(
                 'You must specify a default renewal period greater than 0.')
+
+    def convertToTeam(team_owner):
+        """Convert this person into a team owned by the given team_owner.
+
+        Also adds the given team owner as an administrator of the team.
+
+        Only Person entries whose account_status is NOACCOUNT and which are
+        not teams can be converted into teams.
+        """
 
     def getActiveMemberships():
         """Return all active TeamMembership objects of this team.
@@ -758,8 +815,17 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             'open_inprogress': The number of open bugs that ar In Progress.
         """
 
+    def setContactAddress(email):
+        """Set the given email address as this team's contact address.
+
+        This method must be used only for teams.
+        """
+
     def setPreferredEmail(email):
-        """Set the given email address as this person's preferred one."""
+        """Set the given email address as this person's preferred one.
+
+        This method must be used only for people, not teams.
+        """
 
     def getBranch(product_name, branch_name):
         """The branch associated to this person and product with this name.
@@ -811,11 +877,15 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """
 
     def latestKarma(quantity=25):
-        """Return the latest karma actions for this person, up to the number
-        given as quantity."""
+        """Return the latest karma actions for this person.
 
-    def iterTopProjectsContributedTo(self, limit=10):
-        """Iterate over the top projects contributed to, up to the given limit.
+        Return no more than the number given as quantity.
+        """
+
+    def iterTopProjectsContributedTo(limit=10):
+        """Iterate over the top projects contributed to.
+
+        Iterate no more than the given limit.
         """
 
     def inTeam(team):
@@ -863,16 +933,23 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         Return an iterable of matching results.
         """
 
-    def latestMaintainedPackages():
-        """Return SourcePackageReleases maintained by this person.
+    def getLatestMaintainedPackages():
+        """Return `SourcePackageRelease`s maintained by this person.
 
         This method will only include the latest source package release
         for each source package name, distribution series combination.
         """
 
-    def latestUploadedButNotMaintainedPackages():
-        """Return SourcePackageReleases created by this person but
+    def getLatestUploadedButNotMaintainedPackages():
+        """Return `SourcePackageRelease`s created by this person but
         not maintained by him.
+
+        This method will only include the latest source package release
+        for each source package name, distribution series combination.
+        """
+
+    def getLatestUploadedPPAPackages():
+        """Return `SourcePackageRelease`s uploaded by this person to any PPA.
 
         This method will only include the latest source package release
         for each source package name, distribution series combination.
@@ -893,14 +970,18 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         this person will keep their old preferred email.
 
         This method is meant to be the only one to change the status of an
-        email address, but as we all know the real world is far from ideal and
-        we have to deal with this in one more place, which is the case when
-        people explicitly want to change their preferred email address. On
-        that case, though, all we have to do is use person.setPreferredEmail().
+        email address, but as we all know the real world is far from ideal
+        and we have to deal with this in one more place, which is the case
+        when people explicitly want to change their preferred email address.
+        On that case, though, all we have to do is use
+        person.setPreferredEmail().
         """
 
     def hasParticipationEntryFor(team):
-        """Tell if this person is a direct/indirect member of the given team."""
+        """Return True when this person is a member of the given team.
+
+        The person's membership may be direct or indirect.
+        """
 
     def join(team):
         """Join the given team if its subscriptionpolicy is not RESTRICTED.
@@ -1054,10 +1135,10 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """
 
     def getTeamAnswerQuestionTargets():
-        """Return a list of IQuestionTargets that are indirectly subscribed to.
+        """Return a list of IQuestionTargets that are indirect subscriptions.
 
-        This will return IQuestionTargets that the person or is registered
-        as an answer contact because of his membership in a team.
+        This will return IQuestionTargets that the person or team is
+        registered as an answer contact because of his membership in a team.
         """
 
     def searchQuestions(search_text=None,
@@ -1070,15 +1151,15 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         parameters.
 
         :participation: A list of QuestionParticipation that defines the set
-        of relationship to questions that will be searched. If None or an empty
-        sequence, all relationships are considered.
+        of relationship to questions that will be searched. If None or an
+        empty sequence, all relationships are considered.
 
-        :needs_attention: If this flag is true, only questions needing attention
-        from the person will be included. Questions needing attention are those
-        owned by the person in the ANSWERED or NEEDSINFO state, as well as,
-        those not owned by the person but on which the person requested for
-        more information or gave an answer and that are back in the OPEN
-        state.
+        :needs_attention: If this flag is true, only questions needing
+        attention from the person will be included. Questions needing
+        attention are those owned by the person in the ANSWERED or NEEDSINFO
+        state, as well as, those not owned by the person but on which the
+        person requested for more information or gave an answer and that are
+        back in the OPEN state.
         """
 
 
@@ -1095,9 +1176,9 @@ class ITeam(IPerson, IHasIcon):
         default_image_resource='/@@/team-logo',
         description=_(
             "An image of exactly 64x64 pixels that will be displayed in "
-            "the heading of all pages related to the team. Traditionally this "
-            "is a logo, a small picture or a personal mascot. It should be "
-            "no bigger than 50kb in size."))
+            "the heading of all pages related to the team. Traditionally "
+            "this is a logo, a small picture or a personal mascot. It "
+            "should be no bigger than 50kb in size."))
     mugshot = MugshotImageUpload(
         title=_("Mugshot"), required=False,
         default_image_resource='/@@/team-mugshot',
@@ -1189,7 +1270,7 @@ class IPersonSet(Interface):
     def getPOFileContributors(pofile):
         """Return people that have contributed to the specified POFile."""
 
-    def getPOFileContributorsByDistroSeries(self, distroseries, language):
+    def getPOFileContributorsByDistroSeries(distroseries, language):
         """Return people who translated strings in distroseries to language.
 
         The people that translated only IPOTemplate objects that are not
@@ -1243,7 +1324,7 @@ class IPersonSet(Interface):
         address.
         """
 
-    def findPerson(text="", orderBy=None):
+    def findPerson(text="", orderBy=None, exclude_inactive_accounts=True):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
 
@@ -1254,6 +1335,10 @@ class IPersonSet(Interface):
         or a list of column names as strings.
         If no orderBy is specified the results will be ordered using the
         default ordering specified in Person._defaultOrder.
+
+        If exclude_inactive_accounts is True, any accounts whose
+        account_status is any of INACTIVE_ACCOUNT_STATUSES will not be in the
+        returned set.
 
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
@@ -1286,8 +1371,24 @@ class IPersonSet(Interface):
     def latest_teams(limit=5):
         """Return the latest teams registered, up to the limit specified."""
 
-    def merge(from_person, to_person):
-        """Merge a person into another."""
+    def merge(from_person, to_person, deactivate_members=False, user=None):
+        """Merge a person/team into another.
+
+        The old person/team (from_person) will be left as an atavism.
+
+        When merging two person entries, from_person can't have email
+        addresses associated with.
+
+        When merging teams, from_person must have no IMailingLists
+        associated with and no active members. If it has active members,
+        though, it's possible to have them deactivated before the merge by
+        passing deactivate_members=True. In that case the user who's
+        performing the merge must be provided as well.
+
+        We are not yet game to delete the `from_person` entry from the
+        database yet. We will let it roll for a while and see what cruft
+        develops. -- StuartBishop 20050812
+        """
 
     def getTranslatorsByLanguage(language):
         """Return the list of translators for the given language.
@@ -1307,18 +1408,30 @@ class IRequestPeopleMerge(Interface):
         description=_("The duplicated account you found in Launchpad"))
 
 
-class IAdminRequestPeopleMerge(Interface):
-    """The schema used by admin merge accounts page."""
+class IAdminPeopleMergeSchema(Interface):
+    """The schema used by the admin merge people page."""
 
-    dupe_account = Choice(
-        title=_('Duplicated Account'), required=True,
+    dupe_person = Choice(
+        title=_('Duplicated Person'), required=True,
         vocabulary='PersonAccountToMerge',
-        description=_("The duplicated account found in Launchpad"))
+        description=_("The duplicated person found in Launchpad."))
 
-    target_account = Choice(
-        title=_('Account'), required=True,
+    target_person = Choice(
+        title=_('Target Person'), required=True,
         vocabulary='PersonAccountToMerge',
-        description=_("The account to be merged on"))
+        description=_("The person to be merged on."))
+
+
+class IAdminTeamMergeSchema(Interface):
+    """The schema used by the admin merge teams page."""
+
+    dupe_person = Choice(
+        title=_('Duplicated Team'), required=True, vocabulary='ValidTeam',
+        description=_("The duplicated team found in Launchpad."))
+
+    target_person = Choice(
+        title=_('Target Team'), required=True, vocabulary='ValidTeam',
+        description=_("The team to be merged on."))
 
 
 class IObjectReassignment(Interface):
@@ -1330,7 +1443,8 @@ class IObjectReassignment(Interface):
 class ITeamReassignment(Interface):
     """The schema used by the team reassignment page."""
 
-    owner = Choice(title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
+    owner = Choice(
+        title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
 
 
 class ITeamCreation(ITeam):
@@ -1344,11 +1458,46 @@ class ITeamCreation(ITeam):
         title=_("Contact Email Address"), required=False, readonly=False,
         description=_(
             "This is the email address we'll send all notifications to this "
-            "team. If no contact address is chosen, notifications directed to "
-            "this team will be sent to all team members. After finishing the "
-            "team creation, a new message will be sent to this address with "
-            "instructions on how to finish its registration."),
+            "team. If no contact address is chosen, notifications directed "
+            "to this team will be sent to all team members. After finishing "
+            "the team creation, a new message will be sent to this address "
+            "with instructions on how to finish its registration."),
         constraint=validate_new_team_email)
+
+
+class TeamContactMethod(EnumeratedType):
+    """The method used by Launchpad to contact a given team."""
+
+    HOSTED_LIST = Item("""
+        The Launchpad mailing list for this team
+
+        Notifications directed to this team are sent to its Launchpad-hosted
+        mailing list.
+        """)
+
+    NONE = Item("""
+        Each member individually
+
+        Notifications directed to this team will be sent to each of its
+        members.
+        """)
+
+    EXTERNAL_ADDRESS = Item("""
+        Another e-mail address
+
+        Notifications directed to this team are sent to the contact address
+        specified.
+        """)
+
+
+class ITeamContactAddressForm(Interface):
+
+    contact_address = TextLine(
+        title=_("Contact Email Address"), required=False, readonly=False)
+
+    contact_method = Choice(
+        title=_("How do people contact these team's members?"),
+        required=True, vocabulary=TeamContactMethod)
 
 
 class JoinNotAllowed(Exception):

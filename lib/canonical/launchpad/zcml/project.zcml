@@ -7,7 +7,6 @@
     <!-- Project -->
     <content class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
-        <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
         <allow interface="canonical.launchpad.interfaces.IFAQCollection" />
         <allow interface="canonical.launchpad.interfaces.IQuestionCollection" />
         <require
@@ -48,6 +47,11 @@
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
+        name="+branches"
+        layer="canonical.launchpad.layers.CodeLayer"
+        />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
         name="+bugs"
         layer="canonical.launchpad.layers.BugsLayer"
         />
@@ -76,11 +80,6 @@
             template="../templates/project-index.pt"
             />
         <browser:page
-            name="+branches"
-            facet="overview"
-            template="../templates/project-branches.pt"
-            />
-        <browser:page
             name="+bounties"
             facet="bounties"
             template="../templates/related-bounties.pt"
@@ -88,11 +87,6 @@
         <browser:page
             name="+listing-detailed"
             template="../templates/project-listing-detailed.pt" />
-        <browser:page
-            name="+translations"
-            facet="translations"
-            template="../templates/project-translations.pt"
-            />
        <browser:page
             name="+milestones"
             facet="overview"
@@ -124,11 +118,44 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectBranchesView"
+        facet="branches"
+        permission="zope.Public"
+        name="+branches"
+        template="../templates/project-branches.pt"
+    />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProject"
         class="canonical.launchpad.browser.ProjectRdfView"
         facet="overview"
         permission="zope.Public"
         name="+rdf"
         attribute="__call__"
+        />
+
+    <browser:page
+        name="+translations"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.TranslationsRedirectView"
+        permission="zope.Public"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProject"
+        permission="zope.Public"
+        name="+translations"
+        facet="translations"
+        template="../templates/project-translations.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <browser:page
+        name="+help-translate-button"
+        facet="translations"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.HelpTranslateButtonView"
+        permission="zope.Public"
         />
 
   <browser:pages
@@ -213,6 +240,7 @@
         permission="launchpad.Edit"
         label="Select a new translation group"
         template="../templates/project-translators.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:page

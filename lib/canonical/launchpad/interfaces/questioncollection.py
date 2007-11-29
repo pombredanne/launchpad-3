@@ -1,4 +1,5 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces for a Question."""
 
@@ -87,9 +88,9 @@ class IQuestionSet(IQuestionCollection):
     def findExpiredQuestions(days_before_expiration):
         """Return the questions that are expired.
 
-        This should return all the questions in the Open or Needs information
-        state, without an assignee, that didn't receive any new comments in
-        the last <days_before_expiration> days.
+        Return all the questions in the Open or Needs information state,
+        without an assignee or bug links, that did not receive any new
+        comments in the last <days_before_expiration> days.
         """
 
     def getMostActiveProjects(limit=5):
@@ -98,6 +99,6 @@ class IQuestionSet(IQuestionCollection):
 
         It should only return projects that officially uses the Answer
         Tracker.
-        
+
         :param limit: The number of projects to return.
         """

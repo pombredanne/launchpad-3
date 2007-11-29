@@ -7,30 +7,24 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
-# XXX: thumper 2007-05-25:
-# This import should really be tidied up. Made into alphabetical
-# order ideally.
 from canonical.launchpad.interfaces import (
-    IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
-    IDistribution, IFAQ, IFAQTarget, ITeamMembership, IMilestone, IBug,
-    ITranslator, ITranslationGroup, ITranslationGroupSet, IProduct,
-    IProductSeries, IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet,
-    ISourcePackage, ILaunchpadCelebrities, IDistroSeries, IBugTracker,
-    IBugAttachment, IPoll, IPollSubset, IPollOption, IProductRelease,
-    IBranchMergeProposal, IQuestion, IQuestionTarget,
-    IShippingRequest, IShippingRequestSet, IRequestedCDs,
-    IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, ITranslationImportQueueEntry,
-    ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
-    IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
-    IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
-    IDistroSeriesLanguage, IBranch, IBranchSubscription, ICodeImport,
-    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IEntitlement)
+    IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
+    IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
+    IBuilder, IBuilderSet, ICodeImport, ICodeImportMachine,
+    ICodeImportMachineSet, ICodeImportSet, IDistribution, IDistributionMirror,
+    IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
+    IHasBug, IHasDrivers, IHasOwner, IHWSubmission, ILanguage, ILanguagePack,
+    ILanguageSet, ILaunchpadCelebrities, IMilestone, IPackageUpload,
+    IPackageUploadQueue, IPerson, IPOFile, IPoll, IPollSubset, IPollOption,
+    IPOTemplate, IPOTemplateSubset, IProduct, IProductRelease, IProductSeries,
+    IQuestion, IQuestionTarget, IRequestedCDs, IShipItApplication,
+    IShippingRequest, IShippingRequestSet, IShippingRun, ISpecification,
+    ISpecificationSubscription, ISprint, ISprintSpecification,
+    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
+    ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
+    ITranslationImportQueueEntry, ITranslator, PackageUploadStatus)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
-
-from canonical.lp.dbschema import PackageUploadStatus
 
 
 class AuthorizationBase:
@@ -190,6 +184,20 @@ class DriveSprint(AuthorizationBase):
                 user.inTeam(admins))
 
 
+class Sprint(AuthorizationBase):
+    """An attendee, owner, or driver of a sprint."""
+    permission = 'launchpad.View'
+    usedfor = ISprint
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(self.obj.driver) or
+                user in [attendance.attendee
+                         for attendance in self.obj.attendances] or
+                user.inTeam(admins))
+
+
 class EditSpecificationSubscription(AuthorizationBase):
     """The subscriber, and people related to the spec or the target of the
     spec can determine who is essential."""
@@ -212,6 +220,34 @@ class EditSpecificationSubscription(AuthorizationBase):
                 user.inTeam(self.obj.specification.drafter) or
                 user.inTeam(self.obj.specification.approver) or
                 user.inTeam(admins))
+
+
+class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
+    """Base class that allow access to Rosetta experts and Launchpad admins.
+    """
+
+    def checkAuthenticated(self, user):
+        """Allow Launchpad's admins and Rosetta experts edit all fields."""
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(celebrities.admin) or
+                user.inTeam(celebrities.rosetta_experts))
+
+
+class AdminProductTranslations(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IProduct
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IProduct` translations settings?
+
+        Any Launchpad/Launchpad Translations administrator or owners are
+        able to change translation settings for a product.
+        """
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(celebrities.admin) or
+                user.inTeam(celebrities.rosetta_experts))
+
 
 class AdminSeriesByVCSImports(AuthorizationBase):
     permission = 'launchpad.Admin'
@@ -462,7 +498,7 @@ class EditProductSeries(EditByOwnersOrAdmins):
             # The user is the owner of the product.
             return True
         # Rosetta experts need to be able to upload translations.
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
         if user.inTeam(rosetta_experts):
             return True
         return EditByOwnersOrAdmins.checkAuthenticated(self, user)
@@ -630,25 +666,14 @@ class UseApiDoc(AuthorizationBase):
         return True
 
 
-class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
-    """Base class that allow access to Rosetta experts and Launchpad admins.
-    """
-
-    def checkAuthenticated(self, user):
-        """Allow Launchpad's admins and Rosetta experts edit all fields."""
-        admins = getUtility(ILaunchpadCelebrities).admin
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
-        return user.inTeam(admins) or user.inTeam(rosetta_experts)
-
-
 class OnlyBazaarExpertsAndAdmins(AuthorizationBase):
     """Base class that allows only the Launchpad admins and Bazaar
     experts."""
 
     def checkAuthenticated(self, user):
-        bzrexpert = getUtility(ILaunchpadCelebrities).bazaar_expert
+        bzrexperts = getUtility(ILaunchpadCelebrities).bazaar_experts
         admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(admins) or user.inTeam(bzrexpert)
+        return user.inTeam(admins) or user.inTeam(bzrexperts)
 
 
 class OnlyVcsImportsAndAdmins(AuthorizationBase):
@@ -687,6 +712,16 @@ class SeeCodeImports(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImport
 
 
+class EditCodeImports(OnlyVcsImportsAndAdmins):
+    """Control who can edit the object view of a CodeImport.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = ICodeImport
+
+
 class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
     """Control who can see the CodeImportMachine listing page.
 
@@ -719,7 +754,7 @@ class EditPOTemplateDetails(EditByOwnersOrAdmins):
             # The user is the owner of the product.
             return True
 
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
         return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
                 user.inTeam(rosetta_experts))
@@ -744,7 +779,7 @@ class EditPOFileDetails(EditByOwnersOrAdmins):
     def checkAuthenticated(self, user):
         """Allow anyone that can edit translations, owner, experts and admis.
         """
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
         return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
                 self.obj.canEditTranslations(user) or
@@ -778,28 +813,6 @@ class EditTranslationGroupSet(OnlyRosettaExpertsAndAdmins):
     usedfor = ITranslationGroupSet
 
 
-# XXX: Carlos Perello Marin 2005-05-24 bug=753: 
-# This should be using SuperSpecialPermissions when implemented.
-class ListProductPOTemplateNames(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IProduct
-
-# XXX: Carlos Perello Marin 2005-05-24 bug=753: 
-# This should be using SuperSpecialPermissions when implemented.
-class ListSourcePackagePOTemplateNames(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = ISourcePackage
-
-class EditPOTemplateName(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPOTemplateName
-
-
-class EditPOTemplateNameSet(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPOTemplateNameSet
-
-
 class EditBugTracker(EditByOwnersOrAdmins):
     permission = 'launchpad.Edit'
     usedfor = IBugTracker
@@ -808,6 +821,12 @@ class EditProductRelease(EditByOwnersOrAdmins):
     permission = 'launchpad.Edit'
     usedfor = IProductRelease
 
+    def checkAuthenticated(self, user):
+        if (user.inTeam(self.obj.productseries.owner) or
+            user.inTeam(self.obj.productseries.product.owner)):
+            return True
+        return EditByOwnersOrAdmins.checkAuthenticated(self, user)
+
 class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Edit'
     usedfor = ITranslationImportQueueEntry
@@ -815,7 +834,7 @@ class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
     def checkAuthenticated(self, user):
         """Allow who added the entry, experts and admis.
         """
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
         return (OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
                 user.inTeam(self.obj.importer))
@@ -1085,3 +1104,67 @@ class ViewEntitlement(AuthorizationBase):
         return (user.inTeam(self.obj.person) or
                 user.inTeam(self.obj.registrant) or
                 user.inTeam(admins))
+
+
+class AdminDistroSeriesLanguagePacks(
+    OnlyRosettaExpertsAndAdmins,
+    EditDistroSeriesByOwnersOrDistroOwnersOrAdmins):
+    permission = 'launchpad.LanguagePacksAdmin'
+    usedfor = IDistroSeries
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IDistroSeries` language packs?
+
+        Any Launchpad/Launchpad Translations administrator, people allowed to
+        edit distroseries or members of IDistribution.language_pack_admin team
+        are able to change the language packs available.
+        """
+        return (
+            OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+            EditDistroSeriesByOwnersOrDistroOwnersOrAdmins.checkAuthenticated(
+                self, user) or
+            user.inTeam(self.obj.distribution.language_pack_admin))
+
+
+class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
+                                    EditDistributionByDistroOwnersOrAdmins):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IDistribution
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IDistribution` translations settings?
+
+        Any Launchpad/Launchpad Translations administrator or people allowed
+        to edit distribution details are able to change translation settings
+        for a distribution.
+        """
+        return (
+            OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+            EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
+                self, user))
+
+
+class AdminLanguagePack(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.LanguagePacksAdmin'
+    usedfor = ILanguagePack
+
+
+class ViewHWSubmission(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IHWSubmission
+
+    def checkAuthenticated(self, user):
+        """Can the user view the submission details?
+
+        Submissions that not marked private are publicly visible,
+        private submissions may only be accessed by their owner and by
+        admins.
+        """
+        if not self.obj.private:
+            return True
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.obj.owner) or user.inTeam(admins)
+
+    def checkUnauthenticated(self):
+        return not self.obj.private

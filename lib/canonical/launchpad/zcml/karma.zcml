@@ -24,7 +24,7 @@
     <!-- KarmaCategory -->
     <content class="canonical.launchpad.database.KarmaCategory">
         <allow interface="canonical.launchpad.interfaces.IKarmaCategory" />
-        <require 
+        <require
             permission="launchpad.Admin"
             set_schema="canonical.launchpad.interfaces.IKarmaCategory" />
     </content>
@@ -32,8 +32,8 @@
     <!-- KarmaAction -->
     <content class="canonical.launchpad.database.KarmaAction">
         <allow interface="canonical.launchpad.interfaces.IKarmaAction" />
-        <require 
-            permission="launchpad.Admin" 
+        <require
+            permission="launchpad.Admin"
             set_schema="canonical.launchpad.interfaces.IKarmaAction" />
     </content>
 
@@ -99,7 +99,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IKarmaActionSet"
         name="+index"
-        permission="launchpad.Admin" 
+        permission="launchpad.Admin"
         template="../templates/karmaaction-index.pt"
         />
 

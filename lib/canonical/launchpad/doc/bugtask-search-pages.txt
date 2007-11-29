@@ -235,8 +235,7 @@ need to be logged in.
 
     >>> login("test@canonical.com")
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from canonical.launchpad.interfaces import BugTaskStatus, IBugTaskSet
     >>> open_bugtask = getUtility(IBugTaskSet).get(19)
     >>> open_bugtask.status.name
     'NEW'

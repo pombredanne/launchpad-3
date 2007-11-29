@@ -5,8 +5,7 @@ some people which have done work on the free software community but are not
 Launchpad users.
 
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
-    >>> from canonical.database.sqlbase import sqlvalues, flush_database_updates
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IPerson, IEmailAddressSet, IHasTranslationImports)
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
@@ -81,6 +80,23 @@ a user account when its first email address is confirmed)
     <DBItem EmailAddressStatus.PREFERRED...
     >>> p.account_status
     <DBItem AccountStatus.ACTIVE...
+
+In the case of teams, though, the account_status is not changed as their
+account_status must always be set to NOACCOUNT. (Notice how we use
+setContactAddress() rather than setPreferredEmail() here, since the latter
+can be used only for people and the former only for teams)
+
+    >>> shipit_admins = personset.getByName('shipit-admins')
+    >>> shipit_admins.account_status
+    <DBItem AccountStatus.NOACCOUNT...
+
+    >>> emailset = getUtility(IEmailAddressSet)
+    >>> email = emailset.new('foo@baz.com', shipit_admins)
+    >>> shipit_admins.setContactAddress(email)
+    >>> email.status
+    <DBItem EmailAddressStatus.PREFERRED...
+    >>> shipit_admins.account_status
+    <DBItem AccountStatus.NOACCOUNT...
 
 When a new sourcepackage is imported and a Person entry has to be created
 because we don't know about the maintainer of that package, the code to create
@@ -161,6 +177,70 @@ account_status will always be NOACCOUNT.
 
     >>> landscape_devs.account_status
     <DBItem AccountStatus.NOACCOUNT...
+
+=== Turning people into teams ===
+
+Launchpad may create Person entries automatically and it always assumes
+these are actual people.  Sometimes, though, these should actually be teams,
+so we provide an easy way to turn one of these auto created entries into
+teams.
+
+    >>> not_a_person, dummy = personset.createPersonAndEmail(
+    ...     'foo@random.com', PersonCreationRationale.SOURCEPACKAGEIMPORT,
+    ...     comment='when the ed package was imported into Ubuntu Feisty')
+    >>> not_a_person.isTeam()
+    False
+    >>> not_a_person.is_valid_person
+    False
+    >>> not_a_person.account_status
+    <DBItem AccountStatus.NOACCOUNT...
+
+    # Empty stub.test_emails as later we'll want to show that no notifications
+    # are sent when we add the owner as a member of the team.
+    >>> from canonical.launchpad.mail import stub
+    >>> stub.test_emails = []
+
+    >>> not_a_person.convertToTeam(team_owner=ddaa)
+    >>> not_a_person.isTeam()
+    True
+    >>> ITeam.providedBy(not_a_person)
+    True
+    >>> verifyObject(ITeam, not_a_person)
+    True
+    >>> print not_a_person.password
+    None
+
+The team owner is also added as an administrator of its team.
+
+    >>> [member.name for member in not_a_person.adminmembers]
+    [u'ddaa']
+
+    # As said previously, no notifications are sent when we add the team owner
+    # as a member of his team.
+    >>> transaction.commit()
+    >>> stub.test_emails
+    []
+
+And we can even add other members to our new team!
+
+    >>> not_a_person.addMember(lifeless, reviewer=ddaa)
+    >>> [member.name for member in not_a_person.activemembers]
+    [u'ddaa', u'lifeless']
+
+This functionality is only available for non-team Person entries whose
+account_status is NOACCOUNT, though.
+
+    >>> ddaa.account_status
+    <DBItem AccountStatus.ACTIVE...
+    >>> ddaa.convertToTeam(team_owner=landscape_devs)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only Person entries whose account_status is NOACCOUNT...
+
+    >>> not_a_person.convertToTeam(team_owner=landscape_devs)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Can't convert a team to a team.
 
 === Team members ===
 
@@ -419,12 +499,13 @@ It's also important to note that the teams/pillars owned/driven by Foo Bar
 are now owned/driven by the registry admins team.
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> registry = getUtility(ILaunchpadCelebrities).registry
-    >>> registry_pillars = set(registry.getOwnedOrDrivenPillars())
+    >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
+
+    >>> registry_pillars = set(registry_experts.getOwnedOrDrivenPillars())
     >>> registry_pillars.issuperset(foobar_pillars)
     True
 
-    >>> registry_teams = set(Person.selectBy(teamowner=registry))
+    >>> registry_teams = set(Person.selectBy(teamowner=registry_experts))
     >>> registry_teams.issuperset(foobar_teams)
     True
 
@@ -442,64 +523,84 @@ addresses that belongs to a person using the methods provided by IPersonSet.
 While we don't have Full Text Indexes in the emailaddress table, we'll be
 trying to match the text only against the beginning of an email address:
 
+    # First we'll define a utility function to help us displaying the results.
     >>> emailset = getUtility(IEmailAddressSet)
-    >>> results = personset.find('ubuntu')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'Mirror Administrators', u'ubuntu-mirror-admins', [])
-    (u'Sigurd Gartmann', u'sigurd-ubuntu', [u'sigurd-ubuntu@brogar.org'])
-    (u'Ubuntu Gnome Team', u'name18', [])
-    (u'Ubuntu Team', u'ubuntu-team', [u'support@ubuntu.com'])
-    (u'Ubuntu Translators', u'ubuntu-translators', [])
+    >>> def print_people(results):
+    ...     for person in results:
+    ...         emails = [email.email for email in emailset.getByPerson(person)]
+    ...         print (
+    ...             "%s (%s): %s" % (person.displayname, person.name, emails))
 
-    >>> results = personset.find('steve.alexander')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'Steve Alexander', u'stevea', [u'steve.alexander@ubuntulinux.com'])
+    >>> print_people(personset.find('ubuntu'))
+    Mirror Administrators (ubuntu-mirror-admins): []
+    Sigurd Gartmann (sigurd-ubuntu): [u'sigurd-ubuntu@brogar.org']
+    Ubuntu Doc Team (doc): [u'doc@lists.ubuntu.com']
+    Ubuntu Gnome Team (name18): []
+    Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
+    Ubuntu Translators (ubuntu-translators): []
+
+    >>> print_people(personset.find('steve.alexander'))
+    Steve Alexander (stevea): [u'steve.alexander@ubuntulinux.com']
 
 Searching only for People based on their names or email addresses:
 
-    >>> results = personset.findPerson('james.blackwell')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'James Blackwell', u'jblack', [u'james.blackwell@ubuntulinux.com'])
+    >>> print_people(personset.findPerson('james.blackwell'))
+    James Blackwell (jblack): [u'james.blackwell@ubuntulinux.com']
 
-    >>> results = personset.findPerson('dave')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'Dave Miller', u'justdave', [u'dave.miller@ubuntulinux.com', u'justdave@bugzilla.org'])
+    >>> print_people(personset.findPerson('dave'))
+    Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
+                             u'justdave@bugzilla.org']
+
+By default, when searching only for people, any person whose account is
+inactive is not included in the list, but we can tell findPerson to include
+them as well.
+    
+    >>> from canonical.launchpad.interfaces import AccountStatus
+    >>> dave = personset.getByName('justdave')
+    >>> login('dave.miller@ubuntulinux.com')
+    >>> dave.account_status = AccountStatus.DEACTIVATED
+    >>> flush_database_updates()
+    >>> list(personset.findPerson('dave'))
+    []
+
+    >>> print_people(
+    ...     personset.findPerson('dave', exclude_inactive_accounts=False))
+    Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
+                             u'justdave@bugzilla.org']
+
+    >>> dave.account_status = AccountStatus.ACTIVE
+    >>> flush_database_updates()
+    >>> login(ANONYMOUS)
 
 Searching only for Teams based on their names or email addresses:
 
-    >>> results = personset.findTeam('support')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'Ubuntu Team', u'ubuntu-team', [u'support@ubuntu.com'])
+    >>> print_people(personset.findTeam('support'))
+    Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
 
-    >>> results = personset.findTeam('translators')
-    >>> for person in results:
-    ...     emails = [email.email for email in emailset.getByPerson(person)]
-    ...     (person.displayname, person.name, emails)
-    (u'Ubuntu Translators', u'ubuntu-translators', [])
-
+    >>> print_people(personset.findTeam('translators'))
+    Ubuntu Translators (ubuntu-translators): []
 
 == Packages related to a person ==
 
-To obtain the packages a person is related to, we can use the
-latestMaintainedPackages() and latestUploadedButNotMaintainedPackages()
-methods of IPersonSet. The former will return the latest
-SourcePackageReleases a person uploaded in which he is listed as the
-Maintainer. The latter will return the latest SourcePackageReleases a
-person uploaded (where he isn't the maintainer).
+To obtain the packages a person is related to, we can use:
+
+ 1. getLatestMaintainedPackages(),
+ 2. getLatestUploadedButNotMaintainedPackages(),
+ 3. getLatestUploadedPPAPackages
+
+The 1st will return the latest SourcePackageReleases related to a
+person in which he is listed as the Maintainer. The second will return
+the latest SourcePackageReleases a person uploaded (and where he isn't
+the maintainer).
+
+Both, 1st and 2nd methods, only consider sources upload to primary archives.
+
+The 3rd method returns SourcePackageReleases uploaded by the person in
+question to any PPA.
 
     >>> sabdfl = personset.getByName('sabdfl')
-    >>> for sprelease in sabdfl.latestMaintainedPackages():
-    ...     print (sprelease.name, sprelease.uploaddistroseries.fullseriesname,
+    >>> for sprelease in sabdfl.getLatestMaintainedPackages():
+    ...     print (sprelease.name, sprelease.upload_distroseries.fullseriesname,
     ...            sprelease.version)
     (u'alsa-utils', u'Debian Sid', u'1.0.9a-4')
     (u'pmount', u'Ubuntu Hoary', u'0.1-2')
@@ -509,19 +610,50 @@ person uploaded (where he isn't the maintainer).
     (u'mozilla-firefox', u'Ubuntu Hoary', u'0.9')
     (u'evolution', u'Ubuntu Hoary', u'1.0')
 
-    >>> for sprelease in sabdfl.latestUploadedButNotMaintainedPackages():
-    ...     print (sprelease.name, sprelease.uploaddistroseries.fullseriesname,
+    >>> for sprelease in sabdfl.getLatestUploadedButNotMaintainedPackages():
+    ...     print (sprelease.name, sprelease.upload_distroseries.fullseriesname,
     ...            sprelease.version)
     (u'language-pack-de', u'Ubuntu Breezy-autotest', u'1.0')
     (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cnews', u'Ubuntu Breezy-autotest', u'1.0')
-    (u'iceweasel', u'Ubuntu Warty', u'1.0')
     (u'libstdc++', u'Ubuntu Hoary', u'b8p')
     (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
     (u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
     (u'at', u'Ubuntu Hoary', u'0.00')
     (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
+
+
+    >>> sabdfl_spreleases = sabdfl.getLatestUploadedPPAPackages()
+    >>> for sprelease in sabdfl_spreleases:
+    ...     print (sprelease.name,
+    ...            sprelease.version,
+    ...            sprelease.creator.name,
+    ...            sprelease.maintainer.name,
+    ...            sprelease.upload_archive.owner.name,
+    ...            sprelease.upload_distroseries.fullseriesname)
+    (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'sabdfl', u'Ubuntu Warty')
+    (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'no-priv', u'Ubuntu Warty')
+
+We will change modify the first SourcePackageRelease to reproduce the
+issue mentioned in bug 157303, where source with same creator and
+maintainer got omitted from the results:
+
+    >>> any_spr = sabdfl_spreleases[0]
+    >>> naked_spr = removeSecurityProxy(any_spr)
+    >>> naked_spr.maintainer = sabdfl
+    >>> flush_database_updates()
+
+    >>> sabdfl_spreleases = sabdfl.getLatestUploadedPPAPackages()
+    >>> for sprelease in sabdfl_spreleases:
+    ...     print (sprelease.name,
+    ...            sprelease.version,
+    ...            sprelease.creator.name,
+    ...            sprelease.maintainer.name,
+    ...            sprelease.upload_archive.owner.name,
+    ...            sprelease.upload_distroseries.fullseriesname)
+    (u'iceweasel', u'1.0', u'sabdfl', u'sabdfl', u'sabdfl', u'Ubuntu Warty')
+    (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'no-priv', u'Ubuntu Warty')
 
 
 == Pillars owned or driven by a person or team ==
@@ -571,15 +703,50 @@ projects.
 
 == Translations ==
 
+Users can set their preferred languages, retrievable as Person.languages.
+
+    >>> daf = personset.getByName('daf')
+    >>> carlos = personset.getByName('carlos')
+
+    >>> for language in carlos.languages:
+    ...     print language.code, language.englishname
+    ca     Catalan
+    en     English
+    es     Spanish
+
+The Person.languages list is ordered alphabetically by the languages' English
+names.
+
+    >>> for language in daf.languages:
+    ...     print language.code, language.englishname
+    en_GB  English (United Kingdom)
+    ja     Japanese
+    cy     Welsh
+
+Person.translatable_languages yields the same list, except it leaves out US
+English and languages marked as non-visible such as 'zh' or 'de_DE'.
+
+    >>> for language in daf.translatable_languages:
+    ...     print language.code, language.englishname
+    en_GB  English (United Kingdom)
+    ja     Japanese
+    cy     Welsh
+
+    >>> for language in carlos.translatable_languages:
+    ...     print language.code, language.englishname
+    ca     Catalan
+    es     Spanish
+
 The IPerson interface offers a way of returning POFileTranslator records
 for a Person:
 
-    >>> carlos = getUtility(IPersonSet).getByName('carlos')
-    >>> [pt.pofile.title for pt in carlos.translation_history]
-    [u'Spanish (es) translation of man in Ubuntu Hoary package "evolution"',
-     u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
-     u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
-     u'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"']
+    >>> for pt in carlos.translation_history:
+    ...     print pt.pofile.title
+    Spanish (es) translation of alsa-utils in alsa-utils trunk
+    Spanish (es) translation of man in Ubuntu Hoary package "evolution"
+    Spanish (es) translation of evolution-2.2 in Evolution trunk
+    Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"
+    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"
 
 The IPersonSet component contains a few convenience methods to return
 Person objects that have contributed translations.
@@ -648,9 +815,10 @@ certain criteria:
 
 First, Carlos does not have any completed specifications assigned to him:
 
-    >>> from canonical.lp.dbschema import SpecificationFilter
+    >>> from canonical.launchpad.interfaces import SpecificationFilter
     >>> carlos.specifications(filter=[
-    ...     SpecificationFilter.ASSIGNEE, SpecificationFilter.COMPLETE]).count()
+    ...     SpecificationFilter.ASSIGNEE,
+    ...     SpecificationFilter.COMPLETE]).count()
     0
 
 Next, Carlos has three incomplete specs *related* to him:
@@ -725,7 +893,6 @@ We can filter for specifications that contain specific text:
 
 Inactive products are excluded from the listings.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> from canonical.launchpad.ftests import login
     >>> firefox = getUtility(IProductSet).getByName('firefox')

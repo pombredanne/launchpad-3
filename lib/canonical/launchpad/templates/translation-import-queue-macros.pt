@@ -1,6 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  i18n:domain="launchpad"
+>
 <body>
   <metal:translation-import-queue define-macro="translation-import-queue-content">
 
@@ -62,10 +69,10 @@
                     information.
                   </tal:comment>
                   <td tal:condition="entry/import_into/title|nothing" rowspan="3">
-                    <img alt="" src="/@@/download.png" />
+                    <img alt="" src="/@@/download" />
                   </td>
                   <td tal:condition="not: entry/import_into/title|nothing" rowspan="2">
-                    <img alt="" src="/@@/download.png" />
+                    <img alt="" src="/@@/download" />
                   </td>
                   <td>
                     <a tal:attributes="href entry/content/http_url"

@@ -1,5 +1,4 @@
-Source Package Release
-======================
+= Source Package Release =
 
 The SourcePackageRelease table represents a particular release of a
 SourcePackageName, but isn't tied to any particular DistroSeries
@@ -11,8 +10,7 @@ uploaded DSC (Debian Source Control) file.
 This model allow us to have more granular control of the fields,
 enabling faster searches, faster readings and model constraints.
 
-Basic attributes
-----------------
+== Basic attributes ==
 
 Let's get one from the database:
 
@@ -50,6 +48,26 @@ if the 'age' result looks sane:
    >>> spr.dateuploaded = (local_now - datetime.timedelta(days=10))
    >>> spr.age.days == 10
    True
+
+Mozilla-firefox 0.9 has got some builds. including a PPA build.  The 'builds'
+property only returns the non-PPA builds.
+
+   >>> from canonical.launchpad.interfaces import IPersonSet
+   >>> from canonical.launchpad.database.build import Build
+   >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
+   >>> ff_ppa_build = Build.selectBy(
+   ...     archive=cprov_ppa, sourcepackagerelease=spr)
+   >>> ff_ppa_build.count()
+   1
+   >>> ff_ppa_build[0].archive.purpose.name
+   'PPA'
+   >>> spr.builds.count()
+   4
+
+All the builds returned are for non-PPA archives:
+
+   >>> set(build.archive.purpose.name for build in spr.builds)
+   set(['PRIMARY'])
 
 We can use the magic productrelease property to map this to a ProductRelease:
 
@@ -91,6 +109,11 @@ If there isn't one, that should return None.
    >>> print SourcePackageRelease.get(20).productrelease
    None
 
+Check that the uploaded changesfile works:
+
+   >>> commercial = SourcePackageRelease.get(36)
+   >>> commercial.upload_changesfile.http_url
+   'http://.../commercialpackage_1.0-1_source.changes'
 
 Check ISourcePackageRelease.override() behaviour:
 
@@ -122,7 +145,7 @@ IDistroSeries API:
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, ISourcePackageNameSet, IGPGKeySet)
   >>> from canonical.database.constants import UTC_NOW
-  >>> from canonical.lp.dbschema import SourcePackageUrgency
+  >>> from canonical.launchpad.interfaces import SourcePackageUrgency
 
   >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
@@ -137,10 +160,6 @@ Some of the 20 required arguments are foreign keys or DB contants:
   >>> arg_maintainer = hoary.owner
   >>> arg_creator = hoary.owner
   >>> arg_urgency = SourcePackageUrgency.LOW
-
-'manifest' is the only nullable FK:
-
-  >>> arg_manifest = None
 
 The other argurments are strings:
 
@@ -159,16 +178,16 @@ The other argurments are strings:
 
 Having proper arguments in hand we can create a new
 ISourcePackageRelease, it will automatically set the
-'uploaddistroseries' to the API entry point, in this case Hoary.
+'upload_distroseries' to the API entry point, in this case Hoary.
 
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
   ...     arg_name, version, arg_maintainer,
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
-  ...     arg_urgency, changelog, dsc, arg_key, arg_sect, arg_manifest,
+  ...     arg_urgency, changelog, dsc, arg_key, arg_sect,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
   ...     dsc_binaries, archive, copyright=copyright)
 
-  >>> new_spr.uploaddistroseries.name
+  >>> new_spr.upload_distroseries.name
   u'hoary'
   >>> new_spr.version
   u'0.0.99'
@@ -188,53 +207,169 @@ Let's get a sample SourcePackageRelease:
    u'pmount'
 
 
-== Creating Build records ==
+== Creating & Looking for Build records ==
 
-The SourcePackageRelease has the ability to create Build records,
+ISourcePackageRelease has the ability to create Build records,
 however it needs fully support to treat architecturehintlist and P-a-s
 information, see further information in buildd-queuebuilder.txt.
 
+ISourcePackageRelease also provides a 'getBuildByArch' method which
+allow the applications to lookup for Build records in a given
+DistroArchSeries and Archive.
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> hoary = ubuntu['hoary']
+    >>> hoary_i386 = hoary['i386']
+    >>> hoary_hppa = hoary['hppa']
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> pocket_release = PackagePublishingPocket.RELEASE
+
 The base method createBuild() is able to create build to a given
-distroarchseries and pocket.
+distroarchseries, pocket and archive.
 
-Build.buildstate, by default is set to NEEDSBUILD and build.archive is
-the default distribution.main_archive.
+Build.buildstate, by default is set to NEEDSBUILD.
 
-   >>> from canonical.lp.dbschema import PackagePublishingPocket
-   >>> pocket = PackagePublishingPocket.RELEASE
+    >>> hoary_evo_sp = hoary.getSourcePackage('evolution')
+    >>> evo_spr = hoary_evo_sp['1.0'].sourcepackagerelease
 
-   >>> dar = spr_test.uploaddistroseries['i386']
+    >>> evo_build_i386 = evo_spr.createBuild(
+    ...     hoary_i386, pocket_release, ubuntu.main_archive)
 
-   >>> test_build = spr_test.createBuild(
-   ...     dar, pocket, dar.distroseries.main_archive)
+    >>> evo_build_i386.buildstate.name
+    'NEEDSBUILD'
 
-   >>> test_build.buildstate.name
-   'NEEDSBUILD'
+    >>> evo_build_i386.distroarchseries.architecturetag
+    u'i386'
 
-   >>> test_build.distroarchseries.architecturetag
-   u'i386'
+    >>> print evo_build_i386.archive.title
+    Primary Archive for Ubuntu Linux
 
-   >>> test_build.archive.id == dar.distroseries.main_archive.id
-   True
+Optionally you can pass also another status:
 
-Optionally you can pass also status & archive:
+    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> evo_build_i386_ppa = evo_spr.createBuild(
+    ...     hoary_i386, pocket_release, cprov.archive,
+    ...     status=BuildStatus.SUPERSEDED)
 
-   >>> from canonical.launchpad.interfaces import IPersonSet
-   >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> evo_build_i386_ppa.buildstate.name
+    'SUPERSEDED'
 
-   >>> from canonical.lp.dbschema import BuildStatus
-   >>> ppa_build = spr_test.createBuild(
-   ...    dar, pocket, cprov.archive, status=BuildStatus.SUPERSEDED)
+Successfully Build lookups on the just created Build records:
 
-   >>> ppa_build.buildstate.name
-   'SUPERSEDED'
+    >>> test_build_i386 = evo_spr.getBuildByArch(
+    ...     hoary_i386, ubuntu.main_archive)
+    >>> test_build_i386 == evo_build_i386
+    True
 
-   >>> ppa_build.archive.id == cprov.archive.id
-   True
+    >>> test_build_i386_ppa = evo_spr.getBuildByArch(
+    ...     hoary_i386, cprov.archive)
+    >>> test_build_i386_ppa == evo_build_i386_ppa
+    True
+
+Failed Build lookups for evolution on hoary/hppa in both archives:
+
+    >>> test_build_hppa = evo_spr.getBuildByArch(
+    ...     hoary_hppa, ubuntu.main_archive)
+    >>> test_build_hppa is None
+    True
+
+    >>> test_build_hppa_ppa = evo_spr.getBuildByArch(
+    ...     hoary_hppa, cprov.archive)
+    >>> test_build_hppa_ppa is None
+    True
+
+Even if the source package builds a architecture-independent package,
+no Build record will be returned by getBuildByArch() if arch-specific
+binary packages were not built (see bug #65712 for further
+information).
+
+Let's create and publish and architecture-independent binary for
+evolution_1.0:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BinaryPackageFormat, IBinaryPackageNameSet, IComponentSet,
+    ...     ISectionSet, PackagePublishingPriority, PackagePublishingStatus)
+    >>> from canonical.launchpad.database import (
+    ...    SecureBinaryPackagePublishingHistory)
+
+    >>> main_component = getUtility(IComponentSet)['main']
+    >>> mail_section = getUtility(ISectionSet)['mail']
+    >>> binarypackageformat = BinaryPackageFormat.DEB
+    >>> extra_priority = PackagePublishingPriority.EXTRA
+    >>> evo_bin_name = getUtility(IBinaryPackageNameSet).ensure('evolution')
+
+    >>> evo_bin = evo_build_i386.createBinaryPackageRelease(
+    ...      evo_bin_name, '1.0', 'no sum', 'no desc',
+    ...      binarypackageformat, main_component, mail_section, extra_priority,
+    ...      '', '', '', '', '', '', '', False, 1, False)
+
+Publish 'evo_bin' in all supported architectures (as expected for
+arch-indep binaries).
+
+    >>> pubs = []
+    >>> for arch in [hoary_i386, hoary_hppa]:
+    ...     pub = SecureBinaryPackagePublishingHistory(
+    ...         binarypackagerelease=evo_bin,
+    ...         distroarchseries=arch,
+    ...         component=main_component,
+    ...         section=mail_section,
+    ...         priority=extra_priority,
+    ...         status=PackagePublishingStatus.PUBLISHED,
+    ...         pocket=pocket_release,
+    ...         archive=ubuntu.main_archive)
+    ...     pubs.append(pub)
+
+Now, verifying that the bug mentioned is fixed, we can observe that a
+lookup for the HPPA build correctly returns 'None'.
+
+    >>> test_build_hppa = evo_spr.getBuildByArch(
+    ...     hoary_hppa, ubuntu.main_archive)
+    >>> print test_build_hppa
+    None
+
+And the original build record is still reachable.
+
+    >>> test_build_i386 = evo_spr.getBuildByArch(
+    ...     hoary_i386, ubuntu.main_archive)
+    >>> print test_build_i386.title
+    i386 build of evolution 1.0 in ubuntu hoary RELEASE
+
+We will copy the evolution source to ubuntu/breezy-autotest as if it
+was inherited in the initialization.
+
+    >>> breezy_autotest = ubuntu['breezy-autotest']
+    >>> breezy_autotest_i386 = breezy_autotest['i386']
+
+    >>> print breezy_autotest.parent_series.title
+    The Hoary Hedgehog Release
+
+    >>> hoary_evo_dsspr = hoary_evo_sp['1.0']
+    >>> copied_pub = hoary_evo_dsspr.current_published.copyTo(
+    ...     breezy_autotest, pocket_release, breezy_autotest.main_archive)
+
+    >>> breezy_autotest_evo_sp = breezy_autotest.getSourcePackage('evolution')
+    >>> breezy_autotest_evo_dsspr = breezy_autotest_evo_sp['1.0']
+    >>> evo_spr == breezy_autotest_evo_dsspr.sourcepackagerelease
+    True
+
+Since evolution source was already built on ubuntu/hoary/i386, the
+parent series, it should be found by a build lookup happening on
+ubuntu/breezy-autotest/i386.
+
+In practical terms it means that another build is not necessary in
+this context.
+
+    >>> breezy_autotest_build = evo_spr.getBuildByArch(
+    ...     breezy_autotest_i386, ubuntu.main_archive)
+    >>> print breezy_autotest_build.title
+    i386 build of evolution 1.0 in ubuntu hoary RELEASE
 
 
-Counting bugs
--------------
+== Counting bugs ==
 
 The SourcePackageRelease offers a convenient way of checking how many
 bugs are open against this package in the distribution to which it was
@@ -248,8 +383,8 @@ uploaded. Because of bug privacy, this method needs a user supplied.
    >>> print spr.countOpenBugsInUploadedDistro(no_priv)
    1
 
-Uploading translations
-----------------------
+
+== Uploading translations ==
 
 It's time to check the translation upload function.
 
@@ -337,4 +472,3 @@ The second one, executes the import.
     INFO    creating lockfile
     INFO    Importing: Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
     ...
-

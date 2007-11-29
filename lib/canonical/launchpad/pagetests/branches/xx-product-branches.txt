@@ -1,4 +1,4 @@
-= Branches Overview =
+= Product Branches Overview =
 
 Products link their branch listing page.
 
@@ -12,7 +12,8 @@ We are be able to display a list of branches for a product at +branches.
    >>> browser.open('http://launchpad.dev/gnome-terminal/+branches')
    >>> print browser.title
    GNOME Terminal's Bazaar branches registered in Launchpad
-  
+
+
 == Default page for code site ==
 
 When going directly to a product on the code rootsite for launchpad,
@@ -21,22 +22,25 @@ the +branches is the default page shown.
    >>> browser.open('http://code.launchpad.dev/applets')
    >>> print browser.title
    Gnome Applets's Bazaar branches registered in Launchpad
+   >>> print extract_text(find_main_content(browser.contents).h1)
+   Bazaar branches for Gnome Applets
 
 If there are not any branches, a relevant message is shown.
 
-   >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
-   There may be branches registered for Gnome Applets but none of
-   them match the current filter criteria for this page.
-   Try filtering on "Any Status".
-
-OK, lets follow the advice.
-
-   >>> browser.getControl(name='field.lifecycle').displayValue = ['Any Status']
-   >>> browser.getControl('Filter').click()
-   >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
+   >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
+   >>> print extract_text(message)
    There are no branches registered for Gnome Applets in Launchpad today.
-   We recommend you visit
-   <a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a>
+   We recommend you visit www.bazaar-vcs.org
    for more information about how you can use
    the Bazaar revision control system to improve community
    participation in this project.
+
+If there are branches, but they do not fit with the appropriate filter
+we are given a different message.
+
+   >>> browser.open(
+   ...     'http://code.launchpad.dev/firefox?field.lifecycle=Mature')
+   >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
+   >>> print extract_text(message)
+   There are branches registered for Mozilla Firefox but none of them match
+   the current filter criteria for this page. Try filtering on "Any Status".

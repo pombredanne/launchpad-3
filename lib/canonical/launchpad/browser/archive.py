@@ -15,20 +15,25 @@ __all__ = [
     'ArchiveAdminView',
     ]
 
+from zope.schema import Choice
 from zope.app.form.browser import TextAreaWidget
+from zope.app.form.utility import setUpWidget
+from zope.app.form.interfaces import IInputWidget
 from zope.component import getUtility
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.sourceslist import (
+    SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
-    IArchive, IPPAActivateForm, IArchiveSet, IBuildSet, IHasBuildRecords,
-    NotFoundError)
+    ArchivePurpose, IArchive, IPPAActivateForm, IArchiveSet, IBuildSet,
+    IHasBuildRecords, NotFoundError, PackagePublishingStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import ArchivePurpose
 
 
 class ArchiveNavigation(Navigation):
@@ -37,6 +42,8 @@ class ArchiveNavigation(Navigation):
     usedfor = IArchive
 
     def breadcrumb(self):
+        if self.context.purpose == ArchivePurpose.PPA:
+            return "PPA"
         return self.context.title
 
     @stepthrough('+build')
@@ -89,13 +96,81 @@ class ArchiveView(LaunchpadView):
     __used_for__ = IArchive
 
     def initialize(self):
-        """Setup a batched `ISourcePackagePublishingHistory` list."""
-        self.name_filter = self.request.get('name_filter', None)
+        """Set up select control and our batched list of publishing records."""
+        entries = SourcesListEntries(self.context.distribution,
+                                     self.context.archive_url,
+                                     self.context.series_with_sources)
+        self.sources_list_entries = SourcesListEntriesView(entries,
+                                                           self.request)
+
+        self.name_filter = self.request.get('field.name_filter')
+        status_filter = self.request.get('field.status_filter', 'published')
+        self.setupStatusFilterWidget(status_filter)
+
         publishing = self.context.getPublishedSources(
-            name=self.name_filter)
+            name=self.name_filter,
+            status=self.selected_status_filter.value.collection)
+
         self.batchnav = BatchNavigator(publishing, self.request)
         self.search_results = self.batchnav.currentBatch()
 
+    def setupStatusFilterWidget(self, status_filter):
+        """Setup a customized publishing status select widget.
+
+        Receives the one of the established field values:
+
+        ('published', 'superseded', 'any').
+
+        Allow user to select between:
+
+         * Published:  PENDING and PUBLISHED records,
+         * Superseded: SUPERSEDED and DELETED records,
+         * Any Status
+
+        """
+        class StatusCollection:
+            def __init__(self, collection=None):
+                self.collection = collection
+
+        published_status = [PackagePublishingStatus.PENDING,
+                            PackagePublishingStatus.PUBLISHED]
+        superseded_status = [PackagePublishingStatus.SUPERSEDED,
+                             PackagePublishingStatus.DELETED]
+
+        status_terms = [
+            SimpleTerm(StatusCollection(published_status),
+                       'published', 'Published'),
+            SimpleTerm(StatusCollection(superseded_status),
+                       'superseded', 'Superseded'),
+            SimpleTerm(StatusCollection(), 'any', 'Any Status')
+            ]
+        status_vocabulary = SimpleVocabulary(status_terms)
+
+        self.selected_status_filter = status_vocabulary.getTermByToken(
+            status_filter)
+
+        field = Choice(
+            __name__='status_filter', title=_("Status Filter"),
+            vocabulary=status_vocabulary, required=True)
+        setUpWidget(self, 'status_filter',  field, IInputWidget)
+
+    @property
+    def plain_status_filter_widget(self):
+        """Render a <select> control with no <div>s around it."""
+        return self.status_filter_widget.renderValue(
+            self.selected_status_filter.value)
+
+    def source_count_text(self):
+        if self.context.number_of_sources == 1:
+            return '%s source package' % self.context.number_of_sources
+        else:
+            return '%s source packages' % self.context.number_of_sources
+
+    def binary_count_text(self):
+        if self.context.number_of_binaries == 1:
+            return '%s binary package' % self.context.number_of_binaries
+        else:
+            return '%s binary packages' % self.context.number_of_binaries
 
 class ArchiveActivateView(LaunchpadFormView):
     """PPA activation view class.
@@ -107,6 +182,7 @@ class ArchiveActivateView(LaunchpadFormView):
     """
 
     schema = IPPAActivateForm
+    custom_widget('description', TextAreaWidget, height=3)
 
     def initialize(self):
         """Redirects user to the PPA page if it is already activated."""
@@ -119,15 +195,24 @@ class ArchiveActivateView(LaunchpadFormView):
         if len(self.errors) == 0:
             if not data.get('accepted'):
                 self.addError(
-                    "PPA ToS has to be accepted to complete the activation.")
+                    "PPA Terms of Service must be accepted to activate "
+                    "your PPA.")
+
+    def validate_cancel(self, action, data):
+        """Noop validation in case we cancel"""
+        return []
 
     @action(_("Activate"), name="activate")
     def action_save(self, action, data):
         """Activate PPA and moves to its page."""
-        ppa = getUtility(IArchiveSet).new(
-            owner=self.context, purpose=ArchivePurpose.PPA,
+        ppa = getUtility(IArchiveSet).ensure(
+            owner=self.context, distribution=None, purpose=ArchivePurpose.PPA,
             description=data['description'])
         self.next_url = canonical_url(ppa)
+
+    @action(_("Cancel"), name="cancel", validator='validate_cancel')
+    def action_cancel(self, action, data):
+        self.next_url = canonical_url(self.context)
 
 
 class ArchiveBuildsView(BuildRecordsView):

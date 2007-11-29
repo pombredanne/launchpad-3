@@ -7,9 +7,17 @@ export LPCONFIG
 
 
 LPCURRENT=/srv/launchpad.net/codelines/current
+PPAROOT=/srv/launchpad.net/ppa-archive
 
-
+# Accept PPA binary uploads
 $LPCURRENT/scripts/process-accepted.py -v --ppa ubuntu
+
+# Publish source and binary PPAs into disk.
 $LPCURRENT/scripts/publish-distro.py -v --ppa -d ubuntu
 
+# Removed because this is too slow to run for every pass of this script.
+# It will be put in its own cron job and will run daily.
+#$LPCURRENT/scripts/process-death-row.py -v --ppa -d ubuntu
 
+# Clear out empty and thus redundant dirs
+find $PPAROOT -type d -empty | xargs -r rmdir
