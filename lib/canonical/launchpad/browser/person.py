@@ -2639,14 +2639,14 @@ class PersonEditEmailsView(LaunchpadFormView):
     def _mailing_list_subscription_type(self, mailing_list):
         """Returns the context user's subscription type for the given list.
 
-        This is "Preferred" if the user is subscribed using their
+        This is "Preferred address" if the user is subscribed using their
         preferred address and "Don't subscribe" if the user is not
         subscribed at all. Otherwise it's the EmailAddress under
         which the user is subscribed to this mailing list."""
         subscription = mailing_list.getSubscription(self.context)
         if subscription:
             if subscription.email_address is None:
-                value = "Preferred"
+                value = "Preferred address"
             else:
                 value = subscription.email_address.email
         else:
@@ -2661,11 +2661,10 @@ class PersonEditEmailsView(LaunchpadFormView):
         """
         mailing_list_set = getUtility(IMailingListSet)
         fields = []
-        terms = [SimpleTerm(email.email)
+        terms = [SimpleTerm("Preferred address"), SimpleTerm("Don't subscribe"),
+                 SimpleTerm(self.context.preferredemail.email)]
+        terms += [SimpleTerm(email.email)
                    for email in self.context.validatedemails]
-        preferred_name = "Preferred (%s)" % self.context.preferredemail.email
-        terms.insert(0, SimpleTerm("Preferred", "Preferred", preferred_name))
-        terms.append(SimpleTerm("Don't subscribe"))
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
             if mailing_list and mailing_list.isUsable():
@@ -2913,7 +2912,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         email_set = getUtility(IEmailAddressSet)
         for mailing_list in names:
             email = data[mailing_list]
-            if email not in ['Preferred', "Don't subscribe"]:
+            if email not in ['Preferred address', "Don't subscribe"]:
                 email_address = email_set.getByEmail(email)
                 assert(email_address is not None,
                        "You can't subscribe to a list using an email address"
@@ -2923,7 +2922,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                        "email address!")
         return self.errors
 
-    @action(_("Update subscriptions"), name="update_subscriptions",
+    @action(_("Update Subscriptions"), name="update_subscriptions",
             validator=validate_action_update_subscriptions)
     def action_update_subscriptions(self, action, data):
         mailing_list_set = getUtility(IMailingListSet)
@@ -2939,7 +2938,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                     # Delete subscription
                     mailing_list.unsubscribe(self.context)
                 else:
-                    if new_value == "Preferred":
+                    if new_value == "Preferred address":
                         # If the user is subscribed but not under any
                         # particular address, their current preferred
                         # address will always be used.

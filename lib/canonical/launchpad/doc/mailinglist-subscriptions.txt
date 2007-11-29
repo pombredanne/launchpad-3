@@ -66,6 +66,31 @@ Neither can a team subscribe to a mailing list.
     CannotSubscribe: Teams cannot be mailing list members: Team One
 
 
+== MailingListSubscription objects ==
+
+MailingListSubscription objects make it possible to see under which
+address (if any) a user is subscribed.
+
+If the user is subscribed under their preferred address, the
+email_address member of the corresponding MailingListSubscription
+object is None.
+
+    >>> list_one.getSubscription(anne).email_address is None
+    True
+
+If the user is subscribed under some other address, that address is
+available as the email_address member.
+
+    >>> list_one.getSubscription(bart).email_address.email
+    u'bperson@example.org'
+
+If a user is not subscribed to a mailing list, they will have no
+MailingListSubscription object for that mailing list.
+
+    >>> list_one.getSubscription(cris) is None
+    True
+
+
 == Nested teams ==
 
 Indirect members can subscribe to a team's mailing list.  To illustrate this,

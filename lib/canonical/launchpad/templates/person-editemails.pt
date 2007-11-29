@@ -77,6 +77,17 @@
             <h1>Mailing list subscriptions</h1>
           </td>
         </tr>
+        <tr>
+          <td colspan="2">
+            <p>You're a member of one or more teams with active
+            mailing lists. You can subscribe to a team's mailing list
+            using any of your verified email addresses.</p>
+          </td>
+        </tr>
+        <tr>
+          <th><b>For this mailing list...</b></th>
+          <td><b>Subscribe with this address</b></td>
+        </tr>
         <metal:block tal:repeat="widget view/mailing_list_widgets">
           <metal:block use-macro="context/@@launchpad_form/widget_row" />
         </metal:block>
