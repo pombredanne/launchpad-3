@@ -25,7 +25,7 @@ The following is some mock classwork to help us test the system...
   ...         self.command = command
   ...         self.mindelay = mindelay
   ...         self.alwayslog = alwayslog
-  ... 
+  ...
   ...     def getSectionName(self):
   ...         return self.name
 
@@ -131,7 +131,6 @@ launchpad.conf test section.
   >>> seq = sequencer.BuildSequencer()
   MSG: Loading jobs...
   MSG:    ...loaded slave_scanner
-  MSG:    ...loaded queue_builder
   MSG: Mailer targets set to:
   MSG:    ... -
 
@@ -141,15 +140,11 @@ the time methods for the rest of the tests.
   >>> seq.getCurrentTime = lambda: 0
   >>> seq.jobs[0].getCurrentTime = lambda: 0
   >>> seq.jobs[0].updateDue()
-  >>> seq.jobs[1].getCurrentTime = lambda: 0
-  >>> seq.jobs[1].updateDue()
 
 Now let's check that the jobs it loaded are correct...
 
   >>> seq.jobs[0].name
   'slave_scanner'
-  >>> seq.jobs[1].name
-  'queue_builder'
 
 Ensure it believes the slave_scanner to be next.
 

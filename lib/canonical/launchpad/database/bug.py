@@ -27,12 +27,12 @@ from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, DistroSeriesStatus, IBug,
     IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
-    IBugWatchSet, ICveSet, IDistribution, IDistroBugTask, IDistroSeries,
-    IDistroSeriesBugTask, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IMessage, IProduct, IProductSeries, IProductSeriesBugTask,
-    IQuestionTarget, ISourcePackage, IUpstreamBugTask, NominationError,
-    NominationSeriesObsoleteError, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES)
+    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
+    IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
+    ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
+    IProductSeriesBugTask, IQuestionTarget, ISourcePackage,
+    IUpstreamBugTask, NominationError, NominationSeriesObsoleteError,
+    NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -230,6 +230,68 @@ class Bug(SQLBase):
         for task in self.bugtasks:
             result.add(task.pillar)
         return sorted(result, key=pillar_sort_key)
+
+    @property
+    def permits_expiration(self):
+        """See `IBug`.
+
+        This property checks the general state of the bug to determine if
+        expiration is permitted *if* a bugtask were to qualify for expiration.
+        This property does not check the bugtask preconditions to identify
+        a specific bugtask that can expire.
+
+        :See: `IBug.can_expire` or `BugTaskSet.findExpirableBugTasks` to
+            check or get a list of bugs that can expire.
+        """
+        # No one has replied to the first message reporting the bug.
+        # The bug reporter should be notified that more information
+        # is required to confirm the bug report.
+        if self.messages.count() == 1:
+            return False
+
+        # Bugs cannot be expired if any bugtask is valid.
+        expirable_status_list = [
+            BugTaskStatus.INCOMPLETE, BugTaskStatus.INVALID,
+            BugTaskStatus.WONTFIX]
+        has_an_expirable_bugtask = False
+        for bugtask in self.bugtasks:
+            if bugtask.status not in expirable_status_list:
+                # We found an unexpirable bugtask; the bug cannot expire.
+                return False
+            if (bugtask.status == BugTaskStatus.INCOMPLETE
+                and bugtask.pillar.official_malone):
+                # This bugtasks meets the basic conditions to expire.
+                has_an_expirable_bugtask = True
+
+        return has_an_expirable_bugtask
+
+    @property
+    def can_expire(self):
+        """See `IBug`.
+
+        Only Incomplete bug reports that affect a single pillar with
+        enabled_bug_expiration set to True can be expired. To qualify for
+        expiration, the bug and its bugtasks meet the follow conditions:
+
+        1. The bug is inactive; the last update of the is older than
+            Launchpad expiration age.
+        2. The bug is not a duplicate.
+        3. The bug has at least one message (a request for more information).
+        4. The bug does not have any other valid bugtasks.
+        5. The bugtask belongs to a project with official_malone is True.
+        6. The bugtask has the status Incomplete.
+        7. The bugtask is not assigned to anyone.
+        8. The bugtask does not have a milestone.
+        """
+        # IBugTaskSet.findExpirableBugTasks() is the authoritative determiner
+        # if a bug can expire, but it is expensive. We do a general check
+        # to verify the bug permits expiration before using IBugTaskSet to
+        # determine if a bugtask can cause expiration.
+        if not self.permits_expiration:
+            return False
+
+        bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(0, self)
+        return len(bugtasks) > 0
 
     @property
     def initial_message(self):

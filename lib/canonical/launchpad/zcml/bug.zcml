@@ -15,11 +15,12 @@
     <content class="canonical.launchpad.database.Bug">
         <implements interface="canonical.launchpad.interfaces.IBug" />
         <allow attributes="id private bugtasks affected_pillars
-                           subscriptions syncUpdate
-                           date_last_updated getDirectSubscribers
-                           getIndirectSubscribers mentoring_offers
-                           canMentor isMentor getNullBugTask
-                           is_complete who_made_private date_made_private"
+                           permits_expiration can_expire
+                           subscriptions syncUpdate  date_last_updated
+                           getDirectSubscribers getIndirectSubscribers
+                           mentoring_offers canMentor isMentor
+                           getNullBugTask is_complete who_made_private
+                           date_made_private"
                            />
         <require
             permission="launchpad.View"

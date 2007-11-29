@@ -1,5 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0611,W0212
+# pylint: disable-msg=E0611,W0212,W0231
 
 """`SQLObject` implementation of `IPOFile` interface."""
 
@@ -128,7 +128,7 @@ def _can_edit_translations(pofile, person):
 
     # Rosetta experts and admins can always edit translations.
     admins = getUtility(ILaunchpadCelebrities).admin
-    rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+    rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     if (person.inTeam(admins) or person.inTeam(rosetta_experts) or
         person.id == rosetta_experts.id):
         return True
@@ -154,7 +154,7 @@ def _can_add_suggestions(pofile, person):
     be able to add suggestions only if the permission is not CLOSED.
     """
     return (_can_edit_translations(pofile, person) or
-            pofile.translationpermission <> TranslationPermission.CLOSED)
+            pofile.translationpermission != TranslationPermission.CLOSED)
 
 
 class POFileMixIn(RosettaStats):
@@ -577,7 +577,7 @@ class POFile(SQLBase, POFileMixIn):
 
             # Add two empty email fields to make formatting nicer.
             # See bug #133817 for details.
-            emails.extend([u'',u''])
+            emails.extend([u'', u''])
 
             for contributor in self.contributors:
                 preferred_email = contributor.preferredemail
@@ -670,19 +670,15 @@ class POFile(SQLBase, POFileMixIn):
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
-        query = ['POTMsgSet.potemplate = %s' % sqlvalues(self.potemplate)]
-        query.append('POTMsgSet.sequence > 0')
-        query.append('TranslationMessage.potmsgset = POTMsgSet.id')
-        query.append('TranslationMessage.pofile = %s' % sqlvalues(self))
-        query.append('TranslationMessage.is_current')
-        query.append('NOT TranslationMessage.is_fuzzy')
-        query.append('TranslationMessage.msgstr0 IS NOT NULL')
-        if self.plural_forms > 1:
-            plurals_query = ' AND '.join(
-                'TranslationMessage.msgstr%d IS NOT NULL' % i
-                    for i in range(1, self.plural_forms))
-            query.append(
-                '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
+        query = [
+            'POTMsgSet.potemplate = %s' % sqlvalues(self.potemplate),
+            'POTMsgSet.sequence > 0',
+            'TranslationMessage.potmsgset = POTMsgSet.id',
+            'TranslationMessage.pofile = %s' % sqlvalues(self),
+            'TranslationMessage.is_current',
+            'NOT TranslationMessage.is_fuzzy']
+        self._appendCompletePluralFormsConditions(query)
+
         return POTMsgSet.select(
             ' AND '.join(query), clauseTables=['TranslationMessage'],
             orderBy='POTMsgSet.sequence')
@@ -760,21 +756,30 @@ class POFile(SQLBase, POFileMixIn):
         # (iow, it's different from a published translation: this only
         # lists translations which have actually changed in LP, not
         # translations which are 'new' and only exist in LP).
+        # XXX CarlosPerelloMarin 2007-11-29 bug=165218: Once bug #165218 is
+        # properly fixed (that is, we no longer create empty
+        # TranslationMessage objects for empty strings in imported files), all
+        # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
+        # they will not be needed anymore.
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
-            LEFT JOIN TranslationMessage imported ON
-                POTMsgSet.id = imported.potmsgset
-            LEFT OUTER JOIN TranslationMessage current ON
-                POTMsgSet.id = current.potmsgset AND
-                imported.id != current.id AND
-                current.pofile = imported.pofile
-            WHERE
+            JOIN TranslationMessage AS imported ON
+                POTMsgSet.id = imported.potmsgset AND
                 imported.pofile = %s AND
-                imported.is_imported IS TRUE AND
-                current.is_current IS TRUE AND
+                imported.is_imported IS TRUE
+            JOIN TranslationMessage AS current ON
+                POTMsgSet.id = current.potmsgset AND
+                imported.id <> current.id AND
+                current.pofile = imported.pofile AND
+                current.is_current IS TRUE
+            WHERE
                 POTMsgSet.sequence > 0 AND
-                POTMsgSet.potemplate = %s)
+                POTMsgSet.potemplate = %s AND
+                (imported.msgstr0 IS NOT NULL OR
+                 imported.msgstr1 IS NOT NULL OR
+                 imported.msgstr2 IS NOT NULL OR
+                 imported.msgstr3 IS NOT NULL))
             ''' % sqlvalues(self, self.potemplate),
             orderBy='POTmsgSet.sequence')
 
@@ -841,6 +846,22 @@ class POFile(SQLBase, POFileMixIn):
             self.rosettacount,
             self.unreviewed_count)
 
+    def _appendCompletePluralFormsConditions(self, query):
+        """Add conditions to implement ITranslationMessage.is_complete in SQL.
+
+        :param query: A list of AND SQL conditions where the implementation of
+            ITranslationMessage.is_complete will be appended as SQL
+            conditions.
+        """
+        query.append('TranslationMessage.msgstr0 IS NOT NULL')
+        if self.language.pluralforms > 1:
+            plurals_query = ' AND '.join(
+                'TranslationMessage.msgstr%d IS NOT NULL' % plural_form
+                    for plural_form in range(1, self.plural_forms))
+            query.append(
+                '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
+        return query
+
     def updateStatistics(self):
         """See `IPOFile`."""
         # make sure all the data is in the db
@@ -851,12 +872,8 @@ class POFile(SQLBase, POFileMixIn):
                  'TranslationMessage.is_imported IS TRUE',
                  'NOT TranslationMessage.was_fuzzy_in_last_import',
                  'TranslationMessage.potmsgset = POTMsgSet.id',
-                 'POTMsgSet.sequence > 0',
-                 'TranslationMessage.msgstr0 IS NOT NULL']
-        for plural_form in range(1, self.plural_forms):
-            query.append(
-                '(POTMsgSet.msgid_plural IS NULL OR TranslationMessage.msgstr%d IS NOT NULL)' % plural_form)
-
+                 'POTMsgSet.sequence > 0']
+        self._appendCompletePluralFormsConditions(query)
         current = TranslationMessage.select(
             ' AND '.join(query), clauseTables=['POTMsgSet']).count()
 
@@ -866,24 +883,30 @@ class POFile(SQLBase, POFileMixIn):
 
         # Get the number of new translations in Launchpad that imported ones
         # were not translated.
-        query = ['TranslationMessage.pofile = %s' % sqlvalues(self)]
-        query.append('NOT TranslationMessage.is_fuzzy')
+        query = [
+            'TranslationMessage.pofile = %s' % sqlvalues(self),
+            'NOT TranslationMessage.is_fuzzy',
+            'TranslationMessage.is_current IS TRUE']
         # Check only complete translations.  For messages with only a single
         # msgid, that's anything with a singular translation; for ones with a
         # plural form, it's the number of plural forms the language supports.
-        query.append('TranslationMessage.msgstr0 IS NOT NULL')
-        for plural_form in range(1, self.plural_forms):
-            query.append("""
-                (POTMsgSet.msgid_plural IS NULL OR
-                 TranslationMessage.msgstr%d IS NOT NULL)""" % plural_form)
-        query.append('is_current IS TRUE')
+        self._appendCompletePluralFormsConditions(query)
+        # XXX CarlosPerelloMarin 2007-11-29 bug=165218: Once bug #165218 is
+        # properly fixed (that is, we no longer create empty
+        # TranslationMessage objects for empty strings in imported files), all
+        # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
+        # they will not be needed anymore.
         query.append('''NOT EXISTS (
             SELECT TranslationMessage.id
             FROM TranslationMessage AS imported
             WHERE
                 imported.potmsgset = TranslationMessage.potmsgset AND
                 imported.pofile = TranslationMessage.pofile AND
-                imported.is_imported IS TRUE)''')
+                imported.is_imported IS TRUE AND
+                (imported.msgstr0 IS NOT NULL OR
+                 imported.msgstr1 IS NOT NULL OR
+                 imported.msgstr2 IS NOT NULL OR
+                 imported.msgstr3 IS NOT NULL))''')
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('POTMsgSet.sequence > 0')
         rosetta = TranslationMessage.select(
@@ -941,7 +964,8 @@ class POFile(SQLBase, POFileMixIn):
             # There is no new import waiting for being imported.
             return
 
-        import_file = librarian_client.getFileByAlias(entry_to_import.content.id)
+        import_file = librarian_client.getFileByAlias(
+            entry_to_import.content.id)
 
         # While importing a file, there are two kinds of errors:
         #
@@ -1059,9 +1083,9 @@ class POFile(SQLBase, POFileMixIn):
         # And add karma to the importer if it's not imported automatically
         # (all automatic imports come from the rosetta expert user) and comes
         # from upstream.
-        rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
         if (entry_to_import.is_published and
-            entry_to_import.importer.id != rosetta_expert.id):
+            entry_to_import.importer.id != rosetta_experts.id):
             # The Rosetta Experts team should not get karma.
             entry_to_import.importer.assignKarma(
                 'translationimportupstream',
@@ -1180,7 +1204,8 @@ class POFile(SQLBase, POFileMixIn):
                 # file in librarian, that's fine. It only means that next
                 # time, we will do a full export again.
                 logging.warning(
-                    "Error uploading a cached file into librarian", exc_info=1)
+                    "Error uploading a cached file into librarian",
+                    exc_info=1)
 
         return contents
 
@@ -1209,7 +1234,7 @@ class DummyPOFile(POFileMixIn):
         self.date_changed  = None
         self.license = None
         self.lastparsed = None
-        self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
+        self.owner = getUtility(ILaunchpadCelebrities).rosetta_experts
 
         # The default POFile owner is the Rosetta Experts team unless the
         # given owner has rights to write into that file.

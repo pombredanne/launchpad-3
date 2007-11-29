@@ -100,7 +100,7 @@ class QuestionSetView(LaunchpadFormView):
     @property
     def scope_error(self):
         """The error message for the scope widget."""
-        return self.getWidgetError('scope')
+        return self.getFieldError('scope')
 
     @safe_action
     @action('Find Answers', name="search")

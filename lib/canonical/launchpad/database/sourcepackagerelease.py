@@ -427,7 +427,7 @@ class SourcePackageRelease(SQLBase):
                      ]
 
         if importer is None:
-            importer = getUtility(ILaunchpadCelebrities).rosetta_expert
+            importer = getUtility(ILaunchpadCelebrities).rosetta_experts
 
         translation_import_queue_set = getUtility(ITranslationImportQueue)
 

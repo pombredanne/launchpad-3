@@ -1,4 +1,4 @@
-Hello,
+Hello %(recipient_name)s,
 
 %(reviewer)s has invited %(member)s (which you are an administrator of) to join %(team)s.
 
