@@ -1418,7 +1418,7 @@ class TranslationMessageSuggestions:
         self.submissions = []
 
         for submission in submissions:
-            # XXX: JeroenVermeulen 2007-11-29 bug=165179: The second part of
+            # XXX: JeroenVermeulen 2007-11-29 bug=165167: The second part of
             # this safeguard condition is not tested.  We should test it.
             has_form = (plural_form < submission.pofile.plural_forms and
                 plural_form < len(submission.translations))
