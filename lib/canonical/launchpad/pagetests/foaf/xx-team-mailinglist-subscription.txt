@@ -1,4 +1,4 @@
-== Mailing list subscription management =
+== Mailing list subscription management ==
 
 ==Setup==
 
