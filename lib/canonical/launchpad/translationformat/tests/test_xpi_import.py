@@ -142,7 +142,8 @@ class XpiTestCase(unittest.TestCase):
             'msgid and singular_text should be different but both are %s' % (
                 message.msgid_singular.msgid))
 
-        # Plural forms should be None as this format is not able to handle that.
+        # Plural forms should be None as this format is not able to handle
+        # them.
         self.assertEquals(message.msgid_plural, None)
         self.assertEquals(message.plural_text, None)
 
