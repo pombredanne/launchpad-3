@@ -1,6 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-
 """Tests for the Launchpad code hosting Bazaar transport."""
 
 __metaclass__ = type
@@ -8,6 +7,7 @@ __metaclass__ = type
 import logging
 import os
 from StringIO import StringIO
+import shutil
 import sys
 import tempfile
 import unittest
@@ -23,7 +23,6 @@ from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
     LaunchpadServer, makedirs, set_up_logging)
 from canonical.config import config
-
 from canonical.testing import BaseLayer, reset_logging
 
 
@@ -421,26 +420,34 @@ class TestLoggingSetup(TestCase):
         sys.stderr = self._real_stderr
         config.codehosting.debug_logfile = self._real_debug_logfile
         TestCase.tearDown(self)
+        # We don't use BaseLayer because we want to keep the amount of
+        # pre-configured logging systems to an absolute minimum, in order to
+        # make it easier to test this particular logging system.
         reset_logging()
 
     def test_loggingSetUpAssertionFailsIfParentDirectoryIsNotADirectory(self):
         # set_up_logging fails with an AssertionError if it cannot create the
         # directory that the log file will go in.
         file_handle, filename = tempfile.mkstemp()
-        config.codehosting.debug_logfile = os.path.join(filename, 'debug.log')
-        try:
-            self.assertRaises(AssertionError, set_up_logging)
-        finally:
+        def remove_file():
             os.unlink(filename)
+        self.addCleanup(remove_file)
+
+        config.codehosting.debug_logfile = os.path.join(filename, 'debug.log')
+        self.assertRaises(AssertionError, set_up_logging)
 
     def test_makesLogDirectory(self):
         # If the specified logfile is in a directory that doesn't exist, then
         # set_up_logging makes that directory.
         directory = tempfile.mkdtemp()
+        def remove_directory():
+            shutil.rmtree(directory)
+        self.addCleanup(remove_directory)
+
         config.codehosting.debug_logfile = os.path.join(
-            directory, 'debug.log')
+            directory, 'subdir', 'debug.log')
         set_up_logging()
-        self.failUnless(os.path.isdir(directory))
+        self.failUnless(os.path.isdir(os.path.join(directory, 'subdir')))
 
     def test_returnsCodehostingLogger(self):
         # set_up_logging returns the 'codehosting' logger.
@@ -448,7 +455,8 @@ class TestLoggingSetup(TestCase):
 
     def test_codehostingLogGoesToDebugLogfile(self):
         # Once set_up_logging is called, messages logged to the codehosting
-        # logger are stored in config.codehosting.debug_logfile
+        # logger are stored in config.codehosting.debug_logfile.
+
         # Need this to properly simulate stderr logging behaviour.
         self._finishLogFile()
         set_up_logging()
