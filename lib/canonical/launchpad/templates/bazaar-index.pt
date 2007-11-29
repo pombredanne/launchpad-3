@@ -139,7 +139,7 @@
                             branches associated with bug reports
                           </div>
                           <div>
-                            Launchpad uses Bazaar
+                            Launchpad uses <a href="http://bazaar-vcs.org/">Bazaar</a>
                             <tal:version tal:content="view/bzr_version">0.92.0</tal:version>.
                           </div>
                         </div>

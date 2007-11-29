@@ -60,7 +60,7 @@ class BazaarApplicationView(LaunchpadView):
     def import_count(self):
         return self.series_set.searchImports().count()
 
-    @cachedproperty
+    @property
     def bzr_version(self):
         return bzrlib.__version__
 
