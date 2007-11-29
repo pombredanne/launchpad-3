@@ -23,8 +23,25 @@
 
 <div metal:fill-slot="main">
 
-  <h1><span tal:replace="context/name" /> in
-      <span tal:replace="context/distribution/displayname" /></h1>
+  <h1>
+    <span tal:replace="context/name" /> in
+    <span tal:replace="context/distribution/displayname" />
+  </h1>
+
+  <p class="error message"
+     tal:condition="view/errors"
+     tal:content="view/error_count" />
+  <p class="error message"
+     tal:repeat="form_wide_error view/form_wide_errors"
+     tal:content="structure form_wide_error">
+     Schema validation errors.
+  </p>
+  <p class="error message"
+     tal:define="error python:view.getWidgetError('packaging')"
+     tal:condition="error"
+     tal:content="structure error">
+     Field specific error for the hidden packaging field.
+  </p>
 
   <h2>Published versions and upstream associations</h2>
 
@@ -59,6 +76,18 @@
                title="Edit upstream association">
               <img src="/@@/edit" />
             </a>
+            <tal:can-delete-package-link
+                condition="row/packaging_field">
+              <form style="display: inline"
+                    class="deleteBox"
+                    action=""
+                    method="POST"
+                    tal:attributes="action request/URL">
+                <tal:hidden replace="structure row/packaging_field" />
+	        <tal:action
+	          replace="structure view/delete_packaging_action/render" />
+              </form>
+            </tal:can-delete-package-link>
           </tal:distroseries_row>
         </td>
       </tr>

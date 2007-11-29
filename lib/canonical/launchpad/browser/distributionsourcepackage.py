@@ -14,13 +14,17 @@ __all__ = [
 
 from operator import attrgetter
 
+from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
+from canonical.database.sqlbase import flush_database_updates, flush_database_caches
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IDistributionSourcePackageManageBugcontacts,
+    IPackagingUtil,
     DuplicateBugContactError)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -70,7 +74,8 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
         return Link('+publishinghistory', 'Show publishing history')
 
 
-class DistributionSourcePackageBugsMenu(DistributionSourcePackageOverviewMenu):
+class DistributionSourcePackageBugsMenu(
+        DistributionSourcePackageOverviewMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'bugs'
@@ -291,11 +296,66 @@ class DistributionSourcePackageBugContactsView(LaunchpadFormView):
         return list(self.user.getAdministratedTeams())
 
 
-class DistributionSourcePackageView(LaunchpadView):
+class DistributionSourcePackageView(LaunchpadFormView):
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        # No schema is set in this form, because all fields are created with
+        # custom vocabularies. So we must not call the inherited setUpField
+        # method.
+        self.form_fields = self._createPackagingField()
+
+    def _createPackagingField(self):
+        """Create a field to specify a Packaging association.
+
+        Create a contextual vocabulary that can specify one of the Packaging
+        associated to this DistributionSourcePackage.
+        """
+        terms = []
+        for sourcepackage in self.context.get_distroseries_packages():
+            packaging = sourcepackage.direct_packaging
+            if packaging is None:
+                continue
+            terms.append(SimpleTerm(packaging, packaging.id))
+        return form.Fields(
+            Choice(__name__='packaging', vocabulary=SimpleVocabulary(terms),
+                   required=True))
+
+    def _renderHiddenPackagingField(self, packaging):
+        """Render a hidden input that fills in the packaging field."""
+        vocabulary = self.form_fields['packaging'].field.vocabulary
+        return '<input type="hidden" name="field.packaging" value="%s" />' % (
+            vocabulary.getTerm(packaging).token)
+
+    @action(_("Delete Link"), name='delete_packaging')
+    def delete_packaging_action(self, action, data):
+        """Delete a Packaging association."""
+        packaging = data['packaging']
+        productseries = packaging.productseries
+        distroseries = packaging.distroseries
+        getUtility(IPackagingUtil).deletePackaging(
+            productseries, packaging.sourcepackagename, distroseries)
+        # TODO: form validation
+        self.request.response.addNotification(
+            _("Removed upstream association between %s %s and %s.")
+            % (productseries.product.displayname, productseries.displayname,
+               distroseries.displayname))
+
+        # XXX: This should not be needed, but if we do not do it, then the
+        # POST renders correctly (the packaging appears deleted) but when we
+        # GET the page again, the packaging is back. It looks like something
+        # causes the transaction to abort if we do not set the redirection.
+        # Francis is looking into it. -- DavidAllouche 2007-11-29.
+        self.next_url = self.request.URL
 
     def version_listing(self):
         result = []
         for sourcepackage in self.context.get_distroseries_packages():
+            packaging = sourcepackage.direct_packaging
+            if packaging is None:
+                packaging_field = None
+            else:
+                packaging_field = self._renderHiddenPackagingField(packaging)
             series_result = []
             for published in \
                 sourcepackage.published_by_pocket.iteritems():
@@ -304,15 +364,16 @@ class DistributionSourcePackageView(LaunchpadView):
                         'series': sourcepackage.distroseries,
                         'pocket': published[0].name.lower(),
                         'package': drspr,
-                        'packaging': sourcepackage.direct_packaging,
+                        'packaging': packaging,
+                        'packaging_field': packaging_field,
                         'sourcepackage': sourcepackage
                         })
             for row in range(len(series_result)-1, 0, -1):
                 for column in ['series', 'pocket', 'package', 'packaging',
-                               'sourcepackage']:
-                    if series_result[row][column] == \
-                       series_result[row-1][column]:
-                       series_result[row][column] = None
+                               'packaging_field', 'sourcepackage']:
+                    if (series_result[row][column] ==
+                            series_result[row-1][column]):
+                        series_result[row][column] = None
             for row in series_result:
                 result.append(row)
         return result
