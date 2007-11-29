@@ -565,20 +565,20 @@ Here is the list of bugs for Ubuntu.
 
 None of these bugs have any duplicates.
 
-    >>> reduce(lambda a, b: a and b,
-    ...        [task.bug.duplicateof is None for task in ubuntu_tasks])
-    True
+    >>> [bugtask.bug.id for bugtask in ubuntu_tasks
+    ...  if bugtask.bug.duplicateof is not None]
+    []
 
     >>> from canonical.database.sqlbase import flush_database_updates
 
 We mark bug #10 as a duplicate of bug #9.
 
-    >>> bug_9 = getUtility(IBugSet).get(9)
-    >>> bug_10 = getUtility(IBugSet).get(10)
-    >>> bug_10.duplicateof = bug_9
+    >>> bug_nine = getUtility(IBugSet).get(9)
+    >>> bug_ten = getUtility(IBugSet).get(10)
+    >>> bug_ten.duplicateof = bug_nine
     >>> flush_database_updates()
 
-Searching again should reveal bug #9 at the top of the list, since it now has a duplicate.
+Searching again reveals bug #9 at the top of the list, since it now has a duplicate.
 
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
