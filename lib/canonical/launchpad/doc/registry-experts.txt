@@ -10,7 +10,7 @@ more details on what and how.
     ...     BugTracker, Packaging, ProductReleaseFile,
     ...     Milestone, BugTracker)
     >>> from canonical.launchpad.interfaces import (
-    ...     IProduct, IProductSeries, IProductRelease,
+    ...     IProduct, IProductSeries, IProductRelease, IPersonSet,
     ...     IBugTracker, IPackaging, IProductReleaseFile,
     ...     IMilestone, ILaunchpadCelebrities, IBugTracker)
 
@@ -32,8 +32,9 @@ This helper checks permissions for the objects we care about:
 So if you're not in the experts team, you can't do anything to these
 classes if you don't own them:
 
-    >>> no_priv = Person.selectOneBy(name="no-priv")
-    >>> foobar = Person.selectOneBy(name="name16")
+    >>> personset = getUtility(IPersonSet)
+    >>> no_priv = personset.getByName("no-priv")
+    >>> foobar = personset.getByName("name16")
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> no_priv.inTeam(registry_experts)
     False
@@ -41,11 +42,9 @@ classes if you don't own them:
     >>> login('no-priv@canonical.com')
     >>> check_permissions()
 
-But if we add you to the team (clearing the _inTeam_cache meanwhile to
-work around its existence):
+But if we add you to the team:
 
     >>> registry_experts.addMember(no_priv, foobar)
-    >>> no_priv._inTeam_cache = {}
     >>> no_priv.inTeam(registry_experts)
     True
     >>> check_permissions()
