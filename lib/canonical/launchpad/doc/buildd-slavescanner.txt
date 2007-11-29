@@ -607,12 +607,29 @@ The buildlog is collected and compressed locally using gzip algorithm,
 let's see how this method works:
 
   >>> bqItem10.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+
+Before collecting and processing the buildlog we will store the files
+already created in /tmp so we can verify later that this mechanism is
+not lefting any temporary file behind. See bug #172798.
+
+  >>> import os
+  >>> old_tmps = set(os.listdir('/tmp'))
+
+Collect and process the buildlog.
+
   >>> logfile_alias = buildergroup.getLogFromSlave(bqItem10)
 
+Audit the /tmp for lost temporary files, there should not be any new
+files. For the record, the procedure creates files with the
+'.buildlog' suffix.
+
+  >>> len(set(os.listdir('/tmp')) - old_tmps) == 0
+  True
+
+The buildlog was compressed and directly transferred to Librarian.
+
   >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
-
   >>> logfile = getUtility(ILibraryFileAliasSet)[logfile_alias]
-
   >>> logfile.filename, logfile.mimetype
   (u'buildlog_ubuntu-warty-i386.foobar_1.0_FULLYBUILT.txt.gz', u'text/plain')
 
@@ -620,11 +637,14 @@ Needed so that the Librarian can serve the new file.
 
   >>> commit()
 
+Check if the buildlog content is correct and accessible via the
+library file directly and via Librarian http front-end.
+
 Since LibrarianFileAlias does not implement required attributes for
 gzip.open() (like tell() or seek()) we are obligated to read it again
 in our filesystem.
 
-  >>> import gzip, tempfile, os
+  >>> import gzip, tempfile
   >>> fd, fname = tempfile.mkstemp()
   >>> tmp = open(fname, 'wb')
   >>> tmp.write(logfile.read())
@@ -632,8 +652,8 @@ in our filesystem.
   >>> gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
   True
 
-The happens with urllib instance, we need to download it to the
-filesystem before uncompress.
+This also happens with urllib instance, we need to download it to the
+filesystem before decompress.
 
   >>> import urllib
   >>> from_web = urllib.urlopen(logfile.http_url)
