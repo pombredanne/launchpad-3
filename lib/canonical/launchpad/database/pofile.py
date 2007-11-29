@@ -757,9 +757,10 @@ class POFile(SQLBase, POFileMixIn):
         # lists translations which have actually changed in LP, not
         # translations which are 'new' and only exist in LP).
         # XXX CarlosPerelloMarin 2007-11-29 bug=165218: Once bug #165218 is
-        # properly fixed (we don't create empty TranslationMessage objects for
-        # empty string for imported files), all 'imported.msgstr? IS NOT NULL'
-        # conditions could be removed because will not be needed anymore.
+        # properly fixed (that is, we no longer create empty
+        # TranslationMessage objects for empty strings in imported files), all
+        # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
+        # they will not be needed anymore.
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
@@ -846,11 +847,11 @@ class POFile(SQLBase, POFileMixIn):
             self.unreviewed_count)
 
     def _appendCompletePluralFormsConditions(self, query):
-        """Append needed conditions to get a complete TranslationMessage.
+        """Add conditions to implement ITranslationMessage.is_complete in SQL.
 
-        :param query: A list of AND SQL conditions where the complete
-            conditions will be appended. The new conditions will be appended
-            to this list.
+        :param query: A list of AND SQL conditions where the implement of
+            ITranslationMessage.is_complete will be appended as SQL
+            conditions.
         """
         query.append('TranslationMessage.msgstr0 IS NOT NULL')
         if self.language.pluralforms > 1:
@@ -869,7 +870,6 @@ class POFile(SQLBase, POFileMixIn):
         # Get the number of translations that we got from imports.
         query = ['TranslationMessage.pofile = %s' % sqlvalues(self),
                  'TranslationMessage.is_imported IS TRUE',
-                 'TranslationMessage.is_current IS TRUE',
                  'NOT TranslationMessage.was_fuzzy_in_last_import',
                  'TranslationMessage.potmsgset = POTMsgSet.id',
                  'POTMsgSet.sequence > 0']
@@ -892,9 +892,10 @@ class POFile(SQLBase, POFileMixIn):
         # plural form, it's the number of plural forms the language supports.
         self._appendCompletePluralFormsConditions(query)
         # XXX CarlosPerelloMarin 2007-11-29 bug=165218: Once bug #165218 is
-        # properly fixed (we don't create empty TranslationMessage objects for
-        # empty string for imported files), all 'imported.msgstr? IS NOT NULL'
-        # conditions could be removed because will not be needed anymore.
+        # properly fixed (that is, we no longer create empty
+        # TranslationMessage objects for empty strings in imported files), all
+        # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
+        # they will not be needed anymore.
         query.append('''NOT EXISTS (
             SELECT TranslationMessage.id
             FROM TranslationMessage AS imported

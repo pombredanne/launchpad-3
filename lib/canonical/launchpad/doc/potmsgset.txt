@@ -252,7 +252,7 @@ To emulate that, we set it directly here.
     True
 
 Fuzzy is not counted as translated, so the statistics should remain
-as zero. updateStatistics method returns for values:
+as zero. The updateStatistics method returns for values:
  - The number of translations 'imported' that are being used.
  - The number of translations 'imported' that were updated in Launchpad.
  - The number of new translations added in Launchpad.
