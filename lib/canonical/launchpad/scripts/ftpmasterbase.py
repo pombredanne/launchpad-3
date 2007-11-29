@@ -327,13 +327,13 @@ class SoyuzScript(LaunchpadScript):
         # These can raise PackageLocationError, but we're happy to pass
         # it upwards.
         if(hasattr(self.options, 'partner_archive') and
-            self.options.partner_archive is not None):
+            self.options.partner_archive):
             self.location = build_package_location(
                 self.options.distribution_name,
                 self.options.suite,
                 ArchivePurpose.PARTNER)
         elif(hasattr(self.options, 'archive_owner_name') and
-             self.options.archive_owner_name is not None):
+             self.options.archive_owner_name):
             self.location = build_package_location(
                 self.options.distribution_name,
                 self.options.suite,
