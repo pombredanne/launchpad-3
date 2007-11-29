@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import codecs
 import logging
 import os
 from StringIO import StringIO
@@ -414,7 +415,7 @@ class TestLoggingSetup(TestCase):
 
         # Trap stderr.
         self._real_stderr = sys.stderr
-        sys.stderr = StringIO()
+        sys.stderr = codecs.getwriter('utf8')(StringIO())
 
     def tearDown(self):
         sys.stderr = self._real_stderr
