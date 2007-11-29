@@ -755,6 +755,15 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             raise Invalid(
                 'You must specify a default renewal period greater than 0.')
 
+    def convertToTeam(team_owner):
+        """Convert this person into a team owned by the given team_owner.
+
+        Also adds the given team owner as an administrator of the team.
+
+        Only Person entries whose account_status is NOACCOUNT and which are
+        not teams can be converted into teams.
+        """
+
     def getActiveMemberships():
         """Return all active TeamMembership objects of this team.
 

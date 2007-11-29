@@ -33,8 +33,10 @@ __all__ = [
     'TextualBugTaskSearchListingView',
     ]
 
+from datetime import datetime, timedelta
 import cgi
 import gettext
+import pytz
 import re
 import urllib
 from operator import attrgetter
@@ -717,6 +719,16 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
             registerLaunchpadFunction(toggleOnLoad);
             """ % bugtask_id
 
+    @property
+    def days_to_expiration(self):
+        """Return the number of days before the bug is expired, or None."""
+        if not self.context.bug.can_expire:
+            return None
+
+        expire_after = timedelta(days=config.malone.days_before_expiration)
+        expiration_date = self.context.bug.date_last_updated + expire_after
+        remaining_time = expiration_date - datetime.now(pytz.timezone('UTC'))
+        return remaining_time.days
 
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""
@@ -1636,7 +1648,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
         # through a stale bookmark or a hand-hacked URL.
         for field_name in ("status", "importance", "milestone", "component",
                            "status_upstream"):
-            if self.getWidgetError(field_name):
+            if self.getFieldError(field_name):
                 raise UnexpectedFormData(
                     "Unexpected value for field '%s'. Perhaps your bookmarks "
                     "are out of date or you changed the URL by hand?" %
@@ -1779,27 +1791,29 @@ class BugTaskSearchListingView(LaunchpadFormView):
     def search(self, searchtext=None, context=None, extra_params=None):
         """Return an `ITableBatchNavigator` for the GET search criteria.
 
-        :param searchtext: If the searchtext is None, the search text will be
-        gotten from the request.
+        :param searchtext: Text that must occur in the bug report. If
+            searchtext is None, the search text will be gotten from the
+            request.
 
-        :param extra_params: is a dict that provides search params added to the
-        search criteria taken from the request. Params in `extra_params` take
-        precedence over request params.
+        :param extra_params: A dict that provides search params added to
+            the search criteria taken from the request. Params in
+            `extra_params` take precedence over request params.
         """
         unbatchedTasks = self.searchUnbatched(
             searchtext, context, extra_params)
         return self._getBatchNavigator(unbatchedTasks)
 
-    def searchUnbatched(
-        self, searchtext=None, context=None, extra_params=None):
+    def searchUnbatched(self, searchtext=None, context=None,
+                        extra_params=None):
         """Return a `SelectResults` object for the GET search criteria.
 
-        :param searchtext: If the searchtext is None, the search text will be
-        gotten from the request.
+        :param searchtext: Text that must occur in the bug report. If
+            searchtext is None, the search text will be gotten from the
+            request.
 
-        :param extra_params: is a dict that provides search params added to the
-        search criteria taken from the request. Params in `extra_params` take
-        precedence over request params.
+        :param extra_params: A dict that provides search params added to
+            the search criteria taken from the request. Params in
+            `extra_params` take precedence over request params.
         """
         # Base classes can provide an explicit search context.
         if not context:
@@ -2006,7 +2020,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
         for name in ('assignee', 'bug_reporter', 'bug_contact',
                      'bug_commenter', 'subscriber'):
-            if self.getWidgetError(name):
+            if self.getFieldError(name):
                 self.setFieldError(
                     name, error_message %
                         cgi.escape(self.request.get('field.%s' % name)))

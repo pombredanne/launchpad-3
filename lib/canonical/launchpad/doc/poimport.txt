@@ -374,7 +374,7 @@ Now, is time to check the notification email.
 
 Now, let's import one without errors.
 
-    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> pofile_without_errors = r'''
     ... msgid ""
     ... msgstr ""

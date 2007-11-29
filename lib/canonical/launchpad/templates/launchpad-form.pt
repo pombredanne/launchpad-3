@@ -85,7 +85,7 @@
 
   <metal:macro define-macro="widget_row"
       tal:define="field_name widget/context/__name__;
-                  error python:view.getWidgetError(field_name);
+                  error python:view.getFieldError(field_name);
                   error_class python:error and 'error' or None;
                   show_optional python:view.showOptionalMarker(field_name)">
     <tal:is-visible condition="widget/visible">

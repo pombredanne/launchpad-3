@@ -24,7 +24,7 @@
         <tal:email-widget
            define="contact_address nocall:view/widgets/contact_address;
                    field_name contact_address/context/__name__;
-                   error python:view.getWidgetError(field_name);
+                   error python:view.getFieldError(field_name);
                    error_class python:error and 'error' or None;">
            <span tal:attributes="class error_class">
              <input tal:replace="structure contact_address" />
