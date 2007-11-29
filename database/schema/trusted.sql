@@ -897,10 +897,7 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
 $$
 BEGIN
     UPDATE Bug
-    SET number_of_duplicates = (
-        SELECT COUNT(Dup.id)
-        FROM Bug as Dup
-        WHERE Dup.duplicateof = NEW.duplicateof)
+    SET number_of_duplicates = number_of_duplicates + 1
     WHERE Bug.id = NEW.duplicateof;
     RETURN NULL;
 END;
