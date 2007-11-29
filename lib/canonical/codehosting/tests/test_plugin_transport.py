@@ -417,6 +417,11 @@ class TestLoggingSetup(TestCase):
         self._real_stderr = sys.stderr
         sys.stderr = codecs.getwriter('utf8')(StringIO())
 
+        # We want to use Bazaar's default logging -- not its test logging --
+        # so here we disable the testing logging system (which restores
+        # default logging).
+        self._finishLogFile()
+
     def tearDown(self):
         sys.stderr = self._real_stderr
         config.codehosting.debug_logfile = self._real_debug_logfile
@@ -458,8 +463,6 @@ class TestLoggingSetup(TestCase):
         # Once set_up_logging is called, messages logged to the codehosting
         # logger are stored in config.codehosting.debug_logfile.
 
-        # Need this to properly simulate stderr logging behaviour.
-        self._finishLogFile()
         set_up_logging()
 
         # Make sure that a logged message goes to the debug logfile
@@ -473,8 +476,6 @@ class TestLoggingSetup(TestCase):
         # codehosting logger should *not* be logged to stderr. If they are,
         # they will appear on the user's terminal.
 
-        # Need this to properly simulate stderr logging behaviour.
-        self._finishLogFile()
         set_up_logging()
 
         # Make sure that a logged message does not go to stderr.
@@ -487,9 +488,6 @@ class TestLoggingSetup(TestCase):
         # no debug_logfile set.
 
         config.codehosting.debug_logfile = None
-
-        # Need this to properly simulate stderr logging behaviour.
-        self._finishLogFile()
         set_up_logging()
 
         # Make sure that a logged message does not go to stderr.
@@ -503,9 +501,6 @@ class TestLoggingSetup(TestCase):
 
         # This test is somewhat artificial. Really, we want to test that the
         # bzr log handling is untouched by set_up_logging.
-
-        # Need this to properly simulate stderr logging behaviour.
-        self._finishLogFile()
         set_up_logging()
 
         # Make sure that a logged message does not go to stderr.
