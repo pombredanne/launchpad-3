@@ -2636,19 +2636,19 @@ class PersonEditEmailsView(LaunchpadFormView):
                    ),
             custom_widget = self.custom_widgets['UNVALIDATED_SELECTED'])
 
-    def _mailing_list_subscription_type(mailing_list):
+    def _mailing_list_subscription_type(self, mailing_list):
         """Returns the context user's subscription type for the given list.
 
         This is "Preferred" if the user is subscribed using their
         preferred address and "Don't subscribe" if the user is not
-        subscribed at all. Otherwise it's the email address under
+        subscribed at all. Otherwise it's the EmailAddress under
         which the user is subscribed to this mailing list."""
         subscription = mailing_list.getSubscription(self.context)
         if subscription:
-            if subscription.email is None:
+            if subscription.email_address is None:
                 value = "Preferred"
             else:
-                value = subscription.email
+                value = subscription.email_address.email
         else:
             value = "Don't subscribe"
         return value
@@ -2905,14 +2905,56 @@ class PersonEditEmailsView(LaunchpadFormView):
     ### Actions to do with subscription management.
 
     def validate_action_update_subscriptions(self, action, data):
-        """
-        """
+        names = [w.context.getName() for w in self.mailing_list_widgets]
+        self.validate_widgets(data, names)
+
+        # A user can only subscribe using one of their own email
+        # addresses.
+        email_set = getUtility(IEmailAddressSet)
+        for mailing_list in names:
+            email = data[mailing_list]
+            if email not in ['Preferred', "Don't subscribe"]:
+                email_address = email_set.getByEmail(email)
+                assert(email_address is not None,
+                       "You can't subscribe to a list using an email address"
+                       "that Launchpad doesn't know about!")
+                assert(email_address.person==self.context,
+                       "You can't subscribe using someone else's "
+                       "email address!")
         return self.errors
 
     @action(_("Update subscriptions"), name="update_subscriptions",
             validator=validate_action_update_subscriptions)
     def action_update_subscriptions(self, action, data):
-        pass
+        mailing_list_set = getUtility(IMailingListSet)
+        dirty = False
+        for widget in self.mailing_list_widgets:
+            mailing_list_name = widget.context.getName()[len('subscription.'):]
+            mailing_list = mailing_list_set.get(mailing_list_name)
+            new_value = data[widget.context.getName()]
+            old_value = self._mailing_list_subscription_type(mailing_list)
+            if new_value != old_value:
+                dirty = True
+                if new_value == "Don't subscribe":
+                    # Delete subscription
+                    mailing_list.unsubscribe(self.context)
+                else:
+                    if new_value == "Preferred":
+                        # If the user is subscribed but not under any
+                        # particular address, their current preferred
+                        # address will always be used.
+                        new_value = None
+                    else:
+                        new_value = getUtility(
+                            IEmailAddressSet).getByEmail(new_value)
+                    subscription = mailing_list.getSubscription(self.context)
+                    if subscription:
+                        mailing_list.changeAddress(self.context, new_value)
+                    else:
+                        mailing_list.subscribe(self.context, new_value)
+        if dirty:
+            self.request.response.addInfoNotification("Subscriptions updated.")
+        self.next_url = self.action_url
 
 class TeamReassignmentView(ObjectReassignmentView):
 
