@@ -1537,7 +1537,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
         # through a stale bookmark or a hand-hacked URL.
         for field_name in ("status", "importance", "milestone", "component",
                            "status_upstream"):
-            if self.getWidgetError(field_name):
+            if self.getFieldError(field_name):
                 raise UnexpectedFormData(
                     "Unexpected value for field '%s'. Perhaps your bookmarks "
                     "are out of date or you changed the URL by hand?" %
@@ -1909,7 +1909,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
         for name in ('assignee', 'bug_reporter', 'bug_contact',
                      'bug_commenter', 'subscriber'):
-            if self.getWidgetError(name):
+            if self.getFieldError(name):
                 self.setFieldError(
                     name, error_message %
                         cgi.escape(self.request.get('field.%s' % name)))

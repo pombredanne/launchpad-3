@@ -265,7 +265,7 @@ class MaloneView(LaunchpadFormView):
     @property
     def target_error(self):
         """The error message for the target widget."""
-        return self.getWidgetError('scope')
+        return self.getFieldError('scope')
 
     def initialize(self):
         """Initialize the view to handle the request."""
