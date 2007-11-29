@@ -295,24 +295,6 @@ class IPOFile(IRosettaStats):
         import will be logged there.
         """
 
-    def getCurrentSuggestions(potmsgsets):
-        """Return a dictionary with all suggestions per potmsgset.
-
-        :param potmsgsets: A list of `IPOTMsgSet` objects.
-        :param language: Language we are interested on for the suggestions.
-        :return: A dictionary indexed by potmsgset of all suggestions that are
-            done in other contexts and are used right now.
-        """
-
-    def getExternalSuggestions(potmsgsets):
-        """Return a dictionary with all suggestions used per potmsgset.
-
-        :param potmsgsets: A list of `IPOTMsgSet` objects.
-        :param language: Language we are interested on for the suggestions.
-        :return: A dictionary indexed by potmsgset of all suggestions that are
-            done in other contexts but are not yet used.
-        """
-
 
 class AlternativeLanguageVocabularyFactory:
     """Gets vocab for user's preferred languages, or all languages if not set.
