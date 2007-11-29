@@ -241,8 +241,8 @@ And also, the fuzzy flag should be set for the message.
     True
 
 However, was_fuzzy_in_last_import is only set in the translation import code,
-instead of being set in the potmsgset.updateTranslation.  To emulate that, we
-set it directly here.
+instead of being set in the upstream_potmsgset.updateTranslation.
+To emulate that, we set it directly here.
 
     >>> current.was_fuzzy_in_last_import
     False
@@ -251,13 +251,72 @@ set it directly here.
     >>> current.was_fuzzy_in_last_import
     True
 
+Fuzzy is not counted as translated, so the statistics should remain
+as zero. The updateStatistics method returns for values:
+ - The number of translations 'imported' that are being used.
+ - The number of translations 'imported' that were updated in Launchpad.
+ - The number of new translations added in Launchpad.
+ - The number of messages that have suggestions to be reviewed.
+
+    >>> upstream_pofile.updateStatistics()
+    (0, 0, 0, 0)
+
+Now, we are going to add another translation.
+
+    >>> upstream_potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'%d contact')
+
+At this time, there is no current or imported translation and no suggestions.
+
+    >>> print upstream_potmsgset.getCurrentTranslationMessage(catalan)
+    None
+    >>> print upstream_potmsgset.getImportedTranslationMessage(catalan)
+    None
+    >>> list(upstream_potmsgset.getLocalTranslationMessages(catalan))
+    []
+
+Let's add a non-fuzzy translation.
+
+    >>> new_translation = upstream_potmsgset.updateTranslation(
+    ...     upstream_pofile, carlos, {0: u'foo %d', 1: u'foos %d'},
+    ...     is_fuzzy=False, is_imported=True,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+
+This time, this is a valid translation, so statistics change to reflect
+it.
+
+    >>> upstream_pofile.updateStatistics()
+    (1, 0, 0, 0)
+
+Since this message came from the import, it doesn't have a reviewer, but
+it does note a person which last changed it.
+
+    >>> current = upstream_potmsgset.getCurrentTranslationMessage(catalan)
+    >>> print current.reviewer
+    None
+    >>> print current.date_reviewed
+    None
+    >>> current.submitter.displayname
+    u'Carlos Perell\xf3 Mar\xedn'
+    >>> current.date_created is None
+    False
+    >>> current.is_fuzzy
+    False
+    >>> current.was_fuzzy_in_last_import
+    False
+
+
 === Unsetting a translation from the import ===
 
 A translation can be removed from the import by being set to an empty string.
 
-    >>> new_translation = upstream_potmsgset.updateTranslation(upstream_pofile,
-    ...     carlos, {0: u''}, is_fuzzy=False, is_imported=True,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+Before changing anything, we can see current statistics values:
+
+    >>> upstream_potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'evolution addressbook')
+    >>> new_translation = upstream_potmsgset.updateTranslation(
+    ...     upstream_pofile, carlos, {0: u''}, is_fuzzy=False,
+    ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
 
 A current translation is kept since we don't remove anything from Launchpad
 even if it came from the import.
@@ -283,12 +342,31 @@ An empty TranslationMessage has all the translations set to None.
     >>> print imported.msgstr3
     None
 
-And same with the fuzzy flags.
+The same with the fuzzy flags.
 
     >>> current.is_fuzzy
     True
     >>> current.is_imported
     False
+
+Given that we removed a fuzzy translation, statistics remain unchanged.
+
+    >>> upstream_pofile.updateStatistics()
+    (1, 0, 0, 0)
+
+However, if we change a non fuzzy translation...
+
+    >>> upstream_potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'%d contact')
+    >>> new_translation = upstream_potmsgset.updateTranslation(
+    ...     upstream_pofile, carlos, {0: u'', 1: u''}, is_fuzzy=False,
+    ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
+
+... the statistics change to reflect that the message is not available
+in upstream anymore, so it's now noted as new translated in Launchpad.
+
+    >>> upstream_pofile.updateStatistics()
+    (0, 0, 1, 0)
 
 === Activating an existing suggestion ===
 
