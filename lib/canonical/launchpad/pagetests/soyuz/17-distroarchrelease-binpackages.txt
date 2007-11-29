@@ -26,8 +26,10 @@ this architecture:
   Date                    Status    Target     Pocket  Component Section Version
   2006-04-11 13:00:00 UTC Published warty i386 release main      base    1.0
   Published on 2006-04-11
+  ...
   2005-05-05 00:00:00 UTC Published warty i386 release main      base    0.9
   Published on 2005-06-18
+  ...
 
 It also provides a link to the currently published version:
 
@@ -132,7 +134,7 @@ this architecture:
   Date                    Status    Target     Pocket  Component Section Version
   2007-08-09 21:55:39 UTC Published b...t i386 release partner   devel 1.0-1
   Published on 2007-08-09
-
+  ...
 
 It also provides a link to the currently published version:
   >>> browser.getLink("1.0-1").click()
