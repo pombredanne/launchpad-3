@@ -121,13 +121,14 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2007-10-31</p>
+Dumped on 2007-11-29</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
 <li><a name="public.schema" id="public.schema">public</a></li>
 <li style="list-style: none">
 <ul>
+<li><a href="#public.table.announcement">announcement</a></li>
 <li><a href="#public.table.answercontact">answercontact</a></li>
 <li><a href="#public.table.archive">archive</a></li>
 <li><a href=
@@ -149,6 +150,8 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.branch">branch</a></li>
 <li><a href=
 "#public.table.branchmergeproposal">branchmergeproposal</a></li>
+<li><a href=
+"#public.table.branchmergerobot">branchmergerobot</a></li>
 <li><a href="#public.table.branchrevision">branchrevision</a></li>
 <li><a href=
 "#public.table.branchsubscription">branchsubscription</a></li>
@@ -216,9 +219,29 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.faq">faq</a></li>
 <li><a href="#public.table.fticache">fticache</a></li>
 <li><a href="#public.table.gpgkey">gpgkey</a></li>
+<li><a href="#public.table.hwdevice">hwdevice</a></li>
+<li><a href=
+"#public.table.hwdevicedriverlink">hwdevicedriverlink</a></li>
+<li><a href=
+"#public.table.hwdevicenamevariant">hwdevicenamevariant</a></li>
+<li><a href="#public.table.hwdriver">hwdriver</a></li>
 <li><a href="#public.table.hwsubmission">hwsubmission</a></li>
 <li><a href=
+"#public.table.hwsubmissiondevice">hwsubmissiondevice</a></li>
+<li><a href=
 "#public.table.hwsystemfingerprint">hwsystemfingerprint</a></li>
+<li><a href="#public.table.hwtest">hwtest</a></li>
+<li><a href="#public.table.hwtestanswer">hwtestanswer</a></li>
+<li><a href=
+"#public.table.hwtestanswerchoice">hwtestanswerchoice</a></li>
+<li><a href=
+"#public.table.hwtestanswercount">hwtestanswercount</a></li>
+<li><a href=
+"#public.table.hwtestanswercountdevice">hwtestanswercountdevice</a></li>
+<li><a href=
+"#public.table.hwtestanswerdevice">hwtestanswerdevice</a></li>
+<li><a href="#public.table.hwvendorid">hwvendorid</a></li>
+<li><a href="#public.table.hwvendorname">hwvendorname</a></li>
 <li><a href="#public.table.ircid">ircid</a></li>
 <li><a href="#public.table.jabberid">jabberid</a></li>
 <li><a href="#public.table.karma">karma</a></li>
@@ -294,13 +317,8 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.poll">poll</a></li>
 <li><a href="#public.table.polloption">polloption</a></li>
 <li><a href="#public.table.pomsgid">pomsgid</a></li>
-<li><a href=
-"#public.table.pomsgidsighting">pomsgidsighting</a></li>
-<li><a href="#public.table.pomsgset">pomsgset</a></li>
-<li><a href="#public.table.posubmission">posubmission</a></li>
 <li><a href="#public.table.posubscription">posubscription</a></li>
 <li><a href="#public.table.potemplate">potemplate</a></li>
-<li><a href="#public.table.potemplatename">potemplatename</a></li>
 <li><a href="#public.view.potexport">potexport</a></li>
 <li><a href="#public.table.potmsgset">potmsgset</a></li>
 <li><a href="#public.table.potranslation">potranslation</a></li>
@@ -392,6 +410,8 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.sshkey">sshkey</a></li>
 <li><a href=
 "#public.table.standardshipitrequest">standardshipitrequest</a></li>
+<li><a href=
+"#public.table.structuralsubscription">structuralsubscription</a></li>
 <li><a href="#public.table.teammembership">teammembership</a></li>
 <li><a href=
 "#public.table.teamparticipation">teamparticipation</a></li>
@@ -401,6 +421,8 @@ launchpad_dev</a></h1>
 "#public.table.translationgroup">translationgroup</a></li>
 <li><a href=
 "#public.table.translationimportqueueentry">translationimportqueueentry</a></li>
+<li><a href=
+"#public.table.translationmessage">translationmessage</a></li>
 <li><a href="#public.table.translator">translator</a></li>
 <li><a href=
 "#public.table.validpersonorteamcache">validpersonorteamcache</a></li>
@@ -444,6 +466,9 @@ text )</a></li>
 "#public.function.mv-pofiletranslator-posubmission">mv_pofiletranslator_posubmission(
 )</a></li>
 <li><a href=
+"#public.function.mv-pofiletranslator-translationmessage">mv_pofiletranslator_translationmessage(
+)</a></li>
+<li><a href=
 "#public.function.mv-validpersonorteamcache-emailaddress">mv_validpersonorteamcache_emailaddress(
 )</a></li>
 <li><a href=
@@ -452,6 +477,9 @@ text )</a></li>
 <li><a href=
 "#public.function.name-blacklist-match-text">name_blacklist_match(
 text )</a></li>
+<li><a href=
+"#public.function.null-count-p-values-anyarray">null_count(
+p_values anyarray )</a></li>
 <li><a href=
 "#public.function.person-sort-key-displayname-text-name-text">person_sort_key(
 displayname text, name text )</a></li>
@@ -814,6 +842,238 @@ ts2.tsvector )</a></li>
 <p>Standard public schema</p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.announcement" id=
+"public.table.announcement">announcement</a></h2>
+<p>A project announcement. This is a single item of news or
+information that the project is communicating. Announcements can be
+attached to a Project, a Product or a Distribution.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.announcement Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_created</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>date_announced</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date at which an announcement will become public, if it is
+active. If this is not set then the announcement will not become
+public until someone consciously publishes it (which sets this
+date).</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>registrant</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.product">public.product.id</a></td>
+<td>product</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.distribution">public.distribution.id</a></td>
+<td>distribution</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.project">public.project.id</a></td>
+<td>project</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>title</td>
+<td>text</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>summary</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>url</td>
+<td>text</td>
+<td><br />
+<br />
+A web location for the announcement itself.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>active</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT true</i><br />
+<br />
+Whether or not the announcement is public. This is TRUE by default,
+but can be set to FALSE if the project "retracts" the
+announcement.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_updated</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.announcement Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>has_target</td>
+<td>CHECK ((((product IS NOT NULL) OR (project IS NOT NULL)) OR
+(distribution IS NOT NULL)))</td>
+</tr>
+<tr class="tr1">
+<td>valid_url</td>
+<td>CHECK (valid_absolute_url(url))</td>
+</tr>
+</table>
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+announcement__distribution__active__idx distribution, active) WHERE
+(distribution IS NOT NULL announcement__product__active__idx
+product, active) WHERE (product IS NOT NULL
+announcement__project__active__idx project, active) WHERE (project
+IS NOT NULL announcement__registrant__idx registrant 
+<!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.announcement</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.answercontact" id=
 "public.table.answercontact">answercontact</a></h2>
 <p>Defines the answer contact for a given question target. The
@@ -997,7 +1257,7 @@ answercontact__person__idx person <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr0">
-<td>queued</td>
+<td>processmail</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -1009,7 +1269,7 @@ answercontact__person__idx person <!-- View Definition -->
 <td></td>
 </tr>
 <tr class="tr1">
-<td>read</td>
+<td>queued</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -1021,6 +1281,18 @@ answercontact__person__idx person <!-- View Definition -->
 <td></td>
 </tr>
 <tr class="tr0">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -1300,6 +1572,18 @@ ArchivePurpose DBSchema item.</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -1311,7 +1595,7 @@ ArchivePurpose DBSchema item.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -1323,7 +1607,7 @@ ArchivePurpose DBSchema item.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -1335,7 +1619,7 @@ ArchivePurpose DBSchema item.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -1347,7 +1631,7 @@ ArchivePurpose DBSchema item.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -1361,7 +1645,7 @@ ArchivePurpose DBSchema item.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -3715,6 +3999,47 @@ the branch can see it.</td>
 Branches are currently one of HOSTED (1), MIRRORED (2), or IMPORTED
 (3).</td>
 </tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>reviewer</td>
+<td>integer</td>
+<td><br />
+<br />
+The reviewer (person or) team are able to transition merge
+proposals targetted at the branch throught the CODE_APPROVED
+state.</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.branchmergerobot">public.branchmergerobot.id</a></td>
+<td>merge_robot</td>
+<td>integer</td>
+<td><br />
+<br />
+The robot that controls the automatic landing onto this
+branch.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>merge_control_status</td>
+<td>integer</td>
+<td><i>NOT NULL DEFAULT 1</i><br />
+<br />
+When there is no merge_robot set, the merge_control_status must be
+set to Manual. If a merge_robot is set, then the branch
+merge_control_status can be set to Automatic which means that the
+merge robot will start merging the branches.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_last_modified</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i><br />
+<br />
+A branch is modified any time a user updates something using a
+view, a new revision for the branch is scanned, or the branch is
+linked to a bug, blueprint or merge proposal.</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -3726,28 +4051,33 @@ Branches are currently one of HOSTED (1), MIRRORED (2), or IMPORTED
 <th>Constraint</th>
 </tr>
 <tr class="tr0">
+<td>branch_robotic_control</td>
+<td>CHECK ((((merge_robot IS NULL) AND (merge_control_status = 1))
+OR (merge_robot IS NOT NULL)))</td>
+</tr>
+<tr class="tr1">
 <td>branch_type_url_consistent</td>
 <td>CHECK (((((branch_type = 2) AND (url IS NOT NULL)) OR
 ((branch_type = ANY (ARRAY[1, 3])) AND (url IS NULL))) OR
 (branch_type = 4)))</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>branch_url_no_trailing_slash</td>
 <td>CHECK ((url !~~ '%/'::text))</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>branch_url_not_supermirror</td>
 <td>CHECK ((url !~~ 'http://bazaar.launchpad.net/%'::text))</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>valid_home_page</td>
 <td>CHECK (valid_absolute_url(home_page))</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>valid_name</td>
 <td>CHECK (valid_branch_name(name))</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>valid_url</td>
 <td>CHECK (valid_absolute_url(url))</td>
 </tr>
@@ -3784,8 +4114,9 @@ Branches are currently one of HOSTED (1), MIRRORED (2), or IMPORTED
 branch__date_created__idx date_created
 branch__last_scanned__owner__idx last_scanned, "owner") WHERE
 (last_scanned IS NOT NULL branch__private__idx private
-branch__product__id__idx product, id branch_author_idx author
-branch_owner_idx "owner" <!-- View Definition -->
+branch__product__id__idx product, id branch__reviewer__idx reviewer
+branch_author_idx author branch_owner_idx "owner" 
+<!-- View Definition -->
  <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -4074,6 +4405,140 @@ This is the user that marked the proposal as merged.</td>
 <br />
 When the registrant created the merge proposal.</td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>commit_message</td>
+<td>text</td>
+<td><br />
+<br />
+This is the commit message that is to be used when the branch is
+landed by a robot.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>queue_position</td>
+<td>integer</td>
+<td><br />
+<br />
+The position on the merge proposal in the overall landing queue. If
+the branch has a merge_robot set and the merge robot controls
+multiple branches then the queue position is unique over all the
+queued merge proposals for the landing robot.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>queue_status</td>
+<td>integer</td>
+<td><i>NOT NULL DEFAULT 1</i><br />
+<br />
+This is the current state of the merge proposal.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_review_requested</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date that the merge proposal enters the REVIEW_REQUESTED state.
+This is stored so that we can determine how long a branch has been
+waiting for code approval.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>reviewer</td>
+<td>integer</td>
+<td><br />
+<br />
+The individual who said that the code in this branch is OK to
+land.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_reviewed</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+When the reviewer said the code is OK to land.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>reviewed_revision_id</td>
+<td>text</td>
+<td><br />
+<br />
+The Bazaar revision ID that was approved to land.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>queuer</td>
+<td>integer</td>
+<td><br />
+<br />
+The individual who submitted the branch to the merge queue. This is
+usually the merge proposal registrant.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>date_queued</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+When the queuer submitted the branch to the merge queue.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>queued_revision_id</td>
+<td>text</td>
+<td><br />
+<br />
+The Bazaar revision ID that is queued to land.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>merger</td>
+<td>integer</td>
+<td><br />
+<br />
+The merger is the person who merged the branch.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>merged_revision_id</td>
+<td>text</td>
+<td><br />
+<br />
+The Bazaar revision ID that was actually merged. If the owner of
+the source branch is a trusted person, this may be different than
+the revision_id that was actually queued or reviewed.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>date_merge_started</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+If the merge is performed by a bot the time the merge was started
+is recorded otherwise it is NULL.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_merge_finished</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+If the merge is performed by a bot the time the merge was finished
+is recorded otherwise it is NULL.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
+<td>merge_log_file</td>
+<td>integer</td>
+<td><br />
+<br />
+If the merge is performed by a bot the log file is accessible from
+the librarian.</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -4099,14 +4564,208 @@ When the registrant created the merge proposal.</td>
 <!-- Indexes -->
 branchmergeproposal__dependent_branch__idx dependent_branch
 branchmergeproposal__merge_reporter__idx merge_reporter) WHERE
-(merge_reporter IS NOT NULL branchmergeproposal__source_branch__idx
-source_branch branchmergeproposal__target_branch__idx target_branch
+(merge_reporter IS NOT NULL branchmergeproposal__merger__idx merger
+branchmergeproposal__queuer__idx queuer
+branchmergeproposal__reviewer__idx reviewer
+branchmergeproposal__source_branch__idx source_branch
+branchmergeproposal__target_branch__idx target_branch 
 <!-- View Definition -->
  <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to
 public.branchmergeproposal</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>librariangc</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr0">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.branchmergerobot" id=
+"public.table.branchmergerobot">branchmergerobot</a></h2>
+<p>In order to have a single merge robot be able to control
+landings on multiple branches, we need some robot entity.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.branchmergerobot Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>registrant</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The person that created the merge robot.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>owner</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The person or team that is able to update the robot and manage the
+landing queue.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>UNIQUE NOT NULL</i><br />
+<br />
+The name of the robot. This is unique for the owner.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>whiteboard</td>
+<td>text</td>
+<td><br />
+<br />
+Any interesting comments about the robot itself.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_created</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i><br />
+<br />
+When this robot was created.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.branch">public.branch</a></li>
+</ul>
+<!-- Indexes -->
+branchmergerobot__owner__idx "owner"
+branchmergerobot__registrant__idx registrant 
+<!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.branchmergerobot</caption>
 <tr>
 <th>User</th>
 <th>
@@ -4959,6 +5618,30 @@ Branch with three extra names joined on to it.</p>
 </tr>
 <tr class="tr0">
 <td></td>
+<td>reviewer</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>merge_robot</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>merge_control_status</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_last_modified</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
 <td>product_name</td>
 <td>text</td>
 <td><br />
@@ -5012,6 +5695,10 @@ SELECT branch.id
 , branch.mirror_request_time
 , branch.private
 , branch.branch_type
+, branch.reviewer
+, branch.merge_robot
+, branch.merge_control_status
+, branch.date_last_modified
 , product.name AS product_name
 , author.displayname AS author_name
 ,"owner".displayname AS owner_name 
@@ -5465,6 +6152,22 @@ bug_fti fti bug_owner_idx "owner" <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -5478,7 +6181,7 @@ bug_fti fti bug_owner_idx "owner" <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -5490,7 +6193,7 @@ bug_fti fti bug_owner_idx "owner" <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -5502,7 +6205,7 @@ bug_fti fti bug_owner_idx "owner" <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -5516,7 +6219,7 @@ bug_fti fti bug_owner_idx "owner" <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -5656,7 +6359,7 @@ bugactivity_person_datechanged_idx person, datechanged
 </td>
 </tr>
 <tr class="tr1">
-<td>checkwatches</td>
+<td>bugnotification</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -5670,6 +6373,20 @@ bugactivity_person_datechanged_idx person, datechanged
 <td></td>
 </tr>
 <tr class="tr0">
+<td>checkwatches</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -5690,6 +6407,20 @@ bugactivity_person_datechanged_idx person, datechanged
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="tr1">
 <td>queued</td>
@@ -6026,13 +6757,21 @@ The status of the bugfix in this branch.</td>
 Additional information about the status of the bugfix in this
 branch.</td>
 </tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>registrant</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The person who linked the bug to the branch.</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
-<!-- View Definition -->
-<!-- List off permissions -->
+bugbranch__registrant__idx registrant <!-- View Definition -->
+ <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to public.bugbranch</caption>
@@ -6269,7 +7008,7 @@ bugcve_cve_index cve <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr1">
-<td>queued</td>
+<td>processmail</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -6283,6 +7022,20 @@ bugcve_cve_index cve <!-- View Definition -->
 <td></td>
 </tr>
 <tr class="tr0">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -6294,7 +7047,7 @@ bugcve_cve_index cve <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -6459,6 +7212,20 @@ bugmessage_message_idx message <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -6472,7 +7239,7 @@ bugmessage_message_idx message <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -6484,7 +7251,7 @@ bugmessage_message_idx message <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -6498,7 +7265,7 @@ bugmessage_message_idx message <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -6722,6 +7489,22 @@ WHERE (decider IS NOT NULL bugnomination__owner__idx "owner"
 </td>
 </tr>
 <tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -6733,7 +7516,7 @@ WHERE (decider IS NOT NULL bugnomination__owner__idx "owner"
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -6745,7 +7528,7 @@ WHERE (decider IS NOT NULL bugnomination__owner__idx "owner"
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -6757,7 +7540,7 @@ WHERE (decider IS NOT NULL bugnomination__owner__idx "owner"
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -6958,7 +7741,7 @@ public.bugnotification</caption>
 </td>
 </tr>
 <tr class="tr1">
-<td>queued</td>
+<td>processmail</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -6972,6 +7755,20 @@ public.bugnotification</caption>
 <td></td>
 </tr>
 <tr class="tr0">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -6983,7 +7780,7 @@ public.bugnotification</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -7601,6 +8398,24 @@ public.bugsubscription</caption>
 </td>
 </tr>
 <tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -7612,7 +8427,7 @@ public.bugsubscription</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -7624,7 +8439,7 @@ public.bugsubscription</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -7636,7 +8451,7 @@ public.bugsubscription</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -7810,6 +8625,22 @@ bugtag__bug__idx bug <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -8214,6 +9045,22 @@ bugtask_fti fti <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -8227,7 +9074,7 @@ bugtask_fti fti <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -8239,7 +9086,7 @@ bugtask_fti fti <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -8251,7 +9098,7 @@ bugtask_fti fti <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>targetnamecacheupdater</td>
 <td>
 <center>&diams;</center>
@@ -8265,7 +9112,7 @@ bugtask_fti fti <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -8279,7 +9126,7 @@ bugtask_fti fti <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -8514,6 +9361,20 @@ bugtracker_owner_idx "owner" <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -8527,7 +9388,7 @@ bugtracker_owner_idx "owner" <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -8539,7 +9400,7 @@ bugtracker_owner_idx "owner" <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -8553,7 +9414,7 @@ bugtracker_owner_idx "owner" <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -8756,6 +9617,20 @@ bugwatch_datecreated_idx datecreated bugwatch_owner_idx "owner"
 </td>
 </tr>
 <tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -8769,7 +9644,7 @@ bugwatch_datecreated_idx datecreated bugwatch_owner_idx "owner"
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -8781,7 +9656,7 @@ bugwatch_datecreated_idx datecreated bugwatch_owner_idx "owner"
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -8795,7 +9670,7 @@ bugwatch_datecreated_idx datecreated bugwatch_owner_idx "owner"
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -8937,6 +9812,24 @@ missing-dependencies for this package.</td>
 <td><i>NOT NULL</i><br />
 <br />
 Targeted archive for this build.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>estimated_build_duration</td>
+<td>interval</td>
+<td><br />
+<br />
+How long does the previous attempt to build this source took in
+this architecture.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>build_warnings</td>
+<td>text</td>
+<td><br />
+<br />
+Warnings and diagnosis messages provided by the builder while
+building this job.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -9266,6 +10159,16 @@ from the it, but do not dispach anything to it automatically.</td>
 <td>date_created</td>
 <td>timestamp without time zone</td>
 <td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>vm_host</td>
+<td>text</td>
+<td><br />
+<br />
+The virtual machine host associated to this builder. It should be
+empty for "native" builders (old fashion or architectures not yet
+supported by XEN).</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -11160,7 +12063,7 @@ Description of this component.</td>
 </td>
 </tr>
 <tr class="tr1">
-<td>queued</td>
+<td>processmail</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -11172,7 +12075,7 @@ Description of this component.</td>
 <td></td>
 </tr>
 <tr class="tr0">
-<td>read</td>
+<td>queued</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -11184,6 +12087,18 @@ Description of this component.</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -11197,7 +12112,7 @@ Description of this component.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -11953,7 +12868,7 @@ cve_fti fti <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr0">
-<td>queued</td>
+<td>processmail</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -11967,6 +12882,20 @@ cve_fti fti <!-- View Definition -->
 <td></td>
 </tr>
 <tr class="tr1">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -11978,7 +12907,7 @@ cve_fti fti <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -12462,6 +13391,20 @@ Whether or not this product upstream uses Answers officialy.</td>
 The Person or Team that handle language packs for the distro
 release.</td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>official_blueprints</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>enable_bug_expiration</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+Indicates whether automatic bug expiration is enabled.</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -12473,12 +13416,21 @@ release.</td>
 <th>Constraint</th>
 </tr>
 <tr class="tr0">
+<td>only_launchpad_has_expiration</td>
+<td>CHECK (((enable_bug_expiration IS FALSE) OR (official_malone IS
+TRUE)))</td>
+</tr>
+<tr class="tr1">
 <td>valid_name</td>
 <td>CHECK (valid_name(name))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.announcement">public.announcement</a></li>
+</ul>
 <ul>
 <li><a href=
 "#public.table.answercontact">public.answercontact</a></li>
@@ -12541,6 +13493,10 @@ release.</td>
 <ul>
 <li><a href=
 "#public.table.specification">public.specification</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.structuralsubscription">public.structuralsubscription</a></li>
 </ul>
 <!-- Indexes -->
 distribution__icon__idx icon) WHERE (icon IS NOT NULL
@@ -12733,6 +13689,18 @@ distribution_translationgroup_idx translationgroup
 </td>
 </tr>
 <tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -12744,7 +13712,7 @@ distribution_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -12756,7 +13724,7 @@ distribution_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>rosettaadmin</td>
 <td>
 <center>&diams;</center>
@@ -12768,7 +13736,7 @@ distribution_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -12780,7 +13748,7 @@ distribution_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -12792,7 +13760,7 @@ distribution_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>targetnamecacheupdater</td>
 <td>
 <center>&diams;</center>
@@ -12804,7 +13772,7 @@ distribution_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -12816,7 +13784,7 @@ distribution_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -13617,6 +14585,15 @@ release pocket.</td>
 <td>timestamp without time zone</td>
 <td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i></td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>ppa_supported</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+Whether or not PPA support should be provided by this specific
+distroarchseries</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -13632,6 +14609,10 @@ release pocket.</td>
 <ul>
 <li><a href=
 "#public.table.hwsubmission">public.hwsubmission</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.hwtestanswercount">public.hwtestanswercount</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -13957,6 +14938,18 @@ public.distrocomponentuploader</caption>
 </td>
 </tr>
 <tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -13968,7 +14961,7 @@ public.distrocomponentuploader</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -13980,7 +14973,7 @@ public.distrocomponentuploader</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -13992,7 +14985,7 @@ public.distrocomponentuploader</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -14381,6 +15374,10 @@ update.</td>
 </ul>
 <ul>
 <li><a href=
+"#public.table.structuralsubscription">public.structuralsubscription</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.translationimportqueueentry">public.translationimportqueueentry</a></li>
 </ul>
 <!-- Indexes -->
@@ -14533,7 +15530,7 @@ distroseries__owner__idx "owner" <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr0">
-<td>queued</td>
+<td>processmail</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -14545,7 +15542,7 @@ distroseries__owner__idx "owner" <!-- View Definition -->
 <td></td>
 </tr>
 <tr class="tr1">
-<td>read</td>
+<td>queued</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -14557,6 +15554,18 @@ distroseries__owner__idx "owner" <!-- View Definition -->
 <td></td>
 </tr>
 <tr class="tr0">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>rosettaadmin</td>
 <td>
 <center>&diams;</center>
@@ -14570,7 +15579,7 @@ distroseries__owner__idx "owner" <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -14582,7 +15591,7 @@ distroseries__owner__idx "owner" <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -14596,7 +15605,7 @@ distroseries__owner__idx "owner" <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>targetnamecacheupdater</td>
 <td>
 <center>&diams;</center>
@@ -14608,7 +15617,7 @@ distroseries__owner__idx "owner" <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -14622,7 +15631,7 @@ distroseries__owner__idx "owner" <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -15346,6 +16355,18 @@ emailaddress_person_status_idx person, status
 </td>
 </tr>
 <tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -15359,7 +16380,7 @@ emailaddress_person_status_idx person, status
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -15371,7 +16392,7 @@ emailaddress_person_status_idx person, status
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>shipit</td>
 <td>
 <center>&diams;</center>
@@ -15383,7 +16404,7 @@ emailaddress_person_status_idx person, status
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>teammembership</td>
 <td>
 <center>&diams;</center>
@@ -15395,7 +16416,7 @@ emailaddress_person_status_idx person, status
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -15409,7 +16430,7 @@ emailaddress_person_status_idx person, status
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -16186,7 +17207,7 @@ opposed to just signing)</td>
 </td>
 </tr>
 <tr class="tr0">
-<td>queued</td>
+<td>processmail</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -16198,7 +17219,7 @@ opposed to just signing)</td>
 <td></td>
 </tr>
 <tr class="tr1">
-<td>read</td>
+<td>queued</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -16210,6 +17231,18 @@ opposed to just signing)</td>
 <td></td>
 </tr>
 <tr class="tr0">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -16223,7 +17256,7 @@ opposed to just signing)</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -16237,6 +17270,652 @@ opposed to just signing)</td>
 <td>
 <center>&diams;</center>
 </td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.hwdevice" id=
+"public.table.hwdevice">hwdevice</a></h2>
+<p>Basic information on devices.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwdevice Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.hwvendorid">public.hwvendorid.id</a></td>
+<td>bus_vendor_id</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+A reference to a HWVendorID record.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>bus_product_id</td>
+<td>text</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The bus product ID of a device</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>variant</td>
+<td>text</td>
+<td><i>UNIQUE#1</i><br />
+<br />
+An optional additional description for a device that shares its
+vendor and product ID with another, technically different,
+device.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+The human readable product name of the device.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>submissions</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The number of submissions that contain this device.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.hwdevicedriverlink">public.hwdevicedriverlink</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.hwdevicenamevariant">public.hwdevicenamevariant</a></li>
+</ul>
+<!-- Indexes -->
+hwdevice__bus_product_id__idx bus_product_id hwdevice__name__idx
+name <!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.hwdevice</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.hwdevicedriverlink" id=
+"public.table.hwdevicedriverlink">hwdevicedriverlink</a></h2>
+<p>Combinations of devices and drivers mentioned in
+submissions.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwdevicedriverlink Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.hwdevice">public.hwdevice.id</a></td>
+<td>device</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The device controlled by the driver.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.hwdriver">public.hwdriver.id</a></td>
+<td>driver</td>
+<td>integer</td>
+<td><br />
+<br />
+The driver controlling the device.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.hwsubmissiondevice">public.hwsubmissiondevice</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.hwtestanswercountdevice">public.hwtestanswercountdevice</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.hwtestanswerdevice">public.hwtestanswerdevice</a></li>
+</ul>
+<!-- Indexes -->
+hwdevicedriverlink__device__idx device
+hwdevicedriverlink__driver__idx driver <!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.hwdevicedriverlink</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.hwdevicenamevariant" id=
+"public.table.hwdevicenamevariant">hwdevicenamevariant</a></h2>
+<p>Alternative vendor and product names of devices.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwdevicenamevariant Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.hwvendorname">public.hwvendorname.id</a></td>
+<td>vendor_name</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The alternative vendor name.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>product_name</td>
+<td>text</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The alternative product name.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.hwdevice">public.hwdevice.id</a></td>
+<td>device</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The device named by this alternative vendor and product names.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>submissions</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The number of submissions containing this alternative vendor and
+product name.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+hwdevicenamevariant__device__idx device
+hwdevicenamevariant__product_name__idx product_name 
+<!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.hwdevicenamevariant</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.hwdriver" id=
+"public.table.hwdriver">hwdriver</a></h2>
+<p>Information about a driver for a device</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwdriver Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>package_name</td>
+<td>text</td>
+<td><i>UNIQUE#1</i><br />
+<br />
+The Debian package name a driver is a part of</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The name of a driver.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.license">public.license.id</a></td>
+<td>license</td>
+<td>integer</td>
+<td></td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.hwdevicedriverlink">public.hwdevicedriverlink</a></li>
+</ul>
+<!-- Indexes -->
+hwdriver__name__idx name hwvendorname__name__idx name 
+<!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.hwdriver</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -16377,6 +18056,15 @@ The email address of the submitter.</td>
 <!-- Inherits -->
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.hwsubmissiondevice">public.hwsubmissiondevice</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.hwtestanswer">public.hwtestanswer</a></li>
+</ul>
 <!-- Indexes -->
 hwsubmission__owner__idx "owner"
 hwsubmission__raw_emailaddress__idx raw_emailaddress
@@ -16501,6 +18189,165 @@ hwsubmission__system_fingerprint__idx system_fingerprint
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.hwsubmissiondevice" id=
+"public.table.hwsubmissiondevice">hwsubmissiondevice</a></h2>
+<p>Links between devices and submissions.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwsubmissiondevice Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.hwdevicedriverlink">public.hwdevicedriverlink.id</a></td>
+<td>device_driver_link</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The combination (device, driver) mentioned in a submission.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.hwsubmission">public.hwsubmission.id</a></td>
+<td>submission</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The submission mentioning this (device, driver) combination.</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.hwsubmissiondevice">public.hwsubmissiondevice.id</a></td>
+<td>parent</td>
+<td>integer</td>
+<td><br />
+<br />
+The parent device of this device.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.hwsubmissiondevice">public.hwsubmissiondevice</a></li>
+</ul>
+<!-- Indexes -->
+hwsubmissiondevice__parent__idx parent) WHERE (parent IS NOT NULL
+hwsubmissiondevice__submission__idx submission 
+<!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.hwsubmissiondevice</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.hwsystemfingerprint" id=
 "public.table.hwsystemfingerprint">hwsystemfingerprint</a></h2>
 <p>A distinct list of "fingerprints" (HAL system.name,
@@ -16597,6 +18444,1316 @@ public.hwsystemfingerprint</caption>
 <td>
 <center>&diams;</center>
 </td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.hwtest" id="public.table.hwtest">hwtest</a></h2>
+<p>General information about a device test.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwtest Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>namespace</td>
+<td>text</td>
+<td><br />
+<br />
+The namespace of a test.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+The name of a test.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>version</td>
+<td>text</td>
+<td><i>NOT NULL</i></td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.hwtestanswer">public.hwtestanswer</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.hwtestanswerchoice">public.hwtestanswerchoice</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.hwtestanswercount">public.hwtestanswercount</a></li>
+</ul>
+<!-- Indexes -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.hwtest</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.hwtestanswer" id=
+"public.table.hwtestanswer">hwtestanswer</a></h2>
+<p>The answer for a test from a submission. This can be either a
+multiple choice selection or a numerical value. Exactly one of the
+columns choice, intval, floatval must be non-null.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwtestanswer Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.hwtestanswerchoice">public.hwtestanswerchoice.test#1</a>
+<a href="#public.table.hwtest">public.hwtest.id</a></td>
+<td>test</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The test answered by this answer.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.hwtestanswerchoice">public.hwtestanswerchoice.choice#1</a>
+<a href=
+"#public.table.hwtestanswerchoice">public.hwtestanswerchoice.id</a></td>
+<td>choice</td>
+<td>integer</td>
+<td><br />
+<br />
+The selected value of a multiple choice test.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>intval</td>
+<td>integer</td>
+<td><br />
+<br />
+The integer result of a test with a numerical result.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>floatval</td>
+<td>double precision</td>
+<td><br />
+<br />
+The double precision floating point number result of a test with a
+numerical result.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>unit</td>
+<td>text</td>
+<td><br />
+<br />
+The physical unit of a test with a numerical result.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>comment</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.language">public.language.id</a></td>
+<td>language</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.hwsubmission">public.hwsubmission.id</a></td>
+<td>submission</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwtestanswer Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>hwtestanswer_check</td>
+<td>CHECK (((((choice IS NULL) AND (unit IS NOT NULL)) AND ((intval
+IS NULL) &lt;&gt; (floatval IS NULL))) OR ((((choice IS NOT NULL)
+AND (unit IS NULL)) AND (intval IS NULL)) AND (floatval IS
+NULL))))</td>
+</tr>
+</table>
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.hwtestanswerdevice">public.hwtestanswerdevice</a></li>
+</ul>
+<!-- Indexes -->
+hwtestanswer__choice__idx choice hwtestanswer__submission__idx
+submission hwtestanswer__test__idx test <!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.hwtestanswer</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.hwtestanswerchoice" id=
+"public.table.hwtestanswerchoice">hwtestanswerchoice</a></h2>
+<p>Choice values of multiple choice tests/questions.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwtestanswerchoice Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>choice</td>
+<td>text</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The choice value.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.hwtest">public.hwtest.id</a></td>
+<td>test</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The test this choice belongs to.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.hwtestanswer">public.hwtestanswer</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.hwtestanswercount">public.hwtestanswercount</a></li>
+</ul>
+<!-- Indexes -->
+hwtestanswerchoice__test__idx test <!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.hwtestanswerchoice</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.hwtestanswercount" id=
+"public.table.hwtestanswercount">hwtestanswercount</a></h2>
+<p>Accumulated results of tests. Either the column choice or the
+columns average and sum_square must be non-null.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwtestanswercount Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.hwtest">public.hwtest.id</a></td>
+<td>test</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The test.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.distroarchseries">public.distroarchseries.id</a></td>
+<td>distroarchseries</td>
+<td>integer</td>
+<td><br />
+<br />
+The distroarchseries for which results are accumulated,</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.hwtestanswerchoice">public.hwtestanswerchoice.id</a></td>
+<td>choice</td>
+<td>integer</td>
+<td><br />
+<br />
+The choice value of a multiple choice test.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>average</td>
+<td>double precision</td>
+<td><br />
+<br />
+The average value of the result of a numerical test.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>sum_square</td>
+<td>double precision</td>
+<td><br />
+<br />
+The sum of the squares of the results of a numerical test.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>unit</td>
+<td>text</td>
+<td><br />
+<br />
+The physical unit of a numerical test result.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>num_answers</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The number of submissions from which the result is
+accumulated.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwtestanswercount Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>hwtestanswercount_check</td>
+<td>CHECK ((((((choice IS NULL) AND (average IS NOT NULL)) AND
+(sum_square IS NOT NULL)) AND (unit IS NOT NULL)) OR ((((choice IS
+NOT NULL) AND (average IS NULL)) AND (sum_square IS NULL)) AND
+(unit IS NULL))))</td>
+</tr>
+</table>
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.hwtestanswercountdevice">public.hwtestanswercountdevice</a></li>
+</ul>
+<!-- Indexes -->
+hwtestanswercount__choice__idx choice
+hwtestanswercount__distroarchrelease__idx distroarchseries) WHERE
+(distroarchseries IS NOT NULL hwtestanswercount__test__idx test 
+<!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.hwtestanswercount</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.hwtestanswercountdevice" id=
+"public.table.hwtestanswercountdevice">hwtestanswercountdevice</a></h2>
+<p>Association of accumulated test results and device/driver
+combinations.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwtestanswercountdevice Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.hwtestanswercount">public.hwtestanswercount.id</a></td>
+<td>answer</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The test answer.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.hwdevicedriverlink">public.hwdevicedriverlink.id</a></td>
+<td>device_driver</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The device/driver combination.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+hwtestanswercountdevice__device_driver__idx device_driver 
+<!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.hwtestanswercountdevice</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.hwtestanswerdevice" id=
+"public.table.hwtestanswerdevice">hwtestanswerdevice</a></h2>
+<p>Association of test results and device/driver combinations.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwtestanswerdevice Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.hwtestanswer">public.hwtestanswer.id</a></td>
+<td>answer</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The test answer.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.hwdevicedriverlink">public.hwdevicedriverlink.id</a></td>
+<td>device_driver</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The device/driver combination.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+hwtestanswerdevice__device_driver__idx device_driver 
+<!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.hwtestanswerdevice</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.hwvendorid" id=
+"public.table.hwvendorid">hwvendorid</a></h2>
+<p>Associates tuples (bus, vendor ID for this bus) with vendor
+names.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwvendorid Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>bus</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The bus.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>vendor_id_for_bus</td>
+<td>text</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The ID of a vendor for the bus given by column `bus`</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.hwvendorname">public.hwvendorname.id</a></td>
+<td>vendor_name</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i></td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.hwdevice">public.hwdevice</a></li>
+</ul>
+<!-- Indexes -->
+hwvendorid__vendor_id_for_bus__idx vendor_id_for_bus
+hwvendorid__vendorname__idx vendor_name <!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.hwvendorid</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.hwvendorname" id=
+"public.table.hwvendorname">hwvendorname</a></h2>
+<p>A list of hardware vendor names.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.hwvendorname Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>UNIQUE NOT NULL</i><br />
+<br />
+The name of a vendor.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.hwdevicenamevariant">public.hwdevicenamevariant</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.hwvendorid">public.hwvendorid</a></li>
+</ul>
+<!-- Indexes -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.hwvendorname</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -17095,6 +20252,20 @@ karma_person_datecreated_idx person, datecreated
 </td>
 </tr>
 <tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -17108,7 +20279,7 @@ karma_person_datecreated_idx person, datecreated
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -17120,7 +20291,7 @@ karma_person_datecreated_idx person, datecreated
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>shipit</td>
 <td>
 <center>&diams;</center>
@@ -17132,7 +20303,7 @@ karma_person_datecreated_idx person, datecreated
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -17146,7 +20317,7 @@ karma_person_datecreated_idx person, datecreated
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -17317,6 +20488,18 @@ The unique name of this action.</td>
 </td>
 </tr>
 <tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -17328,7 +20511,7 @@ The unique name of this action.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -17340,7 +20523,7 @@ The unique name of this action.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -17352,7 +20535,7 @@ The unique name of this action.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -18044,6 +21227,10 @@ NULL)))</td>
 "#public.table.distroserieslanguage">public.distroserieslanguage</a></li>
 </ul>
 <ul>
+<li><a href=
+"#public.table.hwtestanswer">public.hwtestanswer</a></li>
+</ul>
+<ul>
 <li><a href="#public.table.person">public.person</a></li>
 </ul>
 <ul>
@@ -18055,9 +21242,6 @@ NULL)))</td>
 </ul>
 <ul>
 <li><a href="#public.table.pofile">public.pofile</a></li>
-</ul>
-<ul>
-<li><a href="#public.table.pomsgset">public.pomsgset</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -18149,6 +21333,18 @@ NULL)))</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>pofilestats</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -18169,6 +21365,18 @@ NULL)))</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="tr0">
 <td>queued</td>
@@ -18871,7 +22079,9 @@ Initially set to this item's creation date.</td>
 <td></td>
 <td>date_created</td>
 <td>timestamp without time zone</td>
-<td><i>DEFAULT timezone('UTC'::text, now())</i></td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i><br />
+<br />
+The timestamp when this alias was created.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -18893,6 +22103,10 @@ Initially set to this item's creation date.</td>
 <ul>
 <li><a href=
 "#public.table.binarypackagefile">public.binarypackagefile</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.branchmergeproposal">public.branchmergeproposal</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -19169,6 +22383,20 @@ public.libraryfilealias</caption>
 </td>
 </tr>
 <tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>productreleasefinder</td>
 <td>
 <center>&diams;</center>
@@ -19182,7 +22410,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -19196,7 +22424,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -19208,7 +22436,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>shipit</td>
 <td>
 <center>&diams;</center>
@@ -19222,7 +22450,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -19234,7 +22462,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -19248,7 +22476,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -19508,6 +22736,20 @@ public.libraryfilecontent</caption>
 </td>
 </tr>
 <tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>productreleasefinder</td>
 <td>
 <center>&diams;</center>
@@ -19521,7 +22763,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -19535,7 +22777,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -19547,7 +22789,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>shipit</td>
 <td>
 <center>&diams;</center>
@@ -19561,7 +22803,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -19573,7 +22815,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -19587,7 +22829,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -19638,6 +22880,9 @@ public</a></p>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.hwdriver">public.hwdriver</a></li>
+</ul>
 <ul>
 <li><a href="#public.table.pofile">public.pofile</a></li>
 </ul>
@@ -21007,6 +24252,20 @@ rfc822msgid <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -21020,7 +24279,7 @@ rfc822msgid <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -21032,7 +24291,7 @@ rfc822msgid <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -21046,7 +24305,7 @@ rfc822msgid <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -21519,7 +24778,7 @@ messagechunk_fti fti <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr0">
-<td>queued</td>
+<td>processmail</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -21533,6 +24792,20 @@ messagechunk_fti fti <!-- View Definition -->
 <td></td>
 </tr>
 <tr class="tr1">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -21544,7 +24817,7 @@ messagechunk_fti fti <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -21584,7 +24857,7 @@ could use to mark a task as needing fixing in bazaar 1.2.</p>
 </tr>
 <tr class="tr1">
 <td><a href="#public.table.product">public.product.id</a> <a href=
-"#public.table.productseries">public.productseries.product#2</a></td>
+"#public.table.productseries">public.productseries.product#1</a></td>
 <td>product</td>
 <td>integer</td>
 <td><i>UNIQUE#3 UNIQUE#4</i><br />
@@ -21601,7 +24874,7 @@ The identifier text, e.g. "1.2."</td>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distroseries">public.distroseries.distribution#1</a>
+"#public.table.distroseries">public.distroseries.distribution#2</a>
 <a href=
 "#public.table.distribution">public.distribution.id</a></td>
 <td>distribution</td>
@@ -21634,7 +24907,7 @@ vocabularies.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.productseries">public.productseries.id#2</a>
+"#public.table.productseries">public.productseries.id#1</a>
 <a href="#public.table.productseries">public.productseries.id</a></td>
 <td>productseries</td>
 <td>integer</td>
@@ -21647,7 +24920,7 @@ moving to being on series/distroseries.</td>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distroseries">public.distroseries.id#1</a> <a href=
+"#public.table.distroseries">public.distroseries.id#2</a> <a href=
 "#public.table.distroseries">public.distroseries.id</a></td>
 <td>distroseries</td>
 <td>integer</td>
@@ -21702,6 +24975,10 @@ NULL))))</td>
 <ul>
 <li><a href=
 "#public.table.specification">public.specification</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.structuralsubscription">public.structuralsubscription</a></li>
 </ul>
 <!-- Indexes -->
 <!-- View Definition -->
@@ -21802,6 +25079,18 @@ NULL))))</td>
 </td>
 </tr>
 <tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -21813,7 +25102,7 @@ NULL))))</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -21825,7 +25114,7 @@ NULL))))</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -21837,7 +25126,7 @@ NULL))))</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -24170,7 +27459,7 @@ public.packagebugcontact</caption>
 </td>
 </tr>
 <tr class="tr1">
-<td>queued</td>
+<td>processmail</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -24182,7 +27471,7 @@ public.packagebugcontact</caption>
 <td></td>
 </tr>
 <tr class="tr0">
-<td>read</td>
+<td>queued</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -24194,6 +27483,18 @@ public.packagebugcontact</caption>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -25375,6 +28676,24 @@ sourcepackagename packaging_sourcepackagename_idx sourcepackagename
 <td></td>
 </tr>
 <tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -25396,7 +28715,7 @@ sourcepackagename packaging_sourcepackagename_idx sourcepackagename
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -25408,7 +28727,7 @@ sourcepackagename packaging_sourcepackagename_idx sourcepackagename
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -25420,7 +28739,7 @@ sourcepackagename packaging_sourcepackagename_idx sourcepackagename
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -25811,6 +29130,10 @@ IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
 <li><a href=
+"#public.table.announcement">public.announcement</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.answercontact">public.answercontact</a></li>
 </ul>
 <ul>
@@ -25832,6 +29155,10 @@ IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN
 </ul>
 <ul>
 <li><a href=
+"#public.table.branchmergerobot">public.branchmergerobot</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.branchsubscription">public.branchsubscription</a></li>
 </ul>
 <ul>
@@ -25840,6 +29167,9 @@ IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN
 </ul>
 <ul>
 <li><a href="#public.table.bug">public.bug</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.bugbranch">public.bugbranch</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -26001,13 +29331,6 @@ IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN
 <li><a href="#public.table.poll">public.poll</a></li>
 </ul>
 <ul>
-<li><a href="#public.table.pomsgset">public.pomsgset</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.posubmission">public.posubmission</a></li>
-</ul>
-<ul>
 <li><a href=
 "#public.table.posubscription">public.posubscription</a></li>
 </ul>
@@ -26076,6 +29399,10 @@ IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN
 </ul>
 <ul>
 <li><a href=
+"#public.table.specificationbranch">public.specificationbranch</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.specificationfeedback">public.specificationfeedback</a></li>
 </ul>
 <ul>
@@ -26098,6 +29425,10 @@ IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN
 </ul>
 <ul>
 <li><a href=
+"#public.table.structuralsubscription">public.structuralsubscription</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.teammembership">public.teammembership</a></li>
 </ul>
 <ul>
@@ -26111,6 +29442,10 @@ IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN
 <ul>
 <li><a href=
 "#public.table.translationimportqueueentry">public.translationimportqueueentry</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.translationmessage">public.translationmessage</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.translator">public.translator</a></li>
@@ -26355,7 +29690,7 @@ person_sorting_idx person_sort_key(displayname, name)
 <td></td>
 </tr>
 <tr class="tr0">
-<td>productreleasefinder</td>
+<td>processmail</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -26367,6 +29702,18 @@ person_sorting_idx person_sort_key(displayname, name)
 <td></td>
 </tr>
 <tr class="tr1">
+<td>productreleasefinder</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -26380,7 +29727,7 @@ person_sorting_idx person_sort_key(displayname, name)
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -26392,7 +29739,7 @@ person_sorting_idx person_sort_key(displayname, name)
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>rosettaadmin</td>
 <td>
 <center>&diams;</center>
@@ -26404,7 +29751,7 @@ person_sorting_idx person_sort_key(displayname, name)
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>shipit</td>
 <td>
 <center>&diams;</center>
@@ -26416,7 +29763,7 @@ person_sorting_idx person_sort_key(displayname, name)
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -26428,7 +29775,7 @@ person_sorting_idx person_sort_key(displayname, name)
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>supermirror</td>
 <td>
 <center>&diams;</center>
@@ -26440,7 +29787,7 @@ person_sorting_idx person_sort_key(displayname, name)
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>teammembership</td>
 <td>
 <center>&diams;</center>
@@ -26452,7 +29799,7 @@ person_sorting_idx person_sort_key(displayname, name)
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -26466,7 +29813,7 @@ person_sorting_idx person_sort_key(displayname, name)
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -26640,6 +29987,18 @@ this language.</td>
 </td>
 </tr>
 <tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -26651,7 +30010,7 @@ this language.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -26663,7 +30022,7 @@ this language.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -26675,7 +30034,7 @@ this language.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -27253,43 +30612,31 @@ public</a></p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>name</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>translationdomain</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>potemplate</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
 <td>productseries</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>sourcepackagename</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>distroseries</td>
 <td>integer</td>
 <td></td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>potemplate</td>
+<td>integer</td>
+<td></td>
+</tr>
 <tr class="tr1">
 <td></td>
-<td>potheader</td>
+<td>template_header</td>
 <td>text</td>
 <td></td>
 </tr>
@@ -27319,127 +30666,115 @@ public</a></p>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>potopcomment</td>
+<td>translation_file_comment</td>
 <td>text</td>
 <td></td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>poheader</td>
+<td>translation_header</td>
 <td>text</td>
 <td></td>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>pofuzzyheader</td>
+<td>is_translation_header_fuzzy</td>
 <td>boolean</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td></td>
+<td>sequence</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td></td>
 <td>potmsgset</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr0">
-<td></td>
-<td>potsequence</td>
-<td>integer</td>
-<td></td>
-</tr>
 <tr class="tr1">
 <td></td>
-<td>potcommenttext</td>
+<td>comment</td>
 <td>text</td>
 <td></td>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>sourcecomment</td>
+<td>source_comment</td>
 <td>text</td>
 <td></td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>flagscomment</td>
+<td>file_references</td>
 <td>text</td>
 <td></td>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>filereferences</td>
+<td>flags_comment</td>
 <td>text</td>
 <td></td>
 </tr>
 <tr class="tr1">
-<td></td>
-<td>pomsgset</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>posequence</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>iscomplete</td>
-<td>boolean</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>obsolete</td>
-<td>boolean</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>isfuzzy</td>
-<td>boolean</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>pocommenttext</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>msgidpluralform</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>translationpluralform</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>activesubmission</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
 <td></td>
 <td>context</td>
 <td>text</td>
 <td></td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>msgid_singular</td>
+<td>text</td>
+<td></td>
+</tr>
 <tr class="tr1">
 <td></td>
-<td>msgid</td>
+<td>msgid_plural</td>
 <td>text</td>
 <td></td>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>translation</td>
+<td>is_fuzzy</td>
+<td>boolean</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>is_current</td>
+<td>boolean</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>is_imported</td>
+<td>boolean</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>translation0</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>translation1</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>translation2</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>translation3</td>
 <td>text</td>
 <td></td>
 </tr>
@@ -27451,65 +30786,45 @@ public</a></p>
 <!-- View Definition -->
 <pre>
 SELECT (
-     (
+     (COALESCE
            (
-                 (
-                       (
-                             (COALESCE
-                                   (
-                                         (potmsgset.id)::text
-                                         ,'X'::text
-                                   ) || '.'::text
-                             ) || COALESCE
-                             (
-                                   (pomsgset.id)::text
-                                   ,'X'::text
-                             )
-                       ) || '.'::text
-                 ) || COALESCE
-                 (
-                       (pomsgidsighting.id)::text
-                       ,'X'::text
-                 )
+                 (potmsgset.id)::text
+                 ,'X'::text
            ) || '.'::text
      ) || COALESCE
      (
-           (posubmission.id)::text
+           (translationmessage.id)::text
            ,'X'::text
      )
 ) AS id
-, potemplatename.name
-, potemplatename.translationdomain
-, potemplate.id AS potemplate
 , potemplate.productseries
 , potemplate.sourcepackagename
 , potemplate.distroseries
-, potemplate."header" AS potheader
+, potemplate.id AS potemplate
+, potemplate."header" AS template_header
 , potemplate.languagepack
 , pofile.id AS pofile
 , pofile."language"
 , pofile.variant
-, pofile.topcomment AS potopcomment
-, pofile."header" AS poheader
-, pofile.fuzzyheader AS pofuzzyheader
+, pofile.topcomment AS translation_file_comment
+, pofile."header" AS translation_header
+, pofile.fuzzyheader AS is_translation_header_fuzzy
+, potmsgset."sequence"
 , potmsgset.id AS potmsgset
-, potmsgset."sequence" AS potsequence
-, potmsgset.commenttext AS potcommenttext
-, potmsgset.sourcecomment
-, potmsgset.flagscomment
-, potmsgset.filereferences
-, pomsgset.id AS pomsgset
-, pomsgset."sequence" AS posequence
-, pomsgset.iscomplete
-, pomsgset.obsolete
-, pomsgset.isfuzzy
-, pomsgset.commenttext AS pocommenttext
-, pomsgidsighting.pluralform AS msgidpluralform
-, posubmission.pluralform AS translationpluralform
-, posubmission.id AS activesubmission
+, translationmessage."comment"
+, potmsgset.sourcecomment AS source_comment
+, potmsgset.filereferences AS file_references
+, potmsgset.flagscomment AS flags_comment
 , potmsgset.context
-, pomsgid.msgid
-, potranslation.translation 
+, msgid_singular.msgid AS msgid_singular
+, msgid_plural.msgid AS msgid_plural
+, translationmessage.is_fuzzy
+, translationmessage.is_current
+, translationmessage.is_imported
+, potranslation0.translation AS translation0
+, potranslation1.translation AS translation1
+, potranslation2.translation AS translation2
+, potranslation3.translation AS translation3 
 FROM (
      (
            (
@@ -27517,51 +30832,57 @@ FROM (
                        (
                              (
                                    (
-                                         (pomsgid 
-                                            JOIN pomsgidsighting 
+                                         (
+                                               (potmsgset 
+                                                  JOIN potemplate 
+                                                    ON (
+                                                           (potemplate.id = potmsgset.potemplate)
+                                                     )
+                                               )
+                                            JOIN pofile 
                                               ON (
-                                                     (pomsgid.id = pomsgidsighting.pomsgid)
+                                                     (potemplate.id = pofile.potemplate)
                                                )
                                          )
-                                      JOIN potmsgset 
+                                 LEFT JOIN translationmessage 
                                         ON (
-                                               (potmsgset.id = pomsgidsighting.potmsgset)
+                                               (
+                                                     (
+                                                           (potmsgset.id = translationmessage.potmsgset)
+                                                         AND (translationmessage.pofile = pofile.id)
+                                                     )
+                                                   AND (translationmessage.is_current IS TRUE)
+                                               )
                                          )
                                    )
-                                JOIN potemplate 
+                           LEFT JOIN pomsgid msgid_singular 
                                   ON (
-                                         (potemplate.id = potmsgset.potemplate)
+                                         (msgid_singular.id = potmsgset.msgid_singular)
                                    )
                              )
-                          JOIN potemplatename 
+                     LEFT JOIN pomsgid msgid_plural 
                             ON (
-                                   (potemplatename.id = potemplate.potemplatename)
+                                   (msgid_plural.id = potmsgset.msgid_plural)
                              )
                        )
-                    JOIN pofile 
+               LEFT JOIN potranslation potranslation0 
                       ON (
-                             (potemplate.id = pofile.potemplate)
+                             (potranslation0.id = translationmessage.msgstr0)
                        )
                  )
-         LEFT JOIN pomsgset 
+         LEFT JOIN potranslation potranslation1 
                 ON (
-                       (
-                             (potmsgset.id = pomsgset.potmsgset)
-                           AND (pomsgset.pofile = pofile.id)
-                       )
+                       (potranslation1.id = translationmessage.msgstr1)
                  )
            )
-   LEFT JOIN posubmission 
+   LEFT JOIN potranslation potranslation2 
           ON (
-                 (
-                       (pomsgset.id = posubmission.pomsgset)
-                     AND posubmission.active
-                 )
+                 (potranslation2.id = translationmessage.msgstr2)
            )
      )
-LEFT JOIN potranslation 
+LEFT JOIN potranslation potranslation3 
     ON (
-           (potranslation.id = posubmission.potranslation)
+           (potranslation3.id = translationmessage.msgstr3)
      )
 );
 </pre>
@@ -28010,18 +31331,19 @@ The sourcepackagename from where the last .po file came (only if
 it's different from POFile.potemplate.sourcepackagename)</td>
 </tr>
 <tr class="tr0">
-<td><a href="#public.table.pomsgset">public.pomsgset.id</a></td>
-<td>last_touched_pomsgset</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
 <td></td>
 <td>unreviewed_count</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-Number of POMsgSets with new, unreviewed POSubmissions.</td>
+Number of POTMsgSets with new, unreviewed TranslationMessages for
+this POFile.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_changed</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i></td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -28049,11 +31371,12 @@ Number of POMsgSets with new, unreviewed POSubmissions.</td>
 "#public.table.pofiletranslator">public.pofiletranslator</a></li>
 </ul>
 <ul>
-<li><a href="#public.table.pomsgset">public.pomsgset</a></li>
+<li><a href=
+"#public.table.translationimportqueueentry">public.translationimportqueueentry</a></li>
 </ul>
 <ul>
 <li><a href=
-"#public.table.translationimportqueueentry">public.translationimportqueueentry</a></li>
+"#public.table.translationmessage">public.translationmessage</a></li>
 </ul>
 <!-- Indexes -->
 pofile_datecreated_idx datecreated pofile_exportfile_idx exportfile
@@ -28137,6 +31460,20 @@ potemplate pofile_variant_idx variant <!-- View Definition -->
 <td></td>
 </tr>
 <tr class="tr1">
+<td>pofilestats</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -28158,7 +31495,7 @@ potemplate pofile_variant_idx variant <!-- View Definition -->
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -28170,7 +31507,7 @@ potemplate pofile_variant_idx variant <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>rosettaadmin</td>
 <td>
 <center>&diams;</center>
@@ -28186,7 +31523,7 @@ potemplate pofile_variant_idx variant <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -28198,7 +31535,7 @@ potemplate pofile_variant_idx variant <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -28254,13 +31591,12 @@ The pofile the translation was submitted for.</td>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.posubmission">public.posubmission.id</a></td>
-<td>latest_posubmission</td>
+"#public.table.translationmessage">public.translationmessage.id</a></td>
+<td>latest_message</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The most recent translation submitted by this user to this
-pofile.</td>
+Latest translation message added to the translation file.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -28268,7 +31604,7 @@ pofile.</td>
 <td>timestamp without time zone</td>
 <td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i><br />
 <br />
-When the most recent submission was made.</td>
+When was added latest translation message.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -28838,10 +32174,6 @@ public</a></p>
 <li><a href="#public.table.pocomment">public.pocomment</a></li>
 </ul>
 <ul>
-<li><a href=
-"#public.table.pomsgidsighting">public.pomsgidsighting</a></li>
-</ul>
-<ul>
 <li><a href="#public.table.potmsgset">public.potmsgset</a></li>
 </ul>
 <!-- Indexes -->
@@ -28950,766 +32282,6 @@ public</a></p>
 <td></td>
 <td></td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>statistician</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.pomsgidsighting" id=
-"public.table.pomsgidsighting">pomsgidsighting</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.pomsgidsighting Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.potmsgset">public.potmsgset.id</a></td>
-<td>potmsgset</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.pomsgid">public.pomsgid.id</a></td>
-<td>pomsgid</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>datefirstseen</td>
-<td>timestamp without time zone</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>datelastseen</td>
-<td>timestamp without time zone</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>inlastrevision</td>
-<td>boolean</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>pluralform</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-</table>
-<!-- Inherits -->
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- Indexes -->
-pomsgidsighting_inlastrevision_idx inlastrevision
-pomsgidsighting_pluralform_idx pluralform
-pomsgidsighting_pomsgid_idx pomsgid pomsgidsighting_pomsgset_idx
-potmsgset <!-- View Definition -->
- <!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.pomsgidsighting</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>poexport</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>rosettaadmin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.pomsgset" id=
-"public.table.pomsgset">pomsgset</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.pomsgset Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>sequence</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.pofile">public.pofile.id</a></td>
-<td>pofile</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>iscomplete</td>
-<td>boolean</td>
-<td><i>NOT NULL</i><br />
-<br />
-This indicates if we believe that Rosetta has an active translation
-for every expected plural form of this message set.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>obsolete</td>
-<td>boolean</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>isfuzzy</td>
-<td>boolean</td>
-<td><i>NOT NULL</i><br />
-<br />
-This indicates if the msgset is currently fuzzy in Rosetta. The
-other indicator, publishedfuzzy, shows the same status for the last
-published pofile we pulled in.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>commenttext</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.potmsgset">public.potmsgset.id</a></td>
-<td>potmsgset</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>publishedfuzzy</td>
-<td>boolean</td>
-<td><i>NOT NULL DEFAULT false</i><br />
-<br />
-This indicates that this POMsgSet was fuzzy when it was last
-imported from a published PO file. By comparing the current fuzzy
-state (in the "fuzzy" field) to that, we know if we have changed
-the fuzzy condition of the messageset in Rosetta.</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>publishedcomplete</td>
-<td>boolean</td>
-<td><i>NOT NULL DEFAULT false</i><br />
-<br />
-This indicates that this POMsgSet was complete when it was last
-imported from a published PO file. By "complete" we mean "has a
-translation for every expected plural form". We can compare the
-current completeness state (in the "iscomplete" field) to this, to
-know if we have changed the completeness of the messageset in
-Rosetta since it was imported.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>isupdated</td>
-<td>boolean</td>
-<td><i>NOT NULL DEFAULT false</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>date_reviewed</td>
-<td>timestamp without time zone</td>
-<td><br />
-<br />
-Last time this message was reviewed.</td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>reviewer</td>
-<td>integer</td>
-<td><br />
-<br />
-The person who last reviewd the translations for this message.</td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.language">public.language.id</a></td>
-<td>language</td>
-<td>integer</td>
-<td><br />
-<br />
-Language this POMsgSet is in; copied from its POFile for
-performance reasons.</td>
-</tr>
-</table>
-<!-- Inherits -->
-<!-- Constraint List -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.pomsgset Constraints</caption>
-<tr>
-<th>Name</th>
-<th>Constraint</th>
-</tr>
-<tr class="tr0">
-<td>pomsgset__reviewer__date_reviewed__valid</td>
-<td>CHECK (((reviewer IS NULL) = (date_reviewed IS NULL)))</td>
-</tr>
-</table>
-<!-- Foreign Key Discovery -->
-<p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href="#public.table.pofile">public.pofile</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.posubmission">public.posubmission</a></li>
-</ul>
-<!-- Indexes -->
-pomsgset__language__idx "language" pomsgset__pofile__sequence__idx
-pofile, "sequence" pomsgset__reviewer__idx reviewer
-pomsgset__sequence__idx "sequence" <!-- View Definition -->
- <!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.pomsgset</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>poexport</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>rosettaadmin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>statistician</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.posubmission" id=
-"public.table.posubmission">posubmission</a></h2>
-<p>This table records the fact that we saw, or someone submitted, a
-particular translation for a particular msgset under a particular
-licence, at a specific time.</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.posubmission Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>UNIQUE#1 PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.pomsgset">public.pomsgset.id</a></td>
-<td>pomsgset</td>
-<td>integer</td>
-<td><i>UNIQUE#1 UNIQUE#2 NOT NULL</i><br />
-<br />
-The message set for which the submission or sighting was made.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>pluralform</td>
-<td>integer</td>
-<td><i>UNIQUE#1 UNIQUE#2 NOT NULL</i><br />
-<br />
-The plural form of the submission which was made.</td>
-</tr>
-<tr class="tr1">
-<td><a href=
-"#public.table.potranslation">public.potranslation.id</a></td>
-<td>potranslation</td>
-<td>integer</td>
-<td><i>UNIQUE#2 NOT NULL</i><br />
-<br />
-The translation that was submitted or sighted.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>origin</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The source of this translation. This indicates whether the
-translation was in a pofile that we parsed (probably one published
-in a package or branch or tarball), or was submitted through the
-web.</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>datecreated</td>
-<td>timestamp without time zone</td>
-<td><i>NOT NULL DEFAULT timezone('UTC'::text,
-('now'::text)::timestamp(6) with time zone)</i></td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>person</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The person that made the submission through the web to rosetta, or
-the last-translator on the pofile that we are processing, or the
-person who uploaded that pofile to rosetta. In short, our best
-guess as to the person who is contributing that translation.</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>validationstatus</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-Says whether or not we have validated this translation. Its value
-is specified by dbschema.TranslationValidationStatus, with 0 the
-value that says this row has not been validated yet.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>active</td>
-<td>boolean</td>
-<td><i>NOT NULL DEFAULT false</i><br />
-<br />
-Whether this submission is being used in Rosetta.</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>published</td>
-<td>boolean</td>
-<td><i>NOT NULL DEFAULT false</i><br />
-<br />
-Whether this submission is the current translation published in
-revision control (or in the public po files for this translation
-template, in the package or tarball or branch which is considered
-the source of it).</td>
-</tr>
-</table>
-<!-- Inherits -->
-<!-- Constraint List -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.posubmission Constraints</caption>
-<tr>
-<th>Name</th>
-<th>Constraint</th>
-</tr>
-<tr class="tr0">
-<td>posubmission_valid_pluralform</td>
-<td>CHECK ((pluralform &gt;= 0))</td>
-</tr>
-</table>
-<!-- Foreign Key Discovery -->
-<p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href=
-"#public.table.pofiletranslator">public.pofiletranslator</a></li>
-</ul>
-<!-- Indexes -->
-posubmission__person__idx person
-posubmission__pomsgset__pluralform__active__idx pomsgset,
-pluralform, active
-posubmission__pomsgset__pluralform__published__idx pomsgset,
-pluralform, published <!-- View Definition -->
- <!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.posubmission</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>poexport</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>rosettaadmin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
 <td></td>
 <td></td>
 <td></td>
@@ -29993,7 +32565,7 @@ the filename.</td>
 "#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
 <td>sourcepackagename</td>
 <td>integer</td>
-<td><i>UNIQUE#1</i><br />
+<td><br />
 <br />
 A reference to a sourcepackage name from where this POTemplate
 comes.</td>
@@ -30003,7 +32575,7 @@ comes.</td>
 "#public.table.distroseries">public.distroseries.id</a></td>
 <td>distroseries</td>
 <td>integer</td>
-<td><i>UNIQUE#1</i><br />
+<td><br />
 <br />
 A reference to the distribution from where this POTemplate
 comes.</td>
@@ -30028,38 +32600,28 @@ from it is POT-Creation-Date and custom headers.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.potemplatename">public.potemplatename.id</a></td>
-<td>potemplatename</td>
-<td>integer</td>
-<td><i>UNIQUE#1 UNIQUE#2 NOT NULL</i><br />
-<br />
-A reference to a POTemplateName row that tells us the name/domain
-for this POTemplate.</td>
-</tr>
-<tr class="tr1">
-<td><a href=
 "#public.table.binarypackagename">public.binarypackagename.id</a></td>
 <td>binarypackagename</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>languagepack</td>
 <td>boolean</td>
 <td><i>NOT NULL DEFAULT false</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href=
 "#public.table.productseries">public.productseries.id</a></td>
 <td>productseries</td>
 <td>integer</td>
-<td><i>UNIQUE#2</i><br />
+<td><br />
 <br />
 A reference to a ProductSeries from where this POTemplate
 comes.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href=
 "#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
 <td>from_sourcepackagename</td>
@@ -30069,13 +32631,13 @@ comes.</td>
 The sourcepackagename from where the last .pot file came (only if
 it's different from POTemplate.sourcepackagename)</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>date_last_updated</td>
 <td>timestamp without time zone</td>
 <td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href=
 "#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
 <td>source_file</td>
@@ -30085,7 +32647,7 @@ it's different from POTemplate.sourcepackagename)</td>
 Reference to Librarian file storing the last uploaded template
 file.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>source_file_format</td>
 <td>integer</td>
@@ -30093,6 +32655,22 @@ file.</td>
 <br />
 File format for the Librarian file referenced in "source_file"
 column.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+The name of the POTemplate set. It must be unique</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>translation_domain</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+The translation domain for this POTemplate</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -30105,11 +32683,15 @@ column.</td>
 <th>Constraint</th>
 </tr>
 <tr class="tr0">
+<td>potemplate_valid_name</td>
+<td>CHECK (valid_name(name))</td>
+</tr>
+<tr class="tr1">
 <td>valid_from_sourcepackagename</td>
 <td>CHECK (((sourcepackagename IS NOT NULL) OR
 (from_sourcepackagename IS NULL)))</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>valid_link</td>
 <td>CHECK ((((productseries IS NULL) &lt;&gt; (distroseries IS
 NULL)) AND ((distroseries IS NULL) = (sourcepackagename IS
@@ -30141,10 +32723,10 @@ NULL))))</td>
 </ul>
 <!-- Indexes -->
 potemplate__date_last_updated__idx date_last_updated
-potemplate__source_file__idx source_file) WHERE (source_file IS NOT
-NULL potemplate_languagepack_idx languagepack potemplate_owner_idx
-"owner" potemplate_potemplatename_idx potemplatename 
-<!-- View Definition -->
+potemplate__name__idx name potemplate__source_file__idx
+source_file) WHERE (source_file IS NOT NULL
+potemplate_languagepack_idx languagepack potemplate_owner_idx
+"owner" <!-- View Definition -->
  <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -30220,6 +32802,18 @@ NULL potemplate_languagepack_idx languagepack potemplate_owner_idx
 <td></td>
 </tr>
 <tr class="tr1">
+<td>pofilestats</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -30241,7 +32835,7 @@ NULL potemplate_languagepack_idx languagepack potemplate_owner_idx
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -30253,7 +32847,7 @@ NULL potemplate_languagepack_idx languagepack potemplate_owner_idx
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>rosettaadmin</td>
 <td>
 <center>&diams;</center>
@@ -30267,7 +32861,7 @@ NULL potemplate_languagepack_idx languagepack potemplate_owner_idx
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -30279,7 +32873,7 @@ NULL potemplate_languagepack_idx languagepack potemplate_owner_idx
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>targetnamecacheupdater</td>
 <td>
 <center>&diams;</center>
@@ -30293,222 +32887,7 @@ NULL potemplate_languagepack_idx languagepack potemplate_owner_idx
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
-<td>write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.potemplatename" id=
-"public.table.potemplatename">potemplatename</a></h2>
-<p>POTemplate Name. This table stores the domains/names of a set of
-POTemplate rows.</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.potemplatename Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
 <tr class="tr1">
-<td></td>
-<td>name</td>
-<td>text</td>
-<td><i>UNIQUE NOT NULL</i><br />
-<br />
-The name of the POTemplate set. It must be unique</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>title</td>
-<td>text</td>
-<td><i>NOT NULL</i><br />
-<br />
-The title we are going to use every time that we render a view of
-this POTemplateName row.</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>description</td>
-<td>text</td>
-<td><br />
-<br />
-A brief text about this POTemplateName so the user could know more
-about it.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>translationdomain</td>
-<td>text</td>
-<td><i>UNIQUE NOT NULL</i><br />
-<br />
-The translation domain name for this POTemplateName</td>
-</tr>
-</table>
-<!-- Inherits -->
-<!-- Constraint List -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.potemplatename Constraints</caption>
-<tr>
-<th>Name</th>
-<th>Constraint</th>
-</tr>
-<tr class="tr0">
-<td>potemplate_valid_name</td>
-<td>CHECK (valid_name(name))</td>
-</tr>
-</table>
-<!-- Foreign Key Discovery -->
-<p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href="#public.table.potemplate">public.potemplate</a></li>
-</ul>
-<!-- Indexes -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.potemplatename</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>poexport</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>rosettaadmin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>statistician</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -30547,43 +32926,31 @@ public</a></p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>name</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>translationdomain</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>potemplate</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
 <td>productseries</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>sourcepackagename</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>distroseries</td>
 <td>integer</td>
 <td></td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>potemplate</td>
+<td>integer</td>
+<td></td>
+</tr>
 <tr class="tr1">
 <td></td>
-<td>header</td>
+<td>template_header</td>
 <td>text</td>
 <td></td>
 </tr>
@@ -30595,55 +32962,55 @@ public</a></p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>potmsgset</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
 <td>sequence</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr1">
-<td></td>
-<td>commenttext</td>
-<td>text</td>
-<td></td>
-</tr>
 <tr class="tr0">
 <td></td>
-<td>sourcecomment</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>flagscomment</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>filereferences</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>pluralform</td>
+<td>potmsgset</td>
 <td>integer</td>
 <td></td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>comment</td>
+<td>text</td>
+<td></td>
+</tr>
 <tr class="tr0">
+<td></td>
+<td>source_comment</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>file_references</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>flags_comment</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td></td>
 <td>context</td>
 <td>text</td>
 <td></td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>msgid_singular</td>
+<td>text</td>
+<td></td>
+</tr>
 <tr class="tr1">
 <td></td>
-<td>msgid</td>
+<td>msgid_plural</td>
 <td>text</td>
 <td></td>
 </tr>
@@ -30654,59 +33021,42 @@ public</a></p>
 <!-- Indexes -->
 <!-- View Definition -->
 <pre>
-SELECT (
-     (
-           (COALESCE
-                 (
-                       (potmsgset.id)::text
-                       ,'X'::text
-                 ) || '.'::text
-           ) || COALESCE
-           (
-                 (pomsgidsighting.id)::text
-                 ,'X'::text
-           )
-     ) || '.'::text
+SELECT COALESCE
+(
+     (potmsgset.id)::text
+     ,'X'::text
 ) AS id
-, potemplatename.name
-, potemplatename.translationdomain
-, potemplate.id AS potemplate
 , potemplate.productseries
 , potemplate.sourcepackagename
 , potemplate.distroseries
-, potemplate."header"
+, potemplate.id AS potemplate
+, potemplate."header" AS template_header
 , potemplate.languagepack
-, potmsgset.id AS potmsgset
 , potmsgset."sequence"
-, potmsgset.commenttext
-, potmsgset.sourcecomment
-, potmsgset.flagscomment
-, potmsgset.filereferences
-, pomsgidsighting.pluralform
+, potmsgset.id AS potmsgset
+, potmsgset.commenttext AS "comment"
+, potmsgset.sourcecomment AS source_comment
+, potmsgset.filereferences AS file_references
+, potmsgset.flagscomment AS flags_comment
 , potmsgset.context
-, pomsgid.msgid 
+, msgid_singular.msgid AS msgid_singular
+, msgid_plural.msgid AS msgid_plural 
 FROM (
      (
-           (
-                 (pomsgid 
-                    JOIN pomsgidsighting 
-                      ON (
-                             (pomsgid.id = pomsgidsighting.pomsgid)
-                       )
-                 )
-              JOIN potmsgset 
+           (potmsgset 
+              JOIN potemplate 
                 ON (
-                       (potmsgset.id = pomsgidsighting.potmsgset)
+                       (potemplate.id = potmsgset.potemplate)
                  )
            )
-        JOIN potemplate 
+   LEFT JOIN pomsgid msgid_singular 
           ON (
-                 (potemplate.id = potmsgset.potemplate)
+                 (potmsgset.msgid_singular = msgid_singular.id)
            )
      )
-  JOIN potemplatename 
+LEFT JOIN pomsgid msgid_plural 
     ON (
-           (potemplatename.id = potemplate.potemplatename)
+           (potmsgset.msgid_plural = msgid_plural.id)
      )
 );
 </pre>
@@ -30825,9 +33175,9 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.potmsgset" id=
 "public.table.potmsgset">potmsgset</a></h2>
-<p>POTMsgSet: This table is stores a collection of msgids without
-their translations and all kind of information associated to that
-set of messages that could be found in a potemplate file.</p>
+<p>This table is stores a collection of msgids without their
+translations and all kind of information associated to that set of
+messages that could be found in a potemplate file.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.potmsgset Structure</caption>
 <tr>
@@ -30844,11 +33194,11 @@ set of messages that could be found in a potemplate file.</p>
 </tr>
 <tr class="tr1">
 <td><a href="#public.table.pomsgid">public.pomsgid.id</a></td>
-<td>primemsgid</td>
+<td>msgid_singular</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The id of a pomgsid that identify this message set.</td>
+The singular msgid for this message.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -30902,21 +33252,20 @@ The flags associated with this set (like c-format).</td>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>alternative_msgid</td>
-<td>text</td>
-<td><br />
-<br />
-The alternative (non-English-based) id of a pomgsid that identifies
-this message set.</td>
-</tr>
-<tr class="tr1">
-<td></td>
 <td>context</td>
 <td>text</td>
 <td><br />
 <br />
 Context uniquely defining a message when there are messages with
 same primemsgids.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.pomsgid">public.pomsgid.id</a></td>
+<td>msgid_plural</td>
+<td>integer</td>
+<td><br />
+<br />
+The plural msgid for this message.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -30925,15 +33274,11 @@ same primemsgids.</td>
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
 <li><a href=
-"#public.table.pomsgidsighting">public.pomsgidsighting</a></li>
-</ul>
-<ul>
-<li><a href="#public.table.pomsgset">public.pomsgset</a></li>
+"#public.table.translationmessage">public.translationmessage</a></li>
 </ul>
 <!-- Indexes -->
-potmsgset_alternative_msgid_idx alternative_msgid
 potmsgset_potemplate_and_sequence_idx potemplate, "sequence"
-potmsgset_primemsgid_idx primemsgid potmsgset_sequence_idx
+potmsgset_primemsgid_idx msgid_singular potmsgset_sequence_idx
 "sequence" <!-- View Definition -->
  <!-- List off permissions -->
 <p>&nbsp;</p>
@@ -30998,6 +33343,18 @@ potmsgset_primemsgid_idx primemsgid potmsgset_sequence_idx
 <td></td>
 </tr>
 <tr class="tr0">
+<td>pofilestats</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -31019,7 +33376,7 @@ potmsgset_primemsgid_idx primemsgid potmsgset_sequence_idx
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -31031,7 +33388,7 @@ potmsgset_primemsgid_idx primemsgid potmsgset_sequence_idx
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>rosettaadmin</td>
 <td>
 <center>&diams;</center>
@@ -31045,7 +33402,7 @@ potmsgset_primemsgid_idx primemsgid potmsgset_sequence_idx
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -31057,7 +33414,7 @@ potmsgset_primemsgid_idx primemsgid potmsgset_sequence_idx
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -31110,7 +33467,7 @@ public</a></p>
 </ul>
 <ul>
 <li><a href=
-"#public.table.posubmission">public.posubmission</a></li>
+"#public.table.translationmessage">public.translationmessage</a></li>
 </ul>
 <!-- Indexes -->
 <!-- View Definition -->
@@ -32010,6 +34367,24 @@ marked as private.</td>
 Additional information about licenses that are not included in the
 License enumeration.</td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>official_blueprints</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+Whether or not this product upstream uses Blueprints officially.
+This is useful to help indicate whether or not the upstream project
+will be actively watching the blueprints in Launchpad.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>enable_bug_expiration</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+Indicates whether automatic bug expiration is enabled.</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -32021,17 +34396,26 @@ License enumeration.</td>
 <th>Constraint</th>
 </tr>
 <tr class="tr0">
+<td>only_launchpad_has_expiration</td>
+<td>CHECK (((enable_bug_expiration IS FALSE) OR (official_malone IS
+TRUE)))</td>
+</tr>
+<tr class="tr1">
 <td>private_bugs_need_contact</td>
 <td>CHECK (((private_bugs IS FALSE) OR (bugcontact IS NOT
 NULL)))</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>valid_name</td>
 <td>CHECK (valid_name(name))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.announcement">public.announcement</a></li>
+</ul>
 <ul>
 <li><a href=
 "#public.table.answercontact">public.answercontact</a></li>
@@ -32091,6 +34475,10 @@ NULL)))</td>
 <ul>
 <li><a href=
 "#public.table.specification">public.specification</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.structuralsubscription">public.structuralsubscription</a></li>
 </ul>
 <!-- Indexes -->
 product__bugcontact__idx bugcontact) WHERE (bugcontact IS NOT NULL
@@ -32260,6 +34648,18 @@ project product_translationgroup_idx translationgroup
 </td>
 </tr>
 <tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>productreleasefinder</td>
 <td>
 <center>&diams;</center>
@@ -32271,7 +34671,7 @@ project product_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -32283,7 +34683,7 @@ project product_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -32295,7 +34695,7 @@ project product_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>rosettaadmin</td>
 <td>
 <center>&diams;</center>
@@ -32307,7 +34707,7 @@ project product_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -32319,7 +34719,7 @@ project product_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -32331,7 +34731,7 @@ project product_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>supermirror</td>
 <td>
 <center>&diams;</center>
@@ -32343,7 +34743,7 @@ project product_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>targetnamecacheupdater</td>
 <td>
 <center>&diams;</center>
@@ -32355,7 +34755,7 @@ project product_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -32367,7 +34767,7 @@ project product_translationgroup_idx translationgroup
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -33669,6 +36069,10 @@ IS NULL) = (cvsbranch IS NULL))))</td>
 </ul>
 <ul>
 <li><a href=
+"#public.table.structuralsubscription">public.structuralsubscription</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.translationimportqueueentry">public.translationimportqueueentry</a></li>
 </ul>
 <!-- Indexes -->
@@ -33798,6 +36202,18 @@ productseries_datecreated_idx datecreated <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>productreleasefinder</td>
 <td>
 <center>&diams;</center>
@@ -33809,7 +36225,7 @@ productseries_datecreated_idx datecreated <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -33821,7 +36237,7 @@ productseries_datecreated_idx datecreated <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -33833,7 +36249,7 @@ productseries_datecreated_idx datecreated <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>rosettaadmin</td>
 <td>
 <center>&diams;</center>
@@ -33845,7 +36261,7 @@ productseries_datecreated_idx datecreated <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -33857,7 +36273,7 @@ productseries_datecreated_idx datecreated <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -33869,7 +36285,7 @@ productseries_datecreated_idx datecreated <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>targetnamecacheupdater</td>
 <td>
 <center>&diams;</center>
@@ -33881,7 +36297,7 @@ productseries_datecreated_idx datecreated <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -33893,7 +36309,7 @@ productseries_datecreated_idx datecreated <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -34326,6 +36742,10 @@ mugshot.</td>
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
 <li><a href=
+"#public.table.announcement">public.announcement</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.branchvisibilitypolicy">public.branchvisibilitypolicy</a></li>
 </ul>
 <ul>
@@ -34348,6 +36768,10 @@ mugshot.</td>
 <ul>
 <li><a href=
 "#public.table.projectrelationship">public.projectrelationship</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.structuralsubscription">public.structuralsubscription</a></li>
 </ul>
 <!-- Indexes -->
 project__icon__idx icon) WHERE (icon IS NOT NULL project__logo__idx
@@ -34452,7 +36876,7 @@ project_translationgroup_idx translationgroup
 </td>
 </tr>
 <tr class="tr0">
-<td>read</td>
+<td>processmail</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -34464,6 +36888,18 @@ project_translationgroup_idx translationgroup
 <td></td>
 </tr>
 <tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -35628,7 +38064,7 @@ fti <!-- View Definition -->
 <td></td>
 </tr>
 <tr class="tr0">
-<td>checkwatches</td>
+<td>bugnotification</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -35640,6 +38076,18 @@ fti <!-- View Definition -->
 <td></td>
 </tr>
 <tr class="tr1">
+<td>checkwatches</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>launchpad</td>
 <td>
 <center>&diams;</center>
@@ -35655,7 +38103,7 @@ fti <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>oopsprune</td>
 <td>
 <center>&diams;</center>
@@ -35667,7 +38115,7 @@ fti <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -35688,6 +38136,20 @@ fti <!-- View Definition -->
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="tr0">
 <td>queued</td>
@@ -35847,7 +38309,7 @@ questionbug__question__idx question <!-- View Definition -->
 <td></td>
 </tr>
 <tr class="tr0">
-<td>checkwatches</td>
+<td>bugnotification</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -35859,6 +38321,18 @@ questionbug__question__idx question <!-- View Definition -->
 <td></td>
 </tr>
 <tr class="tr1">
+<td>checkwatches</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>launchpad</td>
 <td>
 <center>&diams;</center>
@@ -35874,7 +38348,7 @@ questionbug__question__idx question <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -35895,6 +38369,18 @@ questionbug__question__idx question <!-- View Definition -->
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="tr1">
 <td>queued</td>
@@ -36096,6 +38582,20 @@ public.questionmessage</caption>
 </td>
 </tr>
 <tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -36437,7 +38937,7 @@ public.questionsubscription</caption>
 </td>
 </tr>
 <tr class="tr0">
-<td>queued</td>
+<td>processmail</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -36449,7 +38949,7 @@ public.questionsubscription</caption>
 <td></td>
 </tr>
 <tr class="tr1">
-<td>read</td>
+<td>queued</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -36461,6 +38961,18 @@ public.questionsubscription</caption>
 <td></td>
 </tr>
 <tr class="tr0">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -37822,7 +40334,7 @@ scriptactivity__name__date_started__idx name, date_started
 <td></td>
 </tr>
 <tr class="tr0">
-<td>poimport</td>
+<td>pofilestats</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -37836,6 +40348,20 @@ scriptactivity__name__date_started__idx name, date_started
 <td></td>
 </tr>
 <tr class="tr1">
+<td>poimport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -37857,8 +40383,22 @@ scriptactivity__name__date_started__idx name, date_started
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>ppad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>processmail</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -41144,6 +43684,10 @@ A lowercase name identifying one or more sourcepackages</td>
 </ul>
 <ul>
 <li><a href=
+"#public.table.structuralsubscription">public.structuralsubscription</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.translationimportqueueentry">public.translationimportqueueentry</a></li>
 </ul>
 <!-- Indexes -->
@@ -41306,6 +43850,18 @@ public.sourcepackagename</caption>
 </td>
 </tr>
 <tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -41317,7 +43873,7 @@ public.sourcepackagename</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -41329,7 +43885,7 @@ public.sourcepackagename</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>rosettaadmin</td>
 <td>
 <center>&diams;</center>
@@ -41341,7 +43897,7 @@ public.sourcepackagename</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -41353,7 +43909,7 @@ public.sourcepackagename</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -41365,7 +43921,7 @@ public.sourcepackagename</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>targetnamecacheupdater</td>
 <td>
 <center>&diams;</center>
@@ -41377,7 +43933,7 @@ public.sourcepackagename</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -41391,7 +43947,7 @@ public.sourcepackagename</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -41689,6 +44245,18 @@ public.sourcepackagepublishinghistory</caption>
 </td>
 </tr>
 <tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -41700,7 +44268,7 @@ public.sourcepackagepublishinghistory</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -41712,7 +44280,7 @@ public.sourcepackagepublishinghistory</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -41724,7 +44292,7 @@ public.sourcepackagepublishinghistory</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -41736,7 +44304,7 @@ public.sourcepackagepublishinghistory</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -41748,7 +44316,7 @@ public.sourcepackagepublishinghistory</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -42167,6 +44735,18 @@ public.sourcepackagerelease</caption>
 </td>
 </tr>
 <tr class="tr0">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -42180,7 +44760,7 @@ public.sourcepackagerelease</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -42192,7 +44772,7 @@ public.sourcepackagerelease</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -42206,7 +44786,7 @@ public.sourcepackagerelease</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -42218,7 +44798,7 @@ public.sourcepackagerelease</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -42232,7 +44812,7 @@ public.sourcepackagerelease</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -42569,8 +45149,8 @@ itself when it is being implemented.</td>
 </tr>
 <tr class="tr1">
 <td><a href="#public.table.product">public.product.id</a> <a href=
-"#public.table.milestone">public.milestone.product#3</a> <a href=
-"#public.table.productseries">public.productseries.product#4</a></td>
+"#public.table.milestone">public.milestone.product#2</a> <a href=
+"#public.table.productseries">public.productseries.product#3</a></td>
 <td>product</td>
 <td>integer</td>
 <td><i>UNIQUE#2</i><br />
@@ -42581,7 +45161,7 @@ distribution.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.productseries">public.productseries.id#4</a></td>
+"#public.table.productseries">public.productseries.id#3</a></td>
 <td>productseries</td>
 <td>integer</td>
 <td><br />
@@ -42594,10 +45174,10 @@ series.</td>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.distroseries">public.distroseries.distribution#1</a>
+"#public.table.distroseries">public.distroseries.distribution#4</a>
 <a href="#public.table.distribution">public.distribution.id</a>
 <a href=
-"#public.table.milestone">public.milestone.distribution#2</a></td>
+"#public.table.milestone">public.milestone.distribution#1</a></td>
 <td>distribution</td>
 <td>integer</td>
 <td><i>UNIQUE#1</i><br />
@@ -42608,7 +45188,7 @@ distribution.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.distroseries">public.distroseries.id#1</a></td>
+"#public.table.distroseries">public.distroseries.id#4</a></td>
 <td>distroseries</td>
 <td>integer</td>
 <td><br />
@@ -42619,8 +45199,8 @@ is not necessary to target a distroseries, but this is a useful way
 of know which specifications are, for example, BreezyGoals.</td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.milestone">public.milestone.id#2</a>
-<a href="#public.table.milestone">public.milestone.id#3</a></td>
+<td><a href="#public.table.milestone">public.milestone.id#1</a>
+<a href="#public.table.milestone">public.milestone.id#2</a></td>
 <td>milestone</td>
 <td>integer</td>
 <td><br />
@@ -42994,7 +45574,7 @@ drafter specification_fti fti specification_owner_idx "owner"
 </td>
 </tr>
 <tr class="tr1">
-<td>read</td>
+<td>processmail</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -43006,6 +45586,18 @@ drafter specification_fti fti specification_owner_idx "owner"
 <td></td>
 </tr>
 <tr class="tr0">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -43071,11 +45663,20 @@ The branch associated to the specification.</td>
 <td>text</td>
 <td></td>
 </tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>registrant</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The person who linked the specification to the branch.</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
+specificationbranch__registrant__idx registrant
 specificationbranch__specification__idx specification 
 <!-- View Definition -->
  <!-- List off permissions -->
@@ -43960,6 +46561,18 @@ public.specificationsubscription</caption>
 </td>
 </tr>
 <tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -45161,6 +47774,282 @@ public.standardshipitrequest</caption>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.structuralsubscription" id=
+"public.table.structuralsubscription">structuralsubscription</a></h2>
+<p>A subscription to notifications about a Launchpad structure</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.structuralsubscription Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.product">public.product.id</a></td>
+<td>product</td>
+<td>integer</td>
+<td><br />
+<br />
+The subscription`s target, when it is a product.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.productseries">public.productseries.id</a></td>
+<td>productseries</td>
+<td>integer</td>
+<td><br />
+<br />
+The subscription`s target, when it is a product series.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.project">public.project.id</a></td>
+<td>project</td>
+<td>integer</td>
+<td><br />
+<br />
+The subscription`s target, when it is a project.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.milestone">public.milestone.id</a></td>
+<td>milestone</td>
+<td>integer</td>
+<td><br />
+<br />
+The subscription`s target, when it is a milestone.</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.distribution">public.distribution.id</a></td>
+<td>distribution</td>
+<td>integer</td>
+<td><br />
+<br />
+The subscription`s target, when it is a distribution.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.distroseries">public.distroseries.id</a></td>
+<td>distroseries</td>
+<td>integer</td>
+<td><br />
+<br />
+The subscription`s target, when it is a distribution series.</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
+<td>sourcepackagename</td>
+<td>integer</td>
+<td><br />
+<br />
+The subscription`s target, when it is a source-package</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>subscriber</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The person subscribed.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>subscribed_by</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The person initiating the subscription.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>bug_notification_level</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The volume and type of bug notifications this subscription will
+generate. The value is an item of the enumeration
+`BugNotificationLevel`.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>blueprint_notification_level</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The volume and type of blueprint notifications this subscription
+will generate. The value is an item of the enumeration
+`BugNotificationLevel`.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>date_created</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i><br />
+<br />
+The date on which this subscription was created.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_last_updated</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i><br />
+<br />
+The date on which this subscription was last updated.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.structuralsubscription Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>one_target</td>
+<td>CHECK ((null_count(ARRAY[product, productseries, project,
+distroseries, distribution]) = 4))</td>
+</tr>
+<tr class="tr1">
+<td>sourcepackagename_requires_distribution</td>
+<td>CHECK (((sourcepackagename IS NULL) OR (distribution IS NOT
+NULL)))</td>
+</tr>
+</table>
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+structuralsubscription__blueprint_notification_level__idx
+blueprint_notification_level
+structuralsubscription__bug_notification_level__idx
+bug_notification_level
+structuralsubscription__distribution__sourcepackagename__idx
+distribution, sourcepackagename) WHERE (distribution IS NOT NULL
+structuralsubscription__distroseries__idx distroseries) WHERE
+(distroseries IS NOT NULL structuralsubscription__milestone__idx
+milestone) WHERE (milestone IS NOT NULL
+structuralsubscription__product__idx product) WHERE (product IS NOT
+NULL structuralsubscription__productseries__idx productseries)
+WHERE (productseries IS NOT NULL
+structuralsubscription__project__idx project) WHERE (project IS NOT
+NULL structuralsubscription__subscribed_by__idx subscribed_by
+structuralsubscription__subscriber__idx subscriber 
+<!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.structuralsubscription</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.teammembership" id=
 "public.table.teammembership">teammembership</a></h2>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -45347,7 +48236,7 @@ public</a></p>
 </td>
 </tr>
 <tr class="tr0">
-<td>read</td>
+<td>processmail</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -45359,6 +48248,18 @@ public</a></p>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>teammembership</td>
 <td>
 <center>&diams;</center>
@@ -45372,7 +48273,7 @@ public</a></p>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -45541,6 +48442,18 @@ public.teamparticipation</caption>
 </td>
 </tr>
 <tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -45554,7 +48467,7 @@ public.teamparticipation</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -45566,7 +48479,7 @@ public.teamparticipation</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>teammembership</td>
 <td>
 <center>&diams;</center>
@@ -45580,7 +48493,7 @@ public.teamparticipation</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -45594,7 +48507,7 @@ public.teamparticipation</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -46301,6 +49214,400 @@ public.translationimportqueueentry</caption>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.translationmessage" id=
+"public.table.translationmessage">translationmessage</a></h2>
+<p>This table stores a concrete translation for a POTMsgSet
+message. It knows who, when and where did it, and whether it was
+reviewed by someone and when was it reviewed.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.translationmessage Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.pofile">public.pofile.id</a></td>
+<td>pofile</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The translation file which this translation message is part
+of.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.potmsgset">public.potmsgset.id</a></td>
+<td>potmsgset</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The template message which this translation message is a
+translation of.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_created</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i><br />
+<br />
+The date we saw this translation first.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>submitter</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The person that made the submission through the web to Launchpad,
+or the last translator on the translation file that we are
+processing, or the person who uploaded that pofile to Launchpad. In
+short, our best guess as to the person who is contributing that
+translation.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_reviewed</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date when this message was reviewed for last time.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>reviewer</td>
+<td>integer</td>
+<td><br />
+<br />
+The person who did the review and accepted current
+translations.</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.potranslation">public.potranslation.id</a></td>
+<td>msgstr0</td>
+<td>integer</td>
+<td><br />
+<br />
+Translation for plural form 0 (if any).</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.potranslation">public.potranslation.id</a></td>
+<td>msgstr1</td>
+<td>integer</td>
+<td><br />
+<br />
+Translation for plural form 1 (if any).</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.potranslation">public.potranslation.id</a></td>
+<td>msgstr2</td>
+<td>integer</td>
+<td><br />
+<br />
+Translation for plural form 2 (if any).</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.potranslation">public.potranslation.id</a></td>
+<td>msgstr3</td>
+<td>integer</td>
+<td><br />
+<br />
+Translation for plural form 3 (if any).</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>comment</td>
+<td>text</td>
+<td><br />
+<br />
+Text of translator comment from the translation file.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>origin</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The source of this translation. This indicates whether the
+translation was in a translation file that we parsed (probably one
+published in a package or branch or tarball), in which case its
+value will be 1, or was submitted through the web, in which case
+its value will be 2.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>validation_status</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+Whether we have validated this translation. Being 0 the value that
+says this row has not been validated yet, 1 the value that says it
+is correct and 2 the value noting that there was an unknown error
+with the validation.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>is_current</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+Whether this translation is being used in Launchpad.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>is_fuzzy</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+Whether this translation must be checked before use it.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>is_imported</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+Whether this translation is being used in latest imported
+file.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>was_obsolete_in_last_import</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+Whether this translation was obsolete in last imported file.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>was_fuzzy_in_last_import</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+Whether this imported translation must be checked before use
+it.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.translationmessage Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>translationmessage__reviewer__date_reviewed__valid</td>
+<td>CHECK (((reviewer IS NULL) = (date_reviewed IS NULL)))</td>
+</tr>
+</table>
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.pofiletranslator">public.pofiletranslator</a></li>
+</ul>
+<!-- Indexes -->
+translationmessage__msgstr0__idx msgstr0
+translationmessage__msgstr1__idx msgstr1
+translationmessage__msgstr2__idx msgstr2
+translationmessage__msgstr3__idx msgstr3
+translationmessage__potmsgset__pofile__not_used__key potmsgset,
+pofile) WHERE (NOT ((is_current IS TRUE) AND (is_imported IS TRUE))
+translationmessage__reviewer__idx reviewer
+translationmessage__submitter__idx submitter 
+<!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.translationmessage</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>pofilestats</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>poimport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr0">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>rosettaadmin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.translator" id=
 "public.table.translator">translator</a></h2>
 <p>A translator is a person in a TranslationGroup who is
@@ -46677,6 +49984,18 @@ public.validpersonorteamcache</caption>
 </td>
 </tr>
 <tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -46688,7 +50007,7 @@ public.validpersonorteamcache</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -46700,7 +50019,7 @@ public.validpersonorteamcache</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>shipit</td>
 <td>
 <center>&diams;</center>
@@ -46712,7 +50031,7 @@ public.validpersonorteamcache</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -46724,7 +50043,7 @@ public.validpersonorteamcache</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -47596,6 +50915,85 @@ END;
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.mv-pofiletranslator-translationmessage" id=
+"public.function.mv-pofiletranslator-translationmessage">mv_pofiletranslator_translationmessage(
+)</a></h2>
+<h3>Returns: "trigger"</h3>
+<h3>Language: PLPGSQL</h3>
+<p>Trigger maintaining the POFileTranslator table</p>
+<pre>
+DECLARE
+    v_old_entry INTEGER;
+    v_trash_old BOOLEAN;
+BEGIN
+    -- If we are deleting a row, we need to remove the existing
+    -- POFileTranslator row and reinsert the historical data if it exists.
+    -- We also treat UPDATEs that change the key (submitter, pofile) the same
+    -- as deletes. UPDATEs that don't change these columns are treated like
+    -- INSERTs below.
+    IF TG_OP = 'INSERT' THEN
+        v_trash_old := FALSE;
+    ELSIF TG_OP = 'DELETE' THEN
+        v_trash_old := TRUE;
+    ELSE -- UPDATE
+        v_trash_old = (
+            OLD.submitter != NEW.submitter OR OLD.pofile != NEW.pofile
+            );
+    END IF;
+
+    IF v_trash_old THEN
+        -- Was this somebody's most-recently-changed message?
+        SELECT INTO v_old_entry id FROM POFileTranslator
+        WHERE latest_message = OLD.id;
+
+        IF v_old_entry IS NOT NULL THEN
+            -- Delete the old record.
+            DELETE FROM POFileTranslator
+            WHERE POFileTranslator.id = v_old_entry;
+
+            -- Insert a past record if there is one.
+            INSERT INTO POFileTranslator (
+                person, pofile, latest_message, date_last_touched
+                )
+            SELECT DISTINCT ON (person, pofile)
+                submitter AS person,
+                pofile,
+                id,
+                greatest(date_created, date_reviewed)
+            FROM TranslationMessage
+            WHERE pofile = OLD.pofile AND submitter = OLD.submitter
+            ORDER BY submitter, pofile, date_created DESC, id DESC;
+        END IF;
+
+        -- No NEW with DELETE, so we can short circuit and leave.
+        IF TG_OP = 'DELETE' THEN
+            RETURN NULL; -- Ignored because this is an AFTER trigger
+        END IF;
+    END IF;
+
+    -- Standard 'upsert' loop to avoid race conditions.
+    LOOP
+        UPDATE POFileTranslator
+        SET
+            date_last_touched = CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+            latest_message = NEW.id
+        WHERE person = NEW.submitter AND pofile = NEW.pofile;
+        IF found THEN
+            RETURN NULL; -- Return value ignored as this is an AFTER trigger
+        END IF;
+
+        BEGIN
+            INSERT INTO POFileTranslator (person, pofile, latest_message)
+            VALUES (NEW.submitter, NEW.pofile, NEW.id);
+            RETURN NULL; -- Return value ignored as this is an AFTER trigger
+        EXCEPTION WHEN unique_violation THEN
+            -- do nothing
+        END;
+    END LOOP;
+END;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
 "public.function.mv-validpersonorteamcache-emailaddress" id=
 "public.function.mv-validpersonorteamcache-emailaddress">mv_validpersonorteamcache_emailaddress(
 )</a></h2>
@@ -47796,6 +51194,28 @@ match.</p>
         if regexp.search(name) is not None:
             return regexp_id
     return None
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.null-count-p-values-anyarray" id=
+"public.function.null-count-p-values-anyarray">null_count( p_values
+anyarray )</a></h2>
+<h3>Returns: integer</h3>
+<h3>Language: PLPGSQL</h3>
+<p>Return the number of NULLs in the first row of the given
+array.</p>
+<pre>
+DECLARE
+    v_index integer;
+    v_null_count integer := 0;
+BEGIN
+    FOR v_index IN array_lower(p_values,1)..array_upper(p_values,1) LOOP
+        IF p_values[v_index] IS NULL THEN
+            v_null_count := v_null_count + 1;
+        END IF;
+    END LOOP;
+    RETURN v_null_count;
+END;
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
