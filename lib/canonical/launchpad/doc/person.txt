@@ -281,6 +281,13 @@ was a cause of a number of timeouts
     >>> lifeless.inTeam(vcs_imports)
     True
 
+IPerson has a method to clear it; this is used between IPerson instances
+to ensure that the cache can be kept consistent when membership changes.
+
+    >>> naked_lifeless.clearInTeamCache()
+    >>> naked_lifeless._inTeam_cache
+    {}
+
 ** See lib/canonical/launchpad/doc/teammembership.txt for more information
    about team membership/participation.
 

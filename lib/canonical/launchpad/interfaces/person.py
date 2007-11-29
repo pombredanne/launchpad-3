@@ -887,6 +887,12 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         a member of himself (i.e. person1.inTeam(person1)).
         """
 
+    def clearInTeamCache():
+        """Clears the person's inTeam cache.
+
+        To be used when membership changes are enacted. Only meant to be
+        used between IPerson objects."""
+
     def lastShippedRequest():
         """Return this person's last shipped request, or None."""
 

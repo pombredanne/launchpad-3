@@ -1070,9 +1070,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             raise AssertionError(
                 "Unknown subscription policy: %s" % team.subscriptionpolicy)
 
-        self._inTeam_cache = {} # Flush the cache used by the inTeam method
-
         team.addMember(self, reviewer=self, status=status)
+        self.clearInTeamCache()
+
+    def clearInTeamCache(self):
+        """See `IPerson`."""
+        self._inTeam_cache = {}
 
     #
     # ITeam methods
@@ -1143,6 +1146,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 person, self, status, dateexpires=expires, reviewer=reviewer,
                 reviewercomment=comment)
             notify(event(person, self))
+            person.clearInTeamCache()
 
     # The three methods below are not in the IPerson interface because we want
     # to protect them with a launchpad.Edit permission. We could do that by
