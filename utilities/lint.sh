@@ -19,6 +19,13 @@ elif ! which pyflakes >/dev/null; then
     exit 1
 fi
 
+function bzr {
+    # For pylint to operate properly, PYTHONPATH must point to the ./lib
+    # directory in the launchpad tree. This directory includes a bzrlib. When
+    # this script calls bzr, we want it to use the system bzrlib, not the one
+    # in the launchpad tree.
+    PYTHONPATH='' `which bzr` "$@"
+}
 
 rules="Using normal rules."
 rcfile="--rcfile=utilities/lp.pylintrc"
@@ -34,8 +41,25 @@ fi
 
 
 if [ -z "$1" ]; then
-    rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
-    files=`bzr st --short -r $rev | sed '/^.[MN]/!d; s/.* //'`
+    # No command line argument provided, use the defaut logic.
+    bzr diff > /dev/null
+    diff_status=$?
+    if [ $diff_status -eq 0 ] ; then
+        # No uncommitted changes in the tree, lint changes relative to the
+        # parent.
+        rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
+        # XXX sinzui 2007-11-18 bug=163612:
+        # The bzr+ssh protocol causes an exception; fallback to sftp.
+        rev=`echo $rev | sed 's/bzr+ssh:/sftp:/'`
+        rev_option="-r $rev"
+    elif [ $diff_status -eq 1 ] ; then
+        # Uncommitted changes in the tree, lint those changes.
+        rev_option=""
+    else
+        # bzr diff failed
+        exit 1
+    fi
+    files=`bzr st --short $rev_option | sed '/^.[MN]/!d; s/.* //'`
 else
     # Add newlines so grep filters out pyfiles correctly later.
     files=`echo $* | tr " " "\n"`
@@ -50,6 +74,12 @@ echo "$rules"
 if [ -z "$files" ]; then
     echo "No changed files detected."
     exit 0
+else
+    echo
+    echo "Linting changed files:"
+    for file in $files; do
+        echo "  $file"
+    done
 fi
 
 
@@ -121,7 +151,7 @@ if [ ! -z "$pyflakes_notices" ]; then
 fi
 
 
-export PYTHONPATH="/usr/share/pycentral/pylint/site-packages:$PYTHONPATH"
+export PYTHONPATH="/usr/share/pycentral/pylint/site-packages:lib:$PYTHONPATH"
 pylint="python2.4 -Wi::DeprecationWarning `which pylint`"
 
 # XXX sinzui 2007-10-18 bug=154140:
