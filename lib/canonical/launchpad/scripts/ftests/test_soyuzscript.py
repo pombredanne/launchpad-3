@@ -7,15 +7,16 @@ properly.
 
 import unittest
 
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScriptError, SoyuzScript)
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 
-class TestSoyuzScript(LaunchpadZopelessTestCase):
+class TestSoyuzScript(unittest.TestCase):
     """Test the SoyuzScript class."""
+
+    layer = LaunchpadZopelessLayer
 
     def getSoyuz(self, version=None, component=None, arch=None,
                  suite=None, distribution_name='ubuntu',
@@ -211,8 +212,10 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
         soyuz.txn = LaunchpadZopelessLayer.txn
         soyuz.options.confirm_all = True
         self.assertTrue(soyuz.finishProcedure())
-        # XXX Setting confirm_all to False is pretty untestable because it
+        # XXX Julian Edwards 2007-11-29
+        # Setting confirm_all to False is pretty untestable because it
         # asks the user for confirmation via raw_input.
+        # See bug 172869 for ideas on how to fix.
         soyuz.options.dryrun = True
         self.assertFalse(soyuz.finishProcedure())
 
