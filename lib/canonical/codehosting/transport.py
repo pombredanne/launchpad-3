@@ -142,6 +142,9 @@ class LaunchpadServer(Server):
         :param mirror_transport: A Transport pointing to the root of where
             branches are mirrored to.
         """
+        # bzrlib's Server class does not have a constructor, so we cannot
+        # safely upcall it.
+        # pylint: disable-msg=W0231
         self.authserver = authserver
         self.user_dict = self.authserver.getUser(user_id)
         self.user_id = self.user_dict['id']
@@ -386,10 +389,13 @@ class LaunchpadTransport(Transport):
     def append_file(self, relpath, f, mode=None):
         return self._call('append_file', relpath, f, mode)
 
-    def clone(self, relpath):
+    def clone(self, relpath=None):
         self.server.logger.debug('clone(%s)', relpath)
-        return LaunchpadTransport(
-            self.server, urlutils.join(self.base, relpath))
+        if relpath is None:
+            return LaunchpadTransport(self.server, self.base)
+        else:
+            return LaunchpadTransport(
+                self.server, urlutils.join(self.base, relpath))
 
     def delete(self, relpath):
         return self._call('delete', relpath)
