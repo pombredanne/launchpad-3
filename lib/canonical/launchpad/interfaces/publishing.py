@@ -317,6 +317,14 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "correspondent to the sourcepackagerelease attribute inside "
         "a specific distroseries")
 
+    def getAllPublishedSources(distroseries, archives):
+        """Return all currently published sources for the distroseries.
+
+        :param distroseries: The distroseries for which to return
+                             publications.
+        :param archives: The archives for which to limit the results to.
+        """
+
     def getPublishedBinaries():
         """Return all resulted IBinaryPackagePublishingHistory.
 
@@ -447,6 +455,14 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 
     distroarchseriesbinarypackagerelease = Attribute("The object that "
         "represents this binarypacakgerelease in this distroarchseries.")
+
+    def getAllPublishedBinaries(distroseries, archives):
+        """Return all currently published binaries for the distroseries.
+
+        :param distroseries: The distroseries for which to return
+                             publications.
+        :param archives: The archives for which to limit the results to.
+        """
 
     def changeOverride(new_component=None, new_section=None,
                        new_priority=None):

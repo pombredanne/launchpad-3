@@ -1594,12 +1594,8 @@ class ObsoleteDistroseries(SoyuzScript):
                             distroseries.name,
                             distroseries.distribution.name))
 
-        # This nonsense seems to be required otherwise sqlvalues is given
-        # a Zope proxy, which it barfs on.
-        archive_ids = [
-            id for id in distroseries.distribution.all_distro_archive_ids]
-        sources = self._generateSourcesList(distroseries, archive_ids)
-        binaries = self._generateBinariesList(distroseries, archive_ids)
+        sources = self._generateSourcesList(distroseries)
+        binaries = self._generateBinariesList(distroseries)
         num_sources = sources.count()
         num_binaries = binaries.count()
         self.logger.info("There are %d sources and %d binaries." % (
@@ -1640,7 +1636,7 @@ class ObsoleteDistroseries(SoyuzScript):
             raise SoyuzScriptError(
                 "%s is not at status OBSOLETE." % distroseries.name)
 
-    def _generateSourcesList(self, distroseries, archive_ids):
+    def _generateSourcesList(self, distroseries):
         """Return a list of published source packages for distroseries.
 
         Additionally, only consider the archive IDs supplied.
@@ -1650,15 +1646,10 @@ class ObsoleteDistroseries(SoyuzScript):
             SourcePackagePublishingHistory)
         self.logger.info("Generating list of published sources for %s." %
            distroseries.name)
-        sources = SourcePackagePublishingHistory.select("""
-            distroseries = %s AND
-            status = %s AND
-            archive in %s
-            """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
-                            archive_ids))
-        return sources
+        return SourcePackagePublishingHistory.getAllPublishedSources(
+            distroseries, distroseries.distribution.all_distro_archives)
 
-    def _generateBinariesList(self, distroseries, archive_ids):
+    def _generateBinariesList(self, distroseries):
         """Return a list of published binary packages for distroseries.
 
         Additionally, only consider the archive IDs supplied.
@@ -1668,14 +1659,5 @@ class ObsoleteDistroseries(SoyuzScript):
             BinaryPackagePublishingHistory)
         self.logger.info("Generating list of published binaries for %s." %
             distroseries.name)
-        binaries = BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchseries =
-                distroarchseries.id AND
-            distroarchseries.distroseries = distroseries.id AND
-            distroseries.id = %s AND
-            BinaryPackagePublishingHistory.status = %s AND
-            BinaryPackagePublishingHistory.archive in %s
-            """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
-                            archive_ids),
-            clauseTables=["DistroArchSeries", "DistroSeries"])
-        return binaries
+        return BinaryPackagePublishingHistory.getAllPublishedBinaries(
+            distroseries, distroseries.distribution.all_distro_archives)
