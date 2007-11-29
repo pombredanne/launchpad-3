@@ -13,5 +13,5 @@
     >>> browser.getControl('baz.foo@canonical.com')
     Traceback (most recent call last):
     ...
-    LookupError: value 'baz.foo@canonical.com'
+    LookupError: label 'baz.foo@canonical.com'
 
