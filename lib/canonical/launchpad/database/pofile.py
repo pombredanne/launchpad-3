@@ -756,6 +756,10 @@ class POFile(SQLBase, POFileMixIn):
         # (iow, it's different from a published translation: this only
         # lists translations which have actually changed in LP, not
         # translations which are 'new' and only exist in LP).
+        # XXX CarlosPerelloMarin 2007-11-29 bug=165218: Once bug #165218 is
+        # properly fixed (we don't create empty TranslationMessage objects for
+        # empty string for imported files), all 'imported.msgstr? IS NOT NULL'
+        # conditions could be removed because will not be needed anymore.
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
@@ -887,6 +891,10 @@ class POFile(SQLBase, POFileMixIn):
         # msgid, that's anything with a singular translation; for ones with a
         # plural form, it's the number of plural forms the language supports.
         self._appendCompletePluralFormsConditions(query)
+        # XXX CarlosPerelloMarin 2007-11-29 bug=165218: Once bug #165218 is
+        # properly fixed (we don't create empty TranslationMessage objects for
+        # empty string for imported files), all 'imported.msgstr? IS NOT NULL'
+        # conditions could be removed because will not be needed anymore.
         query.append('''NOT EXISTS (
             SELECT TranslationMessage.id
             FROM TranslationMessage AS imported
