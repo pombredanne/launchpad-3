@@ -10,8 +10,8 @@
     ...     print msg
     The email address...has been removed...
 
-    >>> browser.getControl(name='field.VALIDATED_SELECTED').getControl(
-    ...     value='baz.foo@canonical.com')
+    >>> browser.getControl('baz.foo@canonical.com')
     Traceback (most recent call last):
     ...
     LookupError: value 'baz.foo@canonical.com'
+

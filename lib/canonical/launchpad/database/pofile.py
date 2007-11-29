@@ -128,7 +128,7 @@ def _can_edit_translations(pofile, person):
 
     # Rosetta experts and admins can always edit translations.
     admins = getUtility(ILaunchpadCelebrities).admin
-    rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+    rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     if (person.inTeam(admins) or person.inTeam(rosetta_experts) or
         person.id == rosetta_experts.id):
         return True
@@ -1059,9 +1059,9 @@ class POFile(SQLBase, POFileMixIn):
         # And add karma to the importer if it's not imported automatically
         # (all automatic imports come from the rosetta expert user) and comes
         # from upstream.
-        rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
         if (entry_to_import.is_published and
-            entry_to_import.importer.id != rosetta_expert.id):
+            entry_to_import.importer.id != rosetta_experts.id):
             # The Rosetta Experts team should not get karma.
             entry_to_import.importer.assignKarma(
                 'translationimportupstream',
@@ -1209,7 +1209,7 @@ class DummyPOFile(POFileMixIn):
         self.date_changed  = None
         self.license = None
         self.lastparsed = None
-        self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
+        self.owner = getUtility(ILaunchpadCelebrities).rosetta_experts
 
         # The default POFile owner is the Rosetta Experts team unless the
         # given owner has rights to write into that file.
