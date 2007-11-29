@@ -19,7 +19,7 @@ class UnsupportedFeedFormat(Exception):
 
 
 class IFeed(Interface):
-    """Inteface for feeds."""
+    """Interface for feeds."""
 
     max_age = Int(
         title=u"Maximum age",

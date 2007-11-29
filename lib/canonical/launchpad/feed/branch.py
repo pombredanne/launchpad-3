@@ -6,14 +6,17 @@ __metaclass__ = type
 
 __all__ = [
     'BranchFeed',
+    'ProductBranchFeed',
     ]
 
+from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad.browser import ProductBranchesView
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.interfaces import IBranch
+from canonical.launchpad.interfaces import IBranch, IProduct
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 
@@ -27,6 +30,7 @@ class BranchFeedContentView(LaunchpadView):
 
     def render(self):
         """Render the view."""
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
         return ViewPageTemplateFile('templates/branch.pt')(self)
 
 
@@ -94,7 +98,7 @@ class BranchFeedBase(FeedBase):
         """See `IFeed`."""
         title = FeedTypedData('[%s] %s' % (branch.id, branch.title))
         url = canonical_url(branch, rootsite=self.rootsite)
-        #content_view = BranchFeedContentView(branch, self.request, self)
+        content_view = BranchFeedContentView(branch, self.request, self)
         entry = FeedEntry(title=title,
                           id_=url,
                           link_alternate=url,
@@ -104,7 +108,8 @@ class BranchFeedBase(FeedBase):
                           # if author and owner are different perhaps we
                           # should use them both?
                           authors=[FeedPerson(branch.owner, self.rootsite)],
-                          content=branch.summary)
+                          content=FeedTypedData(content=content_view.render(),
+                                                content_type="xhtml"))
         return entry
 
 
@@ -124,8 +129,40 @@ class BranchFeed(BranchFeedBase):
     @property
     def title(self):
         """See `IFeed`."""
-        return "Branch %s" % self.context.id
+        return "Branch %s" % self.context.displayname
 
     def _getRawItems(self):
         """Get the raw set of items for the feed."""
         return [self.context]
+
+
+class ProductBranchFeed(BranchFeedBase):
+    """Feed for all branches on a product."""
+
+    usedfor = IProduct
+    feedname = "branches"
+
+    def initialize(self):
+        """See `IFeed`."""
+        # For a `BranchFeed` we must ensure that the branch is not private.
+        super(ProductBranchFeed, self).initialize()
+
+    @property
+    def title(self):
+        """See `IFeed`."""
+        return "Branches for %s" % self.context.displayname
+
+    def _getRawItems(self):
+        """Get the raw set of items for the feed."""
+        delegate_view = ProductBranchesView(self.context, self.request)
+        delegate_view.initialize()
+        branches_batch = delegate_view.branches()
+        batch_list = branches_batch.getBatches()
+        # Assuming the branches are unique.
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
+        branches = []
+        for batch in batch_list:
+            branches.extend(list(batch.list))
+            if len(branches) >= self.quantity:
+                break
+        return branches[:self.quantity]
