@@ -73,6 +73,17 @@
   </p>
 
   <p class="informational message"
+     id="can-expire"
+     tal:condition="context/bug/can_expire"
+    >This bug report will expire in
+    <tal:days_to_expiration replace="view/days_to_expiration">
+      59
+    </tal:days_to_expiration>
+    days if no further activity occurs.
+    (<a href="https://help.launchpad.net/BugStatuses">find out why</a>)
+  </p>
+
+  <p class="informational message"
      id="number_of_dupes"
      tal:condition="context/bug/duplicates"
      tal:define="number_of_dupes context/bug/duplicates/count"
@@ -80,7 +91,7 @@
      <tal:num-dupes condition="python:number_of_dupes == 1">1 duplicate</tal:num-dupes>
      <tal:num-dupes condition="python:number_of_dupes > 1" content="string:${number_of_dupes} duplicates"
        >2 duplicates</tal:num-dupes>
-    </p>
+  </p>
 
   <tal:duplicate-of define="duplicateof context/bug/duplicateof"
                     condition="duplicateof">
@@ -94,6 +105,16 @@
     </p>
   </tal:duplicate-of>
 
+
+  <p id="bug-is-question" class="informational message"
+    tal:condition="context/bug/getQuestionCreatedFromBug"
+    tal:define="question context/bug/getQuestionCreatedFromBug">
+    This bug report was converted into a question:
+    question #<tal:question-id replace="question/id" />:
+    <a href=""
+      tal:attributes="href question/fmt:url"
+      tal:content="question/title">%s</a>.
+  </p>
       <form
         tal:condition="not:view/isReportedInContext"
         class="error message"
