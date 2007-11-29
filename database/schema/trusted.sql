@@ -892,3 +892,15 @@ $$;
 COMMENT ON FUNCTION set_bug_date_last_message() IS 'AFTER INSERT trigger on BugMessage maintaining the Bug.date_last_message column';
 
 
+CREATE OR REPLACE FUNCTION set_bug_number_of_duplicates() RETURNS TRIGGER
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+$$
+BEGIN
+    UPDATE Bug
+    SET number_of_duplicates = number_of_duplicates + 1
+    WHERE Bug.id = NEW.duplicateof;
+    RETURN NULL;
+END;
+$$;
+
+COMMENT ON FUNCTION set_bug_number_of_duplicates() IS 'AFTER UPDATE trigger on Bug maintaining the Bug.number_of_duplicates column';
