@@ -610,10 +610,10 @@ let's see how this method works:
 
 Before collecting and processing the buildlog we will store the files
 already created in /tmp so we can verify later that this mechanism is
-not lefting any temporary file behind. See bug #172798.
+not leaving any temporary file behind. See bug #172798.
 
   >>> import os
-  >>> old_tmps = set(os.listdir('/tmp'))
+  >>> old_tmps = os.listdir('/tmp')
 
 Collect and process the buildlog.
 
@@ -623,7 +623,7 @@ Audit the /tmp for lost temporary files, there should not be any new
 files. For the record, the procedure creates files with the
 '.buildlog' suffix.
 
-  >>> len(set(os.listdir('/tmp')) - old_tmps) == 0
+  >>> sorted(os.listdir('/tmp')) == sorted(old_tmps)
   True
 
 The buildlog was compressed and directly transferred to Librarian.
