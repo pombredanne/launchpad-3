@@ -80,9 +80,9 @@ class TestObsoleteDistroseries(LaunchpadZopelessTestCase):
         Allow tests to use a set of default options and pass an
         inactive logger to ObsoleteDistroseries
         """
-        test_args=['-s', suite,
-                   '-d', distribution,
-                  ]
+        test_args = ['-s', suite,
+                     '-d', distribution,
+                    ]
 
         if confirm_all:
             test_args.append('-y')

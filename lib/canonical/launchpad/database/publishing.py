@@ -73,7 +73,8 @@ class FilePublishingBase(SQLBase):
     def archive_url(self):
         """See IFilePublishing."""
         return (self.archive.archive_url + "/" +
-                makePoolPath(self.sourcepackagename, self.componentname) + "/" +
+                makePoolPath(self.sourcepackagename, self.componentname) +
+                "/" +
                 self.libraryfilealiasfilename)
 
 
@@ -97,7 +98,8 @@ class SourcePackageFilePublishing(FilePublishingBase):
          foreignKey='SecureSourcePackagePublishingHistory')
 
     libraryfilealias = ForeignKey(
-        dbName='libraryfilealias', foreignKey='LibraryFileAlias', notNull=True)
+        dbName='libraryfilealias', foreignKey='LibraryFileAlias',
+        notNull=True)
 
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
                                          unique=False, notNull=True)
@@ -159,7 +161,8 @@ class BinaryPackageFilePublishing(FilePublishingBase):
         foreignKey='SecureBinaryPackagePublishingHistory', immutable=True)
 
     libraryfilealias = ForeignKey(
-        dbName='libraryfilealias', foreignKey='LibraryFileAlias', notNull=True)
+        dbName='libraryfilealias', foreignKey='LibraryFileAlias',
+        notNull=True)
 
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
                                          unique=False, notNull=True,
