@@ -140,6 +140,17 @@ correctly redirect to the new branch page.
     >>> browser.url
     'http://code.launchpad.dev/~name12/tomcat/junk'
 
+Branch names are less strictly constrained than most others in Launchpad
+-- they are not restricted to lower case, and can contain underscores in
+addition to the plus signs, dots and hyphens allowed by the default name
+validator.
+
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Name').value = 'USELESS_junk'
+    >>> browser.getControl('Change Branch').click()
+    >>> browser.url
+    'http://code.launchpad.dev/~name12/tomcat/USELESS_junk'
+
 We can also detach a branch from a product, making it a junk branch. While we
 are it, we also reset the branch name to its original value, and check that the
 branch was moved back to its original location.

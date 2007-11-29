@@ -221,6 +221,21 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if self.teamownerID is not None:
             alsoProvides(self, ITeam)
 
+    def convertToTeam(self, team_owner):
+        """See `IPerson`."""
+        assert not self.isTeam(), "Can't convert a team to a team."
+        assert self.account_status == AccountStatus.NOACCOUNT, (
+            "Only Person entries whose account_status is NOACCOUNT can be "
+            "converted into teams.")
+        self.password = None
+        self.creation_rationale = None
+        self.teamowner = team_owner
+        alsoProvides(self, ITeam)
+        # Add the owner as a team admin manually because we know what we're
+        # doing and we don't want any email notifications to be sent.
+        TeamMembershipSet().new(
+            team_owner, self, TeamMembershipStatus.ADMIN, reviewer=team_owner)
+
     # specification-related joins
     @property
     def approver_specs(self):
@@ -1419,25 +1434,32 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             email.status = EmailAddressStatus.NEW
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
-            assert bug_task.assignee == self, (
-                "This bugtask (%s) should be assigned to this person."
-                % bug_task.id)
+            # XXX flacoste 2007/11/26 The comparison using id in the assert
+            # below works around a nasty intermittent failure. 
+            # See bug #164635.
+            assert bug_task.assignee.id == self.id, (
+               "Bugtask %s assignee isn't the one expected: %s != %s" % (
+                    bug_task.id, bug_task.assignee.name, self.name))
             bug_task.transitionToAssignee(None)
         for spec in self.assigned_specs:
             spec.assignee = None
-        registry = getUtility(ILaunchpadCelebrities).registry
+        registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
         for team in Person.selectBy(teamowner=self):
-            team.teamowner = registry
+            team.teamowner = registry_experts
         for pillar_name in self.getOwnedOrDrivenPillars():
             pillar = pillar_name.pillar
-            if pillar.owner == self:
-                pillar.owner = registry
-            elif pillar.driver == self:
-                pillar.driver = registry
+            # XXX flacoste 2007/11/26 The comparison using id below
+            # works around a nasty intermittent failure. See bug #164635.
+            if pillar.owner.id == self.id:
+                pillar.owner = registry_experts
+            elif pillar.driver.id == self.id:
+                pillar.driver = registry_experts
             else:
+                # Since we removed the person from all teams, something is
+                # seriously broken here.
                 raise AssertionError(
-                    "This person must be the owner or driver of this project "
-                    "(%s)" % pillar.pillar.name)
+                    "%s was expected to be owner or driver of %s" %
+                    (self.name, pillar.name))
 
         # Nuke all subscriptions of this person.
         removals = [
