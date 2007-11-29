@@ -19,7 +19,7 @@ You can specify the db_location explicitly:
     ...     DebBugs)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> debbugs = new_bugtracker(BugTrackerType.DEBBUGS)
     >>> external_debbugs = DebBugs(debbugs, db_location=test_db_location)
     >>> external_debbugs.db_location == test_db_location
@@ -347,7 +347,7 @@ gets notified about it.
     >>> print debian.getSourcePackage('no-such-package')
     None
     >>> bug = external_debbugs.importBug(debian, '1234')
-    WARNING:root:Unknown Debian package (debbugs #1234): no-such-package
+    WARNING:...:Unknown Debian package (debbugs #1234): no-such-package
 
     >>> [debian_task] = bug.bugtasks
     >>> debian_task.distribution.name
@@ -448,8 +448,8 @@ the script gets notified about it.
     >>> [bug.id for bug in debbugs.getBugsWatching('304014')]
     [1]
     >>> import_debian_bugs(['304014'])
-    WARNING:root:Not importing debbugs #304014, since it's already
-                 linked from LP bug(s) #1.
+    WARNING:...:Not importing debbugs #304014, since it's already
+                linked from LP bug(s) #1.
     >>> [bug.id for bug in debbugs.getBugsWatching('304014')]
     [1]
 

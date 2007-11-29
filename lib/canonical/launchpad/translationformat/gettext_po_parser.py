@@ -21,10 +21,10 @@ from zope.interface import implements
 from zope.app import datetimeutils
 
 from canonical.launchpad.interfaces import (
-    ITranslationHeader, TranslationConstants,
+    ITranslationHeaderData, TranslationConstants,
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
-    TranslationFile, TranslationMessage)
+    TranslationFileData, TranslationMessageData)
 from canonical.launchpad.versioninfo import revno
 
 
@@ -99,8 +99,8 @@ def get_header_dictionary(raw_header, handled_keys_order):
 
 
 class POHeader:
-    """See `ITranslationHeader`."""
-    implements(ITranslationHeader)
+    """See `ITranslationHeaderData`."""
+    implements(ITranslationHeaderData)
 
     # Set of known keys in the .po header.
     _handled_keys_mapping = {
@@ -228,7 +228,7 @@ class POHeader:
                 pass
 
     def getRawContent(self):
-        """See ITranslationHeader."""
+        """See `ITranslationHeaderData`."""
         raw_content_list = []
         for key in self._handled_keys_order:
             value = self._handled_keys_mapping[key]
@@ -319,7 +319,7 @@ class POHeader:
         return u''.join(raw_content_list)
 
     def updateFromTemplateHeader(self, template_header):
-        """See `ITranslationHeader`."""
+        """See `ITranslationHeaderData`."""
         template_header_dictionary = get_header_dictionary(
             template_header.getRawContent(), self._handled_keys_order)
         # 'Domain' is a non standard header field. However, this is required
@@ -337,7 +337,7 @@ class POHeader:
         self.template_creation_date = template_header.template_creation_date
 
     def getLastTranslator(self):
-        """See `ITranslationHeader`."""
+        """See `ITranslationHeaderData`."""
         # Get last translator information. If it's not found, we use the
         # default value from Gettext.
         name, email = parseaddr(self._last_translator)
@@ -352,7 +352,7 @@ class POHeader:
             return name, email
 
     def setLastTranslator(self, email, name=None):
-        """See `ITranslationHeader`."""
+        """See `ITranslationHeaderData`."""
         assert email is not None, 'Email address cannot be None'
 
         if name is None:
@@ -421,13 +421,13 @@ class POParser(object):
     def parse(self, content_text):
         """Parse string as a PO file."""
         # Initialise the parser.
-        self._translation_file = TranslationFile()
+        self._translation_file = TranslationFileData()
         self._messageids = set()
         self._pending_chars = content_text
         self._pending_unichars = u''
         self._lineno = 0
         # Message specific variables.
-        self._message = TranslationMessage()
+        self._message = TranslationMessageData()
         self._message_lineno = self._lineno
         self._section = None
         self._plural_case = None
@@ -442,7 +442,7 @@ class POParser(object):
         while line is not None:
             self._parseLine(line.decode(charset))
             if (self._translation_file.header is not None or
-                self._message.msgid):
+                self._message.msgid_singular):
                 # Either found the header already or it's a message with a
                 # non empty msgid which means is not a header.
                 break
@@ -450,7 +450,7 @@ class POParser(object):
 
         if line is None:
             if (self._translation_file.header is None and
-                not self._message.msgid):
+                not self._message.msgid_singular):
                 # Seems like the file has only the header without any message,
                 # we parse it.
                 self._dumpCurrentSection()
@@ -486,7 +486,7 @@ class POParser(object):
 
     def _storeCurrentMessage(self):
         if self._message is not None:
-            msgkey = self._message.msgid
+            msgkey = self._message.msgid_singular
             if self._message.context is not None:
                 msgkey = '%s\2%s' % (self._message.context, msgkey)
             if msgkey in self._messageids:
@@ -563,7 +563,7 @@ class POParser(object):
 
           >>> class FakeHeader:
           ...     charset = 'UTF-8'
-          >>> parser._translation_file = TranslationFile()
+          >>> parser._translation_file = TranslationFileData()
           >>> parser._translation_file.header = FakeHeader()
           >>> parser._parseQuotedString(utf8_string)
           u'view \xab${version_title}\xbb'
@@ -725,7 +725,7 @@ class POParser(object):
         elif self._section == 'msgctxt':
             self._message.context = self._parsed_content
         elif self._section == 'msgid':
-            self._message.msgid = self._parsed_content
+            self._message.msgid_singular = self._parsed_content
         elif self._section == 'msgid_plural':
             self._message.msgid_plural = self._parsed_content
             # Note in the header that there are plural forms.
@@ -758,7 +758,7 @@ class POParser(object):
             if self._message is None:
                 # first entry - do nothing.
                 pass
-            elif self._message.msgid:
+            elif self._message.msgid_singular:
                 self._dumpCurrentSection()
                 self._storeCurrentMessage()
             elif self._translation_file.header is None:
@@ -771,7 +771,7 @@ class POParser(object):
                     POSyntaxWarning(self._lineno, 'We got a second header.'))
 
             # Start a new message.
-            self._message = TranslationMessage()
+            self._message = TranslationMessageData()
             self._message_lineno = self._lineno
             self._section = None
             self._plural_case = None

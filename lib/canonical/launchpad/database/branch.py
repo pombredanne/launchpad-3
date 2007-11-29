@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -22,6 +23,7 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 
+from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (
@@ -30,7 +32,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
+    BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
+    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
     BranchLifecycleStatus, BranchListingSort, BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
     BranchVisibilityRule, CannotDeleteBranch,
@@ -44,7 +47,7 @@ from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
+from canonical.launchpad.validators import LaunchpadValidationError
 
 
 class Branch(SQLBase):
@@ -112,6 +115,7 @@ class Branch(SQLBase):
         orderBy='id')
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    date_last_modified = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
     landing_targets = SQLMultipleJoin(
         'BranchMergeProposal', joinColumn='source_branch')
@@ -170,6 +174,11 @@ class Branch(SQLBase):
 
         if date_created is None:
             date_created = UTC_NOW
+        # Update the last_modified_date of the source and target branches to
+        # be the date_created for the merge proposal.
+        self.date_last_modified = date_created
+        target_branch.date_last_modified = date_created
+
         return BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
@@ -359,6 +368,7 @@ class Branch(SQLBase):
 
     def updateScannedDetails(self, revision_id, revision_count):
         """See `IBranch`."""
+        self.date_last_modified = UTC_NOW
         self.last_scanned = UTC_NOW
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
@@ -409,7 +419,7 @@ class Branch(SQLBase):
             # This is a push branch, hosted on the supermirror
             # (pushed there by users via SFTP).
             prefix = config.codehosting.branches_root
-            return os.path.join(prefix, split_branch_id(self.id))
+            return os.path.join(prefix, branch_id_to_path(self.id))
         else:
             raise AssertionError("No pull URL for %r" % (self,))
 
@@ -593,15 +603,26 @@ class BranchSet:
         """
         PUBLIC_BRANCH = (False, None)
         PRIVATE_BRANCH = (True, None)
-        # If the product is None, then the branch is a +junk branch.
-        # All junk branches are public.
-        if product is None:
-            return PUBLIC_BRANCH
         # You are not allowed to specify an owner that you are not a member of.
         if not creator.inTeam(owner):
-            raise BranchCreatorNotMemberOfOwnerTeam(
-                "%s is not a member of %s"
-                % (creator.displayname, owner.displayname))
+            if owner.isTeam():
+                raise BranchCreatorNotMemberOfOwnerTeam(
+                    "%s is not a member of %s"
+                    % (creator.displayname, owner.displayname))
+            else:
+                raise BranchCreatorNotOwner(
+                    "%s cannot create branches owned by %s"
+                    % (creator.displayname, owner.displayname))
+        # If the product is None, then the branch is a +junk branch.
+        if product is None:
+            # The only team that is allowed to own +junk branches is
+            # ~vcs-imports.
+            if (owner.isTeam() and
+                owner != getUtility(ILaunchpadCelebrities).vcs_imports):
+                raise BranchCreationNoTeamOwnedJunkBranches(
+                    "Cannot create team-owned junk branches.")
+            # All junk branches are public.
+            return PUBLIC_BRANCH
         # First check if the owner has a defined visibility rule.
         policy = product.getBranchVisibilityRuleForTeam(owner)
         if policy is not None:
@@ -655,7 +676,9 @@ class BranchSet:
         # team policies that matches the owner.
         base_visibility_rule = product.getBaseBranchVisibilityRule()
         if base_visibility_rule == BranchVisibilityRule.FORBIDDEN:
-            raise BranchCreationForbidden()
+            raise BranchCreationForbidden(
+                "You cannot create branches for the product %r"
+                % product.name)
         elif base_visibility_rule == BranchVisibilityRule.PUBLIC:
             return PUBLIC_BRANCH
         else:
@@ -670,22 +693,23 @@ class BranchSet:
         if date_created is None:
             date_created = UTC_NOW
 
-        if product is None and owner.isTeam():
-            # We disallow team-owned junk branches -- with the exception of
-            # ~vcs-imports, to allow the eventual creation of code imports not
-            # yet associated with a product.
-            assert owner == getUtility(ILaunchpadCelebrities).vcs_imports, (
-                "Cannot create team-owned junk branches.")
-
         # Check the policy for the person creating the branch.
         private, implicit_subscription = self._checkVisibilityPolicy(
             creator, owner, product)
+
+        # Not all code paths that lead to branch creation go via a
+        # schema-validated form (e.g. the register_branch XML-RPC call or
+        # pushing a new branch to the supermirror), so we validate the branch
+        # name here to give a nicer error message than 'ERROR: new row for
+        # relation "branch" violates check constraint "valid_name"...'.
+        IBranch['name'].validate(unicode(name))
 
         branch = Branch(
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             home_page=home_page, whiteboard=whiteboard, private=private,
-            date_created=date_created, branch_type=branch_type)
+            date_created=date_created, branch_type=branch_type,
+            date_last_modified=date_created)
 
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at

@@ -32,6 +32,7 @@ from zope.interface import Interface
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 
 from canonical.lp import decorates
 from canonical.launchpad.browser.branchref import BranchRef
@@ -218,7 +219,7 @@ class BranchContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def registermerge(self):
-        text = 'Register merge proposal'
+        text = 'Propose for merging'
         return Link('+register-merge', text, icon='edit')
 
     def landingcandidates(self):
@@ -457,7 +458,10 @@ class BranchEditFormView(LaunchpadEditFormView):
 
     @action('Change Branch', name='change')
     def change_action(self, action, data):
-        self.updateContextFromData(data)
+        if self.updateContextFromData(data):
+            # Only specify that the context was modified if there
+            # was in fact a change.
+            self.context.date_last_modified = UTC_NOW
 
     @property
     def next_url(self):
@@ -606,7 +610,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             if url is None:
                 # If the url is not set due to url validation errors,
                 # there will be an error set for it.
-                error = self.getWidgetError('url')
+                error = self.getFieldError('url')
                 if not error:
                     self.setFieldError(
                         'url',
@@ -696,7 +700,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             if url is None:
                 # If the url is not set due to url validation errors,
                 # there will be an error set for it.
-                error = self.getWidgetError('url')
+                error = self.getFieldError('url')
                 if not error:
                     self.setFieldError(
                         'url',

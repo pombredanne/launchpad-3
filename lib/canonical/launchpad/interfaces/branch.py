@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Branch interfaces."""
 
@@ -7,12 +8,15 @@ __metaclass__ = type
 __all__ = [
     'BranchCreationException',
     'BranchCreationForbidden',
+    'BranchCreationNoTeamOwnedJunkBranches',
     'BranchCreatorNotMemberOfOwnerTeam',
+    'BranchCreatorNotOwner',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchListingSort',
     'BranchType',
     'BranchTypeError',
+    'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'CannotDeleteBranch',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
@@ -27,6 +31,7 @@ __all__ = [
     ]
 
 from datetime import timedelta
+import re
 from zope.interface import Interface, Attribute
 
 from zope.component import getUtility
@@ -185,6 +190,21 @@ class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
     """
 
 
+class BranchCreationNoTeamOwnedJunkBranches(BranchCreationException):
+    """We forbid the creation of team-owned +junk branches.
+
+    Raised when a user is attempting to create a team-owned +junk branch.
+    """
+
+
+class BranchCreatorNotOwner(BranchCreationException):
+    """A user cannot create a branch belonging to another user.
+
+    Raised when a user is attempting to create a branch and set the owner of
+    the branch to another user.
+    """
+
+
 class BranchTypeError(Exception):
     """An operation cannot be performed for a particular branch type.
 
@@ -235,6 +255,36 @@ class BranchURIField(URIField):
                 message, canonical_url(branch), branch.displayname)
 
 
+BRANCH_NAME_VALIDATION_ERROR_MESSAGE = _(
+    "Branch names must start with a number or letter.  The characters +, -, "
+    "_, . and @ are also allowed after the first character.")
+
+
+# This is a copy of the pattern in database/schema/trusted.sql.  Don't
+# change this without changing that.
+valid_branch_name_pattern = re.compile(r"^(?i)[a-z0-9][a-z0-9+\.\-@_]*\Z")
+
+
+def valid_branch_name(name):
+    """Return True if the name is valid as a branch name, otherwise False.
+
+    The rules for what is a valid branch name are described in
+    BRANCH_NAME_VALIDATION_ERROR_MESSAGE.
+    """
+    if valid_branch_name_pattern.match(name):
+        return True
+    return False
+
+
+def branch_name_validator(name):
+    """Return True if the name is valid, or raise a LaunchpadValidationError"""
+    if not valid_branch_name(name):
+        raise LaunchpadValidationError(
+            _("Invalid branch name '%s'. %s"), name,
+            BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+    return True
+
+
 class IBranchBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate branch listings."""
 
@@ -267,7 +317,7 @@ class IBranch(IHasOwner):
         title=_('Name'), required=True, description=_("Keep very "
         "short, unique, and descriptive, because it will be used in URLs. "
         "Examples: main, devel, release-1.0, gnome-vfs."),
-        constraint=name_validator)
+        constraint=branch_name_validator)
     title = Title(
         title=_('Title'), required=False, description=_("Describe the "
         "branch as clearly as possible in up to 70 characters. This "
@@ -417,6 +467,8 @@ class IBranch(IHasOwner):
 
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    date_last_modified = Datetime(
+        title=_('Date Last Modified'), required=True, readonly=False)
 
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""

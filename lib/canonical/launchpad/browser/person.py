@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'BaseListView',
+    'BeginTeamClaimView',
     'BugContactPackageBugsSearchListingView',
     'FOAFSearchView',
     'PeopleListView',
@@ -106,19 +107,19 @@ from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    BranchListingSort, BugTaskSearchParams, BugTaskStatus,
+    AccountStatus, BranchListingSort, BugTaskSearchParams, BugTaskStatus,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddressSet,
-    IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet, ILanguageSet,
-    ILaunchBag, ILoginTokenSet, INewPerson, IPOTemplateSet,
+    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddressSet, IGPGHandler,
+    IGPGKeySet, IIrcIDSet, IJabberIDSet, ILanguageSet, ILaunchBag,
+    ILoginTokenSet, IMailingListSet, INewPerson, IPOTemplateSet,
     IPasswordEncryptor, IPerson, IPersonChangePassword, IPersonClaim,
-    IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages,
-    ISSHKeySet, ISignedCodeOfConductSet, ITeam, ITeamMembership,
-    ITeamMembershipSet, ITeamReassignment, IWikiNameSet, LoginTokenType,
-    NotFoundError, PersonCreationRationale, QuestionParticipation,
-    SpecificationFilter, SSHKeyType, TeamMembershipRenewalPolicy,
-    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
-    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES)
+    IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
+    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
+    ITeamReassignment, IWikiNameSet, LoginTokenType, NotFoundError,
+    PersonCreationRationale, QuestionParticipation, SSHKeyType,
+    SpecificationFilter, TeamMembershipRenewalPolicy, TeamMembershipStatus,
+    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -884,9 +885,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
              'add_member', 'memberships', 'received_invitations', 'mugshots',
-             'editemail', 'editlanguages', 'polls', 'add_poll',
-             'joinleave', 'mentorships', 'reassign', 'common_packages',
-             'related_projects', 'activate_ppa', 'show_ppa']
+             'editemail', 'configure_mailing_list', 'editlanguages', 'polls',
+             'add_poll', 'joinleave', 'mentorships', 'reassign',
+             'common_packages', 'related_projects', 'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -962,6 +963,16 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             'The address Launchpad uses to contact %s' %
             self.context.browsername)
         return Link(target, text, summary, icon='mail')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_mailing_list(self):
+        target = '+mailinglist'
+        text = 'Configure mailing list'
+        mailing_list = getUtility(IMailingListSet).get(self.context.name)
+        enabled = config.mailman.expose_hosted_mailing_lists
+        summary = (
+            'The mailing list associated with %s' % self.context.browsername)
+        return Link(target, text, summary, enabled=enabled, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):
@@ -1194,6 +1205,30 @@ class PersonClaimView(LaunchpadFormView):
             "for up to an hour or two.)"), email=email)
 
 
+class BeginTeamClaimView(PersonClaimView):
+    """Where you can claim an unvalidated profile turning it into a team.
+
+    This is actually just the first step, where you enter the email address
+    of the team and we email further instructions to that address.
+    """
+
+    @action(_("Continue"), name="confirm")
+    def confirm_action(self, action, data):
+        email = data['emailaddress']
+        token = getUtility(ILoginTokenSet).new(
+            requester=self.user, requesteremail=None, email=email,
+            tokentype=LoginTokenType.TEAMCLAIM)
+        token.sendClaimTeamEmail()
+        self.request.response.addInfoNotification(_(
+            "A confirmation message has been sent to '%(email)s'. "
+            "Follow the instructions in that message to finish claiming this "
+            "team. "
+            "(If the above address is from a mailing list, it may be "
+            "necessary to talk with one of its admins to accept the message "
+            "from Launchpad so that you can finish the process.)"),
+            email=email)
+
+
 class RedirectToEditLanguagesView(LaunchpadView):
     """Redirect the logged in user to his +editlanguages page.
 
@@ -1344,7 +1379,23 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return BugTaskSearchListingView.search(
             self, searchtext=searchtext, context=distrosourcepackage)
 
-    def getPackageBugCounts(self):
+    @cachedproperty
+    def total_bug_counts(self):
+        """Return the totals of each type of package bug count as a dict."""
+        totals = {
+            'open_bugs_count': 0,
+            'critical_bugs_count': 0,
+            'unassigned_bugs_count': 0,
+            'inprogress_bugs_count': 0,}
+
+        for package_counts in self.package_bug_counts:
+            for key in totals.keys():
+                totals[key] += int(package_counts[key])
+
+        return totals
+
+    @cachedproperty
+    def package_bug_counts(self):
         """Return a list of dicts used for rendering package bug counts."""
         L = []
         for package_counts in self.context.getBugContactOpenBugCounts(
@@ -1747,6 +1798,25 @@ class PersonView(LaunchpadView):
         for contrib in self.contributions:
             categories.update(category for category in contrib['categories'])
         return sorted(categories, key=attrgetter('title'))
+
+    @cachedproperty
+    def context_is_probably_a_team(self):
+        """Return True if we have any indication that context is a team.
+
+        For now, all we do is check whether or not any email associated with
+        our context contains the '@lists.' string as that's a very good
+        indication this is a team which was automatically created.
+
+        This can only be used when the context is an automatically created
+        profile (account_status == NOACCOUNT).
+        """
+        assert self.context.account_status == AccountStatus.NOACCOUNT, (
+            "This can only be used when the context has no account.")
+        emails = getUtility(IEmailAddressSet).getByPerson(self.context)
+        for email in emails:
+            if '@lists.' in email.email:
+                return True
+        return False
 
     @property
     def subscription_policy_description(self):
@@ -2197,7 +2267,6 @@ class PersonTranslationView(LaunchpadView):
         # XXX: kiko 2006-03-17 bug=60320: Because of a template reference
         # to pofile.potemplate.displayname, it would be ideal to also
         # prejoin inside translation_history:
-        #   potemplate.potemplatename
         #   potemplate.productseries
         #   potemplate.productseries.product
         #   potemplate.distroseries
@@ -2223,8 +2292,8 @@ class PersonTranslationView(LaunchpadView):
         """Return translation groups a person is a member of."""
         return list(self.context.translation_groups)
 
-    def should_display_message(self, pomsgset):
-        """Should a certain POMsgSet be displayed.
+    def should_display_message(self, translationmessage):
+        """Should a certain `TranslationMessage` be displayed.
 
         Return False if user is not logged in and message may contain
         sensitive data such as email addresses.
@@ -2233,7 +2302,8 @@ class PersonTranslationView(LaunchpadView):
         """
         if self.user:
             return True
-        return not(pomsgset.potmsgset.hide_translations_from_anonymous)
+        return not (
+            translationmessage.potmsgset.hide_translations_from_anonymous)
 
 
 class PersonGPGView(LaunchpadView):
@@ -3003,11 +3073,11 @@ class PersonBranchesView(BranchListingView):
     """View for branch listing for a person."""
 
     extra_columns = ('author', 'product', 'role')
+    heading_template = 'Bazaar branches related to %(displayname)s'
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForPerson(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
     @cachedproperty
     def _subscribed_branches(self):
@@ -3030,38 +3100,35 @@ class PersonAuthoredBranchesView(BranchListingView):
     """View for branch listing for a person's authored branches."""
 
     extra_columns = ('product',)
-    title_prefix = 'Authored'
+    heading_template = 'Bazaar branches authored by %(displayname)s'
     no_sort_by = (BranchListingSort.AUTHOR,)
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
 
 class PersonRegisteredBranchesView(BranchListingView):
     """View for branch listing for a person's registered branches."""
 
     extra_columns = ('author', 'product')
-    title_prefix = 'Registered'
+    heading_template = 'Bazaar branches registered by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
 
 class PersonSubscribedBranchesView(BranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
     extra_columns = ('author', 'product')
-    title_prefix = 'Subscribed'
+    heading_template = 'Bazaar branches subscribed to by %(displayname)s'
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
 
 class PersonTeamBranchesView(LaunchpadView):
@@ -3071,4 +3138,3 @@ class PersonTeamBranchesView(LaunchpadView):
     def teams_with_branches(self):
         return [team for team in self.context.teams_participated_in
                 if team.branches.count() > 0 and team != self.context]
-

@@ -1,9 +1,333 @@
 = Launchpad Publication =
 
-Launchad uses the generic Zope3 publisher. It installs
-a LaunchpadRequestPublicationFactory which dispatches to our
-implementation of the appropriate zope.publisher.IRequest and
+Launchpad uses the generic Zope3 publisher. It registers several
+factories that are responsible for instantiating the appropriate
+implementation of zope.publisher.IRequest and
 zope.publisher.IPublication for the request.
+
+
+== Virtual host configurations ==
+
+The configuration defines a number of domains, one for the main
+Launchpad site and one for the sites of the various applications.
+
+    >>> from canonical.config import config
+    >>> config.launchpad.vhosts.mainsite.hostname
+    'launchpad.dev'
+    >>> config.launchpad.vhosts.blueprints.hostname
+    'blueprints.launchpad.dev'
+
+It also says whether we use http or https (although this setting can be
+overridden for the root URL of a particular host).
+
+    >>> config.launchpad.vhosts.use_https
+    False
+
+These are parsed into webapp.vhost.allvhosts.
+
+    >>> from canonical.launchpad.webapp.vhosts import allvhosts
+    >>> allvhosts.use_https
+    False
+    >>> for confname, vhost in sorted(allvhosts.configs.items()):
+    ...     print confname, '@', vhost.hostname
+    ...     print 'rooturl:', vhost.rooturl
+    ...     print 'althosts:', (', '.join(vhost.althostnames))
+    ...     print '----'
+    answers @ answers.launchpad.dev
+    rooturl: http://answers.launchpad.dev/
+    althosts:
+    ----
+    blueprints @ blueprints.launchpad.dev
+    rooturl: http://blueprints.launchpad.dev/
+    althosts:
+    ----
+    bugs @ bugs.launchpad.dev
+    rooturl: http://bugs.launchpad.dev/
+    althosts:
+    ----
+    code @ code.launchpad.dev
+    rooturl: http://code.launchpad.dev/
+    althosts:
+    ----
+    feeds @ feeds.launchpad.dev
+    rooturl: http://feeds.launchpad.dev/
+    althosts:
+    ----
+    mainsite @ launchpad.dev
+    rooturl: http://launchpad.dev/
+    althosts: localhost
+    ----
+    openid @ openid.launchpad.dev
+    rooturl: http://openid.launchpad.dev/
+    althosts:
+    ----
+    shipitedubuntu @ shipit.edubuntu.dev
+    rooturl: http://shipit.edubuntu.dev/
+    althosts:
+    ----
+    shipitkubuntu @ shipit.kubuntu.dev
+    rooturl: http://shipit.kubuntu.dev/
+    althosts:
+    ----
+    shipitubuntu @ shipit.ubuntu.dev
+    rooturl: http://shipit.ubuntu.dev/
+    althosts:
+    ----
+    translations @ translations.launchpad.dev
+    rooturl: http://translations.launchpad.dev/
+    althosts:
+    ----
+    xmlrpc @ xmlrpc.launchpad.dev
+    rooturl: http://launchpad.dev/
+    althosts:
+    ----
+    xmlrpc_private @ xmlrpc-private.launchpad.dev
+    rooturl: http://xmlrpc-private.launchpad.dev/
+    althosts:
+    ----
+
+The hostnames and alternative hostnames for all virtual hosts are
+collected into a set.  This provides a quick way to determine if a
+request is headed to one of the officialy-used Launchpad host names:
+
+    >>> for hostname in sorted(allvhosts.hostnames):
+    ...     print hostname
+    answers.launchpad.dev
+    blueprints.launchpad.dev
+    bugs.launchpad.dev
+    code.launchpad.dev
+    feeds.launchpad.dev
+    launchpad.dev
+    localhost
+    openid.launchpad.dev
+    shipit.edubuntu.dev
+    shipit.kubuntu.dev
+    shipit.ubuntu.dev
+    translations.launchpad.dev
+    xmlrpc-private.launchpad.dev
+    xmlrpc.launchpad.dev
+
+
+== VirtualHostRequestPublicationFactory ==
+
+A number of VirtualHostRequestPublicationFactories are registered with
+Zope to handle requests for a particular vhost, port, and set of HTTP
+methods.
+
+    >>> from cStringIO import StringIO
+    >>> from canonical.launchpad.webapp.publication import (
+    ...     LaunchpadBrowserPublication)
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     LaunchpadBrowserRequest, VirtualHostRequestPublicationFactory)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from zope.app.publication.interfaces import IRequestPublicationFactory
+
+Those factories provide the IRequestPublicationFactory interface.
+
+    >>> factory = VirtualHostRequestPublicationFactory(
+    ...     'mainsite', LaunchpadBrowserRequest, LaunchpadBrowserPublication)
+    >>> verifyObject(IRequestPublicationFactory, factory)
+    True
+
+By default, the request publication factory will only handle requests
+to all the host names registered for a particular virtual host.
+
+    >>> environment = {'REQUEST_METHOD': 'GET',
+    ...                'HTTP_HOST': 'launchpad.dev'}
+    >>> factory.canHandle(environment)
+    True
+
+A request publication factory that was initialized with
+handle_default_host=True will handle a request that specifies no virtual
+host. By default, handle_default_host is False.
+
+    >>> environment = {'REQUEST_METHOD': 'GET',
+    ...                'HTTP_HOST': ''}
+    >>> factory.canHandle(environment)
+    False
+
+    >>> default_handling_factory = VirtualHostRequestPublicationFactory(
+    ...    'mainsite', LaunchpadBrowserRequest, LaunchpadBrowserPublication,
+    ...    handle_default_host=True)
+    >>> default_handling_factory.canHandle(environment)
+    True
+
+By default, a request publication factory handles requests to any port
+on its registered hosts.
+
+    >>> environment = {'REQUEST_METHOD': 'GET',
+    ...                'SERVER_PORT': '1234',
+    ...                'HTTP_HOST': 'launchpad.dev'}
+    >>> factory.canHandle(environment)
+    True
+
+It's a shortcoming of Zope that a request publication factory can only
+consider aspects of the HTTP request when deciding whether or not to
+handle the request (that is, in canHandle()). Our factories need to
+consider the HTTP request when deciding what kind of publication and
+request factory to send (that is, in __call__()). So we abuse
+canHandle() by saving the environment to a thread-local variable. This
+information is retrieved later on, in __call__().
+
+    >>> for key, value in sorted(factory._thread_local.environment.items()):
+    ...     print '%s: %s' % (key, value)
+    HTTP_HOST: launchpad.dev
+    REQUEST_METHOD: GET
+    SERVER_PORT: 1234
+
+When the request publication factory is called, it normally returns
+the configured request and publication factories.
+
+    >>> requestfactory, publicationfactory = factory()
+    >>> publicationfactory
+    <class 'canonical.launchpad.webapp.publication.LaunchpadBrowserPublication'>
+
+If the request comes in on one of the virtual hosts, the request
+factory is wrapped in an ApplicationServerSettingRequestFactory that
+will on instantiation set the base URL of the request to the virtual
+host configured settings.
+
+    >>> type(requestfactory)
+    <class 'canonical.launchpad.webapp.servers.ApplicationServerSettingRequestFactory'>
+    >>> request = requestfactory(StringIO(''), environment)
+    >>> type(request)
+    <class 'canonical.launchpad.webapp.servers.LaunchpadBrowserRequest'>
+    >>> request.getApplicationURL()
+    'http://launchpad.dev'
+
+But if the request comes in to the local or default host, the request
+factory is not wrapped:
+
+    >>> environment = {'REQUEST_METHOD': 'GET',
+    ...                'HTTP_HOST': 'localhost:9000'}
+    >>> default_handling_factory.canHandle(environment)
+    True
+    >>> requestfactory, publicationfactory = default_handling_factory()
+    >>> requestfactory
+    <class 'canonical.launchpad.webapp.servers.LaunchpadBrowserRequest'>
+
+    >>> environment = {'REQUEST_METHOD': 'GET',
+    ...                'HTTP_HOST': ''}
+    >>> default_handling_factory.canHandle(environment)
+    True
+    >>> requestfactory, publicationfactory = default_handling_factory()
+    >>> requestfactory
+    <class 'canonical.launchpad.webapp.servers.LaunchpadBrowserRequest'>
+
+A request publication factory will not handle requests unless they're
+directed to one of its registered host names.
+
+    >>> environment = {'REQUEST_METHOD': 'GET',
+    ...                'HTTP_HOST': 'answers.launchpad.dev'}
+    >>> factory.canHandle(environment)
+    False
+
+Calling the factory on a request it can't handle will result in an
+error:
+
+    >>> requestfactory, publicationfactory = factory()
+    Traceback (most recent call last):
+      ...
+    AssertionError: This factory declined the request.
+
+The factory accepts a port parameter that will restrict the handled
+requests to request to a particular port.
+
+    >>> factory = VirtualHostRequestPublicationFactory(
+    ...     'mainsite', LaunchpadBrowserRequest, LaunchpadBrowserPublication,
+    ...     port=1234)
+    >>> environment = {'REQUEST_METHOD': 'GET',
+    ...                'HTTP_HOST': 'launchpad.dev'}
+    >>> factory.canHandle(environment)
+    False
+    >>> environment['SERVER_PORT'] = '80'
+    >>> factory.canHandle(environment)
+    False
+    >>> environment['SERVER_PORT'] = '1234'
+    >>> factory.canHandle(environment)
+    True
+
+The port is also checked for in the HTTP_HOST variable:
+
+    >>> environment = {'REQUEST_METHOD': 'GET',
+    ...                'HTTP_HOST': 'launchpad.dev:1234'}
+    >>> factory.canHandle(environment)
+    True
+    >>> environment['HTTP_HOST'] = 'launchpad.dev:one_two_three_four'
+    >>> factory.canHandle(environment)
+    False
+
+If the port is given twice (in SERVER_PORT and the Host header), and
+the ports don't match, an AssertionError is the result. This prevents
+sneaky outsiders from making requests to ports only exposed
+internally.
+
+    >>> environment = {'REQUEST_METHOD': 'GET',
+    ...                'SERVER_PORT' : 1234,
+    ...                'HTTP_HOST': 'launchpad.dev:80'}
+    >>> factory.canHandle(environment)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Port specified in SERVER_PORT does not match
+    port specified in HTTP_HOST
+
+It's okay to specify the port in both places if the ports are the same:
+
+    >>> environment = {'REQUEST_METHOD': 'GET',
+    ...                'SERVER_PORT' : 1234,
+    ...                'HTTP_HOST': 'launchpad.dev:1234'}
+    >>> factory.canHandle(environment)
+    True
+
+The VirtualHostRequestPublicationFactory constructor also accepts a
+`methods` parameter that restrict the set of allowed methods. This
+doesn't affect canHandle, but it does affect which requests will make
+the request publication factory return a
+ProtocolErrorPublicationFactory when called. The
+ProtocolErrorPublicationFactory is a parameterized object that
+publishes a document describing a particular HTTP-level error.
+
+    >>> environment = {'REQUEST_METHOD': 'DELETE',
+    ...                'HTTP_HOST': 'launchpad.dev',
+    ...                'SERVER_PORT' : '1234'}
+    >>> factory.canHandle(environment)
+    True
+
+    >>> requestfactory, publicationfactory = factory()
+    >>> publicationfactory
+    <canonical.launchpad.webapp.servers.ProtocolErrorPublicationFactory ...>
+
+    >>> factory = VirtualHostRequestPublicationFactory(
+    ...     'mainsite', LaunchpadBrowserRequest, LaunchpadBrowserPublication,
+    ...     methods=['DELETE'])
+    >>> environment = {'REQUEST_METHOD': 'GET',
+    ...                'HTTP_HOST': 'launchpad.dev'}
+    >>> factory.canHandle(environment)
+    True
+    >>> requestfactory, publicationfactory = factory()
+    >>> publicationfactory
+    <canonical.launchpad.webapp.servers.ProtocolErrorPublicationFactory ...>
+
+    >>> environment['REQUEST_METHOD'] = 'DELETE'
+    >>> factory.canHandle(environment)
+    True
+    >>> requestfactory, publicationfactory = factory()
+    >>> publicationfactory
+    <class 'canonical.launchpad.webapp.publication.LaunchpadBrowserPublication'>
+
+
+== Zope Publisher integration ==
+
+A factory is registered for each of our available virtual host. This
+is done by the register_launchpad_request_publication_factories
+function called when the servers module is loaded.
+
+(We need to call it here once again, because the test layer clears out
+the registered factories.)
+
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     register_launchpad_request_publication_factories)
+    >>> register_launchpad_request_publication_factories()
 
     # Z3 doesn't make this available as a utility.
     >>> from zope.app.publication.requestpublicationregistry import (
@@ -11,24 +335,174 @@ zope.publisher.IPublication for the request.
 
     # Defines an helper function that returns the appropriate
     # IRequest and IPublication.
-    >>> from cStringIO import StringIO
-    >>> def get_request_and_publication(method='GET',
-    ...                                 in_stream='', host='localhost'):
+    >>> def get_request_and_publication(host='localhost', port=None,
+    ...                                 method='GET', mime_type='text/html',
+    ...                                 in_stream=''):
     ...     environment = {'HTTP_HOST': host,
-    ...                    'REQUEST_METHOD': method }
+    ...                    'REQUEST_METHOD': method,
+    ...                    'SERVER_PORT': port,
+    ...                    'CONTENT_TYPE': mime_type}
     ...     launchpad_factory = factoryRegistry.lookup(
-    ...         method, 'text/html', environment)
+    ...         method, mime_type, environment)
     ...     request_factory, publication_factory = launchpad_factory()
     ...     request = request_factory(StringIO(in_stream), environment)
     ...     # Since Launchpad doesn't use ZODB, we use None here.
     ...     publication = publication_factory(None)
     ...     return request, publication
 
+    >>> from canonical.launchpad.webapp.servers import ProtocolErrorPublication
+    >>> def print_request_and_publication(host='localhost', port=None,
+    ...                                   method='GET', mime_type='text/html'):
+    ...     """Helper giving short names for the request and publication."""
+    ...     request, publication = get_request_and_publication(
+    ...         host, port, method, mime_type)
+    ...     print type(request).__name__.split('.')[-1]
+    ...     publication_classname = type(publication).__name__.split('.')[-1]
+    ...     if isinstance(publication, ProtocolErrorPublication):
+    ...         print "%s: status=%d" % (
+    ...             publication_classname, publication.status)
+    ...         for name, value in publication.headers.items():
+    ...             print "  %s: %s" % (name, value)
+    ...     else:
+    ...         print publication_classname
+    >>> print_request_and_publication('launchpad.dev')
+    LaunchpadBrowserRequest
+    MainLaunchpadPublication
+
+    >>> print_request_and_publication('')
+    LaunchpadBrowserRequest
+    MainLaunchpadPublication
+
+    >>> print_request_and_publication('launchpad.dev', method='DELETE')
+    ProtocolErrorRequest
+    ProtocolErrorPublication: status=405
+      Allow: GET HEAD POST
+
+    >>> print_request_and_publication('answers.launchpad.dev')
+    AnswersBrowserRequest
+    AnswersPublication
+
+    >>> print_request_and_publication('blueprints.launchpad.dev')
+    BlueprintBrowserRequest
+    BlueprintPublication
+
+    >>> print_request_and_publication('bugs.launchpad.dev')
+    BugsBrowserRequest
+    BugsPublication
+
+    >>> print_request_and_publication('code.launchpad.dev')
+    CodeBrowserRequest
+    CodePublication
+
+    >>> print_request_and_publication('feeds.launchpad.dev')
+    FeedsBrowserRequest
+    FeedsPublication
+
+    >>> print_request_and_publication('openid.launchpad.dev')
+    OpenIdBrowserRequest
+    OpenIdPublication
+
+    >>> print_request_and_publication('translations.launchpad.dev')
+    TranslationsBrowserRequest
+    TranslationsPublication
+
+    >>> print_request_and_publication('shipit.ubuntu.dev')
+    UbuntuShipItBrowserRequest
+    ShipItPublication
+
+    >>> print_request_and_publication('shipit.edubuntu.dev')
+    EdubuntuShipItBrowserRequest
+    ShipItPublication
+
+    >>> print_request_and_publication('shipit.kubuntu.dev')
+    KubuntuShipItBrowserRequest
+    ShipItPublication
+
+The XML-RPC RequestPublicationFactory only responds to POST requests,
+and then only when the MIME type is text/xml.
+
+    >>> print_request_and_publication(
+    ...     'xmlrpc.launchpad.dev', method='POST', mime_type='text/xml')
+    PublicXMLRPCRequest
+    PublicXMLRPCPublication
+
+    >>> print_request_and_publication(
+    ...     'xmlrpc.launchpad.dev', method='GET')
+    ProtocolErrorRequest
+    ProtocolErrorPublication: status=405
+      Allow: POST
+
+    >>> print_request_and_publication(
+    ...     'xmlrpc.launchpad.dev', method='POST', mime_type='application/xml')
+    ProtocolErrorRequest
+    ProtocolErrorPublication: status=415
+
+The private XML-RPC server works just like the public one, but it only
+listens on a particular port.
+
+Find the port the Private XMLRPC service is listening on.
+
+    >>> for server in config.servers:
+    ...     if server.type == 'PrivateXMLRPC':
+    ...         private_port = server.address[1]
+
+    >>> print_request_and_publication(
+    ...     'xmlrpc-private.launchpad.dev', method='POST',
+    ...     mime_type='application/xml')
+    ProtocolErrorRequest
+    ProtocolErrorPublication: status=404
+
+Try a normal request:
+
+    >>> print_request_and_publication(
+    ...     'xmlrpc-private.launchpad.dev', port=private_port, method='POST',
+    ...     mime_type='text/xml')
+    PrivateXMLRPCRequest
+    PrivateXMLRPCPublication
+
+A request to an unknown host results in a 404 error.
+
+    >>> print_request_and_publication('nosuchhost.launchpad.dev')
+    ProtocolErrorRequest
+    ProtocolErrorPublication: status=404
+
+Now some tests that do full HTTP calls using http() to get various
+errors. I'm going to temporarily bump up the log level so that these
+errors aren't logged as exceptions--that would make the tests look
+less nice.
+
+    >>> import logging
+    >>> logger = logging.getLogger('SiteError')
+    >>> old_level = logger.level
+    >>> logger.setLevel(logging.CRITICAL)
+
+    >>> logout()
+    >>> print http("GET / HTTP/1.1\n"
+    ...            "Host: nosuchhost.launchpad.dev")
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print http("GET /foo/bar HTTP/1.1\n"
+    ...            "Host: xmlrpc.launchpad.dev\n"
+    ...            "X-zope-handle-errors: False")
+    HTTP/1.1 405 Method Not Allowed
+    Allow: POST
+    ...
+    Your request didn't fit the protocol expected by this server.
+    ...
+
+(A bit of cleanup so the test can continue:)
+
+    >>> logger.setLevel(old_level)
+    >>> login(ANONYMOUS)
+
+
+== ILaunchpadBrowserApplicationRequest ==
+
 All Launchpad requests provides the ILaunchpadBrowserApplicationRequest
 interface. That interface is an extension of the zope standard
 IBrowserApplicationRequest.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     ILaunchpadBrowserApplicationRequest)
 
@@ -160,7 +634,7 @@ allowing different authentication based on the traversed objects):
 Our publication implementation make sure that requests supposed to be
 read-only (GET and HEAD) don't change anything in the database.
 (Actually, if the published method calls transaction.commit() itself,
-that assumption won't hold.) 
+that assumption won't hold.)
 
 Again this is handled by the afterCall() publication hook.
 
@@ -177,7 +651,7 @@ reverted in a GET request.
     >>> foo_bar.city = 'Montreal'
     >>> syncUpdate(foo_bar)
 
-    >>> request, publication = get_request_and_publication('GET')
+    >>> request, publication = get_request_and_publication(method='GET')
     >>> publication.afterCall(request, None)
     >>> publication.clearSQLOSCache()
     >>> txn = transaction.begin()
@@ -190,14 +664,13 @@ But not if the request uses POST, the changes will be preserved.
     >>> foo_bar.city = 'Montreal'
     >>> syncUpdate(foo_bar)
 
-    >>> request, publication = get_request_and_publication('POST')
+    >>> request, publication = get_request_and_publication(method='POST')
     >>> publication.afterCall(request, None)
     >>> publication.clearSQLOSCache()
     >>> txn = transaction.begin()
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
     >>> print foo_bar.city
     Montreal
-
 
 == HEAD requests have empty body ==
 
@@ -206,7 +679,7 @@ returned as part of HEAD requests. (Again this is handled by the
 afterCall() publication hook.)
 
     >>> txn = transaction.begin()
-    >>> request, publication = get_request_and_publication('HEAD')
+    >>> request, publication = get_request_and_publication(method='HEAD')
     >>> response = request.response
     >>> response.setResult('Content that will disappear.')
     >>> publication.afterCall(request, None)
@@ -216,7 +689,7 @@ afterCall() publication hook.)
 In other cases, like a GET, the body would be unchanged.
 
     >>> txn = transaction.begin()
-    >>> request, publication = get_request_and_publication('GET')
+    >>> request, publication = get_request_and_publication(method='GET')
     >>> response = request.response
     >>> response.setResult('Some boring content.')
     >>> publication.afterCall(request, None)

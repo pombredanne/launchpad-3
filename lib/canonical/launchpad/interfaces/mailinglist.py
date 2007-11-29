@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Mailing list interfaces."""
 
@@ -118,6 +119,12 @@ class MailingListStatus(DBEnumeratedType):
         The mailing list has been flagged for deactivation by the team owner.
         Mailman will be informed of this and will take the necessary actions
         to deactive the list.
+        """)
+
+    MOD_FAILED = DBItem(11, """
+        Modification failed
+
+        Mailman was unsuccessful in modifying the mailing list.
         """)
 
 
@@ -272,18 +279,22 @@ class IMailingList(Interface):
 
     welcome_message = Text(
         title=_('Welcome message text'),
-        description=_('When a new member joins the mailing list, they are '
-                      'sent this welcome message text.  It may contain '
-                      'any instructions or additional links that a new '
-                      'subscriber might want to know about.  The welcome '
-                      'message may only be changed for active mailing lists '
-                      'and doing so changes the status of the list to '
-                      'MODIFIED.')
+        description=_('Any instructions or links that should be sent to new '
+                      'subscribers to this mailing list.'),
+        required=False,
         )
 
     address = TextLine(
         title=_("This list's email address."), required=True, readonly=True,
         description=_("The text representation of this team's email address."))
+
+    def isUsable():
+        """Is this mailing list in a state to accept messages?
+
+        This doesn't neccessarily mean that the list is in perfect
+        shape: its status might be `MailingListStatus.MOD_FAILED`. But
+        it should be able to handle messages.
+        """
 
     def review(reviewer, status):
         """Review the mailing list's registration.

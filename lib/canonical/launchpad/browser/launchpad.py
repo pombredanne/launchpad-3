@@ -72,7 +72,6 @@ from canonical.launchpad.interfaces import (
     IMentoringOfferSet,
     IPersonSet,
     IPillarNameSet,
-    IPOTemplateNameSet,
     IProductSet,
     IProjectSet,
     IQuestionSet,
@@ -85,7 +84,6 @@ from canonical.launchpad.interfaces import (
     IStructuralHeaderPresentation,
     ITranslationGroupSet,
     ITranslationImportQueue,
-    NotFoundError,
     )
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
@@ -433,7 +431,6 @@ class LaunchpadRootNavigation(Navigation):
         '+languages': ILanguageSet,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
-        'potemplatenames': IPOTemplateNameSet,
         'projects': IProductSet,
         'projectgroups': IProjectSet,
         'registry': IRegistryApplication,
@@ -985,7 +982,7 @@ class AppFrontPageSearchView(LaunchpadFormView):
     @property
     def scope_error(self):
         """The error message for the scope widget."""
-        return self.getWidgetError('scope')
+        return self.getFieldError('scope')
 
 
 class BrowserWindowDimensions(LaunchpadView):

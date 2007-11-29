@@ -138,7 +138,6 @@ no title, and no summary, and even no URL.
 
 Branches with no URL are primarily hosted on the supermirror.
 
-    >>> url = 'http://example.com/~ddaa/junkcode'
     >>> junkcode = branchset.new(
     ...     BranchType.HOSTED, 'junkcode', ddaa, ddaa, None, None,
     ...     date_created=now.next())
@@ -160,12 +159,15 @@ A branch that is not associated with a product may not be owned by a
 team, however.
 
     >>> team = personset.getByName('simple-team')
+    >>> member = personset.getByName('one-membership')
+    >>> member.inTeam(team)
+    True
     >>> teamjunkcode = branchset.new(
-    ...     BranchType.HOSTED, 'junkcode', ddaa, team, None, None,
+    ...     BranchType.HOSTED, 'junkcode', member, team, None, None,
     ...     date_created=now.next())
     Traceback (most recent call last):
       ...
-    AssertionError: Cannot create team-owned junk branches.
+    BranchCreationNoTeamOwnedJunkBranches: Cannot create team-owned junk ...
 
 The ~vcs-imports celebrity team is exempt from this restriction to
 allow the creation of code import branches without an associated
@@ -181,6 +183,15 @@ product.
     >>> print vcs_imports_junkcode.owner.name
     vcs-imports
 
+Branch names must start with a number or a letter (upper or lower
+case) and -, +, _ and @ are allowed after that.
+
+    >>> branchset.new(
+    ...     BranchType.HOSTED, 'invalid name!', ddaa, ddaa, None, None,
+    ...     date_created=now.next())
+    Traceback (most recent call last):
+      ...
+    LaunchpadValidationError: Invalid branch name 'invalid name!'.  Branch ...
 
 == Determining the number of branches ==
 

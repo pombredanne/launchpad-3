@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <head>
   <tal:block metal:fill-slot="head_epilogue">
@@ -59,12 +66,12 @@
                       tal:condition="context/isTeam">
     <li tal:condition="mentorships">
       <a href="+mentoring" title="People will mentor work for newcomers">
-        <img alt="Mentorships" src="/+icing/but-sml-mentoring.gif">
+        <img alt="Mentorships" src="/+icing/but-sml-mentoring.gif" />
       </a>
     </li>
     <li tal:condition="not: mentorships">
       <a href="+mentoring" title="No mentoring is yet offered for this team">
-        <img alt="Mentorships" src="/+icing/but-sml-mentoring-off.gif">
+        <img alt="Mentorships" src="/+icing/but-sml-mentoring-off.gif" />
       </a>
     </li>
     <tal:not-restricted
@@ -345,7 +352,7 @@
       <table>
         <tr tal:repeat="spec specs"
             tal:replace="structure spec/@@+listing-simple" />
-      <table>
+      </table>
       <div tal:condition="specs">
         <tal:comment condition="nothing">
           <!-- XXX: Guilherme Salgado 2007-02-12:
@@ -387,6 +394,7 @@
     </div>
 
   </div>
+  </div>
   </tal:valid-person-or-team>
 
   <div id="not-lp-user-or-team"
@@ -420,13 +428,18 @@
       </p>
 
       <tal:logged-in condition="request/lp:person">
-        <a tal:attributes="
-          href string:/people/+requestmerge?field.dupeaccount=${context/name}"
-        >Hey, I'm <span tal:replace="context/browsername" /></a>
+        <tal:cannot-be-team condition="not: view/context_is_probably_a_team">
+          <a tal:attributes="
+            href string:/people/+requestmerge?field.dupeaccount=${context/name}"
+          >Hey, I'm <span tal:replace="context/browsername" />.</a>
+        </tal:cannot-be-team>
+        <tal:can-be-team condition="view/context_is_probably_a_team">
+          <a href="+claimteam">Hey, this is a team I run.</a>
+        </tal:can-be-team>
       </tal:logged-in>
 
       <tal:not-logged-in condition="not: request/lp:person">
-        <a href="+claim">Hey, I'm <span tal:replace="context/browsername" /></a>
+        <a href="+claim">Hey, I'm <span tal:replace="context/browsername" />.</a>
       </tal:not-logged-in>
     </tal:noaccount>
 

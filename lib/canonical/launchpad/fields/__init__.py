@@ -1,4 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,W0401
 
 from StringIO import StringIO
 from textwrap import dedent
@@ -11,8 +12,8 @@ from zope.schema.interfaces import (
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
-from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
@@ -553,4 +554,22 @@ class MugshotImageUpload(BaseImageUpload):
     max_size = 100*1024
     default_image_resource = '/@@/nyet-mugshot'
 
+
+class PillarNameField(BlacklistableContentNameField):
+    """Base field used for names of distros/projects/products."""
+
+    errormessage = _("%s is already used by another project")
+
+    def _getByName(self, name):
+        return getUtility(IPillarNameSet).getByName(name)
+
+
+class ProductNameField(PillarNameField):
+    """Field used by IProduct.name."""
+
+    @property
+    def _content_iface(self):
+        # Local import to avoid circular dependencies.
+        from canonical.launchpad.interfaces.product import IProduct
+        return IProduct
 

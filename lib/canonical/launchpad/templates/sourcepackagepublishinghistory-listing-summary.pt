@@ -1,0 +1,46 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+  <tal:comment condition="nothing">
+    <!-- XXX: cprov 20071126
+      The template should be kept in sync with its respective binary
+      replacement (binarypackagepublishinghistory-listing-summary.pt).
+      In the future we should be able to refactor both in a single
+      template macro, see bug #153885.
+    -->
+  </tal:comment>
+
+  <tr>
+    <td style="white-space: nowrap"><a href="#"
+        tal:attributes="id string:pub${context/id}-expander"
+        ><img src="/@@/treeCollapsed" alt=""
+                tal:attributes="id string:pub${context/id}-arrow" /></a>
+    </td>
+    <td tal:content="context/datecreated/fmt:datetime"
+        >2005-08-24</td>
+    <td tal:content="context/status/title">Published</td>
+    <td>
+       <a tal:attributes="href context/meta_sourcepackage/fmt:url"
+          tal:content="context/distroseries/displayname">warty</a>
+    </td>
+    <td tal:content="context/pocket/title/fmt:lower">Release</td>
+    <td tal:content="context/component/name">main</td>
+    <td tal:content="context/section/name">web</td>
+    <td>
+      <a tal:content="context/meta_distroseriessourcepackagerelease/version"
+         tal:attributes="href context/meta_distroseriessourcepackagerelease/fmt:url"
+      >2.0.39</a>
+    </td>
+  </tr>
+  <tr tal:attributes="id string:pub${context/id}" style="display: none">
+    <td colspan="8">
+      <tal:block replace="structure context/@@+record-details" />
+    </td>
+  </tr>
+
+  <tal:js_glue replace="structure view/js_connector" />
+
+</tal:root>

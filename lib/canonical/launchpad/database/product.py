@@ -1,9 +1,10 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
 
 __metaclass__ = type
-__all__ = ['Product', 'ProductSet', 'ProductLicense']
+__all__ = ['Product', 'ProductSet']
 
 
 import operator
@@ -32,6 +33,7 @@ from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.productbounty import ProductBounty
+from canonical.launchpad.database.productlicense import ProductLicense
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.question import (
@@ -45,10 +47,11 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, IFAQTarget,
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    ILaunchpadStatisticSet, IPersonSet, IProduct, IProductSet,
-    IQuestionTarget, License, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
-    SpecificationSort, SpecificationFilter, SpecificationDefinitionStatus,
-    SpecificationImplementationStatus, TranslationPermission)
+    ILaunchpadStatisticSet, ILaunchpadUsage, IPersonSet, IProduct,
+    IProductSet, IQuestionTarget, License, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationSort, SpecificationFilter,
+    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    TranslationPermission)
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
@@ -56,8 +59,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
               QuestionTargetMixin, HasTranslationImportsMixin):
     """A Product."""
 
-    implements(IProduct, IFAQTarget, IQuestionTarget,
-               IHasLogo, IHasMugshot, IHasIcon)
+    implements(IFAQTarget, IHasLogo, IHasMugshot, IHasIcon,
+               ILaunchpadUsage, IProduct, IQuestionTarget)
 
     _table = 'Product'
 
@@ -509,7 +512,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = (
-                ['-priority', 'Specification.definition_status', 'Specification.name'])
+                ['-priority', 'Specification.definition_status',
+                 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -538,9 +542,10 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                          SpecificationDefinitionStatus.SUPERSEDED)
+            query += (' AND Specification.definition_status NOT IN '
+                '( %s, %s ) ' % sqlvalues(
+                    SpecificationDefinitionStatus.OBSOLETE,
+                    SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -581,10 +586,10 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         distros = Distribution.select(
             "Packaging.productseries = ProductSeries.id AND "
             "ProductSeries.product = %s AND "
-            "Packaging.distrorelease = DistroRelease.id AND "
-            "DistroRelease.distribution = Distribution.id"
+            "Packaging.distroseries = DistroSeries.id AND "
+            "DistroSeries.distribution = Distribution.id"
             "" % sqlvalues(self.id),
-            clauseTables=['Packaging', 'ProductSeries', 'DistroRelease'],
+            clauseTables=['Packaging', 'ProductSeries', 'DistroSeries'],
             orderBy='name',
             distinct=True
             )
@@ -677,9 +682,6 @@ class ProductSet:
                       reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=(), license_info=None):
         """See `IProductSet`."""
-
-        assert len(licenses) != 0, "licenses argument must not be empty"
-
         product = Product(
             owner=owner, name=name, displayname=displayname,
             title=title, project=project, summary=summary,
@@ -690,13 +692,15 @@ class ProductSet:
             programminglang=programminglang, reviewed=reviewed,
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
 
-        product.licenses = licenses
+        if len(licenses) > 0:
+            product.licenses = licenses
 
         # Create a default trunk series and set it as the development focus
-        trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
-            'represents the primary line of development rather than '
-            'a stable release branch. This is sometimes also called MAIN '
-            'or HEAD.')
+        trunk = product.newSeries(
+            owner, 'trunk',
+            ('The "trunk" series represents the primary line of development '
+             'rather than a stable release branch. This is sometimes also '
+             'called MAIN or HEAD.'))
         product.development_focus = trunk
 
         return product
@@ -790,10 +794,3 @@ class ProductSet:
 
     def count_codified(self):
         return self.stats.value('products_with_branches')
-
-
-class ProductLicense(SQLBase):
-    """A product's license."""
-
-    product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
-    license = EnumCol(dbName='license', notNull=True, schema=License)

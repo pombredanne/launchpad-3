@@ -563,16 +563,16 @@ class ProjectBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForProject(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
     @property
     def no_branch_message(self):
-        if self.selected_lifecycle_status is not None:
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
             message = (
-                'There may be branches registered for %s '
+                'There are branches registered for %s '
                 'but none of them match the current filter criteria '
                 'for this page. Try filtering on "Any Status".')
         else:

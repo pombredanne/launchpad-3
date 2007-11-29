@@ -1,31 +1,38 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
   <ul>
-    <li tal:condition="context/datepublished">
-      <strong>Published</strong>
-      <span tal:attributes="title context/datepublished/fmt:datetime"
-            tal:content="context/datepublished/fmt:displaydate" />
-    </li>
-    <li tal:condition="view/wasDeleted">
-      <strong>Deleted</strong>
-      <span tal:attributes="title context/datesuperseded/fmt:datetime"
-            tal:content="context/datesuperseded/fmt:displaydate" />
-      by <a tal:attributes="href context/removed_by/fmt:url"
-            tal:content="context/removed_by/displayname"/> 
-      (<span tal:replace="context/removal_comment/fmt:shorten/20" />)
-    </li>
-    <li tal:condition="view/wasSuperseded">
-      <strong>Superseded</strong>
-      <span tal:attributes="title context/datesuperseded/fmt:datetime"
-            tal:content="context/datesuperseded/fmt:displaydate"/> 
-      by <span tal:replace="context/supersededby/title" />
+    <li tal:condition="view/isRemoved">
+      <strong>Removed from disk</strong>
+      <span tal:attributes="title context/dateremoved/fmt:datetime"
+            tal:content="context/dateremoved/fmt:displaydate" />.
     </li>
     <li tal:condition="view/isPendingRemoval">
       <strong>Removal requested</strong>
       <span tal:attributes="title context/datesuperseded/fmt:datetime"
          tal:content="context/datesuperseded/fmt:displaydate" />.
     </li>
-    <li tal:condition="view/isRemoved">
-      <strong>Removed from disk</strong>
-      <span tal:attributes="title context/dateremoved/fmt:datetime"
-            tal:content="context/dateremoved/fmt:displaydate" />.
+    <li tal:condition="view/wasDeleted">
+      <strong>Deleted</strong>
+      <span tal:attributes="title context/datesuperseded/fmt:datetime"
+            tal:content="context/datesuperseded/fmt:displaydate" />
+      by <a tal:attributes="href context/removed_by/fmt:url"
+            tal:content="context/removed_by/displayname"/>
+      (<span tal:replace="context/removal_comment/fmt:shorten/20" />)
     </li>
- </ul>
+    <li tal:condition="view/wasSuperseded">
+      <strong>Superseded</strong>
+      <span tal:attributes="title context/datesuperseded/fmt:datetime"
+            tal:content="context/datesuperseded/fmt:displaydate"/>
+      by <span tal:replace="context/supersededby/title" />
+    </li>
+    <li tal:condition="context/datepublished">
+      <strong>Published</strong>
+      <span tal:attributes="title context/datepublished/fmt:datetime"
+            tal:content="context/datepublished/fmt:displaydate" />
+    </li>
+
+  </ul>
+</tal:root>

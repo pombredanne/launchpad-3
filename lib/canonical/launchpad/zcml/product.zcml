@@ -48,7 +48,8 @@
       />
     <require
       permission="launchpad.AnyPerson"
-      attributes="newQuestion addAnswerContact removeAnswerContact"
+      attributes="newQuestion createQuestionFromBug addAnswerContact
+                  removeAnswerContact"
       />
     <!-- IFAQTarget -->
     <allow
@@ -339,18 +340,6 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IProduct"
-    permission="launchpad.Admin"
-    class="canonical.launchpad.browser.ProductView"
-    layer="canonical.launchpad.layers.TranslationsLayer" >
-    <browser:page
-      name="+potemplatenames"
-      facet="translations"
-      template="../templates/object-potemplatenames.pt"
-      />
-  </browser:pages>
-
-  <browser:pages
-    for="canonical.launchpad.interfaces.IProduct"
     permission="zope.Public" >
     <browser:page
       name="+bounties"
@@ -517,7 +506,7 @@
     for="canonical.launchpad.interfaces.IProductSet"
     class="canonical.launchpad.browser.ProductSetView"
     facet="overview"
-    permission="launchpad.AnyPerson">
+    permission="launchpad.Admin">
     <browser:page
       name="+review"
       template="../templates/registry-review.pt"

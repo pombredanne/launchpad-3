@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Person interfaces."""
 
@@ -11,15 +12,15 @@ __all__ = [
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'IObjectReassignment',
+    'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
     'IPersonSet',
-    'IPerson',
     'IRequestPeopleMerge',
+    'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
-    'ITeam',
     'JoinNotAllowed',
     'PersonCreationRationale',
     'TeamContactMethod',
@@ -753,6 +754,15 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             or (renewal_period is not None and renewal_period <= 0)):
             raise Invalid(
                 'You must specify a default renewal period greater than 0.')
+
+    def convertToTeam(team_owner):
+        """Convert this person into a team owned by the given team_owner.
+
+        Also adds the given team owner as an administrator of the team.
+
+        Only Person entries whose account_status is NOACCOUNT and which are
+        not teams can be converted into teams.
+        """
 
     def getActiveMemberships():
         """Return all active TeamMembership objects of this team.

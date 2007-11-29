@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
   <head>
   </head>
   <body>
@@ -29,8 +36,10 @@
                    tal:content="submission/system_fingerprint/fingerprint" />
               </td>
               <td tal:content="submission/date_submitted/fmt:datetime" />
-              <td><a href tal:attributes="href submission/raw_submission/http_url"
-                          tal:content="submission/raw_submission/filename" />
+              <td>
+                <a href=""
+                  tal:attributes="href submission/raw_submission/http_url"
+                  tal:content="submission/raw_submission/filename" />
               </td>
               <td tal:condition="show_private">
                 <span tal:condition="submission/private">yes</span>
