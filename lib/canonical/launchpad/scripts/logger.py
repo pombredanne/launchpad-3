@@ -216,20 +216,12 @@ def logger(options=None, name=None):
         logger_options(parser)
         options, args = parser.parse_args()
 
-    if getattr(options, 'log_stream', None) is not None:
-        out_stream = options.log_stream
-    elif getattr(options, 'log_file', None) is not None:
+    if options.log_file:
         out_stream = open(options.log_file, 'a')
     else:
         out_stream = sys.stderr
 
-    # The attribute is called 'loglevel' for backward compatibility.
-    if getattr(options, 'loglevel', None) is None:
-        log_level = logging.INFO
-    else:
-        log_level = options.loglevel
-        
-    return _logger(log_level, out_stream=out_stream, name=name)
+    return _logger(options.loglevel, out_stream=out_stream, name=name)
 
 
 def reset_root_logger():
@@ -328,7 +320,3 @@ class _LogWrapper:
 
 
 log = _LogWrapper(logging.getLogger())
-
-
-
-

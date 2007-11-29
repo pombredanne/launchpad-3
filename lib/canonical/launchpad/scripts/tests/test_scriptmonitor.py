@@ -4,8 +4,8 @@
 
 __metaclass__ = type
 
+import logging
 import unittest
-from cStringIO import StringIO
 
 from canonical import lp
 from canonical.database.sqlbase import connect
@@ -23,7 +23,9 @@ class CheckScriptTestCase(unittest.TestCase):
         # sys.args.  We don't care about the log messages, so just throw them
         # away.
         class FakeOptions:
-            log_stream = StringIO()
+            log_file = '/dev/null'
+            loglevel = logging.INFO
+            verbose = False
         self.con = connect(lp.dbuser)
         self.log = logger(FakeOptions())
 
