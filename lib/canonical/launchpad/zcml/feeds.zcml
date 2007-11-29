@@ -52,6 +52,6 @@
     <browser:feeds
         module="canonical.launchpad.feed"
         classes="BugFeed BugTargetBugsFeed PersonBugsFeed SearchBugsFeed
-                 BranchFeed ProductBranchFeed"
+                 BranchFeed ProductBranchFeed ProjectBranchFeed"
         />
 </configure>

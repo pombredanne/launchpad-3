@@ -18,7 +18,6 @@ from zope.security.interfaces import Unauthorized
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.browser.bugtask import BugTaskView
 from canonical.launchpad.browser import (
     BugsBugTaskSearchListingView, BugTargetView,
     PersonRelatedBugsView)
@@ -26,7 +25,6 @@ from canonical.launchpad.interfaces import (
     IBug, IBugTarget, IBugTaskSet, IMaloneApplication, IPerson)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
-from canonical.lazr.interfaces import IFeed
 
 
 def get_unique_bug_tasks(items):

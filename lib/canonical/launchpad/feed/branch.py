@@ -7,22 +7,24 @@ __metaclass__ = type
 __all__ = [
     'BranchFeed',
     'ProductBranchFeed',
+    'ProjectBranchFeed',
     ]
 
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.browser import ProductBranchesView
+from canonical.launchpad.browser import (
+    BranchView, ProductBranchesView, ProjectBranchesView)
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.interfaces import IBranch, IProduct
+from canonical.launchpad.interfaces import (
+    IBranch, IProduct, IProject)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 
 
-class BranchFeedContentView(LaunchpadView):
-    """View for a branch feed contents."""
+class BranchFeedContentView(BranchView):
+    """View for branch feed contents."""
 
     def __init__(self, context, request, feed):
         super(BranchFeedContentView, self).__init__(context, request)
@@ -30,7 +32,6 @@ class BranchFeedContentView(LaunchpadView):
 
     def render(self):
         """Render the view."""
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         return ViewPageTemplateFile('templates/branch.pt')(self)
 
 
@@ -96,7 +97,7 @@ class BranchFeedBase(FeedBase):
 
     def itemToFeedEntry(self, branch):
         """See `IFeed`."""
-        title = FeedTypedData('[%s] %s' % (branch.id, branch.title))
+        title = FeedTypedData('%s' % branch.title)
         url = canonical_url(branch, rootsite=self.rootsite)
         content_view = BranchFeedContentView(branch, self.request, self)
         entry = FeedEntry(title=title,
@@ -136,16 +137,14 @@ class BranchFeed(BranchFeedBase):
         return [self.context]
 
 
-class ProductBranchFeed(BranchFeedBase):
-    """Feed for all branches on a product."""
+class ProductProjectBranchFeed(BranchFeedBase):
+    """Feed for all branches on a product or project."""
 
-    usedfor = IProduct
     feedname = "branches"
 
     def initialize(self):
         """See `IFeed`."""
-        # For a `BranchFeed` we must ensure that the branch is not private.
-        super(ProductBranchFeed, self).initialize()
+        super(ProductProjectBranchFeed, self).initialize()
 
     @property
     def title(self):
@@ -154,15 +153,37 @@ class ProductBranchFeed(BranchFeedBase):
 
     def _getRawItems(self):
         """Get the raw set of items for the feed."""
-        delegate_view = ProductBranchesView(self.context, self.request)
+        delegate_view = self.delegate_view_class(self.context, self.request)
         delegate_view.initialize()
         branches_batch = delegate_view.branches()
         batch_list = branches_batch.getBatches()
         # Assuming the branches are unique.
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         branches = []
         for batch in batch_list:
             branches.extend(list(batch.list))
             if len(branches) >= self.quantity:
                 break
         return branches[:self.quantity]
+
+
+class ProductBranchFeed(ProductProjectBranchFeed):
+    """Feed for all branches on a product."""
+
+    usedfor = IProduct
+    delegate_view_class = ProductBranchesView
+
+    def initialize(self):
+        """See `IFeed`."""
+        super(ProductBranchFeed, self).initialize()
+
+
+class ProjectBranchFeed(ProductProjectBranchFeed):
+    """Feed for all branches on a product."""
+
+    usedfor = IProject
+    delegate_view_class = ProjectBranchesView
+
+    def initialize(self):
+        """See `IFeed`."""
+        # For a `BranchFeed` we must ensure that the branch is not private.
+        super(ProjectBranchFeed, self).initialize()
