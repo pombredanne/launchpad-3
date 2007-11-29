@@ -43,7 +43,7 @@ class MailingListAdminScript(LaunchpadScript):
 
     def __init__(self):
         self.usage = textwrap.dedent(self.__doc__)
-        LaunchpadScript.__init__(self, 'scripts.mlist_admin')
+        super(MailingListAdminScript, self).__init__('scripts.mlist_admin')
 
     def add_my_options(self):
         self.parser.add_option('-r', '--reviewer',

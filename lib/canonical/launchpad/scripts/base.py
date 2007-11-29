@@ -1,5 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
+__metaclass__ = type
 __all__ = [
     'LaunchpadCronScript',
     'LaunchpadScript',
@@ -10,7 +11,6 @@ import datetime
 import logging
 from optparse import OptionParser
 import os
-import socket
 import sys
 
 from contrib.glock import GlobalLock, LockAlreadyAcquired
@@ -27,7 +27,6 @@ UTC = pytz.timezone('UTC')
 
 
 class LaunchpadScriptFailure(Exception):
-    exit_status = 1
     """Something bad happened and the script is going away.
 
     When you raise LaunchpadScriptFailure inside your main() method, we
@@ -42,6 +41,7 @@ class LaunchpadScriptFailure(Exception):
     LaunchpadScriptFailure.exit_status. If you want a different value
     subclass LaunchpadScriptFailure and redefine it.
     """
+    exit_status = 1
 
 
 class LaunchpadScript:
@@ -241,7 +241,7 @@ class LaunchpadScript:
 
 
 class LaunchpadCronScript(LaunchpadScript):
-    """A LaunchpadScript subclass that logs successful runs in the Database."""
+    """Logs successful script runs runs in the database."""
 
     def record_activity(self, date_started, date_completed):
         """Record the successful completion of the script."""
