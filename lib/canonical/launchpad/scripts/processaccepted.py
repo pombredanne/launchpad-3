@@ -92,7 +92,11 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
             if edited_task is not None:
                 assert source_release.changelog is not None, (
                     "New source uploads should have a changelog.")
+                content = (
+                    "The bug was fixed in the package %s"
+                    "\n\n---------------\n%s" % (
+                    source_release.title, source_release.changelog,))
                 bug.newMessage(
                     owner=janitor,
                     subject=bug.followup_subject(),
-                    content=source_release.changelog)
+                    content=content)
