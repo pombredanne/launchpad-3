@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -19,19 +20,19 @@ from canonical.launchpad.interfaces import (
     IProductSeries,
     ISpecification,
     ISpecificationSet,
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationGoalStatus,
+    SpecificationImplementationStatus,
+    SpecificationLifecycleStatus,
+    SpecificationPriority,
+    SpecificationSort,
     )
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
-from canonical.lp.dbschema import (
-    SpecificationImplementationStatus, SpecificationSort,
-    SpecificationFilter, SpecificationGoalStatus,
-    SpecificationLifecycleStatus,
-    SpecificationPriority, SpecificationDefinitionStatus,
-    )
 
 from canonical.launchpad.helpers import (
     contactEmailAddresses, shortlist)
@@ -89,7 +90,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         foreignKey='ProductSeries', notNull=False, default=None)
     distribution = ForeignKey(dbName='distribution',
         foreignKey='Distribution', notNull=False, default=None)
-    distroseries = ForeignKey(dbName='distrorelease',
+    distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', notNull=False, default=None)
     goalstatus = EnumCol(schema=SpecificationGoalStatus, notNull=True,
         default=SpecificationGoalStatus.PROPOSED)
@@ -624,13 +625,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return SpecificationBranch.selectOneBy(
             specificationID=self.id, branchID=branch.id)
 
-    def linkBranch(self, branch, summary=None):
+    def linkBranch(self, branch, registrant, summary=None):
         branchlink = self.getBranchLink(branch)
         if branchlink is not None:
             return branchlink
+        branch.date_last_modified = UTC_NOW
         return SpecificationBranch(specification=self,
                                    branch=branch,
-                                   summary=summary)
+                                   summary=summary,
+                                   registrant=registrant)
 
 
 class HasSpecificationsMixin:

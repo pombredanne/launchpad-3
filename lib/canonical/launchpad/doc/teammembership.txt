@@ -722,9 +722,11 @@ teams_participated_in attribute works recursively, listing all teams the
 person is an active member of as well as teams those teams are an active
 member of.
 
-    >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
-    landscape-developers
+    >>> print '\n'.join(sorted(
+    ...     team.name for team in salgado.teams_participated_in))
     admins
+    landscape-developers
+    mailing-list-experts
     t4
 
 Adding admins as a member of t1 will make Salgado a member of t1 as well.
@@ -732,9 +734,11 @@ Adding admins as a member of t1 will make Salgado a member of t1 as well.
     >>> admins = getUtility(IPersonSet).getByName('admins')
     >>> t1.addMember(admins, reviewer=t1.teamowner, force_team_add=True)
     >>> flush_database_updates()
-    >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
-    landscape-developers
+    >>> print '\n'.join(sorted(
+    ...     team.name for team in salgado.teams_participated_in))
     admins
+    landscape-developers
+    mailing-list-experts
     t1
     t4
 
@@ -743,9 +747,45 @@ for Salgado.
 
     >>> admins.addMember(t2, reviewer=admins.teamowner, force_team_add=True)
     >>> flush_database_updates()
-    >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
-    landscape-developers
+    >>> print '\n'.join(sorted(
+    ...     team.name for team in salgado.teams_participated_in))
     admins
+    landscape-developers
+    mailing-list-experts
     t1
     t4
+
+== Membership caches ==
+
+Person instances have membership caches (_inTeam_cache) to avoid the
+need to reissue identical membership queries repeatedly. (This test uses
+Person directly to allow us access to an unproxied object, since
+_inTeam_cache is private, and TeamMembershipSet directly to allow us to
+call TeamMembership.setStatus, which is private).
+
+    >>> from canonical.launchpad.database import Person, TeamMembershipSet
+    >>> no_priv = Person.selectOneBy(name='no-priv')
+    >>> no_priv.inTeam(admins)
+    False
+    >>> no_priv._inTeam_cache
+    {25: False}
+
+This cache is cleared when memberships are created:
+
+    >>> membership = TeamMembershipSet().new(no_priv, admins,
+    ...     status=TeamMembershipStatus.APPROVED)
+    >>> no_priv._inTeam_cache
+    {}
+    >>> no_priv.inTeam(admins)
+    True
+    >>> no_priv._inTeam_cache
+    {25: True}
+
+Or changed:
+
+    >>> membership.setStatus(TeamMembershipStatus.DEACTIVATED, reviewer=sabdfl)
+    >>> no_priv._inTeam_cache
+    {}
+    >>> no_priv.inTeam(admins)
+    False
 

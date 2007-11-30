@@ -154,14 +154,20 @@
         facet="overview"
         permission="launchpad.Admin"
         fields="recipientdisplayname addressline1 addressline2 city province
-                country postcode phone organization ubuntu_quantityx86
-                ubuntu_quantityamd64 kubuntu_quantityx86
-                kubuntu_quantityamd64 edubuntu_quantityx86 highpriority"
+                country postcode phone organization
+                ubuntu_quantityx86 ubuntu_quantityamd64
+                kubuntu_quantityx86 kubuntu_quantityamd64
+                edubuntu_quantityx86
+                server_quantityx86 server_quantityamd64
+                highpriority"
         keyword_arguments="
                 recipientdisplayname addressline1 addressline2 city province
-                country postcode phone organization ubuntu_quantityx86
-                ubuntu_quantityamd64 kubuntu_quantityx86
-                kubuntu_quantityamd64 edubuntu_quantityx86 highpriority"
+                country postcode phone organization
+                ubuntu_quantityx86 ubuntu_quantityamd64
+                kubuntu_quantityx86 kubuntu_quantityamd64
+                edubuntu_quantityx86
+                server_quantityx86 server_quantityamd64
+                highpriority"
         template="../templates/shipit-adminrequest.pt"
         name="adminrequest">
         <browser:widget
@@ -235,13 +241,17 @@
         schema="canonical.launchpad.interfaces.IShippingRequestEdit"
         facet="overview"
         label="Approve or deny ShipIt Request"
-	fields="ubuntu_quantityx86approved ubuntu_quantityamd64approved
-		kubuntu_quantityx86approved kubuntu_quantityamd64approved
-		edubuntu_quantityx86approved highpriority"
+	    fields="ubuntu_quantityx86approved ubuntu_quantityamd64approved
+		        kubuntu_quantityx86approved kubuntu_quantityamd64approved
+                edubuntu_quantityx86approved
+                server_quantityx86approved server_quantityamd64approved
+                highpriority"
         keyword_arguments="
-		ubuntu_quantityx86approved ubuntu_quantityamd64approved
-		kubuntu_quantityx86approved kubuntu_quantityamd64approved
-		edubuntu_quantityx86approved highpriority"
+            ubuntu_quantityx86approved ubuntu_quantityamd64approved
+            kubuntu_quantityx86approved kubuntu_quantityamd64approved
+            edubuntu_quantityx86approved
+            server_quantityx86approved server_quantityamd64approved
+            highpriority"
         permission="launchpad.Admin"
         name="+edit"
         template="../templates/shipitrequest-edit.pt"
@@ -310,7 +320,7 @@
         facet="overview"
         class="canonical.launchpad.browser.editview.SQLObjectEditView"
         schema="canonical.launchpad.interfaces.IStandardShipItRequest"
-        fields="flavour quantityx86 quantityamd64 isdefault"
+        fields="flavour quantityx86 quantityamd64 user_description isdefault"
         label="Edit standard option"
         permission="launchpad.Admin"
         template="../templates/standardshipitrequest-edit.pt"
@@ -361,7 +371,7 @@
         facet="overview"
         schema="canonical.launchpad.interfaces.IStandardShipItRequest"
         class="canonical.launchpad.browser.StandardShipItRequestAddView"
-        fields="flavour quantityx86 quantityamd64 isdefault"
+        fields="flavour quantityx86 quantityamd64 user_description isdefault"
         label="Create a new standard option"
         permission="launchpad.Admin"
         template="../templates/standardshipitrequest-new.pt"

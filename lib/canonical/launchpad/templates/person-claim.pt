@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -9,7 +16,6 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -53,7 +59,7 @@
       To claim the profile, enter one of the e-mail addresses it is
       associated with. (We're not showing you the list of addresses to
       protect <span tal:replace="context/browsername" />'s privacy in case
-      you’re someone else.) We’ll e-mail that address to ask your confirmation.
+      you’re someone else.) We'll e-mail that address to ask your confirmation.
     </p>
     </metal:extra-info>
 

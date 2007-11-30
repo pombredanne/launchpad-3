@@ -21,6 +21,7 @@ from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.proxy import isinstance as zisinstance
 
+from openid.message import IDENTIFIER_SELECT, SREG_URI
 from openid.server.server import CheckIDRequest, ENCODE_URL, Server
 from openid.server.trustroot import TrustRoot
 from openid import oidutil
@@ -31,8 +32,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, ILoginTokenSet, IOpenIdApplication,
     IOpenIdAuthorizationSet, IOpenIDRPConfigSet, IPersonSet,
-    LoginTokenType, NotFoundError, PersonCreationRationale,
-    UnexpectedFormData)
+    LoginTokenType, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
@@ -48,8 +48,6 @@ from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
 OPENID_REQUEST_TIMEOUT = 3600
 SESSION_PKG_KEY = 'OpenID'
-IDENTIFIER_SELECT_URI = 'http://specs.openid.net/auth/2.0/identifier_select'
-
 
 # Shut up noisy OpenID library
 def null_log(message, level=0):
@@ -79,8 +77,8 @@ class OpenIdMixin:
     def __init__(self, context, request):
         super(OpenIdMixin, self).__init__(context, request)
         store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
-        self.openid_server = Server(store_factory())
         self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
+        self.openid_server = Server(store_factory(), self.server_url)
         self.identity_url_prefix = allvhosts.configs['openid'].rooturl + '+id/'
 
     @property
@@ -91,7 +89,7 @@ class OpenIdMixin:
         """Return True if the user can authenticate as the given identifier."""
         assert self.user is not None, "user should be logged in by now."
         return self.openid_request.identity in (
-            IDENTIFIER_SELECT_URI, self.user_identity_url)
+            IDENTIFIER_SELECT, self.user_identity_url)
 
     @cachedproperty('_openid_parameters')
     def openid_parameters(self):
@@ -168,6 +166,7 @@ class OpenIdMixin:
     @property
     def sreg_field_names(self):
         """Return the list of sreg keys that will be provided to the RP."""
+        # XXX: jamesh 2007-07-09 bug=163718: Port to use openid.sreg module.
         field_names = set()
         # Collect the field names requested.  We treat required and
         # optional parameters the same.
@@ -199,6 +198,7 @@ class OpenIdMixin:
         Shipping information is taken from the last shipped Shipit
         request.
         """
+        # XXX: jamesh 2007-07-09 bug=163718: Port to use openid.sreg module.
         assert self.user is not None, (
             'Must be logged in to calculate sreg items')
         # Collect registration values
@@ -251,16 +251,19 @@ class OpenIdMixin:
         if not self.isIdentityOwner():
             return self.createFailedResponse()
 
-        response = self.openid_request.answer(True)
-
-        # If we are in identifier select mode, then we need to
-        # override the claimed identifier.  For regular checks it does
-        # not hurt, so we set it here unconditionally.
-        response.addField(None, 'identity', self.user_identity_url)
+        if self.openid_request.identity == IDENTIFIER_SELECT:
+            response = self.openid_request.answer(
+                True, identity=self.user_identity_url)
+        else:
+            response = self.openid_request.answer(True)
 
         # Add sreg result data
-        for (field_name, value) in self.sreg_fields:
-            response.addField('sreg', field_name, value, signed=True)
+        sreg_fields = self.sreg_fields
+        if sreg_fields:
+            response.fields.namespaces.addAlias(SREG_URI, 'sreg')
+            for (field_name, value) in sreg_fields:
+                response.fields.setArg(SREG_URI, field_name, value)
+
         return response
 
     def createFailedResponse(self):
@@ -372,7 +375,7 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
     def canHandleIdentity(self):
         """Returns True if the identity URL is supported by the server."""
         identity = self.openid_request.identity
-        return (identity == IDENTIFIER_SELECT_URI or
+        return (identity == IDENTIFIER_SELECT or
                 identity.startswith(self.identity_url_prefix))
 
     def isAuthorized(self):

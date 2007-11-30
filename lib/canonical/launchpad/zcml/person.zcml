@@ -30,7 +30,6 @@
 
   <content class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.IPerson" />
-    <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <require
       permission="launchpad.Edit"
@@ -44,6 +43,10 @@
       permission="launchpad.Edit"
       attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf
                   renewTeamMembership"
+      />
+    <require
+      permission="launchpad.Admin"
+      attributes="deactivateAllMembers"
       />
   </content>
 
@@ -103,6 +106,14 @@
       class="canonical.widgets.PasswordChangeWidget"
       />
   </browser:editform>
+
+  <browser:page
+    name="+claimteam"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.BeginTeamClaimView"
+    permission="launchpad.AnyPerson"
+    template="../templates/person-claim-team.pt"
+    />
 
   <browser:page
     name="+claim"
@@ -371,15 +382,6 @@
     template="../templates/archive-activate.pt"
     />
 
-  <browser:page
-    name="+ppa-tos"
-    facet="overview"
-    for="canonical.launchpad.interfaces.IPerson"
-    permission="zope.Public"
-    template="../templates/archive-ppa-tos.pt"
-    />
-
-
   <!-- Adding SSH keys is the only possibly harmful thing that can be done
   without the user's password, so we use a special permission here to make
   sure only the user (and not launchpad admins) will be able to edit her own
@@ -522,9 +524,17 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="launchpad.Edit"
-    class="canonical.launchpad.browser.TeamEmailView"
-    name="+editemail"
-    template="../templates/team-editemail.pt"
+    class="canonical.launchpad.browser.TeamContactAddressView"
+    name="+contactaddress"
+    template="../templates/team-contactaddress.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.TeamMailingListConfigurationView"
+    name="+mailinglist"
+    template="../templates/team-mailinglist.pt"
     />
 
   <browser:page
@@ -742,15 +752,19 @@
     template="../templates/people-requestmerge.pt"
     />
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.IPersonSet"
     permission="launchpad.Admin"
-    class="canonical.launchpad.browser.AdminRequestPeopleMergeView">
-    <browser:page
-      name="+adminrequestmerge"
-      template="../templates/people-adminrequestmerge.pt"
-      />
-  </browser:pages>
+    class="canonical.launchpad.browser.AdminPeopleMergeView"
+    name="+adminpeoplemerge"
+    template="../templates/people-adminrequestmerge.pt" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPersonSet"
+    permission="launchpad.Admin"
+    class="canonical.launchpad.browser.AdminTeamMergeView"
+    name="+adminteammerge"
+    template="../templates/people-adminrequestmerge.pt" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IPersonSet"

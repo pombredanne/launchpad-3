@@ -1,5 +1,4 @@
-Adding BugTasks
-===============
+= Adding BugTasks =
 
 If a bug occurs in more than one place, you can request a fix in some
 other software. You can request a fix in either a product or a
@@ -8,7 +7,6 @@ distribution. Let's start with a product, this is done using
 affects and creates the new bugtask.
 
     >>> login('test@canonical.com')
-    >>> from zope.component import getView
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug_four = getUtility(IBugSet).get(4)
     >>> len(bug_four.bugtasks)
@@ -23,8 +21,7 @@ sure the view is set up properly and returns the actual view rather than
 our meta view.
 
     >>> def get_and_setup_view(context, name, form, method='POST'):
-    ...     view = getView(context, name, LaunchpadTestRequest(
-    ...         method=method, form=form))
+    ...     view = create_view(context, name, form=form, method=method)
     ...     view.initialize()
     ...     # We don't care about the actual rendering of the page, so we
     ...     # override the index template.
@@ -61,7 +58,7 @@ that product is required:
     ...     'field.visited_steps': 'choose_product'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
-    >>> add_task_view.getWidgetError('product')
+    >>> add_task_view.getFieldError('product')
     u'Required input is missing.'
 
 
@@ -84,7 +81,7 @@ If the validation fails, an error will be displayed.
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.step_name
     'choose_product'
-    >>> add_task_view.getWidgetError('product')
+    >>> add_task_view.getFieldError('product')
     u'A fix for this bug has already been requested for Mozilla Firefox'
 
 
@@ -319,7 +316,7 @@ URL. If we don't enter a valid URL, we get an error message.
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.step_name
     'specify_remote_bug_url'
-    >>> print add_task_view.getWidgetError('bug_url')
+    >>> print add_task_view.getFieldError('bug_url')
     Launchpad does not recognize the bug tracker at this URL.
 
 Note that this caused the transaction to be aborted, thus the bugtasks
@@ -400,6 +397,28 @@ the bug watch's status later.
     >>> alsa_task.importance.title
     'Unknown'
 
+If the same bug watch is added to another bug, the bug watch will be
+added, but a notification is shown to the user informing him that
+another bug links to the same bug.
+
+    >>> bug_five = getUtility(IBugSet).get(5)
+    >>> bug_five_task = bug_five.bugtasks[0]
+    >>> add_task_view = get_and_setup_view(
+    ...     bug_five_task, '+choose-affected-product', form)
+    SQLObjectCreatedEvent: <BugWatch at ...>
+    SQLObjectCreatedEvent: <BugTask at ...>
+
+    >>> add_task_view.request.response.getHeader('Location')
+    'http://.../+bug/5'
+
+    >>> for notification in add_task_view.request.response.notifications:
+    ...     print notification.message
+    <a href="...">Bug #4</a> also links to the added bug watch
+    (gnome-bugzilla #84).
+
+    >>> for bugwatch in bug_five.watches:
+    ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
+    GnomeGBug GTracker: 84
 
 There's a property for easily retrieving the target for use on the
 confirmation page.
@@ -428,8 +447,75 @@ name is returned.
     >>> on_created_listener.unregister()
 
 
-IAddBugTaskForm Interface Definition
-------------------------------------
+== Registering a product while adding a bugtask ==
+
+One of the facilities we have when adding a bugtask is the option to target it
+to a newly registered product.  When that option is used, though, we use the
+URL of the remote bug to check if the product is not already registered and
+present these already-registered products as options to the user.
+
+    >>> form = {
+    ...     'field.actions.continue': '1',
+    ...     'field.bug_url': 'http://bugs.foo.org/bugs/show_bug.cgi?id=8',
+    ...     'field.name': 'foo-product',
+    ...     'field.displayname': 'The Foo Product',
+    ...     'field.summary': 'The Foo Product'}
+    >>> add_task_view = create_view(
+    ...     firefox_task, '+affects-new-product', form=form, method='POST')
+    >>> add_task_view.initialize()
+
+We have no products using http://bugs.foo.org as its bug tracker, so we have
+nothing to present to the user.
+
+    >>> print add_task_view.existing_products
+    None
+
+If the user tries to register another product using a bug URL under
+bugs.foo.org, we'll present 'The Foo Product' as a candidate.
+
+    >>> flush_database_updates()
+    >>> form['field.name'] = 'bar-product'
+    >>> form['field.displayname'] = 'The Bar'
+    >>> form['field.summary'] = 'The Bar'
+    >>> add_task_view = create_view(
+    ...     firefox_task, '+affects-new-product', form=form, method='POST')
+    >>> add_task_view.initialize()
+    >>> [product.name for product in add_task_view.existing_products]
+    [u'foo-product']
+
+    # Now we choose to register the product anyway, as it's not one of the
+    # existing ones.
+    >>> form['create_new'] = '1'
+    >>> add_task_view = create_view(
+    ...     firefox_task, '+affects-new-product', form=form, method='POST')
+    >>> add_task_view.initialize()
+
+There's a limit on the number of existing products we present to the user in
+this way, though.  If there are too many products using a given bugtracker,
+we'll present only the ones whose name is similar to what the user entered.
+
+    >>> flush_database_updates()
+    >>> dummy = form.pop('create_new')
+    >>> form['field.name'] = 'foo'
+    >>> form['field.displayname'] = 'Foo, the return'
+    >>> form['field.summary'] = 'Foo'
+    >>> add_task_view = create_view(
+    ...     firefox_task, '+affects-new-product', form=form, method='POST')
+    >>> add_task_view.initialize()
+    >>> add_task_view.MAX_PRODUCTS_TO_DISPLAY
+    10
+    >>> [product.name for product in add_task_view.existing_products]
+    [u'bar-product', u'foo-product']
+
+    >>> add_task_view = create_view(
+    ...     firefox_task, '+affects-new-product', form=form, method='POST')
+    >>> add_task_view.MAX_PRODUCTS_TO_DISPLAY = 1
+    >>> add_task_view.initialize()
+    >>> [product.name for product in add_task_view.existing_products]
+    [u'foo-product']
+
+
+== IAddBugTaskForm Interface Definition ==
 
 IAddBugTaskForm, which is used as the schema for the views tested above, has
 some attributes which are identical to those of IUpstreamBugTask and

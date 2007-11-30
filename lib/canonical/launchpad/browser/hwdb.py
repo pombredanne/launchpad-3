@@ -17,9 +17,8 @@ from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.launchpad.interfaces import (
-    HWSubmissionInvalidEmailAddress, IDistributionSet, IHWDBApplication,
-    IHWSubmissionForm, IHWSubmissionSet, IHWSystemFingerprintSet, 
-    NotFoundError, ILaunchBag)
+    IDistributionSet, IHWDBApplication, IHWSubmissionForm, IHWSubmissionSet,
+    IHWSystemFingerprintSet, NotFoundError, ILaunchBag)
 from canonical.launchpad.webapp import (
     action, LaunchpadView, LaunchpadFormView, Navigation, stepthrough)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -70,26 +69,18 @@ class HWDBUploadView(LaunchpadFormView):
         filename = submission_file.filename.replace('/', '-')
 
         hw_submissionset = getUtility(IHWSubmissionSet)
-        try:
-            hw_submissionset.createSubmission(
-                date_created=data['date_created'],
-                format=data['format'],
-                private=data['private'],
-                contactable=data['contactable'],
-                submission_key=data['submission_key'],
-                emailaddress=data['emailaddress'],
-                distroarchseries=distroarchseries,
-                raw_submission=submission_file,
-                filename=filename,
-                filesize=filesize,
-                system_fingerprint=data['system'])
-        except HWSubmissionInvalidEmailAddress:
-            self.addErrorHeader("emailaddress",
-                "%s isn't a valid email address" % data['emailaddress'])
-            self.request.response.addErrorNotification(
-                "Error: %(address)s email address is invalid",
-                address = data['emailaddress'])
-            return
+        hw_submissionset.createSubmission(
+            date_created=data['date_created'],
+            format=data['format'],
+            private=data['private'],
+            contactable=data['contactable'],
+            submission_key=data['submission_key'],
+            emailaddress=data['emailaddress'],
+            distroarchseries=distroarchseries,
+            raw_submission=submission_file,
+            filename=filename,
+            filesize=filesize,
+            system_fingerprint=data['system'])
 
         self.addCustomHeader('OK data stored')
         self.request.response.addNotification(
@@ -112,7 +103,7 @@ class HWDBUploadView(LaunchpadFormView):
         response = self.request.response
         for field in self.form_fields:
             field_name = field.__name__
-            error = self.getWidgetError(field_name)
+            error = self.getFieldError(field_name)
             if error:
                 self.addErrorHeader(field_name, error)
 

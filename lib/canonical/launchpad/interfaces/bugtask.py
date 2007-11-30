@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Bug task interfaces."""
 
@@ -6,16 +7,19 @@ __metaclass__ = type
 
 __all__ = [
     'BUG_CONTACT_BUGTASK_STATUSES',
+    'BugTaskImportance',
     'BugTaskSearchParams',
     'BugTaskStatus',
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
     'ConjoinedBugTaskEditError',
     'IAddBugTaskForm',
+    'IAddBugTaskWithProductCreationForm',
     'IBugTask',
     'IBugTaskDelta',
     'IBugTaskSearch',
     'IBugTaskSet',
+    'ICreateQuestionFromBugTaskForm',
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
@@ -24,6 +28,7 @@ __all__ = [
     'IPersonBugTaskSearch',
     'IProductSeriesBugTask',
     'ISelectResultsSlicable',
+    'IRemoveQuestionFromBugTaskForm',
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
@@ -32,22 +37,85 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Bool, Choice, Datetime, Int, Text, TextLine, List, Field)
+    Bool, Choice, Datetime, Field, Int, List, Set, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from sqlos.interfaces import ISelectResults
 
-from canonical.lp import dbschema
 from canonical.launchpad import _
-from canonical.launchpad.fields import StrippedTextLine, Tag
+from canonical.launchpad.fields import (
+    Description, ProductNameField, StrippedTextLine, Summary, Tag)
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
+from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import (
     DBEnumeratedType, DBItem, use_template)
+
+
+class BugTaskImportance(DBEnumeratedType):
+    """Bug Task Importance.
+
+    Importance is used by developers and their managers to indicate how
+    important fixing a bug is. Importance is typically a combination of the
+    harm caused by the bug, and how often it is encountered.
+    """
+
+    UNKNOWN = DBItem(999, """
+        Unknown
+
+        The severity of this bug task is unknown.
+        """)
+
+    CRITICAL = DBItem(50, """
+        Critical
+
+        This bug is essential to fix as soon as possible. It affects
+        system stability, data integrity and/or remote access
+        security.
+        """)
+
+    HIGH = DBItem(40, """
+        High
+
+        This bug needs urgent attention from the maintainer or
+        upstream. It affects local system security or data integrity.
+        """)
+
+    MEDIUM = DBItem(30, """
+        Medium
+
+        This bug warrants an upload just to fix it, but can be put
+        off until other major or critical bugs have been fixed.
+        """)
+
+    LOW = DBItem(20, """
+        Low
+
+        This bug does not warrant an upload just to fix it, but
+        it should be fixed, if possible, next time the maintainer
+        does an upload. For example, it might be a typo in a document.
+        """)
+
+    WISHLIST = DBItem(10, """
+        Wishlist
+
+        This is not a bug, but a request for an enhancement or
+        new feature that does not yet exist in the package. It does
+        not affect system stability. For example: it might be a
+        usability or documentation fix.
+        """)
+
+    UNDECIDED = DBItem(5, """
+        Undecided
+
+        A relevant developer or manager has not yet decided how
+        important this bug is.
+        """)
 
 
 class BugTaskStatus(DBEnumeratedType):
@@ -231,8 +299,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         title=_('Status'), vocabulary=BugTaskStatus,
         default=BugTaskStatus.NEW)
     importance = Choice(
-        title=_('Importance'), vocabulary='BugTaskImportance',
-        default=dbschema.BugTaskImportance.UNDECIDED)
+        title=_('Importance'), vocabulary=BugTaskImportance,
+        default=BugTaskImportance.UNDECIDED)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     assignee = Choice(
@@ -399,6 +467,13 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         old_task and this task.
         """
 
+    def getPackageComponent():
+        """Return the task's package's component or None.
+
+        Returns the component associated to the latest package published
+        in that distribution. If the task is not a package task, returns
+        None.
+        """
 
 class INullBugTask(IBugTask):
     """A marker interface for an IBugTask that doesn't exist in a context.
@@ -409,12 +484,6 @@ class INullBugTask(IBugTask):
     already been filed and finding matching reports that don't yet
     have tasks reported in your context.
     """
-
-PENDING_BUGWATCH_VOCABUARY = SimpleVocabulary(
-    [SimpleTerm(
-        "pending_bugwatch",
-        title="Show only bugs that need to be forwarded to an upstream bug "
-              "tracker")])
 
 UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
     [SimpleTerm(
@@ -432,12 +501,25 @@ UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
         title="Show bugs that are open upstream"),
     ])
 
+UPSTREAM_PRODUCT_STATUS_VOCABULARY = SimpleVocabulary(
+    [SimpleTerm(
+        "pending_bugwatch",
+        title="Show bugs that need to be forwarded to an upstream bug "
+              "tracker"),
+    SimpleTerm(
+        "resolved_upstream",
+        title="Show bugs that are resolved elsewhere"),
+    ])
+
 class IBugTaskSearchBase(Interface):
     """The basic search controls."""
     searchtext = TextLine(title=_("Bug ID or text:"), required=False)
     status = List(
         title=_('Status'),
-        value_type=Choice(title=_('Status'), vocabulary=BugTaskStatusSearch, default=BugTaskStatusSearch.NEW),
+        value_type=Choice(
+            title=_('Status'),
+            vocabulary=BugTaskStatusSearch,
+            default=BugTaskStatusSearch.NEW),
         default=list(DEFAULT_SEARCH_BUGTASK_STATUSES),
         required=False)
     importance = List(
@@ -513,13 +595,14 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
 
 class IUpstreamProductBugTaskSearch(IBugTaskSearch):
     """The schema used by the bug task search form for upstream products.
-    
+
     This schema is the same as IBugTaskSearch, except that it has only
     one choice for Status Upstream.
     """
     status_upstream = List(
         title=_('Status Upstream'),
-        value_type=Choice(vocabulary=PENDING_BUGWATCH_VOCABUARY),
+        value_type=Choice(
+            vocabulary=UPSTREAM_PRODUCT_STATUS_VOCABULARY),
         required=False)
 
 
@@ -623,7 +706,7 @@ class IProductSeriesBugTask(IBugTask):
 # the bug that makes this hackery necessary.
 class ISelectResultsSlicable(ISelectResults):
     """ISelectResults (from SQLOS) should be specifying __getslice__.
-    
+
     This interface defines the missing __getslice__ method.
     """
     def __getslice__(i, j):
@@ -794,11 +877,18 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distroseries must be provided.
         """
 
-    def findExpirableBugTasks(min_days_old):
+    def findExpirableBugTasks(min_days_old, bug=None):
         """Return a list of bugtasks that are at least min_days_old.
-        
-        An Expirable bug task is unassigned, in the INCOMPLETE status,
-        and belongs to a Product or Distribtion that uses Malone.
+
+        When a bug is passed as an argument, only bugtasks that belong
+        to the bug may be returned, otherwise all bugs are searched.
+
+        A bugtask is expirable if its status is Incomplete, and the bug
+        report has been never been confirmed, and it has been inactive for
+        min_days_old. Only bugtasks that belong to Products or Distributions
+        that use launchpad to track bugs can be returned. The implementation
+        must define the criteria for determining that the bug report is
+        inactive and have never been confirmed.
         """
 
     def maintainedBugTasks(person, minimportance=None,
@@ -844,10 +934,11 @@ class IBugTaskSet(Interface):
 
 
 def valid_remote_bug_url(value):
+    """Verify that the URL is to a bug to a known bug tracker."""
     from canonical.launchpad.interfaces.bugwatch import (
         IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
     try:
-        tracker, bug = getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
+        getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
     except NoBugTrackerFound:
         pass
     except UnrecognizedBugTrackerURL:
@@ -878,6 +969,36 @@ class IAddBugTaskForm(Interface):
         description=_("Used to keep track of the steps we visited in a "
                       "wizard-like form."))
 
+class IAddBugTaskWithProductCreationForm(Interface):
+
+    bug_url = StrippedTextLine(
+        title=_('Bug URL'), required=True, constraint=valid_remote_bug_url,
+        description=_("The URL of this bug in the remote bug tracker."))
+    displayname = TextLine(title=_('Project name'))
+    name = ProductNameField(
+        title=_('Project ID'), constraint=name_validator, required=True,
+        description=_(
+            "A short name starting with a lowercase letter or number, "
+            "followed by letters, dots, hyphens or plusses. e.g. firefox, "
+            "linux, gnome-terminal."))
+    summary = Summary(title=_('Project summary'), required=True)
+
 
 class INominationsReviewTableBatchNavigator(ITableBatchNavigator):
     """Marker interface to render custom template for the bug nominations."""
+
+
+class ICreateQuestionFromBugTaskForm(Interface):
+    """Form for creating and question from a bug."""
+    comment = Text(
+        title=_('Comment'),
+        description=_('An explanation of why the bug report is a question.'),
+        required=False)
+
+
+class IRemoveQuestionFromBugTaskForm(Interface):
+    """Form for removing a question created from a bug."""
+    comment = Text(
+        title=_('Comment'),
+        description=_('An explanation of why the bug report is valid.'),
+        required=False)

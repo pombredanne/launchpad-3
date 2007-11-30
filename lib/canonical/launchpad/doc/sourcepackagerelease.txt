@@ -109,6 +109,11 @@ If there isn't one, that should return None.
    >>> print SourcePackageRelease.get(20).productrelease
    None
 
+Check that the uploaded changesfile works:
+
+   >>> commercial = SourcePackageRelease.get(36)
+   >>> commercial.upload_changesfile.http_url
+   'http://.../commercialpackage_1.0-1_source.changes'
 
 Check ISourcePackageRelease.override() behaviour:
 
@@ -140,7 +145,7 @@ IDistroSeries API:
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, ISourcePackageNameSet, IGPGKeySet)
   >>> from canonical.database.constants import UTC_NOW
-  >>> from canonical.lp.dbschema import SourcePackageUrgency
+  >>> from canonical.launchpad.interfaces import SourcePackageUrgency
 
   >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
@@ -173,7 +178,7 @@ The other argurments are strings:
 
 Having proper arguments in hand we can create a new
 ISourcePackageRelease, it will automatically set the
-'uploaddistroseries' to the API entry point, in this case Hoary.
+'upload_distroseries' to the API entry point, in this case Hoary.
 
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
   ...     arg_name, version, arg_maintainer,
@@ -182,7 +187,7 @@ ISourcePackageRelease, it will automatically set the
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
   ...     dsc_binaries, archive, copyright=copyright)
 
-  >>> new_spr.uploaddistroseries.name
+  >>> new_spr.upload_distroseries.name
   u'hoary'
   >>> new_spr.version
   u'0.0.99'
@@ -220,7 +225,7 @@ DistroArchSeries and Archive.
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-    >>> from canonical.lp.dbschema import PackagePublishingPocket
+    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
     >>> pocket_release = PackagePublishingPocket.RELEASE
 
 The base method createBuild() is able to create build to a given
@@ -245,16 +250,13 @@ Build.buildstate, by default is set to NEEDSBUILD.
 
 Optionally you can pass also another status:
 
-    >>> from canonical.lp.dbschema import BuildStatus
+    >>> from canonical.launchpad.interfaces import BuildStatus
     >>> evo_build_i386_ppa = evo_spr.createBuild(
     ...     hoary_i386, pocket_release, cprov.archive,
     ...     status=BuildStatus.SUPERSEDED)
 
     >>> evo_build_i386_ppa.buildstate.name
     'SUPERSEDED'
-
-    >>> print evo_build_i386_ppa.archive.title
-    Personal Package Archive for Celso Providelo
 
 Successfully Build lookups on the just created Build records:
 
@@ -289,10 +291,8 @@ Let's create and publish and architecture-independent binary for
 evolution_1.0:
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBinaryPackageNameSet, IComponentSet, ISectionSet)
-    >>> from canonical.lp.dbschema import (
-    ...     BinaryPackageFormat, PackagePublishingPriority,
-    ...     PackagePublishingStatus)
+    ...     BinaryPackageFormat, IBinaryPackageNameSet, IComponentSet,
+    ...     ISectionSet, PackagePublishingPriority, PackagePublishingStatus)
     >>> from canonical.launchpad.database import (
     ...    SecureBinaryPackagePublishingHistory)
 
@@ -344,11 +344,12 @@ was inherited in the initialization.
     >>> breezy_autotest = ubuntu['breezy-autotest']
     >>> breezy_autotest_i386 = breezy_autotest['i386']
 
-    >>> print breezy_autotest.parentseries.title
+    >>> print breezy_autotest.parent_series.title
     The Hoary Hedgehog Release
 
     >>> hoary_evo_dsspr = hoary_evo_sp['1.0']
-    >>> copied_pub = hoary_evo_dsspr.copyTo(breezy_autotest, pocket_release)
+    >>> copied_pub = hoary_evo_dsspr.current_published.copyTo(
+    ...     breezy_autotest, pocket_release, breezy_autotest.main_archive)
 
     >>> breezy_autotest_evo_sp = breezy_autotest.getSourcePackage('evolution')
     >>> breezy_autotest_evo_dsspr = breezy_autotest_evo_sp['1.0']
@@ -360,12 +361,12 @@ parent series, it should be found by a build lookup happening on
 ubuntu/breezy-autotest/i386.
 
 In practical terms it means that another build is not necessary in
-this context. 
+this context.
 
     >>> breezy_autotest_build = evo_spr.getBuildByArch(
     ...     breezy_autotest_i386, ubuntu.main_archive)
     >>> print breezy_autotest_build.title
-    i386 build of evolution 1.0 in ubuntu hoary RELEASE    
+    i386 build of evolution 1.0 in ubuntu hoary RELEASE
 
 
 == Counting bugs ==

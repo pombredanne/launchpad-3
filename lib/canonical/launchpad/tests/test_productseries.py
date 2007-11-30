@@ -17,9 +17,8 @@ from canonical.launchpad.database.productseries import (
 from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (
-    IProductSeriesSet, IProductSet, RevisionControlSystems)
+    IProductSeriesSet, IProductSet, ImportStatus, RevisionControlSystems)
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
-from canonical.lp.dbschema import ImportStatus
 
 
 class ImportdTestCase(TestCase):

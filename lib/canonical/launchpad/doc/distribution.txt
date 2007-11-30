@@ -17,8 +17,8 @@ The IDistributionSet utility is accessed in the usual fashion:
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistribution, IDistributionSet, IHasTranslationImports)
-    >>> from canonical.lp.dbschema import PackagePublishingPocket
+    ...     IDistribution, IDistributionSet, IHasTranslationImports,
+    ...     PackagePublishingPocket, PackagePublishingStatus)
     >>> distroset = getUtility(IDistributionSet)
 
 To retrieve a specific distribution, use IDistributionSet.get:
@@ -130,6 +130,24 @@ Raises NotFoundError for following conditions:
     Traceback (most recent call last):
     ...
     NotFoundError: 'Unknown package: 1234'
+
+Packages only published in PPAs will not be found in the Ubuntu archive.
+Here, 'at' is published in sabdfl's PPA only:
+
+    >>> from canonical.launchpad.ftests.ppa import publishToPPA
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> ubuntutest = distroset.getByName("ubuntutest")
+    >>> publishToPPA(
+    ...     person_name='cprov',
+    ...     sourcepackage_name='at', sourcepackage_version='0.00',
+    ...     binarypackage_version='3.14156',
+    ...     distribution_name='ubuntutest',
+    ...     distroseries_name='hoary-test',
+    ...     publishing_status=PackagePublishingStatus.PUBLISHED)
+    >>> name_tuple = ubuntutest.guessPackageNames('at')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: u'Package at not published in ubuntutest'
 
 It also raises NotFoundError on distributions with no series:
 
@@ -357,7 +375,7 @@ informational.
 
  >>> kubuntu = distroset.getByName("kubuntu")
 
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be one informational spec for kubuntu, but it is
 complete so it will not show up unless we explicitly ask for complete specs:
@@ -421,7 +439,7 @@ We can filter for specifications that contain specific text:
 
 We can get only valid specs (those that are not obsolete or superseded):
 
- >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
+ >>> from canonical.launchpad.interfaces import SpecificationDefinitionStatus
  >>> from canonical.launchpad.ftests import login
  >>> login('mark@hbd.com')
  >>> for spec in kubuntu.specifications():
@@ -495,7 +513,6 @@ the distribution in question:
     >>> [archive.owner.name for archive in debian.getAllPPAs()]
     []
 
-
 === Searching PPAs ===
 
 Via searchPPAs, the callsites are able to look for PPA given a string
@@ -505,30 +522,30 @@ active/inactive (whether the PPA contains or not valid publications):
 There is only one 'active' PPA:
 
     >>> cprov.archive.getPublishedSources().count()
-    3
+    4
     >>> sabdfl.archive.getPublishedSources().count()
     1
     >>> no_priv.archive.getPublishedSources().count()
     0
-  
+
     >>> result = ubuntu.searchPPAs()
     >>> [archive.owner.name for archive in result]
     [u'cprov', u'sabdfl']
-  
+
 PPAs can be reached passing a filter matching (substring) its
 description or the person string indexes:
 
     >>> print cprov.archive.description
     packages to help my friends.
-  
+
     >>> result = ubuntu.searchPPAs(text='friend')
     >>> [archive.owner.name for archive in result]
     [u'cprov']
-  
+
     >>> result = ubuntu.searchPPAs(text='celso')
     >>> [archive.owner.name for archive in result]
     [u'cprov']
-  
+
     >>> result = ubuntu.searchPPAs(text='oink')
     >>> [archive.owner.name for archive in result]
     []
@@ -538,14 +555,14 @@ Incluing 'inactive' PPAs:
     >>> result = ubuntu.searchPPAs(show_inactive=True)
     >>> [archive.owner.name for archive in result]
     [u'cprov', u'no-priv', u'sabdfl']
-  
+
     >>> result = ubuntu.searchPPAs(text='priv', show_inactive=True)
     >>> [archive.owner.name for archive in result]
     [u'no-priv']
-  
+
     >>> print sabdfl.archive.description
     packages to help the humanity (you know, ubuntu)
-  
+
     >>> result = ubuntu.searchPPAs(text='ubuntu', show_inactive=True)
     >>> [archive.owner.name for archive in result]
     [u'sabdfl']
@@ -566,7 +583,7 @@ Create a NEW PackageUpload record for cprov PPA:
 
       >>> hoary = ubuntu['hoary']
 
-      >>> from canonical.lp.dbschema import PackagePublishingPocket
+      >>> from canonical.launchpad.interfaces import PackagePublishingPocket
       >>> queue = hoary.createQueueEntry(
       ...      pocket=PackagePublishingPocket.RELEASE, archive=cprov.archive,
       ...      changesfilename='foo', changesfilecontent='bar')
@@ -631,7 +648,7 @@ publishing record:
       >>> from canonical.launchpad.database.publishing import (
       ...     SecureSourcePackagePublishingHistory, 
       ...     SecureBinaryPackagePublishingHistory) 
-      >>> from canonical.lp.dbschema import PackagePublishingStatus
+      >>> from canonical.launchpad.interfaces import PackagePublishingStatus
 
       >>> pmount = hoary.getSourcePackage('pmount')
       >>> pmount_spr = pmount.currentrelease.sourcepackagerelease

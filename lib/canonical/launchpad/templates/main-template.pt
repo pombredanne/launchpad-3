@@ -36,11 +36,6 @@
       media="screen, print"
       tal:condition="devmode"
       tal:content="string:@import url(${icingroot}/style.css);"/>
-    <style
-      type="text/css"
-      tal:condition="view/isPrivate | CONTEXTS/lp:immediate_object_is_private"
-      id="privatestyle"
-    >#container {background: url(/@@/private-bg) top left repeat-x;}</style>
     <style tal:condition="is_demo" type="text/css"
     >html, body {background-image: url(/@@/demo) !important;}</style>
     <style tal:condition="site_message" type="text/css"
@@ -221,7 +216,10 @@
                           </tal:facet>
                         </ul>
                       </tal:applicationtabs>
-                      <div id="container">
+                      <div
+                        id="container"
+                        tal:attributes="class python:path('view/isPrivate | CONTEXTS/lp:immediate_object_is_private') and 'private' or None"
+                      >
                         <div id="maincontent">
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
@@ -285,7 +283,8 @@
         <div id="colophon">
           <a href="/legal">Terms&nbsp;of&nbsp;Use</a> |
           <a href="/feedback">Help&nbsp;improve&nbsp;Launchpad</a> |
-          <a href="/faq">FAQ</a>
+          <a href="/faq">FAQ</a> |
+          <a href="https://help.launchpad.net/">Documentation</a>
         </div>
         <div id="copyright">
             Copyright&nbsp;2004-2007&nbsp;<a

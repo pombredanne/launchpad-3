@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces related to bugs."""
 
@@ -8,6 +9,7 @@ __all__ = [
     'CreateBugParams',
     'CreatedBugWithNoBugTasksError',
     'IBug',
+    'IBugBecameQuestionEvent',
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
@@ -36,7 +38,7 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, assignee=None, datecreated=None,
                  security_related=False, private=False, subscribers=(),
-                 binarypackagename=None, tags=None):
+                 binarypackagename=None, tags=None, subscribe_reporter=True):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -54,6 +56,7 @@ class CreateBugParams:
         self.sourcepackagename = None
         self.binarypackagename = binarypackagename
         self.tags = tags
+        self.subscribe_reporter = subscribe_reporter
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -93,17 +96,27 @@ class CreateBugParams:
 
 
 class BugNameField(ContentNameField):
+    """Provides a a way to retrieve bugs by name."""
     errormessage = _("%s is already in use by another bug.")
 
     @property
     def _content_iface(self):
+        """Return the `IBug` interface."""
         return IBug
 
     def _getByName(self, name):
+        """Return a bug by name, or None."""
         try:
             return getUtility(IBugSet).getByNameOrID(name)
         except NotFoundError:
             return None
+
+class IBugBecameQuestionEvent(Interface):
+    """A bug became a question."""
+
+    bug = Attribute("The bug that was changed into a question.")
+    question = Attribute("The question that the bug became.")
+    user = Attribute("The user that changed the bug into a question.")
 
 
 class CreatedBugWithNoBugTasksError(Exception):
@@ -140,6 +153,12 @@ class IBug(IMessageTarget, ICanBeMentored):
         description=_(
             "Private bug reports are visible only to their subscribers."),
         default=False)
+    date_made_private = Datetime(
+        title=_('Date Made Private'), required=False)
+    who_made_private = Choice(
+        title=_('Who Made Private'), required=False,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The person who set this bug private."))
     security_related = Bool(
         title=_("This bug is a security vulnerability"), required=False,
         default=False)
@@ -155,7 +174,6 @@ class IBug(IMessageTarget, ICanBeMentored):
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
-    externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
@@ -174,6 +192,15 @@ class IBug(IMessageTarget, ICanBeMentored):
         "True or False depending on whether this bug is considered "
         "completely addressed. A bug is Launchpad is completely addressed "
         "when there are no tasks that are still open for the bug.")
+    permits_expiration = Bool(
+        title=_("Does the bug's state permit expiration? "
+        "Expiration is permitted when the bug is not valid anywhere, "
+        "a message was sent to the bug reporter, and the bug is associated "
+        "with pillars that use the Launchpad bug tracker."))
+    can_expire = Bool(
+        title=_("Can the Incomplete bug expire if it becomes inactive? "
+        "Expiration may happen when the bug permits expiration, and a "
+        "bugtask cannot be confirmed."))
     date_last_message = Datetime(
         title=_('Date of last bug message'), required=False, readonly=True)
 
@@ -265,8 +292,13 @@ class IBug(IMessageTarget, ICanBeMentored):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
-    def addBranch(branch, whiteboard=None, status=None):
+    def addBranch(branch, registrant, whiteboard=None, status=None):
         """Associate a branch with this bug.
+
+        :param branch: The branch being linked to the bug
+        :param registrant: The user making the link.
+        :param whiteboard: A space where people can write about the bug fix
+        :param status: The status of the fix in the branch
 
         Returns an IBugBranch.
         """
@@ -297,6 +329,37 @@ class IBug(IMessageTarget, ICanBeMentored):
 
         The user is the one linking to the CVE.
         """
+
+    def canBeAQuestion():
+        """Return True of False if a question can be created from this bug.
+
+        A Question can be created from a bug if:
+        1. There is only one bugtask with a status of New, Incomplete,
+           Confirmed, or Wont Fix. Any other bugtasks must be Invalid.
+        2. The bugtask's target uses Launchpad to track bugs.
+        3. The bug was not made into a question previously.
+        """
+
+    def convertToQuestion(person, comment=None):
+        """Create and return a Question from this Bug.
+
+        Bugs that are also in external bug trackers cannot be converted
+        to questions. This is also true for bugs that are being developed.
+
+        The `IQuestionTarget` is provided by the `IBugTask` that is not
+        Invalid and is not a conjoined slave. Only one question can be
+        made from a bug.
+
+        An AssertionError is raised if the bug has zero or many BugTasks
+        that can provide a QuestionTarget. It will also be raised if a
+        question was previously created from the bug.
+
+        :person: The `IPerson` creating a question from this bug
+        :comment: A string. An explanation of why the bug is a question.
+        """
+
+    def getQuestionCreatedFromBug():
+        """Return the question created from this Bug, or None."""
 
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
@@ -364,6 +427,15 @@ class IBug(IMessageTarget, ICanBeMentored):
         Return None if no bugtask was edited.
         """
 
+    def setPrivate(private, who):
+        """Set bug privacy.
+
+            :private: True/False.
+            :who: The IPerson who is making the change.
+
+        Return True if a change is made, False otherwise.
+        """
+
     def getBugTask(target):
         """Return the bugtask with the specified target.
 
@@ -390,9 +462,6 @@ class IBugDelta(Interface):
         "IBug's")
 
     # other things linked to the bug
-    external_reference = Attribute(
-        "A dict with two keys, 'old' and 'new', or None. Key values are "
-        "IBugExternalRefs.")
     bugwatch = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "IBugWatch's.")
@@ -478,8 +547,11 @@ class IBugSet(Interface):
         """
 
     def queryByRemoteBug(bugtracker, remotebug):
-        """Find one or None bugs in Launchpad that have a BugWatch matching the
-        given bug tracker and remote bug id."""
+        """Find one or None bugs for the BugWatch and bug tracker.
+
+        Find one or None bugs in Launchpad that have a BugWatch matching
+        the given bug tracker and remote bug id.
+        """
 
     def createBug(bug_params):
         """Create a bug and return it.

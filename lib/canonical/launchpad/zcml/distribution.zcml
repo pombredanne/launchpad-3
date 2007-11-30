@@ -14,10 +14,13 @@
       set_attributes="displayname title summary description
                       translationgroup translationpermission
                       driver members owner bugcontact
-                      official_malone official_rosetta official_answers
                       security_contact upload_admin upload_sender
                       mirror_admin homepage_content icon logo
                       mugshot"
+      />
+    <require
+      permission="launchpad.Admin"
+      set_attributes="official_malone official_rosetta official_answers"
       />
     <require
       permission="launchpad.TranslationsAdmin"
@@ -31,7 +34,8 @@
       />
     <require
       permission="launchpad.AnyPerson"
-      attributes="newQuestion addAnswerContact removeAnswerContact"
+      attributes="newQuestion createQuestionFromBug addAnswerContact
+                  removeAnswerContact"
       />
     <!-- IFAQTarget -->
     <allow
@@ -310,7 +314,7 @@
     for="canonical.launchpad.interfaces.IDistribution"
     schema="canonical.launchpad.interfaces.IDistroSeries"
     label="Register a new series"
-    fields="name displayname title summary description version parentseries"
+    fields="name displayname title summary description version parent_series"
     content_factory="canonical.launchpad.database.DistroSeries"
     class="canonical.launchpad.browser.DistroSeriesAddView"
     facet="overview"
@@ -338,15 +342,6 @@
     name="+branding"
     facet="overview"
     template="../templates/object-branding.pt"
-    />
-
-  <browser:page
-    name="+launchpad"
-    for="canonical.launchpad.interfaces.IDistribution"
-    class="canonical.launchpad.browser.DistributionLaunchpadUsageEditView"
-    facet="overview"
-    permission="launchpad.Edit"
-    template="../templates/object-launchpadusage.pt"
     />
 
   <browser:editform
@@ -381,13 +376,11 @@
     template="../templates/distribution-change-mirror-admin.pt"
     />
 
-  <browser:editform
+  <browser:page
     name="+bugcontact"
     for="canonical.launchpad.interfaces.IDistribution"
-    schema="canonical.launchpad.interfaces.IDistribution"
     class="canonical.launchpad.browser.distribution.DistributionBugContactEditView"
     facet="bugs"
-    fields="bugcontact"
     permission="launchpad.Edit"
     template="../templates/distribution-bugcontact.pt"
     />
@@ -410,12 +403,12 @@
     />
 
   <browser:page
-      name="+help-translate-button"
-      facet="translations"
-      for="canonical.launchpad.interfaces.IDistribution"
-      class="canonical.launchpad.browser.HelpTranslateButtonView"
-      permission="zope.Public"
-      />
+    name="+help-translate-button"
+    facet="translations"
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.HelpTranslateButtonView"
+    permission="zope.Public"
+    />
 
   <browser:editform
     name="+changetranslators"

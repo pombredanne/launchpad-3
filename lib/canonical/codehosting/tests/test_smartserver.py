@@ -55,6 +55,9 @@ class MockProcessTransport:
             raise ProcessExitedAlready()
         self.log.append(('signalProcess', signal))
 
+    def write(self, data):
+        self.log.append(('write', data))
+
 
 class TestExecOnlySession(AvatarTestCase):
     """Tests for ExecOnlySession.
@@ -79,10 +82,10 @@ class TestExecOnlySession(AvatarTestCase):
                           self.session.getPty, None, None, None)
 
     def test_openShellNotImplemented(self):
-        # execCommand raises a NotImplementedError. It doesn't matter what we
-        # pass it.
-        self.assertRaises(NotImplementedError,
-                          self.session.openShell, None)
+        # openShell closes the connection.
+        protocol = MockProcessTransport('bash')
+        self.session.openShell(protocol)
+        self.assertEqual(protocol.log[-1], ('loseConnection',))
 
     def test_windowChangedNotImplemented(self):
         # windowChanged raises a NotImplementedError. It doesn't matter what we
@@ -237,14 +240,15 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
 
     def test_execCommandRejectsUnauthorizedCommands(self):
         # execCommand rejects all commands except for the command specified in
-        # the constructor.
+        # the constructor and closes the connection.
 
         # Note that Conch doesn't have a well-defined way of rejecting
         # commands: raising any exception from execCommand will do. Here we use
         # an exception type defined in smartserver.py.
-        protocol = ProcessProtocol()
+        protocol = MockProcessTransport('cat')
         self.assertRaises(smartserver.ForbiddenCommand,
                           self.session.execCommand, protocol, 'cat')
+        self.assertEqual(protocol.log[-1], ('loseConnection',))
 
     def test_getCommandToRunReturnsTemplateCommand(self):
         # When passed the allowed command, getCommandToRun always returns the
@@ -294,6 +298,9 @@ class TestSessionIntegration(AvatarTestCase):
         self.assertEqual(
             os.path.abspath(os.path.dirname(plugins.__file__)),
             session.environment['BZR_PLUGIN_PATH'])
+        self.assertEqual(
+            '%s@bazaar.launchpad.dev' % self.avatar.lpname,
+            session.environment['BZR_EMAIL'])
 
         executable, arguments = session.getCommandToRun(
             'bzr serve --inet --directory=/ --allow-writes')

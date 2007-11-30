@@ -66,8 +66,7 @@ If we instead pick a new email address, we can register an account:
 
     >>> browser.getControl(name='field.email').value = 'new-user@example.com'
     >>> browser.getControl('Continue').click()
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> print soup.find('h1').renderContents()
     Registration mail sent
 
@@ -126,6 +125,7 @@ directed back to the original site:
     ...
     openid.identity:http://openid.launchpad.dev/+id/...
     openid.mode:id_res
+    ...
     openid.return_to:http://launchpad.dev/+openid-consumer
     ...
 

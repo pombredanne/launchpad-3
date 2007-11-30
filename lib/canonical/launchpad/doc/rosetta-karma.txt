@@ -12,10 +12,11 @@ like SQLObjects are not persistent between transactions.
     ...     ILaunchpadCelebrities)
     >>> from canonical.launchpad.database import POTemplate
     >>> from canonical.launchpad.interfaces import RosettaImportStatus
+    >>> from canonical.database.sqlbase import flush_database_caches
 
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
     >>> karma_action_set = getUtility(IKarmaActionSet)
-    >>> rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
 Setup an event listener to help ensure karma is assigned when it should.
 
@@ -55,7 +56,7 @@ Do the import.
     >>> comes_from_upstream = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     potemplate.path, potemplate_contents, comes_from_upstream,
-    ...     rosetta_expert, productseries=potemplate.productseries,
+    ...     rosetta_experts, productseries=potemplate.productseries,
     ...     potemplate=potemplate)
     >>> entry.status = RosettaImportStatus.APPROVED
 
@@ -139,7 +140,7 @@ Do the import.
 
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, comes_from_upstream,
-    ...     rosetta_expert, productseries=potemplate.productseries,
+    ...     rosetta_experts, productseries=potemplate.productseries,
     ...     potemplate=potemplate, pofile=pofile)
     >>> entry.status = RosettaImportStatus.APPROVED
 
@@ -276,7 +277,7 @@ No Privileges Person is a translator that fits this requirement.
 We are going to add a suggestion that already exists from other user,
 that should not add any kind of karma to this user.
 
-    >>> pomsgset = pofile.getPOMsgSet(u'foo')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: 'bar'}
     >>> fuzzy = False
     >>> published = False
@@ -284,10 +285,10 @@ that should not add any kind of karma to this user.
 And we can see as he won't get any karma activity from that, otherwise it'd be
 printed after the call to updateTranslationSet().
 
-    >>> pomsgset.updateTranslationSet(
-    ...     no_priv, new_translations, fuzzy, published,
+    >>> translationmessage = potmsgset.updateTranslation(
+    ...     pofile, no_priv, new_translations, fuzzy, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
-    >>> transaction.commit()
+    >>> flush_database_caches()
 
 But now, he will provide a new suggestion.
 
@@ -298,9 +299,9 @@ At this moment, karma is assigned and thus is printed here.
     >>> no_priv = personset.getByEmail('no-priv@canonical.com')
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> pomsgset = pofile.getPOMsgSet(u'foo')
-    >>> pomsgset.updateTranslationSet(
-    ...     no_priv, new_translations, fuzzy, published,
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
+    >>> translationmessage = potmsgset.updateTranslation(
+    ...     pofile, no_priv, new_translations, fuzzy, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionadded, product=evolution
     >>> transaction.commit()
@@ -316,10 +317,10 @@ being approved.
 
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> pomsgset = pofile.getPOMsgSet(u'foo')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: u'somethingelse'}
-    >>> pomsgset.updateTranslationSet(
-    ...     kurem, new_translations, fuzzy, published,
+    >>> translationmessage = potmsgset.updateTranslation(
+    ...     pofile, kurem, new_translations, fuzzy, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionapproved, product=evolution
     Karma added: action=translationreview, product=evolution
@@ -331,10 +332,10 @@ get karma for his autoapproved translation.
     >>> kurem = personset.getByEmail('kurem@debian.cz')
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> pomsgset = pofile.getPOMsgSet(u'foo')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: u'changed again'}
-    >>> pomsgset.updateTranslationSet(
-    ...     kurem, new_translations, fuzzy, published,
+    >>> translationmessage = potmsgset.updateTranslation(
+    ...     pofile, kurem, new_translations, fuzzy, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionapproved, product=evolution
     >>> transaction.commit()

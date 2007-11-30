@@ -48,29 +48,6 @@
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
-  <browser:url
-    for="canonical.launchpad.interfaces.IPOTemplateNameSet"
-    path_expression="string:potemplatenames"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
-  <!-- feedback page -->
-  <browser:page
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
-    name="feedback"
-    template="templates/launchpad-feedback.pt"
-    permission="zope.Public"
-    />
-
-  <!-- FAQ -->
-
-  <browser:page
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
-    name="faq"
-    template="templates/faq.pt"
-    permission="zope.Public"
-    />
-
   <!-- RDF downloadable documents -->
   <browser:page
     for="canonical.launchpad.interfaces.ILaunchpadRoot"

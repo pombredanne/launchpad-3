@@ -45,8 +45,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
-from canonical.launchpad.event import (
-    SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.helpers import (
     is_english_variant, preferred_or_request_languages)
 
@@ -61,6 +60,7 @@ from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     LaunchpadView, action, LaunchpadFormView, LaunchpadEditFormView,
     custom_widget, redirection, safe_action, smartquote)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets import LaunchpadRadioWidget
@@ -100,7 +100,7 @@ class QuestionSetView(LaunchpadFormView):
     @property
     def scope_error(self):
         """The error message for the scope widget."""
-        return self.getWidgetError('scope')
+        return self.getFieldError('scope')
 
     @safe_action
     @action('Find Answers', name="search")
@@ -456,9 +456,6 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
 
         question = self.question_target.newQuestion(
             self.user, data['title'], data['description'], data['language'])
-
-        # XXX flacoste 2006-07-25: This should be moved to newQuestion().
-        notify(SQLObjectCreatedEvent(question))
 
         self.request.response.redirect(canonical_url(question))
         return ''
@@ -818,6 +815,16 @@ class QuestionWorkflowView(LaunchpadFormView):
         return '%s/+addquestion' % canonical_url(self.context.target,
                                                  rootsite='answers')
 
+    @property
+    def original_bug(self):
+        """Return the bug that the question was created from or None."""
+        for buglink in self.context.bug_links:
+            if (check_permission('launchpad.View',  buglink.bug)
+                and buglink.bug.owner == self.context.owner
+                and buglink.bug.datecreated == self.context.datecreated):
+                return buglink.bug
+
+        return None
 
 
 class QuestionConfirmAnswerView(QuestionWorkflowView):
@@ -1005,7 +1012,7 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
     select an element from this set using the radio buttons.
     """
 
-    _messageNoValue=_('No existing FAQs are relevant')
+    _messageNoValue = _('No existing FAQs are relevant')
 
     searchDisplayWidth = 30
 
@@ -1124,7 +1131,7 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
             }
 
     def setUpWidgets(self):
-        """Sets the default query on the search widget to the question title."""
+        """Set the query on the search widget to the question title."""
         super(QuestionLinkFAQView, self).setUpWidgets()
         self.widgets['faq'].default_query = self.context.title
 
@@ -1224,9 +1231,8 @@ class QuestionContextMenu(ContextMenu):
     def linkfaq(self):
         """Link for This is a FAQ."""
         text = 'This is a FAQ'
-        summary = 'Answer this question using a FAQ.'
-        can_give_answer = self.context.can_give_answer
-        return Link('+linkfaq', text, summary, enabled=can_give_answer)
+        summary = 'Answer this question using a FAQ, or add one as a comment.'
+        return Link('+linkfaq', text, summary)
 
 
 class QuestionSetContextMenu(ContextMenu):

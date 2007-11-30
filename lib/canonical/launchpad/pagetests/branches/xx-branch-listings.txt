@@ -3,9 +3,9 @@
 Pages that want to display lists of branches use the branch-listing
 page template, and views derived from BranchListingView.
 
-The branch listing page template and associated view provides
-batching of the branches, and filtering of the lifecycle statuses,
-and badge decoration.
+The branch listing page template and associated view provide batching
+of the branches, filtering of the lifecycle statuses, ordering of
+various kinds and badge decoration.
 
 == Branch Batching ==
 
@@ -15,187 +15,322 @@ Luckily for us, many is 5 in the tests.
 Sample Person is used as the logged in user in order to show his private
 branches in the listings.
 
-   >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-   >>> browser.open('http://code.launchpad.dev/~name12')
-   >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
-   >>> print links.renderContents()
-   <BLANKLINE>
-   ...1...&rarr;...6...of 12 results...
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
+    >>> print links.renderContents()
+    <BLANKLINE>
+    ...1...&rarr;...6...of 12 results...
 
-   >>> table = find_tag_by_id(browser.contents, 'branchtable')
-   >>> for row in table.thead.fetch('tr'):
-   ...     print extract_text(row)
-   Name      Author               Status  Last Commit  Project Role
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.thead.fetch('tr'):
+    ...     print extract_text(row)
+    Name      Author               Status  Last Commit  Project Role
 
 Unfortunately our sample data is somewhat lacking in the last commit
 fields.  There are a couple of branches that have them, but most don't
 and are really just branch metadata without the revisions behind them.
 
-   >>> for row in table.tbody.fetch('tr'):
-   ...     print extract_text(row)
-   main      Sample Person        New          firefox         Author
-   2.6                            Mature       gnome-terminal  Registrant
-   main                           Development  gnome-terminal  Registrant
-   klingon   Sample Person        Experimental gnome-terminal  Author
-   launchpad Launchpad Developers New          gnome-terminal  Subscriber
-   mirrored                       New          gnome-terminal  Registrant
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    main      Sample Person        New          firefox         Author
+    2.6                            Mature       gnome-terminal  Registrant
+    main                           Development  gnome-terminal  Registrant
+    klingon   Sample Person        Experimental gnome-terminal  Author
+    launchpad Launchpad Developers New          gnome-terminal  Subscriber
+    mirrored                       New          gnome-terminal  Registrant
 
-   >>> browser.getLink('Next').click()
-   >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
-   >>> print links.renderContents()
-   <BLANKLINE>
-   ...7...&rarr;...12...of 12 results...
+    >>> browser.getLink('Next').click()
+    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
+    >>> print links.renderContents()
+    <BLANKLINE>
+    ...7...&rarr;...12...of 12 results...
 
-   >>> table = find_tag_by_id(browser.contents, 'branchtable')
-   >>> for row in table.tbody.fetch('tr'):
-   ...     print extract_text(row)
-   pushed                     New          gnome-terminal Registrant
-   scanned                    New          gnome-terminal Registrant
-   feature-x    Sample Person New          landscape      Author
-   trunk        Sample Person New          landscape      Author
-   junk.dev     Ubuntu Team   Experimental
-      2005-10-31 12:03:57 ... weeks ago  Registrant
-   junk.contrib Sample Person New
-      2005-10-31 12:03:57 ... weeks ago  Author
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    pushed                     New          gnome-terminal Registrant
+    scanned                    New          gnome-terminal Registrant
+    feature-x    Sample Person New          landscape      Author
+    trunk        Sample Person New          landscape      Author
+    junk.dev     Ubuntu Team   Experimental
+       2005-10-31 12:03:57 ... weeks ago  Registrant
+    junk.contrib Sample Person New
+       2005-10-31 12:03:57 ... weeks ago  Author
 
 If the branch listing has few enough entries that batching isn't
 needed, then the table is sortable and no batching navigation links are shown.
 
-   >>> browser.open('http://code.launchpad.dev/~name12')
-   >>> browser.getLink('Show subscribed branches').click()
-   >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
-   >>> links is None
-   True
+    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> browser.getLink('Show subscribed branches').click()
+    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
+    >>> links is None
+    True
 
 == Lifecycle Filtering ==
 
 When the branches for a person is first loaded, only the 'Current'
-branches are shown.  Current branches are those that have a 
+branches are shown.  Current branches are those that have a
 lifecycle status of New, Development, Experimental or Mature.
 Merged or Abandoned branches are not shown.
 
-   >>> browser.open('http://code.launchpad.dev/~name12')
-   >>> table = find_tag_by_id(browser.contents, 'branchtable')
-   >>> for row in table.tbody.fetch('tr'):
-   ...     print extract_text(row)
-   main      Sample Person        New          firefox         Author
-   2.6                            Mature       gnome-terminal  Registrant
-   main                           Development  gnome-terminal  Registrant
-   klingon   Sample Person        Experimental gnome-terminal  Author
-   launchpad Launchpad Developers New          gnome-terminal  Subscriber
-   mirrored                       New          gnome-terminal  Registrant
+    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    main      Sample Person        New          firefox         Author
+    2.6                            Mature       gnome-terminal  Registrant
+    main                           Development  gnome-terminal  Registrant
+    klingon   Sample Person        Experimental gnome-terminal  Author
+    launchpad Launchpad Developers New          gnome-terminal  Subscriber
+    mirrored                       New          gnome-terminal  Registrant
 
 There is a select control that is used to define which
 subset of the branches are shown.
 
-   >>> filter_control = browser.getControl('Show branches with status of')
-   >>> filter_control
-   <ListControl name='field.lifecycle' type='select'>
-   >>> filter_control.displayValue
-   ['New, Experimental, Development or Mature']
-   >>> filter_control.displayOptions
-   ['New, Experimental, Development or Mature', 'Any Status', 'New', 'Experimental', 'Development', 'Mature', 'Merged', 'Abandoned']
+    >>> filter_control = browser.getControl(name='field.lifecycle')
+    >>> filter_control
+    <ListControl name='field.lifecycle' type='select'>
+    >>> filter_control.displayValue
+    ['New, Experimental, Development or Mature']
+    >>> filter_control.displayOptions
+    ['New, Experimental, Development or Mature', 'Any Status', 'New', 'Experimental', 'Development', 'Mature', 'Merged', 'Abandoned']
 
 Changing the value of the select control will (in a javascript
 enabled browser) cause the form to be submitted automatically.
 For browsers with javascript disabled, there is a form submit
 button.
 
-   >>> filter_control.displayValue = ['Any Status']
-   >>> browser.getControl('Filter').click()
+    >>> filter_control.displayValue = ['Any Status']
+    >>> browser.getControl('Filter').click()
 
 Now all types of branches should be shown.
 
-   >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
-   >>> print links.renderContents()
-   <BLANKLINE>
-   ...1...&rarr;...6...of 14 results...
+    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
+    >>> print links.renderContents()
+    <BLANKLINE>
+    ...1...&rarr;...6...of 14 results...
 
-   >>> table = find_tag_by_id(browser.contents, 'branchtable')
-   >>> for row in table.tbody.fetch('tr'):
-   ...     print extract_text(row)
-   main      Sample Person        New          firefox         Author
-   2.4                            Abandoned    gnome-terminal  Registrant
-   slowness  Sample Person        Merged       gnome-terminal  Author
-   2.6                            Mature       gnome-terminal  Registrant
-   main                           Development  gnome-terminal  Registrant
-   klingon   Sample Person        Experimental gnome-terminal  Author
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    main      Sample Person        New          firefox         Author
+    2.4                            Abandoned    gnome-terminal  Registrant
+    slowness  Sample Person        Merged       gnome-terminal  Author
+    2.6                            Mature       gnome-terminal  Registrant
+    main                           Development  gnome-terminal  Registrant
+    klingon   Sample Person        Experimental gnome-terminal  Author
 
-   >>> browser.getLink('Next').click()
-   >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
-   >>> print links.renderContents()
-   <BLANKLINE>
-   ...7...&rarr;...12...of 14 results...
+    >>> browser.getLink('Next').click()
+    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
+    >>> print links.renderContents()
+    <BLANKLINE>
+    ...7...&rarr;...12...of 14 results...
 
-   >>> table = find_tag_by_id(browser.contents, 'branchtable')
-   >>> for row in table.tbody.fetch('tr'):
-   ...     print extract_text(row)
-   launchpad    Launchpad Developers New          gnome-terminal Subscriber
-   mirrored                          New          gnome-terminal Registrant
-   pushed                            New          gnome-terminal Registrant
-   scanned                           New          gnome-terminal Registrant
-   feature-x    Sample Person New          landscape      Author
-   trunk        Sample Person New          landscape      Author
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    launchpad    Launchpad Developers New          gnome-terminal Subscriber
+    mirrored                          New          gnome-terminal Registrant
+    pushed                            New          gnome-terminal Registrant
+    scanned                           New          gnome-terminal Registrant
+    feature-x    Sample Person New          landscape      Author
+    trunk        Sample Person New          landscape      Author
 
 
 Selecting an individual lifecycle status from the select control
 will cause only branches with that status to be listed.
 
-   >>> browser.getControl('Show branches with status of').displayValue = ['Abandoned']
-   >>> browser.getControl('Filter').click()
-   >>> table = find_tag_by_id(browser.contents, 'branchtable')
-   >>> for row in table.tbody.fetch('tr'):
-   ...     print extract_text(row)
-   2.4 ... Abandoned    gnome-terminal  Registrant
+    >>> browser.getControl(name='field.lifecycle').displayValue = ['Abandoned']
+    >>> browser.getControl('Filter').click()
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    2.4 ... Abandoned    gnome-terminal  Registrant
 
 If anyone tries to hack the URL, and put in an invalid
 status value, it will default to current branches.
 
-   >>> browser.open(
-   ...  'http://launchpad.dev/~name12/+branches?field.lifecycle=Fubar')
-   >>> browser.getControl('Show branches with status of').displayValue
-   ['New, Experimental, Development or Mature']
-   >>> table = find_tag_by_id(browser.contents, 'branchtable')
-   >>> for row in table.tbody.fetch('tr'):
-   ...     print extract_text(row)
-   main      Sample Person        New          firefox         Author
-   2.6                            Mature       gnome-terminal  Registrant
-   main                           Development  gnome-terminal  Registrant
-   klingon   Sample Person        Experimental gnome-terminal  Author
-   launchpad Launchpad Developers New          gnome-terminal  Subscriber
-   mirrored                       New          gnome-terminal  Registrant
+    >>> browser.open(
+    ...  'http://launchpad.dev/~name12/+branches?field.lifecycle=Fubar')
+    >>> browser.getControl(name='field.lifecycle').displayValue
+    ['New, Experimental, Development or Mature']
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    main      Sample Person        New          firefox         Author
+    2.6                            Mature       gnome-terminal  Registrant
+    main                           Development  gnome-terminal  Registrant
+    klingon   Sample Person        Experimental gnome-terminal  Author
+    launchpad Launchpad Developers New          gnome-terminal  Subscriber
+    mirrored                       New          gnome-terminal  Registrant
 
 If the user does have branches, but they are not visible with
 the current filter, the table is shown, and a (hopefully)
 helpful message supplied.
 
-  >>> browser.open('http://code.launchpad.dev/'
-  ...   '~launchpad/+branches?field.lifecycle=Mature')
-  >>> browser.getControl('Show branches with status of').displayValue
-  ['Mature']
-  >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
-  >>> print message.renderContents()
-  There may be branches related to Launchpad Developers but none of
-  them match the current filter criteria for this page.
-  Try filtering on "Any Status".
+    >>> browser.open('http://code.launchpad.dev/'
+    ...   '~launchpad/+branches?field.lifecycle=Mature')
+    >>> browser.getControl(name='field.lifecycle').displayValue
+    ['Mature']
+    >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
+    >>> print message.renderContents()
+    There are branches related to Launchpad Developers...
+
+If the user does not have any branches, then we say so.
+
+    >>> browser.open('http://code.launchpad.dev/'
+    ...   '~no-priv?field.lifecycle=Mature')
+    >>> browser.getControl(name='field.lifecycle').displayValue
+    ['Mature']
+    >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
+    >>> print message.renderContents()
+    There are no branches related to No Privileges Person in Launchpad...
 
 
 == Branch Badge Decoration ==
 
 We display badges for associated bugs.
 
-  >>> browser.open('http://code.launchpad.dev/~name12')
-  >>> table = find_tag_by_id(browser.contents, 'branchtable')
-  >>> for row in table.tbody.fetch('tr'):
-  ...     first_cell = row.find('td')
-  ...     anchors = first_cell.fetch('a')
-  ...     print anchors[0].get('href')
-  ...     for img in first_cell.findAll('img'):
-  ...        print img['title']
-  /~name12/firefox/main
-    Related to a bug
-  /~name12/gnome-terminal/2.6
-  /~name12/gnome-terminal/main
-  /~name12/gnome-terminal/klingon
-  /~launchpad/gnome-terminal/launchpad
-  /~name12/gnome-terminal/mirrored
+    >>> def branchSummary(browser):
+    ...     table = find_tag_by_id(browser.contents, 'branchtable')
+    ...     for row in table.tbody.fetch('tr'):
+    ...         first_cell = row.find('td')
+    ...         anchors = first_cell.fetch('a')
+    ...         print anchors[0].get('href')
+    ...         for img in first_cell.findAll('img'):
+    ...             print img['title']
+
+    >>> browser.open('http://code.launchpad.dev/firefox')
+    >>> branchSummary(browser)
+    /~name12/firefox/main
+      Linked to a bug
+    /~sabdfl/firefox/release--0.9.1
+    /~sabdfl/firefox/release-0.8
+    /~sabdfl/firefox/release-0.9
+    /~sabdfl/firefox/release-0.9.2
+      Linked to a bug
+
+If the bug is not visible to the user that is looking at the page, then the
+badge is not shown.
+
+    >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/4')
+    >>> browser.getLink('Set privacy/security').click()
+    >>> browser.getControl('This bug report should be private').click()
+    >>> browser.getControl('Change').click()
+
+Now the badge is still shown for Sample Person...
+
+    >>> browser.open('http://code.launchpad.dev/firefox')
+    >>> branchSummary(browser)
+    /~name12/firefox/main
+      Linked to a bug
+    /~sabdfl/firefox/release--0.9.1
+    /~sabdfl/firefox/release-0.8
+    /~sabdfl/firefox/release-0.9
+    /~sabdfl/firefox/release-0.9.2
+      Linked to a bug
+
+... but not for an anonymous user.
+
+    >>> anon_browser.open('http://code.launchpad.dev/firefox')
+    >>> branchSummary(anon_browser)
+    /~name12/firefox/main
+      Linked to a bug
+    /~sabdfl/firefox/release--0.9.1
+    /~sabdfl/firefox/release-0.8
+    /~sabdfl/firefox/release-0.9
+    /~sabdfl/firefox/release-0.9.2
+
+
+== Sorting Branch Listings ==
+
+Aside from the implicitly sorted listings of recently registered,
+imported and changed branches, all branch listings have a widget that
+allows changing the sort order.
+
+On a listing that can have branches from more than one product (such
+as the listing of branches owned by a person), the default ordering is
+by product name (which is of course called "project name" in the UI).
+
+    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> sort_by_control = browser.getControl(name='field.sort_by')
+    >>> sort_by_control.value
+    ['by project name']
+    >>> for option in sort_by_control.options:
+    ...     print option
+    by project name
+    by lifecycle status
+    by author name
+    by branch name
+    by registrant name
+    most recently changed first
+    least recently changed first
+    newest first
+    oldest first
+
+On a listing that can only have branches from one product, the default
+is to sort by lifecycle status, and product name is not one of the
+options that can be selected.
+
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> sort_by_control = browser.getControl(name='field.sort_by')
+    >>> sort_by_control.value
+    ['by lifecycle status']
+    >>> sort_by_control.value = ['by project name']
+    Traceback (most recent call last):
+      ...
+    ItemNotFoundError: insufficient items with name 'by project name'
+    >>> for option in sort_by_control.options:
+    ...     print option
+    by lifecycle status
+    by author name
+    by branch name
+    by registrant name
+    most recently changed first
+    least recently changed first
+    newest first
+    oldest first
+
+If you filter by a specific lifecycle status then ordering by
+lifecycle ceases to be relevant, and the default is to sort by author.
+
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> status_control = browser.getControl(name='field.lifecycle')
+    >>> status_control.value = ['MATURE']
+    >>> browser.getControl('Filter').click()
+    >>> browser.getControl(name='field.sort_by').value
+    ['by author name']
+
+The implicitly sorted listings do not have an ordering widget at all.
+
+    >>> browser.open('http://code.launchpad.dev/+recently-registered-branches')
+    >>> browser.getControl(name='field.sort_by').value
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.sort_by'
+
+Finally, sorting by a particular criterion has the desired effect.
+
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    2.6                                 Mature
+    main                                Development
+    klingon     Sample Person           Experimental
+    launchpad   Launchpad Developers    New
+    import                              New
+    mirrored                            New
+
+    >>> browser.getControl(name='field.sort_by').value = ['by author name']
+    >>> browser.getControl('Filter').click()
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    launchpad   Launchpad Developers    New
+    klingon     Sample Person           Experimental
+    2.6                                 Mature
+    main                                Development
+    import                              New
+    mirrored                            New

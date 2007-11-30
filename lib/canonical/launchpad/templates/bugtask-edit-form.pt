@@ -30,17 +30,17 @@
     <tal:context replace="context/bugtargetdisplayname">project</tal:context>,
     and therefore cannot edit this bug's status.
   </p>
+  <tal:has_watch condition="context/bugwatch">
+    <p tal:condition="context/bugwatch/last_error_type"
+        class="error message"
+        tal:content="context/bugwatch/getLastErrorMessage"
+    />
+  </tal:has_watch>
   <table class="summary">
     <tr>
       <th>Affecting:</th>
       <td><a tal:attributes="href context/target/fmt:url"
              tal:content="context/target/bugtargetdisplayname">Ubuntu</a></td>
-    </tr>
-    <tr tal:condition="context/target/currentrelease|nothing">
-      <th>Latest release:</th>
-      <td tal:define="cr context/target/currentrelease">
-        <a tal:content="cr/version" tal:attributes="href cr/fmt:url">3.2.1-3</a>
-      </td>
     </tr>
     <tr>
       <th>Filed here by:</th>
@@ -101,7 +101,7 @@
     <table>
       <tal:distrotask
         condition="python:context.distribution or context.distroseries"
-        define="error python:view.getWidgetError('sourcepackagename')"
+        define="error python:view.getFieldError('sourcepackagename')"
       >
         <tr>
           <td>
@@ -125,7 +125,7 @@
       <tal:upstreamtask
           condition="python:context.product"
           define="omit_required default;
-                  error python:view.getWidgetError('product')">
+                  error python:view.getFieldError('product')">
         <tr>
           <td colspan="2">
             <label style="font-weight: bold"
@@ -221,12 +221,12 @@
         <tal:has_bugwatch tal:condition="context/bugwatch">
           <tal:has_been_pulled 
               tal:condition="context/bugwatch/lastchecked">
-            This information was last pulled
-            <b
-              tal:attributes="title context/bugwatch/lastchecked/fmt:datetime"
-              tal:content="context/bugwatch/lastchecked/fmt:displaydate">
-              3 minutes ago
-            </b>.
+              This information was last pulled
+              <b
+                tal:attributes="title context/bugwatch/lastchecked/fmt:datetime"
+                tal:content="context/bugwatch/lastchecked/fmt:displaydate">
+                3 minutes ago
+              </b>.
           </tal:has_been_pulled>
           <tal:has_not_been_pulled 
               tal:condition="not:context/bugwatch/lastchecked">

@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces to handle translation files exports."""
 
@@ -15,6 +16,8 @@ from zope.interface import Interface
 from zope.schema import Choice, Int, List, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from canonical.launchpad.interfaces.translationcommonformat import (
     TranslationImportExportBaseException)
 
@@ -54,7 +57,7 @@ class ITranslationFormatExporter(Interface):
     # Enum infrastructure. See bug #135853 for more information.
     format = Choice(
         title=_('The file format that the translation will be exported to.'),
-        vocabulary='TranslationFileFormat',
+        vocabulary=TranslationFileFormat,
         required=True, readonly=True)
 
     supported_source_formats = List(
@@ -65,25 +68,25 @@ class ITranslationFormatExporter(Interface):
             '''),
         required=True, readonly=True)
 
-    def exportTranslationMessage(translation_message):
+    def exportTranslationMessageData(translation_message):
         """Export the string for the given translation message.
 
-        :param translation_message: ITranslationMessage to export.
-        :return: Unicode string representing given ITranslationMessage.
+        :param translation_message: `ITranslationMessageData` to export.
+        :return: Unicode string representing given `ITranslationMessageData`.
         """
 
     def exportTranslationFiles(translation_file_list, ignore_obsolete=False,
                                force_utf8=False):
-        """Return an IExportedTranslationFile representing the export.
+        """Return an `IExportedTranslationFile` representing the export.
 
-        :param translation_file_list: A list of ITranslationFile objects to
-            export.
+        :param translation_file_list: A list of ITranslationFileData objects
+            to export.
         :param ignore_obsolete: A flag indicating whether obsolete messages
             should be exported.
         :param force_utf8: A flag indicating whether the export should be
             forced to use UTF-8 encoding. This argument is only useful if the
             file format allows different encodings.
-        :return: An IExportedTranslationFile representing the export.
+        :return: An `IExportedTranslationFile` representing the export.
         """
 
 

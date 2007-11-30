@@ -1,4 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
@@ -9,6 +10,7 @@ __all__ = [
 
 import httplib
 import gzip
+import logging
 import os
 import socket
 import subprocess
@@ -24,20 +26,20 @@ from sqlobject import (
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.buildd.slave import BuilderStatus
 from canonical.buildmaster.master import BuilddMaster
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
-    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotResetHost,
-    IBuildQueueSet, IBuildSet, IBuilder, IBuilderSet, IDistroArchSeriesSet,
-    IHasBuildRecords, NotFoundError,
-    ProtocolVersionMismatch, pocketsuffix)
+    ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
+    CannotBuild, CannotResetHost, IBuildQueueSet, IBuildSet,
+    IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
+    NotFoundError, PackagePublishingPocket, ProtocolVersionMismatch,
+    pocketsuffix)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
-from canonical.lp.dbschema import (
-    ArchivePurpose, BuildStatus, PackagePublishingPocket)
 
 
 class TimeoutHTTPConnection(httplib.HTTPConnection):
@@ -82,7 +84,7 @@ class Builder(SQLBase):
     implements(IBuilder, IHasBuildRecords)
     _table = 'Builder'
 
-    _defaultOrder = ['name']
+    _defaultOrder = ['processor', '-trusted', 'name']
 
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
                            notNull=True)
@@ -195,28 +197,127 @@ class Builder(SQLBase):
         """See IBuilder."""
         self.slave = new_slave
 
-    def startBuild(self, build_queue_item, logger):
-        """See IBuilder."""
-        logger.info("startBuild(%s, %s, %s, %s)", self.url,
-                    build_queue_item.name, build_queue_item.version,
-                    build_queue_item.build.pocket.title)
+    @property
+    def pocket_dependencies(self):
+        """A dictionary of pocket to possible pocket tuple.
+
+        Return a dictionary that maps a pocket to pockets that it can
+        depend on for a build.
+
+        The dependencies apply equally no matter which archive type is
+        using them; but some archives may not have builds in all the pockets.
+        """
+        return {
+            PackagePublishingPocket.RELEASE :
+                (PackagePublishingPocket.RELEASE,),
+            PackagePublishingPocket.SECURITY :
+                (PackagePublishingPocket.RELEASE,
+                 PackagePublishingPocket.SECURITY),
+            PackagePublishingPocket.UPDATES :
+                (PackagePublishingPocket.RELEASE,
+                 PackagePublishingPocket.SECURITY,
+                 PackagePublishingPocket.UPDATES),
+            PackagePublishingPocket.BACKPORTS :
+                (PackagePublishingPocket.RELEASE,
+                 PackagePublishingPocket.SECURITY,
+                 PackagePublishingPocket.UPDATES,
+                 PackagePublishingPocket.BACKPORTS),
+            PackagePublishingPocket.PROPOSED :
+                (PackagePublishingPocket.RELEASE,
+                 PackagePublishingPocket.SECURITY,
+                 PackagePublishingPocket.UPDATES,
+                 PackagePublishingPocket.PROPOSED),
+            }
+
+    @property
+    def component_dependencies(self):
+        """A dictionary of component to component dependencies.
+
+        Return a dictionary that maps a component to a string of
+        components that it is allowed to depend on for a build. This
+        string can be used directly at the end of sources.list lines.
+        """
+        return {
+            'main': 'main',
+            'restricted': 'main restricted',
+            'universe': 'main restricted universe',
+            'multiverse': 'main restricted universe multiverse',
+            'partner' : 'partner',
+            }
+
+    def _determineArchivesForBuild(self, build_queue_item):
+        """Work out what sources.list lines should be passed to builder."""
+        ogre_components = self.component_dependencies[
+            build_queue_item.build.current_component.name]
+        dist_name = build_queue_item.archseries.distroseries.name
+        archive_url = build_queue_item.build.archive.archive_url
+        ubuntu_source_lines = []
+
+        if (build_queue_item.build.archive.purpose == ArchivePurpose.PARTNER
+            or
+            build_queue_item.build.archive.purpose == ArchivePurpose.PPA):
+            # Although partner and PPA builds are always in the release
+            # pocket, they depend on the same pockets as though they
+            # were in the updates pocket.
+            ubuntu_pockets = self.pocket_dependencies[
+                PackagePublishingPocket.UPDATES]
+
+            # Partner and PPA may also depend on any component.
+            ubuntu_components = 'main restricted universe multiverse'
+            source_line = (
+                'deb %s %s %s'
+                % (archive_url, dist_name, ogre_components))
+            ubuntu_source_lines.append(source_line)
+        else:
+            ubuntu_pockets = self.pocket_dependencies[
+                build_queue_item.build.pocket]
+            ubuntu_components = ogre_components
+
+        # Here we build a list of sources.list lines for each pocket
+        # required in the primary archive.
+        for pocket in ubuntu_pockets:
+            if pocket == PackagePublishingPocket.RELEASE:
+                dist_pocket = dist_name
+            else:
+                dist_pocket = dist_name + pocketsuffix[pocket]
+            ubuntu_source_lines.append(
+                'deb http://ftpmaster.internal/ubuntu %s %s'
+                % (dist_pocket, ubuntu_components))
+
+        return ubuntu_source_lines
+
+    def _verifyBuildRequest(self, build_queue_item, logger):
+        """Assert some pre-build checks.
+
+        The build request is checked:
+         * Untrusted builds can't build on a trusted builder
+         * Ensure that we have a chroot
+         * Ensure that the build pocket allows builds for the current
+           distroseries state.
+        """
         if self.trusted:
             assert build_queue_item.is_trusted, (
                 "Attempt to build untrusted item on a trusted-only builder.")
         # Ensure build has the needed chroot
-        chroot = build_queue_item.archseries.getChroot(
-            build_queue_item.build.pocket)
+        chroot = build_queue_item.archseries.getChroot()
         if chroot is None:
-            logger.debug("Missing CHROOT for %s/%s/%s/%s",
+            raise CannotBuild(
+                "Missing CHROOT for %s/%s/%s",
                 build_queue_item.build.distroseries.distribution.name,
                 build_queue_item.build.distroseries.name,
-                build_queue_item.build.distroarchseries.architecturetag,
-                build_queue_item.build.pocket.name)
-            raise CannotBuild
-        # The main distribution has policies prevent uploads to some pockets
-        # (e.g. security) during different parts of the distribution series
-        # lifecycle. These do not apply to PPA builds (which are untrusted)
-        # nor any archive that allows release pocket updates.
+                build_queue_item.build.distroarchseries.architecturetag)
+
+        # XXX cprov 20071025: We silently ignore SECURITY builds until we
+        # have a proper infrastructure to build (EMBARGO archive) and
+        # reviewed the UI to hide their information until public disclosure.
+        if build_queue_item.build.pocket == PackagePublishingPocket.SECURITY:
+            raise CannotBuild(
+                'Soyuz is not yet capable of building SECURITY uploads.')
+
+        # The main distribution has policies to prevent uploads to some
+        # pockets (e.g. security) during different parts of the distribution
+        # series lifecycle. These do not apply to PPA builds (which are
+        # untrusted) nor any archive that allows release pocket updates.
 
         # XXX julian 2007-09-14
         # Currently is_trusted is being overloaded to also mean "is not a
@@ -233,11 +334,11 @@ class Builder(SQLBase):
                 "to the series status of %s."
                 % (build.title, build.id, build.pocket.name,
                    build.distroseries.name))
-        # If we are building untrusted source reset the entire machine.
-        if not self.trusted:
-            self.resetSlaveHost(logger)
 
+    def _dispatchBuildToSlave(self, build_queue_item, args, buildid, logger):
+        """Start the build on the slave builder."""
         # Send chroot.
+        chroot = build_queue_item.archseries.getChroot()
         self.cacheFileOnSlave(logger, chroot)
 
         # Build filemap structure with the files required in this build
@@ -247,84 +348,7 @@ class Builder(SQLBase):
             filemap[f.libraryfile.filename] = f.libraryfile.content.sha1
             self.cacheFileOnSlave(logger, f.libraryfile)
 
-        # Build extra arguments
-        args = {}
-        args["ogrecomponent"] = build_queue_item.current_component.name
-        # turn 'arch_indep' ON only if build is archindep or if
-        # the specific architecture is the nominatedarchindep for
-        # this distroseries (in case it requires any archindep source)
-        # XXX kiko 2006-08-31:
-        # There is no point in checking if archhintlist ==
-        # 'all' here, because it's redundant with the check for
-        # isNominatedArchIndep.
-        args['arch_indep'] = (
-            build_queue_item.archhintlist == 'all' or
-            build_queue_item.archseries.isNominatedArchIndep)
-
-        # XXX cprov 2007-05-23: Ogre Model should not be modelled here ...
-        if build_queue_item.build.archive.purpose != ArchivePurpose.PRIMARY:
-            ogre_map = {
-                'main': 'main',
-                'restricted': 'main restricted',
-                'universe': 'main restricted universe',
-                'multiverse': 'main restricted universe multiverse',
-                'partner' : 'partner',
-                }
-            ogre_components = ogre_map[build_queue_item.current_component.name]
-            dist_name = build_queue_item.archseries.distroseries.name
-            archive_url = build_queue_item.build.archive.archive_url
-
-            if build_queue_item.build.archive.purpose == ArchivePurpose.PPA:
-                ubuntu_source_lines = [
-                    'deb http://archive.ubuntu.com/ubuntu %s %s'
-                    % (dist_name, ogre_components)]
-            else:
-                ubuntu_components = ogre_components
-                # A list of pockets that we are allowed to use for
-                # dependencies.
-                ubuntu_pockets = [
-                    PackagePublishingPocket.RELEASE,
-                    PackagePublishingPocket.SECURITY,
-                    PackagePublishingPocket.UPDATES,
-                    ]
-                if (build_queue_item.build.archive.purpose ==
-                        ArchivePurpose.PARTNER):
-                    # XXX julian 2007-08-07 - this is a greasy hack.
-                    # See comment above about not modelling Ogre here.
-                    # Partner is a very special case because the partner
-                    # component is only in the partner archive, so we have
-                    # to be careful with the sources.list archives.
-                    ubuntu_components = 'main restricted universe multiverse'
-
-                # Here we build a list of sources.list lines for each pocket
-                # required in the primary archive.
-                ubuntu_source_lines = []
-                for pocket in ubuntu_pockets:
-                    if pocket == PackagePublishingPocket.RELEASE:
-                        dist_pocket = dist_name
-                    else:
-                        dist_pocket = dist_name + pocketsuffix[pocket]
-                    ubuntu_source_lines.append(
-                        'deb http://ftpmaster.internal/ubuntu %s %s'
-                        % (dist_pocket, ubuntu_components))
-
-            source_line = (
-                'deb %s %s %s'
-                % (archive_url, dist_name, ogre_components))
-            args['archives'] = [source_line]
-            args['archives'].extend(ubuntu_source_lines)
-
         chroot_sha1 = chroot.content.sha1
-        # store DB information
-        build_queue_item.builder = self
-        build_queue_item.buildstart = UTC_NOW
-        build_queue_item.build.buildstate = BuildStatus.BUILDING
-        # Generate a string which can be used to cross-check when obtaining
-        # results so we know we are referring to the right database object in
-        # subsequent runs.
-        buildid = "%s-%s" % (build_queue_item.build.id, build_queue_item.id)
-        logger.debug("Initiating build %s on %s" % (buildid, self.url))
-
         try:
             status, info = self.slave.build(
                 buildid, "debian", chroot_sha1, filemap, args)
@@ -337,11 +361,56 @@ class Builder(SQLBase):
             """ % (self.name, self.url, filemap, args, status, info)
             logger.info(message)
         except (xmlrpclib.Fault, socket.error), info:
-            # mark builder as 'failed'.
-            self._logger.debug(
+            # Mark builder as 'failed'.
+            logger.debug(
                 "Disabling builder: %s" % self.url, exc_info=1)
-            self.failbuilder("Exception (%s) when setting up to new job" % info)
+            self.failbuilder(
+                "Exception (%s) when setting up to new job" % info)
             raise BuildSlaveFailure
+
+    def startBuild(self, build_queue_item, logger):
+        """See IBuilder."""
+        logger.info("startBuild(%s, %s, %s, %s)", self.url,
+                    build_queue_item.name, build_queue_item.version,
+                    build_queue_item.build.pocket.title)
+
+        # Make sure the request is valid; an exception is raised if it's not.
+        self._verifyBuildRequest(build_queue_item, logger)
+
+        # If we are building untrusted source reset the entire machine.
+        if not self.trusted:
+            self.resetSlaveHost(logger)
+
+        # Build extra arguments.
+        args = {}
+        args["ogrecomponent"] = build_queue_item.build.current_component.name
+        # turn 'arch_indep' ON only if build is archindep or if
+        # the specific architecture is the nominatedarchindep for
+        # this distroseries (in case it requires any archindep source)
+        # XXX kiko 2006-08-31:
+        # There is no point in checking if archhintlist ==
+        # 'all' here, because it's redundant with the check for
+        # isNominatedArchIndep.
+        args['arch_indep'] = (
+            build_queue_item.archhintlist == 'all' or
+            build_queue_item.archseries.isNominatedArchIndep)
+        args['archives'] = self._determineArchivesForBuild(build_queue_item)
+        suite = build_queue_item.build.distroarchseries.distroseries.name
+        if build_queue_item.build.pocket != PackagePublishingPocket.RELEASE:
+            suite += "-%s" % (build_queue_item.build.pocket.name.lower())
+        args['suite'] = suite
+        archive_purpose = build_queue_item.build.archive.purpose.name
+        args['archive_purpose'] = archive_purpose
+
+        # Generate a string which can be used to cross-check when obtaining
+        # results so we know we are referring to the right database object in
+        # subsequent runs.
+        buildid = "%s-%s" % (build_queue_item.build.id, build_queue_item.id)
+        logger.debug("Initiating build %s on %s" % (buildid, self.url))
+
+        # Do it.
+        build_queue_item.markAsBuilding(self)
+        self._dispatchBuildToSlave(build_queue_item, args, buildid, logger)
 
     @property
     def status(self):
@@ -408,7 +477,7 @@ class Builder(SQLBase):
 
     def transferSlaveFileToLibrarian(self, file_sha1, filename):
         """See IBuilder."""
-        out_file_fd, out_file_name = tempfile.mkstemp(suffix=".tmp")
+        out_file_fd, out_file_name = tempfile.mkstemp(suffix=".buildlog")
         out_file = os.fdopen(out_file_fd, "r+")
         try:
             slave_file = self.slave.getFile(file_sha1)
@@ -421,6 +490,7 @@ class Builder(SQLBase):
                 out_file_name += '.gz'
                 gz_file = gzip.GzipFile(out_file_name, mode='wb')
                 copy_and_close(out_file, gz_file)
+                os.remove(out_file_name.replace('.gz', ''))
 
             # Reopen the file, seek to its end position, count and seek
             # to beginning, ready for adding to the Librarian.
@@ -436,6 +506,92 @@ class Builder(SQLBase):
             # Finally, remove the temporary file
             out_file.close()
             os.remove(out_file_name)
+
+    @property
+    def is_available(self):
+        """See `IBuilder`."""
+        if not self.builderok:
+            return False
+        try:
+            slavestatus = self.slaveStatusSentence()
+        except (xmlrpclib.Fault, socket.error), info:
+            return False
+        if slavestatus[0] != BuilderStatus.IDLE:
+            return False
+        return True
+
+    # XXX cprov 20071116: It should become part of the public
+    # findBuildCandidate once we start to detect superseded builds
+    # at build creation time.
+    def _findBuildCandidate(self):
+        """Return the highest priority build candidate for this builder.
+
+        Returns a pending IBuildQueue record queued for this builder
+        processorfamily with the highest lastscore or None if there
+        is no one available.
+        """
+        clauses = ["""
+            buildqueue.build = build.id AND
+            build.distroarchseries = distroarchseries.id AND
+            build.archive = archive.id AND
+            build.buildstate = %s AND
+            distroarchseries.processorfamily = %s AND
+            buildqueue.builder IS NULL
+        """ % sqlvalues(BuildStatus.NEEDSBUILD, self.processor.family)]
+
+        clauseTables = ['Build', 'DistroArchSeries', 'Archive']
+
+        if self.trusted:
+            clauses.append("""
+                archive.purpose IN %s
+            """ % sqlvalues([ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER]))
+        else:
+            clauses.append("""
+                archive.purpose = %s
+            """ % sqlvalues(ArchivePurpose.PPA))
+
+        query = " AND ".join(clauses)
+
+        candidate = BuildQueue.selectFirst(
+            query, clauseTables=clauseTables, prejoins=['build'],
+            orderBy=['-buildqueue.lastscore'])
+
+        return candidate
+
+    def _getSlaveScannerLogger(self):
+        """Return the logger instance from buildd-slave-scanner.py."""
+        # XXX cprov 20071120: Ideally the Launchpad logging system
+        # should be able to configure the root-logger instead of creating
+        # a new object, then the logger lookups won't require the specific
+        # name argument anymore. See bug 164203.
+        logger = logging.getLogger('slave-scanner')
+        return logger
+
+    def findBuildCandidate(self):
+        """See `IBuilder`."""
+        logger = self._getSlaveScannerLogger()
+        candidate = self._findBuildCandidate()
+
+        if not candidate:
+            return None
+
+        while candidate and candidate.is_last_version is False:
+            logger.debug(
+                "Build %s SUPERSEDED, queue item %s REMOVED"
+                % (candidate.build.id, candidate.id))
+            candidate.build.buildstate = BuildStatus.SUPERSEDED
+            candidate.destroySelf()
+            candidate = self._findBuildCandidate()
+
+        return candidate
+
+    def dispatchBuildCandidate(self, candidate):
+        """See `IBuilder`."""
+        logger = self._getSlaveScannerLogger()
+        try:
+            self.startBuild(candidate, logger)
+        except (BuildSlaveFailure, CannotBuild), err:
+            logger.warn('Could not build: %s' % err)
 
 
 class BuilderSet(object):
@@ -497,15 +653,3 @@ class BuilderSet(object):
         # builds where they are completed
         buildMaster.scanActiveBuilders()
         return buildMaster
-
-    def dispatchBuilds(self, logger, buildMaster):
-        """See IBuilderSet."""
-        buildCandidatesSortedByProcessor = buildMaster.sortAndSplitByProcessor()
-
-        logger.info("Dispatching Jobs.")
-        # Now that we've gathered in all the builds, dispatch the pending ones
-        for candidate_proc in buildCandidatesSortedByProcessor.iteritems():
-            processor, buildCandidates = candidate_proc
-            buildMaster.dispatchByProcessor(processor, buildCandidates)
-
-        logger.info("Slave Scan Process Finished.")

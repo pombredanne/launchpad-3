@@ -1,13 +1,16 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
 
 <div metal:fill-slot="main">
 
@@ -32,19 +35,23 @@
         </thead>
         <tbody>
           <tr tal:repeat="record history">
-            <tal:block define="posubmission record/latest_posubmission;
-                               pomsgset posubmission/pomsgset">
+            <tal:block define="translationmessage record/latest_message">
             <td><a tal:content="record/pofile/potemplate/displayname"
                    tal:attributes="href record/pofile/fmt:url">foo bar in package bla</a>
             </td>
             <td tal:content="record/pofile/language/englishname">Spanish</td>
-            <td tal:content="pomsgset/potmsgset/singular_text" />
-            <td tal:condition="python:not(view.should_display_message(pomsgset))">
+            <td tal:content="translationmessage/potmsgset/singular_text" />
+            <td
+              tal:condition="python:not(view.should_display_message(translationmessage))">
               To prevent privacy issues, this translation is not
               available to anonymous users, if you want to see it,
               please, <a href="+login">log in</a> first.</td>
-            <td tal:condition="python:view.should_display_message(pomsgset)"
-                tal:content="posubmission/potranslation/translation" />
+            <tal:block
+              tal:condition="python:view.should_display_message(translationmessage)">
+              <td
+                tal:condition="translationmessage/msgstr0"
+                tal:content="translationmessage/msgstr0/translation" />
+            </tal:block>
             <td>
             <span
               tal:attributes="title record/date_last_touched/fmt:datetime"

@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['BinaryPackageFile', 'SourcePackageReleaseFile']
@@ -10,11 +11,9 @@ from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import (
-    BinaryPackageFileType, SourcePackageFileType)
-
 from canonical.launchpad.interfaces import (
-    IBinaryPackageFile, ISourcePackageReleaseFile)
+    BinaryPackageFileType, IBinaryPackageFile, ISourcePackageReleaseFile,
+    SourcePackageFileType)
 
 
 class BinaryPackageFile(SQLBase):

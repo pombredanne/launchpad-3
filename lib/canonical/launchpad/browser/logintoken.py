@@ -3,13 +3,14 @@
 __metaclass__ = type
 
 __all__ = [
+    'ClaimProfileView',
+    'ClaimTeamView',
     'LoginTokenSetNavigation',
     'LoginTokenView',
+    'MergePeopleView',
+    'NewAccountView',
     'ResetPasswordView',
     'ValidateEmailView',
-    'NewAccountView',
-    'MergePeopleView',
-    'ClaimProfileView',
     'ValidateGPGKeyView',
     ]
 
@@ -19,27 +20,30 @@ import pytz
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
-from zope.interface import Interface
+from zope.app.form.browser import TextAreaWidget
+from zope.interface import alsoProvides, directlyProvides, Interface
 
 from canonical.database.sqlbase import flush_database_updates
 
-from canonical.widgets import PasswordChangeWidget
+from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
+from canonical.launchpad.webapp.interfaces import (
+    IAlwaysSubmittedWidget, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPerson
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
-    LaunchpadView, LaunchpadFormView)
+    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView)
 
 from canonical.launchpad.browser.openidserver import OpenIdMixin
+from canonical.launchpad.browser.team import HasRenewalPolicyMixin
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, ILoginTokenSet, IPerson, ILoginToken,
-    IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError,
-    ShipItConstants, UBUNTU_WIKI_URL, UnexpectedFormData,
-    IGPGKeyValidationForm, IOpenIDRPConfigSet, EmailAddressStatus,
-    GPGKeyAlgorithm, LoginTokenType, PersonCreationRationale)
+    EmailAddressStatus, GPGKeyAlgorithm, GPGKeyNotFoundError,
+    GPGVerificationError, IEmailAddressSet, IGPGHandler, IGPGKeySet,
+    IGPGKeyValidationForm, ILoginToken, ILoginTokenSet, IOpenIDRPConfigSet,
+    IPerson, IPersonSet, ITeam, LoginTokenType, PersonCreationRationale,
+    ShipItConstants, UBUNTU_WIKI_URL, UnexpectedFormData)
 
 UTC = pytz.timezone('UTC')
 
@@ -71,6 +75,7 @@ class LoginTokenView(LaunchpadView):
              LoginTokenType.VALIDATEGPG: '+validategpg',
              LoginTokenType.VALIDATESIGNONLYGPG: '+validatesignonlygpg',
              LoginTokenType.PROFILECLAIM: '+claimprofile',
+             LoginTokenType.TEAMCLAIM: '+claimteam',
              }
 
     def render(self):
@@ -135,6 +140,14 @@ class BaseLoginTokenView(OpenIdMixin):
         self.next_url = None
         return self.renderOpenIdResponse(self.createPositiveResponse())
 
+    def _cancel(self):
+        """Consume the LoginToken and set self.next_url.
+
+        next_url is set to the home page of this LoginToken's requester.
+        """
+        self.next_url = canonical_url(self.context.requester)
+        self.context.consume()
+
 
 class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
 
@@ -146,9 +159,9 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
     expected_token_types = (LoginTokenType.PROFILECLAIM,)
 
     def initialize(self):
-        self.redirectIfInvalidOrConsumedToken()
-        self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
-            self.context.email).person
+        if not self.redirectIfInvalidOrConsumedToken():
+            self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
+                self.context.email).person
         super(ClaimProfileView, self).initialize()
 
     @property
@@ -180,6 +193,63 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
         self.logInPersonByEmail(email.email)
         self.request.response.addInfoNotification(_(
             "Profile claimed successfully"))
+
+
+class ClaimTeamView(
+    BaseLoginTokenView, HasRenewalPolicyMixin, LaunchpadEditFormView):
+
+    schema = ITeam
+    field_names = [
+        'teamowner', 'displayname', 'teamdescription', 'subscriptionpolicy',
+        'defaultmembershipperiod', 'renewal_policy', 'defaultrenewalperiod']
+    label = 'Claim Launchpad team'
+    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+    custom_widget(
+        'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget(
+        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+
+    expected_token_types = (LoginTokenType.TEAMCLAIM,)
+
+    def initialize(self):
+        if not self.redirectIfInvalidOrConsumedToken():
+            self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
+                self.context.email).person
+            # Let's pretend the claimed profile provides ITeam while we
+            # render/process this page, so that it behaves like a team.
+            # Use a local import as we don't want removeSecurityProxy used
+            # anywhere else.
+            from zope.security.proxy import removeSecurityProxy
+            directlyProvides(removeSecurityProxy(self.claimed_profile), ITeam)
+        super(ClaimTeamView, self).initialize()
+
+    def setUpWidgets(self, context=None):
+        self.form_fields['teamowner'].for_display = True
+        super(ClaimTeamView, self).setUpWidgets(context=self.claimed_profile)
+        alsoProvides(self.widgets['teamowner'], IAlwaysSubmittedWidget)
+
+    @property
+    def initial_values(self):
+        return {'teamowner': self.context.requester}
+
+    @action(_('Continue'), name='confirm')
+    def confirm_action(self, action, data):
+        self.claimed_profile.convertToTeam(team_owner=self.context.requester)
+        # Although we converted the person to a team it seems that the
+        # security proxy still thinks it's an IPerson and not an ITeam,
+        # which means to edit it we need to be logged in as the person we
+        # just converted into a team.  Of course, we can't do that, so we'll
+        # have to remove its security proxy before we update it.
+        from zope.security.proxy import removeSecurityProxy
+        self.updateContextFromData(
+            data, context=removeSecurityProxy(self.claimed_profile))
+        self.next_url = canonical_url(self.claimed_profile)
+        self.request.response.addInfoNotification(
+            _('Team claimed successfully'))
+
+    @action(_('Cancel'), name='cancel')
+    def cancel_action(self, action, data):
+        self._cancel()
 
 
 class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
@@ -243,6 +313,10 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
 
         return self.maybeCompleteOpenIDRequest()
 
+    @action(_('Cancel'), name='cancel')
+    def cancel_action(self, action, data):
+        self._cancel()
+
 
 class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
 
@@ -252,9 +326,9 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
                             LoginTokenType.VALIDATESIGNONLYGPG)
 
     def initialize(self):
-        self.redirectIfInvalidOrConsumedToken()
-        if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
-            self.field_names = ['signed_text']
+        if not self.redirectIfInvalidOrConsumedToken():
+            if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
+                self.field_names = ['text_signature']
         super(ValidateGPGKeyView, self).initialize()
 
     def validate(self, data):
@@ -264,8 +338,7 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
 
     @action(_('Cancel'), name='cancel')
     def cancel_action(self, action, data):
-        self.next_url = canonical_url(self.context.requester)
-        self.context.consume()
+        self._cancel()
 
     @action(_('Continue'), name='continue')
     def continue_action_gpg(self, action, data):
@@ -277,7 +350,10 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
 
     def _validateSignOnlyGPGKey(self, data):
         # Verify the signed content.
-        signedcontent = data['signed_text']
+        signedcontent = data.get('text_signature')
+        if signedcontent is None:
+            return
+
         try:
             signature = getUtility(IGPGHandler).getVerifiedSignature(
                 signedcontent.encode('ASCII'))
@@ -488,8 +564,7 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
 
     @action(_('Cancel'), name='cancel')
     def cancel_action(self, action, data):
-        self.next_url = canonical_url(self.context.requester)
-        self.context.consume()
+        self._cancel()
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
@@ -508,7 +583,7 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
         if self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
             if requester.preferredemail is not None:
                 requester.preferredemail.destroySelf()
-            requester.setPreferredEmail(email)
+            requester.setContactAddress(email)
         elif self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
             requester.validateAndEnsurePreferredEmail(email)
         else:
@@ -563,9 +638,9 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE)
 
     def initialize(self):
-        self.redirectIfInvalidOrConsumedToken()
-        self.email = getUtility(IEmailAddressSet).getByEmail(
-            self.context.email)
+        if not self.redirectIfInvalidOrConsumedToken():
+            self.email = getUtility(IEmailAddressSet).getByEmail(
+                self.context.email)
         super(NewAccountView, self).initialize()
 
     # Use a method to set self.next_url rather than a property because we

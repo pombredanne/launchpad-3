@@ -12,6 +12,24 @@
         />
     <require
         permission="launchpad.Edit"
+        set_attributes="name title summary url whiteboard mirror_status_message
+                        private owner author product home_page lifecycle_status
+                        last_mirrored last_mirrored_id last_mirror_attempt
+                        mirror_failures pull_disabled mirror_request_time
+                        last_scanned last_scanned_id revision_count branch_type"
+        />
+    <require
+        permission="launchpad.AnyPerson"
+        set_attributes="date_last_modified"/>
+  </content>
+
+  <content class="canonical.launchpad.database.BranchWithSortKeys">
+    <require
+        permission="launchpad.View"
+        interface="canonical.launchpad.interfaces.IBranch"
+        />
+    <require
+        permission="launchpad.Edit"
         set_schema="canonical.launchpad.interfaces.IBranch"
         />
   </content>
@@ -20,6 +38,12 @@
       for="canonical.launchpad.interfaces.IBranch"
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
       factory="canonical.launchpad.browser.BranchSOP"
+      />
+
+  <adapter
+      for="canonical.launchpad.interfaces.IBranch"
+      provides="canonical.launchpad.webapp.badge.IHasBadges"
+      factory="canonical.launchpad.browser.BranchBadges"
       />
 
     <browser:menus
@@ -126,6 +150,14 @@
       facet="branches"
       permission="launchpad.Edit"
       template="../templates/branch-delete.pt" />
+
+  <browser:page
+      name="+mirror-status"
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.BranchMirrorStatusView"
+      facet="branches"
+      permission="launchpad.View"
+      template="../templates/branch-mirror-status.pt" />
 
   <browser:page
       name="+reassign"

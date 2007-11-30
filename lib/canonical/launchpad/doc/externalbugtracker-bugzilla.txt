@@ -12,13 +12,16 @@ The class that implements EBT is called Bugzilla. It works differently
 depending on which version of Bugzilla it is talking to. If it's a
 version we can't parse, UnparseableBugTrackerVersion is raised:
 
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
-    >>> external_bugzilla = Bugzilla('http://foo.com/', version='A.B4')
-    >>> external_bugzilla.updateBugWatches([])
+    >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> invalid_version_bugzilla = new_bugtracker(BugTrackerType.BUGZILLA)
+    >>> external_bugzilla = Bugzilla(invalid_version_bugzilla, version='A.B4')
     Traceback (most recent call last):
       ...
     UnparseableBugTrackerVersion:
-    Failed to parse version 'A.B4' for http://foo.com
+    Failed to parse version 'A.B4' for http://...
 
 Since we don't want to depend on a working network connection, we use a
 slightly modified implementation.
@@ -28,10 +31,10 @@ slightly modified implementation.
     ...     get_external_bugtracker)
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
-    >>> external_bugzilla = TestBugzilla(gnome_bugzilla.baseurl)
+    >>> external_bugzilla = TestBugzilla(gnome_bugzilla)
     >>> version = external_bugzilla._probe_version()
     >>> version
-    u'2.20+'
+    (2, 20)
 
 Status Conversion
 -----------------
@@ -61,7 +64,8 @@ if the bug is closed:
     'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('RESOLVED FIXED').title
     'Fix Released'
-    >>> external_bugzilla.convertRemoteStatus('CLOSED PATCH_ALREADY_AVAILABLE').title
+    >>> external_bugzilla.convertRemoteStatus(
+    ...     'CLOSED PATCH_ALREADY_AVAILABLE').title
     'Fix Released'
     >>> external_bugzilla.convertRemoteStatus('RESOLVED CODE_FIX').title
     'Fix Released'
@@ -99,13 +103,50 @@ update:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     3224: RESOLVED FIXED
 
-Let's add a few more watches:
+Let's add a handful of watches:
 
     >>> from canonical.launchpad.interfaces import (
     ...     IBugSet, IBugWatchSet, IPersonSet)
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_watch_set = getUtility(IBugWatchSet)
+
+    >>> expected_remote_statuses = dict(
+    ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
+    ...      for bug_watch in gnome_bugzilla.watches])
+    >>> for remote_bug_id in range(50,55):
+    ...     bug_watch = bug_watch_set.createBugWatch(
+    ...         bug=bug_one, owner=sample_person, bugtracker=gnome_bugzilla,
+    ...         remotebug=str(remote_bug_id))
+    ...     external_bugzilla.bugzilla_bugs[remote_bug_id] = (
+    ...         'RESOLVED', 'FIXED')
+    ...     expected_remote_statuses[remote_bug_id] = 'RESOLVED FIXED'
+
+Set the batch threshold higher than the number of bug watches.
+
+    >>> external_bugzilla.batch_query_threshold = 10
+
+Then updateBugWatches() will make one request per bug watch:
+
+    >>> external_bugzilla.trace_calls = True
+    >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    CALLED _postPage()
+    CALLED _postPage()
+    CALLED _postPage()
+    CALLED _postPage()
+    CALLED _postPage()
+    CALLED _postPage()
+
+    >>> remote_statuses = dict(
+    ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
+    ...      for bug_watch in gnome_bugzilla.watches])
+    >>> remote_statuses == expected_remote_statuses
+    True
+
+    >>> external_bugzilla.trace_calls = False
+
+Let's add a few more watches:
+
     >>> expected_remote_statuses = dict(
     ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
     ...      for bug_watch in gnome_bugzilla.watches])
@@ -116,6 +157,10 @@ Let's add a few more watches:
     ...     external_bugzilla.bugzilla_bugs[remote_bug_id] = (
     ...         'ASSIGNED', '')
     ...     expected_remote_statuses[remote_bug_id] = 'ASSIGNED'
+
+Set the batch threshold very low:
+
+    >>> external_bugzilla.batch_query_threshold = 0
 
 Instead of issuing one request per bug watch, like was done before,
 updateBugWatches() issues only one request to update all watches:
@@ -156,7 +201,6 @@ updated:
 Now let's take a look at what happens when a bug watch is linked to
 from a bug task.
 
-    >>> login('foo.bar@canonical.com')
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_task = bug_nine.bugtasks[0]
     >>> print thunderbird_task.status.title
@@ -167,15 +211,14 @@ from a bug task.
 We don't yet support updating the importance for Bugzilla bugs, so let's set it
 to some bogus value, to see that it gets set to UNKNOWN.
 
-    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.interfaces import BugTaskImportance
     >>> thunderbird_task.importance = BugTaskImportance.HIGH
 
 We need to create a new ExternalBugtracker for the Mozilla tracker:
 
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName(
     ...     'mozilla.org')
-    >>> external_bugzilla = TestBugzilla(
-    ...     mozilla_bugzilla.baseurl, version)
+    >>> external_bugzilla = TestBugzilla(mozilla_bugzilla, '2.20')
     >>> external_bugzilla.bugzilla_bugs = {1234: ('ASSIGNED', '')}
 
 Let's update the bug watch, and see that the linked bug watch got
@@ -195,7 +238,8 @@ status mapping.
 
     >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> thunderbird_task.transitionToStatus(
-    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
+    ...     BugTaskStatus.CONFIRMED,
+    ...     getUtility(IPersonSet).getByName('no-priv'))
     >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
     >>> print thunderbird_task.status.title
     In Progress
@@ -224,9 +268,16 @@ bug tracker, an error is logged.
 
     >>> external_bugzilla._postPage = (
     ...     lambda self, data: '<invalid xml>')
-    >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    >>> external_bugzilla.updateBugWatches([bug_watch1, bug_watch2])
     Traceback (most recent call last):
     ...
     UnparseableBugData:
     Failed to parse XML description for https://bugzilla.mozilla.org...
 
+The error is also recorded in each bug watch's last_error_type field so that
+it can be displayed to the user.
+
+    >>> bug_watch1.last_error_type.title
+    'Unparsable Bug'
+    >>> bug_watch2.last_error_type.title
+    'Unparsable Bug'

@@ -14,7 +14,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.archivepublisher.config import Config
 from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.tests.util import FakeLogger
-
+from canonical.config import config
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase)
 from canonical.launchpad.database.publishing import (
@@ -22,19 +22,16 @@ from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
-    ILibraryFileAliasSet, IDistributionSet, IPersonSet, ISectionSet,
-    IComponentSet, ISourcePackageNameSet, IBinaryPackageNameSet,
-    IGPGKeySet)
+    BinaryPackageFormat, ILibraryFileAliasSet, IDistributionSet, IPersonSet,
+    ISectionSet, IComponentSet, ISourcePackageNameSet, IBinaryPackageNameSet,
+    IGPGKeySet, PackagePublishingStatus, PackagePublishingPocket,
+    PackagePublishingPriority, SourcePackageUrgency)
 
 from canonical.librarian.client import LibrarianClient
 
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket, SourcePackageUrgency,
-    BinaryPackageFormat, PackagePublishingPriority)
-
 
 class TestNativePublishingBase(LaunchpadZopelessTestCase):
-    dbuser = 'lucille'
+    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         """Setup creates a pool dir and setup librarian.
@@ -210,6 +207,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source.publish(self.disk_pool, self.logger)
         self.layer.commit()
 
+        pub_source.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
         foo_name = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_name).read().strip(), 'Hello world')
@@ -243,6 +241,7 @@ class TestNativePublishing(TestNativePublishingBase):
         self.layer.commit()
 
         foo_name = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        pub_source.sync()
         self.assertEqual(
             pub_source.status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(open(foo_name).read().strip(), 'foo is happy')
@@ -253,6 +252,8 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source2 = self.getPubSource(filecontent='foo is depressing')
         pub_source2.publish(self.disk_pool, self.logger)
         self.layer.commit()
+
+        pub_source2.sync()
         self.assertEqual(
             pub_source2.status, PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_name).read().strip(), 'foo is happy')
@@ -269,6 +270,7 @@ class TestNativePublishing(TestNativePublishingBase):
         self.layer.commit()
         bar_name = "%s/main/b/bar/bar.dsc" % self.pool_dir
         self.assertEqual(open(bar_name).read().strip(), 'bar is good')
+        pub_source.sync()
         self.assertEqual(
             pub_source.status, PackagePublishingStatus.PUBLISHED)
 
@@ -276,6 +278,7 @@ class TestNativePublishing(TestNativePublishingBase):
             sourcename='bar', filecontent='bar is good')
         pub_source2.publish(self.disk_pool, self.logger)
         self.layer.commit()
+        pub_source2.sync()
         self.assertEqual(
             pub_source2.status, PackagePublishingStatus.PUBLISHED)
 
@@ -294,6 +297,9 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source.publish(self.disk_pool, self.logger)
         pub_source2.publish(self.disk_pool, self.logger)
         self.layer.commit()
+
+        pub_source.sync()
+        pub_source2.sync()
         self.assertEqual(
             pub_source.status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(
@@ -311,6 +317,8 @@ class TestNativePublishing(TestNativePublishingBase):
             filecontent='It is all my fault')
         pub_source3.publish(self.disk_pool, self.logger)
         self.layer.commit()
+
+        pub_source3.sync()
         self.assertEqual(
             pub_source3.status, PackagePublishingStatus.PENDING)
 
@@ -332,15 +340,17 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source.publish(test_disk_pool, self.logger)
         self.layer.commit()
 
+        pub_source.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(pub_source.sourcepackagerelease.upload_archive,
                          cprov.archive)
         foo_name = "%s/main/f/foo/foo.dsc" % test_pool_dir
         self.assertEqual(open(foo_name).read().strip(), 'Am I a PPA Record ?')
 
-        # remove locally created dir
+        # Remove locally created dir.
         shutil.rmtree(test_pool_dir)
         shutil.rmtree(test_temp_dir)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:tag condition="view/update"/>
 <html
     xmlns="http://www.w3.org/1999/xhtml"
@@ -22,3 +28,4 @@
 </div>
 </body>
 </html>
+</tal:root>

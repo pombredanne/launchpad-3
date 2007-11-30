@@ -7,8 +7,14 @@ Currently assumes twisted.vfs as of SVN revision 15836.
 """
 
 __metaclass__ = type
+__all__ = [
+    'ALLOWED_DIRECTORIES', 'FORBIDDEN_DIRECTORY_ERROR', 'is_lock_directory',
+    'SFTPServerRoot']
+
 
 import os
+
+from canonical.codehosting import branch_id_to_path
 
 from twisted.vfs.backends import adhoc, osfs
 from twisted.vfs.ivfs import NotFoundError, PermissionError
@@ -19,6 +25,11 @@ from twisted.vfs.ivfs import NotFoundError, PermissionError
 ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup')
 FORBIDDEN_DIRECTORY_ERROR = (
     "Cannot create '%s'. Only Bazaar branches are allowed.")
+
+
+def is_lock_directory(absolute_path):
+    """Is 'absolute_path' a Bazaar branch lock directory?"""
+    return os.path.basename(absolute_path) == 'held'
 
 
 class LoggingMixin:
@@ -66,9 +77,6 @@ class SFTPServerRoot(adhoc.AdhocDirectory, LoggingMixin):
         than using the default implementation.
         """
         return '/'
-
-    def setListenerFactory(self, factory):
-        self.listenerFactory = factory
 
 
 class SFTPServerUserDir(adhoc.AdhocDirectory, LoggingMixin):
@@ -254,85 +262,77 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
     been written to as part of a connection.
     """
 
-    def __init__(self, flagAsDirty, path, logger, name=None, parent=None):
+    def __init__(self, avatar, path, logger, name=None, parent=None):
         """
         Create a new WriteLoggingDirectory.
 
-        :type flagAsDirty: callable
-        :param flagAsDirty: Called when the directory is written to.
+        :param avatar: A LaunchpadAvatar object, representing the logged-in
+            user.
 
         For other parameters, see osfs.OSDirectory.
         """
         osfs.OSDirectory.__init__(self, path, name, parent)
+        self.avatar = avatar
         self.logger = logger
-        self._flagAsDirty = flagAsDirty
 
     def childFileFactory(self):
-        """Return a child file which uses the same listener.
-
-        The listener is the '_flagAsDirty' callable, set by the constructor.
-        """
-        def childWithListener(path, name, parent):
-            return WriteLoggingFile(
-                self._flagAsDirty, path, self.logger, name, parent)
-        return childWithListener
+        """Return a child file that logs certain operations."""
+        def makeLoggingFile(path, name, parent):
+            return LoggingFile(path, self.logger, name, parent)
+        return makeLoggingFile
 
     def childDirFactory(self):
-        """Return a child directory which uses the same listener.
-
-        The listener is the '_flagAsDirty' callable, set by the constructor.
-        """
-        def childWithListener(path, name, parent):
+        """Return a child directory logs certain operations."""
+        def makeLoggingDirectory(path, name, parent):
             return WriteLoggingDirectory(
-                self._flagAsDirty, path, self.logger, name, parent)
-        return childWithListener
+                self.avatar, path, self.logger, name, parent)
+        return makeLoggingDirectory
 
     def createDirectory(self, name):
-        self.touch()
+        """See `twisted.vfs.ivfs.IFileSystemContainer`."""
         self.logger.info('Creating directory %r in %r', name, self)
         return osfs.OSDirectory.createDirectory(self, name)
 
     def createFile(self, name, exclusive=True):
-        self.touch()
+        """See `twisted.vfs.ivfs.IFileSystemContainer`."""
         self.logger.info('Creating file %r in %r', name, self)
         return osfs.OSDirectory.createFile(self, name, exclusive)
 
+    def getBranchID(self):
+        return self.parent.getBranchID()
+
     def remove(self):
-        self.touch()
+        """See `twisted.vfs.ivfs.IFileSystemContainer`."""
         self.logger.info('Removing %r', self)
         osfs.OSDirectory.remove(self)
 
     def rename(self, newName):
-        self.touch()
+        """See `twisted.vfs.ivfs.IFileSystemContainer`.
+
+        If the rename is actually Bazaar unlocking the branch, then request
+        that this branch be mirrored.
+        """
+        if is_lock_directory(self.getAbsolutePath()):
+            self.avatar._launchpad.requestMirror(self.getBranchID())
         self.logger.info('Renaming %r to %r', self, newName)
         osfs.OSDirectory.rename(self, newName)
 
-    def touch(self):
-        self._flagAsDirty()
 
-
-class WriteLoggingFile(osfs.OSFile, LoggingMixin):
+class LoggingFile(osfs.OSFile, LoggingMixin):
     """osfs.OSFile that keeps track of whether it has been written to.
     """
 
-    def __init__(self, listener, path, logger, name=None, parent=None):
-        self._flagAsDirty = listener
+    def __init__(self, path, logger, name=None, parent=None):
         self.logger = logger
         osfs.OSFile.__init__(self, path, name, parent)
 
     def open(self, flags):
         self.logger.info('Opening %r with flags: %r', self, flags)
-        if os.O_TRUNC & flags:
-            self.touch()
-        osfs.OSFile.open(self, flags)
-
-    def touch(self):
-        self._flagAsDirty()
+        return osfs.OSFile.open(self, flags)
 
     def writeChunk(self, offset, data):
         self.logger.info('Writing to %r', self)
-        self.touch()
-        osfs.OSFile.writeChunk(self, offset, data)
+        return osfs.OSFile.writeChunk(self, offset, data)
 
 
 class NameRestrictedWriteLoggingDirectory(WriteLoggingDirectory):
@@ -342,11 +342,11 @@ class NameRestrictedWriteLoggingDirectory(WriteLoggingDirectory):
     the names in `ALLOWED_DIRECTORIES`.
     """
 
-    def __init__(self, flagAsDirty, path, logger=None, name=None,
+    def __init__(self, avatar, path, logger=None, name=None,
                  parent=None):
         self._checkName(name)
         WriteLoggingDirectory.__init__(
-            self, flagAsDirty, path, logger, name, parent)
+            self, avatar, path, logger, name, parent)
 
     def _checkName(self, name):
         if name not in ALLOWED_DIRECTORIES:
@@ -366,15 +366,10 @@ class SFTPServerBranch(WriteLoggingDirectory, LoggingMixin):
 
     def __init__(self, avatar, branchID, branchName, parent):
         self.branchID = branchID
-        # XXX AndrewBennetts 2006-02-06: this snippet is duplicated in a few
-        # places, such as librarian.storage._relFileLocation and
-        # supermirror_rewritemap.split_branch_id.
-        h = "%08x" % int(branchID)
-        path = '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
-
+        path = branch_id_to_path(branchID)
         self._listener = None
         WriteLoggingDirectory.__init__(
-            self, self._flagAsDirty, os.path.join(avatar.homeDirsRoot, path),
+            self, avatar, os.path.join(avatar.homeDirsRoot, path),
             avatar.logger, branchName, parent)
         if not os.path.exists(self.realPath):
             os.makedirs(self.realPath)
@@ -382,7 +377,7 @@ class SFTPServerBranch(WriteLoggingDirectory, LoggingMixin):
     def childDirFactory(self):
         def childWithListener(path, name, parent):
             return NameRestrictedWriteLoggingDirectory(
-                self._flagAsDirty, path, self.logger, name, parent)
+                self.avatar, path, self.logger, name, parent)
         return childWithListener
 
     def createFile(self, name, exclusive=True):
@@ -390,19 +385,9 @@ class SFTPServerBranch(WriteLoggingDirectory, LoggingMixin):
             "Can only create Bazaar control directories directly beneath a "
             "branch directory.")
 
+    def getBranchID(self):
+        return self.branchID
+
     def remove(self):
         raise PermissionError(
             "removing branch directory %r is not allowed." % self.name)
-
-    def _flagAsDirty(self):
-        if self._listener is None:
-            # Find the root object and create a listener. One parent up is the
-            # product, the next is the username and the third is the root of
-            # the SFTP server.
-
-            # XXX jml 2007-02-14: This is an awkward way of finding the root.
-            # Replace with something that is clearer and requires fewer
-            #  comments.
-            root = self.parent.parent.parent
-            self._listener = root.listenerFactory(self.branchID)
-        self._listener()

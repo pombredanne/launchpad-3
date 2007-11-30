@@ -22,10 +22,10 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
-from canonical.launchpad.interfaces import IComponentSet, pocketsuffix
+from canonical.launchpad.interfaces import (
+    ArchivePurpose, IComponentSet, pocketsuffix, PackagePublishingPocket,
+    PackagePublishingStatus)
 from canonical.librarian.client import LibrarianClient
-from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingPocket, PackagePublishingStatus)
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
@@ -273,7 +273,7 @@ class Publisher(object):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
-                self._writeDistroRelease(distroseries, pocket)
+                self._writeDistroSeries(distroseries, pocket)
 
     def isDirty(self, distroseries, pocket):
         """True if a publication has happened in this release and pocket."""
@@ -308,11 +308,11 @@ class Publisher(object):
         else:
             os.makedirs(source_index_basepath)
 
-        fd_gz, temp_index_gz = tempfile.mkstemp(prefix='source-index_',
-                                                dir=source_index_basepath)
+        fd_gz, temp_index_gz = tempfile.mkstemp(
+            dir=self._config.temproot, prefix='source-index-gz_')
         source_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, 'wb'))
-        fd, temp_index = tempfile.mkstemp(prefix='source-index_',
-                                          dir=source_index_basepath)
+        fd, temp_index = tempfile.mkstemp(
+            dir=self._config.temproot, prefix='source-index_')
         source_index = open(temp_index, 'wb')
 
         for spp in distroseries.getSourcePackagePublishing(
@@ -351,11 +351,10 @@ class Publisher(object):
             else:
                 os.makedirs(package_index_basepath)
 
-            temp_prefix = '%s-index_' % arch_path
-            fd_gz, temp_index_gz = tempfile.mkstemp(prefix=temp_prefix,
-                                                    dir=package_index_basepath)
-            fd, temp_index = tempfile.mkstemp(prefix=temp_prefix,
-                                              dir=package_index_basepath)
+            fd_gz, temp_index_gz = tempfile.mkstemp(
+                dir=self._config.temproot, prefix='%s-index-gz_' % arch_path)
+            fd, temp_index = tempfile.mkstemp(
+                dir=self._config.temproot, prefix='%s-index_' % arch_path)
             package_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, "wb"))
             package_index = open(temp_index, "wb")
 
@@ -405,7 +404,7 @@ class Publisher(object):
             return False
         return True
 
-    def _writeDistroRelease(self, distroseries, pocket):
+    def _writeDistroSeries(self, distroseries, pocket):
         """Write out the Release files for the provided distroseries."""
         # XXX: kiko 2006-08-24: Untested method.
 
@@ -429,7 +428,7 @@ class Publisher(object):
             for architecture in architectures:
                 # XXX malcc 2006-09-20: We don't like the way we build this
                 # all_architectures list. Make this better code.
-                clean_architecture = self._writeDistroArchRelease(
+                clean_architecture = self._writeDistroArchSeries(
                     distroseries, pocket, component, architecture, all_files)
                 if clean_architecture != "source":
                     all_architectures.add(clean_architecture)
@@ -468,7 +467,7 @@ class Publisher(object):
 
         f.close()
 
-    def _writeDistroArchRelease(self, distroseries, pocket, component,
+    def _writeDistroArchSeries(self, distroseries, pocket, component,
                                 architecture, all_files):
         """Write out a Release file for a DAR."""
         # XXX kiko 2006-08-24: Untested method.
@@ -478,12 +477,13 @@ class Publisher(object):
         # Only the primary archive has uncompressed and bz2 archives.
         if self.archive.purpose == ArchivePurpose.PRIMARY:
             index_suffixes = ('', '.gz', '.bz2')
-        elif self.archive.purpose == ArchivePurpose.PARTNER:
-            # The partner archive needs uncompressed files for
-            # compatibility with signed Release files.
-            index_suffixes = ('', '.gz')
         else:
-            index_suffixes = ('.gz',)
+            # We don't generate bz2 indexes for other archives for
+            # simplicity (they use NoMoreAptFtparchive approach).
+            # The plain index has to be listed in the Release, but not
+            # necessarily has to be on disk, its checksum is used for
+            # verification in client applications like dpkg/apt/smart.
+            index_suffixes = ('', '.gz')
 
         self.log.debug("Writing Release file for %s/%s/%s" % (
             full_name, component, architecture))

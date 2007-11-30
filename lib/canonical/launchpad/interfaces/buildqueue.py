@@ -1,4 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Build interfaces."""
 
@@ -10,6 +11,9 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
+from zope.schema import Bool
+
+from canonical.launchpad import _
 
 
 class IBuildQueue(Interface):
@@ -45,9 +49,6 @@ class IBuildQueue(Interface):
     files = Attribute(
         "Collection of files related to the ISourcePackageRelease "
         "releated to this job.")
-    current_component = Attribute(
-        "Component where the ISourcePackageRelease releated to "
-        "this job got published in.")
     urgency = Attribute(
         "Urgency of the ISourcePackageRelease releated to this job.")
     archhintlist = Attribute(
@@ -57,8 +58,12 @@ class IBuildQueue(Interface):
         "builddependsindep of the ISourcePackageRelease releated to "
         "this job.")
     buildduration = Attribute(
-        "Durarion of the job, calculated on-the-fly based on buildstart.")
+        "Duration of the job, calculated on-the-fly based on buildstart.")
     is_trusted = Attribute("See IBuild.is_trusted.")
+    is_last_version = Bool(
+        title=_("Whether or not the job source is the last version published "
+                "in the archive."),
+        required=False)
 
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
@@ -89,6 +94,9 @@ class IBuildQueue(Interface):
 
     def getLogFileName():
         """Get the preferred filename for the buildlog of this build."""
+
+    def markAsBuilding(builder):
+        """Set this queue item to a 'building' state."""
 
     def updateBuild_IDLE(build_id, build_status, logtail,
                          filemap, dependencies, logger):

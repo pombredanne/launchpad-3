@@ -7,8 +7,8 @@ Page to edit a product - does the page load as the product owner?
   http://launchpad.dev/firefox/+edit
   >>> print browser.contents
   <!DOCTYPE...
-  ...<title>Mozilla Firefox in Launchpad</title>...
-  ...<h1>Edit details</h1>...
+  ...<title>Change project details</title>...
+  ...<h1>Change project details</h1>...
 
 We try to change the project related to that product. First with a invalid
 project.
@@ -38,8 +38,7 @@ Now we test if we edited it successfully.
   True
 
 
-Setting Development Focus
-=========================
+== Setting Development Focus ==
 
 The Firefox product's trunk series is set as the development focus:
 
@@ -69,8 +68,7 @@ We can change this to the 1.0 series through the edit form:
   ...
 
 
-Renaming Products
-=================
+== Renaming Products ==
 
 First a user adds a product named newproductname.
 
@@ -79,7 +77,9 @@ First a user adds a product named newproductname.
   >>> user_browser.getControl('Display Name').value = 'dname'
   >>> user_browser.getControl('Title').value = 'title'
   >>> user_browser.getControl('Summary').value = 'summary'
-  >>> user_browser.getControl('Description').value = 'description'
+  >>> user_browser.getControl(name='field.description').value = 'description'
+  >>> user_browser.getControl(name='field.licenses').value = ['GPL']
+  >>> user_browser.getControl(name='field.license_info').value = 'foo'
   >>> user_browser.getControl('Add').click()
   >>> print user_browser.url
   http://launchpad.dev/newproductname
@@ -92,7 +92,9 @@ Then a product named newproductname2.
   >>> user_browser.getControl('Display Name').value = 'dname2'
   >>> user_browser.getControl('Title').value = 'title2'
   >>> user_browser.getControl('Summary').value = 'summary2'
-  >>> user_browser.getControl('Description').value = 'description2'
+  >>> user_browser.getControl(name='field.description').value = 'description2'
+  >>> user_browser.getControl(name='field.licenses').value = ['GPL']
+  >>> user_browser.getControl(name='field.license_info').value = 'foo'
   >>> user_browser.getControl('Add').click()
   >>> print user_browser.url
   http://launchpad.dev/newproductname2
@@ -109,7 +111,7 @@ Now we try to change newproductname2's name to newproductname.
   There is 1 error.
   <BLANKLINE>
   ...
-  ...newproductname is already in use...
+  ...newproductname is already used...
   ...
   <BLANKLINE>
 
@@ -120,3 +122,31 @@ be accepted because there is no product called newproductname3
   >>> admin_browser.getControl(name='field.actions.change').click() 
   >>> print admin_browser.url
   http://launchpad.dev/newproductname3
+
+
+== Registry Experts ==
+
+Regular joes can't edit any old project:
+
+  >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+  >>> browser.open('http://launchpad.dev/firefox/+edit')
+  Traceback (most recent call last):
+  ...
+  Unauthorized:...
+
+But if we add them to the Registry Experts team:
+
+  >>> admin_browser.open("http://launchpad.dev/~registry/+addmember")
+  >>> admin_browser.getControl('New member').value = 'no-priv'
+  >>> admin_browser.getControl('Add Member').click()
+
+They sure can:
+
+  >>> browser.open('http://launchpad.dev/firefox/+edit')
+  >>> browser.getControl('Title').value = 'Mozilla Firefox by no-priv'
+  >>> browser.getControl('Change').click()
+  >>> browser.url
+  'http://launchpad.dev/firefox'
+  >>> browser.title
+  'Mozilla Firefox by no-priv in Launchpad'
+

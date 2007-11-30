@@ -1,4 +1,8 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# _valid_nick() in generate_nick causes E1101
+# vars() causes W0612
+# pylint: disable-msg=E0611,W0212,E1101,W0612
+
 """Implementation classes for a Person."""
 
 __metaclass__ = type
@@ -38,26 +42,24 @@ from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
-from canonical.lp.dbschema import (
-    BugTaskImportance, SpecificationFilter, SpecificationDefinitionStatus,
-    SpecificationImplementationStatus, SpecificationSort)
-
 from canonical.launchpad.interfaces import (
-    AccountStatus, BugTaskSearchParams, BugTaskStatus, EmailAddressStatus,
-    IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
-    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
-    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
-    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
+    AccountStatus, ArchivePurpose, BugTaskImportance, BugTaskSearchParams,
+    BugTaskStatus, EmailAddressStatus, IBugTarget, IBugTaskSet, IDistribution,
+    IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet,
+    IHWSubmissionSet, IHasIcon, IHasLogo, IHasMugshot, IIrcID, IIrcIDSet,
+    IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
+    ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
-    IPillarNameSet, IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet,
-    ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
-    JoinNotAllowed, LoginTokenType, PersonCreationRationale,
-    QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants, ShippingRequestStatus,
-    SSHKeyType, TeamMembershipRenewalPolicy, TeamMembershipStatus,
-    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
+    ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType, PersonCreationRationale,
+    QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
+    ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
-from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtask import (
@@ -101,7 +103,7 @@ class ValidPersonOrTeamCache(SQLBase):
 class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
-    implements(IPerson, ICalendarOwner, IHasIcon, IHasLogo, IHasMugshot)
+    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
@@ -113,6 +115,24 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
+
+    def _set_name(self, value):
+        """Check that rename is allowed."""
+        # Renaming a team is prohibited for any team that has a mailing list.
+        # This is because renaming a mailing list is not trivial in Mailman
+        # 2.1 (see Mailman FAQ item 4.70).  We prohibit such renames in the
+        # team edit details view, but just to be safe, we also assert that
+        # such an attempt is not being made here.  To do this, we must
+        # override the SQLObject method for setting the 'name' database
+        # column.  Watch out for when SQLObject is creating this row, because
+        # in that case self.name isn't yet available.
+        assert (self._SO_creating or
+                not self.isTeam() or
+                getUtility(IMailingListSet).get(self.name) is None), (
+            'Cannot rename teams with mailing lists')
+        # Everything's okay, so let SQLObject do the normal thing.
+        self._SO_set_name(value)
+
     password = StringCol(dbName='password', default=None)
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
@@ -191,8 +211,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
-    calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
-                          default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
 
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
@@ -202,6 +220,21 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         SQLBase._init(self, *args, **kw)
         if self.teamownerID is not None:
             alsoProvides(self, ITeam)
+
+    def convertToTeam(self, team_owner):
+        """See `IPerson`."""
+        assert not self.isTeam(), "Can't convert a team to a team."
+        assert self.account_status == AccountStatus.NOACCOUNT, (
+            "Only Person entries whose account_status is NOACCOUNT can be "
+            "converted into teams.")
+        self.password = None
+        self.creation_rationale = None
+        self.teamowner = team_owner
+        alsoProvides(self, ITeam)
+        # Add the owner as a team admin manually because we know what we're
+        # doing and we don't want any email notifications to be sent.
+        TeamMembershipSet().new(
+            team_owner, self, TeamMembershipStatus.ADMIN, reviewer=team_owner)
 
     # specification-related joins
     @property
@@ -648,12 +681,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         return L
 
-    def getOrCreateCalendar(self):
-        if not self.calendar:
-            self.calendar = Calendar(title=self.browsername,
-                                     revision=0)
-        return self.calendar
-
     def getBranch(self, product_name, branch_name):
         """See `IPerson`."""
         # import here to work around a circular import problem
@@ -724,7 +751,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         query = '''
             ShippingRequest.recipient = %s
             AND ShippingRequest.id = RequestedCDs.request
-            AND RequestedCDs.distrorelease = %s
+            AND RequestedCDs.distroseries = %s
             AND ShippingRequest.shipment IS NOT NULL
             ''' % sqlvalues(self.id, ShipItConstants.current_distroseries)
         return ShippingRequest.select(
@@ -1058,9 +1085,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             raise AssertionError(
                 "Unknown subscription policy: %s" % team.subscriptionpolicy)
 
-        self._inTeam_cache = {} # Flush the cache used by the inTeam method
-
         team.addMember(self, reviewer=self, status=status)
+
+    def clearInTeamCache(self):
+        """See `IPerson`."""
+        self._inTeam_cache = {}
 
     #
     # ITeam methods
@@ -1184,6 +1213,15 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         tm.dateexpires += timedelta(days=team.defaultrenewalperiod)
         tm.sendSelfRenewalNotification()
 
+    def deactivateAllMembers(self, comment, reviewer):
+        """Deactivate all members of this team."""
+        assert self.isTeam(), "This method is only available for teams."
+        assert reviewer.inTeam(getUtility(ILaunchpadCelebrities).admin), (
+            "Only Launchpad admins can deactivate all members of a team")
+        for membership in self.getActiveMemberships():
+            membership.setStatus(
+                TeamMembershipStatus.DEACTIVATED, reviewer, comment)
+
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
         """See `IPerson`."""
@@ -1271,9 +1309,19 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return self.getMembersByStatus(TeamMembershipStatus.INVITED)
 
     @property
+    def invited_member_count(self):
+        """See `IPerson`."""
+        return self.invited_members.count()
+
+    @property
     def deactivatedmembers(self):
         """See `IPerson`."""
         return self.getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
+
+    @property
+    def deactivated_member_count(self):
+        """See `IPerson`."""
+        return self.deactivatedmembers.count()
 
     @property
     def expiredmembers(self):
@@ -1281,9 +1329,19 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return self.getMembersByStatus(TeamMembershipStatus.EXPIRED)
 
     @property
+    def expired_member_count(self):
+        """See `IPerson`."""
+        return self.expiredmembers.count()
+
+    @property
     def proposedmembers(self):
         """See `IPerson`."""
         return self.getMembersByStatus(TeamMembershipStatus.PROPOSED)
+
+    @property
+    def proposed_member_count(self):
+        """See `IPerson`."""
+        return self.proposedmembers.count()
 
     @property
     def adminmembers(self):
@@ -1312,6 +1370,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return self.expiredmembers.union(
             self.deactivatedmembers,
             orderBy=self._sortingColumnsForSetOperations)
+
+    @property
+    def inactive_member_count(self):
+        """See `IPerson`."""
+        return self.inactivemembers.count()
 
     @property
     def pendingmembers(self):
@@ -1373,25 +1436,32 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             email.status = EmailAddressStatus.NEW
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
-            assert bug_task.assignee == self, (
-                "This bugtask (%s) should be assigned to this person."
-                % bug_task.id)
+            # XXX flacoste 2007/11/26 The comparison using id in the assert
+            # below works around a nasty intermittent failure. 
+            # See bug #164635.
+            assert bug_task.assignee.id == self.id, (
+               "Bugtask %s assignee isn't the one expected: %s != %s" % (
+                    bug_task.id, bug_task.assignee.name, self.name))
             bug_task.transitionToAssignee(None)
         for spec in self.assigned_specs:
             spec.assignee = None
-        registry = getUtility(ILaunchpadCelebrities).registry
+        registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
         for team in Person.selectBy(teamowner=self):
-            team.teamowner = registry
+            team.teamowner = registry_experts
         for pillar_name in self.getOwnedOrDrivenPillars():
             pillar = pillar_name.pillar
-            if pillar.owner == self:
-                pillar.owner = registry
-            elif pillar.driver == self:
-                pillar.driver = registry
+            # XXX flacoste 2007/11/26 The comparison using id below
+            # works around a nasty intermittent failure. See bug #164635.
+            if pillar.owner.id == self.id:
+                pillar.owner = registry_experts
+            elif pillar.driver.id == self.id:
+                pillar.driver = registry_experts
             else:
+                # Since we removed the person from all teams, something is
+                # seriously broken here.
                 raise AssertionError(
-                    "This person must be the owner or driver of this project "
-                    "(%s)" % pillar.pillar.name)
+                    "%s was expected to be owner or driver of %s" %
+                    (self.name, pillar.name))
 
         # Nuke all subscriptions of this person.
         removals = [
@@ -1530,16 +1600,17 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def translation_history(self):
         """See `IPerson`."""
         # Note that we can't use selectBy here because of the prejoins.
+        query = ['POFileTranslator.person = %s' % sqlvalues(self),
+                 'POFileTranslator.pofile = POFile.id',
+                 'POFile.language = Language.id',
+                 "Language.code != 'en'"]
         history = POFileTranslator.select(
-            "POFileTranslator.person = %s AND "
-            "POFileTranslator.pofile = POFile.id AND "
-            "POFile.language = Language.id AND "
-            "Language.code != 'en'" % sqlvalues(self),
+            ' AND '.join(query),
             prejoins=[
-                "pofile.potemplate",
-                "latest_posubmission",
-                "latest_posubmission.pomsgset.potmsgset.primemsgid_",
-                "latest_posubmission.potranslation"],
+                'pofile.potemplate',
+                'latest_message',
+                'latest_message.potmsgset.msgid_singular',
+                'latest_message.msgstr0'],
             clauseTables=['Language', 'POFile'],
             orderBy="-date_last_touched")
         return history
@@ -1551,6 +1622,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
+        assert not self.isTeam(), "This method must not be used for teams."
         if not IEmailAddress.providedBy(email):
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "
@@ -1569,25 +1641,20 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # This branch will be executed only in the first time a person
             # uses Launchpad. Either when creating a new account or when
             # resetting the password of an automatically created one.
-            self.setPreferredEmail(email)
+            self._setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
+            getUtility(IHWSubmissionSet).setOwnership(email)
+
+    def setContactAddress(self, email):
+        """See `IPerson`."""
+        assert self.isTeam(), "This method must be used only for teams."
+        self._setPreferredEmail(email)
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
-        if not IEmailAddress.providedBy(email):
-            raise TypeError, (
-                "Any person's email address must provide the IEmailAddress "
-                "interface. %s doesn't." % email)
-        assert email.person.id == self.id
-        preferredemail = self.preferredemail
-        if preferredemail is not None:
-            preferredemail.status = EmailAddressStatus.VALIDATED
-            # We need to flush updates, because we don't know what order
-            # SQLObject will issue the changes and we can't set the new
-            # address to PREFERRED until the old one has been set to VALIDATED
-            preferredemail.syncUpdate()
-        elif not self.isTeam():
+        assert not self.isTeam(), "This method must not be used for teams."
+        if self.preferredemail is None:
             # This is the first time we're confirming this person's email
             # address, so we now assume this person has a Launchpad account.
             # XXX: This is a hack! In the future we won't have this
@@ -1595,16 +1662,36 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # will do for now. -- Guilherme Salgado, 2007-07-03
             self.account_status = AccountStatus.ACTIVE
             self.account_status_comment = None
-        else:
-            # This is a team, so we just need to create the new email address
-            # and set it as its preferred one.
-            pass
+        self._setPreferredEmail(email)
+
+    def _setPreferredEmail(self, email):
+        """Set this person's preferred email to the given email address.
+
+        If the person already has an email address, then its status is
+        changed to VALIDATED and the given one is made its preferred one.
+
+        The given email address must implement IEmailAddress and be owned by
+        this person.
+        """
+        if not IEmailAddress.providedBy(email):
+            raise TypeError, (
+                "Any person's email address must provide the IEmailAddress "
+                "interface. %s doesn't." % email)
+        assert email.person.id == self.id
+
+        if self.preferredemail is not None:
+            self.preferredemail.status = EmailAddressStatus.VALIDATED
+            # We need to flush updates, because we don't know what order
+            # SQLObject will issue the changes and we can't set the new
+            # address to PREFERRED until the old one has been set to VALIDATED
+            self.preferredemail.syncUpdate()
 
         # Get the non-proxied EmailAddress object, so we can call
         # syncUpdate() on it.
         email = EmailAddress.get(email.id)
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()
+        getUtility(IHWSubmissionSet).setOwnership(email)
         # Now we update our cache of the preferredemail
         setattr(self, '_preferredemail_cached', email)
 
@@ -1622,6 +1709,15 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             return emails[0]
         else:
             return None
+
+    @property
+    def safe_email_or_blank(self):
+        """See `IPerson`."""
+        if ((self.preferredemail is not None) and
+            not(self.hide_email_addresses)):
+            return self.preferredemail.email
+        else:
+            return ''
 
     @property
     def preferredemail_sha1(self):
@@ -1673,39 +1769,77 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
-    def latestMaintainedPackages(self):
+    def getLatestMaintainedPackages(self):
         """See `IPerson`."""
         return self._latestSeriesQuery()
 
-    def latestUploadedButNotMaintainedPackages(self):
+    def getLatestUploadedButNotMaintainedPackages(self):
         """See `IPerson`."""
         return self._latestSeriesQuery(uploader_only=True)
 
-    def _latestSeriesQuery(self, uploader_only=False):
-        # Issues a special query that returns the most recent
-        # sourcepackagereleases that were maintained/uploaded to
-        # distribution series by this person.
+    def getLatestUploadedPPAPackages(self):
+        """See `IPerson`."""
+        return self._latestSeriesQuery(
+            uploader_only=True, ppa_only=True)
+
+    def _latestSeriesQuery(self, uploader_only=False, ppa_only=False):
+        """Return the sourcepackagereleases (SPRs) related to this person.
+
+        :param uploader_only: controls if we are interested in SPRs where
+            the person in question is only the uploader (creator) and not the
+            maintainer (debian-syncs) if the `ppa_only` parameter is also
+            False, or, if the flag is False, it returns all SPR maintained
+            by this person.
+
+        :param ppa_only: controls if we are interested only in source
+            package releases targeted to any PPAs or, if False, sources targeted
+            to primary archives.
+
+        Active 'ppa_only' flag is usually associated with active 'uploader_only'
+        because there shouldn't be any sense of maintainership for packages
+        uploaded to PPAs by someone else than the user himself.
+        """
+        clauses = ['sourcepackagerelease.upload_archive = archive.id']
+
         if uploader_only:
-            extra = """sourcepackagerelease.creator = %d AND
-                       sourcepackagerelease.maintainer != %d""" % (
-                       self.id, self.id)
+            clauses.append(
+                'sourcepackagerelease.creator = %s' % quote(self.id))
+
+        if ppa_only:
+            # Source maintainer is irrelevant for PPA uploads.
+            pass
+        elif uploader_only:
+            clauses.append(
+                'sourcepackagerelease.maintainer != %s' % quote(self.id))
         else:
-            extra = "sourcepackagerelease.maintainer = %d" % self.id
+            clauses.append(
+                'sourcepackagerelease.maintainer = %s' % quote(self.id))
+
+        if ppa_only:
+            clauses.append(
+                'archive.purpose = %s' % quote(ArchivePurpose.PPA))
+        else:
+            clauses.append(
+                'archive.purpose != %s' % quote(ArchivePurpose.PPA))
+
+        query_clause = " AND ".join(clauses)
         query = """
             SourcePackageRelease.id IN (
-                SELECT DISTINCT ON (uploaddistrorelease,sourcepackagename)
+                SELECT DISTINCT ON (upload_distroseries, sourcepackagename,
+                                    upload_archive)
                        sourcepackagerelease.id
-                  FROM sourcepackagerelease
+                  FROM sourcepackagerelease, archive
                  WHERE %s
-              ORDER BY uploaddistrorelease, sourcepackagename,
+              ORDER BY upload_distroseries, sourcepackagename, upload_archive,
                        dateuploaded DESC
               )
-              """ % extra
+              """ % (query_clause)
+
         return SourcePackageRelease.select(
             query,
             orderBy=['-SourcePackageRelease.dateuploaded',
                      'SourcePackageRelease.id'],
-            prejoins=['sourcepackagename', 'maintainer'])
+            prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
 
     def isUploader(self, distribution):
         """See `IPerson`."""
@@ -1742,6 +1876,20 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def archive(self):
         """See `IPerson`."""
         return Archive.selectOneBy(owner=self)
+
+    def isBugContributor(self, user=None):
+        """See `IPerson`."""
+        search_params = BugTaskSearchParams(user=user, assignee=self)
+        bugtask_count = self.searchTasks(search_params).count()
+        return bugtask_count > 0
+
+    def isBugContributorInTarget(self, user=None, target=None):
+        """See `IPerson`."""
+        assert IBugTarget.providedBy(target), (
+            "%s isn't a valid bug target." % target)
+        search_params = BugTaskSearchParams(user=user, assignee=self)
+        bugtask_count = target.searchTasks(search_params).count()
+        return bugtask_count > 0
 
 
 class PersonSet:
@@ -2021,7 +2169,7 @@ class PersonSet:
             POFileTranslator.pofile = POFile.id AND
             POFile.language = %s AND
             POFile.potemplate = POTemplate.id AND
-            POTemplate.distrorelease = %s AND
+            POTemplate.distroseries = %s AND
             POTemplate.iscurrent = TRUE"""
                 % sqlvalues(language, distroseries),
             clauseTables=["POFileTranslator", "POFile", "POTemplate"],
@@ -2038,30 +2186,25 @@ class PersonSet:
 
 
     def merge(self, from_person, to_person):
-        """Merge a person into another.
-
-        The old user (from_person) will be left as an atavism
-
-        We are not yet game to delete the `from_person` entry from the
-        database yet. We will let it roll for a while and see what cruft
-        develops -- StuartBishop 20050812
-        """
+        """See `IPersonSet`."""
         # Sanity checks
-        if ITeam.providedBy(from_person):
-            raise TypeError('Got a team as from_person.')
-        if ITeam.providedBy(to_person):
-            raise TypeError('Got a team as to_person.')
         if not IPerson.providedBy(from_person):
             raise TypeError('from_person is not a person.')
         if not IPerson.providedBy(to_person):
             raise TypeError('to_person is not a person.')
+        assert getUtility(IMailingListSet).get(from_person.name) is None, (
+            "Can't merge teams which have mailing lists into other teams.")
 
         # since we are doing direct SQL manipulation, make sure all
         # changes have been flushed to the database
         flush_database_updates()
 
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
-            raise ValueError('from_person still has email addresses.')
+            raise AssertionError('from_person still has email addresses.')
+
+        if from_person.isTeam() and from_person.allmembers.count() > 0:
+            raise AssertionError(
+                "Only teams without active members can be merged")
 
         # Get a database cursor.
         cur = cursor()
@@ -2080,9 +2223,11 @@ class PersonSet:
             ('emailaddress', 'person'),
             ('karmacache', 'person'),
             ('karmatotalcache', 'person'),
-            # We don't merge teams, so the poll table can be ignored
+            # Polls are not carried over when merging teams.
             ('poll', 'team'),
-            # We don't merge teams, so the mailinglist table can be ignored
+            # We can safely ignore the mailinglist table as there's a sanity
+            # check above which prevents teams with associated mailing lists
+            # from being merged.
             ('mailinglist', 'team'),
             # I don't think we need to worry about the votecast and vote
             # tables, because a real human should never have two accounts
@@ -2233,6 +2378,23 @@ class PersonSet:
             DELETE FROM MailingListSubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('mailinglistsubscription', 'person'))
+
+        # Update only the BranchSubscription that will not conflict
+        cur.execute('''
+            UPDATE BranchSubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND branch NOT IN
+                (
+                SELECT branch
+                FROM BranchSubscription
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM BranchSubscription WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('branchsubscription', 'person'))
 
         # Update only the BountySubscriptions that will not conflict
         # XXX: StuartBishop 2005-03-31:
@@ -2437,14 +2599,20 @@ class PersonSet:
             ''' % vars())
         skip.append(('poexportrequest', 'person'))
 
-        # Update the POSubmissions. They should not conflict since each of
-        # them is independent
+        # Update the TranslationMessage. They should not conflict since each
+        # of them are independent
         cur.execute('''
-            UPDATE POSubmission
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d
+            UPDATE TranslationMessage
+            SET submitter=%(to_id)d
+            WHERE submitter=%(from_id)d
             ''' % vars())
-        skip.append(('posubmission', 'person'))
+        skip.append(('translationmessage', 'submitter'))
+        cur.execute('''
+            UPDATE TranslationMessage
+            SET reviewer=%(to_id)d
+            WHERE reviewer=%(from_id)d
+            ''' % vars())
+        skip.append(('translationmessage', 'reviewer'))
 
         # Handle the POFileTranslator cache by doing nothing. As it is
         # maintained by triggers, the data migration has already been done
@@ -2461,7 +2629,7 @@ class PersonSet:
                 FROM TranslationImportQueueEntry AS a,
                      TranslationImportQueueEntry AS b
                 WHERE a.importer = %(from_id)d AND b.importer = %(to_id)d
-                AND a.distrorelease = b.distrorelease
+                AND a.distroseries = b.distroseries
                 AND a.sourcepackagename = b.sourcepackagename
                 AND a.productseries = b.productseries
                 AND a.path = b.path
@@ -2507,11 +2675,11 @@ class PersonSet:
         cur.execute(
             'SELECT team, status FROM TeamMembership WHERE person = %s '
             'AND status IN (%s,%s)'
-            % sqlvalues(from_person.id, approved, admin))
+            % sqlvalues(from_person, approved, admin))
         for team_id, status in cur.fetchall():
             cur.execute('SELECT status FROM TeamMembership WHERE person = %s '
                         'AND team = %s'
-                        % sqlvalues(to_person.id, team_id))
+                        % sqlvalues(to_person, team_id))
             result = cur.fetchone()
             if result:
                 current_status = result[0]
@@ -2520,7 +2688,7 @@ class PersonSet:
                 # team, so may only need to change its status.
                 cur.execute(
                     'DELETE FROM TeamMembership WHERE person = %s '
-                    'AND team = %s' % sqlvalues(from_person.id, team_id))
+                    'AND team = %s' % sqlvalues(from_person, team_id))
 
                 if current_status == admin.value:
                     # to_person is already an administrator of this team, no
@@ -2533,31 +2701,30 @@ class PersonSet:
                 assert status in (approved.value, admin.value)
                 cur.execute(
                     'UPDATE TeamMembership SET status = %s WHERE person = %s '
-                    'AND team = %s' % sqlvalues(
-                        status, to_person.id, team_id))
+                    'AND team = %s' % sqlvalues(status, to_person, team_id))
             else:
                 # to_person is not a member of this team. just change
                 # from_person with to_person in the membership record.
                 cur.execute(
                     'UPDATE TeamMembership SET person = %s WHERE person = %s '
                     'AND team = %s'
-                    % sqlvalues(to_person.id, from_person.id, team_id))
+                    % sqlvalues(to_person, from_person, team_id))
 
         cur.execute('SELECT team FROM TeamParticipation WHERE person = %s '
-                    'AND person != team' % sqlvalues(from_person.id))
+                    'AND person != team' % sqlvalues(from_person))
         for team_id in cur.fetchall():
             cur.execute(
                 'SELECT team FROM TeamParticipation WHERE person = %s '
-                'AND team = %s' % sqlvalues(to_person.id, team_id))
+                'AND team = %s' % sqlvalues(to_person, team_id))
             if not cur.fetchone():
                 cur.execute(
                     'UPDATE TeamParticipation SET person = %s WHERE '
                     'person = %s AND team = %s'
-                    % sqlvalues(to_person.id, from_person.id, team_id))
+                    % sqlvalues(to_person, from_person, team_id))
             else:
                 cur.execute(
                     'DELETE FROM TeamParticipation WHERE person = %s AND '
-                    'team = %s' % sqlvalues(from_person.id, team_id))
+                    'team = %s' % sqlvalues(from_person, team_id))
 
         # Flag the account as merged
         cur.execute('''
@@ -2574,7 +2741,7 @@ class PersonSet:
                         % sqlvalues(name))
             i += 1
         cur.execute("UPDATE Person SET name = %s WHERE id = %s"
-                    % sqlvalues(name, from_person.id))
+                    % sqlvalues(name, from_person))
 
         # Since we've updated the database behind SQLObject's back,
         # flush its caches.

@@ -1,9 +1,8 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0613,E0201,R0911
+# pylint: disable-msg=C0103,W0613,R0911
 #
-"""Implementation of the lp: htmlform: fmt: namespaces in TALES.
+"""Implementation of the lp: htmlform: fmt: namespaces in TALES."""
 
-"""
 __metaclass__ = type
 
 import bisect
@@ -30,15 +29,16 @@ import pytz
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
+    BuildStatus,
     IBug,
     IBugAttachment,
-    IBugExternalRef,
     IBugNomination,
     IBugSet,
     IHasIcon,
     IHasLogo,
     IHasMugshot,
     IPerson,
+    IPersonSet,
     IProduct,
     IProject,
     ISprint,
@@ -48,14 +48,15 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.webapp.interfaces import (
     IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
+from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
-from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, nearest_context_with_adapter, nearest_adapter)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
 
@@ -339,7 +340,7 @@ class NoneFormatter:
         elif name in self.allowed_names:
             return ''
         else:
-            raise TraversalError, name
+            raise TraversalError(name)
 
 
 class ObjectFormatterAPI:
@@ -355,6 +356,35 @@ class ObjectFormatterAPI:
         request = get_current_browser_request()
         return canonical_url(
             self._context, request, path_only_if_possible=True)
+
+
+class ObjectFormatterExtendedAPI(ObjectFormatterAPI):
+    """Adapter for any object to a formatted string.
+
+    Adds fmt:link which shows the icon and formatted string in an anchor.
+    """
+
+    implements(ITraversable)
+
+    allowed_names = set([
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        if name == 'link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError, name
+
+    def link(self, extra_path):
+        """Return an HTML link to the person's page containing an icon
+        followed by the person's name.
+        """
+        raise NotImplemented
 
 
 class ObjectImageDisplayAPI:
@@ -422,7 +452,7 @@ class ObjectImageDisplayAPI:
             return '/@@/meeting-mugshot'
         return '/@@/nyet-mugshot'
 
-    def icon(self):
+    def icon(self, rootsite=None):
         """Return the appropriate <img> tag for this object's icon."""
         context = self._context
         if context is None:
@@ -431,7 +461,11 @@ class ObjectImageDisplayAPI:
         if IHasIcon.providedBy(context) and context.icon is not None:
             url = context.icon.getURL()
         else:
-            url = self.default_icon_resource(context)
+            if rootsite is None:
+                root_url = ''
+            else:
+                root_url = allvhosts.configs[rootsite].rooturl[:-1]
+            url = root_url + self.default_icon_resource(context)
         icon = '<img alt="" width="14" height="14" src="%s" />'
         return icon % url
 
@@ -486,12 +520,29 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     Used for image:icon.
     """
+    implements(ITraversable)
 
     icon_template = (
         '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
 
-    def icon(self):
-        # The icon displayed is dependent on the IBugTask.importance.
+    def traverse(self, name, furtherPath):
+        """Special-case traversal for icons with an optional rootsite."""
+        if name == 'icon':
+            return self.icon()
+        elif name.startswith('icon:'):
+            rootsite = name.split(':', 1)[1]
+            return self.icon(rootsite=rootsite)
+        elif name == 'badges':
+            return self.badges()
+        else:
+            return None
+
+    def icon(self, rootsite=None):
+        """Display the icon dependent on the IBugTask.importance."""
+        if rootsite is not None:
+            root_url = allvhosts.configs[rootsite].rooturl[:-1]
+        else:
+            root_url = ''
         if self._context.importance:
             importance = self._context.importance.title.lower()
             alt = "(%s)" % importance
@@ -500,11 +551,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
                 # The other status names do not make a lot of sense on
                 # their own, so tack on a noun here.
                 title += " importance"
-            src = "/@@/bug-%s" % importance
+            src = "%s/@@/bug-%s" % (root_url, importance)
         else:
             alt = ""
             title = ""
-            src = "/@@/bug"
+            src = "%s/@@/bug" % root_url
 
         return self.icon_template % (alt, title, src)
 
@@ -623,14 +674,14 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
     def icon(self):
         """Return the appropriate <img> tag for the build icon."""
         icon_map = {
-            dbschema.BuildStatus.NEEDSBUILD: "/@@/build-needed",
-            dbschema.BuildStatus.FULLYBUILT: "/@@/build-success",
-            dbschema.BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
-            dbschema.BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
-            dbschema.BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
-            dbschema.BuildStatus.SUPERSEDED: "/@@/build-superseded",
-            dbschema.BuildStatus.BUILDING: "/@@/build-building",
-            dbschema.BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
+            BuildStatus.NEEDSBUILD: "/@@/build-needed",
+            BuildStatus.FULLYBUILT: "/@@/build-success",
+            BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
+            BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
+            BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
+            BuildStatus.SUPERSEDED: "/@@/build-superseded",
+            BuildStatus.BUILDING: "/@@/build-building",
+            BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
             }
 
         alt = '[%s]' % self._context.buildstate.name
@@ -640,8 +691,29 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
         return self.icon_template % (alt, title, source)
 
 
-class PersonFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IPerson objects to a formatted string."""
+class BadgeDisplayAPI:
+    """Adapter for IHasBadges to the images for the badges.
+
+    Used for context/badges:small and context/badges:large.
+    """
+
+    def __init__(self, context):
+        # Adapt the context.
+        self.context = IHasBadges(context)
+
+    def small(self):
+        """Render the visible badge's icon images."""
+        badges = self.context.getVisibleBadges()
+        return ''.join([badge.renderIconImage() for badge in badges])
+
+    def large(self):
+        """Render the visible badge's heading images."""
+        badges = self.context.getVisibleBadges()
+        return ''.join([badge.renderHeadingImage() for badge in badges])
+
+
+class PersonFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for `IPerson` objects to a formatted string."""
 
     implements(ITraversable)
 
@@ -650,46 +722,39 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         ])
 
     def traverse(self, name, furtherPath):
+        """Special-case traversal for links with an optional rootsite."""
+        extra_path = '/'.join(reversed(furtherPath))
         if name == 'link':
-            extra_path = '/'.join(reversed(furtherPath))
+            # Remove remaining entries in furtherPath so that traversal
+            # stops here.
             del furtherPath[:]
             return self.link(extra_path)
+        elif name.startswith('link:'):
+            # Remove remaining entries in furtherPath so that traversal
+            # stops here.
+            del furtherPath[:]
+            rootsite = name.split(':')[1]
+            return self.link(extra_path, rootsite=rootsite)
         elif name in self.allowed_names:
             return getattr(self, name)()
         else:
-            raise TraversalError, name
+            raise TraversalError(name)
 
-    def link(self, extra_path):
+    def link(self, extra_path, rootsite=None):
         """Return an HTML link to the person's page containing an icon
         followed by the person's name.
         """
         person = self._context
-        url = canonical_url(person)
+        url = canonical_url(person, rootsite=rootsite)
         if extra_path:
             url = '%s/%s' % (url, extra_path)
-        image_html = ObjectImageDisplayAPI(person).icon()
+        image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
         return '<a href="%s">%s&nbsp;%s</a>' % (
             url, image_html, person.browsername)
 
 
-class BranchFormatterAPI(ObjectFormatterAPI):
+class BranchFormatterAPI(ObjectFormatterExtendedAPI):
     """Adapter for IBranch objects to a formatted string."""
-
-    implements(ITraversable)
-
-    allowed_names = set([
-        'url',
-        ])
-
-    def traverse(self, name, furtherPath):
-        if name == 'link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.link(extra_path)
-        elif name in self.allowed_names:
-            return getattr(self, name)()
-        else:
-            raise TraversalError, name
 
     def link(self, extra_path):
         """Return an HTML link to the branch page containing an icon
@@ -703,28 +768,27 @@ class BranchFormatterAPI(ObjectFormatterAPI):
                 '&nbsp;%s</a>' % (url, branch.displayname, branch.unique_name))
 
 
-class BugTaskFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IBugTask objects to a formatted string."""
-
-    implements(ITraversable)
-
-    allowed_names = set([
-        'url',
-        ])
-
-    def traverse(self, name, furtherPath):
-        if name == 'link':
-            extra_path = '/'.join(reversed(furtherPath))
-            del furtherPath[:]
-            return self.link(extra_path)
-        elif name in self.allowed_names:
-            return getattr(self, name)()
-        else:
-            raise TraversalError, name
+class BugFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for IBug objects to a formatted string."""
 
     def link(self, extra_path):
-        """Return an HTML link to the person's page containing an icon
-        followed by the person's name.
+        """Return an HTML link to the bug page containing an icon
+        followed by the bug's title.
+        """
+        bug = self._context
+        url = canonical_url(bug)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        return ('<a href="%s"><img src="/@@/bug" alt=""/>'
+                '&nbsp;Bug #%d: %s</a>' % (url, bug.id, bug.title))
+
+
+class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for IBugTask objects to a formatted string."""
+
+    def link(self, extra_path):
+        """Return an HTML link to the bug task's page containing an icon
+        appropriate to the importance of the bug task.
         """
         bugtask = self._context
         url = canonical_url(bugtask)
@@ -783,27 +847,24 @@ class DateTimeFormatterAPI:
             value = value.astimezone(getUtility(ILaunchBag).timezone)
         return value.strftime('%Y-%m-%d')
 
-    def displaydate(self):
+    def _now(self):
+        # This method exists to be overridden in tests.
         if self._datetime.tzinfo:
             # datetime is offset-aware
-            now = datetime.now(pytz.timezone('UTC'))
+            return datetime.now(pytz.timezone('UTC'))
         else:
             # datetime is offset-naive
-            now = datetime.utcnow()
-        delta = abs(now - self._datetime)
+            return datetime.utcnow()
+
+    def displaydate(self):
+        delta = abs(self._now() - self._datetime)
         if delta > timedelta(1, 0, 0):
             # far in the past or future, display the date
             return 'on ' + self.date()
         return self.approximatedate()
 
     def approximatedate(self):
-        if self._datetime.tzinfo:
-            # datetime is offset-aware
-            now = datetime.now(pytz.timezone('UTC'))
-        else:
-            # datetime is offset-naive
-            now = datetime.utcnow()
-        delta = now - self._datetime
+        delta = self._now() - self._datetime
         if abs(delta) > timedelta(1, 0, 0):
             # far in the past or future, display the date
             return self.date()
@@ -814,20 +875,23 @@ class DateTimeFormatterAPI:
         minutes = (delta.seconds - (3600*hours)) / 60
         seconds = delta.seconds % 60
         result = ''
-        comma = ''
         if future:
             result += 'in '
         if days != 0:
-            result += '%d days' % days
-            comma = ', '
-        if days == 0 and hours != 0:
-            result += '%s%d hours' % (comma, hours)
-            comma = ', '
-        if days == 0 and hours == 0 and minutes != 0:
-            result += '%s%d minutes' % (comma, minutes)
-            comma = ', '
-        if days == 0 and hours == 0 and minutes == 0:
-            result += '%s%d seconds' % (comma, seconds)
+            amount = days
+            unit = 'day'
+        elif hours != 0:
+            amount = hours
+            unit = 'hour'
+        elif minutes != 0:
+            amount = minutes
+            unit = 'minute'
+        else:
+            amount = seconds
+            unit = 'second'
+        if amount != 1:
+            unit += 's'
+        result += '%s %s' % (amount, unit)
         if not future:
             result += ' ago'
         return result
@@ -1618,6 +1682,33 @@ class FormattersAPI:
         """
         text = self._re_email.sub(
             r'<email address hidden>', self._stringtoformat)
+        text = text.replace(
+            "<<email address hidden>>", "<email address hidden>")
+        return text
+
+    def linkify_email(self):
+        """Linkify any email address recognised in Launchpad.
+
+        If an email address is recognised as one registered in Launchpad,
+        it is linkified to point to the profile page for that person.
+
+        Note that someone could theoretically register any old email
+        address in Launchpad and then have it linkified.  This may or not
+        may be a concern but is noted here for posterity anyway.
+        """
+        text = self._stringtoformat
+
+        matches = re.finditer(self._re_email, text)
+        for match in matches:
+            address = match.group()
+            person = getUtility(IPersonSet).getByEmail(address)
+            # Only linkify if person exists and does not want to hide
+            # their email addresses.
+            if person is not None and not person.hide_email_addresses:
+                person_formatter = PersonFormatterAPI(person)
+                image_html = ObjectImageDisplayAPI(person).icon()
+                text = text.replace(address, '<a href="%s">%s&nbsp;%s</a>' % (
+                    canonical_url(person), image_html, address))
         return text
 
     def lower(self):
@@ -1646,6 +1737,8 @@ class FormattersAPI:
             return self.email_to_html()
         elif name == 'obfuscate-email':
             return self.obfuscate_email()
+        elif name == 'linkify-email':
+            return self.linkify_email()
         elif name == 'shorten':
             if len(furtherPath) == 0:
                 raise TraversalError(
@@ -1817,8 +1910,7 @@ class GotoStructuralObject:
         """
         if (IBug.providedBy(self.context) or
             IBugAttachment.providedBy(self.context) or
-            IBugNomination.providedBy(self.context) or
-            IBugExternalRef.providedBy(self.context)):
+            IBugNomination.providedBy(self.context)):
             return self.view.current_bugtask
         else:
             return self.context

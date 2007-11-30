@@ -1,0 +1,27 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  xmlns:zope="http://namespaces.zope.org/zope"
+  i18n_domain="launchpad">
+
+  <!-- CodeImportJob -->
+
+  <content class="canonical.launchpad.database.CodeImportJob">
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.ICodeImportJob"
+      />
+  </content>
+
+  <!-- CodeImportJobSet -->
+
+  <securedutility
+    class="canonical.launchpad.database.CodeImportJobSet"
+    provides="canonical.launchpad.interfaces.ICodeImportJobSet" >
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.ICodeImportJobSet" />
+  </securedutility>
+
+</configure>

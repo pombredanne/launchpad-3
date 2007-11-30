@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['Milestone',
@@ -30,11 +31,12 @@ class Milestone(SQLBase):
 
     productseries = ForeignKey(dbName='productseries',
         foreignKey='ProductSeries', default=None)
-    distroseries = ForeignKey(dbName='distrorelease',
+    distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', default=None)
     name = StringCol(notNull=True)
     dateexpected = DateCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
+    description = StringCol(notNull=False, default=None)
 
     # joins
     specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
@@ -132,6 +134,7 @@ class ProjectMilestone:
         self.visible = visible
         self.target = target
         self.series_target = None
+        self.description = None
 
     @property
     def specifications(self):

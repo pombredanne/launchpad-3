@@ -1,4 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Builder interfaces."""
 
@@ -122,6 +123,16 @@ class IBuilder(IHasOwner):
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
     currentjob = Attribute("Build Job being processed")
     status = Attribute("Generated status information")
+    pocket_dependencies = Attribute("""
+        A dictionary of pocket to a tuple of pocket dependencies.
+
+        A dictionary that maps a pocket to pockets that it can
+        depend on for a build.
+        """)
+    is_available = Bool(
+        title=_("Whether or not a builder is available for building "
+                "new jobs. "),
+        required=False)
 
     def cacheFileOnSlave(logger, libraryfilealias):
         """Ask the slave to cache a librarian file to its local disk.
@@ -225,6 +236,20 @@ class IBuilder(IHasOwner):
         :return: A librarian file alias.
         """
 
+    def findBuildCandidate():
+        """Return the candidate for building.
+
+        The pending BuildQueue item with the highest score for this builder
+        ProcessorFamily or None if no candidate is available.
+        """
+
+    def dispatchBuildCandidate(candidate):
+        """Dispatch the given job to this builder.
+
+        This method can only be executed in the builddmaster machine, since
+        it will actually issues the XMLRPC call to the buildd-slave.
+        """
+
 
 class IBuilderSet(Interface):
     """Collections of builders.
@@ -273,15 +298,4 @@ class IBuilderSet(Interface):
         :return: A canonical.buildmaster.master.BuilddMaster instance. This is
             temporary and once the dispatchBuilds method no longer requires
             a used instance this return parameter will be dropped.
-        """
-
-    def dispatchBuilds(logger, buildMaster):
-        """Dispatch any pending builds that can be dispatched.
-
-        :param logger: A logger to use to provide information about the
-            dispatching process.
-        :param buildMaster: This is a canonical.buildmaster.master.BuilddMaster
-            instance which will be used to perform the dispatching as that is
-            where the detailed logic currently resides. This is being
-            refactored to remove the need for a buildMaster parameter at all.
         """

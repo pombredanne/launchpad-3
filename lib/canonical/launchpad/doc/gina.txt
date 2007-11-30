@@ -204,7 +204,7 @@ Check if the changelog message was stored correcly:
     <BLANKLINE>
      -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 11 Jul 2005 19:11:11 +1000
 
-    >>> from canonical.lp.dbschema import SourcePackageUrgency
+    >>> from canonical.launchpad.interfaces import SourcePackageUrgency
     >>> x11p.urgency == SourcePackageUrgency.LOW
     True
 
@@ -254,7 +254,7 @@ Test ubuntu-meta in breezy, which was forcefully imported.
     >>> um = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...         version="0.80")
     >>> print um.section.name, um.architecturehintlist, \
-    ...         um.uploaddistroseries.name
+    ...         um.upload_distroseries.name
     base any breezy
 
 And check that its files actually ended up in the librarian (these sha1sums
@@ -295,7 +295,7 @@ Make sure that we only imported one db1-compat source package.
 We check that the source package publishing override facility works:
 
     >>> for pub in SSPPH.selectBy(
-    ...     sourcepackagereleaseID=db1.id, orderBy='distrorelease'):
+    ...     sourcepackagereleaseID=db1.id, orderBy='distroseries'):
     ...     print "%s %s %s" % (
     ...         pub.distroseries.name, pub.section.name,
     ...         pub.archive.purpose.name)
@@ -413,7 +413,7 @@ We check that the binary package publishing override facility works:
     >>> db1 = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id,
     ...         version="2.1.3-7")
     >>> for pub in SecureBinaryPackagePublishingHistory.selectBy(
-    ...     binarypackagereleaseID=db1.id, orderBy='distroarchrelease'):
+    ...     binarypackagereleaseID=db1.id, orderBy='distroarchseries'):
     ...     print "%s %s %s" % (
     ...         pub.distroarchseries.distroseries.name, pub.priority,
     ...         pub.archive.purpose.name)
@@ -556,9 +556,9 @@ because, of course, there may be multiple rows published for that package --
 that's what overrides actually do.
 
     >>> from canonical.database.sqlbase import sqlvalues
-    >>> from canonical.lp.dbschema import PackagePublishingStatus
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> x11_pub = SSPPH.select("""sourcepackagerelease = %s
-    ...                           AND distrorelease = %s
+    ...                           AND distroseries = %s
     ...                           AND status in (%s, %s)""" %
     ...                         sqlvalues(x11p, breezy,
     ...                          PackagePublishingStatus.PUBLISHED,
@@ -567,7 +567,7 @@ that's what overrides actually do.
     >>> print x11_pub.section.name
     net
     >>> ed_pub = SBPPH.select("""binarypackagerelease = %s
-    ...                           AND distroarchrelease = %s
+    ...                           AND distroarchseries = %s
     ...                           AND status in (%s, %s)""" %
     ...                         sqlvalues(ed, breezy_i386,
     ...                          PackagePublishingStatus.PUBLISHED,
@@ -579,7 +579,7 @@ that's what overrides actually do.
     >>> ac = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...         version="0.3.6")
     >>> ac_pub = SSPPH.select("""sourcepackagerelease = %s
-    ...                          AND distrorelease = %s
+    ...                          AND distroseries = %s
     ...                          AND status in (%s, %s)""" %
     ...                        sqlvalues(ac, breezy,
     ...                         PackagePublishingStatus.PUBLISHED,
@@ -601,10 +601,10 @@ First get a set of existing publishings for both source and binary:
     >>> hoary = ubuntu['hoary']
     >>> hoary_i386 = hoary['i386']
     >>> partner_source_set = set(
-    ...     SSPPH.select("distrorelease = %s" % sqlvalues(hoary)))
+    ...     SSPPH.select("distroseries = %s" % sqlvalues(hoary)))
 
     >>> partner_binary_set = set(
-    ...     SBPPH.select("distroarchrelease = %s" % sqlvalues(hoary_i386)))
+    ...     SBPPH.select("distroarchseries = %s" % sqlvalues(hoary_i386)))
 
 Now run gina to import packages and convert them to partner:
 
@@ -617,10 +617,10 @@ Now run gina to import packages and convert them to partner:
 There will now be a number of publishings in the partner archive:
 
     >>> partner_source_set_after = set(
-    ...     SSPPH.select("distrorelease = %s" % sqlvalues(hoary)))
+    ...     SSPPH.select("distroseries = %s" % sqlvalues(hoary)))
 
     >>> partner_binary_set_after = set(
-    ...     SBPPH.select("distroarchrelease = %s" % sqlvalues(hoary_i386)))
+    ...     SBPPH.select("distroarchseries = %s" % sqlvalues(hoary_i386)))
 
     >>> source_difference = partner_source_set_after - partner_source_set
     >>> len(source_difference)
