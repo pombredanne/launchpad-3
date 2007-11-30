@@ -1011,9 +1011,9 @@ class POFile(SQLBase, POFileMixIn):
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
             'elapsedtime': entry_to_import.getElapsedTimeText(),
             'file_link': entry_to_import.content.http_url,
-            'importer': entry_to_import.importer.displayname,
             'import_title': '%s translations for %s' % (
                 self.language.displayname, self.potemplate.displayname),
+            'importer': entry_to_import.importer.displayname,
             'language': self.language.displayname,
             'numberofmessages': msgsets_imported,
             'template': self.potemplate.displayname,
