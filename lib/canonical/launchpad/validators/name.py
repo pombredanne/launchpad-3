@@ -59,4 +59,3 @@ def name_validator(name):
             first character.
             """)), name)
     return True
-

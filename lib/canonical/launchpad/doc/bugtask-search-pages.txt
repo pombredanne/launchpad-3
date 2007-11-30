@@ -148,7 +148,7 @@ message.
     >>> distro_advanced_search_listingview = create_view(
     ...     debian, '+bugs', form_values)
 
-    >>> distro_advanced_search_listingview.getWidgetError('bug_reporter')
+    >>> distro_advanced_search_listingview.getFieldError('bug_reporter')
     u"There's no person with the name or email address 'invalid-reporter'."
 
 The same if we try with an invalid assignee.
@@ -162,7 +162,7 @@ The same if we try with an invalid assignee.
     >>> distro_advanced_search_listingview = create_view(
     ...     debian, '+bugs', form_values)
 
-    >>> distro_advanced_search_listingview.getWidgetError('assignee')
+    >>> distro_advanced_search_listingview.getFieldError('assignee')
     u"There's no person with the name or email address 'invalid-assignee'."
 
 Searching by component is possible, as long as the context has defined a

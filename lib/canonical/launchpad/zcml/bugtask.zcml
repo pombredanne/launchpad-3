@@ -240,6 +240,13 @@
         permission="launchpad.AnyPerson" />
 
     <browser:page
+        name="+affects-new-product"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugAlsoAffectsProductWithProductCreationView"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugtask-affects-new-product.pt" />
+
+    <browser:page
         name="+distrotask"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugAlsoAffectsDistroMetaView"
@@ -331,6 +338,28 @@
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt">
     </browser:page>
+
+    <browser:page
+        name="+confirm-non-contributor"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.bugtask.BugTaskNonContributorAssigneeConfirmView"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-non-contributor-assignee-confirm.pt">
+    </browser:page>
+
+    <browser:page
+      for="canonical.launchpad.interfaces.IBugTask"
+      name="+create-question"
+      class="canonical.launchpad.browser.BugTaskCreateQuestionView"
+      permission="launchpad.Edit"
+      template="../templates/bug-create-question.pt" />
+
+    <browser:page
+      for="canonical.launchpad.interfaces.IBugTask"
+      name="+remove-question"
+      class="canonical.launchpad.browser.BugTaskRemoveQuestionView"
+      permission="launchpad.Edit"
+      template="../templates/bug-remove-question.pt" />
 
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
