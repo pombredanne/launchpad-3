@@ -323,6 +323,7 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Download project files'
         return Link('+download', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def series_add(self):
         text = 'Register a series'
         return Link('+addseries', text, icon='add')

@@ -428,7 +428,7 @@
     for="canonical.launchpad.interfaces.IProduct"
     class="canonical.launchpad.browser.ProductAddSeriesView"
     facet="overview"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Edit"
     template="../templates/productseries-new.pt"
     />
 
