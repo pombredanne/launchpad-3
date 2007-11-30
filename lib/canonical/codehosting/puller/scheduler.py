@@ -227,7 +227,8 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         self._termination_failure = failure
         try:
             self.transport.signalProcess('INT')
-            self._sigkill_delayed_call = self.clock.callLater(5, self._sigkill)
+            self._sigkill_delayed_call = self.clock.callLater(
+                5, self._sigkill)
         except error.ProcessExitedAlready:
             # The process has already died. Fine.
             pass
@@ -412,6 +413,7 @@ class JobScheduler:
 class LockError(StandardError):
 
     def __init__(self, lockfilename):
+        StandardError.__init__(self)
         self.lockfilename = lockfilename
 
     def __str__(self):

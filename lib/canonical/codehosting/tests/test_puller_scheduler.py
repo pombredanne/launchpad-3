@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702,W0222
 
 __metaclass__ = type
 
@@ -165,7 +166,8 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.clock = task.Clock()
         self.protocol = scheduler.PullerMasterProtocol(
             self.termination_deferred, self.listener, self.clock)
-        self.protocol.transport = self.StubTransport(self.protocol, self.clock)
+        self.protocol.transport = self.StubTransport(
+            self.protocol, self.clock)
         self.protocol.connectionMade()
 
     def assertProtocolSuccess(self):
