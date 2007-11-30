@@ -1,0 +1,73 @@
+= OpenID Discovery =
+
+Launchpad provides a number of pages that can be used as OpenID URLs.
+The OpenID discovery process can be run on them to discover the
+endpoints.
+
+To test this, we will set up the python-openid to talk directly to the
+Zope publisher:
+
+    >>> from openid.fetchers import setDefaultFetcher
+    >>> from canonical.launchpad.ftests.openidhelpers import PublisherFetcher
+    >>> setDefaultFetcher(PublisherFetcher())
+
+We'll also define a helper that will print out the discovered
+endpoints for a URL:
+
+    >>> from openid.consumer.discover import discover
+    >>> def print_endpoints(url):
+    ...     claimed_id, services = discover(url)
+    ...     print 'Claimed ID:', claimed_id
+    ...     print '----'
+    ...     if not services:
+    ...         print 'No services discovered'
+    ...     for service in services:
+    ...         print 'Local ID:', service.getLocalID()
+    ...         print 'Server URL:', service.server_url
+    ...         print 'Supports:'
+    ...         for type_uri in service.type_uris:
+    ...             print '  ' + type_uri
+    ...         print '----'
+
+
+== Persistent User Identity URLs ==
+
+Launchpad assigns a persistent identifier to each user:
+
+    >>> print_endpoints('http://openid.launchpad.dev/+id/sabdfl_oid')
+    Claimed ID: http://openid.launchpad.dev/+id/sabdfl_oid
+    ----
+    Local ID: http://openid.launchpad.dev/+id/sabdfl_oid
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
+      http://openid.net/signon/1.1
+    ----
+
+== Non-persistent User Identity URLs ==
+
+Launchpad can also support discovery on a user's profile page.
+
+Currently this is only done for users who are members of the team
+identified by the openid_users configuration value.  For the tests,
+this means the admins team, which Mark Shuttleworth is a member of:
+
+    >>> print_endpoints('http://launchpad.dev/~sabdfl')
+    Claimed ID: http://launchpad.dev/~sabdfl
+    ----
+    Local ID: http://openid.launchpad.dev/+id/sabdfl_oid
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
+      http://openid.net/signon/1.1
+    ----
+
+Discovery fails for users who are not members of the team:
+
+    >>> print_endpoints('http://launchpad.dev/~name12')
+    Claimed ID: http://launchpad.dev/~name12
+    ----
+    No services discovered
+
+
+== Cleanup ==
+
+    >>> setDefaultFetcher(None)
