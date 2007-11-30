@@ -8,7 +8,7 @@ back in as part of the authentication process.
 First we will set up the helper view that lets us test the final
 portion of the authentication process:
 
-    >>> from canonical.launchpad.ftests.openid import (
+    >>> from canonical.launchpad.ftests.openidhelpers import (
     ...     install_consumer, uninstall_consumer)
     >>> install_consumer()
 
