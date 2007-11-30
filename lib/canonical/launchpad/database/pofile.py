@@ -704,6 +704,8 @@ class POFile(SQLBase, POFileMixIn):
 
     def importFromQueue(self, logger=None):
         """See `IPOFile`."""
+
+        translation_importer = getUtility(ITranslationImporter)
         librarian_client = getUtility(ILibrarianClient)
 
         entry_to_import = self.getNextToImport()
@@ -728,8 +730,7 @@ class POFile(SQLBase, POFileMixIn):
         #   list of faulty messages.
         import_rejected = False
         try:
-            importer = getUtility(ITranslationImporter)
-            errors = importer.importFile(entry_to_import, logger=logger)
+            errors = translation_importer.importFile(entry_to_import, logger)
         except NotExportedFromLaunchpad:
             # We got a file that was not exported from Rosetta as a non
             # published upload. We log it and select the email template.
