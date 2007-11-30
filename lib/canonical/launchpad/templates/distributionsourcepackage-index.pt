@@ -37,7 +37,7 @@
      Schema validation errors.
   </p>
   <p class="error message"
-     tal:define="error python:view.getWidgetError('packaging')"
+     tal:define="error python:view.getFieldError('packaging')"
      tal:condition="error"
      tal:content="structure error">
      Field specific error for the hidden packaging field.
