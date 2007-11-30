@@ -17,8 +17,6 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
-from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.proxy import isinstance as zisinstance
 
 from openid.message import IDENTIFIER_SELECT, SREG_URI
@@ -30,17 +28,14 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
-    ILoginServiceLoginForm, ILoginTokenSet, IOpenIdApplication,
-    IOpenIdAuthorizationSet, IOpenIDRPConfigSet, IPersonSet,
-    LoginTokenType, NotFoundError, UnexpectedFormData)
+    ILoginServiceLoginForm, ILoginTokenSet, IOpenIdAuthorizationSet,
+    IOpenIDRPConfigSet, IPersonSet, LoginTokenType, UnexpectedFormData)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
+    action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp.login import logInPerson
-from canonical.launchpad.webapp.publisher import (
-    Navigation, RedirectionView, stepthrough, stepto)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -617,37 +612,6 @@ class LoginServiceLoginView(LoginServiceBaseView):
         return self.email_sent_template()
 
 
-class OpenIdApplicationNavigation(Navigation):
-    usedfor = IOpenIdApplication
-
-    @stepthrough('+id')
-    def traverse_id(self, name):
-        person = getUtility(IPersonSet).getByOpenIdIdentifier(name)
-        if person is not None and person.is_openid_enabled:
-            return OpenIdIdentityView(person, self.request)
-        else:
-            return None
-
-    @stepto('token')
-    def token(self):
-        # We need to traverse the 'token' namespace in order to allow people
-        # to create new accounts and reset their passwords. This can't clash
-        # with a person's name because it's a blacklisted name.
-        return getUtility(ILoginTokenSet)
-
-    def traverse(self, name):
-        # Provide a permanent OpenID identity for use by the Ubuntu shop
-        # or other services that cannot cope with name changes.
-        person = getUtility(IPersonSet).getByName(name)
-        if person is not None and person.is_openid_enabled:
-            target = '%s+id/%s' % (
-                    allvhosts.configs['openid'].rooturl,
-                    person.openid_identifier)
-            return RedirectionView(target, self.request, 303)
-        else:
-            raise NotFoundError(name)
-
-
 class ProtocolErrorView(LaunchpadView):
     """Render a ProtocolError raised by the openid library."""
     def render(self):
@@ -659,30 +623,3 @@ class ProtocolErrorView(LaunchpadView):
             response.setStatus(200)
         response.setHeader('Content-Type', 'text/plain;charset=utf-8')
         return self.context.encodeToKVForm()
-
-
-class OpenIdIdentityView:
-    """Render the OpenID identity page."""
-
-    implements(IBrowserPublisher)
-
-    identity_template = ViewPageTemplateFile(
-        "../templates/openid-identity.pt")
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        # Setup variables to pass to the template
-        self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
-        self.identity_url = '%s+id/%s' % (
-                self.server_url, self.context.openid_identifier)
-        self.person_url = canonical_url(self.context, rootsite='mainsite')
-        self.meta_refresh_content = "1; URL=%s" % self.person_url
-
-        return self.identity_template()
-
-    def browserDefault(self, request):
-        return self, ()
-

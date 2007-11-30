@@ -67,8 +67,9 @@ The standard person homepage delegates to a permanent identity URL
 
     >>> anon_browser.open('http://openid.launchpad.dev/+id/sabdfl_oid')
     >>> print anon_browser.contents
-    <html>
+    <html ...>
     <head>
+    ...
     <link rel="openid.server" href="http://openid.launchpad.dev/+openid" />
     ...
     >>> 'openid.delegate' in anon_browser.contents

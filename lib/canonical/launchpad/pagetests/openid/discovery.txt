@@ -42,6 +42,20 @@ Launchpad assigns a persistent identifier to each user:
     Supports:
       http://openid.net/signon/1.1
     ----
+    Local ID: http://openid.launchpad.dev/+id/sabdfl_oid
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
+      http://openid.net/signon/1.0
+    ----
+
+If the user enters a non-canonical form of the identifier, it is
+normalised to the standard form:
+
+    >>> print_endpoints(
+    ...     'http://openid.launchpad.dev/+id/sabdfl_oid/+index?foo=bar')
+    Claimed ID: http://openid.launchpad.dev/+id/sabdfl_oid
+    ...
+
 
 == Non-persistent User Identity URLs ==
 
