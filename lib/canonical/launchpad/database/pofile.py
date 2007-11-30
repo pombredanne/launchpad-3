@@ -1002,8 +1002,6 @@ class POFile(SQLBase, POFileMixIn):
             template_mail = 'poimport-got-old-version.txt'
             import_rejected = True
 
-        flush_database_updates()
-
         # Prepare the mail notification.
         msgsets_imported = TranslationMessage.select(
             'was_obsolete_in_last_import IS FALSE AND pofile=%s' %
@@ -1054,37 +1052,35 @@ class POFile(SQLBase, POFileMixIn):
             subject = 'Translation import - %s - %s' % (
                 self.language.displayname, self.potemplate.displayname)
 
-        # Send email: confirmation or error.
-        template = helpers.get_email_template(template_mail)
-        message = template % replacements
-
-        notification = (subject, message)
-
         if import_rejected:
             # There were no imports at all and the user needs to review that
             # file, we tag it as FAILED.
             entry_to_import.status = RosettaImportStatus.FAILED
-            return notification
+        else:
+            entry_to_import.status = RosettaImportStatus.IMPORTED
+            # Assign karma to the importer if this is not an automatic import
+            # (all automatic imports come from the rosetta expert user) and
+            # comes from upstream.
+            celebs = getUtility(ILaunchpadCelebrities)
+            rosetta_experts = celebs.rosetta_experts
+            if (entry_to_import.is_published and
+                entry_to_import.importer.id != rosetta_experts.id):
+                entry_to_import.importer.assignKarma(
+                    'translationimportupstream',
+                    product=self.potemplate.product,
+                    distribution=self.potemplate.distribution,
+                    sourcepackagename=self.potemplate.sourcepackagename)
 
-        # The import has been done, we mark it that way.
-        entry_to_import.status = RosettaImportStatus.IMPORTED
-        # And add karma to the importer if it's not imported automatically
-        # (all automatic imports come from the rosetta expert user) and comes
-        # from upstream.
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-        if (entry_to_import.is_published and
-            entry_to_import.importer.id != rosetta_experts.id):
-            # The Rosetta Experts team should not get karma.
-            entry_to_import.importer.assignKarma(
-                'translationimportupstream',
-                product=self.potemplate.product,
-                distribution=self.potemplate.distribution,
-                sourcepackagename=self.potemplate.sourcepackagename)
+            # Synchronize to database so we can calculate fresh statistics on
+            # the server side.
+            flush_database_updates()
 
-        # Now we update the statistics after this new import
-        self.updateStatistics()
+            # Now we update the statistics after this new import
+            self.updateStatistics()
 
-        return notification
+        template = helpers.get_email_template(template_mail)
+        message = template % replacements
+        return (subject, message)
 
     def updateExportCache(self, contents):
         """See `IPOFile`."""

@@ -640,48 +640,40 @@ class POTemplate(SQLBase, RosettaStats):
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
             'elapsedtime': entry_to_import.getElapsedTimeText(),
             'file_link': entry_to_import.content.http_url,
-            'importer': entry_to_import.importer.displayname,
             'import_title': 'translation templates for %s' % self.displayname,
+            'importer': entry_to_import.importer.displayname,
             'template': self.displayname,
             }
 
-        # Send email: confirmation or error.
+        if entry_to_import.status != RosettaImportStatus.FAILED:
+            entry_to_import.status = RosettaImportStatus.IMPORTED
+
+            # Assign karma to the importer if this is not an automatic import
+            # (all automatic imports come from the rosetta expert team).
+            celebs = getUtility(ILaunchpadCelebrities)
+            rosetta_experts = celebs.rosetta_experts
+            if entry_to_import.importer.id != rosetta_experts.id:
+                entry_to_import.importer.assignKarma(
+                    'translationtemplateimport',
+                    product=self.product,
+                    distribution=self.distribution,
+                    sourcepackagename=self.sourcepackagename)
+
+            # Synchronize changes to database so we can calculate fresh
+            # statistics on the server side.
+            flush_database_updates()
+
+            # Update cached number of msgsets.
+            self.messagecount = self.getPOTMsgSetsCount()
+
+            # The upload affects the statistics for all translations of this
+            # template.  Recalculate those as well.
+            for pofile in self.pofiles:
+                pofile.updateStatistics()
+
         template = helpers.get_email_template(template_mail)
         message = template % replacements
-
-        notification = (subject, message)
-
-        if entry_to_import.status == RosettaImportStatus.FAILED:
-            # Give up on this file.
-            return notification
-
-        # The import has been done, we mark it that way.
-        entry_to_import.status = RosettaImportStatus.IMPORTED
-        # And add karma to the importer if it's not imported automatically
-        # (all automatic imports come from the rosetta expert team).
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-        if entry_to_import.importer.id != rosetta_experts.id:
-            # The admins should not get karma.
-            entry_to_import.importer.assignKarma(
-                'translationtemplateimport',
-                product=self.product,
-                distribution=self.distribution,
-                sourcepackagename=self.sourcepackagename)
-
-        # Ask for a sqlobject sync before reusing the data we just
-        # updated.
-        flush_database_updates()
-
-        # We update the cached value that tells us the number of msgsets
-        # this .pot file has
-        self.messagecount = self.getPOTMsgSetsCount()
-
-        # And now, we should update the statistics for all po files this
-        # .pot file has because msgsets will have changed.
-        for pofile in self.pofiles:
-            pofile.updateStatistics()
-
-        return notification
+        return (subject, message)
 
 
 class POTemplateSubset:
