@@ -1,5 +1,4 @@
 # Put your TODOs for this branch here, then make sure it is empty before
 # landing. There is a test to ensure it is empty in trunk.
 
- * Do not allow branch_set_size to default to zero unless agreed with
-   BjornT et al.
+
