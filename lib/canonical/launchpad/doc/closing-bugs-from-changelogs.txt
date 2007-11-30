@@ -110,7 +110,7 @@ will close the specified bug.
     'FIXRELEASED'
 
 The changelog associated with the SourcePackageRelease is automatically
-added as a comment from the uploader.
+added as a comment from the janitor.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -119,7 +119,7 @@ added as a comment from the uploader.
     >>> print pmount_release.creator.displayname
     Mark Shuttleworth
     >>> print last_comment.owner.displayname
-    Mark Shuttleworth
+    Launchpad Janitor
 
     >>> print pmount_release.changelog
     pmount (0.1-1) hoary; urgency=low
@@ -149,11 +149,11 @@ single e-mail later.
     ...     print "From %s:\n%s\n" % (
     ...         notification.message.owner.displayname,
     ...         notification.message.text_contents)
-    From Mark Shuttleworth:
+    From Launchpad Janitor:
     ** Changed in: pmount (Ubuntu)
            Status: New => Fix Released
     <BLANKLINE>
-    From Mark Shuttleworth:
+    From Launchpad Janitor:
     pmount (0.1-1) hoary; urgency=low
     <BLANKLINE>
      * Fix description (Malone #1)
