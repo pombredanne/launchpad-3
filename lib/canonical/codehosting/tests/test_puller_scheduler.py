@@ -49,6 +49,17 @@ class FakeBranchStatusClient:
         return defer.succeed(None)
 
 
+def makeFailure(exception_factory, *args, **kwargs):
+    """Make a Failure object from the given exception factory.
+
+    Any other arguments are passed straight on to the factory.
+    """
+    try:
+        raise exception_factory(*args, **kwargs)
+    except:
+        return failure.Failure()
+
+
 class TestJobScheduler(unittest.TestCase):
 
     def setUp(self):
@@ -130,6 +141,8 @@ class TestPullerMasterProtocol(TrialTestCase):
         transport.
         """
 
+        only_sigkill_kills = False
+
         def __init__(self, protocol, clock):
             self.protocol = protocol
             self.clock = clock
@@ -140,8 +153,9 @@ class TestPullerMasterProtocol(TrialTestCase):
 
         def signalProcess(self, signal_name):
             self.calls.append(('signalProcess', signal_name))
-            reason = failure.Failure(error.ProcessTerminated())
-            self.clock.callLater(0, self.protocol.processEnded, reason)
+            if not self.only_sigkill_kills or signal_name == 'KILL':
+                reason = failure.Failure(error.ProcessTerminated())
+                self.clock.callLater(0, self.protocol.processEnded, reason)
 
 
     def setUp(self):
@@ -300,7 +314,7 @@ class TestPullerMasterProtocol(TrialTestCase):
 
         def check_failure(exception):
             self.assertEqual(
-                [('signalProcess', 'KILL')], self.protocol.transport.calls)
+                [('signalProcess', 'INT')], self.protocol.transport.calls)
             self.assertTrue('foo' in str(exception))
 
         deferred = self.assertFailure(
@@ -319,12 +333,33 @@ class TestPullerMasterProtocol(TrialTestCase):
 
         def check_failure(exception):
             self.assertEqual(
-                ['loseConnection', ('signalProcess', 'KILL')],
+                ['loseConnection', ('signalProcess', 'INT')],
                 self.protocol.transport.calls)
             self.assertTrue('foo' in str(exception))
 
         deferred = self.assertFailure(
             self.termination_deferred, NetstringParseError)
+
+        return deferred.addCallback(check_failure)
+
+    def test_interruptThenKill(self):
+        """ """
+        fail = makeFailure(RuntimeError, 'error message')
+        self.protocol.transport.only_sigkill_kills = True
+        self.protocol.unexpectedError(fail)
+        self.assertEqual(
+            [('signalProcess', 'INT')],
+            self.protocol.transport.calls)
+        self.clock.advance(10)
+        self.assertEqual(
+            [('signalProcess', 'INT'), ('signalProcess', 'KILL')],
+            self.protocol.transport.calls)
+
+        def check_failure(exception):
+            self.assertEqual('error message', str(exception))
+
+        deferred = self.assertFailure(
+            self.termination_deferred, RuntimeError)
 
         return deferred.addCallback(check_failure)
 
@@ -337,16 +372,6 @@ class TestPullerMaster(TrialTestCase):
         self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
             BranchType.HOSTED, logging.getLogger(), self.status_client)
-
-    def makeFailure(self, exception_factory, *args, **kwargs):
-        """Make a Failure object from the given exception factory.
-
-        Any other arguments are passed straight on to the factory.
-        """
-        try:
-            raise exception_factory(*args, **kwargs)
-        except:
-            return failure.Failure()
 
     def _getLastOOPSFilename(self, time):
         """Find the filename for the OOPS logged at 'time'."""
@@ -372,7 +397,7 @@ class TestPullerMaster(TrialTestCase):
         error.
         """
         now = datetime.now(pytz.timezone('UTC'))
-        fail = self.makeFailure(RuntimeError, 'error message')
+        fail = makeFailure(RuntimeError, 'error message')
         self.eventHandler.unexpectedError(fail, now)
         oops = self.getLastOOPS(now)
         self.assertEqual(fail.getTraceback(), oops.tb_text)

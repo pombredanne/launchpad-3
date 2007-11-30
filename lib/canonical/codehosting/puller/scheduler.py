@@ -100,6 +100,8 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         # failure -- which isn't very interesting, we want to report to the
         # listener _why_ we killed the process so we store that here.
         self._termination_failure = None
+        # XXX blabla
+        self._sigkill_delayed_call = None
         self.listener = listener
         self._resetState()
         self._stderr = StringIO()
@@ -215,10 +217,21 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         or sending an recognized command, or sending the wrong number of
         arguments for a command etc.
 
-        Calling this method kills the child process and records the failure
-        for later use by processEnded().
+        Calling this method sends SIGINT to the child process, arranges to
+        SIGKILL the process in a few seconds if it doesn't exit and records
+        the failure for later use by processEnded().
         """
         self._termination_failure = failure
+        try:
+            self.transport.signalProcess('INT')
+            self._sigkill_delayed_call = self.clock.callLater(5, self._sigkill)
+        except error.ProcessExitedAlready:
+            # The process has already died. Fine.
+            pass
+
+    def _sigkill(self):
+        """XXX."""
+        self._sigkill_delayed_call = None
         try:
             self.transport.signalProcess('KILL')
         except error.ProcessExitedAlready:
@@ -232,7 +245,10 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         because we killed it, why we killed it.
         """
         ProcessProtocol.processEnded(self, reason)
-        if self._termination_failure:
+        if self._sigkill_delayed_call is not None:
+            self._sigkill_delayed_call.cancel()
+            self._sigkill_delayed_call = None
+        if self._termination_failure is not None:
             reason = self._termination_failure
         self._processTerminated(reason)
 
