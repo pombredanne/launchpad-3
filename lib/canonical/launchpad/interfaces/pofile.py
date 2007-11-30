@@ -267,14 +267,15 @@ class IPOFile(IRosettaStats):
     def getStatistics():
         """Summarize this file's cached translation statistics.
 
-        Returns tuple of (currentcount, updatescount, rosettacount,
-        unreviewed_count).
+        :return: tuple of (`currentcount`, `updatescount`, `rosettacount`,
+            `unreviewed_count`), as collected by `updateStatistics`.
         """
 
     def updateStatistics():
-        """Update the statistics fields - rosettaCount, updatesCount and
-        currentCount - from the messages currently known.
-        Return a tuple (rosettaCount, updatesCount, currentCount)."""
+        """Update the cached statistics fields.
+
+        :return: a tuple (`currentcount`, `updatescount`, `rosettacount`,
+            `unreviewed_count`), as for `getStatistics`."""
 
     def updateHeader(new_header):
         """Update the header information.
@@ -294,24 +295,6 @@ class IPOFile(IRosettaStats):
 
         :return: a tuple of the subject line and body for a notification email
             to be sent to the uploader.
-        """
-
-    def getCurrentSuggestions(potmsgsets):
-        """Return a dictionary with all suggestions per potmsgset.
-
-        :param potmsgsets: A list of `IPOTMsgSet` objects.
-        :param language: Language we are interested on for the suggestions.
-        :return: A dictionary indexed by potmsgset of all suggestions that are
-            done in other contexts and are used right now.
-        """
-
-    def getExternalSuggestions(potmsgsets):
-        """Return a dictionary with all suggestions used per potmsgset.
-
-        :param potmsgsets: A list of `IPOTMsgSet` objects.
-        :param language: Language we are interested on for the suggestions.
-        :return: A dictionary indexed by potmsgset of all suggestions that are
-            done in other contexts but are not yet used.
         """
 
 

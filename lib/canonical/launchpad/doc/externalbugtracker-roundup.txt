@@ -12,12 +12,12 @@ implements IExternalBugTracker.
 
     >>> from canonical.launchpad.components.externalbugtracker import Roundup
     >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IExternalBugtracker)
+    ...     BugTrackerType, IExternalBugTracker)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(
-    ...     IExternalBugtracker,
+    ...     IExternalBugTracker,
     ...     Roundup(new_bugtracker(BugTrackerType.ROUNDUP)))
     True
 
