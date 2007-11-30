@@ -133,7 +133,9 @@ will currently return "can't say" as we are not yet logged into Launchpad.
     >>> anon_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print anon_browser.contents
     Consumer received GET
+    openid.assoc_handle:...
     openid.mode:id_res
+    ...
     openid.user_setup_url:http://openid.launchpad.dev/+openid?...
     <BLANKLINE>
 
@@ -150,7 +152,9 @@ user.
     >>> user_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print user_browser.contents
     Consumer received GET
+    openid.assoc_handle:...
     openid.mode:id_res
+    ...
     openid.user_setup_url:http://openid.launchpad.dev/+openid?...
     <BLANKLINE>
 
@@ -187,11 +191,15 @@ to the consumer, completing the OpenID request:
     >>> print sabdfl_browser.contents
     Consumer received GET
     openid.assoc_handle:...
+    openid.claimed_id:http://openid.launchpad.dev/+id/sabdfl_oid
     openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
     openid.mode:id_res
+    openid.ns:http://specs.openid.net/auth/2.0
+    openid.op_endpoint:http://openid.launchpad.dev/+openid
+    openid.response_nonce:...
     openid.return_to:http://launchpad.dev/+openid-consumer
     openid.sig:...
-    openid.signed:return_to,mode,identity
+    openid.signed:...
     <BLANKLINE>
 
 We will record the signature from this response to use in the next test:
@@ -209,10 +217,11 @@ This can be seen using the existing browser session:
     >>> sabdfl_browser.getControl("Not Now").click()
 
     >>> print sabdfl_browser.url
-    http://launchpad.dev/+openid-consumer?openid.mode=cancel
+    http://launchpad.dev/+openid-consumer?...
     >>> print sabdfl_browser.contents
     Consumer received GET
     openid.mode:cancel
+    openid.ns:http://specs.openid.net/auth/2.0
     <BLANKLINE>
 
 
@@ -240,7 +249,8 @@ check_authentication will fail.
 
 
 If we are a dumb consumer though, we must invoke the check_authentication
-Mode.
+mode, passing back the association handle, signature and values of all
+fields that were signed.
 
     >>> args = urlencode({
     ...     'openid.mode': 'checkid_setup',
@@ -255,25 +265,29 @@ Mode.
     openid.assoc_handle:...
     openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
     openid.mode:id_res
+    openid.op_endpoint:http://openid.launchpad.dev/+openid
+    openid.response_nonce:...
     openid.return_to:http://launchpad.dev/+openid-consumer
     openid.sig:...
-    openid.signed:return_to,mode,identity
+    openid.signed:...
     <BLANKLINE>
 
-    >>> [stateless_assoc_handle] = re.findall(
-    ...     'assoc_handle:(.*)', sabdfl_browser.contents
-    ...     )
-    >>> [sig] = re.findall('sig:(.*)', sabdfl_browser.contents)
-    >>> args = urlencode({
+    >>> fields = dict(line.split(':', 1)
+    ...               for line in sabdfl_browser.contents.splitlines()[1:]
+    ...               if line.startswith('openid.'))
+    >>> signed = ['openid.' + name
+    ...           for name in fields['openid.signed'].split(',')]
+    >>> message = dict((key, value) for (key, value) in fields.items()
+    ...                if key in signed)
+    >>> message.update({
     ...     'openid.mode': 'check_authentication',
-    ...     'openid.assoc_handle': stateless_assoc_handle,
-    ...     'openid.sig': sig,
-    ...     'openid.signed': 'return_to,mode,identity',
-    ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
-    ...     'openid.identity':
-    ...         'http://openid.launchpad.dev/+id/sabdfl_oid',
+    ...     'openid.assoc_handle': fields['openid.assoc_handle'],
+    ...     'openid.sig': fields['openid.sig'],
+    ...     'openid.signed': fields['openid.signed'],
     ...     })
-    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
+
+    >>> args = urlencode(message)
+    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid', args)
     >>> print sabdfl_browser.contents
     is_valid:true
     <BLANKLINE>
@@ -330,7 +344,10 @@ Immediate mode:
     >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print sabdfl_browser.contents
     Consumer received GET
+    openid.assoc_handle:...
     openid.mode:id_res
+    openid.sig:...
+    openid.signed:...
     openid.user_setup_url:http://openid.launchpad.dev/+openid?...
     <BLANKLINE>
 
@@ -350,10 +367,11 @@ Interactive mode:
 
     >>> sabdfl_browser.open(setup_url)
     >>> print sabdfl_browser.url
-    http://launchpad.dev/+openid-consumer?openid.mode=cancel
+    http://launchpad.dev/+openid-consumer?...
     >>> print sabdfl_browser.contents
     Consumer received GET
     openid.mode:cancel
+    openid.ns:http://specs.openid.net/auth/2.0
 
 
 == Invalid identities ==
@@ -379,7 +397,7 @@ identifier, you get a nice error page.
     that is not a valid Launchpad OpenID identity URL, such as
     <strong>http://launchpad.dev/~sabdfl</strong>
     ...
-    <form action="http://launchpad.dev/+openid-consumer?openid.mode=cancel">
+    <form action="http://launchpad.dev/+openid-consumer?openid.mode=cancel...">
     <input type="submit" value="Continue" />
     </form>
     ...
