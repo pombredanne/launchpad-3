@@ -130,6 +130,26 @@ class ExternalBugTracker:
     implements(IExternalBugTracker)
     batch_query_threshold = config.checkwatches.batch_query_threshold
 
+    # We obfuscate the batch_set_size config option so that we account
+    # for any situations in which it's 0, which translates to offering
+    # no limit on batch set size at all. See the batch_set_size property
+    # below.
+    _batch_set_size = config.checkwatches.batch_set_size
+
+    @property
+    def batch_set_size(self):
+        """Return the batch set size for the `ExternalBugTracker`.
+
+        If the _batch_set_size attribute for the current
+        `ExternalBugTracker` subclass is 0, meaning that no limit will
+        be offered on batch set sizes, None will be returned. Otherwise
+        the value of _batch_set_size will be returned.
+        """
+        if self._batch_set_size == 0:
+            return None
+        else:
+            return self._batch_set_size
+
     def __init__(self, bugtracker):
         self.bugtracker = bugtracker
         self.baseurl = bugtracker.baseurl.rstrip('/')
@@ -142,6 +162,12 @@ class ExternalBugTracker:
 
         It's optional to override this method.
         """
+        # We limit the number of bugs we're going to fetch to that
+        # specififed by the batch_set_size property. That way we won't
+        # overload those remote systems that don't take kindly to huge
+        # exports.
+        bug_ids = bug_ids[:self.batch_set_size]
+
         self.bugs = {}
         if len(bug_ids) > self.batch_query_threshold:
             self.bugs = self.getRemoteBugBatch(bug_ids)

@@ -82,10 +82,6 @@ class BugWatchUpdater(object):
 
     def updateBugTracker(self, bug_tracker):
         """Updates the given bug trackers's bug watches."""
-        # We want 1 day, but we'll use 23 hours because we can't count
-        # on the cron job hitting exactly the same time every day
-        bug_watches_to_update = bug_tracker.getBugWatchesNeedingUpdate(23)
-
         try:
             remotesystem = externalbugtracker.get_external_bugtracker(
                 bug_tracker)
@@ -94,6 +90,14 @@ class BugWatchUpdater(object):
                 "ExternalBugtracker for BugTrackerType '%s' is not "
                 "known." % (error.bugtrackertypename))
         else:
+            # We limit the number of bug watches based on the
+            # ExternalBugTracker's batch_set_size property not for the
+            # sake of logic (ExternalBugTrackers enforce their own
+            # batch_set_sizes in initializeRemoteBugDB()) but for the
+            # sake of logging how many watches we'll update.
+            bug_watches_to_update = bug_tracker.getBugWatchesNeedingUpdate(
+                    23)[:remotesystem.batch_set_size]
+
             number_of_watches = bug_watches_to_update.count()
             if number_of_watches > 0:
                 self.log.info(

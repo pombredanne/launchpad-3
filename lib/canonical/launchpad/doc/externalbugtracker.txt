@@ -4,6 +4,66 @@ ExternalBugTracker instances are used to communicate with remote bug
 trackers. This document tests those features that are common to all
 ExternalBugTracker instances.
 
+
+== Configuration Options ==
+
+All ExternalBugTrackers have two properties which are set by
+configuration options in launchpad.conf, batch_set_size and
+batch_query_threshold. batch_set_size is used to limit the number of
+bugs fetched from the remote server on each run of the checkwatches
+script. batch_query_threshold is used to decide whether or not the bugs
+are exported from the remote server as a batch (where possible) or
+individually.
+
+The batch_query_threshold for a vanilla ExternalBugTracker should be the
+same as that specified in launchpad.conf. We use a test version of
+ExternalBugTracker here that doesn't actually do anything besides
+fulfill the implementation requirements of IExternalBugTracker.
+
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestExternalBugTracker)
+    >>> tracker = TestExternalBugTracker()
+    >>> (tracker.batch_query_threshold ==
+    ...     config.checkwatches.batch_query_threshold)
+    True
+
+The batch_set_size property is much the same a batch_query_set, with one
+important distinction. If a bug tracker applies no limit to its batch
+set size its batch_set_size will be zero. However, for the sake of
+making batch_set_size easier to use in code a value of 0 for a bug
+tracker will be returned by batch_set_size as None.
+
+Each ExternalBugTracker has an attribute _batch_set_size, which stores
+the batch set size for that bug tracker. In our test ExternalBugTracker
+its value will be that specified in launchpad.conf:
+
+    >>> tracker._batch_set_size == config.checkwatches.batch_set_size
+    True
+
+If we create a new subclass of TestExternalBugTracker with a batch set
+size of, say, five, this will be reflected in that class's
+batch_set_size property as well as its _batch_set_size attribute:
+
+    >>> class NewTestExternalBugTracker(TestExternalBugTracker):
+    ...     _batch_set_size = 5
+    >>> tracker = NewTestExternalBugTracker()
+    >>> tracker._batch_set_size
+    5
+    >>> tracker.batch_set_size
+    5
+
+However, if we set NewTestExternalBugTracker's batch set size to 0, the
+attribute and the property return different values:
+
+    >>> NewTestExternalBugTracker._batch_set_size = 0
+    >>> tracker = NewTestExternalBugTracker()
+    >>> tracker._batch_set_size
+    0
+    >>> tracker.batch_set_size is None
+    True
+
+
 == Error Handling ==
 
 When an error occurs during the updating of bug watches it will be
