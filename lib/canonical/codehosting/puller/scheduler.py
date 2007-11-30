@@ -100,7 +100,10 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         # failure -- which isn't very interesting, we want to report to the
         # listener _why_ we killed the process so we store that here.
         self._termination_failure = None
-        # XXX blabla
+        # When we SIGINT the process, we schedule a call to SIGKILL it a few
+        # seconds later, to be sure it exits, but we want to be able to cancel
+        # the call if the SIGINT does indeed kill the process so we stash it
+        # here.
         self._sigkill_delayed_call = None
         self.listener = listener
         self._resetState()
@@ -230,7 +233,11 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
             pass
 
     def _sigkill(self):
-        """XXX."""
+        """Send SIGKILL to the child process.
+
+        We rely on this killing the process, i.e. we assume that
+        processEnded() will be called soon after this.
+        """
         self._sigkill_delayed_call = None
         try:
             self.transport.signalProcess('KILL')

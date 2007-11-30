@@ -343,17 +343,26 @@ class TestPullerMasterProtocol(TrialTestCase):
         return deferred.addCallback(check_failure)
 
     def test_interruptThenKill(self):
-        """ """
+        """If SIGINT doesn't kill the process, we SIGKILL after 5 seconds."""
         fail = makeFailure(RuntimeError, 'error message')
         self.protocol.transport.only_sigkill_kills = True
+
+        # When the error happens, we SIGINT the process.
         self.protocol.unexpectedError(fail)
         self.assertEqual(
             [('signalProcess', 'INT')],
             self.protocol.transport.calls)
-        self.clock.advance(10)
+
+        # After 5 seconds, we send SIGKILL.
+        self.clock.advance(6)
         self.assertEqual(
             [('signalProcess', 'INT'), ('signalProcess', 'KILL')],
             self.protocol.transport.calls)
+
+        # SIGKILL is assumed to kill the process.  We check that the
+        # failure passed to the termination_deferred is the failure we
+        # created above, not the ProcessTerminated that results from
+        # the process dying.
 
         def check_failure(exception):
             self.assertEqual('error message', str(exception))
