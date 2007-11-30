@@ -1,3 +1,5 @@
+= The Launchpad Code front page =
+
 First we manually set the Bazaar version, so that this document will not need
 updating when Launchpad upgrades Bazaar.
 
