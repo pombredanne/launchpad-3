@@ -131,7 +131,7 @@ added as a comment from the janitor.
      -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300
 
     >>> print last_comment.text_contents
-    The bug was fixed in the package pmount - 0.1-1
+    This bug was fixed in the package pmount - 0.1-1
     <BLANKLINE>
     ---------------
     pmount (0.1-1) hoary; urgency=low
@@ -157,7 +157,7 @@ single e-mail later.
            Status: New => Fix Released
     <BLANKLINE>
     From Launchpad Janitor:
-    The bug was fixed in the package pmount - 0.1-1
+    This bug was fixed in the package pmount - 0.1-1
     <BLANKLINE>
     ---------------
     pmount (0.1-1) hoary; urgency=low

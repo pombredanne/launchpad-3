@@ -93,7 +93,7 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
                 assert source_release.changelog is not None, (
                     "New source uploads should have a changelog.")
                 content = (
-                    "The bug was fixed in the package %s"
+                    "This bug was fixed in the package %s"
                     "\n\n---------------\n%s" % (
                     source_release.title, source_release.changelog,))
                 bug.newMessage(
