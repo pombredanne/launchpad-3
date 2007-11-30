@@ -156,9 +156,14 @@ def get_alternative_email(person):
 
 
 def review_list(list_name, status=None):
-    """Helper for approving a mailing list.
+    """Review a mailing list application.
 
-    This functionality is not yet exposed through the web.
+    :param list_name: The name of the mailing list to review.  This is
+        equivalent to the name of the team that the mailing list is
+        associated with.
+    :param status: The status applied to the reviewed mailing list.  This must
+        be either MailingListStatus.APPROVED or MailingListStatus.DECLINED
+        with the former being used if `status` is not given.
     """
     if status is None:
         status = MailingListStatus.APPROVED

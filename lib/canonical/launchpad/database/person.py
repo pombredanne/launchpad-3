@@ -741,22 +741,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return self.teamowner is not None
 
     @property
-    def archived_mailing_list(self):
+    def mailing_list(self):
         """See `IPerson`."""
-        mailing_list = getUtility(IMailingListSet).get(self.name)
-        if mailing_list is None:
-            return None
-        # These represent states that can occur at or after a mailing list has
-        # been activated.  Once it's been activated, a mailing list could have
-        # an archive.
-        if mailing_list.status in [MailingListStatus.ACTIVE,
-                                   MailingListStatus.INACTIVE,
-                                   MailingListStatus.MODIFIED,
-                                   MailingListStatus.UPDATING,
-                                   MailingListStatus.DEACTIVATING,
-                                   MailingListStatus.MOD_FAILED]:
-            return mailing_list
-        return None
+        return getUtility(IMailingListSet).get(self.name)
 
     @cachedproperty
     def is_trusted_on_shipit(self):

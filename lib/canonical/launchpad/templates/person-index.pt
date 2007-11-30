@@ -324,11 +324,11 @@
                 <span tal:replace="context/subscriptionpolicy/description" />
                 </td>
             </tr>
-            <tr tal:define="mailing_list context/archived_mailing_list"
-                 tal:condition="mailing_list">
+            <tr tal:define="archive_url view/archive_url"
+                 tal:condition="archive_url">
               <th>Mailing list archive:</th>
-              <td><a tal:content="mailing_list/archive_url"
-                     tal:attributes="href mailing_list/archive_url"
+              <td><a tal:content="archive_url"
+                     tal:attributes="href archive_url"
                    >http://lists.launchpad.dev/archives/team_name</a>
               </td>
             </tr>

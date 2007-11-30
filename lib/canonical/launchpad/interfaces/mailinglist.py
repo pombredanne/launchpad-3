@@ -293,6 +293,11 @@ class IMailingList(Interface):
 
     archive_url = TextLine(
         title=_("The url to the list's archives"),
+        description=_(
+            'This is the url to the archive if the mailing list has ever '
+            'activated.  Such a list, even if now inactive, may still have '
+            'an archive.  If the list has never been activated, this will '
+            'be None.'),
         readonly=True)
 
     def isUsable():
@@ -479,7 +484,7 @@ class IMailingListSet(Interface):
         readonly=True)
 
     deactivated_lists = Set(
-       title=_('Deactivated lists'),
+        title=_('Deactivated lists'),
         description=_('All mailing lists with status '
                       '`MailingListStatus.DEACTIVATING`.'),
         value_type=Object(schema=IMailingList),

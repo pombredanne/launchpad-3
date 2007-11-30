@@ -146,7 +146,7 @@ we'll ask the user to contact a Launchpad admin.
     >>> mailing_list.status = MailingListStatus.REGISTERED
     >>> mailing_list.syncUpdate()
 
-If a team's mailing list is declined, there is no link to its non-existant
+If a team's mailing list is declined, there is no link to its non-existent
 archive.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')

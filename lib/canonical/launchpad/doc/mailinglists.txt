@@ -63,6 +63,14 @@ created right away.
     >>> list_one
     <MailingList for team "team-one"; status=REGISTERED at 0x...>
 
+You can always access the mailing list through its team, if the team has a
+mailing list.
+
+    >>> team_one.mailing_list
+    <MailingList for team "team-one"; status=REGISTERED at 0x...>
+    >>> print team_two.mailing_list
+    None
+
 You may not register a mailing list for a person.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
@@ -508,35 +516,25 @@ But a team with no mailing list (yet) can still be renamed.
 
 == Team archive links ==
 
-A team with no mailing list has no archived mailing list.
+Mailing lists have archives, accessible through a list-specific url.  However,
+if a mailing list has never be activated, it won't have an archive url.
 
-    >>> print team_six.archived_mailing_list
+    >>> print list_two.archive_url
     None
 
-A team that failed when trying to create its mailing list, also has no
-archived mailing list.
-
-    >>> print team_four.archived_mailing_list
-    None
-
-Teams with active mailing lists and teams with lists that have been deactived
-both have archived mailing lists.
+An active mailing list has an archive url.
 
     >>> list_one.status.name
     'ACTIVE'
-    >>> team_one.archived_mailing_list
-    <MailingList for team "team-one"; status=ACTIVE at ...>
+    >>> list_one.archive_url
+    u'http://lists.launchpad.dev/archives/team-one'
+
+Inactive mailing lists also have an archive url, because once activated, a
+mailing list could have an archive and archives are never deleted.
+
     >>> list_one.deactivate()
     >>> list_one.transitionToStatus(MailingListStatus.INACTIVE)
     >>> list_one.status.name
     'INACTIVE'
-    >>> team_one.archived_mailing_list
-    <MailingList for team "team-one"; status=INACTIVE at ...>
-
-All mailing lists have an archive url, regardless of whether they are active
-or not.
-
     >>> list_one.archive_url
     u'http://lists.launchpad.dev/archives/team-one'
-    >>> list_four.archive_url
-    u'http://lists.launchpad.dev/archives/team-four'

@@ -848,10 +848,11 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """True if this Person is actually a Team, otherwise False."""
 
     # XXX BarryWarsaw 29-Nov-2007 I'd prefer for this to be an Object() with a
-    # schema of IMailingList, but setting that up correct causes a circular
+    # schema of IMailingList, but setting that up correctly causes a circular
     # import error with interfaces.mailinglists that is too difficult to
     # unfunge for this one attribute.
-    archived_mailing_list = Attribute(_("The team's mailing list"))
+    mailing_list = Attribute(
+        _("The team's mailing list, if it has one, otherwise None."))
 
     def getProjectsAndCategoriesContributedTo(limit=10):
         """Return a list of dicts with projects and the contributions made
