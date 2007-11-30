@@ -236,9 +236,8 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         """Reject the upload if target archive size quota will be exceeded.
 
         This check will reject source upload exceeding the specified archive
-        size quota.
-        Binary upload will be skipped to avoid unnecessary hassle dealing
-        with 'failed-to-upload' builds.
+        size quota.Binary upload will be skipped to avoid unnecessary hassle
+        dealing with FAILEDTOUPLOAD builds.
         """
         # Skip the check for binary uploads.
         if upload.binaryful:

@@ -242,7 +242,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(queue_items.count(), 1)
 
     def testPPASizeQuotaCheck(self):
-        """Verifing the size quota check for PPA uploads.
+        """Verifying the size quota check for PPA uploads.
 
         New source uploads are submitted to the size quota check, where
         the size of the upload plus the current PPA size must be smaller
@@ -252,7 +252,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         automatically generated, rejecting them would just cause unnecessary
         hassle.
         """
-        # Reducing the target PPA size quota.
+        # Reducing the target PPA size quota to 1 byte.
         self.name16.archive.authorized_size = 1
 
         # Since the authorized_size is very low the upload will be rejected.
@@ -278,7 +278,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         self.assertEmail(contents)
 
         # Create a build record for source bar in breezy-i386
-        # distroarchseries and setup a appropriate upload policy
+        # distroarchseries, and setup a appropriate upload policy
         # in preparation to the corresponding binary upload.
         pub_sources = self.name16.archive.getPublishedSources(name='bar')
         [pub_bar] = pub_sources
@@ -288,14 +288,14 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         self.options.context = 'buildd'
         self.options.buildid = build_bar_i386.id
 
-        # Drastically reducing the size quota again to check if it doesn't
+        # Drastically reduce the size quota again to check if it doesn't
         # affect binary uploads as expected.
         self.name16.archive.authorized_size = 1
 
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        # The binary upload was accepted and it's waiting in the queue.
+        # The binary upload was accepted, and it's waiting in the queue.
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
             version="1.0-1", exact_match=True, archive=self.name16.archive)
