@@ -150,6 +150,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def add_release(self):
         text = 'Register a release'
         return Link('+addrelease', text, icon='add')
