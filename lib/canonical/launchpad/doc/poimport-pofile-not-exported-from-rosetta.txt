@@ -144,11 +144,11 @@ Now, attach the file again, but this time as published.
   >>> entry = translation_import_queue.addOrUpdateEntry(
   ...     pofile.path, pofile_contents, published, person,
   ...     productseries=series, potemplate=potemplate, pofile=pofile)
+  >>> transaction.commit()
 
 We must approve the entry to be able to import it.
 
   >>> entry.status = RosettaImportStatus.APPROVED
-  >>> transaction.commit()
 
 We do the import.
 
