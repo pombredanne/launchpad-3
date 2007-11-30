@@ -388,8 +388,8 @@ Ensure the file is no longer listed.
 
 Download files are shown on the page for the product release.
 
-    >>> firefox_owner.open('http://launchpad.dev/firefox/trunk/0.9')
-    >>> content = find_main_content(firefox_owner.contents)
+    >>> non_owner.open('http://launchpad.dev/firefox/trunk/0.9')
+    >>> content = find_main_content(non_owner.contents)
     >>> rows = content.findAll('tr')
     >>> for row in rows[1:]:
     ...     a_list = row.findAll('a')
@@ -397,21 +397,36 @@ Download files are shown on the page for the product release.
     ...        print a_list[0].string
     foo09.txt
 
+Non-administrators do not have the delete option.
+
+    >>> row = content.find('table').find('tr')
+    >>> print extract_text(row)
+    Download
+    Description
+
+And no "Delete Files" button is shown.
+
+    >>> non_owner.getControl('Delete Files')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Delete Files'
+
 As with the other listing, the administrators have the option to
 delete files.  In this context the 'Release' column would be redundant
 so it is not shown.
 
+    >>> firefox_owner.open('http://launchpad.dev/firefox/trunk/0.9')
+    >>> content = find_main_content(firefox_owner.contents)
     >>> row = content.find('table').find('tr')
     >>> print extract_text(row)
     Delete
     Download
     Description
 
-Non-administrators do not have the delete option.
+A "Delete Files" button is available.
 
-    >>> non_owner.open('http://launchpad.dev/firefox/trunk/0.9')
-    >>> content = find_main_content(non_owner.contents)
-    >>> row = content.find('table').find('tr')
-    >>> print extract_text(row)
-    Download
-    Description
+    >>> checkbox = firefox_owner.getControl(name="checkbox_0")
+    >>> checkbox.value = checkbox.options
+    >>> firefox_owner.getControl('Delete Files').click()
+    >>> get_feedback_messages(firefox_owner.contents)
+    [u'1 file has been deleted.']
