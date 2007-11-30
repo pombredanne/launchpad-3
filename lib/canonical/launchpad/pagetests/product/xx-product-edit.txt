@@ -38,8 +38,7 @@ Now we test if we edited it successfully.
   True
 
 
-Setting Development Focus
-=========================
+== Setting Development Focus ==
 
 The Firefox product's trunk series is set as the development focus:
 
@@ -69,8 +68,7 @@ We can change this to the 1.0 series through the edit form:
   ...
 
 
-Renaming Products
-=================
+== Renaming Products ==
 
 First a user adds a product named newproductname.
 
@@ -124,3 +122,31 @@ be accepted because there is no product called newproductname3
   >>> admin_browser.getControl(name='field.actions.change').click() 
   >>> print admin_browser.url
   http://launchpad.dev/newproductname3
+
+
+== Registry Experts ==
+
+Regular joes can't edit any old project:
+
+  >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+  >>> browser.open('http://launchpad.dev/firefox/+edit')
+  Traceback (most recent call last):
+  ...
+  Unauthorized:...
+
+But if we add them to the Registry Experts team:
+
+  >>> admin_browser.open("http://launchpad.dev/~registry/+addmember")
+  >>> admin_browser.getControl('New member').value = 'no-priv'
+  >>> admin_browser.getControl('Add Member').click()
+
+They sure can:
+
+  >>> browser.open('http://launchpad.dev/firefox/+edit')
+  >>> browser.getControl('Title').value = 'Mozilla Firefox by no-priv'
+  >>> browser.getControl('Change').click()
+  >>> browser.url
+  'http://launchpad.dev/firefox'
+  >>> browser.title
+  'Mozilla Firefox by no-priv in Launchpad'
+

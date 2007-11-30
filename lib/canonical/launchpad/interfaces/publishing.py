@@ -164,10 +164,12 @@ class IFilePublishing(Interface):
             title=_('Component name'), required=True, readonly=True,
             )
     publishingstatus = Int(
-            title=_('Package publishing status'), required=True, readonly=True,
+            title=_('Package publishing status'), required=True,
+            readonly=True,
             )
     pocket = Int(
-            title=_('Package publishing pocket'), required=True, readonly=True,
+            title=_('Package publishing pocket'), required=True,
+            readonly=True,
             )
     archive = Int(
             title=_('Archive ID'), required=True, readonly=True,
@@ -240,7 +242,8 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
             required=False, readonly=False,
             )
     scheduleddeletiondate = Datetime(
-            title=_('The date on which this record is scheduled for deletion'),
+            title=_('The date on which this record is scheduled for '
+                    'deletion'),
             required=False, readonly=False,
             )
     pocket = Int(
@@ -263,7 +266,8 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
             required=True, readonly=False,
             )
     datemadepending = Datetime(
-            title=_('The date on which this record was set as pending removal'),
+            title=_('The date on which this record was set as pending '
+                    'removal'),
             required=False, readonly=False,
             )
     dateremoved = Datetime(
@@ -375,7 +379,8 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
             required=False, readonly=False,
             )
     scheduleddeletiondate = Datetime(
-            title=_('The date on which this record is scheduled for deletion'),
+            title=_('The date on which this record is scheduled for '
+                    'deletion'),
             required=False, readonly=False,
             )
     status = Int(
@@ -399,7 +404,8 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
             required=False, readonly=False,
             )
     datemadepending = Datetime(
-            title=_('The date on which this record was set as pending removal'),
+            title=_('The date on which this record was set as pending '
+                    'removal'),
             required=False, readonly=False,
             )
     dateremoved = Datetime(
@@ -487,6 +493,15 @@ class PackagePublishingStatus(DBEnumeratedType):
         Records in this state contain a reference to the Launchpad user
         responsible for the deletion and a text comment with the removal
         reason.
+        """)
+
+    OBSOLETE = DBItem(5, """
+        Obsolete
+
+        When a distroseries becomes obsolete, its published packages
+        are no longer required in the archive.  The publications for
+        those packages are marked as "obsolete" and are subsequently
+        removed during domination and death row processing.
         """)
 
 
