@@ -149,7 +149,8 @@ class MailingListTeamBaseView(LaunchpadFormView):
         """
         beta_testers_team = getUtility(IPersonSet).getByName(
             config.mailman.beta_testers_team)
-        return (self.context.hasParticipationEntryFor(beta_testers_team) and
+        return (beta_testers_team is not None and
+                self.context.hasParticipationEntryFor(beta_testers_team) and
                 not self.list_is_usable)
 
     @property
@@ -350,9 +351,13 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         """
         beta_testers_team = getUtility(IPersonSet).getByName(
             config.mailman.beta_testers_team)
-        if self.context.hasParticipationEntryFor(beta_testers_team):
+        if (beta_testers_team is not None and
+            self.context.hasParticipationEntryFor(beta_testers_team)):
+            # It's okay to let this team configure its mailing list, so let
+            # the normal view initialization procedure continue.
             super(TeamMailingListConfigurationView, self).initialize()
         else:
+            # Pretend as if this view doesn't exist at all.
             raise NotFound(self, '+mailinglist', request=self.request)
 
     @action('Save', name='save')
