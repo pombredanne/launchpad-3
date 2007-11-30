@@ -14,6 +14,17 @@ database submissions by this person.
     Fujitsu CY26  ...             test.txt          ...
     TONKA TUFFBOOK2600 ...        hwsubmission1.xml ...
 
+The 'System' and 'Raw' columns should contain valid links for that
+submission.
+
+    >>> system_link = anon_browser.getLink('Fujitsu CY26')
+    >>> system_link.url
+    'http://launchpad.dev/+hwdb/+fingerprint/Fujitsu CY26'
+
+    >>> raw_link = anon_browser.getLink('text')
+    >>> raw_link.url
+    'http://launchpad.dev/+hwdb/+submission/unique-id-1'
+
 Submissions that are marked as private are only displayed to the 
 submitter himself.
 
