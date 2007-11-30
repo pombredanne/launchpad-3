@@ -95,6 +95,11 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         # This Deferred is fired only when the child process has terminated
         # *and* any other operations have completed.
         self._termination_deferred = deferred
+        # When an unexpected error occurs, we terminate the subprocess which
+        # will cause processEnded to be called with a ProcessTerminated
+        # failure -- which isn't very interesting, we want to report to the
+        # listener _why_ we killed the process so we store that here.
+        self._termination_failure = None
         self.listener = listener
         self._resetState()
         self._stderr = StringIO()
@@ -210,19 +215,25 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         or sending an recognized command, or sending the wrong number of
         arguments for a command etc.
 
-        Calling this method kills the child process and fires the completion
-        deferred that was provided to the constructor.
+        Calling this method kills the child process and records the failure
+        for later use by processEnded().
         """
-        self.unexpected_error_received = True
+        self._termination_failure = failure
         try:
             self.transport.signalProcess('KILL')
         except error.ProcessExitedAlready:
             # The process has already died. Fine.
             pass
-        self._processTerminated(failure)
 
     def processEnded(self, reason):
+        """See `ProcessProtocol.processEnded`.
+
+        Fires the termination deferred with reason or, if the process died
+        because we killed it, why we killed it.
+        """
         ProcessProtocol.processEnded(self, reason)
+        if self._termination_failure:
+            reason = self._termination_failure
         self._processTerminated(reason)
 
 

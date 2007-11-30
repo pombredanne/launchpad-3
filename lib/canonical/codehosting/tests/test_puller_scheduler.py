@@ -130,7 +130,9 @@ class TestPullerMasterProtocol(TrialTestCase):
         transport.
         """
 
-        def __init__(self):
+        def __init__(self, protocol, clock):
+            self.protocol = protocol
+            self.clock = clock
             self.calls = []
 
         def loseConnection(self):
@@ -138,6 +140,8 @@ class TestPullerMasterProtocol(TrialTestCase):
 
         def signalProcess(self, signal_name):
             self.calls.append(('signalProcess', signal_name))
+            reason = failure.Failure(error.ProcessTerminated())
+            self.clock.callLater(0, self.protocol.processEnded, reason)
 
 
     def setUp(self):
@@ -147,11 +151,12 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.clock = task.Clock()
         self.protocol = scheduler.PullerMasterProtocol(
             self.termination_deferred, self.listener, self.clock)
-        self.protocol.transport = self.StubTransport()
+        self.protocol.transport = self.StubTransport(self.protocol, self.clock)
         self.protocol.connectionMade()
 
     def assertProtocolSuccess(self):
-        self.assertEqual(False, self.protocol.unexpected_error_received)
+        """Assert that the protocol saw no unexpected errors."""
+        self.assertEqual(None, self.protocol._termination_failure)
 
     def convertToNetstring(self, string):
         return '%d:%s,' % (len(string), string)
@@ -290,6 +295,9 @@ class TestPullerMasterProtocol(TrialTestCase):
         """
         self.protocol.outReceived(self.convertToNetstring('foo'))
 
+        # Give the process time to die.
+        self.clock.advance(1)
+
         def check_failure(exception):
             self.assertEqual(
                 [('signalProcess', 'KILL')], self.protocol.transport.calls)
@@ -305,6 +313,9 @@ class TestPullerMasterProtocol(TrialTestCase):
         netstring.
         """
         self.protocol.outReceived('foo')
+
+        # Give the process time to die.
+        self.clock.advance(1)
 
         def check_failure(exception):
             self.assertEqual(
