@@ -27,7 +27,7 @@ from bzrlib.tests import TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
 
 from canonical.codehosting.tests.helpers import (
-    adapt_suite, deferToThread, BranchTestCase, ServerTestCase)
+    adapt_suite, deferToThread, ServerTestCase)
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting import branch_id_to_path
@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
 from canonical.testing import TwistedLayer
 
 
-class SSHTestCase(ServerTestCase, BranchTestCase):
+class SSHTestCase(ServerTestCase, TestCaseWithTransport):
 
     layer = TwistedLayer
     server = None
