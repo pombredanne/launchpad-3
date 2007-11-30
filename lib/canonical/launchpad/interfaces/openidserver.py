@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
         'IOpenIdAuthorization',
         'IOpenIdAuthorizationSet',
+        'IOpenIDPersistentIdentity',
         'IOpenIDRPConfig',
         'IOpenIDRPConfigSet',
         'ILaunchpadOpenIdStoreFactory',
@@ -133,6 +134,14 @@ class IOpenIDRPConfigSet(Interface):
 
     def getByTrustRoot(trust_root):
         """Return the IOpenIdRPConfig for a particular trust root"""
+
+
+class IOpenIDPersistentIdentity(Interface):
+    """An object that represents a persistent user identity URL.
+
+    This interface is used purely for use in the UI.
+    """
+    person = Attribute('The IPerson this is for')
 
 
 class ILoginServiceAuthorizeForm(Interface):

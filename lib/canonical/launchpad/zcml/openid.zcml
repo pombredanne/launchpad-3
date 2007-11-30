@@ -10,14 +10,12 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IOpenIdApplication"
-        path_expression="string:"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-        rootsite="openid"
+        urldata="canonical.launchpad.browser.openiddiscovery.OpenIdApplicationURL"
         />
 
     <!-- Root navigation -->
     <browser:navigation
-        module="canonical.launchpad.browser.openidserver"
+        module="canonical.launchpad.browser.openiddiscovery"
         classes="OpenIdApplicationNavigation"
         />
 
@@ -40,6 +38,40 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IOpenIdApplication"
         name="+index"
+        />
+
+    <!-- OpenID persistent identity URLs -->
+    <content
+        class="canonical.launchpad.browser.openiddiscovery.OpenIDPersistentIdentity">
+      <allow
+          interface="canonical.launchpad.interfaces.IOpenIDPersistentIdentity" />
+    </content>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
+        path_expression="string:+id/${person/openid_identifier}"
+        parent_utility="canonical.launchpad.interfaces.IOpenIdApplication"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
+        name="+index"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
+        name="+index"
+        template="../templates/openidpersistentidentity-index.pt"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.openiddiscovery.PersistentIdentityView"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
+        name="+xrds"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.openiddiscovery.PersistentIdentityView"
+        attribute="xrds"
         />
 
     <!-- OpenID Provider -->
@@ -90,14 +122,6 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.openidserver.ProtocolErrorView"
         />
-
-    <!-- XXX: StuartBishop 2007-06-13: May be dropped - in discussion.
-      http://openid.launchpad.dev/$Person.name identity URLs
-    -->
-    <content
-        class="canonical.launchpad.browser.openidserver.OpenIdIdentityView">
-      <allow attributes="browserDefault __call__" />
-    </content>
 
     <!-- IOpenIDRPConfig -->
     <content
