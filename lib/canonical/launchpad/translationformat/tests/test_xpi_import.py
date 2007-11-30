@@ -141,7 +141,8 @@ class XpiTestCase(unittest.TestCase):
             'msgid and singular_text should be different but both are %s' % (
                 message.msgid_singular.msgid))
 
-        # Plural forms should be None as this format is not able to handle that.
+        # Plural forms should be None as this format is not able to handle
+        # them.
         self.assertEquals(message.msgid_plural, None)
         self.assertEquals(message.plural_text, None)
 
@@ -257,7 +258,8 @@ class XpiTestCase(unittest.TestCase):
         # The status is now IMPORTED:
         sync(translation_entry)
         sync(template_entry)
-        self.assertEquals(translation_entry.status, RosettaImportStatus.IMPORTED)
+        self.assertEquals(translation_entry.status,
+            RosettaImportStatus.IMPORTED)
         self.assertEquals(template_entry.status, RosettaImportStatus.IMPORTED)
 
         # Let's validate the content of the messages.
