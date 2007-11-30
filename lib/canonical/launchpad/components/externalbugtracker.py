@@ -228,6 +228,9 @@ class ExternalBugTracker:
         if self.batch_size is not None:
             bug_watches = bug_watches[:self.batch_size]
 
+        log.info("Updating %i watches on %s" % (bug_watches.count(),
+            bug_tracker_url))
+
         for bug_watch in bug_watches:
             remote_bug = bug_watch.remotebug
             # There can be multiple bug watches pointing to the same
