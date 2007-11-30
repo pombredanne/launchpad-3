@@ -125,14 +125,15 @@ class TestExternalBugTracker(ExternalBugTracker):
     implementation, though it doesn't actually do anything.
     """
 
-    def __init__(self):
+    def __init__(self, bugtracker=None):
         """Initialise a new `TestExternalBugTracker`.
 
         This method exists because the tests that use this class don't
         need to know about `BugTracker` objects or the new_bugtracker
         function.
         """
-        pass
+        if bugtracker is not None:
+            super(TestExternalBugTracker, self).__init__(bugtracker)
 
     def convertRemoteStatus(self, remote_status):
         """Always return UNKNOWN_REMOTE_STATUS.

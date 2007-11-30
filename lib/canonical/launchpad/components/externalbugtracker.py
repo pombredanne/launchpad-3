@@ -228,6 +228,11 @@ class ExternalBugTracker:
         if self.batch_size is not None:
             bug_watches = bug_watches[:self.batch_size]
 
+        # Some tests pass a list of bug watches whilst checkwatches.py
+        # will pass a SelectResults instance. We convert bug_watches to a
+        # list here to ensure that were're doing sane things with it
+        # later on.
+        bug_watches = list(bug_watches)
         log.info("Updating %i watches on %s" %
             (len(bug_watches), bug_tracker_url))
 
