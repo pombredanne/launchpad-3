@@ -1115,7 +1115,6 @@ k            </description>
 
     <sectiontype name="checkwatches">
         <key name="dbuser" datatype="string" default="checkwatches" />
-        <key name="batch_set_size" datatype="integer" default="0" />
         <key name="batch_query_threshold" datatype="integer" default="10" />
         <key name="default_socket_timeout" datatype="integer" default="30" />
     </sectiontype>

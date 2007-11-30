@@ -129,26 +129,7 @@ class ExternalBugTracker:
 
     implements(IExternalBugTracker)
     batch_query_threshold = config.checkwatches.batch_query_threshold
-
-    # We obfuscate the batch_set_size config option so that we account
-    # for any situations in which it's 0, which translates to offering
-    # no limit on batch set size at all. See the batch_set_size property
-    # below.
-    _batch_set_size = config.checkwatches.batch_set_size
-
-    @property
-    def batch_set_size(self):
-        """Return the batch set size for the `ExternalBugTracker`.
-
-        If the _batch_set_size attribute for the current
-        `ExternalBugTracker` subclass is 0, meaning that no limit will
-        be offered on batch set sizes, None will be returned. Otherwise
-        the value of _batch_set_size will be returned.
-        """
-        if self._batch_set_size == 0:
-            return None
-        else:
-            return self._batch_set_size
+    batch_size = None
 
     def __init__(self, bugtracker):
         self.bugtracker = bugtracker
@@ -162,12 +143,6 @@ class ExternalBugTracker:
 
         It's optional to override this method.
         """
-        # We limit the number of bugs we're going to fetch to that
-        # specififed by the batch_set_size property. That way we won't
-        # overload those remote systems that don't take kindly to huge
-        # exports.
-        bug_ids = bug_ids[:self.batch_set_size]
-
         self.bugs = {}
         if len(bug_ids) > self.batch_query_threshold:
             self.bugs = self.getRemoteBugBatch(bug_ids)
@@ -247,6 +222,11 @@ class ExternalBugTracker:
         # error after a transaction has been aborted.
         bug_tracker_url = self.baseurl
         bug_watches_by_remote_bug = {}
+
+        # We limit the number of watches we're updating by the
+        # ExternalBugTracker's batch_size.
+        if self.batch_size is not None:
+            bug_watches = bug_watches[:self.batch_size]
 
         for bug_watch in bug_watches:
             remote_bug = bug_watch.remotebug
