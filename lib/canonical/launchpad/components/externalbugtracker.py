@@ -29,7 +29,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTrackerType, BugWatchErrorType, CreateBugParams,
-    IBugWatchSet, IDistribution, IExternalBugtracker, ILaunchpadCelebrities,
+    IBugWatchSet, IDistribution, IExternalBugTracker, ILaunchpadCelebrities,
     IPersonSet, PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests
@@ -129,7 +129,7 @@ def get_bugwatcherrortype_for_error(error):
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
 
-    implements(IExternalBugtracker)
+    implements(IExternalBugTracker)
     batch_query_threshold = config.checkwatches.batch_query_threshold
 
     def __init__(self, bugtracker):
@@ -306,7 +306,7 @@ class ExternalBugTracker:
 class Bugzilla(ExternalBugTracker):
     """A class that deals with communications with a remote Bugzilla system."""
 
-    implements(IExternalBugtracker)
+    implements(IExternalBugTracker)
     batch_query_threshold = 0 # Always use the batch method.
 
     def __init__(self, bugtracker, version=None):
@@ -383,7 +383,7 @@ class Bugzilla(ExternalBugTracker):
         return version
 
     def convertRemoteStatus(self, remote_status):
-        """See `IExternalBugtracker`.
+        """See `IExternalBugTracker`.
 
         Bugzilla status consist of two parts separated by space, where
         the last part is the resolution. The resolution is optional.
@@ -581,7 +581,7 @@ debbugsstatusmap = {'open':      BugTaskStatus.NEW,
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
 
-    implements(IExternalBugtracker)
+    implements(IExternalBugTracker)
 
     # We don't support different versions of debbugs.
     version = None
@@ -1319,7 +1319,7 @@ class Trac(ExternalBugTracker):
                 return UNKNOWN_REMOTE_STATUS
 
     def convertRemoteStatus(self, remote_status):
-        """See `IExternalBugtracker`"""
+        """See `IExternalBugTracker`"""
         status_map = {
             'assigned': BugTaskStatus.CONFIRMED,
             # XXX: 2007-08-06 Graham Binns:
@@ -1527,7 +1527,7 @@ class Roundup(ExternalBugTracker):
                     "Remote bug %s does not define a status.")
 
     def convertRemoteStatus(self, remote_status):
-        """See `IExternalBugtracker`."""
+        """See `IExternalBugTracker`."""
         # XXX: 2007-09-04 Graham Binns
         #      We really shouldn't have to do this here because we
         #      should logically never be passed UNKNOWN_REMOTE_STATUS as
@@ -1666,7 +1666,7 @@ class SourceForge(ExternalBugTracker):
 
 
     def convertRemoteStatus(self, remote_status):
-        """See `IExternalBugtracker`."""
+        """See `IExternalBugTracker`."""
         # XXX: 2007-09-06 Graham Binns
         #      We shouldn't have to do this, but
         #      ExternalBugTracker.updateBugWatches() will pass us

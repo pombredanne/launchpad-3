@@ -24,8 +24,7 @@ Add a new project without the http://
   >>> admin_browser.getControl('Description').value = 'K Desktop Environment'
   >>> admin_browser.getControl('Homepage URL').value = 'www.kde.org'
   >>> admin_browser.getControl('Add').click()
-  >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
-  ...     print message.renderContents()
+  >>> print "\n".join(get_feedback_messages(admin_browser.contents))
   There is 1 error.
   "www.kde.org" is not a valid URI
 
@@ -39,17 +38,15 @@ Testing if the validator is working for the name field.
   >>> admin_browser.getControl('Description').value = 'K Desktop Environment'
   >>> admin_browser.getControl('Homepage URL').value = 'http://kde.org/'
   >>> admin_browser.getControl('Add').click()
-  >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
-  ...     print message.renderContents()
+  >>> print "\n".join(get_feedback_messages(admin_browser.contents))
   There is 1 error.
   Invalid name 'kde!'. Names must...
 
   >>> admin_browser.getControl('Name', index=0).value = 'apache'
   >>> admin_browser.getControl('Add').click()
-  >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
-  ...     print message.renderContents()
+  >>> print "\n".join(get_feedback_messages(admin_browser.contents))
   There is 1 error.
-  apache is already in use by another project
+  apache is already used by another project
 
 Now we add a new project.
 

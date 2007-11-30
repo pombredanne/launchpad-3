@@ -21,10 +21,9 @@ from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.database import BRANCH_NAME_VALIDATION_ERROR_MESSAGE
 from canonical.launchpad.interfaces import (
-    BranchType, EmailAddressStatus, IBranchSet, IEmailAddressSet, IPersonSet,
-    IProductSet, IWikiNameSet)
+    BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE, EmailAddressStatus,
+    IBranchSet, IEmailAddressSet, IPersonSet, IProductSet, IWikiNameSet)
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
@@ -419,7 +418,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
     def test_createBranch_bad_product(self):
         # Test that creating a branch for a non-existant product fails.
         storage = DatabaseUserDetailsStorageV2(None)
-        message = "Product 'no-such-product' does not exist."
+        message = "Project 'no-such-product' does not exist."
         self.assertRaisesFault(
             NOT_FOUND_FAULT_CODE, message,
             storage._createBranchInteraction,
@@ -440,7 +439,8 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         storage = DatabaseUserDetailsStorageV2(None)
         self.assertRaisesFault(
             PERMISSION_DENIED_FAULT_CODE,
-            BRANCH_NAME_VALIDATION_ERROR_MESSAGE,
+            ("Invalid branch name 'invalid name!'. %s" %
+                BRANCH_NAME_VALIDATION_ERROR_MESSAGE),
             storage._createBranchInteraction,
             12, 'name12', 'firefox', 'invalid name!')
 
