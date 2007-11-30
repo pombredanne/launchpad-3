@@ -314,6 +314,8 @@ bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Confirm project')
 
 bugtask_view = BugTaskPageTitle()
 
+bugtask_non_contributor_assignee_confirm = 'Confirm bug assignment'
+
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
 
