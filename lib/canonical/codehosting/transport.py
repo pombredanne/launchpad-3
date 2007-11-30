@@ -3,8 +3,12 @@
 """Bazaar transport for the Launchpad code hosting file system."""
 
 __metaclass__ = type
-__all__ = ['LaunchpadServer', 'LaunchpadTransport', 'set_up_logging',
-           'UntranslatablePath']
+__all__ = [
+    'LaunchpadServer',
+    'LaunchpadTransport',
+    'set_up_logging',
+    'UntranslatablePath',
+    ]
 
 import logging
 import os
@@ -22,6 +26,7 @@ from bzrlib.transport import (
     )
 
 from twisted.web.xmlrpc import Fault
+from twisted.python import log as tplog
 
 from canonical.authserver.interfaces import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY)
@@ -30,6 +35,7 @@ from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bazaarfs import (
     ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR, is_lock_directory)
 from canonical.config import config
+from canonical.launchpad.webapp import errorlog
 
 
 def split_with_padding(a_string, splitter, num_fields, padding=None):
@@ -73,6 +79,20 @@ def get_path_segments(path):
     return path.strip('/').split('/')
 
 
+def oops_reporting_observer(args):
+    """A log observer for twisted's logging system that reports OOPSes."""
+    if args.get('isError', False) and 'failure' in args:
+        log = logging.getLogger('codehosting')
+        try:
+            failure = args['failure']
+            request = errorlog.ScriptRequest([])
+            errorlog.globalErrorUtility.raising(
+                (failure.type, failure.value, failure.getTraceback()), request,)
+            log.info("Logged OOPS id %s."%(request.oopsid,))
+        except:
+            log.exception("Error reporting OOPS:")
+
+
 class _NotFilter(logging.Filter):
     """A Filter that only allows records that do *not* match.
 
@@ -84,12 +104,16 @@ class _NotFilter(logging.Filter):
         return not logging.Filter.filter(self, record)
 
 
-def set_up_logging():
+def set_up_logging(configure_oops_reporting=False):
     """Set up logging for the smart server.
 
     This sets up a debugging handler on the 'codehosting' logger, makes sure
     that things logged there won't go to stderr (necessary because of
     bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
+
+    In addition, if configure_oops_reporting is True, install a
+    Twisted log observer that ensures unhandled exceptions get
+    reported as OOPSes.
     """
     log = logging.getLogger('codehosting')
 
@@ -114,6 +138,15 @@ def set_up_logging():
         trace._stderr_handler.addFilter(_NotFilter('codehosting'))
 
     log.setLevel(logging.DEBUG)
+
+    if configure_oops_reporting:
+        errorreports = config.codehosting
+
+        config.launchpad.errorreports.oops_prefix = errorreports.oops_prefix
+        config.launchpad.errorreports.errordir = errorreports.errordir
+        config.launchpad.errorreports.copy_to_zlog = errorreports.copy_to_zlog
+        tplog.addObserver(oops_reporting_observer)
+
     return log
 
 

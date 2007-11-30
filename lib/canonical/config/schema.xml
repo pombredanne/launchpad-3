@@ -967,7 +967,7 @@ k            </description>
             required="no" />
     </sectiontype>
 
-    <sectiontype name="codehosting">
+    <sectiontype name="codehosting" extends="script_errorreports">
         <key name="authserver" datatype="string" />
         <key name="host_key_pair_path" datatype="string" />
         <key name="branches_root" datatype="string" />
