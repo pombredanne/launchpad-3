@@ -1105,12 +1105,11 @@ k            </description>
         <key name="xmlrpc_url" datatype="string"
              default="http://xmlrpc-private.launchpad.dev:8087/mailinglists" />
         <key name="xmlrpc_runner_sleep" datatype="integer" default="10" />
-        <!-- XXX: A temporary key to control whether or not the functionality
-        related to hosted mailing lists is exposed in the UI.
-        https://launchpad.net/launchpad/+spec/team-mailing-list-beta-program
-        - Guilherme Salgado 2007-09-14 -->
-        <key name="expose_hosted_mailing_lists" datatype="boolean"
-             default="false" />
+        <!-- XXX BarryWarsaw 30-Nov-2007 This is a temporary entry to control
+             beta testing of the mailing list feature.  It goes away when
+             mailing lists go public. -->
+        <key name="beta_testers_team" datatype="string"
+             default="mailing-list-beta-testers" />
     </sectiontype>
 
     <sectiontype name="checkwatches">

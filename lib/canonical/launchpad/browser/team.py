@@ -19,7 +19,7 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.publisher.interfaces import NotFound
-from zope.schema import Choice, TextLine
+from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.database.sqlbase import flush_database_updates
@@ -143,10 +143,13 @@ class MailingListTeamBaseView(LaunchpadFormView):
     def can_create_mailing_list(self):
         """Is it allowed to create a mailing list for this team?
 
-        `list_is_usable` must return false and mailing lists must
-        be enabled. Once mailing lists are enabled globally, this should
-        be replacable with not list_is_usable."""
-        return (config.mailman.expose_hosted_mailing_lists and
+        `list_is_usable` must return false and mailing lists must be enabled
+        for this team.  Once mailing lists are enabled globally, this should
+        be replacable with not list_is_usable.
+        """
+        beta_testers_team = getUtility(IPersonSet).getByName(
+            config.mailman.beta_testers_team)
+        return (self.context.hasParticipationEntryFor(beta_testers_team) and
                 not self.list_is_usable)
 
     @property
@@ -199,8 +202,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
             if term.value == TeamContactMethod.HOSTED_LIST:
                 hosted_list_term_index = i
                 break
-        if (config.mailman.expose_hosted_mailing_lists
-            and self.list_is_usable):
+        if self.list_is_usable:
             # The team's mailing list can be used as the contact
             # address. However we need to change the title of the
             # corresponding term to include the list's email address.
@@ -341,14 +343,17 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         self.mailing_list = list_set.get(self.context.name)
 
     def initialize(self):
-        """Hide this view if mailing lists are disabled.
+        """Hide this view if mailing lists are not enabled for this team.
 
         Once mailing lists are enabled globally, this method should be
         removed.
         """
-        if not config.mailman.expose_hosted_mailing_lists:
+        beta_testers_team = getUtility(IPersonSet).getByName(
+            config.mailman.beta_testers_team)
+        if self.context.hasParticipationEntryFor(beta_testers_team):
+            super(TeamMailingListConfigurationView, self).initialize()
+        else:
             raise NotFound(self, '+mailinglist', request=self.request)
-        super(TeamMailingListConfigurationView, self).initialize()
 
     @action('Save', name='save')
     def save_action(self, action, data):

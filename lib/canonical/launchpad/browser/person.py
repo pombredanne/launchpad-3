@@ -144,7 +144,7 @@ from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView, 
+    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, smartquote, StandardLaunchpadFacets, stepthrough, stepto)
 
 from canonical.launchpad import _
@@ -969,7 +969,10 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+mailinglist'
         text = 'Configure mailing list'
         mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        enabled = config.mailman.expose_hosted_mailing_lists
+        beta_testers_team = getUtility(IPersonSet).getByName(
+            config.mailman.beta_testers_team)
+        enabled = (beta_testers_team is not None and
+                   self.context.hasParticipationEntryFor(beta_testers_team))
         summary = (
             'The mailing list associated with %s' % self.context.browsername)
         return Link(target, text, summary, enabled=enabled, icon='edit')
