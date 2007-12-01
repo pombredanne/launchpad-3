@@ -28,9 +28,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugTrackerType, BugWatchErrorType, CreateBugParams,
-    IBugWatchSet, IDistribution, IExternalBugTracker, ILaunchpadCelebrities,
-    IPersonSet, PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+    BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
+    CreateBugParams, IBugWatchSet, IDistribution, IExternalBugTracker,
+    ILaunchpadCelebrities, IPersonSet, PersonCreationRationale,
+    UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
@@ -262,6 +263,8 @@ class ExternalBugTracker:
             try:
                 new_remote_status = None
                 new_malone_status = None
+                new_remote_importance = None
+                new_malone_importance = None
                 error = None
 
                 # XXX: 2007-10-17 Graham Binns
@@ -272,6 +275,10 @@ class ExternalBugTracker:
                     new_remote_status = self.getRemoteStatus(bug_id)
                     new_malone_status = self.convertRemoteStatus(
                         new_remote_status)
+
+                    new_remote_importance = self.getRemoteImportance(bug_id)
+                    new_malone_importance = self.convertRemoteImportance(
+                        new_remote_importance)
                 except InvalidBugId:
                     error = BugWatchErrorType.INVALID_BUG_ID
                     log.warn("Invalid bug %r on %s (local bugs: %s)." %
@@ -1347,6 +1354,7 @@ class Trac(ExternalBugTracker):
         except KeyError:
             log.warn("Unknown remote status '%s'." % remote_status)
             return BugTaskStatus.UNKNOWN
+
 
 class Roundup(ExternalBugTracker):
     """An ExternalBugTracker descendant for handling Roundup bug trackers."""

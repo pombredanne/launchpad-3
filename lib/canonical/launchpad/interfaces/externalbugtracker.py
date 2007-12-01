@@ -16,8 +16,9 @@ from zope.interface import Interface
 # unknown for some reason.
 # XXX: Bjorn Tillenius 2006-04-06:
 #      We should store the actual reason for the error somewhere. This
-#      would allow us to get rid of this text constant.
+#      would allow us to get rid of these text constants.
 UNKNOWN_REMOTE_STATUS = 'UNKNOWN'
+UNKNOWN_REMOTE_IMPORTANCE = 'UNKNOWN'
 
 
 class IExternalBugTracker(Interface):
