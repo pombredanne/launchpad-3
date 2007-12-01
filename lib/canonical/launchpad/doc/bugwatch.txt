@@ -283,7 +283,6 @@ Finally, let's make sure that bug notifications were added:
     ...     print bug_notification.message.text_contents
     Bug 1 changed by Bug Watch Updater:
     ** Changed in: mozilla-firefox (Debian)
-       Importance: Low => Unknown
            Status: Confirmed => New
 
     >>> event_listener.unregister()

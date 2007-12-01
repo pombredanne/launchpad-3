@@ -293,7 +293,10 @@ class ExternalBugTracker:
                     bug_watch.last_error_type = error
                     if new_malone_status is not None:
                         bug_watch.updateStatus(new_remote_status,
-                                               new_malone_status)
+                            new_malone_status)
+                    if new_malone_importance is not None:
+                        bug_watch.updateImportance(new_remote_importance,
+                            new_malone_importance)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.

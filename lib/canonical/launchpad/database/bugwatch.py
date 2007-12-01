@@ -80,8 +80,28 @@ class BugWatch(SQLBase):
         """See canonical.launchpad.interfaces.IBugWatch."""
         return True
 
+    def updateImportance(remote_importance, malone_importance):
+        """See `IBugWatch`."""
+        if self.remoteimportance != remote_importance:
+            self.remoteimportance = remote_importance
+            self.lastchanged = UTC_NOW
+            # Sync the object in order to convert the UTC_NOW sql
+            # constant to a datetime value.
+            self.sync()
+
+        for linked_bugtask in self.bugtasks:
+            old_bugtask = Snapshot(
+                linked_bugtask, providing=providedBy(linked_bugtask))
+            linked_bugtask.importance = malone_importance
+
+            if linked_bugtask.importance != old_bugtask.importance:
+                event = SQLObjectModifiedEvent(
+                    linked_bugtask, old_bugtask, ['importance'],
+                    user=getUtility(ILaunchpadCelebrities).bug_watch_updater)
+                notify(event)
+
     def updateStatus(self, remote_status, malone_status):
-        """See IBugWatch."""
+        """See `IBugWatch`."""
         if self.remotestatus != remote_status:
             self.remotestatus = remote_status
             self.lastchanged = UTC_NOW
@@ -94,8 +114,7 @@ class BugWatch(SQLBase):
             linked_bugtask.transitionToStatus(
                 malone_status,
                 getUtility(ILaunchpadCelebrities).bug_watch_updater)
-            # We don't yet support updating the following values.
-            linked_bugtask.importance = BugTaskImportance.UNKNOWN
+            # We don't yet support updating the assignee of bug watches.
             linked_bugtask.transitionToAssignee(None)
             if linked_bugtask.status != old_bugtask.status:
                 event = SQLObjectModifiedEvent(

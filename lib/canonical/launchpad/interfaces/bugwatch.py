@@ -110,6 +110,12 @@ class IBugWatch(IHasBug):
 
     url = Text(title=_('The URL at which to view the remote bug.'), readonly=True)
 
+    def updateImportance(remote_importance, malone_importance):
+        """Update the importance of the bug watch and any linked bug task.
+
+        The lastchanged attribute gets set to the current time.
+        """
+
     def updateStatus(remote_status, malone_status):
         """Update the status of the bug watch and any linked bug task.
 
