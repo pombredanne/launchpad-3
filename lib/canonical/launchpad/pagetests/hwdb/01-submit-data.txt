@@ -15,7 +15,7 @@ All form fields must be filled with valid values.
     ...     'Distribution:': 'ubuntu',
     ...     'Distribution Release:': '5.04',
     ...     'Processor Architecture:': 'i386',
-    ...     'System name:': 'Fujitsu CY26',
+    ...     'System name:': 'Fujitsu_CY26',
     ... }
     >>> submit_data_checkboxes = {
     ...     'Private Submission': False,

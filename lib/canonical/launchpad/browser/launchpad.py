@@ -981,7 +981,7 @@ class AppFrontPageSearchView(LaunchpadFormView):
     @property
     def scope_error(self):
         """The error message for the scope widget."""
-        return self.getWidgetError('scope')
+        return self.getFieldError('scope')
 
 
 class BrowserWindowDimensions(LaunchpadView):

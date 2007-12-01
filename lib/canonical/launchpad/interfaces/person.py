@@ -755,6 +755,15 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             raise Invalid(
                 'You must specify a default renewal period greater than 0.')
 
+    def convertToTeam(team_owner):
+        """Convert this person into a team owned by the given team_owner.
+
+        Also adds the given team owner as an administrator of the team.
+
+        Only Person entries whose account_status is NOACCOUNT and which are
+        not teams can be converted into teams.
+        """
+
     def getActiveMemberships():
         """Return all active TeamMembership objects of this team.
 
@@ -889,6 +898,12 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         <team> can be the id of a team, an SQLObject representing the
         ITeam, or the name of the team.
         """
+
+    def clearInTeamCache():
+        """Clears the person's inTeam cache.
+
+        To be used when membership changes are enacted. Only meant to be
+        used between TeamMembership and Person objects."""
 
     def lastShippedRequest():
         """Return this person's last shipped request, or None."""
@@ -1154,6 +1169,31 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         state, as well as, those not owned by the person but on which the
         person requested for more information or gave an answer and that are
         back in the OPEN state.
+        """
+
+    def isBugContributor(user):
+        """Is the person a contributer to bugs in Launchpad?
+
+        Return True if the user has any bugs assigned to him, either
+        directly or by team participation.
+
+        :user: The user doing the search. Private bugs that this
+        user doesn't have access to won't be included in the
+        count.
+        """
+
+    def isBugContributorInTarget(user, target):
+        """Is the person a contributor to bugs in `target`?
+
+        Return True if the user has any bugs assigned to him in the
+        context of a specific target, either directly or by team
+        participation.
+
+        :user: The user doing the search. Private bugs that this
+        user doesn't have access to won't be included in the
+        count.
+
+        :target: An object providing `IBugTarget` to search within.
         """
 
 

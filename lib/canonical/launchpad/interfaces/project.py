@@ -24,7 +24,6 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
-from canonical.launchpad.interfaces.pillar import PillarNameField
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.sprint import IHasSprints
@@ -32,7 +31,7 @@ from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
-    IconImageUpload, LogoImageUpload, MugshotImageUpload)
+    IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
 
 class ProjectNameField(PillarNameField):

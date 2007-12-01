@@ -623,6 +623,12 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
         body = "\n".join(mirror.base_url for mirror in mirrors)
         self.request.response.setHeader(
             'content-type', 'text/plain;charset=utf-8')
+        if country is None:
+            country_name = 'Unknown'
+        else:
+            country_name = country.name
+        self.request.response.setHeader(
+            'X-Generated-For-Country', country_name)
         return body.encode('utf-8')
 
 

@@ -1,4 +1,4 @@
-Hello,
+Hello %(recipient_name)s,
 
 The membership of %(member_name)s in the %(team_name)s team has expired.
 

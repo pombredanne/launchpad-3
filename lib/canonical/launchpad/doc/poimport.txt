@@ -374,7 +374,7 @@ Now, is time to check the notification email.
 
 Now, let's import one without errors.
 
-    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> pofile_without_errors = r'''
     ... msgid ""
     ... msgstr ""
@@ -484,7 +484,7 @@ the msgid
     >>> print entry.status.name
     IMPORTED
 
-Now, is time to check the notification email.
+The email notification mentions the oddity:
 
     >>> transaction.commit()
 
