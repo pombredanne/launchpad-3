@@ -19,9 +19,10 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import isinstance as zisinstance
 
-from openid.message import IDENTIFIER_SELECT, SREG_URI
 from openid.server.server import CheckIDRequest, ENCODE_URL, Server
 from openid.server.trustroot import TrustRoot
+from openid.sreg import (
+    SRegRequest, SRegResponse, data_fields as sreg_data_fields)
 from openid import oidutil
 
 from canonical.cachedproperty import cachedproperty
@@ -50,20 +51,22 @@ def null_log(message, level=0):
 oidutil.log = null_log
 
 
-SREG_FIELDS = [
-    ('fullname', 'Full name'),
-    ('nickname', 'Launchpad ID'),
-    ('email', 'Email address'),
-    ('timezone', 'Time Zone'),
-    ('x_address1', 'Address line 1'),
-    ('x_address2', 'Address line 2'),
-    ('x_city', 'City'),
-    ('x_province', 'State/Province'),
-    ('country', 'Country'),
-    ('postcode', 'Postcode'),
-    ('x_phone', 'Phone number'),
-    ('x_organization', 'Organization'),
+sreg_data_fields.update({
+    'x_address1': 'Address line 1',
+    'x_address2': 'Address line 2',
+    'x_city': 'City',
+    'x_province': 'Province',
+    'x_phone': 'Phone number',
+    'x_organization': 'Organization',
+    })
+
+
+sreg_data_fields_order = [
+    'fullname', 'nickname', 'email', 'timezone',
+    'x_address1', 'x_address2', 'x_city', 'x_province',
+    'country', 'postcode', 'x_phone', 'x_organization',
     ]
+
 
 class OpenIdMixin:
 
@@ -84,8 +87,8 @@ class OpenIdMixin:
     def isIdentityOwner(self):
         """Return True if the user can authenticate as the given ID."""
         assert self.user is not None, "user should be logged in by now."
-        return self.openid_request.identity in (
-            IDENTIFIER_SELECT, self.user_identity_url)
+        return (self.openid_request.idSelect() or
+                self.openid_request.identity == self.user_identity_url)
 
     @cachedproperty('_openid_parameters')
     def openid_parameters(self):
@@ -162,16 +165,9 @@ class OpenIdMixin:
     @property
     def sreg_field_names(self):
         """Return the list of sreg keys that will be provided to the RP."""
-        # XXX: jamesh 2007-07-09 bug=163718: Port to use openid.sreg module.
-        field_names = set()
-        # Collect the field names requested.  We treat required and
-        # optional parameters the same.
-        if 'openid.sreg.required' in self.openid_parameters:
-            field_names.update(
-                self.openid_parameters['openid.sreg.required'].split(','))
-        if 'openid.sreg.optional' in self.openid_parameters:
-            field_names.update(
-                self.openid_parameters['openid.sreg.optional'].split(','))
+        sreg_request = SRegRequest.fromOpenIDRequest(self.openid_request)
+
+        field_names = set(sreg_request.required + sreg_request.optional)
         # Now subset them based on what keys are allowed from the
         # RP config:
         rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
@@ -180,8 +176,9 @@ class OpenIdMixin:
             field_names.clear()
         else:
             field_names.intersection_update(rpconfig.allowed_sreg)
-        # Sort the list according to SREG_FIELDS
-        return [name for (name, description) in SREG_FIELDS
+
+        # Sort the set of names according to our field order
+        return [name for name in sreg_data_fields_order
                 if name in field_names]
 
     @property
@@ -194,7 +191,6 @@ class OpenIdMixin:
         Shipping information is taken from the last shipped Shipit
         request.
         """
-        # XXX: jamesh 2007-07-09 bug=163718: Port to use openid.sreg module.
         assert self.user is not None, (
             'Must be logged in to calculate sreg items')
         # Collect registration values
@@ -247,7 +243,7 @@ class OpenIdMixin:
         if not self.isIdentityOwner():
             return self.createFailedResponse()
 
-        if self.openid_request.identity == IDENTIFIER_SELECT:
+        if self.openid_request.idSelect():
             response = self.openid_request.answer(
                 True, identity=self.user_identity_url)
         else:
@@ -256,9 +252,10 @@ class OpenIdMixin:
         # Add sreg result data
         sreg_fields = self.sreg_fields
         if sreg_fields:
-            response.fields.namespaces.addAlias(SREG_URI, 'sreg')
-            for (field_name, value) in sreg_fields:
-                response.fields.setArg(SREG_URI, field_name, value)
+            sreg_request = SRegRequest.fromOpenIDRequest(self.openid_request)
+            sreg_response = SRegResponse.extractResponse(
+                sreg_request, dict(sreg_fields))
+            response.addExtension(sreg_response)
 
         return response
 
@@ -371,7 +368,7 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
     def canHandleIdentity(self):
         """Returns True if the identity URL is supported by the server."""
         identity = self.openid_request.identity
-        return (identity == IDENTIFIER_SELECT or
+        return (self.openid_request.idSelect() or
                 identity.startswith(self.identity_url_prefix))
 
     def isAuthorized(self):
