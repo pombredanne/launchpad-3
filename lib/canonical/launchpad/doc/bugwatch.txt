@@ -1,5 +1,4 @@
-Bug Watches
-===========
+= Bug Watches =
 
 Malone is a bug tracker that understands the structure of the Open
 Source world. It's there for people who want to use it, and take
@@ -13,8 +12,8 @@ in a bugtracker outside of Malone. By doing this, we can be kept aware
 of the status of a bug that lives outside Malone for the benefit of
 users and maintainers that are using Malone.
 
-Retrieving Bug Watches
-----------------------
+
+== Retrieving Bug Watches ==
 
 Bug watches are accessed via a utility that provides IBugWatchSet.
 
@@ -99,8 +98,8 @@ If no matching bug watch can be found, None is returned.
     >>> bug_one.getBugWatch(mozilla_bugtracker, 'no-such-bug') is None
     True
 
-Creating Bug Watches
---------------------
+
+== Creating Bug Watches ==
 
 To create a bugwatch, use IBugWatchSet.createBugWatch:
 
@@ -117,8 +116,7 @@ To create a bugwatch, use IBugWatchSet.createBugWatch:
     True
 
 
-Creating SF.net Bug Watches
----------------------------
+== Creating SF.net Bug Watches ==
 
 SourceForge.net bug watch URLs are generated using the
 "/support/tracker.php" script, which will redirect to the URL with the
@@ -133,8 +131,7 @@ group_id and aid arguments filled in:
     >>> bugwatch.url
     u'http://sourceforge.net/support/tracker.php?aid=1337833'
 
-Extracting Bug Watches From Text
---------------------------------
+== Extracting Bug Watches From Text ==
 
 When you have a text, for example a bug comment, it can be useful to
 extract all the possible bug watches from that text. To make this
@@ -192,8 +189,8 @@ bugs.gnome.org vs. bugzilla.gnome.org).
     >>> old_bugtracker_count == new_bugtracker_count
     True
 
-Syncing the Status with Linked Bugtasks
----------------------------------------
+
+== Syncing the Status with Linked Bugtasks ==
 
 If the bug watch is linked to a bugtask, the bug watch can sync its
 status with it. Before we do this we need to login as the Bug Watch
@@ -220,7 +217,12 @@ we can confirm that an event is indeed fired off.
 
     >>> def print_bugtask_modified(bugtask, event):
     ...     old_bugtask = event.object_before_modification
-    ...     print "%s => %s" % (old_bugtask.status.title, bugtask.status.title)
+    ...     if bugtask.status != old_bugtask.status:
+    ...         print "%s => %s" % (old_bugtask.status.title,
+    ...             bugtask.status.title)
+    ...     if bugtask.importance != old_bugtask.importance:
+    ...         print "%s => %s" % (old_bugtask.importance.title,
+    ...             bugtask.importance.title)
     >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> from canonical.launchpad.interfaces import IBugTask
     >>> from canonical.launchpad.event.interfaces import (
@@ -285,10 +287,72 @@ Finally, let's make sure that bug notifications were added:
     ** Changed in: mozilla-firefox (Debian)
            Status: Confirmed => New
 
+
+== Syncing Importance With Linked BugTasks ==
+
+Similarly, the bug watch updater can modify the bug watch's importance.
+Passing it a new Malone importance will fire off an event, which our
+event listener will pick up. We reset the lastchanged field of the bug
+watch so that we can demonstrate how it gets updated.
+
+    >>> from canonical.launchpad.interfaces import BugTaskImportance
+    >>> debian_bugwatch.lastchanged = old_lastchanged
+    >>> old_remote_importance = debian_bugwatch.remote_importance
+
+    >>> debian_bugwatch.updateImportance(
+    ...     debian_bugwatch.remote_importance, BugTaskImportance.CRITICAL)
+    Low => Critical
+
+As with updating Malone statuses, the bug watch's lastchanged field
+doesn't get updated since the remote importance hasn't been changed.
+
+    >>> debian_bugwatch.lastchanged == old_lastchanged
+    True
+
+    >>> debian_bugwatch.remote_importance == old_remote_importance
+    True
+
+    >>> print debian_task.importance.title
+    Critical
+
+If only the remote importance is changed, not the bugtask's status, no
+event is fired off. The remote importance is simply a string, it doesn't
+have to be convertible to a real Malone status.
+
+    >>> debian_bugwatch.updateImportance(u'some importance',
+    ...     BugTaskImportance.CRITICAL)
+
+    >>> debian_bugwatch.remote_importance
+    u'some importance'
+    >>> print debian_task.importance.title
+    Critical
+
+The lastchanged field was updated, though.
+
+    >>> debian_bugwatch.lastchanged > old_lastchanged
+    True
+
+Changes to bug watch statuses will produce notifications in the usual
+manner:
+
+    >>> for bug_notification in sorted(BugNotification.select()):
+    ...     print "Bug %s changed by %s:" % (
+    ...         bug_notification.bug.id,
+    ...         bug_notification.message.owner.displayname)
+    ...     print bug_notification.message.text_contents
+    Bug 1 changed by Bug Watch Updater:
+    ** Changed in: mozilla-firefox (Debian)
+           Status: Confirmed => New
+    Bug 1 changed by Bug Watch Updater:
+    ** Changed in: mozilla-firefox (Debian)
+       Importance: Low => Critical
+
     >>> event_listener.unregister()
 
-The Bug Watch Updater can transition a bug to any status:
+The Bug Watch Updater can transition a bug to any status or importance:
 
     >>> for status in BugTaskStatus.items:
     ...     debian_bugwatch.updateStatus(u'nothing', status)
 
+    >>> for importance in BugTaskImportance.items:
+    ...     debian_bugwatch.updateImportance(u'nothing', importance)

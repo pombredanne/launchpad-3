@@ -80,10 +80,10 @@ class BugWatch(SQLBase):
         """See canonical.launchpad.interfaces.IBugWatch."""
         return True
 
-    def updateImportance(remote_importance, malone_importance):
+    def updateImportance(self, remote_importance, malone_importance):
         """See `IBugWatch`."""
-        if self.remoteimportance != remote_importance:
-            self.remoteimportance = remote_importance
+        if self.remote_importance != remote_importance:
+            self.remote_importance = remote_importance
             self.lastchanged = UTC_NOW
             # Sync the object in order to convert the UTC_NOW sql
             # constant to a datetime value.
