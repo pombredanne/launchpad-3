@@ -42,11 +42,12 @@ class BugWatch(SQLBase):
                 foreignKey='BugTracker', notNull=True)
     remotebug = StringCol(notNull=True)
     remotestatus = StringCol(notNull=False, default=None)
+    remote_importance = StringCol(notNull=False, default=None)
     lastchanged = UtcDateTimeCol(notNull=False, default=None)
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
+    last_error_type = EnumCol(schema=BugWatchErrorType, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    last_error_type = EnumCol(schema=BugWatchErrorType, default=None)
 
     # useful joins
     bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',

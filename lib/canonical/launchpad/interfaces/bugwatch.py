@@ -83,13 +83,14 @@ class IBugWatch(IHasBug):
         readonly=False, description=_("The bug number of this bug in the "
         "remote bug tracker."))
     remotestatus = TextLine(title=_('Remote Status'))
+    remote_importance = TextLine(title=_('Remote Importance'))
     lastchanged = Datetime(title=_('Last Changed'))
     lastchecked = Datetime(title=_('Last Checked'))
+    last_error_type = Choice(title=_('Last Error Type'),
+        vocabulary=BugWatchErrorType)
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True)
     owner = Int(title=_('Owner'), required=True, readonly=True)
-    last_error_type = Choice(title=_('Last Error Type'),
-        vocabulary=BugWatchErrorType)
 
     # useful joins
     bugtasks = Attribute('The tasks which this watch will affect. '
