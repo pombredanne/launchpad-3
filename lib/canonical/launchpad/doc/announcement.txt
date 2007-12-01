@@ -24,6 +24,16 @@ after publishing, and they can be deleted, permanently.
     >>> sabdfl = apache.owner
     >>> assert sabdfl.name == 'sabdfl'
 
+== Beta testers ==
+
+For the moment, this is only available to beta testers.
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+    >>> beta.addMember(sabdfl, sabdfl)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
 == Creation ==
 
 To make an announcement, use the announce() method on the relevant project.
