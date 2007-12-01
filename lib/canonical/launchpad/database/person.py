@@ -1001,6 +1001,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if team is None:
             return False
 
+        # Translate the team name to an ITeam if we were passed a team.
+        if isinstance(team, str):
+            team = PersonSet().getByName(team)
+
         if team.id == self.id: # Short circuit - would return True anyway
             return True
 

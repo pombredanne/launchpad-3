@@ -885,6 +885,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
+
+        <team> can be the id of a team, and SQLObject representing the
+        ITeam, or the name of the team.
         """
 
     def lastShippedRequest():
