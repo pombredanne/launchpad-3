@@ -146,6 +146,7 @@ class UserAttributeCache:
 
     _no_user = object()
     _user = _no_user
+    _is_beta = None
 
     @property
     def user(self):
@@ -153,6 +154,19 @@ class UserAttributeCache:
         if self._user is self._no_user:
             self._user = getUtility(ILaunchBag).user
         return self._user
+
+    def isBetaUser(self):
+        """Return True if the user is in the beta testers team."""
+        if self._is_beta is not None:
+            return self._is_beta
+
+        if config.launchpad.beta_testers_redirection_host is None:
+            self._is_beta = False
+            return self._is_beta
+
+        self._is_beta = self.user is not None and self.user.inTeam(
+            getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
+        return self._is_beta
 
 
 class LaunchpadView(UserAttributeCache):
@@ -168,6 +182,7 @@ class LaunchpadView(UserAttributeCache):
     - render()     <-- used to render the page.  override this if you have many
                        templates not set via zcml, or you want to do rendering
                        from Python.
+    - isBetaUser   <-- whether the logged-in user is a beta tester
     """
 
     def __init__(self, context, request):

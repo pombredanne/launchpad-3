@@ -58,4 +58,9 @@
  = Clean up unused imports & generally de-lint
  = Sample data
    = Announcements on Mozilla, Firefox, Thunderbird, Ubuntu
+ * Expose announcements to lp-beta-testers only
+   * latest news portlet
+   * announcement action menu items
+   * announcement lists
+   * announcement add, edit, retract, retarget, delete pages
 
