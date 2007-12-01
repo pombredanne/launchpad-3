@@ -34,7 +34,6 @@ from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.publisher.interfaces import NotFound
 
-from canonical.config import config
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -147,7 +146,6 @@ class UserAttributeCache:
 
     _no_user = object()
     _user = _no_user
-    _is_beta = None
 
     @property
     def user(self):
@@ -156,13 +154,11 @@ class UserAttributeCache:
             self._user = getUtility(ILaunchBag).user
         return self._user
 
+    _is_beta = None
+    @property
     def isBetaUser(self):
         """Return True if the user is in the beta testers team."""
         if self._is_beta is not None:
-            return self._is_beta
-
-        if config.launchpad.beta_testers_redirection_host is None:
-            self._is_beta = False
             return self._is_beta
 
         # We cannot import ILaunchpadCelebrities here, so we will use the

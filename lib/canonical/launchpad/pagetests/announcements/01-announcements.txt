@@ -5,6 +5,22 @@ is available as a portlet on the project home page, as well as on a
 dedicated batched page showing all announcements, and as an RSS/Atom news
 feed.
 
+== Beta testers only ==
+
+For the purposes of these tests, during the beta tests, sabdfl and kamion
+need to be beta testers.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> kamion = getUtility(IPersonSet).getByName('kamion')
+    >>> betateam = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+    >>> login("foo.bar@canonical.com")
+    >>> betateam.addMember(sabdfl, sabdfl)
+    >>> betateam.addMember(kamion, sabdfl)
+    >>> logout()
+
 == Making an announcement ==
 
 If you are not logged in, you don't see the link to make an announcement.

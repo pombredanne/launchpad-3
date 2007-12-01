@@ -669,6 +669,9 @@ class EditAnnouncement(AuthorizationBase):
         """Allow the project owner and drivers to edit any project news."""
 
         assert self.obj.target
+        if not user.inTeam(
+            getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
+            return False
         if self.obj.target.drivers:
             for driver in self.obj.target.drivers:
                 if user.inTeam(driver):

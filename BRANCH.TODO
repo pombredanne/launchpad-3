@@ -59,8 +59,9 @@
  = Sample data
    = Announcements on Mozilla, Firefox, Thunderbird, Ubuntu
  * Expose announcements to lp-beta-testers only
-   * latest news portlet
-   * announcement action menu items
-   * announcement lists
-   * announcement add, edit, retract, retarget, delete pages
+   = latest news portlet
+   = announcement action menu items on product, project, distro
+   = announcement lists
+   = announcement add, edit, retract, retarget, delete pages
+   = make sabdfl and kamion beta testers for the pagetests
 

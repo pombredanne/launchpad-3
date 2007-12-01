@@ -26,6 +26,13 @@
     <div metal:fill-slot="extra_info" class="documentDescription">
       Publish news about your project through Launchpad. Readers can
       subscribe to an RSS feed of your announcements.
+    <div class="error message" tal:condition="not: view/isBetaUser">
+      This function is in beta test, and is available to Launchpad beta
+      testers only. Please join the <a href="/~launchpad-beta-testers">beta
+      test team</a> if you'd like to explore this capability before it is
+      widely available to all Launchpad users.
+    </div>
+
     </div>
 
   </div>

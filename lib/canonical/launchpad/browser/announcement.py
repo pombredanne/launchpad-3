@@ -100,6 +100,11 @@ class AnnouncementAddView(LaunchpadFormView):
 
     custom_widget('publication_date', AnnouncementDateWidget)
 
+    def validate(self, data):
+        if not self.isBetaUser:
+            self.addError(
+                'This capability is only available to beta testers.')
+
     @action(_('Make announcement'), name='announce')
     def announce_action(self, action, data):
         """Registers a new announcement."""

@@ -15,7 +15,7 @@
             tal:attributes="
               href string:${modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/feeds/rooturl}announcements.atom" />
 
-  <div class="informational message" tal:condition="view/isBetaUser">
+  <div class="informational message" tal:condition="view/canRedirect">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
       <p>As a member of the Launchpad Beta Testers team, you would
       normally be redirected to the beta site when viewing Launchpad
@@ -87,13 +87,8 @@
            <li>
              <a href="https://help.launchpad.net/PPAQuickStart">
                <strong>Personal Package Archives for everyone!</strong> Build
-               and host Ubuntu packages in your own apt repository, following
-               our successful beta</a>
-           </li>
-           <li>
-             <a href="http://news.launchpad.net/?p=32">
-               <strong>Major Translations speed improvements:</strong> faster
-               exports, faster imports and fewer timeouts.</a>
+               and host Ubuntu packages in your own apt repository.
+             </a>
            </li>
             <li>
               <a
@@ -101,7 +96,7 @@
                 <strong>Come learn more:</strong><br />
                 Introductory IRC tutorial sessions about Launchpad.</a>
             </li>
-           <li>
+           <li tal:condition="not: view/isBetaUser">
              <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters">
                <strong>Launchpad beta:</strong> join our beta team to get
                access to pre-release features</a>

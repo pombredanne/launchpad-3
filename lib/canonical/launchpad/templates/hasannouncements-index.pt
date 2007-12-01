@@ -25,6 +25,7 @@
 </metal:heading>
 
 <div metal:fill-slot="main">
+<tal:beta-testers-only condition="view/isBetaUser">
 
   <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
         tal:attributes="href view/feed_url" />
@@ -42,6 +43,7 @@
   <div class="lesser"
        tal:content="structure view/batchnav/@@+navigation-links-lower" />
 
+</tal:beta-testers-only>
 </div>
 </body>
 </html>

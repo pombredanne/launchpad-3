@@ -583,6 +583,11 @@ class LaunchpadRootIndexView(LaunchpadView):
         """Returns True if redirection has been inhibited."""
         return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
 
+    def canRedirect(self):
+        return bool(
+            config.launchpad.beta_testers_redirection_host is not None and
+            self.isBetaUser)
+
 
 class ObjectForTemplate:
 
