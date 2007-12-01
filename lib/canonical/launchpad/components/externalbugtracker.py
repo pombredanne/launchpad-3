@@ -176,6 +176,15 @@ class ExternalBugTracker:
         """
         raise NotImplementedError(self.getRemoteBugBatch)
 
+    def getRemoteImportance(self, bug_id):
+        """Return the remote importance for the given bug id.
+
+        Raise BugNotFound if the bug can't be found.
+        Raise InvalidBugId if the bug id has an unexpected format.
+        Raise UnparseableBugData if the bug data cannot be parsed.
+        """
+        raise NotImplementedError(self.getRemoteImportance)
+
     def getRemoteStatus(self, bug_id):
         """Return the remote status for the given bug id.
 
