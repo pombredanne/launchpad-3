@@ -78,7 +78,8 @@ class TestPublishDistro(TestNativePublishingBase):
         pub_source.sync()
         pub_source2.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
-        self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(
+            pub_source2.status, PackagePublishingStatus.PUBLISHED)
 
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertNotExists(foo_path)
@@ -172,8 +173,10 @@ class TestPublishDistro(TestNativePublishingBase):
         pub_source2.sync()
         pub_source3.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
-        self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
-        self.assertEqual(pub_source3.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(
+            pub_source2.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(
+            pub_source3.status, PackagePublishingStatus.PUBLISHED)
 
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(False, os.path.exists(foo_path))
@@ -203,7 +206,8 @@ class TestPublishDistro(TestNativePublishingBase):
         release_path = "%s/hoary-test-updates/Release" % self.config.distsroot
         self.assertExists(release_path)
 
-        release_path = "%s/hoary-test-backports/Release" % self.config.distsroot
+        release_path = (
+            "%s/hoary-test-backports/Release" % self.config.distsroot)
         self.assertExists(release_path)
 
         release_path = "%s/hoary-test/Release" % self.config.distsroot

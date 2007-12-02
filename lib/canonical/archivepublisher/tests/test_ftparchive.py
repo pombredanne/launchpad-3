@@ -181,7 +181,8 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
             ('linux-source-2.6.15', '2.6.15.3')
             ]
         actualSources = [
-            (spph.sourcepackagerelease.name, spph.sourcepackagerelease.version)
+            (spph.sourcepackagerelease.name,
+             spph.sourcepackagerelease.version)
             for spph in spphs]
 
         self.assertEqual(expectedSources, actualSources)
@@ -208,7 +209,8 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
             ('commercialpackage', '1.0-1')
             ]
         actualSources = [
-            (spph.sourcepackagerelease.name, spph.sourcepackagerelease.version)
+            (spph.sourcepackagerelease.name,
+             spph.sourcepackagerelease.version)
             for spph in spphs]
 
         self.assertEqual(expectedSources, actualSources)
@@ -235,7 +237,8 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
             ('pmount', '2:1.9-1'),
             ]
         actualBinaries = [
-            (bpph.binarypackagerelease.name, bpph.binarypackagerelease.version)
+            (bpph.binarypackagerelease.name,
+             bpph.binarypackagerelease.version)
             for bpph in bpphs]
 
         self.assertEqual(expectedBinaries, actualBinaries)
@@ -264,13 +267,14 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
             (u'commercialpackage', u'1.0-1')
             ]
         actualBinaries = [
-            (bpph.binarypackagerelease.name, bpph.binarypackagerelease.version)
+            (bpph.binarypackagerelease.name,
+             bpph.binarypackagerelease.version)
             for bpph in bpphs]
 
         self.assertEqual(expectedBinaries, actualBinaries)
 
     def testPublishOverrides(self):
-        """canonical.archivepublisher.Publisher.publishOverrides should work"""
+        """Verify FtpArchive.publishOverrides working on disk."""
         fa = self._setUpFTPArchiveHandler()
         src = [self._getFakePubSource(
             "foo", "main", "foo.dsc", "misc", "hoary-test")]
@@ -286,7 +290,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         self._verifyFile("override.hoary-test.extra.main", self._overdir)
 
     def testPublishFileLists(self):
-        """canonical.archivepublisher.Publisher.publishFileLists should work"""
+        """Verify FtpArchive.publishFileLists working on disk."""
         fa = self._setUpFTPArchiveHandler()
         src = [self._getFakePubSourceFile(
             "foo", "main", "foo.dsc", "misc", "hoary-test")]
