@@ -148,6 +148,7 @@ class TestBrokenExternalBugTracker(TestExternalBugTracker):
     """A test version of ExternalBugTracker, designed to break."""
 
     def __init__(self, baseurl):
+        super(TestBrokenExternalBugTracker, self).__init__()
         self.baseurl = baseurl
         self.initialize_remote_bugdb_error = None
         self.get_remote_status_error = None
