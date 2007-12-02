@@ -1,0 +1,68 @@
+
+Let's take a tour of the Launchpad specification management system.
+
+First, we should be able to see a list of latest specs on any product or
+distribution in Launchpad. This should take the form of a portlet on the
+product or distribution home page, showing latest specs.
+
+    >>> user_browser.open('http://launchpad.dev/firefox')
+    >>> main = find_main_content(user_browser.contents)
+    >>> print extract_text(main).encode('us-ascii', 'backslashreplace')
+    Mozilla Firefox...
+    Latest blueprints
+    Merge Open Browser Windows with "Consolidate Windows"
+    Support E4X in EcmaScript
+    Support Native SVG Objects
+    Support &lt;canvas&gt; Objects
+    Extension Manager Upgrades...
+
+If there are no specifications, then we should not see the "latest
+specifications" portlet.
+
+    >>> user_browser.open('http://launchpad.dev/debian')
+    >>> main = find_main_content(user_browser.contents)
+    >>> text = extract_text(main).encode('us-ascii', 'backslashreplace')
+    >>> print text
+    Debian GNU/Linux...
+    Uses Launchpad for:
+    Nothing...
+    >>> 'Latest blueprints' not in text
+    True
+
+On both product and distribution we should be able to see a list of
+specifications, at +specs.
+
+First, let's check on product.
+
+  >>> print http(r"""
+  ... GET /evolution/+specs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Now, on distribution.
+
+  >>> print http(r"""
+  ... GET /debian/+specs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+
+And we should see the latest specifications available for the whole system:
+
+  >>> print http(r"""
+  ... GET /specs/ HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Recently registered...
+
+
+Which should also support searching:
+
+  >>> print http(r"""
+  ... GET /specs/?searchtext=svg HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...blueprint(s) matching...svg...
+  ...Support Native SVG Objects...
