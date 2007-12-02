@@ -305,6 +305,10 @@ class DistributionSourcePackageView(LaunchpadFormView):
         # method.
         self.form_fields = self._createPackagingField()
 
+    def canDeletePackaging(self):
+        """Whether the user can delete existing packaging links."""
+        return self.user is not None
+
     def _createPackagingField(self):
         """Create a field to specify a Packaging association.
 
@@ -323,6 +327,8 @@ class DistributionSourcePackageView(LaunchpadFormView):
 
     def _renderHiddenPackagingField(self, packaging):
         """Render a hidden input that fills in the packaging field."""
+        if not self.canDeletePackaging():
+            return None
         vocabulary = self.form_fields['packaging'].field.vocabulary
         return '<input type="hidden" name="field.packaging" value="%s" />' % (
             vocabulary.getTerm(packaging).token)

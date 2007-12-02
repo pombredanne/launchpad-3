@@ -45,7 +45,7 @@
 
   <h2>Published versions and upstream associations</h2>
 
-  <table class="listing">
+  <table id="packaging" class="listing">
     <thead>
       <tr>
         <th colspan="4">
