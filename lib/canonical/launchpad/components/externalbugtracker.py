@@ -184,6 +184,9 @@ class ExternalBugTracker:
         Raise InvalidBugId if the bug id has an unexpected format.
         Raise UnparseableBugData if the bug data cannot be parsed.
         """
+        # This method should be overridden by subclasses, so we raise a
+        # NotImplementedError if this version of it gets called for some
+        # reason.
         raise NotImplementedError(self.getRemoteImportance)
 
     def getRemoteStatus(self, bug_id):
