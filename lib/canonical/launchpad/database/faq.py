@@ -272,3 +272,4 @@ class FAQSet:
         """See `IFAQSet`."""
         return FAQSearch(
             search_text=search_text, owner=owner, sort=sort).getResults()
+

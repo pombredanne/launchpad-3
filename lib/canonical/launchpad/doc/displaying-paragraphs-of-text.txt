@@ -3,6 +3,9 @@
 To display paragraphs of text in HTML, use fmt:text-to-html. For details,
 see <https://launchpad.canonical.com/DisplayingParagraphsOfText>.
 
+
+== Basics ==
+
     >>> from canonical.launchpad.ftests import test_tales
 
     >>> text = ('This is a paragraph.\n'
@@ -82,6 +85,29 @@ previous line.  This aids in the display of code samples:
     <p>&nbsp;&nbsp;&nbsp;&nbsp;def currentCount(self, language=None):<br />
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"""See IRosettaStats."""<br />
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.currentCount</p>
+
+Testing a bunch of URL links.
+
+    >>> text = (
+    ...     'https://launchpad.net/ is the new Launchpad site\n'
+    ...     'http://example.com/something?foo=bar&hum=baz\n'
+    ...     'You can check the PPC md5sums at '
+    ...     'ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc'
+    ...     '/current/images/MD5SUMS\n'
+    ...     'irc://irc.freenode.net/#launchpad\n'
+    ...     '\n'
+    ...     'I have a Jabber account (jabber:foo@jabber.example.com)\n'
+    ...     'Foo Bar <mailto:foo.bar@example.net>')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a rel="nofollow" href="https://launchpad.net/">https:/<wbr></wbr>/launchpad.<wbr></wbr>net/</a> is the new Launchpad site<br />
+    <a rel="nofollow" href="http://example.com/something?foo=bar&amp;hum=baz">http://<wbr></wbr>example.<wbr></wbr>com/something?<wbr></wbr>foo=bar&amp;<wbr></wbr>hum=baz</a><br />
+    You can check the PPC md5sums at <a rel="nofollow" href="ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc/current/images/MD5SUMS">ftp://ftp.<wbr></wbr>ubuntu.<wbr></wbr>com/ubuntu/<wbr></wbr>dists/breezy/<wbr></wbr>main/installer-<wbr></wbr>powerpc/<wbr></wbr>current/<wbr></wbr>images/<wbr></wbr>MD5SUMS</a><br />
+    <a rel="nofollow" href="irc://irc.freenode.net/#launchpad">irc://irc.<wbr></wbr>freenode.<wbr></wbr>net/#launchpad</a></p>
+    <p>I have a Jabber account (<a rel="nofollow" href="jabber:foo@jabber.example.com">jabber:<wbr></wbr>foo@jabber.<wbr></wbr>example.<wbr></wbr>com</a>)<br />
+    Foo Bar &lt;<a rel="nofollow" href="mailto:foo.bar@example.net">mailto:<wbr></wbr>foo.bar@<wbr></wbr>example.<wbr></wbr>net</a>&gt;</p>
+
+
+== URL linkification ==
 
 fmt:text-to-html knows how to linkify URLs:
 
@@ -175,6 +201,8 @@ The fmt:text-to-html formatter leaves a number of non-URIs unlinked:
     http::No-cache=True</p>
 
 
+== Bug references ==
+
 fmt:text-to-html is also smart enough to convert bug references into
 links:
 
@@ -254,6 +282,38 @@ A private bug has a title "private bug".
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a href="/bugs/6" title="private bug">bug 6</a></p>
 
+
+== FAQ references ==
+
+FAQ references are global, and also linkified:
+
+    >>> text = (
+    ...     'faq 1\n'
+    ...     'faq #2\n'
+    ...     'faq item 1\n'
+    ...     'faq  number  2\n'
+    ...     )
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a rel="nofollow"
+          href="http://answers.launchpad.dev/ubuntu/+faq/1">faq 1</a><br />
+        <a rel="nofollow"
+           href="http://answers.launchpad.dev/ubuntu/+faq/2">faq #2</a><br />
+        <a rel="nofollow"
+           href="http://answers.launchpad.dev/ubuntu/+faq/1">faq item 1</a><br />
+        <a rel="nofollow"
+           href="http://answers.launchpad.dev/ubuntu/+faq/2">faq  number  2</a></p>
+
+Except, that is, when the FAQ doesn't exist:
+
+    >>> text = (
+    ...     'faq 999\n'
+    ...     )
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>faq 999</p>
+
+
+== OOPS references ==
+
 fmt:text-to-html is also smart enough to convert OOPS references into
 links. However, it only does this if the logged in person is a member of the
 Launchpad Developers team.
@@ -332,26 +392,6 @@ Reset login information.
     >>> getUtility(ILaunchBag).developer
     False
 
-Testing a bunch of URL links.
-
-    >>> text = (
-    ...     'https://launchpad.net/ is the new Launchpad site\n'
-    ...     'http://example.com/something?foo=bar&hum=baz\n'
-    ...     'You can check the PPC md5sums at '
-    ...     'ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc'
-    ...     '/current/images/MD5SUMS\n'
-    ...     'irc://irc.freenode.net/#launchpad\n'
-    ...     '\n'
-    ...     'I have a Jabber account (jabber:foo@jabber.example.com)\n'
-    ...     'Foo Bar <mailto:foo.bar@example.net>')
-    >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a rel="nofollow" href="https://launchpad.net/">https:/<wbr></wbr>/launchpad.<wbr></wbr>net/</a> is the new Launchpad site<br />
-    <a rel="nofollow" href="http://example.com/something?foo=bar&amp;hum=baz">http://<wbr></wbr>example.<wbr></wbr>com/something?<wbr></wbr>foo=bar&amp;<wbr></wbr>hum=baz</a><br />
-    You can check the PPC md5sums at <a rel="nofollow" href="ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc/current/images/MD5SUMS">ftp://ftp.<wbr></wbr>ubuntu.<wbr></wbr>com/ubuntu/<wbr></wbr>dists/breezy/<wbr></wbr>main/installer-<wbr></wbr>powerpc/<wbr></wbr>current/<wbr></wbr>images/<wbr></wbr>MD5SUMS</a><br />
-    <a rel="nofollow" href="irc://irc.freenode.net/#launchpad">irc://irc.<wbr></wbr>freenode.<wbr></wbr>net/#launchpad</a></p>
-    <p>I have a Jabber account (<a rel="nofollow" href="jabber:foo@jabber.example.com">jabber:<wbr></wbr>foo@jabber.<wbr></wbr>example.<wbr></wbr>com</a>)<br />
-    Foo Bar &lt;<a rel="nofollow" href="mailto:foo.bar@example.net">mailto:<wbr></wbr>foo.bar@<wbr></wbr>example.<wbr></wbr>net</a>&gt;</p>
-
 
 == Regex helper functions ==
 
@@ -375,9 +415,9 @@ is dealing with bugs, and 'url' when it is dealing with URLs.
 First, let's try a match of nothing it understands.  This is a bug, so we get
 an AssertionError.
 
-    >>> matchobj = re.match('(?P<bug>xxx)?(?P<url>yyy)?(?P<oops>zzz)?', 'fish')
+    >>> matchobj = re.match('(?P<bug>xxx)?(?P<faq>www)?(?P<url>yyy)?(?P<oops>zzz)?', 'fish')
     >>> sorted(matchobj.groupdict().items())
-    [('bug', None), ('oops', None), ('url', None)]
+    [('bug', None), ('faq', None), ('oops', None), ('url', None)]
     >>> FormattersAPI._linkify_substitution(matchobj)
     Traceback (most recent call last):
     ...
@@ -421,3 +461,4 @@ title.
     [('bug', 'xxxx'), ('bugnum', '6'), ('url', None)]
     >>> FormattersAPI._linkify_substitution(matchobj)
     '<a href="/bugs/6" title="private bug">xxxx</a>'
+

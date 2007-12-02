@@ -34,6 +34,7 @@ from canonical.launchpad.interfaces import (
     IBugAttachment,
     IBugNomination,
     IBugSet,
+    IFAQSet,
     IHasIcon,
     IHasLogo,
     IHasMugshot,
@@ -1318,6 +1319,15 @@ class FormattersAPI:
                 cgi.escape(url, quote=True),
                 add_word_breaks(cgi.escape(url)),
                 cgi.escape(trailers))
+        elif match.group('faq') is not None:
+            text = match.group('faq')
+            faqnum = match.group('faqnum')
+            faqset = getUtility(IFAQSet)
+            faq = faqset.getFAQ(faqnum)
+            if not faq:
+                return text
+            url = canonical_url(faq)
+            return '<a rel="nofollow" href="%s">%s</a>' % (url, text)
         elif match.group('oops') is not None:
             text = match.group('oops')
 
@@ -1440,6 +1450,10 @@ class FormattersAPI:
       (?P<bug>
         \bbug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
         0*(?P<bugnum>\d+)
+      ) |
+      (?P<faq>
+        \bfaq(?:\s|<br\s*/>)*(?:\#|item|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
+        0*(?P<faqnum>\d+)
       ) |
       (?P<oops>
         \boops\s*-?\s*
