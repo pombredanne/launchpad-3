@@ -399,6 +399,15 @@ class Bugzilla(ExternalBugTracker):
 
         return version
 
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        BugTaskImportance.UNKNOWN will always be returned.
+        """
+        return BugTaskImportance.UNKNOWN
+
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`.
 
@@ -576,6 +585,15 @@ class Bugzilla(ExternalBugTracker):
                     status += ' %s' % resolution
             self.remote_bug_status[bug_id] = status
 
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
+        """
+        return UNKNOWN_REMOTE_IMPORTANCE
+
     def getRemoteStatus(self, bug_id):
         """See ExternalBugTracker."""
         if not bug_id.isdigit():
@@ -633,6 +651,15 @@ class DebBugs(ExternalBugTracker):
         This method is overridden (and left empty) here to avoid breakage when
         the continuous bug-watch checking spec is implemented.
         """
+
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        BugTaskImportance.UNKNOWN will always be returned.
+        """
+        return BugTaskImportance.UNKNOWN
 
     def convertRemoteStatus(self, remote_status):
         """Convert a debbugs status to a Malone status.
@@ -694,6 +721,15 @@ class DebBugs(ExternalBugTracker):
                 raise BugNotFound(bug_id)
 
         return debian_bug
+
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
+        """
+        return UNKNOWN_REMOTE_IMPORTANCE
 
     def getRemoteStatus(self, bug_id):
         """See ExternalBugTracker."""
@@ -1144,6 +1180,15 @@ class Mantis(ExternalBugTracker):
 
         return value_node.strip()
 
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
+        """
+        return UNKNOWN_REMOTE_IMPORTANCE
+
     def getRemoteStatus(self, bug_id):
         if not bug_id.isdigit():
             raise InvalidBugId(
@@ -1167,6 +1212,15 @@ class Mantis(ExternalBugTracker):
             raise BugNotFound(bug_id)
         else:
             return bug['status'], bug['resolution']
+
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        BugTaskImportance.UNKNOWN will always be returned.
+        """
+        return BugTaskImportance.UNKNOWN
 
     def convertRemoteStatus(self, status_and_resolution):
         if (not status_and_resolution or
@@ -1304,6 +1358,15 @@ class Trac(ExternalBugTracker):
         else:
             self.bugs = self.getRemoteBugBatch(bug_ids)
 
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
+        """
+        return UNKNOWN_REMOTE_IMPORTANCE
+
     def getRemoteStatus(self, bug_id):
         """Return the remote status for the given bug id.
 
@@ -1334,6 +1397,15 @@ class Trac(ExternalBugTracker):
                 # CSV exports. In those cases we raise a warning.
                 log.warn("Trac ticket %i defines no status." % bug_id)
                 return UNKNOWN_REMOTE_STATUS
+
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        BugTaskImportance.UNKNOWN will always be returned.
+        """
+        return BugTaskImportance.UNKNOWN
 
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`"""
@@ -1518,6 +1590,15 @@ class Roundup(ExternalBugTracker):
 
         return bugs
 
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
+        """
+        return UNKNOWN_REMOTE_IMPORTANCE
+
     def getRemoteStatus(self, bug_id):
         """See `ExternalBugTracker`."""
         remote_bug = self._getBug(bug_id)
@@ -1543,6 +1624,15 @@ class Roundup(ExternalBugTracker):
             except KeyError:
                 raise UnparseableBugData(
                     "Remote bug %s does not define a status.")
+
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        BugTaskImportance.UNKNOWN will always be returned.
+        """
+        return BugTaskImportance.UNKNOWN
 
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
@@ -1663,6 +1753,15 @@ class SourceForge(ExternalBugTracker):
                 'status': status,
                 'resolution': resolution}
 
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
+        """
+        return UNKNOWN_REMOTE_IMPORTANCE
+
     def getRemoteStatus(self, bug_id):
         """See `ExternalBugTracker`."""
         try:
@@ -1682,6 +1781,14 @@ class SourceForge(ExternalBugTracker):
             raise UnparseableBugData(
                 "Remote bug %i does not define a status." % bug_id)
 
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        BugTaskImportance.UNKNOWN will always be returned.
+        """
+        return BugTaskImportance.UNKNOWN
 
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
