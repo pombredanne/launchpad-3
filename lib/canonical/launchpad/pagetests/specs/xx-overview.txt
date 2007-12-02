@@ -38,23 +38,9 @@ First, let's check on product.
     >>> main = find_main_content(user_browser.contents)
     >>> print extract_text(main).encode('us-ascii', 'backslashreplace')
     Blueprints for Mozilla Firefox...
-    Priority
-    Specification
-    Design
-    Delivery
-    Assignee
-    Series
-    4
-    High
-    svg-support
-    0
-    Approved
-    8
-    Beta Available
-    Carlos Perell\xf3 Mar\xedn
-    3
-    Medium
-    canvas
+    Priority...Specification...Design...Delivery...Assignee...Series...
+    High...svg-support...Approved...Beta Available...Carlos Perell...
+    Medium...canvas
     5
     New
     0
