@@ -40,18 +40,8 @@ First, let's check on product.
     Blueprints for Mozilla Firefox...
     Priority...Specification...Design...Delivery...Assignee...Series...
     High...svg-support...Approved...Beta Available...Carlos Perell...
-    Medium...canvas
-    5
-    New
-    0
-    Unknown
-    3
-    Medium
-    extension-manager-upgrades
-    5
-    New
-    12
-    Informational
+    Medium...canvas...New...Unknown...
+    Medium...extension-manager-upgrades...New...Informational
     Carlos Perell\xf3 Mar\xedn
     3
     Medium
