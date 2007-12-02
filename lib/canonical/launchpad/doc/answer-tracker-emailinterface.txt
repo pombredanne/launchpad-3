@@ -47,6 +47,9 @@ AnswerTrackerHandler.
     ...     raw_msg = '\n'.join(lines)
     ...     msg = signed_message_from_string(raw_msg)
     ...     if handler.process(msg, msg['To']):
+    ...         # Ensures that the DB user has the correct permission to 
+    ...         # saves the changes.
+    ...         flush_database_updates()
     ...         return msgid
     ...     else:
     ...         return None

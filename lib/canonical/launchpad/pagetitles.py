@@ -227,6 +227,12 @@ bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
 bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
 
+bug_create_question = LaunchbagBugID(
+    'Bug #%d - Convert this bug to a question')
+
+bug_remove_question = LaunchbagBugID(
+    'Bug #%d - Convert this question back to a bug')
+
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 
 bugbranch_edit = "Edit branch fix status"
@@ -287,8 +293,10 @@ bugtarget_filebug_search = bugtarget_filebug_advanced
 
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
-bugtask_choose_affected_product = LaunchbagBugID(
+bugtask_affects_new_product = LaunchbagBugID(
     'Bug #%d - Record as affecting another project')
+
+bugtask_choose_affected_product = bugtask_affects_new_product
 
 # This page is used for both projects/distros so we have to say 'software'
 # rather than distro or project here.
@@ -305,6 +313,8 @@ bugtask_requestfix = LaunchbagBugID(
 bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Confirm project')
 
 bugtask_view = BugTaskPageTitle()
+
+bugtask_non_contributor_assignee_confirm = 'Confirm bug assignment'
 
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
@@ -649,6 +659,8 @@ loginservice_resetpassword = 'Reset your password'
 
 logintoken_claimprofile = 'Claim Launchpad profile'
 
+logintoken_claimteam = 'Claim Launchpad team'
+
 logintoken_index = 'Launchpad: redirect to the logintoken page'
 
 logintoken_mergepeople = 'Merge Launchpad accounts'
@@ -788,6 +800,8 @@ person_branch_add = ContextDisplayName('Register a new branch for %s')
 person_changepassword = 'Change your password'
 
 person_claim = 'Claim account'
+
+person_claim_team = 'Claim team'
 
 person_deactivate_account = 'Deactivate your Launchpad account'
 

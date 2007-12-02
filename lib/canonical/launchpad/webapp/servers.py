@@ -19,6 +19,7 @@ from zope.app.wsgi import WSGIPublisherApplication
 from zope.interface import implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
+from zope.publisher.interfaces import NotFound
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.server.http.commonaccesslogger import CommonAccessLogger
@@ -915,7 +916,7 @@ class ProtocolErrorPublication(LaunchpadBrowserPublication):
     def callObject(self, request, object):
         """Raise an approprate exception for this protocol error."""
         if self.status == 404:
-            raise NotFound()
+            raise NotFound(self, '', request)
         else:
             raise ProtocolErrorException(self.status, self.headers)
 

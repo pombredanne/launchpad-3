@@ -157,8 +157,6 @@ if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     cp $OVERRIDEROOT/override.* $INDICES
 fi
 
-set -x 
-
 # As close to atomically as possible, put the new dists into place for the
 # primary archive.
 mv $DISTSROOT ${DISTSROOT}.old

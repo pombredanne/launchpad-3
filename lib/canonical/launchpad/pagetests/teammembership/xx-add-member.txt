@@ -44,8 +44,11 @@ the team, we'll simply change the membership's status and say that it was
 successfully added.
 
     >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(ANONYMOUS) # login() because we need a zope interaction.
     >>> cprov_landscape_membership.setStatus(
     ...     TeamMembershipStatus.DEACTIVATED, landscape_team.teamowner)
+    >>> logout()
     >>> cprov_landscape_membership.syncUpdate()
 
     >>> browser.url
@@ -217,10 +220,12 @@ the bug sice we could skip the notification sent to the team in this case.
     # lot simpler.
     >>> carlos = Person.byName('carlos')
     >>> ubuntu_translators = Person.byName('ubuntu-translators')
+    >>> login(ANONYMOUS) # login() because we need a zope interaction.
     >>> carlos_translators_membership = TeamMembership.selectOneBy(
     ...     personID=carlos.id, teamID=ubuntu_translators.id)
     >>> carlos_translators_membership.setStatus(
     ...     TeamMembershipStatus.DEACTIVATED, ubuntu_translators.teamowner)
+    >>> logout()
     >>> carlos_translators_membership.syncUpdate()
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')

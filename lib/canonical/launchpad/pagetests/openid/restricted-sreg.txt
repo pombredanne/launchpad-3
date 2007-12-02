@@ -16,7 +16,7 @@ configured, then no details are disclosed in the response.
 
 First acquire an association handle:
 
-    >>> from canonical.launchpad.ftests.openid import (
+    >>> from canonical.launchpad.ftests.openidhelpers import (
     ...     install_consumer, uninstall_consumer)
     >>> install_consumer()
 
