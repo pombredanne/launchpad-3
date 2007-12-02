@@ -152,6 +152,14 @@ class AcceptanceTests(SSHTestCase):
     https://launchpad.canonical.com/SupermirrorTaskList
     """
 
+    def assertNotBranch(self, url):
+        """Assert that there's no branch at 'url'."""
+        self.assertRaises(
+            NotBranchError,
+            self.runInChdir,
+            self.server.runAndWaitForDisconnect,
+            bzrlib.branch.Branch.open, url)
+
     def addRevisionToBranch(self, branch):
         """Add a new revision in the database to the given database branch."""
         # We don't care who the author is. Just find someone.
@@ -224,14 +232,14 @@ class AcceptanceTests(SSHTestCase):
         self.assertEqual(remote_revision, 'rev2')
 
     @deferToThread
-    def test_db_rename_branch(self):
+    def test_rename_branch(self):
         """
         Branches should be able to be renamed in the Launchpad webapp, and
         those renames should be immediately reflected in subsequent SFTP
         connections.
 
-        Also, the renames may happen in the database for other reasons, e.g. if
-        the DBA running a one-off script.
+        Also, the renames may happen in the database for other reasons, e.g.
+        if the DBA running a one-off script.
         """
 
         # Push the local branch to the server
@@ -241,42 +249,60 @@ class AcceptanceTests(SSHTestCase):
         # Rename branch in the database
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getDatabaseBranch('testuser', None, 'test-branch')
-        branch_id = branch.id
         branch.name = 'renamed-branch'
         LaunchpadZopelessTestSetup().txn.commit()
 
-        self.push(remote_url)
-        remote_revision = self.getLastRevision(remote_url)
+        # Check that it's not at the old location.
+        self.assertNotBranch(
+            self.getTransportURL('~testuser/+junk/test-branch'))
+
+        # Check that it *is* at the new location.
+        remote_revision = self.getLastRevision(
+            self.getTransportURL('~testuser/+junk/renamed-branch'))
         self.assertEqual(remote_revision, self.local_branch.last_revision())
 
-        # Assign to a different product in the database. This is
-        # effectively a Rename as far as bzr is concerned: the URL changes.
+
+    @deferToThread
+    def test_rename_product(self):
+        # Push the local branch to the server
+        remote_url = self.getTransportURL('~testuser/+junk/test-branch')
+        self.push(remote_url)
+
+        # Assign to a different product in the database. This is effectively a
+        # rename as far as bzr is concerned: the URL changes.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.get(branch_id)
+        branch = self.getDatabaseBranch('testuser', None, 'test-branch')
         branch.product = database.Product.byName('firefox')
         LaunchpadZopelessTestSetup().txn.commit()
 
-        self.assertRaises(
-            NotBranchError,
-            self.runInChdir,
-            self.server.runAndWaitForDisconnect,
-            bzrlib.branch.Branch.open,
-            self.getTransportURL('~testuser/+junk/renamed-branch'))
+        self.assertNotBranch(
+            self.getTransportURL('~testuser/+junk/test-branch'))
 
         remote_revision = self.getLastRevision(
-            self.getTransportURL('~testuser/firefox/renamed-branch'))
+            self.getTransportURL('~testuser/firefox/test-branch'))
         self.assertEqual(remote_revision,
                          self.local_branch.last_revision())
 
-        # Rename person in the database. Again, the URL changes (and so
-        # does the username we have to connect as!).
+    @deferToThread
+    def test_rename_user(self):
+        # Rename person in the database. Again, the URL changes (and so does
+        # the username we have to connect as!).
+        remote_url = self.getTransportURL('~testuser/+junk/test-branch')
+        self.push(remote_url)
+
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.get(branch_id)
+        branch = self.getDatabaseBranch('testuser', None, 'test-branch')
         branch.owner.name = 'renamed-user'
         LaunchpadZopelessTestSetup().txn.commit()
 
+        # Check that it's not at the old location.
+        self.assertNotBranch(
+            self.getTransportURL(
+                '~testuser/+junk/test-branch', 'renamed-user'))
+
+        # Check that it *is* at the new location.
         url = self.getTransportURL(
-            '~renamed-user/firefox/renamed-branch', 'renamed-user')
+            '~renamed-user/+junk/test-branch', 'renamed-user')
         remote_revision = self.getLastRevision(url)
         self.assertEqual(remote_revision, self.local_branch.last_revision())
 
