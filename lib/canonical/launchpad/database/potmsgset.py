@@ -400,7 +400,6 @@ class POTMsgSet(SQLBase):
 
         # If the update is on the translation credits message, yet
         # update is not is_imported, silently return.
-        # XXX 2007-06-26 Danilo: Do we want to raise an exception here?
         if self.is_translation_credit and not is_imported:
             return
 
