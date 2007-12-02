@@ -611,6 +611,12 @@ class DebBugs(ExternalBugTracker):
         if not os.path.exists(os.path.join(self.db_location, 'db-h')):
             log.error("There's no debbugs db at %s." % self.db_location)
             self.debbugs_db = None
+
+            # XXX gmb 2007-11-02 (bug 153532):
+            #     We really shouldn't be returning in an __init__(), and
+            #     make lint will complain about this. This is one of the
+            #     the things that can be fixed when we refactor
+            #     ExternalBugTrackers.
             return
 
         # The debbugs database is split in two parts: a current
