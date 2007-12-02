@@ -188,7 +188,7 @@ created in its last_error_type field.
 
 == Batched Bugwatch Updating ==
 
-Checkwatches.py will only update those bugs that need updating, but
+checkwatches.py will only update those bugs that need updating, but
 there is a further limit on the amount of bugs which will be updated for
 a given ExternalBugTracker in each checkwatches run: the batch size.
 
