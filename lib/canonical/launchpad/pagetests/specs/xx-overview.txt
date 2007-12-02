@@ -34,11 +34,55 @@ specifications, at +specs.
 
 First, let's check on product.
 
-    >>> user_browser.open('http://launchpad.dev/evolution/+specs')
-    >>> print extract_text(find_main_content(user_browser.contents))
-    Blueprints for Evolution
-    Launchpad lets projects track the features they intend to implement...
-
+    >>> user_browser.open('http://launchpad.dev/firefox/+specs')
+    >>> main = find_main_content(user_browser.contents)
+    >>> print extract_text(main).encode('us-ascii', 'backslashreplace')
+    Blueprints for Mozilla Firefox...
+    Priority
+    Specification
+    Design
+    Delivery
+    Assignee
+    Series
+    4
+    High
+    svg-support
+    0
+    Approved
+    8
+    Beta Available
+    Carlos Perell\xf3 Mar\xedn
+    3
+    Medium
+    canvas
+    5
+    New
+    0
+    Unknown
+    3
+    Medium
+    extension-manager-upgrades
+    5
+    New
+    12
+    Informational
+    Carlos Perell\xf3 Mar\xedn
+    3
+    Medium
+    mergewin
+    5
+    New
+    0
+    Unknown
+    0
+    Not
+    e4x
+    2
+    Review
+    0
+    Unknown
+    Dafydd Harries
+    
 Now, on distribution.
 
     >>> user_browser.open('http://launchpad.dev/debian/+specs')
