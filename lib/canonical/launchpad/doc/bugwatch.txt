@@ -315,9 +315,9 @@ doesn't get updated since the remote importance hasn't been changed.
     >>> print debian_task.importance.title
     Critical
 
-If only the remote importance is changed, not the bugtask's status, no
-event is fired off. The remote importance is simply a string, it doesn't
-have to be convertible to a real Malone status.
+If only the remote importance is changed, not the bugtask's importance,
+no event is fired off. The remote importance is simply a string, it
+doesn't necessarily have to be convertible to a real Malone status.
 
     >>> debian_bugwatch.updateImportance(u'some importance',
     ...     BugTaskImportance.CRITICAL)
