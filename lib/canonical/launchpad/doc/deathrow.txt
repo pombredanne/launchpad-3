@@ -1,6 +1,4 @@
-
-Testing the Package Death Row
-=============================
+= Testing the Package Death Row =
 
   >>> import datetime
   >>> import pytz
@@ -36,8 +34,7 @@ Temporary directories to be used in tests:
   >>> os.makedirs(temp_path)
 
 
-Nothing to do
-=============
+== Nothing to do ==
 
 The no-operation use case:
 
@@ -50,8 +47,7 @@ The no-operation use case:
   INFO: Total bytes freed: 0
   DEBUG: Marking 0 condemned packages as removed.
 
-Package Removal (dry-run)
-=========================
+= Package Removal (dry-run) =
 
 And, if we mark some packages to be pending removal. Source publication
 15 refers to alsa-utils_1.0.9a-4.dsc:
@@ -66,6 +62,20 @@ And, if we mark some packages to be pending removal. Source publication
   >>> print publishing_record.dateremoved
   None
   >>> publishing_record.status = PackagePublishingStatus.DELETED
+  >>> publishing_record.scheduleddeletiondate = old_date
+
+Source publication 25 includes 'foobar-1.0.dsc' (but the source pacakge
+is 'cdrkit'; our sample data is not entirely consistent but it
+doesn't matter for this test.)  It will be considered for file deletion
+but nothing actually deleted because other publications are referring to
+the files.
+
+  >>> publishing_record = SSPPH.get(25)
+  >>> print publishing_record.distroseries.name
+  breezy-autotest
+  >>> print publishing_record.dateremoved
+  None
+  >>> publishing_record.status = PackagePublishingStatus.OBSOLETE
   >>> publishing_record.scheduleddeletiondate = old_date
 
 Source publication 12 includes alsa-utils_1.0.9a-4ubuntu1.dsc:
@@ -106,9 +116,17 @@ Knock off some binaries as well:
   >>> publishing_record.status = PackagePublishingStatus.DELETED
   >>> publishing_record.scheduleddeletiondate = old_date
 
+  >>> publishing_record = SBPPH.get(24)
+  >>> print publishing_record.dateremoved
+  None
+  >>> publishing_record.status = PackagePublishingStatus.OBSOLETE
+  >>> publishing_record.scheduleddeletiondate = old_date
+
 As above, both 19 and 21 binary publication refer to the same pmount
 binaries, and since 21 is not to be removed, 19 is supposed to be left
-alone too:
+alone too.  Publishing record 23 refers to package 'cdrkit'
+which we just made obsolete, and is also considered for death row
+processing.
 
   >>> publishing_record = SBPPH.get(21)
   >>> print [f.libraryfile.filename
@@ -120,21 +138,30 @@ alone too:
   ...        for f in publishing_record.binarypackagerelease.files]
   [u'pmount_1.9-1_all.deb']
 
+Our sample data has "cdrkit" with a .deb name of "foobar".  Go figure.
+
+  >>> publishing_record = SBPPH.get(24)
+  >>> print [f.libraryfile.filename
+  ...        for f in publishing_record.binarypackagerelease.files]
+  [u'foobar_1.0_all.deb']
+
 Flush our these updates and kick the DeathRow processor again.
 
   >>> flush_database_updates()
   >>> disk_pool = DiskPool(pool_path, temp_path, MockLogger())
   >>> death_row = DeathRow(distro.main_archive, disk_pool, MockLogger())
   >>> death_row.reap(dry_run=True)
-  DEBUG: 2 Sources
-  DEBUG: 2 Binaries
-  INFO: Removing 2 files marked for reaping
+  DEBUG: 3 Sources
+  DEBUG: 3 Binaries
+  INFO: Removing 3 files marked for reaping
   DEBUG: (Not really!) removing main linux-source-2.6.15/linux-2.6.12_2.6.12.20_i386.deb
   DEBUG: File to remove main linux-source-2.6.15/linux-2.6.12_2.6.12.20_i386.deb is not in pool, skipping
+  DEBUG: (Not really!) removing main cdrkit/foobar_1.0_all.deb
+  DEBUG: File to remove main cdrkit/foobar_1.0_all.deb is not in pool, skipping
   DEBUG: (Not really!) removing main alsa-utils/alsa-utils_1.0.9a-4.dsc
   DEBUG: File to remove main alsa-utils/alsa-utils_1.0.9a-4.dsc is not in pool, skipping
   INFO: Total bytes freed: 0
-  DEBUG: Marking 2 condemned packages as removed.
+  DEBUG: Marking 3 condemned packages as removed.
 
 Note that while we are in dry run mode, the database queries are
 actually executed; the process-death-row script however does not commit
@@ -182,7 +209,7 @@ since it can't be sure whether or not they can be removed.
   >>> disk_pool = DiskPool(pool_path, temp_path, MockLogger())
   >>> death_row = DeathRow(distro.main_archive, disk_pool, MockLogger())
   >>> death_row.reap(dry_run=True)
-  DEBUG: 1 Sources
+  DEBUG: 2 Sources
   DEBUG: 1 Binaries
   INFO: Removing 0 files marked for reaping
   INFO: Total bytes freed: 0
@@ -200,8 +227,7 @@ were not removed from disk.
   True
 
 
-Package Removal (simulated real run)
-====================================
+== Package Removal (simulated real run) ==
 
 Test that bytes freed computing is handled correctly:
 
@@ -212,12 +238,14 @@ Test that bytes freed computing is handled correctly:
   >>> publishing_record = SSPPH.get(2)
   >>> publishing_record.status = PackagePublishingStatus.DELETED
   >>> publishing_record.scheduleddeletiondate = old_date
+  >>> publishing_record.dateremoved = None
   >>> publishing_record = SBPPH.get(24)
   >>> publishing_record.status = PackagePublishingStatus.SUPERSEDED
   >>> publishing_record.scheduleddeletiondate = old_date
+  >>> publishing_record.dateremoved = None
   >>> flush_database_updates()
   >>> death_row.reap()
-  DEBUG: 2 Sources
+  DEBUG: 3 Sources
   DEBUG: 2 Binaries
   INFO: Removing 2 files marked for reaping
   DEBUG: (Not really!) removing main cdrkit/foobar_1.0_all.deb
@@ -236,7 +264,7 @@ Test that random exceptions are handled correctly:
   >>> publishing_record.scheduleddeletiondate = old_date
   >>> flush_database_updates()
   >>> death_row.reap()
-  DEBUG: 2 Sources
+  DEBUG: 3 Sources
   DEBUG: 1 Binaries
   INFO: Removing 1 files marked for reaping
   DEBUG: (Not really!) removing main alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc

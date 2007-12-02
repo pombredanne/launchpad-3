@@ -6,7 +6,7 @@ Launchpad account, they can register directly from the login page.
 First we will set up the helper view that lets us test the final
 portion of the authentication process:
 
-    >>> from canonical.launchpad.ftests.openid import (
+    >>> from canonical.launchpad.ftests.openidhelpers import (
     ...     install_consumer, uninstall_consumer)
     >>> install_consumer()
 
@@ -125,6 +125,7 @@ directed back to the original site:
     ...
     openid.identity:http://openid.launchpad.dev/+id/...
     openid.mode:id_res
+    ...
     openid.return_to:http://launchpad.dev/+openid-consumer
     ...
 

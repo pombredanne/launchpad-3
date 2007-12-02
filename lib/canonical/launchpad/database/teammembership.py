@@ -238,8 +238,7 @@ class TeamMembership(SQLBase):
         invited = TeamMembershipStatus.INVITED
         invitation_declined = TeamMembershipStatus.INVITATION_DECLINED
 
-        # Flush the cache used by the Person.inTeam method
-        self.person._inTeam_cache = {}
+        self.person.clearInTeamCache()
 
         # Make sure the transition from the current status to the given one
         # is allowed. All allowed transitions are in the TeamMembership spec.
@@ -394,6 +393,9 @@ class TeamMembershipSet:
         admin = TeamMembershipStatus.ADMIN
         invited = TeamMembershipStatus.INVITED
         assert status in [proposed, approved, admin, invited]
+
+        person.clearInTeamCache()
+
         tm = TeamMembership(
             person=person, team=team, status=status, dateexpires=dateexpires,
             reviewer=reviewer, reviewercomment=reviewercomment)

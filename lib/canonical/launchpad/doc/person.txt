@@ -344,6 +344,13 @@ was a cause of a number of timeouts
     >>> lifeless.inTeam(vcs_imports)
     True
 
+IPerson has a method to clear it; this is used between IPerson instances
+to ensure that the cache can be kept consistent when membership changes.
+
+    >>> naked_lifeless.clearInTeamCache()
+    >>> naked_lifeless._inTeam_cache
+    {}
+
 ** See lib/canonical/launchpad/doc/teammembership.txt for more information
    about team membership/participation.
 
@@ -930,3 +937,53 @@ or not.
     >>> kiko.isUploader(ubuntu)
     False
 
+
+== Bug contribution ==
+
+We can check whether a person has any bugs assigned to them, either
+within the context of a specific bug target, or in Launchpad in general.
+
+A person with bugs assigned to them in a context is considered a 'Bug
+Contributor'.
+
+    >>> cprov.searchTasks(
+    ...     BugTaskSearchParams(user=foobar, assignee=cprov)).count()
+    0
+
+Celso has no bug tasks assigned to him. In other words, he isn't a bug
+contributor.
+
+    >>> cprov.isBugContributor(user=foobar)
+    False
+
+We assign a bug task to Celso.
+
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> search_params = BugTaskSearchParams(user=foobar)
+    >>> search_params.setProduct(firefox)
+    >>> firefox_bugtask = getUtility(IBugTaskSet).search(search_params)[0]
+    >>> firefox_bugtask.transitionToAssignee(cprov)
+    >>> flush_database_updates()
+
+Now Celso is a bug contributor in Launchpad.
+
+    >>> cprov.isBugContributor(user=foobar)
+    True
+
+Celso is a bug contributer in the context of the `firefox` product.
+
+    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> cprov.isBugContributorInTarget(user=foobar, target=firefox)
+    True
+
+And also in the context of the `mozilla` project, by association.
+
+    >>> cprov.isBugContributorInTarget(user=foobar,
+    ...     target=getUtility(IProjectSet).getByName('mozilla'))
+    True
+
+But not in other contexts.
+
+    >>> cprov.isBugContributorInTarget(user=foobar,
+    ...     target=getUtility(IProductSet).getByName('jokosher'))
+    False

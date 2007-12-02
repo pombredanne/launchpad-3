@@ -86,7 +86,8 @@ class ImportProcess:
                     title = entry_to_import.import_into.title
                     self.logger.info('Importing: %s' % title)
                     entry_to_import.import_into.importFromQueue(self.logger)
-                    from canonical.database.sqlbase import flush_database_caches
+                    from canonical.database.sqlbase import (
+                        flush_database_caches)
                     flush_database_caches()
                 except KeyboardInterrupt:
                     self.ztm.abort()
@@ -105,7 +106,8 @@ class ImportProcess:
                     self.ztm.begin()
                     translation_import_queue = getUtility(
                         ITranslationImportQueue)
-                    entry_to_import = translation_import_queue[failed_entry_id]
+                    entry_to_import = translation_import_queue[
+                        failed_entry_id]
                     entry_to_import.status = RosettaImportStatus.FAILED
                     self.ztm.commit()
                     self.ztm.begin()
@@ -123,10 +125,13 @@ class ImportProcess:
                 except:
                     # If we have any exception, we log it and abort the
                     # transaction.
-                    self.logger.error('We got an unexpected exception while'
-                                      ' committing the transaction', exc_info=1)
+                    self.logger.error(
+                        'We got an unexpected exception while committing the '
+                        'transaction',
+                        exc_info=1)
                     self.ztm.abort()
                     self.ztm.begin()
+
             # Refresh the list of objects with pending imports.
             importqueues = (
                 translation_import_queue.getPillarObjectsWithImports(

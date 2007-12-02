@@ -371,7 +371,7 @@ class TranslationImportQueueEntry(SQLBase):
             # We need to extract the language information from the package
             # name
 
-            # Here we have the set of language codes that have special meanings.
+            # These language codes have special meanings.
             lang_mapping = {
                 'engb': 'en_GB',
                 'ptbr': 'pt_BR',
@@ -402,13 +402,13 @@ class TranslationImportQueueEntry(SQLBase):
             dir_name = os.path.basename(dir_path)
 
             if dir_name == 'messages' or dir_name == 'LC_MESSAGES':
-                # We have another directory between the language code directory
-                # and the filename (second and third case).
+                # We have another directory between the language code
+                # directory and the filename (second and third case).
                 dir_path = os.path.dirname(dir_path)
                 lang_code = os.path.basename(dir_path)
             else:
-                # The .po file is stored inside the directory with the language
-                # code as its name or an unsupported layout.
+                # The .po file is stored inside the directory with the
+                # language code as its name or an unsupported layout.
                 lang_code = dir_name
 
             if lang_code is None:
@@ -730,9 +730,10 @@ class TranslationImportQueue:
                     ' IProductSeries, IDistribution, IDistroSeries or'
                     ' ISourcePackage')
         if status is not None:
-            queries.append('status = %s' % sqlvalues(status.value))
+            queries.append('status = %s' % sqlvalues(status))
         if file_extension is not None:
-            queries.append("path LIKE '%%' || %s" % quote_like(file_extension))
+            queries.append(
+                "path LIKE '%%' || %s" % quote_like(file_extension))
 
         return queries, clause_tables
 
@@ -773,10 +774,10 @@ class TranslationImportQueue:
         from canonical.launchpad.database.distroseries import DistroSeries
         from canonical.launchpad.database.product import Product
 
-        query = []
-        query.append('ProductSeries.product=Product.id')
-        query.append(
-            'TranslationImportQueueEntry.productseries=ProductSeries.id')
+        query = [
+            'ProductSeries.product = Product.id',
+            'TranslationImportQueueEntry.productseries = ProductSeries.id'
+            ]
         if status is not None:
             query.append('TranslationImportQueueEntry.status=%s' % sqlvalues(
                 status))
@@ -786,11 +787,10 @@ class TranslationImportQueue:
             clauseTables=['ProductSeries', 'TranslationImportQueueEntry'],
             distinct=True)
 
-        query = []
-        query.append('TranslationImportQueueEntry.distroseries IS NOT NULL')
-        query.append(
-            'TranslationImportQueueEntry.distroseries=DistroSeries.id')
-        query.append('DistroSeries.defer_translation_imports IS FALSE')
+        query = [
+            'TranslationImportQueueEntry.distroseries = DistroSeries.id',
+            'DistroSeries.defer_translation_imports IS FALSE'
+            ]
         if status is not None:
             query.append('TranslationImportQueueEntry.status=%s' % sqlvalues(
                 status))
