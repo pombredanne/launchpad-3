@@ -50,7 +50,10 @@ Clicking this button deletes the corresponding packaging association.
 The packaging association is persistently deleted. It does not reappear
 if the page is reloaded.
 
-    >>> user_browser.reload()
+XXX: user_browser.reload() does not expose the incorrect behaviour if it
+occurs. -- David Allouche 2007-12-02
+
+    >>> user_browser.open(user_browser.url)
     >>> content = user_browser.contents
     >>> print extract_text(find_tag_by_id(content, 'packaging'))
     Ubuntu version                  Upstream version

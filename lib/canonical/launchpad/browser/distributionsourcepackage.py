@@ -347,13 +347,6 @@ class DistributionSourcePackageView(LaunchpadFormView):
             % (productseries.product.displayname, productseries.displayname,
                distroseries.displayname))
 
-        # XXX: This should not be needed, but if we do not do it, then the
-        # POST renders correctly (the packaging appears deleted) but when we
-        # GET the page again, the packaging is back. It looks like something
-        # causes the transaction to abort if we do not set the redirection.
-        # Francis is looking into it. -- DavidAllouche 2007-11-29.
-        self.next_url = self.request.URL
-
     def version_listing(self):
         result = []
         for sourcepackage in self.context.get_distroseries_packages():
