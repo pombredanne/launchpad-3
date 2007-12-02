@@ -27,6 +27,7 @@ instance here:
     42: FUBAR
     42: FUBAR
     >>> issuezilla.updateBugWatches(mozilla_bugzilla.watches)
+    INFO:...:Updating 4 watches on https://bugzilla.mozilla.org
     WARNING:...:Didn't find bug u'42' on https://bugzilla.mozilla.org
     (local bugs: 1, 2).
     >>> for bug_watch in mozilla_bugzilla.watches:
@@ -62,6 +63,7 @@ Mozilla.org's using this old version. Here's the scoop:
 We support them just fine:
 
     >>> old_bugzilla.updateBugWatches(mozilla_bugzilla.watches)
+    INFO:...:Updating 4 watches on https://bugzilla.mozilla.org
     WARNING:...:Didn't find bug u'2000' on https://bugzilla.mozilla.org
     (local bugs: 1).
     >>> for bug_watch in mozilla_bugzilla.watches:
@@ -99,6 +101,7 @@ Some Bugzillas have some weird properties that we need to cater for:
 Yet everything still works as expected:
 
     >>> weird_bugzilla.updateBugWatches(mozilla_bugzilla.watches)
+    INFO:root:Updating 4 watches on https://bugzilla.mozilla.org
     WARNING:...:Didn't find bug u'42' on https://bugzilla.mozilla.org
     (local bugs: 1, 2).
     >>> for bug_watch in mozilla_bugzilla.watches:
