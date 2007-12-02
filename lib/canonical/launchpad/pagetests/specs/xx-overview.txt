@@ -41,23 +41,9 @@ First, let's check on product.
     Priority...Specification...Design...Delivery...Assignee...Series...
     High...svg-support...Approved...Beta Available...Carlos Perell...
     Medium...canvas...New...Unknown...
-    Medium...extension-manager-upgrades...New...Informational
-    Carlos Perell\xf3 Mar\xedn
-    3
-    Medium
-    mergewin
-    5
-    New
-    0
-    Unknown
-    0
-    Not
-    e4x
-    2
-    Review
-    0
-    Unknown
-    Dafydd Harries
+    Medium...extension-manager-upgrades...New...Informational...Carlos Perell...
+    Medium...mergewin...New...Unknown...
+    Not...e4x...Review...Unknown...Dafydd Harries
     
 Now, on distribution.
 
