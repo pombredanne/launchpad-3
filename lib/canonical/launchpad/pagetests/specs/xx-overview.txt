@@ -10,11 +10,11 @@ product or distribution home page, showing latest specs.
     >>> print extract_text(main).encode('us-ascii', 'backslashreplace')
     Mozilla Firefox...
     Latest blueprints
-    Merge Open Browser Windows with "Consolidate Windows"
-    Support E4X in EcmaScript
-    Support Native SVG Objects
-    Support &lt;canvas&gt; Objects
-    Extension Manager Upgrades...
+        Merge Open Browser Windows with "Consolidate Windows"
+        Support E4X in EcmaScript
+        Support Native SVG Objects
+        Support &lt;canvas&gt; Objects
+        Extension Manager Upgrades...
 
 If there are no specifications, then we should not see the "latest
 specifications" portlet.
@@ -34,35 +34,45 @@ specifications, at +specs.
 
 First, let's check on product.
 
-  >>> print http(r"""
-  ... GET /evolution/+specs HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+    >>> user_browser.open('http://launchpad.dev/evolution/+specs')
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Blueprints for Evolution
+    Launchpad lets projects track the features they intend to implement...
 
 Now, on distribution.
 
-  >>> print http(r"""
-  ... GET /debian/+specs HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-
+    >>> user_browser.open('http://launchpad.dev/debian/+specs')
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Blueprints for Debian...
+    Launchpad lets projects track the features they intend to implement...
 
 And we should see the latest specifications available for the whole system:
 
-  >>> print http(r"""
-  ... GET /specs/ HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Recently registered...
-
+    >>> user_browser.open('http://launchpad.dev/specs/')
+    >>> print extract_text(find_main_content(user_browser.contents))
+    All projects...
+    Recently registered
+        The Krunch Desktop Plan
+        KDE Desktop File Language Packs
+        The REVU Review Tracking System
+        Facilitate mass installs of Ubuntu using Netboot configuration
+        CD Media Integrity Check
+    Recently completed
+        Activating Usplash during Hibernation
+        Support for local devices on Ubuntu thin clients...
 
 Which should also support searching:
 
-  >>> print http(r"""
-  ... GET /specs/?searchtext=svg HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...blueprint(s) matching...svg...
-  ...Support Native SVG Objects...
+    >>> user_browser.getControl(name='field.search_text').value = "svg"
+    >>> user_browser.getControl('Find Blueprints').click()
+    >>> print extract_text(user_browser.contents)
+    Launchpad...
+    Launchpad is a free software hosting and development website...
+
+    >>> user_browser.open('http://launchpad.dev/specs/?searchtext=svg')
+    >>> print extract_text(find_main_content(user_browser.contents))
+    All projects...
+    1
+    blueprint(s) matching...
+    Support Native SVG Objects
+    for Mozilla Firefox...
