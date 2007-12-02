@@ -12,10 +12,28 @@ need to be beta testers.
 
     >>> admin_browser.open('http://launchpad.dev/~launchpad-beta-testers')
     >>> admin_browser.getLink('Add member').click()
-    >>> admin_browser.getControl(name='field.newmember').value = ('sabdfl')
-    >>> admin_browser.getControl(name="field.actions.add").click()
-    >>> admin_browser.getControl(name='field.newmember').value = ('kamion')
-    >>> admin_browser.getControl(name="field.actions.add").click()
+    >>> admin_browser.getControl('New member').value = ('sabdfl')
+    >>> admin_browser.getControl('Add Member').click()
+    >>> admin_browser.getControl('New member').value = ('kamion')
+    >>> admin_browser.getControl('Add Member').click()
+
+Also, anon_browser can't be truly anonymous, it must be a logged in user who
+has nothing to do with any of these pillars or announcements but is at least
+in the beta team.
+
+    >>> admin_browser.getControl('New member').value = ('no-priv')
+    >>> admin_browser.getControl('Add Member').click()
+    >>> anon_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+
+And finally, because of a quirk of the data where Ubuntu Team has LP Beta
+Testers as a member, and because we just added no-priv@canonical.com to LP
+Beta Testers, and because the Ubuntu Team is the product owner of Tomcat
+which is where we create some announcements, no-priv turns out to have
+some-priv in weird spots. We will fix that temporarily here:
+
+   >>> admin_browser.open(
+   ...    'http://launchpad.dev/~ubuntu-team/+member/launchpad-beta-testers')
+   >>> admin_browser.getControl('Deactivate').click()
 
 == Making an announcement ==
 
