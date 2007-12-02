@@ -292,7 +292,7 @@ Finally, let's make sure that bug notifications were added:
 
 Similarly, the bug watch updater can modify the bug watch's importance.
 Passing it a new Malone importance will fire off an event, which our
-event listener will pick up. We reset the lastchanged field of the bug
+event listener will pick up. We reset the `lastchanged` field of the bug
 watch so that we can demonstrate how it gets updated.
 
     >>> from canonical.launchpad.interfaces import BugTaskImportance
@@ -303,7 +303,7 @@ watch so that we can demonstrate how it gets updated.
     ...     debian_bugwatch.remote_importance, BugTaskImportance.CRITICAL)
     Low => Critical
 
-As with updating Malone statuses, the bug watch's lastchanged field
+As with updating Malone statuses, the bug watch's `lastchanged` field
 doesn't get updated since the remote importance hasn't been changed.
 
     >>> debian_bugwatch.lastchanged == old_lastchanged
@@ -327,7 +327,7 @@ doesn't necessarily have to be convertible to a real Malone status.
     >>> print debian_task.importance.title
     Critical
 
-The lastchanged field was updated, though.
+The `lastchanged` field was updated, though.
 
     >>> debian_bugwatch.lastchanged > old_lastchanged
     True
