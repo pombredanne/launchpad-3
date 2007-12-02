@@ -98,7 +98,7 @@ stating that the bug report can expire.
 == The expirable bug search ==
 
 Users can view a list of expirable bugs via a link on the project's
-bug page. To see the behaviour to the bug listing, we need another
+bug page. To see the behaviour of the bug listing, we need another
 expirable bug. No Privileges Person marks another bug as incomplete.
 
     >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bug/12')
@@ -114,9 +114,9 @@ bugs that can expire.
     'bugs in Jokosher Audio Editor'
 
     >>> expirable_bugs_link = user_browser.getLink(
-    ...     'bugs will expire if they are not confirmed')
+    ...     'Incomplete bugs can expire')
     >>> expirable_bugs_link.text
-    '2 bugs will expire if they are not confirmed'
+    '2 Incomplete bugs can expire'
 
 The link is to the expirable bugs page. No Privileges Person can see
 the bug he set Incomplete previously. He cannot see the search form or
@@ -174,9 +174,9 @@ Jokosher's bug page.
 
     >>> user_browser.getLink('Bugs').click()
     >>> expirable_bugs_link = user_browser.getLink(
-    ...     'bugs will expire if they are not confirmed')
+    ...     'Incomplete bugs can expire')
     >>> expirable_bugs_link.text
-    '0 bugs will expire if they are not confirmed'
+    '0 Incomplete bugs can expire'
 
     >>> user_browser.goBack(1)
     >>> user_browser.reload()

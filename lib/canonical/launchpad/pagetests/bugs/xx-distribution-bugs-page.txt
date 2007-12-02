@@ -71,9 +71,9 @@ not confirmed when the project uses Launchpad to track bugs.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu')
     >>> expirable_bugs_link = anon_browser.getLink(
-    ...     'bugs will expire if they are not confirmed')
+    ...     'Incomplete bugs can expire')
     >>> expirable_bugs_link.text
-    '0 bugs will expire if they are not confirmed'
+    '0 Incomplete bugs can expire'
 
 The link goes to the expirable bugs page, where the anonymous user can
 see which bugs will expire if they are not confirmed.
@@ -87,7 +87,7 @@ see any link reporting that bugs can expire.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/debian')
     >>> expirable_bugs_link = anon_browser.getLink(
-    ...     'bugs will expire if they are not confirmed')
+    ...     'Incomplete bugs can expire')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
