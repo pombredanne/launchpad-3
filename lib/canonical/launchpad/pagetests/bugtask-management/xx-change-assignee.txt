@@ -37,12 +37,12 @@ choice if it was mistaken.
     >>> assign_to_control.value = "cprov"
     >>> admin_browser.getControl("Save Changes", index=0).click()
     >>> print extract_text(
-    ...     first_tag_by_class(admin_browser.contents, 'informational message'))
+    ...     first_tag_by_class(admin_browser.contents, 'warning message'))
     Celso Providelo
-    did not previously have any assigned bugs.
+    did not previously have any assigned bugs in
+    Mozilla Firefox.
     If this bug was assigned by mistake,
-    You may change the assignment using
-    the form below.
+    you may change the assignment.
 
 If the new assignee does have bugs assigned, but not in the relevant pillar,
 the user will be warned too.
@@ -56,13 +56,12 @@ the user will be warned too.
     >>> assign_to_control.value = "cprov"
     >>> admin_browser.getControl("Save Changes", index=0).click()
     >>> print extract_text(
-    ...     first_tag_by_class(admin_browser.contents, 'informational message'))
+    ...     first_tag_by_class(admin_browser.contents, 'warning message'))
     Celso Providelo
     did not previously have any assigned bugs in
     Jokosher Audio Editor.
     If this bug was assigned by mistake,
-    You may change the assignment using
-    the form below.
+    you may change the assignment.
 
 When assigning a bug to oneself, though, the warning message is suppreseed.
 
@@ -77,5 +76,5 @@ When assigning a bug to oneself, though, the warning message is suppreseed.
     >>> print user_browser.url
     http://bugs.launchpad.dev/jokosher/+bug/11
     >>> print first_tag_by_class(
-    ...     user_browser.contents, 'informational message')
+    ...     user_browser.contents, 'warning message')
     None

@@ -1067,43 +1067,44 @@ class BugTaskEditView(LaunchpadEditFormView):
         # happen to be the only values that changed. We explicitly verify that
         # we got a new status and/or assignee, because our test suite doesn't
         # always pass all form values.
-        new_status = new_values.pop("status", False)
-        new_assignee = new_values.pop("assignee", False)
-        if ((new_status is not False) and
+        missing = object()
+        new_status = new_values.pop("status", missing)
+        new_assignee = new_values.pop("assignee", missing)
+        if ((new_status is not missing) and
             (bugtask.status != new_status)):
             changed = True
             bugtask.transitionToStatus(new_status, self.user)
 
-        if ((new_assignee is not False) and
+        if ((new_assignee is not missing) and
             (bugtask.assignee != new_assignee)):
             changed = True
             bugtask.transitionToAssignee(new_assignee)
 
-            if new_assignee and new_assignee != self.user:
-                if not new_assignee.isBugContributor(user=self.user):
-                    self.request.response.addNotification(
-                        """<a href="%s">%s</a>
-                        did not previously have any assigned bugs.
-                        <br /><br />
-                        If this bug was assigned by mistake,
-                        You may change the assignment using
-                        the form below.""" % (
-                        canonical_url(new_assignee),
-                        new_assignee.displayname))
-                elif not new_assignee.isBugContributorInTarget(
-                    user=self.user, target=bugtask.pillar):
-                    self.request.response.addNotification(
-                        """<a href="%s">%s</a>
-                        did not previously have any assigned bugs in
-                        <a href="%s">%s</a>.
-                        <br /><br />
-                        If this bug was assigned by mistake,
-                        You may change the assignment using
-                        the form below.""" % (
-                        canonical_url(new_assignee),
-                        new_assignee.displayname,
-                        canonical_url(bugtask.pillar),
-                        bugtask.pillar.title))
+            if new_assignee is None:
+                is_contributor = True
+            else:
+                is_contributor = new_assignee.isBugContributorInTarget(
+                    user=self.user, target=bugtask.pillar)
+
+            if (new_assignee is not None and
+                new_assignee != self.user and
+                not is_contributor):
+                # If we have a new assignee who isn't
+                # a bug contributor in this pillar,
+                # we display a warning to the user,
+                # in case they made a mistake.
+                self.request.response.addWarningNotification(
+                """<a href="%s">%s</a>
+                did not previously have any assigned bugs in
+                <a href="%s">%s</a>.
+                <br /><br />
+                If this bug was assigned by mistake,
+                you may <a href="%s/+editstatus">change the assignment</a>.""" % (
+                canonical_url(new_assignee),
+                new_assignee.displayname,
+                canonical_url(bugtask.pillar),
+                bugtask.pillar.title,
+                canonical_url(bugtask)))
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
             if bugtask.bugwatch is None:
