@@ -13,6 +13,7 @@
           <tr>
             <th>Relying Party</th>
             <th>Trust Root</th>
+          </tr>
         </thead>
         <tbody>
           <tr tal:repeat="rpconfig context/getAll">
