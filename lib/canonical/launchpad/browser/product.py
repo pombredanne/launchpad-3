@@ -53,8 +53,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchListingSort, IBranchSet, ICountry, IDistribution, IHasIcon,
-    ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
+    BranchListingSort, IBranchSet, IBugTracker, ICountry, IDistribution,
+    IHasIcon, ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
     IProductSeries, IProductSet, IProject, ITranslationImportQueue,
     License, NotFoundError, RESOLVED_BUGTASK_STATUSES,
     UnsafeFormGetSubmissionError)
@@ -776,8 +776,8 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     label = "Change project details"
     field_names = [
         "displayname", "title", "summary", "description", "project",
-        "bugtracker", "official_rosetta", "official_answers",
-        "homepageurl", "sourceforgeproject",
+        "bugtracker", 'enable_bug_expiration', "official_rosetta",
+        "official_answers", "homepageurl", "sourceforgeproject",
         "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
         "programminglang", "development_focus", "licenses", "license_info"]
     custom_widget(
@@ -792,6 +792,17 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         if (len(self.context.licenses) == 0 and
             self.widgets.get('licenses') is not None):
             self.widgets['licenses'].allow_pending_license = True
+
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        # enable_bug_expiration is disabled by JavaScript when bugtracker
+        # is not 'In Launchpad'. The contraint is enforced here in case the
+        # JavaScript fails to activate or run. Note that the bugtracker
+        # name : values are {'In Launchpad' : object, 'Somewhere else' : None
+        # 'In a registered bug tracker' : IBugTracker}.
+        bugtracker = data.get('bugtracker', None)
+        if bugtracker is None or IBugTracker.providedBy(bugtracker):
+            data['enable_bug_expiration'] = False
 
     @action("Change", name='change')
     def change_action(self, action, data):
