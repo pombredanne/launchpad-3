@@ -8,7 +8,6 @@ __all__ = ["findPolicyByName", "findPolicyByOptions", "UploadPolicyError"]
 
 from zope.component import getUtility
 
-from canonical.archiveuploader.nascentuploadfile import UploadError
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IDistributionSet,
     ILaunchpadCelebrities, PackagePublishingPocket)
@@ -22,25 +21,30 @@ def policy_options(optparser):
     objects herein.
     """
 
-    optparser.add_option("-C", "--context", action="store",
-                         dest="context", metavar="CONTEXT", default="insecure",
-                         help="The context in which to consider the upload.")
+    optparser.add_option(
+        "-C", "--context", action="store", dest="context",
+        metavar="CONTEXT", default="insecure",
+        help="The context in which to consider the upload.")
 
-    optparser.add_option("-d", "--distro", action="store",
-                         dest="distro", metavar="DISTRO", default="ubuntu",
-                         help="Distribution to give back from")
+    optparser.add_option(
+        "-d", "--distro", action="store",
+        dest="distro", metavar="DISTRO", default="ubuntu",
+        help="Distribution to give back from")
 
-    optparser.add_option("-s", "--series", action="store", default=None,
-                         dest="distroseries", metavar="DISTROSERIES",
-                         help="Distro series to give back from.")
+    optparser.add_option(
+        "-s", "--series", action="store", default=None,
+        dest="distroseries", metavar="DISTROSERIES",
+        help="Distro series to give back from.")
 
-    optparser.add_option("-b", "--buildid", action="store", type="int",
-                         dest="buildid", metavar="BUILD",
-                         help="The build ID to which to attach this upload.")
+    optparser.add_option(
+        "-b", "--buildid", action="store", type="int",
+        dest="buildid", metavar="BUILD",
+        help="The build ID to which to attach this upload.")
 
-    optparser.add_option("-a", "--announce", action="store",
-                         dest="announcelist", metavar="ANNOUNCELIST",
-                         help="Override the announcement list")
+    optparser.add_option(
+        "-a", "--announce", action="store",
+        dest="announcelist", metavar="ANNOUNCELIST",
+        help="Override the announcement list")
 
 
 class UploadPolicyError(Exception):
@@ -121,11 +125,10 @@ class AbstractUploadPolicy:
         elif (self.archive.purpose == ArchivePurpose.PARTNER and
               self.pocket != PackagePublishingPocket.RELEASE and
               self.pocket != PackagePublishingPocket.PROPOSED):
-              # Partner uploads can only go to the release or proposed
-              # pockets.
-              upload.reject(
-                "Partner uploads must be for the RELEASE or "
-                "PROPOSED pocket.")
+            # Partner uploads can only go to the release or proposed
+            # pockets.
+            upload.reject(
+                "Partner uploads must be for the RELEASE or PROPOSED pocket.")
         else:
             # Uploads to the partner archive are allowed in any distroseries
             # state.
@@ -142,33 +145,8 @@ class AbstractUploadPolicy:
         # reject PPA uploads by default
         self.rejectPPAUploads(upload)
 
-        # Ensure that the archive for binary uploads matches that of the
-        # source upload.
-        self.checkArchiveConsistency(upload)
-
         # execute policy specific checks
         self.policySpecificChecks(upload)
-
-    def checkArchiveConsistency(self, upload):
-        """Reject binary uploads whose archive differs from its source's.
-
-        If a build generates binaries which would end up in a different
-        archive to the source, then the upload is rejected.
-        """
-        if upload.sourceful and upload.binaryful:
-            # Mixed mode uploads do not need this check, there is no existing
-            # source package.
-            return
-
-        for binary_package_file in upload.changes.binary_package_files:
-            try:
-                spr = binary_package_file.findSourcePackageRelease()
-            except UploadError:
-                # The binary has no source package.
-                continue
-            if self.archive != spr.upload_archive:
-                upload.reject(
-                    "Archive for binary differs to the source's archive.")
 
     def rejectPPAUploads(self, upload):
         """Reject uploads targeted to PPA.
@@ -254,6 +232,31 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
                 "PPA is only allowed for members of "
                 "launchpad-beta-testers team.")
 
+    def checkArchiveSizeQuota(self, upload):
+        """Reject the upload if target archive size quota will be exceeded.
+
+        This check will reject source upload exceeding the specified archive
+        size quota.Binary upload will be skipped to avoid unnecessary hassle
+        dealing with FAILEDTOUPLOAD builds.
+        """
+        # Skip the check for binary uploads.
+        if upload.binaryful:
+            return
+
+        # Calculate the incoming upload total size.
+        upload_size = 0
+        for uploadfile in upload.changes.files:
+            upload_size += uploadfile.size
+
+        # Reject the upload if the archive size is going to exceed
+        # the authorized_size.
+        proposed_size = self.archive.estimated_size + upload_size
+        if proposed_size > self.archive.authorized_size:
+            upload.reject(
+                "PPA exceeded its size limit of %s bytes. Contact a "
+                "Launchpad administrator if you really need more space." % (
+                self.archive.authorized_size))
+
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now.
 
@@ -268,6 +271,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
             # publicly.
             self.checkSignerIsUbuntero(upload)
             #self.checkSignerIsBetaTester(upload)
+            self.checkArchiveSizeQuota(upload)
         else:
             if self.pocket == PackagePublishingPocket.SECURITY:
                 upload.reject(
@@ -327,7 +331,7 @@ AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)
 
 
 class SyncUploadPolicy(AbstractUploadPolicy):
-    """This policy is invoked when processing uploads from the sync process."""
+    """This policy is invoked when processing sync uploads."""
 
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
@@ -387,7 +391,10 @@ AbstractUploadPolicy._registerPolicy(AbsolutelyAnythingGoesUploadPolicy)
 
 
 class SecurityUploadPolicy(AbstractUploadPolicy):
-    """The security-upload policy allows unsigned changes and binary uploads."""
+    """The security-upload policy.
+
+    It allows unsigned changes and binary uploads.
+    """
 
     def __init__(self):
         AbstractUploadPolicy.__init__(self)

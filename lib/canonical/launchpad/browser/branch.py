@@ -611,7 +611,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             if url is None:
                 # If the url is not set due to url validation errors,
                 # there will be an error set for it.
-                error = self.getWidgetError('url')
+                error = self.getFieldError('url')
                 if not error:
                     self.setFieldError(
                         'url',
@@ -701,7 +701,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             if url is None:
                 # If the url is not set due to url validation errors,
                 # there will be an error set for it.
-                error = self.getWidgetError('url')
+                error = self.getFieldError('url')
                 if not error:
                     self.setFieldError(
                         'url',

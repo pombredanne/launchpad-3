@@ -21,17 +21,6 @@
 
     <div metal:fill-slot="main">
 
-    <script>
-    <!--
-        function updateSeries(select) {
-            var deb = document.getElementById('series-deb');
-            deb.innerHTML = select.value;
-            var deb_src = document.getElementById('series-deb-src');
-            deb_src.innerHTML = select.value;
-        }
-    //-->
-    </script>
-
       <tal:whiteboard condition="context/required:launchpad.Edit">
          <div id="whiteboard" class="informational"
               tal:condition="context/whiteboard">
@@ -46,27 +35,15 @@
             replace="structure context/description/fmt:text-to-html" />
       </div>
 
-      <h2>sources.list entries</h2>
-
-      <div tal:condition="view/sources_in_more_than_one_series" id="series-widget-div">
-        <form style="display: inline">
-        Display entries for: <span tal:replace="structure view/plain_series_widget" />
-        </form>
-      </div>
-
-      <pre style="border: 1px solid gray; padding: 0.3em" id="sources-list-entries">
-deb <a tal:attributes="href context/archive_url"
-       tal:content="context/archive_url" /> <span id="series-deb"
-             tal:content="context/distribution/currentseries/name">gutsy</span> main
-deb-src <a tal:attributes="href context/archive_url"
-       tal:content="context/archive_url" /> <span id="series-deb-src"
-             tal:content="context/distribution/currentseries/name">gutsy</span> main</pre>
+      <tal:entries replace="structure view/sources_list_entries" />
 
       <h2>Packages</h2>
 
       <p tal:condition="not:context/number_of_sources">
         This PPA does not contain any packages yet.
       </p>
+
+      <h2>apt sources.list entries</h2>
 
       <tal:active_ppa condition="context/number_of_sources">
 

@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'download_file_url',
     'ProductNavigation',
     'ProductDynMenu',
     'ProductShortLink',
@@ -18,6 +17,7 @@ __all__ = [
     'ProductBranchesMenu',
     'ProductTranslationsMenu',
     'ProductView',
+    'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductAddView',
     'ProductAddViewBase',
@@ -87,14 +87,6 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
-
-def download_file_url(release, file_):
-    """Construct the download file URL.
-
-    Given a release and file, return the file download URL.
-    """
-    return "%s/+download/%s" % (canonical_url(release),
-                                file_.libraryfile.filename)
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
@@ -210,7 +202,7 @@ class ProductLicenseMixin:
                 license_titles=indent(license_titles),
                 license_info=indent(self.product.license_info))
 
-            reply_to = format_address(user.displayname, 
+            reply_to = format_address(user.displayname,
                                       user.preferredemail.email)
             simple_sendmail(fromaddress,
                             'feedback@launchpad.net',
@@ -451,10 +443,12 @@ class ProductTranslationsMenu(ApplicationMenu):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
         text = 'Download translations'
         preferred_series = self.context.primary_translatable
-        enabled = (preferred_series is not None)
+        enabled = (self.context.official_rosetta and
+            preferred_series is not None)
         link = ''
         if enabled:
             link = '%s/+export' % preferred_series.name
@@ -669,18 +663,45 @@ class ProductView(LaunchpadView, SortSeriesMixin):
         return self.context.getLatestBranches(visible_by_user=self.user)
 
 
-class ProductDownloadFilesView(LaunchpadView, SortSeriesMixin):
+class ProductDownloadFileMixin:
+    """Provides methods for managing download files."""
 
-    __used_for__ = IProduct
+    def deleteFiles(self, releases):
+        """Delete the selected files from the set of releases.
 
-    def initialize(self):
-        self.form = self.request.form
-        self.product = self.context
+        :param releases: A set of releases in the view.
+        :return: The number of files deleted.
+        """
+        del_count = 0
+        for release in releases:
+            for release_file in release.files:
+                if release_file.libraryfile.id in self.delete_ids:
+                    release.deleteFileAlias(release_file.libraryfile)
+                    self.delete_ids.remove(release_file.libraryfile.id)
+                    del_count += 1
+        return del_count
+
+    def getReleases(self):
+        """Find the releases with download files for view."""
+        raise NotImplementedError
+
+    def fileURL(self, file_, release=None):
+        """Create a download URL for the file."""
+        if release is None:
+            release = self.context
+        return "%s/+download/%s" % (canonical_url(release),
+                                    file_.libraryfile.filename)
+
+    def processDeleteFiles(self):
+        """If the 'delete_files' button was pressed, process the deletions."""
         del_count = None
+        self.delete_ids = [int(value) for key, value in self.form.items()
+                           if key.startswith('checkbox')]
         if 'delete_files' in self.form:
             if self.request.method == 'POST':
                 del(self.form['delete_files'])
-                del_count = self.delete_files(self.form)
+                releases = self.getReleases()
+                del_count = self.deleteFiles(releases)
             else:
                 # If there is a form submission and it is not a POST then
                 # raise an error.  This is to protect against XSS exploits.
@@ -697,22 +718,24 @@ class ProductDownloadFilesView(LaunchpadView, SortSeriesMixin):
                     "%d files have been deleted." %
                     del_count)
 
-    def delete_files(self, data):
-        del_keys = [int(v) for k, v in data.items()
-                    if k.startswith('checkbox')]
-        del_count = 0
-        for series in self.product.serieses:
-            for release in series.releases:
-                for f in release.files:
-                    if f.libraryfile.id in del_keys:
-                        release.deleteFileAlias(f.libraryfile)
-                        del_keys.remove(f.libraryfile.id)
-                        del_count += 1
-        return del_count
 
-    def file_url(self, release, file_):
-        """Create a download URL for the file."""
-        return download_file_url(release, file_)
+class ProductDownloadFilesView(LaunchpadView,
+                               SortSeriesMixin,
+                               ProductDownloadFileMixin):
+    """View class for the product's file downloads page."""
+    __used_for__ = IProduct
+
+    def initialize(self):
+        self.form = self.request.form
+        self.product = self.context
+        self.processDeleteFiles()
+
+    def getReleases(self):
+        """See `ProductDownloadFileMixin`."""
+        releases = set()
+        for series in self.product.serieses:
+            releases.update(series.releases)
+        return releases
 
     @cachedproperty
     def has_download_files(self):

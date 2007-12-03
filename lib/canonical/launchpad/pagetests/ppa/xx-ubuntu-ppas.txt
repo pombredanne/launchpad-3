@@ -7,6 +7,7 @@ The Ubuntu Linux page contains a link to get to the Personal Package Archives.
     >>> browser.title
     'Ubuntu Linux Personal Package Archives'
 
+
 == PPA main page ==
 
 The PPA page contains a search box and a table of known PPAs with columns
@@ -14,6 +15,7 @@ Owner, Description, Sources and Binaries, the latter two being a count.
 
 The sample data contains three PPAs.  Only Celso has any packages, with two
 sources and one binary.
+
 
 == Searching PPAs ==
 
@@ -72,6 +74,7 @@ In the three sample data PPAs, only one matches the search string "Celso".
     >>> len(find_tags_by_class(browser.contents, 'ppa_batch_row'))
     1
 
+
 == Owner's PPA pages ==
 
 Let's start by adding an extra package to Celso's archive:
@@ -98,8 +101,8 @@ Let's see his sources.list entries:
     >>> results = find_tag_by_id(browser.contents, 'sources-list-entries')
     >>> text = extract_text(results)
     >>> print text
-    deb http://ppa.launchpad.dev/cprov/ubuntu hoary main
-    deb-src http://ppa.launchpad.dev/cprov/ubuntu hoary main
+    deb http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
+    deb-src http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
 
 and the select control that lets you update them:
 
@@ -285,6 +288,24 @@ any package ever published in the context PPA.
     pmount - 0.1-1             2007-07-09  Deleted    warty            editors
 
 
+== Empty PPAs ==
+
+An empty PPA lists no packages and uses apt sources lines for the
+distribution's current release, as a guess.
+
+    >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive")
+    >>> print extract_text(anon_browser.contents)
+    PPA for No Privileges Person
+    ...
+    URL: http://ppa.launchpad.dev/no-priv/ubuntu
+    ...
+    deb http://ppa.launchpad.dev/no-priv/ubuntu hoary main
+    deb-src http://ppa.launchpad.dev/no-priv/ubuntu hoary main
+    ...
+    This PPA does not contain any packages yet.
+    ...
+
+
 == Single-publication PPAs ==
 
 Just quickly check if the singular form of this section is handled
@@ -310,6 +331,14 @@ series-widget-div control to update them:
     >>> print find_tag_by_id(anon_browser.contents, 'series-widget-div')
     None
 
+And the sources.list entries point to the right distribution release:
+
+    >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')
+    >>> text = extract_text(results)
+    >>> print text
+    deb http://ppa.launchpad.dev/sabdfl/ubuntu breezy-autotest main
+    deb-src http://ppa.launchpad.dev/sabdfl/ubuntu breezy-autotest main
+
 
 == Other Distribution PPAs ==
 
@@ -323,6 +352,7 @@ allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
 
     >>> len(find_tags_by_class(browser.contents, 'ppa_batch_row'))
     0
+
 
 == Team PPA pages ==
 

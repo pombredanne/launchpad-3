@@ -14,10 +14,10 @@ IExternalBugTracker.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IExternalBugtracker)
+    ...     BugTrackerType, IExternalBugTracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> trac = Trac(new_bugtracker(BugTrackerType.TRAC))
-    >>> verifyObject(IExternalBugtracker, trac)
+    >>> verifyObject(IExternalBugTracker, trac)
     True
 
 
