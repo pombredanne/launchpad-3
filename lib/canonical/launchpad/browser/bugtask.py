@@ -1080,26 +1080,26 @@ class BugTaskEditView(LaunchpadEditFormView):
             changed = True
             bugtask.transitionToAssignee(new_assignee)
 
-        if new_assignee is not None and new_assignee != self.user:
-            is_contributor = new_assignee.isBugContributorInTarget(
-                user=self.user, target=bugtask.pillar)
-            if not is_contributor:
-                # If we have a new assignee who isn't a bug
-                # contributor in this pillar, we display a warning
-                # to the user, in case they made a mistake.
-                self.request.response.addWarningNotification(
-                    """<a href="%s">%s</a>
-                    did not previously have any assigned bugs in
-                    <a href="%s">%s</a>.
-                    <br /><br />
-                    If this bug was assigned by mistake,
-                    you may <a href="%s/+editstatus"
-                    >change the assignment</a>.""" % (
-                    canonical_url(new_assignee),
-                    new_assignee.displayname,
-                    canonical_url(bugtask.pillar),
-                    bugtask.pillar.title,
-                    canonical_url(bugtask)))
+            if new_assignee is not None and new_assignee != self.user:
+                is_contributor = new_assignee.isBugContributorInTarget(
+                    user=self.user, target=bugtask.pillar)
+                if not is_contributor:
+                    # If we have a new assignee who isn't a bug
+                    # contributor in this pillar, we display a warning
+                    # to the user, in case they made a mistake.
+                    self.request.response.addWarningNotification(
+                        """<a href="%s">%s</a>
+                        did not previously have any assigned bugs in
+                        <a href="%s">%s</a>.
+                        <br /><br />
+                        If this bug was assigned by mistake,
+                        you may <a href="%s/+editstatus"
+                        >change the assignment</a>.""" % (
+                        canonical_url(new_assignee),
+                        new_assignee.displayname,
+                        canonical_url(bugtask.pillar),
+                        bugtask.pillar.title,
+                        canonical_url(bugtask)))
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
             if bugtask.bugwatch is None:
