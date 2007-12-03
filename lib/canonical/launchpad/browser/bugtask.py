@@ -1065,8 +1065,10 @@ class BugTaskEditView(LaunchpadEditFormView):
 
         # Set the "changed" flag properly, just in case status and/or assignee
         # happen to be the only values that changed. We explicitly verify that
-        # we got a new status and/or assignee, because our test suite doesn't
-        # always pass all form values.
+        # we got a new status and/or assignee, because the form is not always
+        # guaranteed to pass all the values. For example: bugtasks linked to a
+        # bug watch don't allow editting the form, and the value is missing
+        # from the form.
         missing = object()
         new_status = new_values.pop("status", missing)
         new_assignee = new_values.pop("assignee", missing)
