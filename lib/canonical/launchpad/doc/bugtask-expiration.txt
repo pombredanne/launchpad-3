@@ -251,8 +251,9 @@ are returned.
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(60)
     >>> summarize_bugtasks(expirable_bugtasks)
     ROLE         MALONE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
-    jokosher     True     61  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
+    jokosher     True     61  Incomplete  False     False  False  False
+
 
 When a bug is passed as an argument to findExpirableBugTasks(), it
 returns that bug's expirable BugTasks, or None. Passing the bug that

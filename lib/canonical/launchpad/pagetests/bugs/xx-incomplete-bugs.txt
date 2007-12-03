@@ -185,6 +185,7 @@ Jokosher's bug page.
     ...     print extract_text(tr)
     12  Copy, Cut and Delete operations should work ...  Critical  Incomplete
 
+
 == Incomplete bugs that do not expire ==
 
 Debian does not use launchpad to track bugs, so its incomplete bugs
