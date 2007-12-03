@@ -45,7 +45,7 @@ from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchType, BranchVisibilityRule, IBranch,
     IBranchMergeProposal, InvalidBranchMergeProposal,
     IBranchSet, IBranchSubscription, IBugSet,
-    ICodeImportSet, ILaunchpadCelebrities, IPersonSet, MIRROR_TIME_INCREMENT,
+    ICodeImportSet, ILaunchpadCelebrities, IPersonSet,
     UICreatableBranchType)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
@@ -359,7 +359,7 @@ class BranchView(LaunchpadView):
 
 
 class DecoratedMergeProposal:
-    """Provide some additional functionality to a normal branch merge proposal.
+    """Provide some additional attributes to a normal branch merge proposal.
     """
     decorates(IBranchMergeProposal)
 
@@ -396,19 +396,6 @@ class DecoratedMergeProposal:
         """Return a decorated list of landing candidates."""
         candidates = self.context.landing_candidates
         return [DecoratedMergeProposal(proposal) for proposal in candidates]
-
-
-class DecoratedMergeProposal:
-    """Provide some additional functionality to a normal branch merge proposal.
-    """
-    decorates(IBranchMergeProposal)
-
-    def __init__(self, context):
-        self.context = context
-
-    def show_registrant(self):
-        """Show the registrant if it was not the branch owner."""
-        return self.context.registrant != self.source_branch.owner
 
 
 class BranchInPersonView(BranchView):
@@ -625,8 +612,9 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
-    field_names = ['branch_type', 'product', 'url', 'name', 'title', 'summary',
-                   'lifecycle_status', 'whiteboard', 'home_page', 'author']
+    field_names = ['branch_type', 'product', 'url', 'name', 'title',
+                   'summary', 'lifecycle_status', 'whiteboard', 'home_page',
+                   'author']
 
     branch = None
 
@@ -865,7 +853,7 @@ class BranchSubscriptionsView(LaunchpadView):
 class RegisterBranchMergeProposalView(LaunchpadFormView):
     """The view to register new branch merge proposals."""
     schema = IBranchMergeProposal
-    for_input=True
+    for_input = True
 
     field_names = ['target_branch', 'dependent_branch', 'whiteboard']
 

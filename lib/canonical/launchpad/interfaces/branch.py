@@ -132,7 +132,8 @@ class BranchType(DBEnumeratedType):
         Imported
 
         Imported branches have been converted from some other revision
-        control system into bzr and are made available through the supermirror.
+        control system into bzr and are made available through the
+        supermirror.
         """)
 
     REMOTE = DBItem(4, """
@@ -234,8 +235,8 @@ class BranchURIField(URIField):
         launchpad_domain = config.launchpad.vhosts.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             message = _(
-                "For Launchpad to mirror a branch, the original branch cannot "
-                "be on <code>%s</code>." % launchpad_domain)
+                "For Launchpad to mirror a branch, the original branch "
+                "cannot be on <code>%s</code>." % launchpad_domain)
             raise LaunchpadValidationError(message)
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
@@ -350,8 +351,6 @@ class IBranch(IHasOwner):
         default=False)
 
     # People attributes
-    """Product owner, it can either a valid Person or Team
-            inside Launchpad context."""
     owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
         description=_("Branch owner, either a valid Person or Team."))
     author = Choice(
@@ -462,7 +461,8 @@ class IBranch(IHasOwner):
         the revisions that match the revision history from bzrlib for this
         branch.
         """)
-    subscriptions = Attribute("BranchSubscriptions associated to this branch.")
+    subscriptions = Attribute(
+        "BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
     date_created = Datetime(
@@ -707,7 +707,8 @@ class IBranchSet(Interface):
         """
 
     def getRecentlyChangedBranches(
-        branch_count=None, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """Return a result set of branches that have been recently updated.
 
@@ -730,7 +731,8 @@ class IBranchSet(Interface):
         """
 
     def getRecentlyImportedBranches(
-        branch_count=None, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """Return a result set of branches that have been recently imported.
 
@@ -753,7 +755,8 @@ class IBranchSet(Interface):
         """
 
     def getRecentlyRegisteredBranches(
-        branch_count=None, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """Return a result set of branches that have been recently registered.
 
@@ -956,7 +959,8 @@ class IBranchSet(Interface):
 
 
 class IBranchDelta(Interface):
-    """The quantitative changes made to a branch that was edited or altered."""
+    """The quantitative changes made to a branch that was edited or altered.
+    """
 
     branch = Attribute("The IBranch, after it's been edited.")
     user = Attribute("The IPerson that did the editing.")
