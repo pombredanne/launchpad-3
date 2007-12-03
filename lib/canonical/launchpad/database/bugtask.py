@@ -1579,7 +1579,6 @@ class BugTaskSet:
             bug_clause = 'AND Bug.id = %s' % sqlvalues(bug)
 
         (target_join, target_clause) = self._getTargetJoinAndClause(target)
-
         all_bugtasks = BugTask.select("""
             BugTask.id IN (
                 SELECT BugTask.id
@@ -1605,6 +1604,7 @@ class BugTaskSet:
             if (bugtask.bug.permits_expiration
                 and bugtask.conjoined_master is None):
                 bugtasks.append(bugtask)
+
         def date_last_updated_key(bugtask):
             """Return the date the bugtask was lasted updated."""
             return bugtask.bug.date_last_updated
@@ -1617,41 +1617,39 @@ class BugTaskSet:
         If target is None, the clause joins BugTask to Distribution,
         DistroSeries, Product, and ProductSeries.
         """
-        if target is None:
-            target_join = """
+        bugtarget_joins = dict(
+            distribution="""
                 LEFT OUTER JOIN Distribution
                     ON BugTask.distribution = Distribution.id
-                    AND Distribution.official_malone IS TRUE
+                    AND Distribution.official_malone IS TRUE""",
+            distroseries="""
                 LEFT OUTER JOIN DistroSeries
-                    ON BugTask.distroseries = DistroSeries.id
-                    AND DistroSeries.distribution IN (
-                        SELECT id FROM Distribution
-                        WHERE official_malone IS TRUE)
+                        ON BugTask.distroseries = DistroSeries.id
+                        AND DistroSeries.distribution IN (
+                            SELECT id FROM Distribution
+                            WHERE official_malone IS TRUE)""",
+            product="""
                 LEFT OUTER JOIN Product
-                    ON BugTask.product = Product.id
-                    AND Product.official_malone IS TRUE
+                        ON BugTask.product = Product.id
+                        AND Product.official_malone IS TRUE""",
+            productseries="""
                 LEFT OUTER JOIN ProductSeries
-                    ON BugTask.productseries = ProductSeries.id
-                    AND ProductSeries.product IN (
-                        SELECT id FROM Product WHERE official_malone IS TRUE)
-                """
+                        ON BugTask.productseries = ProductSeries.id
+                        AND ProductSeries.product IN (
+                            SELECT id FROM Product
+                            WHERE official_malone IS TRUE)""")
+        if target is None:
+            target_join = """
+                %(distribution)s %(distroseries)s
+                %(product)s %(productseries)s""" % bugtarget_joins
             target_clause = """
                 (Distribution.id IS NOT NULL
                  OR DistroSeries.id IS NOT NULL
                  OR Product.id IS NOT NULL
-                 OR ProductSeries.id IS NOT NULL)
-                 """
+                 OR ProductSeries.id IS NOT NULL)"""
         elif IDistribution.providedBy(target):
             target_join = """
-                LEFT OUTER JOIN Distribution
-                    ON BugTask.distribution = Distribution.id
-                    AND Distribution.official_malone IS TRUE
-                LEFT OUTER JOIN DistroSeries
-                    ON BugTask.distroseries = DistroSeries.id
-                    AND DistroSeries.distribution IN (
-                        SELECT id FROM Distribution
-                        WHERE official_malone IS TRUE)
-                """
+                %(distribution)s %(distroseries)s""" % bugtarget_joins
             target_clause = """
                 (BugTask.distribution = %s
                  OR DistroSeries.distribution = %s)""" % sqlvalues(
@@ -1662,19 +1660,11 @@ class BugTaskSet:
                     ON BugTask.distroseries = DistroSeries.id
                     AND DistroSeries.distribution IN (
                         SELECT id FROM Distribution
-                        WHERE official_malone IS TRUE)
-                """
+                        WHERE official_malone IS TRUE)"""
             target_clause = "DistroSeries.id = %s" % sqlvalues(target)
         elif IProduct.providedBy(target):
             target_join =  """
-                LEFT OUTER JOIN Product
-                    ON BugTask.product = Product.id
-                    AND Product.official_malone IS TRUE
-                LEFT OUTER JOIN ProductSeries
-                    ON BugTask.productseries = ProductSeries.id
-                    AND ProductSeries.product IN (
-                        SELECT id FROM Product WHERE official_malone IS TRUE)
-                """
+                 %(product)s %(productseries)s""" % bugtarget_joins
             target_clause = """
                 (BugTask.product = %s
                  OR ProductSeries.product = %s)""" % sqlvalues(target, target)
@@ -1683,8 +1673,8 @@ class BugTaskSet:
                 INNER JOIN ProductSeries
                     ON BugTask.productseries = ProductSeries.id
                     AND ProductSeries.product IN (
-                        SELECT id FROM Product WHERE official_malone IS TRUE)
-                """
+                        SELECT id FROM Product
+                        WHERE official_malone IS TRUE)"""
             target_clause = "ProductSeries.id = %s" % sqlvalues(target)
         else:
             raise AssertionError("Unknown BugTarget type.")
