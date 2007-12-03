@@ -75,6 +75,11 @@ class DistributionSourcePackage(BugTargetBase,
         return 'Source Package "%s" in %s' % (
             self.sourcepackagename.name, self.distribution.title)
 
+    @property
+    def bug_reporting_guidelines(self):
+        """See `IBugTarget`."""
+        return self.distribution.bug_reporting_guidelines
+
     def __getitem__(self, version):
         return self.getVersion(version)
 

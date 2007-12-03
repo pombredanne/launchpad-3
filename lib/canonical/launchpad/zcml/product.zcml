@@ -19,8 +19,8 @@
                       translationgroup translationpermission
                       official_malone official_answers
                       releaseroot development_focus bugtracker
-                      homepage_content icon logo mugshot 
-                      license_info licenses"
+                      homepage_content icon logo mugshot
+                      license_info licenses bug_reporting_guidelines"
       />
 <!-- sabdfl 2006-04-10 I put "name" in the admin group because
       with Bazaar now in place, lots of people can have personal

@@ -126,6 +126,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     development_focus = ForeignKey(
         foreignKey="ProductSeries", dbName="development_focus", notNull=False,
         default=None)
+    bug_reporting_guidelines = StringCol(default=None)
 
     license_info = StringCol(dbName='license_info', default=None)
 

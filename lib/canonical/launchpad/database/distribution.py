@@ -103,6 +103,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     bugcontact = ForeignKey(
         dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
+    bug_reporting_guidelines = StringCol(default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person', notNull=False,
         default=None)

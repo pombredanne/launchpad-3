@@ -90,6 +90,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     bugtracker = ForeignKey(
         foreignKey="BugTracker", dbName="bugtracker", notNull=False,
         default=None)
+    bug_reporting_guidelines = StringCol(default=None)
 
     # convenient joins
 

@@ -187,6 +187,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     shortdesc = property(shortdesc)
 
     @property
+    def bug_reporting_guidelines(self):
+        """See `IBugTarget`."""
+        return self.product.bug_reporting_guidelines
+
+    @property
     def sourcepackages(self):
         """See IProductSeries"""
         from canonical.launchpad.database.sourcepackage import SourcePackage

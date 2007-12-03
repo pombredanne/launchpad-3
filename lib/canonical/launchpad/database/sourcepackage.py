@@ -382,6 +382,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                 spr.distroseries, spr.sourcepackagerelease))
         return thedict
 
+    @property
+    def bug_reporting_guidelines(self):
+        """See `IBugTarget`."""
+        return self.distribution.bug_reporting_guidelines
+
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setSourcePackage(self)
