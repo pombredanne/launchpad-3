@@ -1,5 +1,7 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
+"""View classes used to edit `IOpenIDRPConfig` objects."""
+
 __metaclass__ = type
 __all__ = []
 
@@ -16,6 +18,7 @@ from canonical.widgets.image import ImageChangeWidget
 
 
 class OpenIDRPConfigSetNavigation(Navigation):
+    """Navigation for `IOpenIDRPConfigSet`."""
     usedfor = IOpenIDRPConfigSet
 
     def traverse(self, config_id):
@@ -29,6 +32,7 @@ class OpenIDRPConfigSetNavigation(Navigation):
 
 
 class OpenIDRPConfigAddView(LaunchpadFormView):
+    """View class for adding new RP configurations."""
 
     schema = IOpenIDRPConfig
     field_names = ['trust_root', 'displayname', 'description', 'logo',
@@ -43,6 +47,7 @@ class OpenIDRPConfigAddView(LaunchpadFormView):
 
     @action(_('Create'), name='create')
     def create_action(self, action, data):
+        """Create the new RP configuration."""
         rpconfig = getUtility(IOpenIDRPConfigSet).new(
             trust_root=data['trust_root'],
             displayname=data['displayname'],
@@ -60,6 +65,7 @@ class OpenIDRPConfigAddView(LaunchpadFormView):
 
 
 class OpenIDRPConfigEditView(LaunchpadEditFormView):
+    """View class for editing or removing RP configurations."""
 
     schema = IOpenIDRPConfig
     field_names = ['trust_root', 'displayname', 'description', 'logo',
@@ -69,6 +75,7 @@ class OpenIDRPConfigEditView(LaunchpadEditFormView):
 
     @action(_('Save'), name='save')
     def save_action(self, action, data):
+        """Save the RP configuration."""
         if self.updateContextFromData(data):
             self.request.response.addInfoNotification(
                 _('Updated RP configuration for %(trust_root)s.'),
@@ -76,6 +83,7 @@ class OpenIDRPConfigEditView(LaunchpadEditFormView):
 
     @action(_('Remove'), name='remove')
     def remove_action(self, action, data):
+        """Remove the RP configuration."""
         trust_root = self.context.trust_root
         self.context.destroySelf()
         self.request.response.addInfoNotification(
