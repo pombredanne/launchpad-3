@@ -32,13 +32,15 @@ To subscribe to a mailing list, Carlos needs to use his subscription
 management screen, which shows a subscription control for every
 mailing list.
 
-    >>> browser.open('http://launchpad.dev/~carlos/+editemails')
+    >>> browser.open('http://launchpad.dev/~carlos/')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.title
+    "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
+
     >>> admins = browser.getControl(name='field.subscription.admins')
     >>> rosetta_admins = browser.getControl(
     ...     name='field.subscription.rosetta-admins')
 
-    >>> for t in find_tags_by_class(browser.contents, 'subscription'):
-    ...     print t.name, t.value
     >>> print admins.value
     ["Don't subscribe"]
     >>> print rosetta_admins.value

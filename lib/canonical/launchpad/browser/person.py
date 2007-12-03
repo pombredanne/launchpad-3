@@ -2681,21 +2681,21 @@ class PersonEditEmailsView(LaunchpadFormView):
             custom_widget = self.custom_widgets['UNVALIDATED_SELECTED'])
 
     def _mailing_list_subscription_type(self, mailing_list):
-        """Returns the context user's subscription type for the given list.
+        """Return the context user's subscription type for the given list.
 
-        This is "Preferred address" if the user is subscribed using their
+        This is "Preferred address" if the user is subscribed using her
         preferred address and "Don't subscribe" if the user is not
         subscribed at all. Otherwise it's the EmailAddress under
-        which the user is subscribed to this mailing list."""
+        which the user is subscribed to this mailing list.
+        """
         subscription = mailing_list.getSubscription(self.context)
-        if subscription:
+        if subscription is not None:
             if subscription.email_address is None:
-                value = "Preferred address"
+                return "Preferred address"
             else:
-                value = subscription.email_address.email
+                return subscription.email_address.email
         else:
-            value = "Don't subscribe"
-        return value
+            return "Don't subscribe"
 
     def _mailing_list_fields(self):
         """Creates a field for each mailing list the user can subscribe to.
@@ -2705,24 +2705,25 @@ class PersonEditEmailsView(LaunchpadFormView):
         """
         mailing_list_set = getUtility(IMailingListSet)
         fields = []
-        terms = [SimpleTerm("Preferred address"), SimpleTerm("Don't subscribe"),
+        terms = [SimpleTerm("Preferred address"),
+                 SimpleTerm("Don't subscribe"),
                  SimpleTerm(self.context.preferredemail.email)]
         terms += [SimpleTerm(email.email)
                    for email in self.context.validatedemails]
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
-            if mailing_list and mailing_list.isUsable():
+            if mailing_list is not None and mailing_list.isUsable():
                 name = 'subscription.%s' % team.name
                 value = self._mailing_list_subscription_type(mailing_list)
                 field = Choice(__name__=name,
-                               title=team.name, source=SimpleVocabulary(terms),
-                               default=value)
+                               title=team.name,
+                               source=SimpleVocabulary(terms), default=value)
                 fields.append(field)
         return form.fields(*fields)
 
     @property
     def mailing_list_widgets(self):
-        """Returns all the mailing list subscription widgets."""
+        """Return all the mailing list subscription widgets."""
         return [widget for widget in self.widgets
                 if 'field.subscription.' in widget.name]
 
@@ -2779,7 +2780,7 @@ class PersonEditEmailsView(LaunchpadFormView):
              if not guessed.email in emailset])
         return emailset
 
-    ### Actions to do with validated email addresses.
+    # Actions to do with validated email addresses.
 
     def validate_action_remove_validated(self, action, data):
         """Make sure the user selected an email address to remove."""
@@ -2832,7 +2833,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                     emailaddress.email))
         self.next_url = self.action_url
 
-    ### Actions to do with unvalidated email addresses.
+    # Actions to do with unvalidated email addresses.
 
     def validate_action_confirm(self, action, data):
         """Make sure the user selected an email address to confirm."""
@@ -2885,7 +2886,7 @@ class PersonEditEmailsView(LaunchpadFormView):
             "The email address '%s' has been removed." % email)
         self.next_url = self.action_url
 
-    ### Actions to do with new email addresses
+    # Actions to do with new email addresses
 
     def validate_action_add_email(self, action, data):
         """Make sure the user entered a valid email address.
