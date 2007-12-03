@@ -1,0 +1,64 @@
+= Bug Reporting Guidelines =
+
+Guidelines can be set at the Distribution, Project or Product level to
+help users file good bug reports, direct them to FAQs, and so forth.
+
+    >>> from canonical.launchpad.database import (
+    ...     DistributionSet, ProjectSet, ProductSet)
+
+    >>> distribution = DistributionSet().getByName('ubuntu')
+    >>> project = ProjectSet().getByName('mozilla')
+    >>> product = ProductSet().getByName('firefox')
+
+    >>> for context in [distribution, project, product]:
+    ...     context.bug_reporting_guidelines = (
+    ...         "Welcome to %s!" % context.displayname)
+
+In fact, all IBugTargets have guidelines available, but the others
+delegate to the distribution or product level.
+
+DistroSeries, SourcePackages and DistributionSourcePackages defer to
+the Distribution:
+
+    >>> distro_series = distribution.getSeries('warty')
+    >>> print distro_series.bug_reporting_guidelines
+    Welcome to Ubuntu!
+
+    >>> source_package = distro_series.getSourcePackage('alsa-utils')
+    >>> print source_package.bug_reporting_guidelines
+    Welcome to Ubuntu!
+
+    >>> distribution_source_package = (
+    ...     distribution.getSourcePackage('alsa-utils'))
+    >>> print distribution_source_package.bug_reporting_guidelines
+    Welcome to Ubuntu!
+
+ProductSeries defer to the Product:
+
+    >>> product_series = product.getSeries('trunk')
+    >>> print product_series.bug_reporting_guidelines
+    Welcome to Mozilla Firefox!
+
+One day these objects that defer bug_reporting_guidelines may have
+their own guidelines. In the meantime the deferral is done with a
+read-only property:
+
+    >>> distro_series.bug_reporting_guidelines = 'Foobar'
+    Traceback (most recent call last):
+    ...
+    AttributeError: can't set attribute
+
+    >>> source_package.bug_reporting_guidelines = 'Foobar'
+    Traceback (most recent call last):
+    ...
+    AttributeError: can't set attribute
+
+    >>> distribution_source_package.bug_reporting_guidelines = 'Foobar'
+    Traceback (most recent call last):
+    ...
+    AttributeError: can't set attribute
+
+    >>> product_series.bug_reporting_guidelines = 'Foobar'
+    Traceback (most recent call last):
+    ...
+    AttributeError: can't set attribute
