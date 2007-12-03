@@ -26,12 +26,6 @@ And also, the DBSchema to change the imports status
 
   >>> from canonical.launchpad.interfaces import RosettaImportStatus
 
-Then, let's get a handle to our mailer. This is the thing we'll examine to show
-what email has been sent, to whom, and what the body of the message contains:
-
-  >>> import email
-  >>> from canonical.launchpad.mail import stub
-
 Login as an admin to be able to do changes to the import queue.
 
   >>> login('carlos@canonical.com')
@@ -93,7 +87,7 @@ The status is now IMPORTED:
   True
 
 (The procedure also generates a confirmation email, but that is tested
-elsewhere.)
+in `poimport.txt`.)
 
 We can see that the header has the same 'PO-Revision-Date' than the file we
 just imported.

@@ -11,8 +11,7 @@ and they are usually translated differently.
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet, IProductSet,
-    ...     ITranslationImportQueue)
+    ...     ILaunchpadCelebrities, IPersonSet, IProductSet)
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
     >>> from canonical.launchpad.scripts.po_import import (
@@ -21,54 +20,11 @@ and they are usually translated differently.
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
 
-We need this for the Librarian to work properly.
-
-    >>> import transaction
-
-And also, the DBSchema to change the imports status
-
-    >>> from canonical.launchpad.interfaces import RosettaImportStatus
-
-Then, let's get a handle to our mailer. This is the thing we'll examine to show
-what email has been sent, to whom, and what the body of the message contains:
-
-    >>> import email
-    >>> from canonical.launchpad.mail import stub
-
-Here's a fake logger to capture any errors that happen.
-
-    >>> from canonical.launchpad.scripts import FakeLogger
-
 This is a function for importing a pofile or potemplate from a string,
 printing out the import status after import is done.
 
-    >>> def import_pofile_or_potemplate(file_contents, person, series,
-    ...                                 pofile=None, potemplate=None,
-    ...                                 published=True):
-    ...     """Import a `POFile` or `POTemplate` from the string.
-    ...
-    ...	    If pofile is None, it imports a potemplate.
-    ...	    Returns `TranslationImportQueueEntry` as added to the import queue.
-    ...	    """
-    ...     translation_import_queue = getUtility(ITranslationImportQueue)
-    ...     if pofile:
-    ...         entry = translation_import_queue.addOrUpdateEntry(
-    ...             pofile.path, file_contents, published, person,
-    ...             productseries=series, pofile=pofile)
-    ...     else:
-    ...         # A POTemplate can only be published, so setting
-    ...         # the published flag makes no difference.
-    ...         entry = translation_import_queue.addOrUpdateEntry(
-    ...             potemplate.path, file_contents, True, person,
-    ...             productseries=series, potemplate=potemplate)
-    ...     transaction.commit()
-    ...     entry.status = RosettaImportStatus.APPROVED
-    ...     if pofile:
-    ...         (subject, body) = pofile.importFromQueue(entry, FakeLogger())
-    ...     else:
-    ...         (subject, body) = potemplate.importFromQueue(
-    ...             entry, FakeLogger())
-    ...     return entry
+    >>> from canonical.launchpad.translationformat.tests.helpers import (
+    ...     import_pofile_or_potemplate)
 
 == Import PO templates ==
 

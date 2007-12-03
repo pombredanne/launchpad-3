@@ -1,8 +1,10 @@
-PO Imports
-----------
+= PO Imports =
 
 The tale of a PO template and a PO file and how they get imported into
 Rosetta.
+
+
+== Test Setup ==
 
     >>> from zope.app import datetimeutils
 
@@ -11,6 +13,7 @@ Here are some imports we need to get this test running.
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import ITranslationImportQueue
     >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import IProductSet
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
@@ -36,7 +39,12 @@ Login as an admin to be able to do changes to the import queue.
 
     >>> login('carlos@canonical.com')
 
-Now, is time to create the new potemplate
+
+== Importing a Template ==
+
+Normal procedure is to import a template, followed by translations.
+A template is created first.  After that, imports are done using the
+POFile.importFromQueue and POTemplate.importFromQueue methods.
 
     >>> from canonical.launchpad.database import ProductRelease
     >>> release = ProductRelease.get(3)
@@ -152,6 +160,41 @@ The file references field should be there
     >>> potmsgsets[2].filereferences
     u'test.c:13'
 
+=== Import Preconditions ===
+
+The API for POTemplate.importFromQueue demands a translation import
+queue entry to import.
+
+    >>> potemplate.importFromQueue(None)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Attempt to import None entry.
+
+The entry must have been approved for import.
+
+    >>> potemplate.importFromQueue(entry)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Attempt to import non-approved entry.
+
+The entry indicates what file it is to be imported to; importing it to
+any other file would be an error.
+
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> other_product = getUtility(IProductSet).getByName('netapplet')
+    >>> other_productseries = other_product.getSeries('trunk')
+    >>> template_set = getUtility(IPOTemplateSet)
+    >>> other_template = template_set.getPOTemplateByPathAndOrigin(
+    ...     'po/netapplet.pot', productseries=other_productseries)
+    >>> other_template.importFromQueue(entry)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Attempt to import entry to POTemplate it doesn't belong to.
+
+
+== Importing a Translation ==
+
 Now let's get a PO file to import.
 
     >>> pofile = potemplate.newPOFile('cy')
@@ -175,6 +218,9 @@ And the statistics reflect it.
 
     >>> pofile.currentCount()
     0
+
+
+=== Import With Errors ===
 
 Here are the contents of the file we'll be importing. It has some validation
 errors.
@@ -312,7 +358,7 @@ translator.
     >>> imported_translationmessage.submitter.displayname
     u'Carlos Perell\xf3 Mar\xedn'
 
-The import process produces an emailwarning us of partial failure.
+The import process produces an email warning us of partial failure.
 
     >>> subject
     u'Translation problems - Welsh (cy) - firefox in Mozilla Firefox trunk'
@@ -335,6 +381,9 @@ The import process produces an emailwarning us of partial failure.
     The other 4 translations have been accepted.
     <BLANKLINE>
     ...
+
+
+=== Import Without Errors ===
 
 Now, let's import one without errors.
 
@@ -456,6 +505,45 @@ The email notification mentions the oddity:
     msgstr[0] ""
     msgstr[1] ""
     ...
+
+
+=== Import Preconditions ===
+
+The API for POFile.importFromQueue demands a translation import queue
+entry to import.
+
+    >>> pofile.importFromQueue(None)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Attempt to import None entry.
+
+The entry must have been approved for import.
+
+    >>> pofile.importFromQueue(entry)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Attempt to import non-approved entry.
+
+The entry indicates what file it is to be imported to; importing it to
+any other file would be an error.
+
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> other_pofile = potemplate.newPOFile('de')
+    >>> other_pofile.importFromQueue(entry)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Attempt to import entry to POFile it doesn't belong to.
+
+Even importing a translation into its own template is wrong; it must be
+the exact right POFile.
+
+    >>> potemplate.importFromQueue(entry)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Attempt to import entry to POTemplate it doesn't belong to.
+
+
+== Cron Scripts ==
 
 We tested already that the functionality works. Now it's time to know if the
 cronscript has any problem.
@@ -722,7 +810,7 @@ For a language such as Divehi, which has no plural forms defined, we
 default to two plural forms (the most common value for the number of
 plural forms).
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet, IProductSet
+    >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> divehi = getUtility(ILanguageSet)['dv']
     >>> print divehi.pluralforms
     None
@@ -758,7 +846,8 @@ We now import this POFile as Divehi translation of Firefox trunk:
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     firefox_dv.path, pofile_with_plurals, True, person,
     ...     productseries=firefox_trunk, potemplate=firefox_potemplate)
-    >>> transaction.commit() # For Librarian to pick the file up.
+    >>> # Allow Librarian to see the change.
+    >>> transaction.commit()
     >>> entry.pofile = firefox_dv
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> (subject, body) = firefox_dv.importFromQueue(entry, FakeLogger())
