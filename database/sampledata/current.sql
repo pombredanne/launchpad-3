@@ -1788,7 +1788,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (63, '
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (64, 'beta-admin@launchpad.net', 68, 4, '2007-01-31 06:56:25.096519');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (66, 'launchpad@julian-edwards.com', 243606, 1, '2007-08-09 21:25:37.832976');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (67, 'doc@lists.ubuntu.com', 243608, 1, '2007-11-12 15:23:19.847132');
-
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (68, 'carlos@test.com', 13, 2, '2006-10-16 18:31:43.548591');
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
 

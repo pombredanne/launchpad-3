@@ -140,8 +140,9 @@ Make sure that UIDs were properly processed; in particular, check that
 added as an email address:
 
     >>> browser.open("http://launchpad.dev/~name12/+editemails")
-    >>> browser.getControl(name='field.UNVALIDATED_SELECTED').displayOptions
-    ['\xa0testtest@canonical.com', '\xa0sample.person@canonical.com']
+    >>> control = browser.getControl(name='field.UNVALIDATED_SELECTED')
+    >>> sorted(control.displayOptions)
+    ['\xa0sample.person@canonical.com', '\xa0testtest@canonical.com']
 
 Verify that the key was imported with the "can encrypt" flag set:
 

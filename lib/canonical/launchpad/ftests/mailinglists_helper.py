@@ -14,7 +14,10 @@ __all__ = [
 import xmlrpclib
 
 from zope.component import getUtility
+from zope.testbrowser.testing import Browser
 
+from canonical.launchpad.database import MailingListSet, Person
+from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities,
     IMailingListSet, IPersonSet, MailingListStatus, PersonCreationRationale,
@@ -141,6 +144,38 @@ def new_person(first_name):
                                      EmailAddressStatus.VALIDATED)
     return person
 
+def new_list_for_team(team_name, make_contact_address=False):
+    """Create a mailing list for the named team.
+
+    :param team: A Team object, the team for which to create a list.
+    :param make_contact_address: If True, the newly created list will be
+           made the team's contact address.
+    """
+    browser = Browser()
+    browser.handleErrors = False
+    browser.addHeader("Authorization", 'Basic foo.bar@canonical.com:test')
+
+    browser.open('http://launchpad.dev/~%s' % team_name)
+    browser.getLink('Configure mailing list').click()
+    browser.getControl('Apply for Mailing List').click()
+
+    login('foo.bar@canonical.com')
+    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    admin = list(experts.allmembers)[0]
+    list_set = MailingListSet()
+    mailing_list = list_set.get(team_name)
+    mailing_list.review(admin, MailingListStatus.APPROVED)
+    mailing_list.syncUpdate()
+    mailing_list.startConstructing()
+    mailing_list.syncUpdate()
+    mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
+    mailing_list.syncUpdate()
+    logout()
+
+    if make_contact_address:
+        browser.getLink('Change contact address').click()
+        browser.getControl('The Launchpad mailing list').selected = True
+        browser.getControl('Change').click()
 
 def get_alternative_email(person):
     """Return a non-preferred IEmailAddress for a person.
