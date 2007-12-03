@@ -42,7 +42,6 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import (
@@ -278,7 +277,8 @@ def valid_branch_name(name):
 
 
 def branch_name_validator(name):
-    """Return True if the name is valid, or raise a LaunchpadValidationError"""
+    """Return True if the name is valid, or raise a LaunchpadValidationError.
+    """
     if not valid_branch_name(name):
         raise LaunchpadValidationError(
             _("Invalid branch name '%s'. %s"), name,

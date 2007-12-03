@@ -913,7 +913,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         elif dependent_branch == source_branch:
             self.setFieldError(
                 'dependent_branch',
-                "The dependent branch cannot be the same as the source branch.")
+                "The dependent branch cannot be the same as the source "
+                "branch.")
         else:
             # Make sure that the dependent_branch is in the project.
             if dependent_branch.product != source_branch.product:
