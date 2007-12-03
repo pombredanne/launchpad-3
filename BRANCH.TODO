@@ -2,7 +2,9 @@
 # landing. There is a test to ensure it is empty in trunk.
 
 
- * update default Archive.authorized_size (from 100 K to 1 Gb)
+ * update default Archive.authorized_size (from 100 K to 1 Gb) [DONE]
+ * fix IArchive.sources_size for not consider duplicated references of
+   the same file. [DONE]
  * back out rejection for uploads exceeding PPA Quota
  * implement warning for uploads over 80% of the authorzed_size.
 
