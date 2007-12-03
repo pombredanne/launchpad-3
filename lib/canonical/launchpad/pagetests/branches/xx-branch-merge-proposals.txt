@@ -70,8 +70,9 @@ shown.
     >>> sample_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> sample_browser.getLink('Propose for merging').click()
-    >>> sample_browser.getControl('Target Branch').value = (
-    ...     '~name12/gnome-terminal/main')
+    >>> sample_browser.getControl(
+    ...     name='field.target_branch.target_branch').value = (
+    ...         '~name12/gnome-terminal/main')
     >>> sample_browser.getControl('Whiteboard').value = (
     ...     'This is the whiteboard')
     >>> sample_browser.getControl('Register').click()
@@ -149,8 +150,9 @@ This is used when the source branch has branched of a branch other than
 the target branch.
 
     >>> sample_browser.getLink('Propose for merging').click()
-    >>> sample_browser.getControl('Target Branch').value = (
-    ...     '~name12/gnome-terminal/main')
+    >>> sample_browser.getControl(
+    ...     name='field.target_branch.target_branch').value = (
+    ...         '~name12/gnome-terminal/main')
     >>> sample_browser.getControl('Dependent Branch').value = (
     ...     '~name12/gnome-terminal/klingon')
     >>> sample_browser.getControl('Whiteboard').value = (
