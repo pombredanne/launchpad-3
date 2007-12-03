@@ -25,8 +25,9 @@ Logged in users can.
     >>> nopriv_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
     >>> nopriv_browser.getLink('Propose for merging').click()
-    >>> nopriv_browser.getControl('Target Branch').value = (
-    ...     '~name12/gnome-terminal/main')
+    >>> nopriv_browser.getControl(
+    ...     name='field.target_branch.target_branch').value = (
+    ...         '~name12/gnome-terminal/main')
     >>> nopriv_browser.getControl('Whiteboard').value = (
     ...     'This is the whiteboard')
     >>> nopriv_browser.getControl('Register').click()
