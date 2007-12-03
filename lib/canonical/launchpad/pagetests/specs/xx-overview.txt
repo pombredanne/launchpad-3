@@ -1,5 +1,7 @@
 
-Let's take a tour of the Launchpad specification management system.
+Let's take a tour of the Launchpad blueprint management system.
+
+== Viewing the latest blueprints ==
 
 First, we should be able to see a list of latest specs on any product or
 distribution in Launchpad. This should take the form of a portlet on the
@@ -16,8 +18,8 @@ product or distribution home page, showing latest specs.
         Support &lt;canvas&gt; Objects
         Extension Manager Upgrades...
 
-If there are no specifications, then we should not see the "latest
-specifications" portlet.
+If there are no blueprints, then we should not see the "latest
+blueprints" portlet.
 
     >>> user_browser.open('http://launchpad.dev/debian')
     >>> main = find_main_content(user_browser.contents)
@@ -29,8 +31,13 @@ specifications" portlet.
     >>> 'Latest blueprints' not in text
     True
 
+== Viewing lists of blueprints ==
+
 On both product and distribution we should be able to see a list of
-specifications, at +specs.
+blueprints, at +specs.
+
+
+=== Viewing blueprints targeted to a product ===
 
 First, let's check on product.
 
@@ -40,6 +47,9 @@ First, let's check on product.
     Blueprints for Mozilla Firefox...
     Priority...Specification...Design  ...Delivery      ...
     High    ...svg-support  ...Approved...Beta Available...
+
+
+=== Viewing blueprints targeted to a product series ===
 
 Now, on a product series.
 
@@ -81,6 +91,9 @@ Now list the blueprints for the 1.0 series:
     Priority...Specification...Design  ...Delivery...Assignee...Milestone...
     High    ...svg-support  ...Approved...Beta    ...Carlos  ...1.0      ...
 
+
+=== Viewing blueprints targeted to a distribution ===
+
 Now, on distribution.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/+specs')
@@ -89,3 +102,6 @@ Now, on distribution.
     Blueprints for Ubuntu...
     Priority ...Specification        ...Design    ...Delivery...
     Undefined...media-integrity-check...Discussion...Unknown...
+
+    
+=== Viewing blueprints targeted to a distribution series ===
