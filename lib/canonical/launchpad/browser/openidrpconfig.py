@@ -6,11 +6,13 @@ __all__ = []
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IOpenIDRPConfig, IOpenIDRPConfigSet
+from canonical.launchpad.interfaces import (
+    IOpenIDRPConfig, IOpenIDRPConfigSet, PersonCreationRationale)
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, Navigation, action,
     canonical_url, custom_widget)
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from canonical.widgets.image import ImageChangeWidget
 
 
 class OpenIDRPConfigSetNavigation(Navigation):
@@ -31,7 +33,13 @@ class OpenIDRPConfigAddView(LaunchpadFormView):
     schema = IOpenIDRPConfig
     field_names = ['trust_root', 'displayname', 'description', 'logo',
                    'allowed_sreg', 'creation_rationale']
+    custom_widget('logo', ImageChangeWidget, ImageChangeWidget.ADD_STYLE)
     custom_widget('allowed_sreg', LabeledMultiCheckBoxWidget)
+
+    initial_values = {
+        'creation_rationale':
+            PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT
+        }
 
     @action(_('Create'), name='create')
     def create_action(self, action, data):
@@ -56,6 +64,7 @@ class OpenIDRPConfigEditView(LaunchpadEditFormView):
     schema = IOpenIDRPConfig
     field_names = ['trust_root', 'displayname', 'description', 'logo',
                    'allowed_sreg', 'creation_rationale']
+    custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('allowed_sreg', LabeledMultiCheckBoxWidget)
 
     @action(_('Save'), name='save')
