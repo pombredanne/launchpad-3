@@ -7,7 +7,7 @@ product or distribution home page, showing latest specs.
 
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> main = find_main_content(user_browser.contents)
-    >>> print extract_text(main).encode('us-ascii', 'backslashreplace')
+    >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Mozilla Firefox...
     Latest blueprints
         Merge Open Browser Windows with "Consolidate Windows"
@@ -21,7 +21,7 @@ specifications" portlet.
 
     >>> user_browser.open('http://launchpad.dev/debian')
     >>> main = find_main_content(user_browser.contents)
-    >>> text = extract_text(main).encode('us-ascii', 'backslashreplace')
+    >>> text = extract_text(main).encode('ascii', 'backslashreplace')
     >>> print text
     Debian GNU/Linux...
     Uses Launchpad for:
@@ -35,52 +35,61 @@ specifications, at +specs.
 First, let's check on product.
 
     >>> user_browser.open('http://launchpad.dev/firefox/+specs')
-    >>> main = find_main_content(user_browser.contents)
-    >>> print extract_text(main).encode('us-ascii', 'backslashreplace')
+    >>> main = find_main_content(user_browser.contents)  
+    >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for Mozilla Firefox...
-    Priority...Specification...Design  ...Delivery      ...Assignee...
-    High    ...svg-support  ...Approved...Beta Available...Carlos Perell...
+    Priority...Specification...Design  ...Delivery      ...
+    High    ...svg-support  ...Approved...Beta Available...
     Medium  ...canvas       ...New     ...Unknown       ...
-    Medium  ...extension-man...New     ...Informational ...Carlos Perell...
+    Medium  ...extension-man...New     ...Informational ...
     Medium  ...mergewin     ...New     ...Unknown       ...
-    Not     ...e4x          ...Review  ...Unknown       ...Dafydd Harries...
+    Not     ...e4x          ...Review  ...Unknown       ...
+
+Now, on a product series.
+
+First target to a series:
+
+    >>> browser = admin_browser
+    >>> browser.open('http://launchpad.dev/firefox/+specs')
+    >>> browser.getLink('svg-support').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Blueprint overview...
+    >>> browser.getLink('Propose as goal').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Target to a product series...
+    >>> series = browser.getControl('Series Goal')
+    >>> series.displayValue = ['firefox 1.0']
+    >>> browser.getControl('Continue').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Blueprint overview...
+    Series goal: Accepted for 1.0...
+
+Next target to a milestone:
+    
+    >>> browser.getLink('Target milestone').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Target to a milestone...
+    >>> milestones = browser.getControl('Milestone')
+    >>> milestones.displayValue = ['Mozilla Firefox: 1.0']
+    >>> browser.getControl('Change').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Blueprint overview...
+    Milestone target:...1.0...
+ 
+Now list the blueprints for the 1.0 series:
+
+    >>> user_browser.open('http://launchpad.dev/firefox/1.0/+specs')
+    >>> main = find_main_content(user_browser.contents)  
+    >>> print extract_text(main).encode('ascii', 'backslashreplace')
+    Blueprints for 1.0...
+    Priority...Specification...Design  ...Delivery...Assignee...Milestone...
+    High    ...svg-support  ...Approved...Beta    ...Carlos  ...1.0      ...
 
 Now, on distribution.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/+specs')
     >>> main = find_main_content(user_browser.contents)
-    >>> print extract_text(main).encode('us-ascii', 'backslashreplace')
+    >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for Ubuntu...
     Priority ...Specification        ...Design    ...Delivery...Assignee...
     Undefined...media-integrity-check...Discussion...Unknown...
-
-And we should see the latest specifications available for the whole system:
-
-    >>> user_browser.open('http://launchpad.dev/specs/')
-    >>> print extract_text(find_main_content(user_browser.contents))
-    All projects...
-    Recently registered
-        The Krunch Desktop Plan
-        KDE Desktop File Language Packs
-        The REVU Review Tracking System
-        Facilitate mass installs of Ubuntu using Netboot configuration
-        CD Media Integrity Check
-    Recently completed
-        Activating Usplash during Hibernation
-        Support for local devices on Ubuntu thin clients...
-
-Which should also support searching:
-
-    >>> user_browser.getControl(name='field.search_text').value = "svg"
-    >>> user_browser.getControl('Find Blueprints').click()
-    >>> print extract_text(user_browser.contents)
-    Launchpad...
-    Launchpad is a free software hosting and development website...
-
-    >>> user_browser.open('http://launchpad.dev/specs/?searchtext=svg')
-    >>> print extract_text(find_main_content(user_browser.contents))
-    All projects...
-    1
-    blueprint(s) matching...
-    Support Native SVG Objects
-    for Mozilla Firefox...
