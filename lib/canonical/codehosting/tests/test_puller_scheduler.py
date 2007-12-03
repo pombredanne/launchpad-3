@@ -486,6 +486,13 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         print error
         return failure
 
+    def makePullerMaster(self, cls=scheduler.PullerMaster):
+        """XXX."""
+        return cls(
+            self.db_branch.id, local_path_to_url('src-branch'),
+            self.db_branch.unique_name, self.db_branch.branch_type,
+            logging.getLogger(), self.client)
+
     def test_mirror(self):
         """Actually mirror a branch using a worker sub-process.
 
@@ -493,10 +500,7 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         runs successfully and that we report the successful run.
         """
         revision_id = self.bzr_tree.branch.last_revision()
-        puller_master = scheduler.PullerMaster(
-            self.db_branch.id, local_path_to_url('src-branch'),
-            self.db_branch.unique_name, self.db_branch.branch_type,
-            logging.getLogger(), self.client)
+        puller_master = self.makePullerMaster()
         puller_master.destination_url = os.path.abspath('dest-branch')
         deferred = puller_master.mirror().addErrback(self._dumpError)
 
@@ -517,6 +521,59 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
 
         return deferred
 
+    def test_lock_with_magic_id(self):
+        """When the subprocess locks a branch, it is locked with the right ID.
+        """
+        puller_master = self.makePullerMaster(PullerMasterWithLockID)
+        puller_master.destination_url = os.path.abspath('dest-branch')
+        puller_master.lock_ids = []
+        script = open('script.py', 'w')
+        script.write(check_lock_id_script)
+        script.close()
+        puller_master.path_to_script = os.path.abspath('script.py')
+
+        deferred = puller_master.mirror().addErrback(self._dumpError)
+
+        def checkID(ignored):
+            self.assertEqual(
+                puller_master.lock_ids, [puller_master.getLockID()])
+
+        return deferred.addCallback(checkID)
+
+
+class PullerMasterProtocolWithLockID(scheduler.PullerMasterProtocol):
+    """A subclass of PullerMasterProtocol that defines a lock_id method.
+
+    This protocol defines a method that records on the listener the
+    lock id reported by the subprocess.
+    """
+
+    def do_lock_id(self, id):
+        """Record the lock id on the listener."""
+        self.listener.lock_ids.append(id)
+
+
+class PullerMasterWithLockID(scheduler.PullerMaster):
+    """A subclass of PullerMaster that uses allows recording of lock ids."""
+
+    master_protocol_class = PullerMasterProtocolWithLockID
+
+
+check_lock_id_script = """
+from optparse import OptionParser
+from canonical.codehosting.puller.worker import PullerWorkerProtocol
+import sys
+parser = OptionParser()
+(options, arguments) = parser.parse_args()
+(source_url, destination_url, branch_id, unique_name,
+ branch_type_name) = arguments
+from bzrlib import branch
+b = branch.Branch.open(source_url)
+b.lock_write()
+protocol = PullerWorkerProtocol(sys.stdout)
+protocol.sendEvent('lock_id', b.control_files._lock.peek()['user'])
+b.unlock()
+"""
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
