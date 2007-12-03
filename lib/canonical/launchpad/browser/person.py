@@ -2708,7 +2708,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         terms = [SimpleTerm("Preferred address"),
                  SimpleTerm("Don't subscribe"),
                  SimpleTerm(self.context.preferredemail.email)]
-        terms += [SimpleTerm(email.email)
+        terms += [SimpleTerm(email, email.email)
                    for email in self.context.validatedemails]
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
@@ -2949,27 +2949,13 @@ class PersonEditEmailsView(LaunchpadFormView):
     ### Actions to do with subscription management.
 
     def validate_action_update_subscriptions(self, action, data):
-        """Make sure the user is subscribing using their own addresses.
+        """Make sure the user is subscribing using a valid address.
 
-        XXX Is this neccessary? Similar check code is found in
-        changeAddress() and subscribe().
+        Valid addresses are the ones presented as options for the mailing
+        list widgets.
         """
         names = [w.context.getName() for w in self.mailing_list_widgets]
         self.validate_widgets(data, names)
-
-        # A user can only subscribe using one of their own email
-        # addresses.
-        email_set = getUtility(IEmailAddressSet)
-        for mailing_list in names:
-            email = data[mailing_list]
-            if email not in ['Preferred address', "Don't subscribe"]:
-                email_address = email_set.getByEmail(email)
-                assert(email_address is not None,
-                       "You can't subscribe to a list using an email address"
-                       "that Launchpad doesn't know about!")
-                assert(email_address.person==self.context,
-                       "You can't subscribe using someone else's "
-                       "email address!")
         return self.errors
 
     @action(_("Update Subscriptions"), name="update_subscriptions",
@@ -2983,7 +2969,11 @@ class PersonEditEmailsView(LaunchpadFormView):
             mailing_list = mailing_list_set.get(mailing_list_name)
             new_value = data[widget.context.getName()]
             old_value = self._mailing_list_subscription_type(mailing_list)
-            if new_value != old_value:
+            if IEmailAddress.providedBy(new_value):
+                new_value_string = new_value.email
+            else:
+                new_value_string = new_value
+            if new_value_string != old_value:
                 dirty = True
                 if new_value == "Don't subscribe":
                     # Delete subscription
@@ -2994,14 +2984,11 @@ class PersonEditEmailsView(LaunchpadFormView):
                         # particular address, their current preferred
                         # address will always be used.
                         new_value = None
-                    else:
-                        new_value = getUtility(
-                            IEmailAddressSet).getByEmail(new_value)
                     subscription = mailing_list.getSubscription(self.context)
-                    if subscription:
-                        mailing_list.changeAddress(self.context, new_value)
+                    if subscription is None:
+                        mailing_list.subscribe(self.context new_value)
                     else:
-                        mailing_list.subscribe(self.context, new_value)
+                        mailing_list.changeAddress(self.context,new_value)
         if dirty:
             self.request.response.addInfoNotification("Subscriptions updated.")
         self.next_url = self.action_url
