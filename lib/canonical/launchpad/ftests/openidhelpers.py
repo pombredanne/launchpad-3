@@ -47,15 +47,13 @@ class ConsumerView(LaunchpadView):
         return self, ()
 
 
-defineChecker(ConsumerView, Checker({
-    '__call__': CheckerPublic,
-    'browserDefault': CheckerPublic,
-    'render': CheckerPublic,
-    }))
-
-
 def install_consumer():
+    defineChecker(ConsumerView, Checker({
+        '__call__': CheckerPublic,
+        'browserDefault': CheckerPublic,
+        'render': CheckerPublic}))
     browserView(None, '+openid-consumer', ConsumerView)
+
 
 def uninstall_consumer():
     # Don't bother - work out how to do this if it is a problem, but I

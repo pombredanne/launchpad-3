@@ -19,27 +19,21 @@ details:
 
     >>> from openid.fetchers import setDefaultFetcher
     >>> from canonical.launchpad.ftests.openidhelpers import (
-    ...     install_consumer, uninstall_consumer, PublisherFetcher)
+    ...     install_consumer, make_endpoint, uninstall_consumer,
+    ...     PublisherFetcher)
     >>> install_consumer()
     >>> setDefaultFetcher(PublisherFetcher())
 
+    >>> from openid.consumer.consumer import Consumer
+    >>> from openid.consumer.discover import OPENID_1_1_TYPE
     >>> from openid.sreg import SRegRequest, SRegResponse
     >>> from openid.store.memstore import MemoryStore
-    >>> from openid.consumer.consumer import Consumer
-    >>> from openid.consumer.discover import (
-    ...     discover, OpenIDServiceEndpoint, OPENID_1_0_TYPE, OPENID_1_1_TYPE)
-    >>> from openid.message import IDENTIFIER_SELECT
 
     >>> openid_store = MemoryStore()
     >>> consumer = Consumer(session={}, store=openid_store)
 
-    >>> endpoint = OpenIDServiceEndpoint()
-    >>> endpoint.claimed_id = 'http://openid.launchpad.dev/+id/sabdfl_oid'
-    >>> endpoint.server_url = 'http://openid.launchpad.dev/+openid'
-    >>> endpoint.local_id = 'http://openid.launchpad.dev/+id/sabdfl_oid'
-    >>> endpoint.type_uris = [OPENID_1_1_TYPE]
-
-    >>> endpoint.claimed_id = endpoint.local_id = IDENTIFIER_SELECT
+    >>> endpoint = make_endpoint(
+    ...     OPENID_1_1_TYPE, 'http://openid.launchpad.dev/+id/sabdfl_oid')
 
     >>> request = consumer.beginWithoutDiscovery(endpoint)
     >>> request.addExtension(SRegRequest(
@@ -61,16 +55,8 @@ details:
     Consumer received GET
     ...
 
-    >>> def maybe_fixup_endpoint(consumer, claimed_id):
-    ...     endpoint = consumer.session[consumer._token_key]
-    ...     if endpoint.local_id == IDENTIFIER_SELECT and (
-    ...             OPENID_1_0_TYPE in endpoint.type_uris or
-    ...             OPENID_1_1_TYPE in endpoint.type_uris):
-    ...         endpoint.claimed_id = endpoint.local_id = claimed_id
-
 We have authenticated successfully:
 
-    >>> maybe_fixup_endpoint(consumer, 'http://openid.launchpad.dev/+id/sabdfl_oid')
     >>> query = dict(line.split(':', 1)
     ...              for line in sabdfl_browser.contents.splitlines()[1:])
     >>> info = consumer.complete(query)
@@ -105,8 +91,7 @@ play out a bit differently:
 Now begin another identical OpenID authentication request:
 
     >>> consumer = Consumer(session={}, store=openid_store)
-    >>> request = consumer.begin(
-    ...     'http://openid.launchpad.dev/+id/sabdfl_oid')
+    >>> request = consumer.beginWithoutDiscovery(endpoint)
     >>> request.addExtension(SRegRequest(
     ...     required=['email', 'country'],
     ...     optional=['fullname', 'nickname']))
