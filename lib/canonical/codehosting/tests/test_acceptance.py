@@ -173,20 +173,20 @@ class SmokeTest(SSHTestCase):
         self.push(
             self.first_tree,
             self.getTransportURL('~testuser/+junk/new-branch'))
-        # Pull it back down.
-        self.pull(
-            self.getTransportURL('~testuser/+junk/new-branch'),
-            self.second_tree)
         # Commit to it.
         file = open(os.path.join(self.second_tree, 'foo'), 'w')
         file.write('Content!\n')
         file.close()
         tree.add('foo')
         tree.commit('new revision')
-        # Push up again.
+        # Push it up again.
         self.push(
-            self.second_tree,
+            self.first_tree,
             self.getTransportURL('~testuser/+junk/new-branch'))
+        # Pull it back down.
+        self.pull(
+            self.getTransportURL('~testuser/+junk/new-branch'),
+            self.second_tree)
 
 
 
