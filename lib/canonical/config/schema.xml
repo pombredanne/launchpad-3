@@ -211,15 +211,16 @@ k            </description>
             </description>
         </key>
         <key name="max_bug_feed_cache_minutes" required="no"
-            datatype="integer" default="30">
+            datatype="integer" default="60">
             <description>
             The maximum number of minutes that Bug feeds should be cached for.
             </description>
         </key>
-        <key name="max_branch_feed_cache_minutes" required="no"
-            datatype="integer" default="60">
+        <key name="is_bug_search_feed_active" required="no"
+            datatype="boolean" default="false">
             <description>
-            The maximum number of minutes that Branch feeds should be cached for.
+            The bug search feed isn't ready to be active in production
+            because of performance concerns.
             </description>
         </key>
         <key name="bzr_imports_root_url" datatype="canonical.config.urlbase"
