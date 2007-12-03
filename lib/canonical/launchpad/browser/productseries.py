@@ -675,7 +675,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     def allowCertify(self, action):
         return self.isAdmin() and not self.context.syncCertified()
 
-    @action(_('Approve import for production and publication'), 
+    @action(_('Approve import for production and publication'),
             name='certify', condition=allowCertify)
     def certify_action(self, action, data):
         self.updateContextFromData(data)

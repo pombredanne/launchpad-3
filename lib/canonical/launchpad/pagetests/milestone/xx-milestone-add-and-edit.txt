@@ -2,7 +2,7 @@
 
 == Adding a milestone ==
 
-Let's make the sample user the owner of Ubuntu and alsa-utils for this
+Let's make Sample Person the owner of Ubuntu and alsa-utils for this
 story.
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu/+reassign')
@@ -22,7 +22,8 @@ see the link to add a milestone nor access the page directly.
     Traceback (most recent call last):
       ...
     LinkNotFoundError
-    >>> user_browser.open('http://launchpad.dev/alsa-utils/trunk/+addmilestone')
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/alsa-utils/trunk/+addmilestone')
     Traceback (most recent call last):
       ...
     Unauthorized: ...
