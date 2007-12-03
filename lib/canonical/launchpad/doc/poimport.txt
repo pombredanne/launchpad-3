@@ -484,7 +484,7 @@ the msgid
     >>> print entry.status.name
     IMPORTED
 
-Now, is time to check the notification email.
+The email notification mentions the oddity:
 
     >>> transaction.commit()
 

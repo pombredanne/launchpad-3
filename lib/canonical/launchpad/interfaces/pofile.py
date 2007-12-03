@@ -175,7 +175,8 @@ class IPOFile(IRosettaStats):
         """
 
     def __iter__():
-        """Return an iterator over Current `IPOMessageSets` in this PO file."""
+        """Return an iterator over Current `IPOMessageSets` in this PO file.
+        """
 
     def getHeader():
         """Return an `ITranslationHeaderData` representing its header."""
@@ -293,24 +294,6 @@ class IPOFile(IRosettaStats):
 
         If a logger argument is given, any problem found with the
         import will be logged there.
-        """
-
-    def getCurrentSuggestions(potmsgsets):
-        """Return a dictionary with all suggestions per potmsgset.
-
-        :param potmsgsets: A list of `IPOTMsgSet` objects.
-        :param language: Language we are interested on for the suggestions.
-        :return: A dictionary indexed by potmsgset of all suggestions that are
-            done in other contexts and are used right now.
-        """
-
-    def getExternalSuggestions(potmsgsets):
-        """Return a dictionary with all suggestions used per potmsgset.
-
-        :param potmsgsets: A list of `IPOTMsgSet` objects.
-        :param language: Language we are interested on for the suggestions.
-        :return: A dictionary indexed by potmsgset of all suggestions that are
-            done in other contexts but are not yet used.
         """
 
 

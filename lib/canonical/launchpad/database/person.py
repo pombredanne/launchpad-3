@@ -44,7 +44,7 @@ from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.launchpad.interfaces import (
     AccountStatus, ArchivePurpose, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, EmailAddressStatus, IBugTaskSet, IDistribution,
+    BugTaskStatus, EmailAddressStatus, IBugTarget, IBugTaskSet, IDistribution,
     IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet,
     IHWSubmissionSet, IHasIcon, IHasLogo, IHasMugshot, IIrcID, IIrcIDSet,
     IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
@@ -1821,10 +1821,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 'sourcepackagerelease.maintainer = %s' % quote(self.id))
 
         if ppa_only:
-            clauses.append('archive.purpose = %s' % quote(ArchivePurpose.PPA))
+            clauses.append(
+                'archive.purpose = %s' % quote(ArchivePurpose.PPA))
         else:
-            clauses.append('archive.purpose != %s' %
-                           quote(ArchivePurpose.PPA))
+            clauses.append(
+                'archive.purpose != %s' % quote(ArchivePurpose.PPA))
 
         query_clause = " AND ".join(clauses)
         query = """
@@ -1880,6 +1881,20 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def archive(self):
         """See `IPerson`."""
         return Archive.selectOneBy(owner=self)
+
+    def isBugContributor(self, user=None):
+        """See `IPerson`."""
+        search_params = BugTaskSearchParams(user=user, assignee=self)
+        bugtask_count = self.searchTasks(search_params).count()
+        return bugtask_count > 0
+
+    def isBugContributorInTarget(self, user=None, target=None):
+        """See `IPerson`."""
+        assert IBugTarget.providedBy(target), (
+            "%s isn't a valid bug target." % target)
+        search_params = BugTaskSearchParams(user=user, assignee=self)
+        bugtask_count = target.searchTasks(search_params).count()
+        return bugtask_count > 0
 
 
 class PersonSet:

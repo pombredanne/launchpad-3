@@ -124,3 +124,8 @@ by browsers and the reverse-proxy in front of the feeds servers.
     ...  == BugsFeedBase.max_age)
     True
 
+The is_bug_search_feed_active is false by default since it is useful for
+testing, but it is still a performance concern for production.
+
+    >>> config.launchpad.is_bug_search_feed_active
+    False

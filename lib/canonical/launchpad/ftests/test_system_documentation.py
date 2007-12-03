@@ -664,6 +664,12 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadZopelessLayer
             ),
+    'openid-fetcher.txt': FunctionalDocFileSuite(
+            '../doc/openid-fetcher.txt',
+            optionflags=default_optionflags,
+            stdout_logging=False,
+            layer=LaunchpadFunctionalLayer
+            ),
     }
 
 

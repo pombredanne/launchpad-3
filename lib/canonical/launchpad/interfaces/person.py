@@ -1175,6 +1175,31 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         back in the OPEN state.
         """
 
+    def isBugContributor(user):
+        """Is the person a contributer to bugs in Launchpad?
+
+        Return True if the user has any bugs assigned to him, either
+        directly or by team participation.
+
+        :user: The user doing the search. Private bugs that this
+        user doesn't have access to won't be included in the
+        count.
+        """
+
+    def isBugContributorInTarget(user, target):
+        """Is the person a contributor to bugs in `target`?
+
+        Return True if the user has any bugs assigned to him in the
+        context of a specific target, either directly or by team
+        participation.
+
+        :user: The user doing the search. Private bugs that this
+        user doesn't have access to won't be included in the
+        count.
+
+        :target: An object providing `IBugTarget` to search within.
+        """
+
 
 class ITeam(IPerson, IHasIcon):
     """ITeam extends IPerson.
