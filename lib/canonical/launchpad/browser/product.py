@@ -690,7 +690,7 @@ class ProductDownloadFileMixin:
         if release is None:
             release = self.context
         return "%s/+download/%s" % (canonical_url(release),
-                                    file_.libraryfile.filename)
+                                    file_.filename)
 
     def processDeleteFiles(self):
         """If the 'delete_files' button was pressed, process the deletions."""

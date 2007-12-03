@@ -53,6 +53,7 @@
             <tr>
               <th tal:condition="has_edit" width="10%">Delete</th>
               <th>Download</th>
+              <th>Signature</th>
               <th width="50%">Description</th>
             </tr>
           </thead>
@@ -67,8 +68,16 @@
                 </td>
                 <td>
                   <img alt="download icon" src="/@@/download" />
-                  <a tal:attributes="href python:view.fileURL(file)"
-                       tal:content="file/libraryfile/filename">filename</a></td>
+                  <a tal:attributes="href python:view.fileURL(file.libraryfile)"
+                       tal:content="file/libraryfile/filename">filename</a>
+                </td>
+                <td>
+                  <tal:signature condition="file/signaturefile">
+                    <img alt="download icon" src="/@@/download" />
+                    <a tal:attributes="href python:view.fileURL(file.signaturefile)"
+                       tal:content="file/signaturefile/filename">signature</a>
+                  </tal:signature>
+                </td>
                 <td tal:content="file/description">Installer for i386</td>
               </tr>
           </tbody>

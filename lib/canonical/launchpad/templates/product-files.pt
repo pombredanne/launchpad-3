@@ -66,8 +66,9 @@
                 </td>
                 <td>
                   <img alt="download icon" src="/@@/download" />
-                  <a tal:attributes="href python:view.fileURL(file,release,)"
-                       tal:content="file/libraryfile/filename">filename</a></td>
+                  <a tal:attributes="href python:view.fileURL(file.libraryfile,release)"
+                       tal:content="file/libraryfile/filename">filename</a>
+                </td>
                 <td>
                    <tal:version content="release/version">version</tal:version>
                    <img tal:condition="python: view.is_milestone(series,release)"

@@ -17,7 +17,9 @@
   <div metal:use-macro="context/@@launchpad_form/form">
   Template for adding files to a product release.
   </div>
-
+  <div>
+    Use 'gpg --armor --sign --detach-sig filename' to create filename.sig.
+  </div>
 </div>
 </body>
 </html>
