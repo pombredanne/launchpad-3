@@ -19,8 +19,8 @@ details:
 
     >>> from openid.fetchers import setDefaultFetcher
     >>> from canonical.launchpad.ftests.openidhelpers import (
-    ...     install_consumer, make_endpoint, uninstall_consumer,
-    ...     PublisherFetcher)
+    ...     complete_from_browser, install_consumer, make_endpoint,
+    ...     uninstall_consumer, PublisherFetcher)
     >>> install_consumer()
     >>> setDefaultFetcher(PublisherFetcher())
 
@@ -57,9 +57,7 @@ details:
 
 We have authenticated successfully:
 
-    >>> query = dict(line.split(':', 1)
-    ...              for line in sabdfl_browser.contents.splitlines()[1:])
-    >>> info = consumer.complete(query)
+    >>> info = complete_from_browser(consumer, sabdfl_browser)
     >>> print info.status
     success
     >>> print info.identity_url
@@ -90,7 +88,6 @@ play out a bit differently:
 
 Now begin another identical OpenID authentication request:
 
-    >>> consumer = Consumer(session={}, store=openid_store)
     >>> request = consumer.beginWithoutDiscovery(endpoint)
     >>> request.addExtension(SRegRequest(
     ...     required=['email', 'country'],
@@ -112,9 +109,7 @@ Now begin another identical OpenID authentication request:
 
 Again, the authentication request is successful:
 
-    >>> query = dict(line.split(':', 1)
-    ...              for line in sabdfl_browser.contents.splitlines()[1:])
-    >>> info = consumer.complete(query)
+    >>> info = complete_from_browser(consumer, sabdfl_browser)
     >>> print info.status
     success
     >>> print info.identity_url

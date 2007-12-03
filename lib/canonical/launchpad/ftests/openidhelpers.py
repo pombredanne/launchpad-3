@@ -5,10 +5,10 @@
 __metaclass__ = type
 __all__ = [
     'PublisherFetcher',
+    'complete_from_browser',
     'install_consumerview',
     'make_endpoint',
     'make_identifier_select_endpoint',
-    'maybe_fixup_identifier_select_request',
     'uninstall_consumerview',
 ]
 
@@ -130,12 +130,12 @@ def make_identifier_select_endpoint(protocol_uri):
 
 
 def maybe_fixup_identifier_select_request(consumer, claimed_id):
-    """Fix up an OpenID 1.1 identifier select request.
+    """Fix up an OpenID 1.x identifier select request.
 
-    OpenID 1.1 does not support identifier select, so responses using
+    OpenID 1.x does not support identifier select, so responses using
     our non-standard identifier select mode appear to be corrupt.
 
-    This function checks to see if the current request was a 1.1
+    This function checks to see if the current request was a 1.x
     identifier select one, and updates the internal state to use the
     given claimed ID if so.
     """
@@ -150,3 +150,21 @@ def maybe_fixup_identifier_select_request(consumer, claimed_id):
         # For standard identifier select, local_id is None.
         assert endpoint.local_id is None, (
             "Request did not use identifier select mode")
+
+
+def complete_from_browser(consumer, browser, expected_claimed_id=None):
+    """Complete OpenID request based on output of +openid-consumer.
+
+    This function parses the body of the +openid-consumer view into a
+    set of query arguments representing the OpenID response.
+
+    If the third argument is provided, it will also attempt to fix up
+    1.x identifier select requests.
+    """
+    # Skip the first "Consumer received GET" line
+    query = dict(line.split(':', 1)
+                 for line in browser.contents.splitlines()[1:])
+    if expected_claimed_id is not None:
+        maybe_fixup_identifier_select_request(
+            consumer, expected_claimed_id)
+    return consumer.complete(query)

@@ -14,9 +14,8 @@ from openid.message import IDENTIFIER_SELECT
 from openid.store.memstore import MemoryStore
 
 from canonical.launchpad.ftests.openidhelpers import (
-    make_endpoint, make_identifier_select_endpoint,
+    complete_from_browser, make_endpoint, make_identifier_select_endpoint,
     maybe_fixup_identifier_select_request)
-from canonical.testing import LaunchpadFunctionalLayer
 
 
 class MakeEndpointTests(unittest.TestCase):
@@ -118,6 +117,22 @@ class MaybeFixupIdentifierSelectRequestTests(unittest.TestCase):
             consumer, 'http://example.com/identifier')
         self.assertEqual(endpoint.claimed_id, None)
         self.assertEqual(endpoint.local_id, None)
+
+
+class CompleteFromBrowserTests(unittest.TestCase):
+
+    def test_complete_from_browser(self):
+        store = MemoryStore()
+        consumer = Consumer(session={}, store=store)
+        consumer.beginWithoutDiscovery(make_endpoint(
+                OPENID_1_1_TYPE, 'http://example.com/identifier'))
+        class FakeBrowser:
+            contents = ('Consumer received GET\n'
+                        'openid.mode:error\n'
+                        'openid.error:foo:error\n')
+        info = complete_from_browser(consumer, FakeBrowser)
+        self.assertEqual(info.status, 'failure')
+        self.assertEqual(info.message, 'foo:error')
 
 
 def test_suite():
