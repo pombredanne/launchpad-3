@@ -24,8 +24,9 @@ But we can change it to be assigned to nobody.
 == Bug assignment to non-contributors ==
 
 When attempting to assign a bug to a user who isn't an established bug
-contributor (they have no bugs currently assigned to them) it is
-necessary to confirm that the assignment is intentional.
+contributor (they have no bugs currently assigned to them) the user is
+warned immediately after the assingment, so that they can change their
+choice if it was mistaken.
 
     >>> admin_browser.open("http://launchpad.dev/firefox/+bug/1")
     >>> assignee_control = admin_browser.getControl(
@@ -36,38 +37,45 @@ necessary to confirm that the assignment is intentional.
     >>> assign_to_control.value = "cprov"
     >>> admin_browser.getControl("Save Changes", index=0).click()
     >>> print extract_text(
-    ...     first_tag_by_class(admin_browser.contents, 'pageheading'))
-    Confirm bug assignment
+    ...     first_tag_by_class(admin_browser.contents, 'informational message'))
+    Celso Providelo
+    did not previously have any assigned bugs.
+    If this bug was assigned by mistake,
+    You may change the assignment using
+    the form below.
 
-A confirmation request appears. If we choose to cancel the operation
-we return to the bugtask index, so that we can change our choice (the
-form fields are pre-filled with the data previously entered, and the
-relevant bugtask is expanded as soon as the page is loaded).
+If the new assignee does have bugs assigned, but not in the relevant pillar,
+the user will be warned too.
 
-    >>> def url_path(url):
-    ...     return url.split('?')[0]
-
-    >>> admin_browser.getLink("Choose someone else...").click()
-    >>> print url_path(admin_browser.url)
-    http://bugs.launchpad.dev/firefox/+bug/1
+    >>> admin_browser.open("http://bugs.launchpad.dev/jokosher/+bug/11")
+    >>> assignee_control = admin_browser.getControl(
+    ...     name="jokosher.assignee.option", index=0)
+    >>> assignee_control.value = ["jokosher.assignee.assign_to"]
     >>> assign_to_control = admin_browser.getControl(
-    ...     name="firefox.assignee", index=0)
-    >>> assign_to_control.value
-    'cprov'
-
-We submit the form again, and this time we choose to accept cprov as
-a new bug contributor.
-
+    ...     name="jokosher.assignee", index=0)
+    >>> assign_to_control.value = "cprov"
     >>> admin_browser.getControl("Save Changes", index=0).click()
     >>> print extract_text(
-    ...     first_tag_by_class(admin_browser.contents, 'pageheading'))
-    Confirm bug assignment
-    >>> admin_browser.getControl("Continue").click()
+    ...     first_tag_by_class(admin_browser.contents, 'informational message'))
+    Celso Providelo
+    did not previously have any assigned bugs in
+    Jokosher Audio Editor.
+    If this bug was assigned by mistake,
+    You may change the assignment using
+    the form below.
 
-Now the bug is assigned to cprov.
+When assigning a bug to oneself, though, the warning message is suppreseed.
 
-    >>> print admin_browser.url
-    http://bugs.launchpad.dev/firefox/+bug/1
-    >>> 'href="/~cprov/+assignedbugs"' in str(
-    ...     first_tag_by_class(admin_browser.contents, 'listing'))
-    True
+    >>> user_browser.open("http://bugs.launchpad.dev/jokosher/+bug/11")
+    >>> assignee_control = user_browser.getControl(
+    ...     name="jokosher.assignee.option", index=0)
+    >>> assignee_control.value = ["jokosher.assignee.assign_to"]
+    >>> assign_to_control = user_browser.getControl(
+    ...     name="jokosher.assignee", index=0)
+    >>> assign_to_control.value = "no-priv"
+    >>> user_browser.getControl("Save Changes", index=0).click()
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/jokosher/+bug/11
+    >>> print first_tag_by_class(
+    ...     user_browser.contents, 'informational message')
+    None
