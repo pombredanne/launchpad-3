@@ -438,6 +438,7 @@ COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Seri
 COMMENT ON TABLE ProductReleaseFile IS 'Links a ProductRelease to one or more files in the Librarian.';
 COMMENT ON COLUMN ProductReleaseFile.productrelease IS 'This is the product release this file is associated with';
 COMMENT ON COLUMN ProductReleaseFile.libraryfile IS 'This is the librarian entry';
+COMMENT ON COLUMN ProductReleaseFile.signaturefile IS 'This is the signature of the librarian entry as uploaded by the user.';
 COMMENT ON COLUMN ProductReleaseFile.description IS 'A description of what the file contains';
 COMMENT ON COLUMN ProductReleaseFile.filetype IS 'An enum of what kind of file this is. Code tarballs are marked for special treatment (importing into bzr)';
 COMMENT ON COLUMN ProductReleaseFile.uploader IS 'The person who uploaded this file.';
