@@ -535,6 +535,12 @@ A new Archive can be created by passing a name and an owner
   >>> sandbox_archive.owner == name16
   True
 
+We can take the opportunity to check if the default 'authorized_size'
+corresponds to what we state in our policy, 1 Gbyte:
+
+  >>> name16.archive.authorized_size / (2 ** 30)
+  1
+
 IArchiveSet.ensure will either return an existing archive, or make a new
 one if there is no existing one.
 

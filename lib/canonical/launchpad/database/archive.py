@@ -46,7 +46,7 @@ class Archive(SQLBase):
     enabled = BoolCol(dbName='enabled', notNull=False, default=True)
 
     authorized_size = IntCol(
-        dbName='authorized_size', notNull=False, default=104857600)
+        dbName='authorized_size', notNull=False, default=1073741824)
 
     whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
 
