@@ -209,7 +209,7 @@ The user is then taken to the source branch details page.
     ~name12/gnome-terminal/main
       This is the whiteboard
       Merge proposed by No Privileges Person
-      Merged ... seconds ago as revision 42
+      Merged ... ago as revision 42
 
 Gone from the target branch.
 
@@ -218,3 +218,74 @@ Gone from the target branch.
     ~name12/gnome-terminal/scanned (New)
       This is the whiteboard
 
+
+== Default target branches ==
+
+Almost all of the proposals to merge branches will be created
+on feature branches where the target branch is the development
+focus branch.  With that in mind, we want the default option
+when proposing a new branch to land is to have it target the
+development focus branch.
+
+If there is no development focus branch, then just the normal
+branch widget is shown.
+
+    # A helpful function to determine target branch widgets.
+    >>> import re
+    >>> def get_target_branch_widgets(browser):
+    ...     main = find_main_content(browser.contents)
+    ...     return main.findAll(
+    ...         'input', attrs={'name': re.compile('target_branch')})
+
+    >>> nopriv_browser.open(
+    ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.8')
+    >>> nopriv_browser.getLink('Propose for merging').click()
+    >>> for widget in get_target_branch_widgets(nopriv_browser):
+    ...     print widget
+    <input type="text" ...
+
+When a branch is set as the development focus, then a radio button
+is shown.
+
+    >>> admin_browser.open('http://launchpad.dev/firefox/trunk')
+    >>> admin_browser.getLink('Edit source').click()
+    >>> admin_browser.getControl(name='field.user_branch').value = (
+    ...     '~name12/firefox/main')
+    >>> admin_browser.getControl('Update Details').click()
+
+    # Just show the radio buttons for the branch widgets.
+    >>> def print_radio_options(browser):
+    ...     widgets = get_target_branch_widgets(browser)
+    ...     for widget in widgets:
+    ...         if widget['type'] == 'radio':
+    ...             try:
+    ...                 checked = widget['checked']
+    ...             except KeyError:
+    ...                 checked = ''
+    ...             print widget['value'], checked
+
+Also the main development focus is selected.
+
+    >>> nopriv_browser.open(
+    ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.8')
+    >>> nopriv_browser.getLink('Propose for merging').click()
+    >>> print_radio_options(nopriv_browser)
+    ~name12/firefox/main checked
+    other
+
+If the user has also targetted a branch other than the development
+focus before, then that is also shown as a radio option.
+
+    >>> nopriv_browser.getControl('Other').click()
+    >>> nopriv_browser.getControl(
+    ...     name='field.target_branch.target_branch').value = (
+    ...         '~sabdfl/firefox/release-0.9')
+    >>> nopriv_browser.getControl('Register').click()
+
+    >>> nopriv_browser.open(
+    ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2')
+    >>> nopriv_browser.getLink('Propose for merging').click()
+    >>> print_radio_options(nopriv_browser)
+    ~name12/firefox/main checked
+    ~sabdfl/firefox/release-0.9
+    other
