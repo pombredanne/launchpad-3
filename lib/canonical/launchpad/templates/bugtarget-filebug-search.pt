@@ -36,6 +36,11 @@
 
    <div metal:use-macro="context/@@launchpad_form/form">
     <table class="form" metal:fill-slot="widgets">
+      <tr tal:condition="context/bug_reporting_guidelines|nothing">
+        <td colspan="2" id="bug-reporting-guidelines"
+            tal:content="structure context/bug_reporting_guidelines/fmt:text-to-html" />
+      </tr>
+
       <tal:product_widget
           tal:define="widget nocall:view/widgets/product|nothing"
           tal:condition="widget">
