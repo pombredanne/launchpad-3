@@ -1557,7 +1557,8 @@ class BugTaskSet:
         2. The bug is not a duplicate.
         3. The bug has at least one message (a request for more information).
         4. The bug does not have any other valid bugtasks.
-        5. The bugtask belongs to a project with official_malone is True.
+        5. The bugtask belongs to a project with enable_bug_expiration set
+           to True.
         6. The bugtask has the status Incomplete.
         7. The bugtask is not assigned to anyone.
         8. The bugtask does not have a milestone.

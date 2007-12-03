@@ -139,7 +139,9 @@ Let's also make some bugs that almost qualify for expiration.
     >>> external_bugtask = create_old_bug('external', 61, thunderbird)
     >>> external_bugtask.bug.permits_expiration
     False
-    >>> thunderbird.official_malone
+    >>> thunderbird.enable_bug_expiration
+    False
+    >>> external_bugtask.bug.can_expire
     False
 
     # A bugtask that is not expirable because it has a milestone.
@@ -170,9 +172,11 @@ Let's also make some bugs that almost qualify for expiration.
     # track bugs, enable_bug_expiration is set to False
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> no_expiration_bugtask = create_old_bug('no_expire', 61, firefox)
-    >>> no_expiration_bugtask.pillar.official_malone
-    True
-    >>> no_expiration_bugtask.pillar.enable_bug_expiration
+    >>> no_expiration_bugtask.bug.permits_expiration
+    False
+    >>> firefox.enable_bug_expiration
+    False
+    >>> no_expiration_bugtask.bug.can_expire
     False
 
 The ubuntu, hoary, and jokosher bugs are the only ones that can be
@@ -400,6 +404,11 @@ expired.
     >>> no_expiration_bugtask.pillar.enable_bug_expiration = True
     >>> from canonical.launchpad.ftests import sync
     >>> sync(no_expiration_bugtask.pillar)
+
+    >>> no_expiration_bugtask.bug.permits_expiration
+    True
+    >>> no_expiration_bugtask.bug.can_expire
+    True
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(60)
     >>> summarize_bugtasks(expirable_bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
