@@ -392,12 +392,56 @@ in the archive (+1kbytes for each publication)
   >>> indexes_size = number_of_publications * 1024
 
   >>> estimated_size = cprov_archive.estimated_size
+  >>> estimated_size
+  9929546
 
   >>> estimated_size == pool_size + indexes_size
   True
 
-  >>> estimated_size
-  9929546
+The 'estimated_size' property automatically excludes duplicated published
+files as it happens in the archive filesystem (pool/):
+
+  >>> def print_published_files(archive):
+  ...     pub_sources = archive.getPublishedSources()
+  ...     for pub_source in pub_sources:
+  ...         for src_file in pub_source.sourcepackagerelease.files:
+  ...             print '%s: %s (%s, %d bytes)' % (
+  ...                 src_file.sourcepackagerelease.title,
+  ...                 src_file.libraryfile.filename,
+  ...                 src_file.filetype.name,
+  ...                 src_file.libraryfile.content.filesize)
+
+First, let's print the currently published files in cprov's PPA:
+
+  >>> print_published_files(cprov_archive)
+  cdrkit - 1.0: foobar-1.0.dsc (DSC, 716 bytes)
+  iceweasel - 1.0: firefox-0.9.2.orig.tar.gz (ORIG, 9922560 bytes)
+  iceweasel - 1.0: iceweasel-1.0.dsc (DSC, 123 bytes)
+
+Now we will emulate a duplicated reference to the same 'orig.tar.gz',
+upstream tarball, as if it was part of two different SourcePackageRelease.
+
+  >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+  >>> huge_firefox_orig_file = getUtility(ILibraryFileAliasSet)[3]
+  >>> cprov_cdrkit_src = cprov_archive.getPublishedSources(name='cdrkit')[0]
+  >>> unused_src_file = cprov_cdrkit_src.sourcepackagerelease.addFile(
+  ...     huge_firefox_orig_file)
+
+As we see below, now we have two references to
+'firefox-0.9.2.orig.tar.gz' file.
+
+  >>> print_published_files(cprov_archive)
+  cdrkit - 1.0: firefox-0.9.2.orig.tar.gz (ORIG, 9922560 bytes)
+  cdrkit - 1.0: foobar-1.0.dsc (DSC, 716 bytes)
+  iceweasel - 1.0: firefox-0.9.2.orig.tar.gz (ORIG, 9922560 bytes)
+  iceweasel - 1.0: iceweasel-1.0.dsc (DSC, 123 bytes)
+
+Similarly to what happen in the archive disk 'pool', where already
+published files satisfy the new reference, the file size is not
+computed again in the archive total size.
+
+  >>> estimated_size == cprov_archive.estimated_size
+  True
 
 
 == Build Lookup ==

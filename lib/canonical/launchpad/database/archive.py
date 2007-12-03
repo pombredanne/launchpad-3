@@ -193,20 +193,22 @@ class Archive(SQLBase):
     @property
     def sources_size(self):
         """See `IArchive`."""
+        cur = cursor()
         query = """
-            LibraryFileContent.id=LibraryFileAlias.content AND
-            LibraryFileAlias.id=
-                SourcePackageFilePublishing.libraryfilealias AND
-            SourcePackageFilePublishing.archive=%s
+            SELECT SUM(filesize) FROM LibraryFileContent WHERE id IN (
+               SELECT DISTINCT(lfc.id) FROM
+                   LibraryFileContent lfc, LibraryFileAlias lfa,
+                   SourcePackageFilePublishing spfp
+               WHERE
+                   lfc.id=lfa.content AND
+                   lfa.id=spfp.libraryfilealias AND
+                   spfp.archive=%s);
         """ % sqlvalues(self)
-
-        clauseTables = ['LibraryFileAlias', 'SourcePackageFilePublishing']
-        result = LibraryFileContent.select(query, clauseTables=clauseTables)
-
-        size = result.sum('filesize')
+        cur.execute(query)
+        size = cur.fetchall()[0][0]
         if size is None:
             return 0
-        return size
+        return int(size)
 
     def _getBinaryPublishingBaseClauses (
         self, name=None, version=None, status=None, distroarchseries=None,
