@@ -217,7 +217,7 @@ message. (We added this to catch bug #160331.)"
   >>> find_tag_by_id(browser.contents, 'no-default-result') is None
   True
 
-The same mechanism still working for a SourcePackage-Builds page with
+The same mechanism still works for a SourcePackage-Builds page with
 no builds, see bug 62545.
 
 After opening a empty SourcePackage Builds page we will repeat the
