@@ -95,6 +95,16 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         # This Deferred is fired only when the child process has terminated
         # *and* any other operations have completed.
         self._termination_deferred = deferred
+        # When an unexpected error occurs, we terminate the subprocess which
+        # will cause processEnded to be called with a ProcessTerminated
+        # failure -- which isn't very interesting, we want to report to the
+        # listener _why_ we killed the process so we store that here.
+        self._termination_failure = None
+        # When we SIGINT the process, we schedule a call to SIGKILL it a few
+        # seconds later, to be sure it exits, but we want to be able to cancel
+        # the call if the SIGINT does indeed kill the process so we stash it
+        # here.
+        self._sigkill_delayed_call = None
         self.listener = listener
         self._resetState()
         self._stderr = StringIO()
@@ -210,19 +220,44 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         or sending an recognized command, or sending the wrong number of
         arguments for a command etc.
 
-        Calling this method kills the child process and fires the completion
-        deferred that was provided to the constructor.
+        Calling this method sends SIGINT to the child process, arranges to
+        SIGKILL the process in a few seconds if it doesn't exit and records
+        the failure for later use by processEnded().
         """
-        self.unexpected_error_received = True
+        self._termination_failure = failure
+        try:
+            self.transport.signalProcess('INT')
+            self._sigkill_delayed_call = self.clock.callLater(
+                5, self._sigkill)
+        except error.ProcessExitedAlready:
+            # The process has already died. Fine.
+            pass
+
+    def _sigkill(self):
+        """Send SIGKILL to the child process.
+
+        We rely on this killing the process, i.e. we assume that
+        processEnded() will be called soon after this.
+        """
+        self._sigkill_delayed_call = None
         try:
             self.transport.signalProcess('KILL')
         except error.ProcessExitedAlready:
             # The process has already died. Fine.
             pass
-        self._processTerminated(failure)
 
     def processEnded(self, reason):
+        """See `ProcessProtocol.processEnded`.
+
+        Fires the termination deferred with reason or, if the process died
+        because we killed it, why we killed it.
+        """
         ProcessProtocol.processEnded(self, reason)
+        if self._sigkill_delayed_call is not None:
+            self._sigkill_delayed_call.cancel()
+            self._sigkill_delayed_call = None
+        if self._termination_failure is not None:
+            reason = self._termination_failure
         self._processTerminated(reason)
 
 
@@ -378,6 +413,7 @@ class JobScheduler:
 class LockError(StandardError):
 
     def __init__(self, lockfilename):
+        StandardError.__init__(self)
         self.lockfilename = lockfilename
 
     def __str__(self):

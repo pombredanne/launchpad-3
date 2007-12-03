@@ -82,7 +82,8 @@ def build_package_location(distribution_name, suite=None, purpose=None,
 
     if suite is not None:
         try:
-            distroseries, pocket = distribution.getDistroSeriesAndPocket(suite)
+            distroseries, pocket = distribution.getDistroSeriesAndPocket(
+                suite)
         except NotFoundError, err:
             raise PackageLocationError(
                 "Could not find suite %s" % err)
@@ -130,13 +131,12 @@ class SoyuzScript(LaunchpadScript):
     Possible exceptions raised are:
 
      * `PackageLocationError`: specified package or distro does not exist
-     * `PackageRemoverError`: the remove operation itself has failed
      * `LaunchpadScriptError`: only raised if entering via main(), ie this
         code is running as a genuine script.  In this case, this is
         also the _only_ exception to be raised.
 
-    The test harness doesn't enter via main(), it calls task(), so
-    it only sees the first two exceptions.
+    The test harness doesn't enter via main(), it calls mainTask(), so
+    it does not see LaunchpadScriptError.
 
     Each script can extend:
 
@@ -145,14 +145,24 @@ class SoyuzScript(LaunchpadScript):
      * `success_message`: string to be presented on successful runs;
      * `mainTask`: a method to actually perform a specific task.
 
-    See `add_my_options` contexts for the default `SoyuzScript`
-    command-line options.
+    See `add_my_options` for the default `SoyuzScript` command-line options.
     """
     location = None
     success_message = "Done."
 
     def add_my_options(self):
-        """Adds SoyuzScript default options."""
+        """Adds SoyuzScript default options.
+
+        Any subclass may override this method and call the add_*_options
+        individually to reduce the number of available options as necessary.
+        """
+        self.add_transaction_options()
+        self.add_distro_options()
+        self.add_package_location_options()
+        self.add_archive_options()
+
+    def add_transaction_options(self):
+        """Add SoyuzScript transaction-related options."""
         self.parser.add_option(
             '-n', '--dry-run', dest='dryrun', default=False,
             action='store_true', help='Do not commit changes.')
@@ -162,6 +172,8 @@ class SoyuzScript(LaunchpadScript):
             default=False, action='store_true',
             help='Do not prompt the user for confirmation.')
 
+    def add_distro_options(self):
+        """Add SoyuzScript distro-related options."""
         self.parser.add_option(
             '-d', '--distribution', dest='distribution_name',
             default='ubuntu', action='store',
@@ -171,6 +183,8 @@ class SoyuzScript(LaunchpadScript):
             '-s', '--suite', dest='suite', default=None,
             action='store', help='Suite name.')
 
+    def add_package_location_options(self):
+        """Add SoyuzScript package location-related options."""
         self.parser.add_option(
             "-a", "--architecture", dest="architecture", default=None,
             help="Architecture tag.")
@@ -184,6 +198,8 @@ class SoyuzScript(LaunchpadScript):
             "-c", "--component", dest="component", default=None,
             help="Component name.")
 
+    def add_archive_options(self):
+        """Add SoyuzScript archive-related options."""
         self.parser.add_option(
             '-p', '--ppa', dest='archive_owner_name', action='store',
             help='Archive owner name in case of PPA operations')
@@ -314,12 +330,12 @@ class SoyuzScript(LaunchpadScript):
         """Setup `PackageLocation` for context distribution and suite."""
         # These can raise PackageLocationError, but we're happy to pass
         # it upwards.
-        if self.options.partner_archive:
+        if getattr(self.options, 'partner_archive', ''):
             self.location = build_package_location(
                 self.options.distribution_name,
                 self.options.suite,
                 ArchivePurpose.PARTNER)
-        elif self.options.archive_owner_name:
+        elif getattr(self.options, 'archive_owner_name', ''):
             self.location = build_package_location(
                 self.options.distribution_name,
                 self.options.suite,
@@ -330,7 +346,7 @@ class SoyuzScript(LaunchpadScript):
                 self.options.distribution_name,
                 self.options.suite)
 
-    def _finishProcedure(self):
+    def finishProcedure(self):
         """Script finalization procedure.
 
         'dry-run' command-line option will case the transaction to be
@@ -339,11 +355,13 @@ class SoyuzScript(LaunchpadScript):
         In normal mode it will ask for user confirmation (see
         `waitForUserConfirmation`) and will commit the transaction or abort
         it according to the user answer.
+
+        Returns True if the transaction was committed, False otherwise.
         """
         if self.options.dryrun:
             self.logger.info('Dry run, so nothing to commit.')
             self.txn.abort()
-            return
+            return False
 
         confirmed = self.waitForUserConfirmation()
 
@@ -351,9 +369,11 @@ class SoyuzScript(LaunchpadScript):
             self.txn.commit()
             self.logger.info('Transaction committed.')
             self.logger.info(self.success_message)
+            return True
         else:
             self.logger.info("Ok, see you later")
             self.txn.abort()
+            return False
 
     def main(self):
         """LaunchpadScript entry point.
@@ -367,7 +387,7 @@ class SoyuzScript(LaunchpadScript):
         except SoyuzScriptError, err:
             raise LaunchpadScriptFailure(err)
 
-        self._finishProcedure()
+        self.finishProcedure()
 
     def mainTask(self):
         """Main task to be performed by the script"""

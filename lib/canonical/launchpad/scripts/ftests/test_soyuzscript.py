@@ -7,14 +7,16 @@ properly.
 
 import unittest
 
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScriptError, SoyuzScript)
+from canonical.testing.layers import LaunchpadZopelessLayer
 
 
-class TestSoyuzScript(LaunchpadZopelessTestCase):
+class TestSoyuzScript(unittest.TestCase):
     """Test the SoyuzScript class."""
+
+    layer = LaunchpadZopelessLayer
 
     def getSoyuz(self, version=None, component=None, arch=None,
                  suite=None, distribution_name='ubuntu',
@@ -24,7 +26,7 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
         Allow tests to use a set of default options and pass an
         inactive logger to SoyuzScript.
         """
-        test_args=['-d', distribution_name, '-y' ]
+        test_args = ['-d', distribution_name, '-y']
 
         if suite is not None:
             test_args.extend(['-s', suite])
@@ -203,6 +205,19 @@ class TestSoyuzScript(LaunchpadZopelessTestCase):
         soyuz = self.getSoyuz(version='666')
         self.assertRaises(
             SoyuzScriptError, soyuz.findLatestPublishedBinaries, 'pmount')
+
+    def testFinishProcedure(self):
+        """Make sure finishProcedure returns the correct boolean."""
+        soyuz = self.getSoyuz()
+        soyuz.txn = LaunchpadZopelessLayer.txn
+        soyuz.options.confirm_all = True
+        self.assertTrue(soyuz.finishProcedure())
+        # XXX Julian Edwards 2007-11-29
+        # Setting confirm_all to False is pretty untestable because it
+        # asks the user for confirmation via raw_input.
+        # See bug 172869 for ideas on how to fix.
+        soyuz.options.dryrun = True
+        self.assertFalse(soyuz.finishProcedure())
 
 
 def test_suite():
