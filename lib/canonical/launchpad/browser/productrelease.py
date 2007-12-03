@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, ILibraryFileAliasSet, IProductReleaseFileAddForm)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.product import download_file_url
+from canonical.launchpad.browser.product import ProductDownloadFileMixin
 from canonical.launchpad.webapp import (
     ContextMenu, LaunchpadFormView, LaunchpadView, Link, Navigation, action,
     canonical_url, custom_widget, enabled_with_permission, stepthrough)
@@ -114,11 +114,12 @@ class ProductReleaseRdfView(object):
         As a side-effect, HTTP headers are set for the mime type
         and filename for download."""
         self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader('Content-Disposition',
-                                        'attachment; filename=%s-%s-%s.rdf' % (
-                                            self.context.product.name,
-                                            self.context.productseries.name,
-                                            self.context.version))
+        self.request.response.setHeader(
+            'Content-Disposition',
+            'attachment; filename=%s-%s-%s.rdf' % (
+                self.context.product.name,
+                self.context.productseries.name,
+                self.context.version))
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
@@ -150,10 +151,14 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
         self.next_url = canonical_url(self.context)
 
 
-class ProductReleaseView(LaunchpadView):
+class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
     """View for ProductRelease overview."""
     __used_for__ = IProductRelease
 
-    def file_url(self, file_):
-        """Create a download URL for the file."""
-        return download_file_url(self.context, file_)
+    def initialize(self):
+        self.form = self.request.form
+        self.processDeleteFiles()
+
+    def getReleases(self):
+        """See `ProductDownloadFileMixin`."""
+        return set([self.context])

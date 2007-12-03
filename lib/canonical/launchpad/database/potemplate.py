@@ -423,8 +423,8 @@ class POTemplate(SQLBase, RosettaStats):
 
     def hasMessageID(self, messageID, context=None):
         """See `IPOTemplate`."""
-        results = POTMsgSet.selectBy(potemplate=self, msgid_singular=messageID,
-                                     context=context)
+        results = POTMsgSet.selectBy(
+            potemplate=self, msgid_singular=messageID, context=context)
         return bool(results)
 
     def hasPluralMessage(self):

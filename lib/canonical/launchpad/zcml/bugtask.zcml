@@ -340,6 +340,14 @@
     </browser:page>
 
     <browser:page
+        name="+confirm-non-contributor"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.bugtask.BugTaskNonContributorAssigneeConfirmView"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-non-contributor-assignee-confirm.pt">
+    </browser:page>
+
+    <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
       name="+create-question"
       class="canonical.launchpad.browser.BugTaskCreateQuestionView"
