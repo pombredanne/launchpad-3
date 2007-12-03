@@ -23,7 +23,7 @@ from canonical.launchpad.mail import stub
 
 
 class TestPPAUploadProcessorBase(TestUploadProcessorBase):
-    """Help class for unctional tests for uploadprocessor.py and PPA."""
+    """Help class for functional tests for uploadprocessor.py and PPA."""
 
     def setUp(self):
         """Setup infrastructure for PPA tests.
@@ -573,7 +573,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
     """Functional test for uploadprocessor.py file-lookups in PPA."""
 
     def uploadNewBarToUbuntu(self):
-        """Upload a 'bar' source containing a new orig.tar.gz in ubuntu.
+        """Upload a 'bar' source containing a unseen orig.tar.gz in ubuntu.
 
         Accept and publish the NEW source, so it becomes available to
         the rest of the system.
@@ -596,7 +596,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
     def uploadHigherBarToUbuntu(self):
         """Upload the same higher version of 'bar' to the ubuntu.
 
-        We expects the official orig.tar.gz to be already available in the
+        We expect the official orig.tar.gz to be already available in the
         system.
         """
         upload_dir = self.queueUpload("bar_1.0-10")
