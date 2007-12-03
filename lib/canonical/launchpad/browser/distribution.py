@@ -521,7 +521,8 @@ class DistributionEditView(LaunchpadEditFormView):
     schema = IDistribution
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
-                   'official_malone', 'official_rosetta', 'official_answers']
+                   'bug_reporting_guidelines', 'official_malone',
+                   'official_rosetta', 'official_answers']
 
     def isAdmin(self):
         return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
