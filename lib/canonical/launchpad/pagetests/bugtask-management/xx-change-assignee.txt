@@ -25,7 +25,7 @@ But we can change it to be assigned to nobody.
 
 When attempting to assign a bug to a user who isn't an established bug
 contributor (they have no bugs currently assigned to them) the user is
-warned immediately after the assingment, so that they can change their
+warned immediately after the assignment, so that they can change their
 choice if it was mistaken.
 
     >>> admin_browser.open("http://launchpad.dev/firefox/+bug/1")
@@ -64,6 +64,17 @@ the user will be warned too.
     you may change the assignment.
 
 When assigning a bug to oneself, though, the warning message is suppreseed.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.ftests import login, logout
+
+    >>> login('no-priv@canonical.com')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv.isBugContributor(user=no_priv)
+    False
+
+    >>> logout()
 
     >>> user_browser.open("http://bugs.launchpad.dev/jokosher/+bug/11")
     >>> assignee_control = user_browser.getControl(

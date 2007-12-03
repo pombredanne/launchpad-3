@@ -74,10 +74,10 @@ from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
     INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
-    IPersonBugTaskSearch, IPersonSet, IProduct, IProductSeries,
-    IProductSeriesBugTask, IProject, IRemoveQuestionFromBugTaskForm,
-    ISourcePackage, IUpstreamBugTask, IUpstreamProductBugTaskSearch,
-    NotFoundError, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
+    IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
+    IProject, IRemoveQuestionFromBugTaskForm, ISourcePackage,
+    IUpstreamBugTask, IUpstreamProductBugTaskSearch, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UnexpectedFormData, valid_upstreamtask, validate_distrotask)
 
 from canonical.launchpad.searchbuilder import any, NULL
@@ -1070,41 +1070,34 @@ class BugTaskEditView(LaunchpadEditFormView):
         missing = object()
         new_status = new_values.pop("status", missing)
         new_assignee = new_values.pop("assignee", missing)
-        if ((new_status is not missing) and
-            (bugtask.status != new_status)):
+        if new_status is not missing and bugtask.status != new_status:
             changed = True
             bugtask.transitionToStatus(new_status, self.user)
 
-        if ((new_assignee is not missing) and
-            (bugtask.assignee != new_assignee)):
+        if new_assignee is not missing and bugtask.assignee != new_assignee:
             changed = True
             bugtask.transitionToAssignee(new_assignee)
 
-            if new_assignee is None:
-                is_contributor = True
-            else:
-                is_contributor = new_assignee.isBugContributorInTarget(
-                    user=self.user, target=bugtask.pillar)
-
-            if (new_assignee is not None and
-                new_assignee != self.user and
-                not is_contributor):
-                # If we have a new assignee who isn't
-                # a bug contributor in this pillar,
-                # we display a warning to the user,
-                # in case they made a mistake.
+        if new_assignee is not None and new_assignee != self.user:
+            is_contributor = new_assignee.isBugContributorInTarget(
+                user=self.user, target=bugtask.pillar)
+            if not is_contributor:
+                # If we have a new assignee who isn't a bug
+                # contributor in this pillar, we display a warning
+                # to the user, in case they made a mistake.
                 self.request.response.addWarningNotification(
-                """<a href="%s">%s</a>
-                did not previously have any assigned bugs in
-                <a href="%s">%s</a>.
-                <br /><br />
-                If this bug was assigned by mistake,
-                you may <a href="%s/+editstatus">change the assignment</a>.""" % (
-                canonical_url(new_assignee),
-                new_assignee.displayname,
-                canonical_url(bugtask.pillar),
-                bugtask.pillar.title,
-                canonical_url(bugtask)))
+                    """<a href="%s">%s</a>
+                    did not previously have any assigned bugs in
+                    <a href="%s">%s</a>.
+                    <br /><br />
+                    If this bug was assigned by mistake,
+                    you may <a href="%s/+editstatus"
+                    >change the assignment</a>.""" % (
+                    canonical_url(new_assignee),
+                    new_assignee.displayname,
+                    canonical_url(bugtask.pillar),
+                    bugtask.pillar.title,
+                    canonical_url(bugtask)))
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
             if bugtask.bugwatch is None:
