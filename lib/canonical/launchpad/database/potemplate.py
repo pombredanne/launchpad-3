@@ -423,8 +423,8 @@ class POTemplate(SQLBase, RosettaStats):
 
     def hasMessageID(self, messageID, context=None):
         """See `IPOTemplate`."""
-        results = POTMsgSet.selectBy(potemplate=self, msgid_singular=messageID,
-                                     context=context)
+        results = POTMsgSet.selectBy(
+            potemplate=self, msgid_singular=messageID, context=context)
         return bool(results)
 
     def hasPluralMessage(self):
@@ -525,7 +525,7 @@ class POTemplate(SQLBase, RosettaStats):
         if dummy_pofile.canEditTranslations(requester):
             owner = requester
         else:
-            owner = getUtility(ILaunchpadCelebrities).rosetta_expert
+            owner = getUtility(ILaunchpadCelebrities).rosetta_experts
 
         if variant is None:
             path_variant = ''
@@ -670,8 +670,8 @@ class POTemplate(SQLBase, RosettaStats):
         entry_to_import.status = RosettaImportStatus.IMPORTED
         # And add karma to the importer if it's not imported automatically
         # (all automatic imports come from the rosetta expert team).
-        rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
-        if entry_to_import.importer.id != rosetta_expert.id:
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
+        if entry_to_import.importer.id != rosetta_experts.id:
             # The admins should not get karma.
             entry_to_import.importer.assignKarma(
                 'translationtemplateimport',

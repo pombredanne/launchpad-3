@@ -1,5 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0611,W0212
+# pylint: disable-msg=E0611,W0212,W0231
 
 """`SQLObject` implementation of `IPOFile` interface."""
 
@@ -128,7 +128,7 @@ def _can_edit_translations(pofile, person):
 
     # Rosetta experts and admins can always edit translations.
     admins = getUtility(ILaunchpadCelebrities).admin
-    rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+    rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     if (person.inTeam(admins) or person.inTeam(rosetta_experts) or
         person.id == rosetta_experts.id):
         return True
@@ -154,7 +154,7 @@ def _can_add_suggestions(pofile, person):
     be able to add suggestions only if the permission is not CLOSED.
     """
     return (_can_edit_translations(pofile, person) or
-            pofile.translationpermission <> TranslationPermission.CLOSED)
+            pofile.translationpermission != TranslationPermission.CLOSED)
 
 
 class POFileMixIn(RosettaStats):
@@ -198,258 +198,6 @@ class POFileMixIn(RosettaStats):
                                                             context=context)
         return self.getCurrentTranslationMessageFromPOTMsgSet(
             potmsgset, ignore_obsolete=ignore_obsolete)
-
-    # XXX CarlosPerelloMarin 2007-11-16: Disabled until we implement
-    # suggestions again.
-    def getCurrentSuggestions(self, potmsgsets):
-        """See `IPOTemplate`."""
-        raise NotImplementedError
-#        if not potmsgsets:
-#            return
-#        for potmsgset in potmsgsets:
-#            assert potmsgset.potemplate == self.potemplate, (
-#                "Requesting external suggestions in wrong template.")
-#
-#        parameters = {}
-#        parameters['this_template'] = quote(self.potemplate)
-#        parameters['language'] = quote(self.language)
-#        parameters['wanted_msgids'] = ', '.join([
-#            quote(msgid) for msgid in takers_for_msgid.keys()])
-#
-#        cur = cursor()
-#
-#        # Retrieve (the ids of) external suggestions, and for each, the
-#        # message identifier (original English message, in the singular) it
-#        # translates.
-#        # The msgids come from the suggestions' potmsgsets, not from the
-#        # potmsgsets we got in our parameter.  We need to know those msgids,
-#        # but we avoid retrieving the potmsgsets from the database.
-#        cur.execute("""
-#            SELECT DISTINCT id, msgid_singular FROM (
-#                SELECT
-#                    DISTINCT ON (
-#                        msgid_singular,
-#                        msgstr0,
-#                        msgstr1,
-#                        msgstr2,
-#                        msgstr3)
-#                    Suggestion.id,
-#                    Suggestion.msgstr0,
-#                    Suggestion.msgstr1,
-#                    Suggestion.msgstr2,
-#                    Suggestion.msgstr3,
-#                    POTMsgSet.msgid_singular
-#                FROM TranslationMessage Suggestion
-#                JOIN POTMsgSet ON Suggestion.potmsgset = POTMsgSet.id
-#                JOIN POFile ON Suggestion.pofile = POFile.id
-#                -- If this is slow, we can try joining POTemplate in through
-#                -- POTMsgSet instead.
-#                JOIN POTemplate ON POFile.potemplate = POTemplate.id
-#                LEFT JOIN ProductSeries ON
-#                    POTemplate.productseries = ProductSeries.id
-#                LEFT JOIN Product ON ProductSeries.product = Product.id
-#                LEFT JOIN DistroRelease ON
-#                    POTemplate.distrorelease = DistroRelease.id
-#                LEFT JOIN Distribution ON
-#                    DistroRelease.distribution = Distribution.id
-#                -- If there's a more recent translation message offering the
-#                -- exact same translations, never mind the current one.
-#                -- XXX CarlosPerelloMarin 20071107 This is crap and useless,
-#                -- we should look in the local potmsgset not in the
-#                -- suggestions ones...
-#                LEFT JOIN TranslationMessage AS Better ON
-#                    Better.potmsgset = Suggestion.potmsgset AND
-#                    COALESCE(Better.msgstr0, -1) =
-#                        COALESCE(Suggestion.msgstr0, -1) AND
-#                    COALESCE(Better.msgstr1, -1) =
-#                        COALESCE(Suggestion.msgstr1, -1) AND
-#                    COALESCE(Better.msgstr2, -1) =
-#                        COALESCE(Suggestion.msgstr2, -1) AND
-#                    COALESCE(Better.msgstr3, -1) =
-#                        COALESCE(Suggestion.msgstr3, -1))
-#                WHERE
-#                    POTMsgSet.msgid_singular IN (%(wanted_msgids)s) AND
-#                    POTemplate.id <> %(this_template)s AND
-#                    POTemplate.iscurrent AND
-#                    Suggestion.is_current AND
-#                    POFile.language = %(language)s AND
-#                    NOT Suggestion.is_fuzzy AND
-#                    COALESCE(msgstr0, msgstr1, msgstr2, msgstr3)
-#                        IS NOT NULL AND
-#                    (Product.official_rosetta OR
-#                     Distribution.official_rosetta) AND
-#                    Better.id IS NULL
-#                    )
-#                ORDER BY
-#                    msgid_singular,
-#                    msgstr0,
-#                    msgstr1,
-#                    msgstr2,
-#                    msgstr3,
-#                    Suggestion.id DESC
-#                ) AS Suggestions
-#            """ % parameters)
-#
-#        external_suggestions = cur.fetchall()
-#
-#        if external_translations:
-#            # Retrieve the actual suggestions.  Keep these in
-#            # newest-to-oldest order, because that's the way the view
-#            # class likes them.
-#            messages_query = TranslationMessage.select(
-#                "id IN (%s)" % ", ".join(
-#                    [quote(id) for id in external_translations]),
-#                orderBy="-datecreated")
-#            messages = shortlist(
-#                messages_query, longest_expected=100, hardlimit=200)
-#        else:
-#            messages = []
-#
-#        suggestions_by_id = dict(
-#            (message.id, message) for message in messages)
-#
-#        # For each of the message identifiers belonging to potmsgsets,
-#        # exactly which potmsgsets could benefit from a suggestion for
-#        # that message identifier?  There could be multiple because the
-#        # same message identifier may occur in different contexts.
-#        takers_for_msgid = dict(
-#            (potmsgset.msgid_singular, []) for potmsgset in potmsgsets)
-#        for potmsgset in potmsgsets:
-#            takers_for_msgid[potmsgset.msgid_singular].append(potmsgset)
-#
-#        # Figure out which of potmsgsets each suggestion is relevant to,
-#        # and return our mapping from potmsgsets to various subsets of
-#        # load_submissions.  The subsets may overlap because two
-#        # potmsgsets could have the same msgid (i.e. translate the same
-#        # string) but in different contexts.  The same suggestions would
-#        # apply to both.
-#        # Suggestions are still kept in new-to-old order.
-#        result = dict((potmsgset, []) for potmsgset in potmsgsets)
-#        for translationmessage_id, msgid in external_suggestions:
-#            suggestion = suggestions_by_id[translationmessage_id]
-#            result[takers_for_msgid[msgid]].append(suggestion)
-#
-#        return result
-
-    # XXX CarlosPerelloMarin 2007-11-16: Disabled until we implement
-    # suggestions again.
-    def getExternalSuggestions(self, potmsgsets):
-        """See `IPOTemplate`."""
-        raise NotImplementedError
-#        # XXX JeroenVermeulen 2007-11-08: Unify this with
-#        # getCurrentSuggestions(), and sort out the current suggestions from
-#        # the full set at the call site.
-#        if not potmsgsets:
-#            return
-#        for potmsgset in potmsgsets:
-#            assert potmsgset.potemplate == self.potemplate, (
-#                "Requesting external suggestions in wrong template.")
-#
-#        parameters = {}
-#        parameters['this_template'] = quote(self.potemplate)
-#        parameters['language'] = quote(self.language)
-#        parameters['wanted_msgids'] = ', '.join([
-#            quote(msgid) for msgid in takers_for_msgid.keys()])
-#
-#        cur = cursor()
-#
-#        # Retrieve (the ids of) external suggestions, and for each, the
-#        # message identifier (original English message, in the singular) it
-#        # translates.
-#        # The msgids come from the suggestions' potmsgsets, not from the
-#        # potmsgsets we got in our parameter.  We need to know those msgids,
-#        # but we avoid retrieving the potmsgsets from the database.
-#        cur.execute("""
-#            SELECT DISTINCT id, msgid_singular FROM (
-#                SELECT
-#                    DISTINCT ON (
-#                        msgid_singular,
-#                        msgstr0,
-#                        msgstr1,
-#                        msgstr2,
-#                        msgstr3)
-#                    Suggestion.id,
-#                    Suggestion.msgstr0,
-#                    Suggestion.msgstr1,
-#                    Suggestion.msgstr2,
-#                    Suggestion.msgstr3,
-#                    POTMsgSet.msgid_singular
-#                FROM TranslationMessage Suggestion
-#                JOIN POTMsgSet ON Suggestion.potmsgset = POTMsgSet.id
-#                JOIN POFile ON Suggestion.pofile = POFile.id
-#                -- If this is slow, we can try joining POTemplate in through
-#                -- POTMsgSet instead.
-#                JOIN POTemplate ON POFile.potemplate = POTemplate.id
-#                LEFT JOIN ProductSeries ON
-#                    POTemplate.productseries = ProductSeries.id
-#                LEFT JOIN Product ON ProductSeries.product = Product.id
-#                LEFT JOIN DistroRelease ON
-#                    POTemplate.distrorelease = DistroRelease.id
-#                LEFT JOIN Distribution ON
-#                    DistroRelease.distribution = Distribution.id
-#                WHERE
-#                    POTMsgSet.msgid_singular IN (%(wanted_msgids)s) AND
-#                    POTemplate.id <> %(this_template)s AND
-#                    POTemplate.iscurrent AND
-#                    Suggestion.is_current IS FALSE AND
-#                    POFile.language = %(language)s AND
-#                    NOT Suggestion.is_fuzzy AND
-#                    COALESCE(msgstr0, msgstr1, msgstr2, msgstr3)
-#                        IS NOT NULL AND
-#                    (Product.official_rosetta OR
-#                     Distribution.official_rosetta) AND
-#                    Better.id IS NULL
-#                    )
-#                ORDER BY
-#                    msgid_singular,
-#                    msgstr0,
-#                    msgstr1,
-#                    msgstr2,
-#                    msgstr3,
-#                    Suggestion.id DESC
-#                ) AS Suggestions
-#            """ % parameters)
-#
-#        external_suggestions = cur.fetchall()
-#
-#        if external_translations:
-#            # Retrieve the actual suggestions.  Keep these in
-#            # newest-to-oldest order, because that's the way the view
-#            # class likes them.
-#            messages_query = TranslationMessage.select(
-#                "id IN (%s)" % ", ".join(
-#                    [quote(id) for id in external_translations]),
-#                orderBy="-datecreated")
-#            messages = shortlist(
-#                messages_query, longest_expected=100, hardlimit=200)
-#        else:
-#            messages = []
-#
-#        suggestions_by_id = dict(
-#            (message.id, message) for message in messages)
-#
-#        # For each of the message identifiers belonging to potmsgsets,
-#        # exactly which potmsgsets could benefit from a suggestion for
-#        # that message identifier?  There could be multiple because the
-#        # same message identifier may occur in different contexts.
-#        takers_for_msgid = dict(
-#            (potmsgset.msgid_singular, []) for potmsgset in potmsgsets)
-#        for potmsgset in potmsgsets:
-#            takers_for_msgid[potmsgset.msgid_singular].append(potmsgset)
-#
-#        # Figure out which of potmsgsets each suggestion is relevant to,
-#        # and return our mapping from potmsgsets to various subsets of
-#        # load_submissions.  The subsets may overlap because two
-#        # potmsgsets could have the same msgid (i.e. translate the same
-#        # string) but in different contexts.  The same suggestions would
-#        # apply to both.
-#        # Suggestions are still kept in new-to-old order.
-#        result = dict((potmsgset, []) for potmsgset in potmsgsets)
-#        for translationmessage_id, msgid in external_suggestions:
-#            suggestion = suggestions_by_id[translationmessage_id]
-#            result[takers_for_msgid[msgid]].append(suggestion)
-#
-#        return result
 
 
 class POFile(SQLBase, POFileMixIn):
@@ -577,7 +325,7 @@ class POFile(SQLBase, POFileMixIn):
 
             # Add two empty email fields to make formatting nicer.
             # See bug #133817 for details.
-            emails.extend([u'',u''])
+            emails.extend([u'', u''])
 
             for contributor in self.contributors:
                 preferred_email = contributor.preferredemail
@@ -670,19 +418,15 @@ class POFile(SQLBase, POFileMixIn):
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
-        query = ['POTMsgSet.potemplate = %s' % sqlvalues(self.potemplate)]
-        query.append('POTMsgSet.sequence > 0')
-        query.append('TranslationMessage.potmsgset = POTMsgSet.id')
-        query.append('TranslationMessage.pofile = %s' % sqlvalues(self))
-        query.append('TranslationMessage.is_current')
-        query.append('NOT TranslationMessage.is_fuzzy')
-        query.append('TranslationMessage.msgstr0 IS NOT NULL')
-        if self.plural_forms > 1:
-            plurals_query = ' AND '.join(
-                'TranslationMessage.msgstr%d IS NOT NULL' % i
-                    for i in range(1, self.plural_forms))
-            query.append(
-                '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
+        query = [
+            'POTMsgSet.potemplate = %s' % sqlvalues(self.potemplate),
+            'POTMsgSet.sequence > 0',
+            'TranslationMessage.potmsgset = POTMsgSet.id',
+            'TranslationMessage.pofile = %s' % sqlvalues(self),
+            'TranslationMessage.is_current',
+            'NOT TranslationMessage.is_fuzzy']
+        self._appendCompletePluralFormsConditions(query)
+
         return POTMsgSet.select(
             ' AND '.join(query), clauseTables=['TranslationMessage'],
             orderBy='POTMsgSet.sequence')
@@ -760,21 +504,30 @@ class POFile(SQLBase, POFileMixIn):
         # (iow, it's different from a published translation: this only
         # lists translations which have actually changed in LP, not
         # translations which are 'new' and only exist in LP).
+        # XXX CarlosPerelloMarin 2007-11-29 bug=165218: Once bug #165218 is
+        # properly fixed (that is, we no longer create empty
+        # TranslationMessage objects for empty strings in imported files), all
+        # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
+        # they will not be needed anymore.
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
-            LEFT JOIN TranslationMessage imported ON
-                POTMsgSet.id = imported.potmsgset
-            LEFT OUTER JOIN TranslationMessage current ON
-                POTMsgSet.id = current.potmsgset AND
-                imported.id != current.id AND
-                current.pofile = imported.pofile
-            WHERE
+            JOIN TranslationMessage AS imported ON
+                POTMsgSet.id = imported.potmsgset AND
                 imported.pofile = %s AND
-                imported.is_imported IS TRUE AND
-                current.is_current IS TRUE AND
+                imported.is_imported IS TRUE
+            JOIN TranslationMessage AS current ON
+                POTMsgSet.id = current.potmsgset AND
+                imported.id <> current.id AND
+                current.pofile = imported.pofile AND
+                current.is_current IS TRUE
+            WHERE
                 POTMsgSet.sequence > 0 AND
-                POTMsgSet.potemplate = %s)
+                POTMsgSet.potemplate = %s AND
+                (imported.msgstr0 IS NOT NULL OR
+                 imported.msgstr1 IS NOT NULL OR
+                 imported.msgstr2 IS NOT NULL OR
+                 imported.msgstr3 IS NOT NULL))
             ''' % sqlvalues(self, self.potemplate),
             orderBy='POTmsgSet.sequence')
 
@@ -841,6 +594,22 @@ class POFile(SQLBase, POFileMixIn):
             self.rosettacount,
             self.unreviewed_count)
 
+    def _appendCompletePluralFormsConditions(self, query):
+        """Add conditions to implement ITranslationMessage.is_complete in SQL.
+
+        :param query: A list of AND SQL conditions where the implementation of
+            ITranslationMessage.is_complete will be appended as SQL
+            conditions.
+        """
+        query.append('TranslationMessage.msgstr0 IS NOT NULL')
+        if self.language.pluralforms > 1:
+            plurals_query = ' AND '.join(
+                'TranslationMessage.msgstr%d IS NOT NULL' % plural_form
+                    for plural_form in range(1, self.plural_forms))
+            query.append(
+                '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
+        return query
+
     def updateStatistics(self):
         """See `IPOFile`."""
         # make sure all the data is in the db
@@ -851,12 +620,8 @@ class POFile(SQLBase, POFileMixIn):
                  'TranslationMessage.is_imported IS TRUE',
                  'NOT TranslationMessage.was_fuzzy_in_last_import',
                  'TranslationMessage.potmsgset = POTMsgSet.id',
-                 'POTMsgSet.sequence > 0',
-                 'TranslationMessage.msgstr0 IS NOT NULL']
-        for plural_form in range(1, self.plural_forms):
-            query.append(
-                '(POTMsgSet.msgid_plural IS NULL OR TranslationMessage.msgstr%d IS NOT NULL)' % plural_form)
-
+                 'POTMsgSet.sequence > 0']
+        self._appendCompletePluralFormsConditions(query)
         current = TranslationMessage.select(
             ' AND '.join(query), clauseTables=['POTMsgSet']).count()
 
@@ -866,24 +631,30 @@ class POFile(SQLBase, POFileMixIn):
 
         # Get the number of new translations in Launchpad that imported ones
         # were not translated.
-        query = ['TranslationMessage.pofile = %s' % sqlvalues(self)]
-        query.append('NOT TranslationMessage.is_fuzzy')
+        query = [
+            'TranslationMessage.pofile = %s' % sqlvalues(self),
+            'NOT TranslationMessage.is_fuzzy',
+            'TranslationMessage.is_current IS TRUE']
         # Check only complete translations.  For messages with only a single
         # msgid, that's anything with a singular translation; for ones with a
         # plural form, it's the number of plural forms the language supports.
-        query.append('TranslationMessage.msgstr0 IS NOT NULL')
-        for plural_form in range(1, self.plural_forms):
-            query.append("""
-                (POTMsgSet.msgid_plural IS NULL OR
-                 TranslationMessage.msgstr%d IS NOT NULL)""" % plural_form)
-        query.append('is_current IS TRUE')
+        self._appendCompletePluralFormsConditions(query)
+        # XXX CarlosPerelloMarin 2007-11-29 bug=165218: Once bug #165218 is
+        # properly fixed (that is, we no longer create empty
+        # TranslationMessage objects for empty strings in imported files), all
+        # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
+        # they will not be needed anymore.
         query.append('''NOT EXISTS (
             SELECT TranslationMessage.id
             FROM TranslationMessage AS imported
             WHERE
                 imported.potmsgset = TranslationMessage.potmsgset AND
                 imported.pofile = TranslationMessage.pofile AND
-                imported.is_imported IS TRUE)''')
+                imported.is_imported IS TRUE AND
+                (imported.msgstr0 IS NOT NULL OR
+                 imported.msgstr1 IS NOT NULL OR
+                 imported.msgstr2 IS NOT NULL OR
+                 imported.msgstr3 IS NOT NULL))''')
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('POTMsgSet.sequence > 0')
         rosetta = TranslationMessage.select(
@@ -933,6 +704,8 @@ class POFile(SQLBase, POFileMixIn):
 
     def importFromQueue(self, logger=None):
         """See `IPOFile`."""
+
+        translation_importer = getUtility(ITranslationImporter)
         librarian_client = getUtility(ILibrarianClient)
 
         entry_to_import = self.getNextToImport()
@@ -941,7 +714,8 @@ class POFile(SQLBase, POFileMixIn):
             # There is no new import waiting for being imported.
             return
 
-        import_file = librarian_client.getFileByAlias(entry_to_import.content.id)
+        import_file = librarian_client.getFileByAlias(
+            entry_to_import.content.id)
 
         # While importing a file, there are two kinds of errors:
         #
@@ -956,8 +730,7 @@ class POFile(SQLBase, POFileMixIn):
         #   list of faulty messages.
         import_rejected = False
         try:
-            importer = getUtility(ITranslationImporter)
-            errors = importer.importFile(entry_to_import, logger=logger)
+            errors = translation_importer.importFile(entry_to_import, logger)
         except NotExportedFromLaunchpad:
             # We got a file that was not exported from Rosetta as a non
             # published upload. We log it and select the email template.
@@ -1059,9 +832,9 @@ class POFile(SQLBase, POFileMixIn):
         # And add karma to the importer if it's not imported automatically
         # (all automatic imports come from the rosetta expert user) and comes
         # from upstream.
-        rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
         if (entry_to_import.is_published and
-            entry_to_import.importer.id != rosetta_expert.id):
+            entry_to_import.importer.id != rosetta_experts.id):
             # The Rosetta Experts team should not get karma.
             entry_to_import.importer.assignKarma(
                 'translationimportupstream',
@@ -1180,7 +953,8 @@ class POFile(SQLBase, POFileMixIn):
                 # file in librarian, that's fine. It only means that next
                 # time, we will do a full export again.
                 logging.warning(
-                    "Error uploading a cached file into librarian", exc_info=1)
+                    "Error uploading a cached file into librarian",
+                    exc_info=1)
 
         return contents
 
@@ -1209,7 +983,7 @@ class DummyPOFile(POFileMixIn):
         self.date_changed  = None
         self.license = None
         self.lastparsed = None
-        self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
+        self.owner = getUtility(ILaunchpadCelebrities).rosetta_experts
 
         # The default POFile owner is the Rosetta Experts team unless the
         # given owner has rights to write into that file.

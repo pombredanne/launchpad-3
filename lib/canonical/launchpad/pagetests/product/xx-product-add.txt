@@ -38,8 +38,7 @@ Tests if the validator is working for the URL fields
     >>> user_browser.getControl('Add').click()
     >>> user_browser.url
     'http://launchpad.dev/projects/+new'
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print message.renderContents()
+    >>> print "\n".join(get_feedback_messages(user_browser.contents))
     There is 1 error.
     "www.test.test.com/" is not a valid URI
 
@@ -49,8 +48,7 @@ And just 'http://' for the url
     >>> user_browser.getControl('Add').click()
     >>> user_browser.url
     'http://launchpad.dev/projects/+new'
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print message.renderContents()
+    >>> print "\n".join(get_feedback_messages(user_browser.contents))
     There is 1 error.
     http URIs must have a host name
 
@@ -189,10 +187,9 @@ Now let's try to insert a product with the same name (testing).
     >>> user_browser.getControl('Add').click()
     >>> user_browser.url
     'http://launchpad.dev/projects/+new'
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print message.renderContents()
+    >>> print "\n".join(get_feedback_messages(user_browser.contents))
     There is 1 error.
-    testing is already in use by another project
+    testing is already used by another project
 
 
 Normal users don't get to see the owner and reviewed fields

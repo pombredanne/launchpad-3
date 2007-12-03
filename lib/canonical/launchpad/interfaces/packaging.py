@@ -88,6 +88,9 @@ class IPackagingUtil(Interface):
                         distroseries, packaging, owner):
         """Create Packaging entry."""
 
+    def deletePackaging(productseries, sourcepackagename, distroseries):
+        """Delete a packaging entry."""
+
     def packagingEntryExists(productseries, sourcepackagename,
                              distroseries):
         """Does this packaging entry already exists?"""
