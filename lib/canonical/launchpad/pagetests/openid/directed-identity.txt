@@ -3,7 +3,7 @@ consumer need not specify the identity URL, instead leaving it up to the
 OpenID provider to determine it. We call this mode 'OP Identifier' for
 lack of a better name.
 
-    >>> from canonical.launchpad.ftests.openid import install_consumer
+    >>> from canonical.launchpad.ftests.openidhelpers import install_consumer
     >>> install_consumer()
 
 
@@ -67,6 +67,6 @@ presented with an authorization screen instead:
 
 == Cleanup ==
 
-    >>> from canonical.launchpad.ftests.openid import uninstall_consumer
+    >>> from canonical.launchpad.ftests.openidhelpers import uninstall_consumer
     >>> uninstall_consumer()
 

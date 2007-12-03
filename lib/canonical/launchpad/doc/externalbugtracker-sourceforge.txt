@@ -149,6 +149,7 @@ remote status for, the bug watch that we have created.
 
     >>> sourceforge = TestSourceForge(example_bug_tracker)
     >>> sourceforge.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 1 watches on http://bugs.some.where
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1722250: Open:None
 
@@ -181,6 +182,7 @@ tracker with a variety of statuses.
 
     >>> sourceforge.trace_calls = True
     >>> sourceforge.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 10 watches on http://bugs.some.where
     CALLED _getPage(u'support/tracker.php?aid=1722250')
     CALLED _getPage(u'support/tracker.php?aid=1722251')
     CALLED _getPage(u'support/tracker.php?aid=1722252')
