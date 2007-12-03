@@ -128,6 +128,7 @@ And have a Roundup instance process them:
 
     >>> roundup = TestRoundup(example_bug_tracker)
     >>> roundup.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 1 watches on http://bugs.some.where
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1: 1
 
@@ -160,6 +161,7 @@ We'll add some more watches now.
 
     >>> roundup.trace_calls = True
     >>> roundup.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 11 watches on http://bugs.some.where
     CALLED urlopen(u'http://.../issue?...@startwith=0')
 
     >>> print_bugwatches(example_bug_tracker.watches,

@@ -41,10 +41,13 @@
       highlights.</i>
     </p>
 
-    <tal:downloadfiles
-        define="has_edit context/required:launchpad.Edit"
-        condition="context/files">
+    <form method="POST"
+        tal:define="has_edit context/required:launchpad.Edit"
+        tal:condition="context/files"
+        tal:attributes="action request/URL">
+
       <h2>Download files for this release</h2>
+
         <table class="listing">
           <thead>
             <tr>
@@ -64,13 +67,18 @@
                 </td>
                 <td>
                   <img alt="download icon" src="/@@/download" />
-                  <a tal:attributes="href python:view.file_url(file)"
+                  <a tal:attributes="href python:view.fileURL(file)"
                        tal:content="file/libraryfile/filename">filename</a></td>
                 <td tal:content="file/description">Installer for i386</td>
               </tr>
           </tbody>
         </table>
-    </tal:downloadfiles>
+
+      <input tal:condition="has_edit"
+          type="submit"
+          name="delete_files"
+          value="Delete Files" />
+    </form>
 
 </div>
 
