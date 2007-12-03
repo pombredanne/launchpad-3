@@ -166,7 +166,8 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         # Override the current SamplePublisher archive (ubuntutest primary)
         # to 'ubuntu primary archive'.
         fa.publisher.archive = ubuntuwarty.main_archive
-        spphs = fa.getSourcesForOverrides(
+
+        published_sources = fa.getSourcesForOverrides(
             ubuntuwarty, PackagePublishingPocket.RELEASE)
 
         # For the above query, we are depending on the sample data to
@@ -183,7 +184,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         actualSources = [
             (spph.sourcepackagerelease.name,
              spph.sourcepackagerelease.version)
-            for spph in spphs]
+            for spph in published_sources]
 
         self.assertEqual(expectedSources, actualSources)
 
@@ -202,7 +203,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         fa.publisher.archive = getUtility(IArchiveSet).getByDistroPurpose(
             ubuntu, ArchivePurpose.PARTNER)
 
-        spphs = fa.getSourcesForOverrides(
+        published_sources = fa.getSourcesForOverrides(
             breezy_autotest, PackagePublishingPocket.RELEASE)
 
         expectedSources = [
@@ -211,7 +212,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         actualSources = [
             (spph.sourcepackagerelease.name,
              spph.sourcepackagerelease.version)
-            for spph in spphs]
+            for spph in published_sources]
 
         self.assertEqual(expectedSources, actualSources)
 
@@ -227,7 +228,8 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         # Override the current SamplePublisher archive (ubuntutest primary)
         # to 'ubuntu primary archive'.
         fa.publisher.archive = ubuntuwarty.main_archive
-        bpphs = fa.getBinariesForOverrides(
+
+        published_binaries = fa.getBinariesForOverrides(
             ubuntuwarty, PackagePublishingPocket.RELEASE)
 
         # The above query depends on the sample data containing two rows
@@ -239,7 +241,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         actualBinaries = [
             (bpph.binarypackagerelease.name,
              bpph.binarypackagerelease.version)
-            for bpph in bpphs]
+            for bpph in published_binaries]
 
         self.assertEqual(expectedBinaries, actualBinaries)
 
@@ -258,7 +260,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         fa.publisher.archive = getUtility(IArchiveSet).getByDistroPurpose(
             ubuntu, ArchivePurpose.PARTNER)
 
-        bpphs = fa.getBinariesForOverrides(
+        published_binaries = fa.getBinariesForOverrides(
             breezy_autotest, PackagePublishingPocket.RELEASE)
 
         # The above query depends on the sample data containing two rows
@@ -269,7 +271,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         actualBinaries = [
             (bpph.binarypackagerelease.name,
              bpph.binarypackagerelease.version)
-            for bpph in bpphs]
+            for bpph in published_binaries]
 
         self.assertEqual(expectedBinaries, actualBinaries)
 
