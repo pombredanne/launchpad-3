@@ -10,4 +10,4 @@ ALTER TABLE Distribution
       ADD COLUMN bug_reporting_guidelines TEXT;
 
 INSERT INTO LaunchpadDatabaseRevision
-       VALUES (88, 99, 0);
+       VALUES (88, 33, 0);
