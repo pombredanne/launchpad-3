@@ -218,7 +218,7 @@ COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone
 -- BugWatch
 
 COMMENT ON COLUMN BugWatch.last_error_type IS 'The type of error which last prevented this entry from being updated. Legal values are defined by the BugWatchErrorType enumeration.';
-COMMENT ON COLUMN BugWatch.last_error_type IS 'The importance of the bug as returned by the remote server. This will be converted into a Launchpad BugTaskImportance value.';
+COMMENT ON COLUMN BugWatch.remote_importance IS 'The importance of the bug as returned by the remote server. This will be converted into a Launchpad BugTaskImportance value.';
 
 
 -- CodeImport
