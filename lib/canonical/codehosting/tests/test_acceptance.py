@@ -6,7 +6,9 @@ __metaclass__ = type
 
 from StringIO import StringIO
 import os
+import shutil
 import sys
+import tempfile
 import thread
 import unittest
 import xmlrpclib
@@ -15,6 +17,7 @@ import bzrlib.branch
 from bzrlib.builtins import cmd_push
 from bzrlib.errors import (
     BzrCommandError, NotBranchError, TransportNotPossible)
+from bzrlib.repository import format_registry
 
 # bzr 0.91 uses ReadOnlyError, bzr 0.92 uses LockFailed
 try:
@@ -27,7 +30,7 @@ from bzrlib.tests import TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
 
 from canonical.codehosting.tests.helpers import (
-    adapt_suite, deferToThread, ServerTestCase)
+    adapt_suite, clone_test, deferToThread, ServerTestCase)
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting import branch_id_to_path
@@ -158,22 +161,32 @@ class SmokeTest(SSHTestCase):
         self.repo_format = format
 
     def setUp(self):
-        SSHTestCase.setUp()
-        self.first_tree = tempfile.mkdtemp()
-        self.second_tree = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.first_tree)
-        shutil.rmtree(self.second_tree)
+        super(SmokeTest, self).setUp()
+        self.first_tree = 'first'
+        self.second_tree = 'second'
 
     def test_smoke(self):
         # Make a new branch
         tree = self.make_branch_and_tree(
             self.first_tree, format=self.repo_format)
         # Push up a new branch.
+        self.push(
+            self.first_tree,
+            self.getTransportURL('~testuser/+junk/new-branch'))
         # Pull it back down.
+        self.pull(
+            self.getTransportURL('~testuser/+junk/new-branch'),
+            self.second_tree)
         # Commit to it.
+        file = open(os.path.join(self.second_tree, 'foo'), 'w')
+        file.write('Content!\n')
+        file.close()
+        tree.add('foo')
+        tree.commit('new revision')
         # Push up again.
+        self.push(
+            self.second_tree,
+            self.getTransportURL('~testuser/+junk/new-branch'))
 
 
 
@@ -561,11 +574,33 @@ def make_server_tests(base_suite, servers):
     return adapt_suite(adapter, base_suite)
 
 
+class RepositoryTestAdapter:
+
+    def __init__(self, repositories):
+        self.repositories = repositories
+
+    def adapt(self, test):
+        result = unittest.TestSuite()
+        for repository in self.repositories:
+            new_test = clone_test(test, '%s(%s)' % (test.id(), str(repository)))
+            new_test.setRepositoryFormat(repository)
+            result.addTest(new_test)
+        return result
+
+
+def make_smoke_tests(base_suite):
+    repositories = [
+        format_registry.get(key) for key in format_registry.keys()]
+    adapter = RepositoryTestAdapter(repositories)
+    return adapt_suite(adapter, base_suite)
+
+
 def test_suite():
     base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
     suite.addTest(make_server_tests(
-        base_suite, [make_sftp_server, make_bzr_ssh_server]))
+            base_suite, [make_sftp_server, make_bzr_ssh_server]))
     suite.addTest(make_server_tests(
-        unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))
+            unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))
+    suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))
     return suite

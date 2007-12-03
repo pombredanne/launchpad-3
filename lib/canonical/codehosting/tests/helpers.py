@@ -413,6 +413,16 @@ class FakeLaunchpad:
         self._request_mirror_log.append(branchID)
 
 
+def clone_test(test, new_id):
+    """Return a clone of the given test."""
+    from copy import deepcopy
+    new_test = deepcopy(test)
+    def make_new_test_id():
+        return lambda: new_id
+    new_test.id = make_new_test_id()
+    return new_test
+
+
 class CodeHostingTestProviderAdapter:
     """Test adapter to run a single test against many codehosting servers."""
 
@@ -420,14 +430,9 @@ class CodeHostingTestProviderAdapter:
         self._servers = servers
 
     def adaptForServer(self, test, serverFactory):
-        from copy import deepcopy
-        new_test = deepcopy(test)
         server = serverFactory()
+        new_test = clone_test(test, '%s(%s)' % (test.id(), server._schema))
         new_test.installServer(server)
-        def make_new_test_id():
-            new_id = "%s(%s)" % (new_test.id(), server._schema)
-            return lambda: new_id
-        new_test.id = make_new_test_id()
         return new_test
 
     def adapt(self, test):
