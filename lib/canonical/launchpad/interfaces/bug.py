@@ -471,7 +471,7 @@ class IBugDelta(Interface):
 
 def lengthValidator(length, error_message):
     """Returns a unary function to validate the length of a string.
-    
+
     The function accepts a string and returns True for strings of length
     less than or equal to :length:. It also returns True for an argument
     equal to None.
