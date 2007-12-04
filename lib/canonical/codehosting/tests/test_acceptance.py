@@ -17,6 +17,7 @@ import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
     BzrCommandError, NotBranchError, TransportNotPossible)
+from bzrlib.repofmt.weaverepo import RepositoryFormat7
 from bzrlib.repository import format_registry
 
 # bzr 0.91 uses ReadOnlyError, bzr 0.92 uses LockFailed
@@ -602,8 +603,11 @@ def make_server_tests(base_suite, servers):
 def make_smoke_tests(base_suite):
     from bzrlib.tests.repository_implementations import (
         RepositoryTestProviderAdapter)
+    # We specifically exclude RepositoryFormat7, which is not supported.
+    # See bug 173807 for details.
     all_formats = [
-        format_registry.get(key) for key in format_registry.keys()]
+        format_registry.get(key) for key in format_registry.keys()
+        if not isinstance(format_registry.get(key), RepositoryFormat7)]
     adapter = RepositoryTestProviderAdapter(
         default_transport, None,
         [(format, format._matchingbzrdir) for format in all_formats])
