@@ -18,7 +18,7 @@ from canonical.archiveuploader.ftests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchiveSet, IDistributionSet, ILaunchpadCelebrities,
-    IPersonSet, PackageUploadStatus, PackagePublishingStatus,
+    IPersonSet, NotFoundError, PackageUploadStatus, PackagePublishingStatus,
     PackagePublishingPocket)
 from canonical.launchpad.mail import stub
 
@@ -631,7 +631,15 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
 
 class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
-    """Functional test for uploadprocessor.py file-lookups in PPA."""
+    """Functional test for uploadprocessor.py file-lookups in PPA.
+
+    Lower-level tests on the DSCFile.checkFiles and DSCFile._getFileByName
+    are implemented in launchpad/doc/nascentuploadfile.txt.
+    """
+    # XXX cprov 20071204: the DSCFile tests are not yet implemented, this
+    # issue should be addressed by bug #106084, while implementing those
+    # tests we should revisit this test-suite checking if we have a
+    # satisfactory coverage.
 
     def uploadNewBarToUbuntu(self):
         """Upload a 'bar' source containing a unseen orig.tar.gz in ubuntu.
@@ -660,6 +668,12 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         We expect the official orig.tar.gz to be already available in the
         system.
         """
+        try:
+            self.ubuntu.getFileByName(
+                'bar_1.0.orig.tar.gz', source=True, binary=False)
+        except NotFoundError:
+            self.fail('bar_1.0.orig.tar.gz is not yet published.')
+
         upload_dir = self.queueUpload("bar_1.0-10")
         self.processUpload(self.uploadprocessor, upload_dir)
         # Discard the announcement email and check the acceptance message
