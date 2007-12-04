@@ -49,7 +49,7 @@ def parse_options():
     parser.add_option("-R", "--distsroot",
                       dest="distsroot", metavar="SUFFIX", default=None,
                       help="Override the dists path for generation of the "
-                           "PRIMARY archive only.")
+                           "PRIMARY and PARTNER archives only.")
 
     parser.add_option("--ppa", action="store_true",
                       dest="ppa", metavar="PPA", default=False,

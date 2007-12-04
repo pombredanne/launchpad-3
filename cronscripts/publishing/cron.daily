@@ -116,7 +116,7 @@ if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
 fi
 
 # Publish the results for all archives (except PPA).
-# (the -R only affects the primary archive)
+# (The -R only affects the primary and the partner archive.)
 publish-distro.py -v -v --partner -d $DISTRONAME -R ${DISTSROOT_PARTNER}.new
 publish-distro.py -v -v -d $DISTRONAME -R ${DISTSROOT}.new
 
@@ -169,7 +169,7 @@ if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
 fi
 
 # As close to atomically as possible, put the new dists into place for the
-# primary archive.
+# primary and partner archives.
 mv $DISTSROOT ${DISTSROOT}.old
 mv ${DISTSROOT}.new $DISTSROOT
 mv $DISTSROOT_PARTNER ${DISTSROOT_PARTNER}.old
