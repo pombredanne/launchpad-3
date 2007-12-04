@@ -253,9 +253,9 @@ class PullerWorker:
             if identical_formats(self._source_branch, branch):
                 # The destination exists, and is in the same format.  So all
                 # we need to do is pull the new revisions.  Unless the branch
-                # is lock, but the only thing that locks these branches is the
-                # puller and there is protection against running more than one
-                # puller at once... so break the lock.
+                # is locked, but the only thing that locks these branches is
+                # the puller and there is protection against running more than
+                # one puller at once... so break the lock.
                 if branch.get_physical_lock_status():
                     branch.break_lock()
                 branch.pull(self._source_branch, overwrite=True)
