@@ -63,6 +63,14 @@ created right away.
     >>> list_one
     <MailingList for team "team-one"; status=REGISTERED at 0x...>
 
+You can always access the mailing list through its team, if the team has a
+mailing list.
+
+    >>> team_one.mailing_list
+    <MailingList for team "team-one"; status=REGISTERED at 0x...>
+    >>> print team_two.mailing_list
+    None
+
 You may not register a mailing list for a person.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
@@ -504,3 +512,29 @@ But a team with no mailing list (yet) can still be renamed.
     >>> team_six.name = 'team-canonical'
     >>> team_six.name
     u'team-canonical'
+
+
+== Team archive links ==
+
+Mailing lists have archives, accessible through a list-specific url.  However,
+if a mailing list has never be activated, it won't have an archive url.
+
+    >>> print list_two.archive_url
+    None
+
+An active mailing list has an archive url.
+
+    >>> list_one.status.name
+    'ACTIVE'
+    >>> list_one.archive_url
+    u'http://lists.launchpad.dev/archives/team-one'
+
+Inactive mailing lists also have an archive url, because once activated, a
+mailing list could have an archive and archives are never deleted.
+
+    >>> list_one.deactivate()
+    >>> list_one.transitionToStatus(MailingListStatus.INACTIVE)
+    >>> list_one.status.name
+    'INACTIVE'
+    >>> list_one.archive_url
+    u'http://lists.launchpad.dev/archives/team-one'

@@ -30,6 +30,7 @@ else
     ARCHIVEROOT_PARTNER=/srv/launchpad.net/ppa/ubuntu-partner
 fi
 DISTSROOT_PARTNER=$ARCHIVEROOT_PARTNER/dists
+DISTSCOPYROOT_PARTNER=$ARCHIVEROOT_PARTNER/../ubuntu-partner-distscopy
 
 # Configuration options
 LAUNCHPADROOT=/srv/launchpad.net/codelines/current
@@ -60,9 +61,15 @@ cleanup () {
     if [ -d ${DISTSROOT}.old ]; then
       mv ${DISTSROOT}.old ${DISTSCOPYROOT}/dists
     fi
+    if [ -d ${DISTSROOT_PARTNER}.old ]; then
+      mv ${DISTSROOT_PARTNER}.old ${DISTSCOPYROOT_PARTNER}/dists
+    fi
   else
     if [ -d ${DISTSROOT}.new ]; then
       mv ${DISTSROOT}.new ${DISTSCOPYROOT}/dists
+    fi
+    if [ -d ${DISTSROOT_PARTNER}.new ]; then
+      mv ${DISTSROOT_PARTNER}.new ${DISTSCOPYROOT_PARTNER}/dists
     fi
   fi
 }
@@ -83,11 +90,14 @@ process-accepted.py -v -v -v $DISTRONAME
 
 # Create backup dists folder, if this is the first time
 mkdir -p ${DISTSCOPYROOT}/dists
+mkdir -p ${DISTSCOPYROOT_PARTNER}/dists
 # Move the backup dists folder into place
 mv ${DISTSCOPYROOT}/dists ${ARCHIVEROOT}/dists.new
+mv ${DISTSCOPYROOT_PARTNER}/dists ${ARCHIVEROOT_PARTNER}/dists.new
 # Bring it up-to-date efficiently with rsync. --delete is required to
 # ensure we don't ressurect things previously deleted, bug 58835.
 rsync -aH --delete ${DISTSROOT}/ ${ARCHIVEROOT}/dists.new
+rsync -aH --delete ${DISTSROOT_PARTNER}/ ${ARCHIVEROOT_PARTNER}/dists.new
 
 # XXX: dsilvers 2006-02-04:
 # DAK created some extra d-i pockets which
@@ -106,7 +116,8 @@ if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
 fi
 
 # Publish the results for all archives (except PPA).
-# (the -R only affects the primary archive)
+# (The -R only affects the primary and the partner archive.)
+publish-distro.py -v -v --partner -d $DISTRONAME -R ${DISTSROOT_PARTNER}.new
 publish-distro.py -v -v -d $DISTRONAME -R ${DISTSROOT}.new
 
 # Process death row for all archives (except PPA).
@@ -127,7 +138,7 @@ for CANDIDATE in $(find ${DISTSROOT}.new -maxdepth 2 -name Release) \
     echo "Not re-signing $CANDIDATE"
   fi
 done
-SIGNLIST_PARTNER=$(find ${DISTSROOT_PARTNER} -maxdepth 2 -name Release)
+SIGNLIST_PARTNER=$(find ${DISTSROOT_PARTNER}.new -maxdepth 2 -name Release)
 for CANDIDATE in $SIGNLIST_PARTNER; do
   #  [ Release.gpg missing   ] or [ Release is newer than Release.gpg ]
   if [ ! -f $CANDIDATE.gpg ] || [ $CANDIDATE -nt $CANDIDATE.gpg ]; then
@@ -158,11 +169,14 @@ if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
 fi
 
 # As close to atomically as possible, put the new dists into place for the
-# primary archive.
+# primary and partner archives.
 mv $DISTSROOT ${DISTSROOT}.old
 mv ${DISTSROOT}.new $DISTSROOT
+mv $DISTSROOT_PARTNER ${DISTSROOT_PARTNER}.old
+mv ${DISTSROOT_PARTNER}.new $DISTSROOT_PARTNER
 DONEPUB=yes
 mv ${DISTSROOT}.old ${DISTSCOPYROOT}/dists
+mv ${DISTSROOT_PARTNER}.old ${DISTSCOPYROOT_PARTNER}/dists
 
 # Touch everything you asked us to do
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then

@@ -1557,7 +1557,8 @@ class BugTaskSet:
         2. The bug is not a duplicate.
         3. The bug has at least one message (a request for more information).
         4. The bug does not have any other valid bugtasks.
-        5. The bugtask belongs to a project with official_malone is True.
+        5. The bugtask belongs to a project with enable_bug_expiration set
+           to True.
         6. The bugtask has the status Incomplete.
         7. The bugtask is not assigned to anyone.
         8. The bugtask does not have a milestone.
@@ -1583,19 +1584,20 @@ class BugTaskSet:
                     ON BugTask.bug = Bug.id
                 LEFT OUTER JOIN Distribution
                     ON distribution = Distribution.id
-                    AND Distribution.official_malone IS TRUE
+                    AND Distribution.enable_bug_expiration IS TRUE
                 LEFT OUTER JOIN DistroSeries
                     ON distroseries = DistroSeries.id
                     AND DistroSeries.distribution IN (
                         SELECT id FROM Distribution
-                        WHERE official_malone IS TRUE)
+                        WHERE enable_bug_expiration IS TRUE)
                 LEFT OUTER JOIN Product
                     ON product = Product.id
-                    AND Product.official_malone IS TRUE
+                    AND Product.enable_bug_expiration IS TRUE
                 LEFT OUTER JOIN ProductSeries
                     ON productseries = ProductSeries.id
                     AND ProductSeries.product IN (
-                        SELECT id FROM Product WHERE official_malone IS TRUE)
+                        SELECT id FROM Product
+                        WHERE enable_bug_expiration IS TRUE)
                 WHERE
                     (Distribution.id IS NOT NULL
                      OR DistroSeries.id IS NOT NULL
