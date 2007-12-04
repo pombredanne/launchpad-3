@@ -101,6 +101,14 @@ for.
     ...
     LinkNotFoundError
 
+Hacking the url still doesn't get you to the mailing list configuration page.
+
+    >>> browser.open(
+    ...     'http://launchpad.dev/~landscape-developers/+mailinglist')
+    Traceback (most recent call last):
+    ...
+    NotFound: ...
+
 Enable the Landscape Developers to apply for mailing lists by adding
 landscape-developers to the mailing list beta test team.
 
@@ -115,7 +123,7 @@ landscape-developers to the mailing list beta test team.
 
 Now Landscape Developers can apply for a mailing list.
 
-    >>> browser.reload()
+    >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.title
     'Configure mailing list'
