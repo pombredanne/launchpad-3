@@ -34,6 +34,7 @@ from canonical.launchpad.interfaces import (
     IBugAttachment,
     IBugNomination,
     IBugSet,
+    IFAQSet,
     IHasIcon,
     IHasLogo,
     IHasMugshot,
@@ -1331,10 +1332,23 @@ class FormattersAPI:
                 url = url[:-len(trailers)]
             else:
                 trailers = ''
+            # We use nofollow for these links to reduce the value of
+            # adding spam URLs to our comments; it's a way of moderately
+            # devaluing the return on effort for spammers that consider
+            # using Launchpad.
             return '<a rel="nofollow" href="%s">%s</a>%s' % (
                 cgi.escape(url, quote=True),
                 add_word_breaks(cgi.escape(url)),
                 cgi.escape(trailers))
+        elif match.group('faq') is not None:
+            text = match.group('faq')
+            faqnum = match.group('faqnum')
+            faqset = getUtility(IFAQSet)
+            faq = faqset.getFAQ(faqnum)
+            if not faq:
+                return text
+            url = canonical_url(faq)
+            return '<a href="%s">%s</a>' % (url, text)
         elif match.group('oops') is not None:
             text = match.group('oops')
 
@@ -1347,7 +1361,7 @@ class FormattersAPI:
                 root_url += '/'
 
             url = root_url + match.group('oopscode')
-            return '<a rel="nofollow" href="%s">%s</a>' % (url, text)
+            return '<a href="%s">%s</a>' % (url, text)
         else:
             raise AssertionError("Unknown pattern matched.")
 
@@ -1457,6 +1471,10 @@ class FormattersAPI:
       (?P<bug>
         \bbug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
         0*(?P<bugnum>\d+)
+      ) |
+      (?P<faq>
+        \bfaq(?:\s|<br\s*/>)*(?:\#|item|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
+        0*(?P<faqnum>\d+)
       ) |
       (?P<oops>
         \boops\s*-?\s*
