@@ -421,3 +421,17 @@ subscription address.
     ...
     CannotChangeSubscription: Anne Person is not a member of
         the mailing list: Team Six
+
+
+== Deleting addresses ==
+
+When a user deletes an email address, all of their mailing list
+subscriptions that use that address are automatically deleted as well.
+
+    >>> list_six.changeAddress(kara, kara_alternative)
+    >>> print sorted(list_six.getAddresses())
+    [u'kperson@example.org']
+
+    >>> kara_alternative.destroySelf()
+    >>> print sorted(list_six.getAddresses())
+    []

@@ -11,8 +11,32 @@ database submissions by this person.
     >>> [content_table] = find_tags_by_class(anon_browser.contents, 'listing')
     >>> print extract_text(content_table)
     System        Date submitted  Download          Raw
-    Fujitsu CY26  ...             test.txt          ...
+    Fujitsu_CY26  ...             test.txt          ...
     TONKA TUFFBOOK2600 ...        hwsubmission1.xml ...
+
+The 'System', 'Download' and 'Raw' columns should contain valid links for that
+submission. All links should resolve to valid pages, but the individual pages
+are tested in detail later.
+
+    >>> system_link = anon_browser.getLink('Fujitsu_CY26')
+    >>> system_link.url
+    'http://launchpad.dev/+hwdb/+fingerprint/Fujitsu_CY26'
+    >>> system_link.click()
+    >>> anon_browser.headers['status']
+    '200 Ok'
+    >>> anon_browser.goBack(1)
+
+    >>> download_link = anon_browser.getLink('test.txt')
+    >>> download_link.url
+    'http://localhost:58000/75/test.txt'
+
+    >>> raw_link = anon_browser.getLink('text')
+    >>> raw_link.url
+    'http://launchpad.dev/+hwdb/+submission/unique-id-1'
+    >>> raw_link.click()
+    >>> anon_browser.headers['status']
+    '200 Ok'
+    >>> anon_browser.goBack(1)
 
 Submissions that are marked as private are only displayed to the 
 submitter himself.
@@ -27,7 +51,7 @@ submitter himself.
     ...     'Distribution:': 'ubuntu',
     ...     'Distribution Release:': '5.04',
     ...     'Processor Architecture:': 'i386',
-    ...     'System name:': 'Fujitsu CY26',
+    ...     'System name:': 'Fujitsu_CY26',
     ... }
     >>> submit_data_checkboxes = {
     ...     'Private Submission': True,
@@ -54,7 +78,7 @@ submitter himself.
     >>> [content_table] = find_tags_by_class(anon_browser.contents, 'listing')
     >>> print extract_text(content_table)
     System        Date submitted  Download          Raw
-    Fujitsu CY26  ...             test.txt          ...
+    Fujitsu_CY26  ...             test.txt          ...
     TONKA TUFFBOOK2600 ...        hwsubmission1.xml ...
 
     >>> import transaction
@@ -69,8 +93,8 @@ status of each submission.
     >>> [content_table] = find_tags_by_class(browser.contents, 'listing')
     >>> print extract_text(content_table)
     System        Date submitted  Download          Private     Raw
-    Fujitsu CY26  ...             test2.txt           yes       ...
-    Fujitsu CY26  ...             test.txt             no       ...
+    Fujitsu_CY26  ...             test2.txt           yes       ...
+    Fujitsu_CY26  ...             test.txt             no       ...
     TONKA TUFFBOOK2600 ...        hwsubmission1.xml    no       ...
 
 If a person has not submitted any hardware data, an according message is
@@ -133,7 +157,7 @@ Individual submissions can be rendered in an RFC-822-formatted file.
     Distribution: ubuntu
     Distribution-Series: 5.04
     Architecture: i386
-    System: Fujitsu CY26
+    System: Fujitsu_CY26
     Submission URL: http://localhost:58000/75/test.txt
 
 Private submissions can't be viewed anonymously:
@@ -166,7 +190,7 @@ The pages http://launchpad.dev/+hwdb/+fingerprint/(fingerprint) list
 all submissions for a fingerprint/system name.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/+hwdb/+fingerprint/Fujitsu%20CY26')
+    ...     'http://launchpad.dev/+hwdb/+fingerprint/Fujitsu_CY26')
     >>> [content_table] = find_tags_by_class(anon_browser.contents, 'listing')
     >>> print extract_text(content_table)
     Date submitted     Submitted by    Download     Raw
@@ -185,7 +209,7 @@ is False.
     ...     'test3.txt')
     >>> browser.getControl('Upload').click()
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/+hwdb/+fingerprint/Fujitsu%20CY26')
+    ...     'http://launchpad.dev/+hwdb/+fingerprint/Fujitsu_CY26')
     >>> [content_table] = find_tags_by_class(anon_browser.contents, 'listing')
     >>> print extract_text(content_table)
     Date submitted     Submitted by            Download     Raw
@@ -196,7 +220,7 @@ Private submissions are only displayed for the owner.
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open(
-    ...     'http://launchpad.dev/+hwdb/+fingerprint/Fujitsu%20CY26')
+    ...     'http://launchpad.dev/+hwdb/+fingerprint/Fujitsu_CY26')
     >>> [content_table] = find_tags_by_class(browser.contents, 'listing')
     >>> print extract_text(content_table)
     Date submitted     Submitted by              Download        Raw

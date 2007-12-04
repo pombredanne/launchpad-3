@@ -9,6 +9,8 @@ __all__ = [
     'MailingListSubscription',
     ]
 
+from string import Template
+
 from sqlobject import ForeignKey, StringCol
 from zope.component import getUtility
 from zope.interface import implements
@@ -43,7 +45,8 @@ class MailingList(SQLBase):
 
     date_registered = UtcDateTimeCol(notNull=True, default=None)
 
-    reviewer = ForeignKey(dbName='reviewer', foreignKey='Person', default=None)
+    reviewer = ForeignKey(dbName='reviewer', foreignKey='Person',
+                          default=None)
 
     date_reviewed = UtcDateTimeCol(notNull=True, default=None)
 
@@ -58,6 +61,23 @@ class MailingList(SQLBase):
     def address(self):
         """See `IMailingList`."""
         return '%s@%s' % (self.team.name, MAILING_LISTS_DOMAIN)
+
+    @property
+    def archive_url(self):
+        """See `IMailingList`."""
+        # These represent states that can occur at or after a mailing list has
+        # been activated.  Once it's been activated, a mailing list could have
+        # an archive.
+        if self.status not in [MailingListStatus.ACTIVE,
+                               MailingListStatus.INACTIVE,
+                               MailingListStatus.MODIFIED,
+                               MailingListStatus.UPDATING,
+                               MailingListStatus.DEACTIVATING,
+                               MailingListStatus.MOD_FAILED]:
+            return None
+        # There could be an archive, return its url.
+        template = Template(config.mailman.archive_url_template)
+        return template.safe_substitute(team_name=self.team.name)
 
     def __repr__(self):
         return '<MailingList for team "%s"; status=%s at %#x>' % (
