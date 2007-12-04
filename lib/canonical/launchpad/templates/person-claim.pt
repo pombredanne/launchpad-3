@@ -59,7 +59,7 @@
       To claim the profile, enter one of the e-mail addresses it is
       associated with. (We're not showing you the list of addresses to
       protect <span tal:replace="context/browsername" />'s privacy in case
-      you’re someone else.) We’ll e-mail that address to ask your confirmation.
+      you’re someone else.) We'll e-mail that address to ask your confirmation.
     </p>
     </metal:extra-info>
 

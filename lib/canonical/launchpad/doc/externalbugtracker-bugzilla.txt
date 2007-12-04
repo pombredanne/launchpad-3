@@ -99,6 +99,8 @@ update:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     3224:
     >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    INFO:...:Updating 1 watches on http://bugzilla.gnome.org/bugs
+
     >>> for bug_watch in gnome_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     3224: RESOLVED FIXED
@@ -130,6 +132,7 @@ Then updateBugWatches() will make one request per bug watch:
 
     >>> external_bugzilla.trace_calls = True
     >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    INFO:...:Updating 6 watches on http://bugzilla.gnome.org/bugs
     CALLED _postPage()
     CALLED _postPage()
     CALLED _postPage()
@@ -167,6 +170,7 @@ updateBugWatches() issues only one request to update all watches:
 
     >>> external_bugzilla.trace_calls = True
     >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    INFO:...:Updating 206 watches on http://bugzilla.gnome.org/bugs
     CALLED _postPage()
 
     >>> remote_statuses = dict(
@@ -195,6 +199,7 @@ updated:
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged
     >>> external_bugzilla.updateBugWatches([bug_watch])
+    INFO:...:Updating 1 watches on http://bugzilla.gnome.org/bugs
     >>> bug_watch.lastchanged == old_last_changed
     True
 
@@ -225,6 +230,8 @@ Let's update the bug watch, and see that the linked bug watch got
 synced:
 
     >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
+    INFO:...:Updating 1 watches on https://bugzilla.mozilla.org
+
     >>> print thunderbird_task.status.title
     In Progress
     >>> print thunderbird_task.importance.title
@@ -241,6 +248,8 @@ status mapping.
     ...     BugTaskStatus.CONFIRMED,
     ...     getUtility(IPersonSet).getByName('no-priv'))
     >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
+    INFO:...:Updating 1 watches on https://bugzilla.mozilla.org
+
     >>> print thunderbird_task.status.title
     In Progress
     >>> print thunderbird_task.bugwatch.remotestatus
@@ -258,6 +267,8 @@ same remote bug, both will of course be updated.
     ...     bug=bug_two, owner=sample_person, bugtracker=mozilla_bugzilla,
     ...     remotebug='42')
     >>> external_bugzilla.updateBugWatches([bug_watch1, bug_watch2])
+    INFO:...:Updating 2 watches on https://bugzilla.mozilla.org
+
     >>> print bug_watch1.remotestatus
     RESOLVED FIXED
     >>> print bug_watch2.remotestatus

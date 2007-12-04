@@ -1418,6 +1418,14 @@ class TranslationMessageSuggestions:
         self.submissions = []
 
         for submission in submissions:
+            # XXX: JeroenVermeulen 2007-11-29 bug=165167: The second part of
+            # this safeguard condition is not tested.  We should test it.
+            has_form = (plural_form < submission.pofile.plural_forms and
+                plural_form < len(submission.translations))
+            if not has_form:
+                # This submission does not have a translation for the
+                # requested plural form.  It's not a viable suggestion here.
+                continue
             this_translation = submission.translations[plural_form]
             if (this_translation is None or
                 this_translation in seen_translations):

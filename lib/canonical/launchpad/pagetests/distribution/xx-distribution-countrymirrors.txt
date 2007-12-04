@@ -13,6 +13,8 @@ archive mirrors, plus the canonical one.
     >>> browser.open('http://launchpad.dev/ubuntu/+countrymirrors-archive')
     >>> print browser.headers['content-type']
     text/plain;charset=utf-8
+    >>> print browser.headers['X-Generated-For-Country']
+    France
     >>> print browser.contents
     http://localhost:11375/archive-mirror/
     http://localhost:11375/valid-mirror/
@@ -24,6 +26,8 @@ canonical mirror.
     >>> anon_browser.addHeader('X_FORWARDED_FOR', None)
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+countrymirrors-archive')
+    >>> print anon_browser.headers['X-Generated-For-Country']
+    Unknown
     >>> print anon_browser.contents
     http://archive.ubuntu.com/ubuntu/
 

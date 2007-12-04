@@ -1,5 +1,12 @@
 = Distribution mirrors =
 
+Launchpad allows package and CD mirrors to be managed for a
+distribution. This test demonstrates the creation, modification and
+approval processes for them.
+
+
+== Mirror registration ==
+
 First of all we'll create a new mirror for the Ubuntu distribution...
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
@@ -19,9 +26,12 @@ First of all we'll create a new mirror for the Ubuntu distribution...
     Country: Antarctica
     Content: Archive
 
+
+== Updating a Mirror ==
+
 Note that even though the http_url we used didn't contain a trailing slash,
 the value stored in our database will contain it.
- 
+
     >>> browser.getLink('Change details').click()
     >>> http_url + "/" == browser.getControl('HTTP URL').value
     True
@@ -34,7 +44,7 @@ another mirror.
     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/+edit'
     >>> browser.getControl(name='field.name').value = 'archive-mirror'
     >>> browser.getControl('Save').click()
- 
+
     >>> message = "is already in use by another distribution mirror."
     >>> message in browser.contents
     True
@@ -59,6 +69,9 @@ Starting again from the mirror's page, we can also change the mirror's URLs:
     Web: http://foo.bar/baz/
     FTP: ftp://foo.bar/baz/
     Rsync: rsync://foo.bar/baz/
+
+
+== Official Mirrors ==
 
 The mirror can't be probed before it's marked as official by one of the
 distribution owners.
@@ -115,6 +128,7 @@ else.
     ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
     >>> print find_tag_by_id(anon_browser.contents, 'whiteboard')
     None
+
 
 == Deleting mirrors ==
 

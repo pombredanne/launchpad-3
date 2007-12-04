@@ -24,7 +24,7 @@
         <tal:email-widget
            define="contact_address nocall:view/widgets/contact_address;
                    field_name contact_address/context/__name__;
-                   error python:view.getWidgetError(field_name);
+                   error python:view.getFieldError(field_name);
                    error_class python:error and 'error' or None;">
            <span tal:attributes="class error_class">
              <input tal:replace="structure contact_address" />
@@ -40,7 +40,7 @@
     </div>
   </div>
 
-  <p tal:condition="not:view/list_is_usable">
+  <p id="set-up-a-mailing-list" tal:condition="view/can_create_mailing_list">
     If you <a href="+mailinglist">set up a mailing list for this
     team</a>, you can use the mailing list as the team contact
     address.

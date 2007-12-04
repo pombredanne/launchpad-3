@@ -7,8 +7,8 @@ Get evolution template for Ubuntu Hoary
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet, IPOFile, IPOTemplateSet,
-    ...     ISourcePackageNameSet)
+    ...     IDistributionSet, ILanguageSet, IPersonSet, IPOFile,
+    ...     IPOTemplateSet, ISourcePackageNameSet)
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> sourcepackagename = sourcepackagenameset['evolution']
     >>> distributionset = getUtility(IDistributionSet)
@@ -197,7 +197,7 @@ A Launchpad admin must have permission always.
 
 A Rosetta Expert too.
 
-    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> pofile_es.canEditTranslations(rosetta_experts)
     True
 
@@ -385,6 +385,35 @@ handling suggestions because it allows anyone to add suggestions.
     >>> product.translationpermission = TranslationPermission.OPEN
     >>> transaction.commit()
 
+== plural_forms ==
+
+This method returns a number of plural forms for the language of the POFile,
+or a default of 2 when language doesn't specify it: 2 is the most common
+value for number of plural forms, so most likely to be correct for any new
+language.  Even if the default value is incorrect, it is handled gracefully
+by the rest of the system (see doc/poimport.txt for example).
+
+When the language has number of plural forms defined, that value is used.
+
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution_trunk = evolution.getSeries('trunk')
+    >>> evolution_pot = evolution_trunk.getPOTemplate('evolution-2.2')
+    >>> serbian = getUtility(ILanguageSet)['sr']
+    >>> serbian.pluralforms
+    3
+    >>> evolution_sr = evolution_pot.getDummyPOFile(serbian.code)
+    >>> evolution_sr.plural_forms
+    3
+
+And when a language has no plural forms defined, a POFile defaults to 2,
+the most common number of plural forms:
+
+    >>> divehi = getUtility(ILanguageSet)['dv']
+    >>> print divehi.pluralforms
+    None
+    >>> evolution_dv = evolution_pot.getDummyPOFile(divehi.code)
+    >>> evolution_dv.plural_forms
+    2
 
 == uncachedExport ==
 
@@ -1039,6 +1068,77 @@ will not be listed twice in the returned result.
     3
     >>> len(set(evolution_es.getPOTMsgSetWithNewSuggestions()))
     3
+
+
+== getPOTMsgSetTranslated ==
+
+With this method we can get all POTMsgSet objects that are fully
+translated for a given POFile.
+
+    >>> def print_message_status(potmsgsets, language):
+    ...     print "%-10s %-5s %-10s %-9s %-11s" % (
+    ...         "msgid", "form", "translat.", "fuzzy", "Has plurals")
+    ...     for potmsgset in potmsgsets:
+    ...         translationmessage = potmsgset.getCurrentTranslationMessage(
+    ...             language)
+    ...         for index in range(len(translationmessage.translations)):
+    ...             msgid = potmsgset.msgid_singular.msgid
+    ...             if len(msgid) > 10:
+    ...                 msgid = msgid[:7] + '...'
+    ...             if translationmessage.translations[index] is None:
+    ...                 translation = 'None'
+    ...             else:
+    ...                 translation = translationmessage.translations[index]
+    ...                 if len(translation) > 10:
+    ...                     translation = translation[:7] + '...'
+    ...             print "%-10s %-5s %-10s %-9s %-11s" % (
+    ...                 msgid, index, translation,
+    ...                 translationmessage.is_fuzzy,
+    ...                 potmsgset.msgid_plural is not None)
+
+    >>> potmsgsets_translated = evolution_es.getPOTMsgSetTranslated()
+    >>> print_message_status(
+    ...     potmsgsets_translated, evolution_es.language)
+    msgid      form  translat.  fuzzy     Has plurals
+    evoluti... 0     libreta... False     False
+    current... 0     carpeta... False     False
+    have       0     tiene      False     False
+     cards     0      tarjetas  False     False
+    evoluti... 0     boohoo     False     False
+    Failed ... 0     Blah.      False     False
+    The loc... 0     La ubic... False     False
+    %d contact 0     %d cont... False     True
+    %d contact 1     %d cont... False     True
+    Opening... 0     Abrir %... False     True
+    Opening... 1     Abrir %... False     True
+    EncFS P... 0     Contras... False     False
+
+
+== getPOTMsgSetFuzzy ==
+
+This method returns all POTMsgSet for a given POFile that have its
+current TranslationMessage with is_fuzzy flag set.
+
+    >>> potmsgsets_fuzzy = evolution_es.getPOTMsgSetFuzzy()
+    >>> print_message_status(potmsgsets_fuzzy, evolution_es.language)
+    msgid      form  translat.  fuzzy     Has plurals
+    %d foo     0     %d foo     True      True
+    %d foo     1     None       True      True
+
+And when we submit another translation that is fuzzy...
+
+    >>> potmsgset_to_change = potmsgsets_fuzzy[0]
+    >>> new_translationmessage = potmsgset_to_change.updateTranslation(
+    ...     evolution_es, editor, {0: u'something'}, is_fuzzy=True,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+
+... we get only the new one, which is fuzzy
+
+    >>> potmsgsets_fuzzy = evolution_es.getPOTMsgSetFuzzy()
+    >>> print_message_status(potmsgsets_fuzzy, evolution_es.language)
+    msgid      form  translat.  fuzzy     Has plurals
+    %d foo     0     something  True      True
+    %d foo     1     None       True      True
 
 
 == Translations credits ==
