@@ -553,7 +553,8 @@ Two emails generated:
   2
 
   >>> [message['To'] for message in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
+  ['Daniel Silverstone <daniel.silverstone@canonical.com>',
+    'hoary-announce@lists.ubuntu.com']
 
   >>> [message['Subject'] for message in msgs]
   ['Accepted: foo 1.0-2.1 (source)', 'Accepted: foo 1.0-2.1 (source)']
