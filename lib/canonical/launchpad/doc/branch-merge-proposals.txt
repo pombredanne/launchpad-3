@@ -87,6 +87,132 @@ first.
     ~name12/gnome-terminal/klingon
 
 
+== Merge proposal states ==
+
+A branch merge proposal can be in one of several states:
+ * Work in progress
+ * Review requested
+ * Code approved
+ * Code not approved
+ * Merged
+ * Code failed to merge
+
+When a merge proposal is initially created, it is in the "Work in
+progress" state.
+
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
+    >>> source_branch = factory.makeBranch(owner=sample_person)
+    # Needs to be the same product to merge into.
+    >>> target_branch = factory.makeBranch(
+    ...     owner=sample_person, product=source_branch.product)
+    >>> proposal = source_branch.addLandingTarget(
+    ...     sample_person, target_branch, date_created=now.next())
+    >>> print proposal.queue_status.title
+    Work in progress
+
+Directly setting the queue_status is not possible.
+
+    >>> from canonical.launchpad.interfaces import BranchMergeProposalStatus
+    >>> proposal.queue_status = BranchMergeProposalStatus.REVIEWED
+    Forbidden
+
+Adjusting the state is done through methods on the merge proposal.
+
+    >>> print proposal.date_review_requested
+    None
+    >>> proposal.requestReview()
+    >>> print proposal.queue_status.title
+    Review requested
+
+When requesting a review, a timestamp is also recorded.
+
+    >>> proposal.date_review_requested is not None
+    True
+
+
+=== Approving or rejecting code ===
+
+Once code has been reviewed the result of the code review can be
+recoreded either as approved or not approved.
+
+There is a limited number of people that are able to make code
+as approved or not.  By default it is anyone that is in the team
+of the owner of the target branch.  If the target branch has specified
+a specific review team, then that review team is used instead to control
+who can sign-off code.
+
+Initially both the reviewer and date_reviewed for a merge proposal
+are not set.
+
+    >>> print proposal.reviewer
+    None
+    >>> print proposal.date_reviewed
+    None
+
+Since Sample Person is the owner of the target branch they can authorise
+their own code.
+
+    >>> proposal.approveBranch(sample_person)
+    >>> print proposal.reviewer.displayname
+    Sample Person
+    >>> proposal.date_reviewed is not None
+    True
+    >>> print proposal.queue_status.title
+    Code approved
+
+Code that has been accepted, and also be rejected.
+
+    >>> proposal.rejectBranch(sample_person)
+    >>> proposal.queue_status.title
+    Code not approved
+
+Rejected proposals can also be updated to be approved.
+
+    >>> proposal.approveBranch(sample_person)
+    >>> print proposal.queue_status.title
+    Code approved
+
+Proposals with either rejected or accepted reviews can request another
+review.
+
+    >>> proposal.requestReview()
+    >>> print proposal.queue_status.title
+    Review requested
+    >>> proposal.rejectBranch(sample_person)
+    >>> proposal.queue_status.title
+    Code not approved
+    >>> proposal.requestReview()
+    >>> print proposal.queue_status.title
+    Review requested
+
+If the target branch has specified a specific reviewer, then only
+a user in the reviewer team can approve or reject the branch.
+
+    >>> eric_the_reviewer = factory.makePerson(name="eric-reviewer")
+    >>> target_branch.reviewer = eric_the_reviewer
+    >>> proposal.rejectBranch(sample_person)
+    Traceback...
+    UserNotBranchReviewer
+    >>> proposal.acceptBranch(sample_person)
+    Traceback...
+    UserNotBranchReviewer
+
+    >>> proposal.acceptBranch(eric_the_reviewer)
+    >>> proposal.queue_status.title
+    Code approved
+
+
+== Marking as failed to merge ==
+
+Anyone that has rights to edit the merge proposal can say that the
+merge failed.
+
+    >>> proposal.mergeFailed(merger=sample_person)
+    >>> proposal.queue_status.title
+    Code failed to merge
+
+
 == Marking as merged ==
 
 A merge proposal may be marked as merged by calling the `markAsMerged` method
@@ -107,6 +233,8 @@ The user that marked the branch as merged can also be recorded.
     1234
     >>> print merge_proposal.merge_reporter.browsername
     Mark Shuttleworth
+    >>> proposal.queue_status.title
+    Merged
     >>> flush_database_updates()
 
 The merged proposal is no longer listed amongst the target's candidates.
