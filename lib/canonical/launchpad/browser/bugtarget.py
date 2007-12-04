@@ -203,7 +203,8 @@ class FileBugViewBase(LaunchpadFormView):
         # The comment field is only required if filing a new bug.
         if self.submit_bug_action.submitted():
             if not data.get('comment'):
-                self.setFieldError('comment', "Required input is missing.")
+                if not self.hasFieldError('comment'):
+                    self.setFieldError('comment', "Required input is missing.")
         # Check a bug has been selected when the user wants to
         # subscribe to an existing bug.
         elif self.this_is_my_bug_action.submitted():
