@@ -196,7 +196,7 @@ class IBug(IMessageTarget, ICanBeMentored):
         title=_("Does the bug's state permit expiration? "
         "Expiration is permitted when the bug is not valid anywhere, "
         "a message was sent to the bug reporter, and the bug is associated "
-        "with pillars that use the Launchpad bug tracker."))
+        "with pillars that have enabled bug expiration."))
     can_expire = Bool(
         title=_("Can the Incomplete bug expire if it becomes inactive? "
         "Expiration may happen when the bug permits expiration, and a "

@@ -17,30 +17,28 @@ Setup the stub KeyServer:
 
 This test verifies the basic claim a GPG key workflow.
 
-Start out with a clean page:
+Start out with a clean page containing no imported keys:
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open("http://launchpad.dev/~name12/+editpgpkeys")
-    >>> "<title>Sample Person's OpenPGP keys</title>" in browser.contents
-    True
-    >>> "1024D/DFD20543" in browser.contents
-    False
+    >>> browser.title
+    "Sample Person's OpenPGP keys"
+    >>> browser.getControl(name='DEACTIVATE_GPGKEY')
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'DEACTIVATE_GPGKEY'
 
 Claim OpenPGP key:
 
     >>> key = "A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
     >>> browser.getControl(name='fingerprint').value = key
     >>> browser.getControl(name='import').click()
-    >>> "error message" not in browser.contents
-    True
-    >>> print browser.contents
-    <BLANKLINE>
-    ...
-    A message has been sent to <code>test@canonical.com</code>, encrypted
-    with the key <code>1024D/DFD20543</code>.
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    A message has been sent to test@canonical.com, encrypted
+    with the key 1024D/DFD20543.
     To confirm the key is yours, decrypt the message and follow the
     link inside.
-    ...
 
 Recover token URL from the encrypted part, but also make sure there's a clear
 text part that provides useful information to users who -- for whatever reason
@@ -109,7 +107,7 @@ instance to access this key and decrypt the message.
 Extract the token URL from the email:
 
     >>> from canonical.launchpad.ftests.logintoken import (
-    ...     get_token_url_from_string)  
+    ...     get_token_url_from_string)
     >>> token_url = get_token_url_from_string(body)
 
 Go to the link sent by email, to validate the email address.
@@ -126,29 +124,25 @@ Get redirected to the user's homepage with a greeting:
 
     >>> browser.url
     'http://launchpad.dev/~name12'
-    >>> "The key 1024D/DFD20543 was successfully validated" in browser.contents
-    True
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    The key 1024D/DFD20543 was successfully validated.
+    ...
 
 Certify the key is imported:
 
     >>> browser.open("http://launchpad.dev/~name12/+editpgpkeys")
-
-    >>> print browser.contents
-    <BLANKLINE>
-    ...
-    <h2>Active keys</h2>
-    ...
-    1024D/DFD20543
-    ...
+    >>> browser.getControl(name='DEACTIVATE_GPGKEY').displayOptions
+    ['1024D/DFD20543']
 
 Make sure that UIDs were properly processed; in particular, check that
-the revoked UID in the key wasn't added as an email address:
+"sample.revoked@canonical.com", the revoked UID in the key, wasn't
+added as an email address:
 
     >>> browser.open("http://launchpad.dev/~name12/+editemails")
-    >>> "sample.person@canonical.com_unvalidated" in browser.contents
-    True
-    >>> "sample.revoked@canonical.com" in browser.contents
-    False
+    >>> control = browser.getControl(name='field.UNVALIDATED_SELECTED')
+    >>> sorted(control.displayOptions)
+    ['\xa0sample.person@canonical.com', '\xa0testtest@canonical.com']
 
 Verify that the key was imported with the "can encrypt" flag set:
 
@@ -177,7 +171,7 @@ their Launchpad account.
     >>> browser.getControl(name='import').click()
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
-    A message has been sent to test@canonical.com. To 
+    A message has been sent to test@canonical.com. To
     confirm the key 1024D/17B05A8F is yours, follow
     the link inside.
 
@@ -255,11 +249,11 @@ If he refuses to sign the text, he gets an error message.
     Required input is missing.
 
 If he signs a different text, he gets an error message.
-  
+
     >>> import_secret_test_key('sign.only@canonical.com.sec')
     >>> from canonical.launchpad.ftests import sign_content
     >>> bad = sign_content(
-    ...     'This is not the verification message!', 
+    ...     'This is not the verification message!',
     ...     '447DBF38C4F9C4ED752246B77D88913717B05A8F', 'test')
     >>> browser.getControl('Signed text').value = bad
     >>> browser.getControl('Continue').click()
@@ -286,20 +280,20 @@ message. The following text was signed with the key DFD20543:
     ... -----END PGP SIGNATURE-----
     ... """
     >>> browser.getControl('Signed text').value = signed_content
-    >>> browser.getControl('Continue').click()  
+    >>> browser.getControl('Continue').click()
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     There is 1 error.
     The key used to sign the content (A419AE861E88BC9E04B9C26FBA2B9389DFD20543)
     is not the key you were registering
 
-If he signs the text correctly, he is redirected to his home page. 
+If he signs the text correctly, he is redirected to his home page.
 
     >>> good = sign_content(
     ...     str(verification_content),
     ...     '447DBF38C4F9C4ED752246B77D88913717B05A8F', 'test')
     >>> browser.getControl('Signed text').value = good
-    >>> browser.getControl('Continue').click()  
+    >>> browser.getControl('Continue').click()
     >>> browser.url
     'http://launchpad.dev/~name12'
 
@@ -309,7 +303,7 @@ Launchpad account, so Launchpad gives him a message to that effect.
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     The key 1024D/17B05A8F was successfully validated.
-    Some email addresses were found in your key but are not 
+    Some email addresses were found in your key but are not
     registered with Launchpad:sign.only@canonical.com...
 
 Now that the key has been validated, the login token is consumed:

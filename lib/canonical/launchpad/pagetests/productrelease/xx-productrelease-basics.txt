@@ -2,134 +2,136 @@
 
 The page to add a product release works:
 
-  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/firefox/trunk')
-  >>> browser.getLink('Register a release').click()
-  >>> browser.url
-  'http://launchpad.dev/firefox/trunk/+addrelease'
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/firefox/trunk')
+    >>> browser.getLink('Register a release').click()
+    >>> browser.url
+    'http://launchpad.dev/firefox/trunk/+addrelease'
 
-  >>> browser.title
-  'Register a new Mozilla Firefox Series: trunk release in Launchpad'
+    >>> browser.title
+    'Register a new Mozilla Firefox Series: trunk release in Launchpad'
 
-  >>> browser.getControl('Version').value = '0.9.3'
-  >>> browser.getControl('Code name').value = 'One Tree Hill the 3rd'
-  >>> browser.getControl('Summary').value = 'Security fix for this version'
-  >>> browser.getControl('Description').value = 'A long description'
-  >>> browser.getControl('Changelog').value = 'Fix Foo'
-  >>> browser.getControl('Add').click()
+    >>> browser.getControl('Version').value = '0.9.3'
+    >>> browser.getControl('Code name').value = 'One Tree Hill the 3rd'
+    >>> browser.getControl('Summary').value = 'Security fix for this version'
+    >>> browser.getControl('Description').value = 'A long description'
+    >>> browser.getControl('Changelog').value = 'Fix Foo'
+    >>> browser.getControl('Add').click()
 
-  >>> browser.url
-  'http://launchpad.dev/firefox/trunk/0.9.3'
+    >>> browser.url
+    'http://launchpad.dev/firefox/trunk/0.9.3'
+
 
 == Checking releases with the same version ==
 
 Now we'll add a new product release with the same version of an existing
 product release from another product series
 
-  >>> browser.getLink('Overview').click()
-  >>> browser.getLink('Register a release').click()
-  >>> browser.url
-  'http://launchpad.dev/firefox/trunk/+addrelease'
+    >>> browser.getLink('Overview').click()
+    >>> browser.getLink('Register a release').click()
+    >>> browser.url
+    'http://launchpad.dev/firefox/trunk/+addrelease'
 
-  >>> browser.getControl('Version').value = '1.0.0'
-  >>> browser.getControl('Code name').value = 'SameName'
-  >>> browser.getControl('Summary').value = 'A test summary'
-  >>> browser.getControl('Description').value = 'A test description'
-  >>> browser.getControl('Changelog').value = 'Fix Foo'
-  >>> browser.getControl('Add').click()
+    >>> browser.getControl('Version').value = '1.0.0'
+    >>> browser.getControl('Code name').value = 'SameName'
+    >>> browser.getControl('Summary').value = 'A test summary'
+    >>> browser.getControl('Description').value = 'A test description'
+    >>> browser.getControl('Changelog').value = 'Fix Foo'
+    >>> browser.getControl('Add').click()
 
-  >>> browser.url
-  'http://launchpad.dev/firefox/trunk/1.0.0'
+    >>> browser.url
+    'http://launchpad.dev/firefox/trunk/1.0.0'
 
 And we check in the product's overview page, if both links are there pointing 
 to different places.
 
-  >>> browser.getLink('Mozilla Firefox').click()
-  >>> browser.url
-  'http://launchpad.dev/firefox'
+    >>> browser.getLink('Mozilla Firefox').click()
+    >>> browser.url
+    'http://launchpad.dev/firefox'
 
-  >>> browser.getLink(url='trunk/1.0.0').url
-  'http://launchpad.dev/firefox/trunk/1.0.0'
+    >>> browser.getLink(url='trunk/1.0.0').url
+    'http://launchpad.dev/firefox/trunk/1.0.0'
 
-  >>> browser.getLink(url='1.0/1.0.0').url
-  'http://launchpad.dev/firefox/1.0/1.0.0'
+    >>> browser.getLink(url='1.0/1.0.0').url
+    'http://launchpad.dev/firefox/1.0/1.0.0'
 
 Now let's try to create a productrelease with a dupe version in the same
 series.
 
-  >>> browser.getLink('trunk').click()
-  >>> browser.getLink('Register a release').click()
-  >>> browser.url
-  'http://launchpad.dev/firefox/trunk/+addrelease'
+    >>> browser.getLink('trunk').click()
+    >>> browser.getLink('Register a release').click()
+    >>> browser.url
+    'http://launchpad.dev/firefox/trunk/+addrelease'
 
-  >>> browser.getControl('Version').value = '1.0.0'
-  >>> browser.getControl('Code name').value = 'SameName'
-  >>> browser.getControl('Summary').value = 'A test summary'
-  >>> browser.getControl('Description').value = 'A test description'
-  >>> browser.getControl('Changelog').value = 'Fix Foo'
-  >>> browser.getControl('Add').click()
+    >>> browser.getControl('Version').value = '1.0.0'
+    >>> browser.getControl('Code name').value = 'SameName'
+    >>> browser.getControl('Summary').value = 'A test summary'
+    >>> browser.getControl('Description').value = 'A test description'
+    >>> browser.getControl('Changelog').value = 'Fix Foo'
+    >>> browser.getControl('Add').click()
 
-  >>> for tag in find_tags_by_class(browser.contents, 'message'):
-  ...     tag.renderContents()
-  'An error occurred.'
-  '1.0.0 is already in use by another version in this release series.'
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     tag.renderContents()
+    'An error occurred.'
+    '1.0.0 is already in use by another version in this release series.'
+
 
 == Editing a product release ==
 
 The release owner can edit the release via its +edit form:
 
-  >>> browser.open('http://launchpad.dev/firefox/trunk/1.0.0')
-  >>> browser.getLink('Change details').click()
+    >>> browser.open('http://launchpad.dev/firefox/trunk/1.0.0')
+    >>> browser.getLink('Change details').click()
 
-  >>> browser.getControl('Summary').value = 'This is not a joke.'
-  >>> browser.getControl('Code name').value = 'Portland Oregon part 2'
-  >>> browser.getControl('Change').click()
+    >>> browser.getControl('Summary').value = 'This is not a joke.'
+    >>> browser.getControl('Code name').value = 'Portland Oregon part 2'
+    >>> browser.getControl('Change').click()
 
 == Editing permissions extend to product and series owners ==
 
 If the product or series owner is a team, members can edit a product
 release too.
 
-  >>> from canonical.launchpad.database import Product, Person
-  >>> tomcat = Product.selectOneBy(name='tomcat')
-  >>> print tomcat.owner.name
-  ubuntu-team
+    >>> from canonical.launchpad.database import Product, Person
+    >>> tomcat = Product.selectOneBy(name='tomcat')
+    >>> print tomcat.owner.name
+    ubuntu-team
 
 Let's add a release as Jeff:
 
-  >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
-  >>> browser.open('http://launchpad.dev/tomcat/trunk')
-  >>> browser.getLink('Register a release').click()
-  >>> browser.getControl('Version').value = '0.6.6.6'
-  >>> browser.getControl('Code name').value = 'SameName'
-  >>> browser.getControl('Summary').value = 'Fixes 2 bugs.'
-  >>> browser.getControl('Description').value = 'A test description'
-  >>> browser.getControl('Changelog').value = 'Fix Foo'
-  >>> browser.getControl('Add').click()
+    >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> browser.open('http://launchpad.dev/tomcat/trunk')
+    >>> browser.getLink('Register a release').click()
+    >>> browser.getControl('Version').value = '0.6.6.6'
+    >>> browser.getControl('Code name').value = 'SameName'
+    >>> browser.getControl('Summary').value = 'Fixes 2 bugs.'
+    >>> browser.getControl('Description').value = 'A test description'
+    >>> browser.getControl('Changelog').value = 'Fix Foo'
+    >>> browser.getControl('Add').click()
 
 Celso is a member of ubuntu-team, so he can edit this release too:
 
-  >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
-  >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
-  >>> browser.getLink('Change details').click()
+    >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
+    >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
+    >>> browser.getLink('Change details').click()
 
-  >>> browser.getControl('Summary').value = 'Fixes 3 bugs.'
-  >>> browser.getControl('Change').click()
+    >>> browser.getControl('Summary').value = 'Fixes 3 bugs.'
+    >>> browser.getControl('Change').click()
 
 And if no-priv owns the series...
 
-  >>> no_priv = Person.selectOneBy(name="no-priv")
-  >>> tomcat.getSeries('trunk').owner = no_priv
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> flush_database_updates()
+    >>> no_priv = Person.selectOneBy(name="no-priv")
+    >>> tomcat.getSeries('trunk').owner = no_priv
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
 ... he can edit existing releases as well, even if they are owned by
 others:
 
-  >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
-  >>> browser.getLink('Change details').click()
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
+    >>> browser.getLink('Change details').click()
 
-  >>> browser.getControl('Summary').value = 'Fixes 4 bugs.'
-  >>> browser.getControl('Change').click()
+    >>> browser.getControl('Summary').value = 'Fixes 4 bugs.'
+    >>> browser.getControl('Change').click()
 
