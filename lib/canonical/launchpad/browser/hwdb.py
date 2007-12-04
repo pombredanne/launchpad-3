@@ -103,7 +103,7 @@ class HWDBUploadView(LaunchpadFormView):
         response = self.request.response
         for field in self.form_fields:
             field_name = field.__name__
-            error = self.getWidgetError(field_name)
+            error = self.getFieldError(field_name)
             if error:
                 self.addErrorHeader(field_name, error)
 

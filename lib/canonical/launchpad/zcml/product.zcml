@@ -17,7 +17,7 @@
                       downloadurl programminglang
                       sourceforgeproject freshmeatproject
                       translationgroup translationpermission
-                      official_malone official_answers
+                      official_malone official_answers enable_bug_expiration
                       releaseroot development_focus bugtracker
                       homepage_content icon logo mugshot 
                       license_info licenses"
@@ -48,7 +48,8 @@
       />
     <require
       permission="launchpad.AnyPerson"
-      attributes="newQuestion addAnswerContact removeAnswerContact"
+      attributes="newQuestion createQuestionFromBug addAnswerContact
+                  removeAnswerContact"
       />
     <!-- IFAQTarget -->
     <allow
@@ -427,7 +428,7 @@
     for="canonical.launchpad.interfaces.IProduct"
     class="canonical.launchpad.browser.ProductAddSeriesView"
     facet="overview"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Edit"
     template="../templates/productseries-new.pt"
     />
 

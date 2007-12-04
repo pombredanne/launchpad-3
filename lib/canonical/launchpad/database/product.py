@@ -113,6 +113,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
         dbName='official_rosetta', notNull=True, default=False)
+    enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
+        notNull=True, default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     private_bugs = BoolCol(
@@ -682,9 +684,6 @@ class ProductSet:
                       reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=(), license_info=None):
         """See `IProductSet`."""
-
-        assert len(licenses) != 0, "licenses argument must not be empty"
-
         product = Product(
             owner=owner, name=name, displayname=displayname,
             title=title, project=project, summary=summary,
@@ -695,13 +694,15 @@ class ProductSet:
             programminglang=programminglang, reviewed=reviewed,
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
 
-        product.licenses = licenses
+        if len(licenses) > 0:
+            product.licenses = licenses
 
         # Create a default trunk series and set it as the development focus
-        trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
-            'represents the primary line of development rather than '
-            'a stable release branch. This is sometimes also called MAIN '
-            'or HEAD.')
+        trunk = product.newSeries(
+            owner, 'trunk',
+            ('The "trunk" series represents the primary line of development '
+             'rather than a stable release branch. This is sometimes also '
+             'called MAIN or HEAD.'))
         product.development_focus = trunk
 
         return product

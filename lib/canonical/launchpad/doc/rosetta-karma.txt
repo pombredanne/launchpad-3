@@ -16,7 +16,7 @@ like SQLObjects are not persistent between transactions.
 
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
     >>> karma_action_set = getUtility(IKarmaActionSet)
-    >>> rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
 Setup an event listener to help ensure karma is assigned when it should.
 
@@ -56,7 +56,7 @@ Do the import.
     >>> comes_from_upstream = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     potemplate.path, potemplate_contents, comes_from_upstream,
-    ...     rosetta_expert, productseries=potemplate.productseries,
+    ...     rosetta_experts, productseries=potemplate.productseries,
     ...     potemplate=potemplate)
     >>> entry.status = RosettaImportStatus.APPROVED
 
@@ -140,7 +140,7 @@ Do the import.
 
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, comes_from_upstream,
-    ...     rosetta_expert, productseries=potemplate.productseries,
+    ...     rosetta_experts, productseries=potemplate.productseries,
     ...     potemplate=potemplate, pofile=pofile)
     >>> entry.status = RosettaImportStatus.APPROVED
 

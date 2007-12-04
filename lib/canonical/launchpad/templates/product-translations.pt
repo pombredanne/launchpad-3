@@ -51,7 +51,7 @@
             To set up <tal:product replace="context/displayname" /> for
             translation in Launchpad, you need to
             <tal:official condition="not: context/official_rosetta">set the
-            flag that stats that <tal:product replace="context/displayname" />
+            flag that states that <tal:product replace="context/displayname" />
             uses Launchpad to handle Translations and</tal:official> upload a
             translation template for one of its release series.
           </p>
