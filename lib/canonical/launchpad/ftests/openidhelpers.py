@@ -24,7 +24,8 @@ from openid.message import IDENTIFIER_SELECT
 from zope.app.testing.ztapi import browserView
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.security.checker import defineChecker, Checker, CheckerPublic
+from zope.security.checker import (
+    Checker, CheckerPublic, defineChecker, undefineChecker)
 from zope.testbrowser.testing import PublisherHTTPHandler
 
 from canonical.launchpad.webapp import LaunchpadView
@@ -56,6 +57,7 @@ def install_consumer():
 
 
 def uninstall_consumer():
+    undefineChecker(ConsumerView)
     # Don't bother - work out how to do this if it is a problem, but I
     # think YAGNI.
     pass

@@ -17,17 +17,16 @@ configured, then no details are disclosed in the response.
 We will perform an OpenID authentication request asking for a few user
 details:
 
+    >>> from openid.consumer.consumer import Consumer
+    >>> from openid.consumer.discover import OPENID_1_1_TYPE
     >>> from openid.fetchers import setDefaultFetcher
+    >>> from openid.sreg import SRegRequest, SRegResponse
+    >>> from openid.store.memstore import MemoryStore
     >>> from canonical.launchpad.ftests.openidhelpers import (
     ...     complete_from_browser, install_consumer, make_endpoint,
     ...     uninstall_consumer, PublisherFetcher)
     >>> install_consumer()
     >>> setDefaultFetcher(PublisherFetcher())
-
-    >>> from openid.consumer.consumer import Consumer
-    >>> from openid.consumer.discover import OPENID_1_1_TYPE
-    >>> from openid.sreg import SRegRequest, SRegResponse
-    >>> from openid.store.memstore import MemoryStore
 
     >>> openid_store = MemoryStore()
     >>> consumer = Consumer(session={}, store=openid_store)
@@ -40,7 +39,6 @@ details:
     ...     required=['email', 'country'],
     ...     optional=['fullname', 'nickname']))
 
-    >>> return_to = 'http://launchpad.dev/+openid-consumer'
     >>> redirect_url = request.redirectURL(
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer')
     >>> print redirect_url
@@ -93,7 +91,6 @@ Now begin another identical OpenID authentication request:
     ...     required=['email', 'country'],
     ...     optional=['fullname', 'nickname']))
 
-    >>> return_to = 'http://launchpad.dev/+openid-consumer'
     >>> redirect_url = request.redirectURL(
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer')
     >>> print redirect_url
