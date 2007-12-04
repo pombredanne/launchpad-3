@@ -11,7 +11,8 @@ distribution officially uses Launchpad.
     Bug tracking
     Translations
 
-Unprivileged Launchpad users cannot access the page for changing these details.
+Unprivileged Launchpad users cannot access the page for changing these
+details.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu')
     >>> user_browser.getLink('Change distribution details')
@@ -23,8 +24,8 @@ Unprivileged Launchpad users cannot access the page for changing these details.
       ...
     Unauthorized...
 
-The distribution's registrant can access the page, but even he/she can't change
-the usage.
+The distribution's registrant can access the page, but even he/she can't
+change the usage.
 
     >>> from zope.testbrowser.testing import Browser
     >>> registrant = setupBrowser(

@@ -179,7 +179,25 @@ a feed.
     >>> url = ("http://feeds.launchpad.dev/bugs/+bugs.atom?"
     ...        "field.searchtext=&search=Search+Bug+Reports&"
     ...        "field.scope=all&field.scope.target=")
+
+The bug search feed is not enabled by default since it may represent a
+performance problem in production.
+
+    >>> from zope.security.interfaces import Unauthorized
+    >>> from canonical.config import config
+    >>> config.launchpad.is_bug_search_feed_active = False
+    >>> try: 
+    ...     browser.open(url)
+    ... except Unauthorized, info:
+    ...     print Unauthorized, info
+    zope.security.interfaces.Unauthorized Bug search feed deactivated
+
+The bug search feed can be tested after setting is_bug_search_feed_active
+to True.
+
+    >>> config.launchpad.is_bug_search_feed_active = True
     >>> browser.open(url)
+    >>> config.launchpad.is_bug_search_feed_active = False
     >>> browser.title
     'Bugs from custom search'
 
@@ -233,7 +251,6 @@ overriding the Expires and Cache-Control headers so that the feeds
 will be cached longer by browsers and the reverse-proxy in front
 of the feeds servers.
 
-    >>> from canonical.config import config
     >>> from canonical.launchpad.feed.bug import BugsFeedBase
     >>> from canonical.lazr.feed.feed import FeedBase
     >>> from zope.app.datetimeutils import rfc1123_date

@@ -466,9 +466,10 @@ A request to an unknown host results in a 404 error.
     ProtocolErrorRequest
     ProtocolErrorPublication: status=404
 
-A request that uses the wrong method results in a 405 error. I'm going
-to temporarily bump up the log level so that the 405 error isn't
-logged as an exception--that would make this test look less nice.
+Now some tests that do full HTTP calls using http() to get various
+errors. I'm going to temporarily bump up the log level so that these
+errors aren't logged as exceptions--that would make the tests look
+less nice.
 
     >>> import logging
     >>> logger = logging.getLogger('SiteError')
@@ -476,6 +477,11 @@ logged as an exception--that would make this test look less nice.
     >>> logger.setLevel(logging.CRITICAL)
 
     >>> logout()
+    >>> print http("GET / HTTP/1.1\n"
+    ...            "Host: nosuchhost.launchpad.dev")
+    HTTP/1.1 404 Not Found
+    ...
+
     >>> print http("GET /foo/bar HTTP/1.1\n"
     ...            "Host: xmlrpc.launchpad.dev\n"
     ...            "X-zope-handle-errors: False")
@@ -489,6 +495,7 @@ logged as an exception--that would make this test look less nice.
 
     >>> logger.setLevel(old_level)
     >>> login(ANONYMOUS)
+
 
 == ILaunchpadBrowserApplicationRequest ==
 

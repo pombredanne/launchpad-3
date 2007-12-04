@@ -113,3 +113,12 @@ a hold of to change.
     Traceback (most recent call last):
     ...
     LookupError: name 'field.name'
+
+Of course, teams without mailing lists still have an editable name field.
+
+    >>> print MailingListSet().get('guadamen')
+    None
+    >>> browser.open('http://launchpad.dev/~guadamen')
+    >>> browser.getLink('Change details').click()
+    >>> browser.getControl(name='field.name').value
+    'guadamen'

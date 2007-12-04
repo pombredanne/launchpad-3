@@ -71,10 +71,10 @@ class IPOTMsgSet(Interface):
         We must not have already a TranslationMessage for this language.
         """
 
-    def getCurrentTranslationMessage(language):
+    def getCurrentTranslationMessage(language, variant=None):
         """Returns a TranslationMessage marked as being currently used."""
 
-    def getImportedTranslationMessage(language):
+    def getImportedTranslationMessage(language, variant=None):
         """Returns a TranslationMessage as imported from the package."""
 
     def getLocalTranslationMessages(language):

@@ -14,10 +14,9 @@ change translations being used in Rosetta, it's just a reference of what
 upstream has and they only add active translations if there isn't one already
 so there aren't conflicts to solve.
 
-Let's check that we don't accept .po imports that aren't exported first from
-Rosetta.
-
-This test makes sure we send such email.
+This test shows that we don't accept .po imports that weren't first
+exported from Launchpad, and that a notification email is generated to
+warn the uploader about this.
 
 Here are some imports we need to get this test running.
 

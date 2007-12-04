@@ -48,7 +48,8 @@
       />
     <require
       permission="launchpad.AnyPerson"
-      attributes="newQuestion addAnswerContact removeAnswerContact"
+      attributes="newQuestion createQuestionFromBug addAnswerContact
+                  removeAnswerContact"
       />
     <!-- IFAQTarget -->
     <allow
@@ -427,7 +428,7 @@
     for="canonical.launchpad.interfaces.IProduct"
     class="canonical.launchpad.browser.ProductAddSeriesView"
     facet="overview"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Edit"
     template="../templates/productseries-new.pt"
     />
 

@@ -3,6 +3,14 @@
     <head>
         <link rel="openid.server"
             tal:attributes="href view/openid_server_url" />
+        <tal:comment condition="nothing">
+          Send the user to the person's Launchpad profile page, since
+          it has more useful information.  We can't use an HTTP
+          redirect for this because it would affect OpenID discovery.
+
+          If we decide to anonymise the persistent IDs at some point,
+          this refresh should be removed.
+        </tal:comment>
         <meta http-equiv="Refresh"
             tal:attributes="content string:1;; URL=${view/person_url}" />
     </head>

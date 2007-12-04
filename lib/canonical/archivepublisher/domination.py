@@ -55,6 +55,7 @@ import apt_pkg
 from datetime import timedelta
 import gc
 
+from canonical.archivepublisher import ELIGIBLE_DOMINATION_STATES
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates, cursor,
@@ -80,6 +81,7 @@ PENDING = PackagePublishingStatus.PENDING
 PUBLISHED = PackagePublishingStatus.PUBLISHED
 SUPERSEDED = PackagePublishingStatus.SUPERSEDED
 DELETED = PackagePublishingStatus.DELETED
+OBSOLETE = PackagePublishingStatus.OBSOLETE
 
 # Ugly, but works
 apt_pkg.InitSystem()
@@ -146,12 +148,13 @@ class Dominator:
                     this_release = pubrec.sourcepackagerelease
 
                     this_release_name = this_release.sourcepackagename.name
-                    self.debug("%s/%s has been judged as superseded by %s/%s" %
-                               (this_release_name, this_release.version,
-                                super_release_name, super_release.version))
+                    self.debug(
+                        "%s/%s has been judged as superseded by %s/%s" %
+                        (this_release_name, this_release.version,
+                         super_release_name, super_release.version))
 
-                    pubrec.status = SUPERSEDED;
-                    pubrec.datesuperseded = UTC_NOW;
+                    pubrec.status = SUPERSEDED
+                    pubrec.datesuperseded = UTC_NOW
                     pubrec.supersededby = super_release
 
     def _dominateBinary(self, binaryinput):
@@ -175,23 +178,24 @@ class Dominator:
             for pubrec in binaryinput[binary][1:]:
                 if pubrec.status == PUBLISHED or pubrec.status == PENDING:
                     thisrelease = pubrec.binarypackagerelease
+                    distroarchseries = dominantrelease.build.distroarchseries
                     self.debug("The %s build of %s/%s has been judged "
                                "as superseded by the %s build of %s/%s.  "
                                "Arch-specific == %s" % (
                         thisrelease.build.distroarchseries.architecturetag,
                         thisrelease.binarypackagename.name,
                         thisrelease.version,
-                        dominantrelease.build.distroarchseries.architecturetag,
+                        distroarchseries.architecturetag,
                         dominantrelease.binarypackagename.name,
                         dominantrelease.version,
                         thisrelease.architecturespecific))
-                    pubrec.status = SUPERSEDED;
-                    pubrec.datesuperseded = UTC_NOW;
+                    pubrec.status = SUPERSEDED
+                    pubrec.datesuperseded = UTC_NOW
                     # Binary package releases are superseded by the new build,
-                    # not the new binary package release. This is because there
-                    # may not *be* a new matching binary package - source
-                    # packages can change the binaries they build between
-                    # releases.
+                    # not the new binary package release. This is because
+                    # there may not *be* a new matching binary package -
+                    # source packages can change the binaries they build
+                    # between releases.
                     pubrec.supersededby = dominantrelease.build
 
 
@@ -400,18 +404,14 @@ class Dominator:
             flush_database_updates()
             cur.execute("DROP TABLE PubDomHelper")
 
-        dominate_status = [
-            PackagePublishingStatus.SUPERSEDED,
-            PackagePublishingStatus.DELETED,
-            ]
-
         sources = SecureSourcePackagePublishingHistory.select("""
             securesourcepackagepublishinghistory.distroseries = %s AND
             securesourcepackagepublishinghistory.archive = %s AND
             securesourcepackagepublishinghistory.pocket = %s AND
             securesourcepackagepublishinghistory.status IN %s AND
             securesourcepackagepublishinghistory.scheduleddeletiondate is NULL
-            """ % sqlvalues(dr, self.archive, pocket, dominate_status))
+            """ % sqlvalues(dr, self.archive, pocket,
+                            ELIGIBLE_DOMINATION_STATES))
 
         binaries = SecureBinaryPackagePublishingHistory.select("""
             securebinarypackagepublishinghistory.distroarchseries =
@@ -421,7 +421,8 @@ class Dominator:
             securebinarypackagepublishinghistory.pocket = %s AND
             securebinarypackagepublishinghistory.status IN %s AND
             securebinarypackagepublishinghistory.scheduleddeletiondate is NULL
-            """ % sqlvalues(dr, self.archive, pocket, dominate_status),
+            """ % sqlvalues(dr, self.archive, pocket,
+                            ELIGIBLE_DOMINATION_STATES),
             clauseTables=['DistroArchSeries'])
 
         self._judgeSuperseded(sources, binaries, config)

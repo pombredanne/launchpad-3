@@ -140,8 +140,8 @@ However, if we ask for incorrect plural form, we get an AssertionError.
     ...
     AssertionError: There is no plural form #1 for Spanish (es) language
 
-Web presentation
-----------------
+
+== Web presentation ==
 
 Some characters are presented specially in the Web interface, and there are
 functions to determine whether to advise translators about their presence.
@@ -221,8 +221,7 @@ And text_has_leading_or_trailing_space() determines ... well, you can guess.
     >>> transaction.commit()
 
 
-Submitting translations
------------------------
+== Submitting translations ==
 
 It's time to check the submission of translations and the IPOFile statistics
 update.
@@ -353,8 +352,7 @@ And active text too
     [u'Foo']
 
 
-Bogus translation submission
-----------------------------
+== Bogus translation submission ==
 
 What would happen if we get a submit for another msgset that isn't being
 considered?
@@ -384,3 +382,158 @@ And since this was a POST, we don't even build the subview:
 
     >>> translationmessage_page_view.translationmessage_view is None
     True
+
+
+== TranslationMessageSuggestions ==
+
+This class keeps all suggestions available for a concrete
+ITranslationMessage.
+
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.browser import TranslationMessageSuggestions
+    >>> from canonical.launchpad.interfaces import IPersonSet, IPOTemplateSet
+
+We are going to work with Evolution's evolution-2.2 template.
+
+    >>> potemplate_set = getUtility(IPOTemplateSet)
+    >>> potemplates = potemplate_set.getAllByName('evolution-2.2')
+    >>> potemplate_trunk = potemplates[0]
+    >>> potemplate_hoary = potemplates[1]
+    >>> potemplate_trunk.title
+    u'Template "evolution-2.2" in Evolution trunk'
+    >>> potemplate_hoary.title
+    u'Template "evolution-2.2" in Ubuntu Hoary package "evolution"'
+
+For alternative suggestions we need two languages, the one being
+translated and other one providing suggestions. We will use Japanese
+as the language to get suggestions for because it has less plural forms
+than the other choosen language, Spanish.
+
+    # Japanese translation for this template doesn't exist yet in our
+    # database, we need to create it first.
+    >>> pofile_ja = potemplate_trunk.newPOFile('ja')
+    >>> pofile_ja.language.pluralforms
+    1
+    >>> pofile_es = potemplate_trunk.getPOFileByLang('es')
+    >>> pofile_es.language.pluralforms
+    2
+
+We are going to work with a plural form message.
+
+    >>> potmsgset = potemplate_trunk.getPOTMsgSetByMsgIDText(u'%d contact')
+    >>> potmsgset.msgid_plural is None
+    False
+
+Also, we are going to create a new translation for the Japanese
+language that will be used as the suggestion.
+
+    >>> UTC = pytz.timezone('UTC')
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> login('carlos@canonical.com')
+    >>> translation_message_ja = potmsgset.updateTranslation(
+    ...     pofile_ja, carlos, { 0: u'Foo %d' }, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    >>> translation_message_ja.translations
+    [u'Foo %d']
+
+Let's get current message in Spanish.
+
+    >>> translation_message_es = potmsgset.getCurrentTranslationMessage(
+    ...     pofile_es.language)
+
+And we prepare the ITranslationMessageSuggestions object for the higher
+Spanish plural form.
+
+    >>> suggestions = TranslationMessageSuggestions(
+    ...     title=u'Testing', translation=translation_message_es,
+    ...     submissions=[translation_message_ja],
+    ...     user_is_official_translator=True,
+    ...     form_is_writeable=True,
+    ...     plural_form=(pofile_es.language.pluralforms - 1))
+
+Which produces no suggestions, because Japanese only has one form but
+Spanish has two.
+
+    >>> print suggestions.submissions
+    []
+
+However, when we use the first plural form, which exists in both
+languages...
+
+    >>> suggestions = TranslationMessageSuggestions(
+    ...     title=u'Testing', translation=translation_message_es,
+    ...     submissions=[translation_message_ja],
+    ...     user_is_official_translator=True,
+    ...     form_is_writeable=True,
+    ...     plural_form=0)
+
+... we get suggestions.
+
+    >>> len(suggestions.submissions)
+    1
+    >>> sorted(suggestions.submissions[0].items())
+    [('date_created', ...),
+     ('id', 703L),
+     ('language', ...), ('person', ...),
+     ('plural_index', 0),
+     ('pofile', ...), ('potmsgset', ...),
+     ('suggestion_html_id', u'msgset_15_ja_suggestion_703_0'),
+     ('suggestion_text', u'Foo <code>%d</code>'),
+     ('translation_html_id', u'msgset_15_es_translation_0'),
+     ('translationmessage', ...)]
+
+Another reason why a suggestion might not have translations for all
+plural forms is that it was submitted as a translation for an English
+message that didn't have a plural.
+
+Here, an identical message is added to the two Evolution templates: the
+"trunk" one and the one in Ubuntu Hoary.  But one of the English strings
+is in a single form only, whereas the other has a singular and a plural.
+
+    >>> singular_id = 'This message has %d form.'
+    >>> plural_id = 'This message has %d forms.'
+    >>> pofile_simple = potemplate_trunk.getPOFileByLang('es')
+    >>> pofile_plural = potemplate_hoary.getPOFileByLang('es')
+    >>> potmsgset_simple = potemplate_trunk.createMessageSetFromText(
+    ...     singular_id, None)
+    >>> potmsgset_plural = potemplate_hoary.createMessageSetFromText(
+    ...     singular_id, plural_id)
+
+Carlos translates both.  The single-form one is simple; for the other he
+provides a complete translation including both the singular and the
+plural form.
+
+    >>> translation_message_simple = potmsgset_simple.updateTranslation(
+    ...     pofile_simple, carlos, { 0: u'%d forma' }, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    >>> translation_message_plural = potmsgset_plural.updateTranslation(
+    ...     pofile_plural, carlos, { 0: u'%d forma', 1: u'%d formas' },
+    ...     is_fuzzy=False, is_imported=False,
+    ...     lock_timestamp=datetime.now(UTC))
+
+The single-form translation shows up as a suggestion for the singular
+translation of the two-form message.
+
+    >>> suggestions = TranslationMessageSuggestions(
+    ...     title=u'Testing', translation=translation_message_plural,
+    ...     submissions=[translation_message_simple],
+    ...     user_is_official_translator=True,
+    ...     form_is_writeable=True,
+    ...     plural_form=0)
+    >>> len(suggestions.submissions)
+    1
+
+For the plural translation of the same message, however, that
+translation provides no text and so is ignored.
+
+    >>> suggestions = TranslationMessageSuggestions(
+    ...     title=u'Testing', translation=translation_message_plural,
+    ...     submissions=[translation_message_simple],
+    ...     user_is_official_translator=True,
+    ...     form_is_writeable=True,
+    ...     plural_form=1)
+    >>> len(suggestions.submissions)
+    0
+
