@@ -483,7 +483,7 @@ def lengthValidator(length, error_message):
         if string is None:
             return True
         else:
-            if len(string) < length:
+            if len(string) <= length:
                 return True
             else:
                 raise LaunchpadValidationError(error_message)
