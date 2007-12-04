@@ -17,7 +17,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IHWDBApplication"
-        path_expression="string:hwdb"
+        path_expression="string:+hwdb"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 

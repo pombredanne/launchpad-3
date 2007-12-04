@@ -9,6 +9,7 @@ __all__ = [
     'new_team',
     'print_actions',
     'print_info',
+    'review_list',
     ]
 
 import xmlrpclib
@@ -152,3 +153,24 @@ def get_alternative_email(person):
     assert len(alternatives) == 1, (
         'Unexpected email count: %d' % len(alternatives))
     return alternatives[0]
+
+
+def review_list(list_name, status=None):
+    """Review a mailing list application.
+
+    :param list_name: The name of the mailing list to review.  This is
+        equivalent to the name of the team that the mailing list is
+        associated with.
+    :param status: The status applied to the reviewed mailing list.  This must
+        be either MailingListStatus.APPROVED or MailingListStatus.DECLINED
+        with the former being used if `status` is not given.
+    """
+    if status is None:
+        status = MailingListStatus.APPROVED
+    # Any Mailing List Expert will suffice for approving the registration.
+    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    lpadmin = list(experts.allmembers)[0]
+    # Review and approve the mailing list registration.
+    list_set = getUtility(IMailingListSet)
+    mailing_list = list_set.get(list_name)
+    mailing_list.review(lpadmin, status)
