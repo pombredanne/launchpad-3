@@ -29,6 +29,7 @@ from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -468,6 +469,27 @@ class IBugDelta(Interface):
         "A sequence of IBugTaskDeltas, one IBugTaskDelta or None.")
 
 
+def lengthValidator(length, error_message):
+    """Returns a unary function to validate the length of a string.
+    
+    The function accepts a string and returns True for strings of length
+    less than or equal to :length:. It also returns True for an argument
+    equal to None.
+
+    The function raises a `LaunchpadValidationError` with :error_message:
+    for strings longer than :length:.
+    """
+    def validate(string):
+        if string is None:
+            return True
+        else:
+            if len(string) < length:
+                return True
+            else:
+                raise LaunchpadValidationError(error_message)
+    return validate
+
+
 class IBugAddForm(IBug):
     """Information we need to create a bug"""
     id = Int(title=_("Bug #"), required=False)
@@ -494,7 +516,7 @@ class IBugAddForm(IBug):
     comment = Text(
         title=_('Further information, steps to reproduce,'
                 ' version information, etc.'),
-        required=False)
+        required=False, constraint=lengthValidator(100, 'Too Long'))
     bug_already_reported_as = Choice(
         title=_("This bug has already been reported as ..."), required=False,
         vocabulary="Bug")
