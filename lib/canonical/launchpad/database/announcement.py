@@ -97,10 +97,6 @@ class Announcement(SQLBase):
         self.date_last_modified = None
         self.active = True
 
-    def erase_permanently(self):
-        """See IAnnouncement."""
-        Announcement.delete(self.id)
-
     @property
     def future(self):
         """See IAnnouncement."""

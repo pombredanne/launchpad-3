@@ -270,7 +270,7 @@ You can move an announcement from one pillar to the next:
 You can ask an announcement to delete itself permanently.
 
     >>> old_id = kubuntu_release.id
-    >>> kubuntu_release.erase_permanently()
+    >>> kubuntu_release.destroySelf()
     >>> flush_database_updates()
     >>> print kubuntu.getAnnouncement(old_id)
     None

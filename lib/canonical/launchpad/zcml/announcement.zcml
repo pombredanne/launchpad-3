@@ -11,7 +11,7 @@
                        published" />
     <require permission="launchpad.Edit"
              attributes="modify retarget retract set_publication_date
-                         erase_permanently" />
+                         destroySelf" />
   </content>
 
   <browser:menus

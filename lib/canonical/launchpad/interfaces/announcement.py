@@ -23,11 +23,11 @@ class IHasAnnouncements(Interface):
     def announcements(limit=5, published_only=True):
         """Return a list of announcements visible to this user.
 
-        If limit is provided, then the list is limited to that number of the
-        most recent Announcements.
+            :param limit: restrict the results to `limit` announcements.  If
+                None is used as the limit then a full list is returned.
 
-        If published_only is True then the list will include only published
-        announcements.
+            :param published_only: when True the list will include only
+                published announcements.
         """
 
 
@@ -95,7 +95,7 @@ class IAnnouncement(Interface):
           A datetime: publish it on the date given.
         """
 
-    def erase_permanently():
+    def destroySelf():
         """Remove this announcement permanently."""
 
 

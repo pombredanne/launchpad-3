@@ -115,15 +115,11 @@ class AnnouncementAddView(LaunchpadFormView):
             url = data.get('url'),
             publication_date = data.get('publication_date')
             )
-        self._next_url = canonical_url(self.context)
+        self.next_url = canonical_url(self.context)
 
     @property
     def action_url(self):
         return "%s/+announce" % canonical_url(self.context)
-
-    @property
-    def next_url(self):
-        return self._next_url
 
 
 class AnnouncementEditView(LaunchpadFormView):
@@ -138,15 +134,11 @@ class AnnouncementEditView(LaunchpadFormView):
         self.context.modify(title=data.get('title'),
                             summary=data.get('summary'),
                             url=data.get('url'))
-        self._nextURL = canonical_url(self.context.target)+'/+announcements'
+        self.next_url = canonical_url(self.context.target)+'/+announcements'
 
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
     def action_cancel(self, action, data):
-        self._nextURL = canonical_url(self.context.target)+'/+announcements'
-
-    @property
-    def next_url(self):
-        return self._nextURL
+        self.next_url = canonical_url(self.context.target)+'/+announcements'
 
 
 class AnnouncementRetargetForm(Interface):
@@ -189,15 +181,11 @@ class AnnouncementRetargetView(LaunchpadFormView):
     def retarget_action(self, action, data):
         target = data.get('target')
         self.context.retarget(target)
-        self._nextURL = canonical_url(self.context.target)+'/+announcements'
+        self.next_url = canonical_url(self.context.target)+'/+announcements'
 
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
     def action_cancel(self, action, data):
-        self._nextURL = canonical_url(self.context.target)+'/+announcements'
-
-    @property
-    def next_url(self):
-        return self._nextURL
+        self.next_url = canonical_url(self.context.target)+'/+announcements'
 
 
 class AnnouncementPublishView(LaunchpadFormView):
@@ -212,15 +200,11 @@ class AnnouncementPublishView(LaunchpadFormView):
     def publish_action(self, action, data):
         publication_date = data['publication_date']
         self.context.set_publication_date(publication_date)
-        self._nextURL = canonical_url(self.context.target)+'/+announcements'
+        self.next_url = canonical_url(self.context.target)+'/+announcements'
 
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
     def action_cancel(self, action, data):
-        self._nextURL = canonical_url(self.context.target)+'/+announcements'
-
-    @property
-    def next_url(self):
-        return self._nextURL
+        self.next_url = canonical_url(self.context.target)+'/+announcements'
 
 
 class AnnouncementRetractView(LaunchpadFormView):
@@ -231,15 +215,11 @@ class AnnouncementRetractView(LaunchpadFormView):
     @action(_('Retract'), name='retract')
     def retract_action(self, action, data):
         self.context.retract()
-        self._nextURL = canonical_url(self.context.target)+'/+announcements'
+        self.next_url = canonical_url(self.context.target)+'/+announcements'
 
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
     def action_cancel(self, action, data):
-        self._nextURL = canonical_url(self.context.target)+'/+announcements'
-
-    @property
-    def next_url(self):
-        return self._nextURL
+        self.next_url = canonical_url(self.context.target)+'/+announcements'
 
 
 class AnnouncementDeleteView(LaunchpadFormView):
@@ -249,16 +229,12 @@ class AnnouncementDeleteView(LaunchpadFormView):
 
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
     def action_cancel(self, action, data):
-        self._nextURL = canonical_url(self.context.target)+'/+announcements'
+        self.next_url = canonical_url(self.context.target)+'/+announcements'
 
     @action(_("Delete"), name="delete", validator='validate_cancel')
     def action_delete(self, action, data):
-        self.context.erase_permanently()
-        self._nextURL = canonical_url(self.context.target)+'/+announcements'
-
-    @property
-    def next_url(self):
-        return self._nextURL
+        self.context.destroySelf()
+        self.next_url = canonical_url(self.context.target)+'/+announcements'
 
 
 class HasAnnouncementsView(LaunchpadView):
