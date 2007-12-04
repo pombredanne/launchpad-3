@@ -68,15 +68,11 @@ identity URL will be sent to the relying party:
     >>> browser.getControl('Continue').click()
     >>> print browser.url
     http://launchpad.dev/+openid-consumer?...
-    >>> print browser.contents
-    Consumer received GET
-    ...
-
     >>> info = complete_from_browser(
     ...     consumer, browser, 'http://openid.launchpad.dev/+id/name12_oid')
     >>> print info.status
     success
-    >>> print info.identity_url
+    >>> print info.endpoint.claimed_id
     http://openid.launchpad.dev/+id/name12_oid
 
 

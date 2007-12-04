@@ -124,9 +124,6 @@ directed back to the original site:
 
     >>> print browser.url
     http://launchpad.dev/+openid-consumer?...
-    >>> print browser.contents
-    Consumer received GET
-    ...
 
 The creation rationale has been set correctly:
 
@@ -143,7 +140,7 @@ And the response matches the new OpenID:
     >>> info = complete_from_browser(consumer, browser, expected_claimed_id)
     >>> print info.status
     success
-    >>> info.identity_url == expected_claimed_id
+    >>> info.endpoint.claimed_id == expected_claimed_id
     True
 
 

@@ -46,13 +46,10 @@ provider:
 
     >>> print browser.url
     http://launchpad.dev/+openid-consumer?...
-    >>> print browser.contents
-    Consumer received GET
-    ...
     >>> info = complete_from_browser(consumer, browser)
     >>> print info.status
     success
-    >>> print info.identity_url
+    >>> print info.endpoint.claimed_id
     http://openid.launchpad.dev/+id/sabdfl_oid
 
 Now lets begin another OpenID authentication request, which will
@@ -90,13 +87,10 @@ From this point, we can log in as usual:
 
     >>> print browser.url
     http://launchpad.dev/+openid-consumer?...
-    >>> print browser.contents
-    Consumer received GET
-    ...
     >>> info = complete_from_browser(consumer, browser)
     >>> print info.status
     success
-    >>> print info.identity_url
+    >>> print info.endpoint.claimed_id
     http://openid.launchpad.dev/+id/sabdfl_oid
 
 

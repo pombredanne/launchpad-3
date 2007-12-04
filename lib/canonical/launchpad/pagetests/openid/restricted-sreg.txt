@@ -49,16 +49,13 @@ details:
     >>> sabdfl_browser.getControl('Sign In', index=0).click()
     >>> print sabdfl_browser.url
     http://launchpad.dev/+openid-consumer?...
-    >>> print sabdfl_browser.contents
-    Consumer received GET
-    ...
 
 We have authenticated successfully:
 
     >>> info = complete_from_browser(consumer, sabdfl_browser)
     >>> print info.status
     success
-    >>> print info.identity_url
+    >>> print info.endpoint.claimed_id
     http://openid.launchpad.dev/+id/sabdfl_oid
 
 But no user details are returned:
@@ -100,16 +97,13 @@ Now begin another identical OpenID authentication request:
     >>> sabdfl_browser.getControl('Sign In', index=0).click()
     >>> print sabdfl_browser.url
     http://launchpad.dev/+openid-consumer?...
-    >>> print sabdfl_browser.contents
-    Consumer received GET
-    ...
 
 Again, the authentication request is successful:
 
     >>> info = complete_from_browser(consumer, sabdfl_browser)
     >>> print info.status
     success
-    >>> print info.identity_url
+    >>> print info.endpoint.claimed_id
     http://openid.launchpad.dev/+id/sabdfl_oid
 
 But now we have some user details.  Note that the user's country is

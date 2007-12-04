@@ -44,15 +44,11 @@ party with their identity URL:
     >>> browser.getControl('Sign In', index=0).click()
     >>> print browser.url
     http://launchpad.dev/+openid-consumer?...
-    >>> print browser.contents
-    Consumer received GET
-    ...
-
     >>> info = complete_from_browser(
     ...     consumer, browser, 'http://openid.launchpad.dev/+id/sabdfl_oid')
     >>> print info.status
     success
-    >>> print info.identity_url
+    >>> print info.endpoint.claimed_id
     http://openid.launchpad.dev/+id/sabdfl_oid
 
 
@@ -71,9 +67,6 @@ time, we will cancel the authentication request:
     >>> browser.getControl("Not Now").click()
     >>> print browser.url
     http://launchpad.dev/+openid-consumer?...
-    >>> print browser.contents
-    Consumer received GET
-    ...
     >>> info = complete_from_browser(
     ...     consumer, browser, 'http://openid.launchpad.dev/+id/sabdfl_oid')
     >>> print info.status
