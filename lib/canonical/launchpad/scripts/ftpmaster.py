@@ -1644,9 +1644,6 @@ class ObsoleteDistroseries(SoyuzScript):
         # the next time it runs.  We skip the domination phase in the
         # publisher because it won't consider stable distroseries.
 
-        # Information returned mainly for the benefit of the test harness.
-        return sources, binaries
-
     def _checkParameters(self, distroseries):
         """Sanity check the supplied script parameters."""
         # Did the user provide a suite name? (distribution defaults
@@ -1659,7 +1656,7 @@ class ObsoleteDistroseries(SoyuzScript):
                 "Please specify a valid distroseries name with -s/--suite "
                 "and which is not the most recent distroseries.")
 
-        # Is the distroseries in an obsolete state?  Bail out now if so.
+        # Is the distroseries in an obsolete state?  Bail out now if not.
         if distroseries.status != DistroSeriesStatus.OBSOLETE:
             raise SoyuzScriptError(
                 "%s is not at status OBSOLETE." % distroseries.name)
