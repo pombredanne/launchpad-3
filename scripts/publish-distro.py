@@ -151,6 +151,9 @@ def main():
         try_and_commit("dominating", publisher.B_dominate,
                        options.careful or options.careful_domination)
 
+        # Flag dirty pockets for any outstanding deletions.
+        publisher.B2_markPocketsWithDeletionsDirty()
+
         # The primary archive uses apt-ftparchive to generate the indexes,
         # everything else uses the newer internal LP code.
         if archive.purpose != ArchivePurpose.PPA:

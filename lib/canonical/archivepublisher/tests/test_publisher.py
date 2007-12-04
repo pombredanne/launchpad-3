@@ -18,6 +18,7 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.publishing import (
     getPublisher, Publisher)
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
@@ -500,6 +501,64 @@ class TestPublisher(TestNativePublishingBase):
 
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
+
+    def testDirtyingPocketsWithDeletedPackages(self):
+        """Test that dirtying pockets with deleted packages works."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        # Run the deletion detection too see how many existing dirty pockets
+        # there are.
+        publisher.B2_markPocketsWithDeletionsDirty()
+        existing_num_dirty = len(publisher.dirty_pockets)
+
+        # There should be none.
+        self.assertTrue(existing_num_dirty == 0,
+            "Expected no existing dirty pockets, got %d" %
+            existing_num_dirty)
+
+        # Make a published source, a source that's been removed from disk
+        # and one that's waiting to be deleted, each in different pockets.
+        # We'll also have a binary waiting to be deleted.
+        published_source = self.getPubSource(
+            pocket=PackagePublishingPocket.RELEASE,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        removed_source = self.getPubSource(
+            scheduleddeletiondate = UTC_NOW,
+            dateremoved = UTC_NOW,
+            pocket=PackagePublishingPocket.UPDATES,
+            status=PackagePublishingStatus.DELETED)
+
+        deleted_source = self.getPubSource(
+            scheduleddeletiondate = UTC_NOW,
+            pocket=PackagePublishingPocket.SECURITY,
+            status=PackagePublishingStatus.DELETED)
+
+        deleted_binary = self.getPubBinary(
+            scheduleddeletiondate = UTC_NOW,
+            pocket=PackagePublishingPocket.BACKPORTS,
+            status=PackagePublishingStatus.DELETED)
+
+        self.layer.txn.commit()
+
+        # Run the deletion detection.
+        publisher.B2_markPocketsWithDeletionsDirty()
+
+        # There should now be two dirty pockets.
+        num_dirtied = len(publisher.dirty_pockets)
+        self.assertTrue(num_dirtied == 2,
+            "Expected 2 dirty pockets, got %d" % num_dirtied)
+
+        # The security pocket is dirtied by deleted_source, and the backports
+        # is dirtied by deleted_binary.
+        [(source_distroname, source_pocket),
+         (binary_distroname, binary_pocket)] = publisher.dirty_pockets
+        self.assertTrue(binary_pocket == PackagePublishingPocket.SECURITY,
+            "Expected security pocket, got %s" % binary_pocket)
+        self.assertTrue(source_pocket == PackagePublishingPocket.BACKPORTS,
+            "Expected backports pocket, got %s" % source_pocket)
 
     def testCarefulDominationOnDevelopmentSeries(self):
         """Test the careful domination procedure.
