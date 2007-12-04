@@ -210,14 +210,7 @@ class Publisher(object):
                         self.log.debug("Skipping domination for %s/%s" %
                                    (distroseries.name, pocket.name))
                         continue
-                    if (not distroseries.isUnstable() and
-                        not self.archive.allowUpdatesToReleasePocket):
-                        # We're not doing a full run and the
-                        # distroseries is now 'stable': if we try to
-                        # write a release file for it, we're doing
-                        # something wrong.
-                        assert pocket != PackagePublishingPocket.RELEASE,(
-                            "Oops, dominating stable distroseries.")
+                    self.checkDirtySuiteBeforePublishing(distroseries, pocket)
                 judgejudy.judgeAndDominate(distroseries, pocket, self._config)
 
     def C_doFTPArchive(self, is_careful):
@@ -238,11 +231,7 @@ class Publisher(object):
                         self.log.debug("Skipping index generation for %s/%s" %
                                        (distroseries.name, pocket.name))
                         continue
-                    if (not distroseries.isUnstable() and
-                        not self.archive.allowUpdatesToReleasePocket):
-                        # See comment in B_dominate
-                        assert pocket != PackagePublishingPocket.RELEASE, (
-                            "Oops, indexing stable distroseries.")
+                    self.checkDirtySuiteBeforePublishing(distroseries, pocket)
                 # Retrieve components from the publisher config because
                 # it gets overridden in IArchive.getPubConfig to set the
                 # correct components for the archive being used.
@@ -268,11 +257,7 @@ class Publisher(object):
                         self.log.debug("Skipping release files for %s/%s" %
                                        (distroseries.name, pocket.name))
                         continue
-                    if (not distroseries.isUnstable() and
-                        not self.archive.allowUpdatesToReleasePocket):
-                        # See comment in B_dominate
-                        assert pocket != PackagePublishingPocket.RELEASE, (
-                            "Oops, indexing stable distroseries.")
+                    self.checkDirtySuiteBeforePublishing(distroseries, pocket)
                 self._writeDistroSeries(distroseries, pocket)
 
     def isDirty(self, distroseries, pocket):
@@ -325,7 +310,8 @@ class Publisher(object):
         source_index.close()
         source_index_gz.close()
 
-        source_index_gz_path = os.path.join(source_index_basepath, "Sources.gz")
+        source_index_gz_path = os.path.join(
+            source_index_basepath, "Sources.gz")
         source_index_path = os.path.join(source_index_basepath, "Sources")
 
         # Move the the archive index files to the right place.
@@ -355,7 +341,8 @@ class Publisher(object):
                 dir=self._config.temproot, prefix='%s-index-gz_' % arch_path)
             fd, temp_index = tempfile.mkstemp(
                 dir=self._config.temproot, prefix='%s-index_' % arch_path)
-            package_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, "wb"))
+            package_index_gz = gzip.GzipFile(
+                fileobj=open(temp_index_gz, "wb"))
             package_index = open(temp_index, "wb")
 
             for bpp in distroseries.getBinaryPackagePublishing(
@@ -379,7 +366,8 @@ class Publisher(object):
 
             # Make the files group writable and world readable.
             self._makeFileGroupWriteableAndWorldReadable(package_index_path)
-            self._makeFileGroupWriteableAndWorldReadable(package_index_gz_path)
+            self._makeFileGroupWriteableAndWorldReadable(
+                package_index_gz_path)
 
         # Inject static requests for Release files into self.apt_handler
         # in a way which works for NoMoreAptFtpArchive without changing
@@ -404,6 +392,19 @@ class Publisher(object):
             return False
         return True
 
+    def checkDirtySuiteBeforePublishing(self, distroseries, pocket):
+        """Last check before publishing a dirty suite.
+
+        If the distroseries is stable and the archive doesn't allow updates
+        in RELEASE pocket (primary archives) we certainly have a problem,
+        better stop.
+        """
+        if (not distroseries.isUnstable() and
+            not self.archive.allowUpdatesToReleasePocket
+            and pocket == PackagePublishingPocket.RELEASE):
+            raise AssertionError(
+                "Oops, tainting RELEASE pocket of %s." % distroseries)
+
     def _writeDistroSeries(self, distroseries, pocket):
         """Write out the Release files for the provided distroseries."""
         # XXX: kiko 2006-08-24: Untested method.
@@ -422,8 +423,8 @@ class Publisher(object):
         all_components = set()
         all_architectures = set()
         all_files = set()
-        for component, architectures in release_files_needed[full_name].items():
-
+        release_files_needed_items = release_files_needed[full_name].items()
+        for component, architectures in release_files_needed_items:
             all_components.add(component)
             for architecture in architectures:
                 # XXX malcc 2006-09-20: We don't like the way we build this
