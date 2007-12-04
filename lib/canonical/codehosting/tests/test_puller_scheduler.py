@@ -486,6 +486,15 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         print error
         return failure
 
+    def makePullerMaster(self):
+        """XXX."""
+        puller_master = scheduler.PullerMaster(
+            self.db_branch.id, local_path_to_url('src-branch'),
+            self.db_branch.unique_name, self.db_branch.branch_type,
+            logging.getLogger(), self.client)
+        puller_master.destination_url = os.path.abspath('dest-branch')
+        return puller_master
+
     def test_mirror(self):
         """Actually mirror a branch using a worker sub-process.
 
@@ -493,11 +502,8 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         runs successfully and that we report the successful run.
         """
         revision_id = self.bzr_tree.branch.last_revision()
-        puller_master = scheduler.PullerMaster(
-            self.db_branch.id, local_path_to_url('src-branch'),
-            self.db_branch.unique_name, self.db_branch.branch_type,
-            logging.getLogger(), self.client)
-        puller_master.destination_url = os.path.abspath('dest-branch')
+
+        puller_master = self.makePullerMaster()
         deferred = puller_master.mirror().addErrback(self._dumpError)
 
         def check_authserver_called(ignored):
@@ -514,6 +520,27 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
                 Branch.open(puller_master.destination_url).last_revision())
             return ignored
         deferred.addCallback(check_branch_mirrored)
+
+        return deferred
+
+    def test_mirror_with_branch_initially_locked(self):
+        """XXX."""
+        revision_id = self.bzr_tree.branch.last_revision()
+
+        puller_master = self.makePullerMaster()
+
+        new_bzr_dir = self.bzr_tree.bzrdir.clone(puller_master.destination_url)
+        destination_branch = new_bzr_dir.open_branch()
+        destination_branch.lock_write()
+
+        deferred = puller_master.mirror().addErrback(self._dumpError)
+
+        # XXX.
+        def check_unlocked(ignored):
+            self.assertIs(
+                b.get_physical_lock_status(), None)
+            return ignored
+        deferred.addCallback(check_unlocked)
 
         return deferred
 
