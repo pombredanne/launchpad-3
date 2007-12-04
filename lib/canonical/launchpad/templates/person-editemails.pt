@@ -71,24 +71,28 @@
             </td>
           </tr>
         </tal:widget>
+      </table>
+    </metal:widgets>
+    <metal:widgets fill-slot="buttons" />
+  </div>
 
-      <tal:subscriptions tal:condition="view/mailing_list_widgets">
-        <tr>
-          <td colspan="2">
-            <h2>Mailing list subscriptions</h2>
-          </td>
-        </tr>
-        <tr>
-          <td colspan="2">
-            <p>You're a member of one or more teams with active
-            mailing lists. You can subscribe to a team's mailing list
-            using any of your verified email addresses.</p>
-          </td>
-        </tr>
-        <tr>
-          <th>For this mailing list...</th>
-          <td><strong>Subscribe with this address</strong></td>
-        </tr>
+
+  <form action=""
+        method="post" enctype="multipart/form-data"
+        accept-charset="UTF-8" tal:condition="view/mailing_list_widgets">
+
+    <h2>Mailing list subscriptions</h2>
+
+    <p>You're a member of one or more teams with active mailing
+      lists. You can subscribe to a team's mailing list using any of
+      your verified email addresses.</p>
+
+    <table class="form">
+      <thead>
+        <th>For this mailing list...</th>
+        <td><strong>Subscribe with this address</strong></td>
+      </thead>
+      <tbody>
         <metal:block tal:repeat="widget view/mailing_list_widgets">
           <metal:block use-macro="context/@@launchpad_form/widget_row" />
         </metal:block>
@@ -99,13 +103,10 @@
                      view/action_update_subscriptions/render" />
             </td>
           </tr>
-      </tal:subscriptions>
+      </tbody>
+    </table>
+  </form>
 
-      </table>
-    </metal:widgets>
-    <metal:widgets fill-slot="buttons" />
-
-  </div>
 </div>
 
 <div metal:fill-slot="help">
