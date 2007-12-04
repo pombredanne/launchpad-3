@@ -14,5 +14,4 @@ CREATE TABLE BugTrackerAlias (
 CREATE INDEX bugtrackeralias__bugtracker__idx
        ON BugTrackerAlias(bugtracker);
 
-INSERT INTO LaunchpadDatabaseRevision
-       VALUES (88, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (88, 34, 0);
