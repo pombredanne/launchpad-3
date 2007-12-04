@@ -26,7 +26,6 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import (
     HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
 
-from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
@@ -37,7 +36,8 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
     IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
     ITeamCreation, ITeamMember, LoginTokenType, MailingListStatus,
-    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
+    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData,
+    is_participant_in_beta_program)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 class HasRenewalPolicyMixin:
@@ -147,10 +147,7 @@ class MailingListTeamBaseView(LaunchpadFormView):
         for this team.  Once mailing lists are enabled globally, this should
         be replacable with not list_is_usable.
         """
-        beta_testers_team = getUtility(IPersonSet).getByName(
-            config.mailman.beta_testers_team)
-        return (beta_testers_team is not None and
-                self.context.hasParticipationEntryFor(beta_testers_team) and
+        return (is_participant_in_beta_program(self.context) and
                 not self.list_is_usable)
 
     @property
@@ -349,10 +346,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         Once mailing lists are enabled globally, this method should be
         removed.
         """
-        beta_testers_team = getUtility(IPersonSet).getByName(
-            config.mailman.beta_testers_team)
-        if (beta_testers_team is not None and
-            self.context.hasParticipationEntryFor(beta_testers_team)):
+        if is_participant_in_beta_program(self.context):
             # It's okay to let this team configure its mailing list, so let
             # the normal view initialization procedure continue.
             super(TeamMailingListConfigurationView, self).initialize()

@@ -15,7 +15,7 @@ person:
 
 XXX 20070131 jamesh:
 zope.testbrowser does not handle redirects to remote sites, so we
-disable the redireciton handling at the mechanize layer.  We then need
+disable the redirection handling at the mechanize layer.  We then need
 to check the HTTPError directly.
       http://www.zope.org/Collectors/Zope3-dev/755
 

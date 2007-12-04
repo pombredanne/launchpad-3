@@ -111,15 +111,15 @@ from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
     GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddressSet, IGPGHandler,
     IGPGKeySet, IIrcIDSet, IJabberIDSet, ILanguageSet, ILaunchBag,
-    ILoginTokenSet, IMailingListSet, INewPerson, IPOTemplateSet,
-    IPasswordEncryptor, IPerson, IPersonChangePassword, IPersonClaim,
-    IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
-    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
-    ITeamReassignment, IWikiNameSet, LoginTokenType, NotFoundError,
-    PersonCreationRationale, QuestionParticipation, SSHKeyType,
-    SpecificationFilter, TeamMembershipRenewalPolicy, TeamMembershipStatus,
-    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES,
-    UnexpectedFormData)
+    ILoginTokenSet, INewPerson, IPOTemplateSet, IPasswordEncryptor, IPerson,
+    IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet, IPollSubset,
+    IRequestPreferredLanguages, ISSHKeySet, ISignedCodeOfConductSet, ITeam,
+    ITeamMembership, ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
+    LoginTokenType, NotFoundError, PersonCreationRationale,
+    QuestionParticipation, SSHKeyType, SpecificationFilter,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    is_participant_in_beta_program)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -968,14 +968,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def configure_mailing_list(self):
         target = '+mailinglist'
         text = 'Configure mailing list'
-        mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        beta_testers_team = getUtility(IPersonSet).getByName(
-            config.mailman.beta_testers_team)
-        enabled = (beta_testers_team is not None and
-                   self.context.hasParticipationEntryFor(beta_testers_team))
         summary = (
             'The mailing list associated with %s' % self.context.browsername)
-        return Link(target, text, summary, enabled=enabled, icon='edit')
+        return Link(target, text, summary,
+                    enabled=is_participant_in_beta_program(self.context),
+                    icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):

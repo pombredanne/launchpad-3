@@ -1,5 +1,21 @@
 = Team contact address =
 
+    # XXX BarryWarsaw 04-Dec-2007 launchpad-beta-testers redirection messes up
+    # these tests.  To avoid having to create a new team for these tests, we
+    # re-use launchpad-beta-testers as the mailing list beta tester team.
+    # However Launchpad redirection points to launchpad.net, when it really
+    # should point to a local host.  I don't fully understand why this is
+    # because in default/launchpad.conf, the <canonical testrunner> section
+    # has beta_testers_redirection_host pointing to beta.launchpad.dev.  Even
+    # with that host defined in /etc/hosts, we still get redirections screwing
+    # up the test results.  The easiest thing to do is to just disable
+    # redirection entirely for this test, making sure to restore it at the
+    # end of the doctest.  Note that setting the browser cookie
+    # inhibit_beta_redirect=1 doesn't seem to do the trick.
+    >>> from canonical.config import config
+    >>> redirection_host = config.launchpad.beta_testers_redirection_host
+    >>> config.launchpad.beta_testers_redirection_host = None
+
 Team admins are allowed to set the contact method used by Launchpad to
 send notifications to that team.  The possible contact methods are:
 
@@ -85,21 +101,11 @@ for.
     ...
     LinkNotFoundError
 
-Create the beta testers team.
+Enable the Landscape Developers to apply for mailing lists by adding
+landscape-developers to the mailing list beta test team.
 
-    >>> from canonical.config import config
     >>> testers = config.mailman.beta_testers_team
-    >>> admin_browser.open('http://launchpad.dev/people/+newteam')
-    >>> admin_browser.getControl('Name', index=0).value = testers
-    >>> admin_browser.getControl('Display Name').value = 'Mailing List Testers'
-
-    # For testing convenience, make this an open team.
-    >>> admin_browser.getControl(
-    ...     name='field.subscriptionpolicy').displayValue = ['Open Team']
-    >>> admin_browser.getControl('Create').click()
-
-Enable the Landscape Developers to apply for mailing lists.
-
+    >>> admin_browser.open('http://launchpad.dev/~' + testers)
     >>> admin_browser.getLink('Add member').click()
     >>> admin_browser.getControl('New member').value = 'landscape-developers'
     >>> admin_browser.getControl('Add Member').click()
@@ -494,21 +500,29 @@ fact, this membership also controls visibility of a few other u/i items.  For
 example, a team's Contact address page can have a shortcut link to the
 Configure mailing list page, but only if the team is a beta testing member.
 
-    # Foo Bar is the owner of guadamen, so use the admin_browser for the
-    # following tests. 
-    >>> admin_browser.open('http://launchpad.dev/~guadamen/+contactaddress')
-    >>> print find_tag_by_id(admin_browser.contents, 'set-up-a-mailing-list')
+    >>> simple_browser = setupBrowser('Basic one-membership@test.com:test')
+    >>> simple_browser.open(
+    ...     'http://launchpad.dev/~simple-team/+contactaddress')
+    >>> print find_tag_by_id(simple_browser.contents, 'set-up-a-mailing-list')
     None
 
     >>> admin_browser.open('http://launchpad.dev/~' + testers + '/+addmember')
-    >>> admin_browser.getControl('New member').value = 'guadamen'
+    >>> admin_browser.getControl('New member').value = 'simple-team'
     >>> admin_browser.getControl('Add Member').click()
-    >>> admin_browser.open('http://launchpad.dev/~guadamen/+invitation/'
-    ...                    + testers)
-    >>> admin_browser.getControl('Accept').click()
+    >>> simple_browser.open('http://launchpad.dev/~simple-team/+invitation/'
+    ...                     + testers)
+    >>> simple_browser.getControl('Accept').click()
 
-    >>> admin_browser.open('http://launchpad.dev/~guadamen/+contactaddress')
+    >>> simple_browser.open(
+    ...     'http://launchpad.dev/~simple-team/+contactaddress')
     >>> print extract_text(find_tag_by_id(
-    ...     admin_browser.contents, 'set-up-a-mailing-list'))
+    ...     simple_browser.contents, 'set-up-a-mailing-list'))
     If you set up a mailing list for this team, you can use the
     mailing list as the team contact address.
+
+
+== Clean up ==
+
+Restore global state.
+
+    >>> config.launchpad.beta_testers_redirection_host = redirection_host
