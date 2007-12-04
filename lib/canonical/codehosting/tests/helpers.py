@@ -305,10 +305,11 @@ class FakeLaunchpad:
         """
         if self.failing_branch_name == branch_name:
             raise Fault(self.failing_branch_code, self.failing_branch_string)
-        for user_id, user_info in self._person_set.iteritems():
+        user_id = None
+        for id, user_info in self._person_set.iteritems():
             if user_info['name'] == user:
-                break
-        else:
+                user_id = id
+        if user_id is None:
             return ''
         product_id = self.fetchProductID(product)
         if product_id is None:

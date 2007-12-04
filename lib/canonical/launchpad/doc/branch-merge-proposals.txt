@@ -213,6 +213,20 @@ merge failed.
     Code failed to merge
 
 
+== Getting a list of previous merge targets ==
+
+In order to make it easier to propose branches to merge on similar
+branches, there is a method on the branch set that returns the branches that a
+user has previously targetted for merging.
+
+    >>> gnome_terminal = branch.product
+    >>> branches = branch_set.getTargetBranchesForUsersMergeProposals(
+    ...     sample_person, gnome_terminal)
+    >>> for branch in branches:
+    ...     print branch.unique_name
+    ~name12/gnome-terminal/main
+
+
 == Marking as merged ==
 
 A merge proposal may be marked as merged by calling the `markAsMerged` method
@@ -226,6 +240,8 @@ proposals as merged.
 
 The user that marked the branch as merged can also be recorded.
 
+    >>> branch = branch_set.getByUniqueName(
+    ...     '~launchpad/gnome-terminal/launchpad')
     >>> merge_proposal = branch.landing_targets[0]
     >>> reporter = person_set.getByName('sabdfl')
     >>> merge_proposal.markAsMerged(1234, now.next(), reporter)

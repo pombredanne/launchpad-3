@@ -1,6 +1,9 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""This module is to contain testing infrastucture not actual tests."""
+"""Testing infrastructure for the Launchpad application.
+
+This module should not have any actual tests.
+"""
 
 __metaclass__ = type
 __all__ = [
@@ -32,6 +35,7 @@ class LaunchpadObjectFactory:
     When this is done, the returned object should have unique references
     for any other required objects.
     """
+
     def __init__(self):
         # Initialise the unique identifier.
         self._integer = 0
