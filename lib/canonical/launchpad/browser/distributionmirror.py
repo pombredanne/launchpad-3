@@ -8,6 +8,9 @@ __all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
            'DistributionMirrorReassignmentView',
            'DistributionMirrorDeleteView']
 
+from datetime import datetime
+import pytz
+
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.event import notify
 
@@ -187,8 +190,12 @@ class DistributionMirrorReviewView(LaunchpadEditFormView):
 
     @action(_("Save"), name="save")
     def action_save(self, action, data):
+        context = self.context
+        if data['status'] != context.status:
+            context.reviewer = self.user
+            context.date_reviewed = datetime.now(pytz.timezone('UTC'))
         self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
+        self.next_url = canonical_url(context)
 
 
 class DistributionMirrorEditView(LaunchpadEditFormView):
