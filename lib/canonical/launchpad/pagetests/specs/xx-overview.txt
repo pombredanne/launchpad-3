@@ -120,7 +120,7 @@ blueprint. It also lists the milestone to which the blueprint is targeted:
 
 === Viewing blueprints targeted to a distribution ===
 
-Let's use the Ubuntu distribution as an example.Users can see the list of
+Let's use the Ubuntu distribution as an example. Users can see the list of
 blueprints attached to Ubuntu Linux by following the "Blueprints" tab:
 
     >>> user_browser.open('http://launchpad.dev/ubuntu')
