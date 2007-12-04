@@ -893,14 +893,36 @@ COMMENT ON FUNCTION set_bug_date_last_message() IS 'AFTER INSERT trigger on BugM
 
 
 CREATE OR REPLACE FUNCTION set_bug_number_of_duplicates() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+LANGUAGE plpgsql VOLATILE AS
 $$
 BEGIN
-    UPDATE Bug
-    SET number_of_duplicates = number_of_duplicates + 1
-    WHERE Bug.id = NEW.duplicateof;
-    RETURN NULL;
+    -- Short circuit on an update that doesn't change duplicateof
+    IF TG_OP = 'UPDATE' THEN
+        IF NEW.duplicateof = OLD.duplicateof THEN
+            RETURN NULL; -- Ignored - this is an AFTER trigger
+        END IF;
+    END IF;
+
+    -- For update or delete, possibly decrement a bug's dupe count
+    IF TG_OP <> 'INSERT' THEN
+        IF OLD.duplicateof IS NOT NULL THEN
+            UPDATE Bug SET number_of_duplicates = number_of_duplicates - 1
+                WHERE Bug.id = OLD.duplicateof;
+        END IF;
+    END IF;
+
+    -- For update or insert, possibly increment a bug's dupe cout
+    IF TG_OP <> 'DELETE' THEN
+        IF NEW.duplicateof IS NOT NULL THEN
+            UPDATE Bug SET number_of_duplicates = number_of_duplicates + 1
+                WHERE Bug.id = NEW.duplicateof;
+        END IF;
+    END IF;
+
+    RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
 $$;
 
-COMMENT ON FUNCTION set_bug_number_of_duplicates() IS 'AFTER UPDATE trigger on Bug maintaining the Bug.number_of_duplicates column';
+COMMENT ON FUNCTION set_bug_number_of_duplicates() IS
+'AFTER UPDATE trigger on Bug maintaining the Bug.number_of_duplicates column';
+

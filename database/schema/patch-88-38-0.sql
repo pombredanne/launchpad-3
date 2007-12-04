@@ -10,8 +10,8 @@ SET number_of_duplicates = (
     WHERE Dup.duplicateof = Bug.id);
 
 CREATE TRIGGER set_bug_number_of_duplicates_t
-    AFTER UPDATE ON Bug
+    AFTER INSERT OR UPDATE OR DELETE ON Bug
     FOR EACH ROW
     EXECUTE PROCEDURE set_bug_number_of_duplicates();
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (88, 38, 0);
