@@ -314,6 +314,8 @@ bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Confirm project')
 
 bugtask_view = BugTaskPageTitle()
 
+bugtask_non_contributor_assignee_confirm = 'Confirm bug assignment'
+
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
 
@@ -657,6 +659,8 @@ loginservice_resetpassword = 'Reset your password'
 
 logintoken_claimprofile = 'Claim Launchpad profile'
 
+logintoken_claimteam = 'Claim Launchpad team'
+
 logintoken_index = 'Launchpad: redirect to the logintoken page'
 
 logintoken_mergepeople = 'Merge Launchpad accounts'
@@ -796,6 +800,8 @@ person_branch_add = ContextDisplayName('Register a new branch for %s')
 person_changepassword = 'Change your password'
 
 person_claim = 'Claim account'
+
+person_claim_team = 'Claim team'
 
 person_deactivate_account = 'Deactivate your Launchpad account'
 

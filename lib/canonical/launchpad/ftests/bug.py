@@ -8,6 +8,7 @@ from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.ftests import sync
 from canonical.launchpad.ftests.test_pages import (
     extract_text, find_main_content, find_portlet, find_tag_by_id,
     find_tags_by_class)
@@ -129,7 +130,7 @@ def create_old_bug(
 
 def summarize_bugtasks(bugtasks):
     """Summarize a sequence of bugtasks."""
-    print 'ROLE  MALONE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
+    print 'ROLE  EXPIRE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
     for bugtask in bugtasks:
         if len(bugtask.bug.bugtasks) == 1:
             title = bugtask.bug.title
@@ -137,10 +138,19 @@ def summarize_bugtasks(bugtasks):
             title = bugtask.target.name
         print '%s  %s  %s  %s  %s  %s  %s  %s' % (
             title,
-            bugtask.pillar.official_malone,
+            bugtask.pillar.enable_bug_expiration,
             (datetime.now(UTC) - bugtask.bug.date_last_updated).days,
             bugtask.status.title,
             bugtask.assignee is not None,
             bugtask.bug.duplicateof is not None,
             bugtask.milestone is not None,
             bugtask.bug.messages.count() == 1)
+
+
+def sync_bugtasks(bugtasks):
+    """Sync the bugtask and its bug to the database."""
+    if not isinstance(bugtasks, list):
+        bugtasks = [bugtasks]
+    for bugtask in bugtasks:
+        sync(bugtask)
+        sync(bugtask.bug)

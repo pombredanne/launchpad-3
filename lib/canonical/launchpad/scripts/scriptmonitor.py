@@ -8,10 +8,12 @@ __all__ = ['check_script']
 from canonical.database.sqlbase import sqlvalues
 
 
-def check_script(con, log, hostname, scriptname, completed_from, completed_to):
+def check_script(con, log, hostname, scriptname,
+                 completed_from, completed_to):
     """Check whether a script ran on a specific host within stated timeframe.
 
-    Return nothing on success, or log an error message and return error message.
+    Return nothing on success, or log an error message and return error
+    message.
     """
     cur = con.cursor()
     cur.execute("""
@@ -34,6 +36,6 @@ def check_script(con, log, hostname, scriptname, completed_from, completed_to):
         """ % sqlvalues(hostname, scriptname))
         date_last_seen = cur.fetchone()[0]
         if date_last_seen is not None:
-           output += " (last seen %s)" % (date_last_seen,)
+            output += " (last seen %s)" % (date_last_seen,)
         log.fatal(output)
         return output

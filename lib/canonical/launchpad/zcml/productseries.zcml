@@ -200,7 +200,7 @@
                 changelog"
         class="canonical.launchpad.browser.ProductReleaseAddView"
         facet="overview"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Edit"
         template="../templates/productrelease-add.pt"
         >
         <browser:widget
