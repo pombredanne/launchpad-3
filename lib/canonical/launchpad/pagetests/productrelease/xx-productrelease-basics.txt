@@ -1,6 +1,22 @@
 == Adding a product release ==
 
-The page to add a product release works:
+Adding a release is restricted to the product owner, or the series owner
+or driver. That means that only Sample Person can add releases in the
+Firefox trunk series. No Privileges Person won't see the link to add a
+release nor can access the page directly.
+
+    >>> user_browser.open('http://launchpad.dev/firefox/trunk')
+    >>> user_browser.getLink('Register a release').click()
+    Traceback (most recent call last):
+      ...
+    LinkNotFoundError
+    >>> user_browser.open('http://launchpad.dev/firefox/trunk/+addrelease')
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
+
+But Sample Person can use the 'Register a release' link to create a new
+release in the series.
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/firefox/trunk')
