@@ -527,6 +527,9 @@ Configure mailing list page, but only if the team is a beta testing member.
     ...     simple_browser.contents, 'set-up-a-mailing-list'))
     If you set up a mailing list for this team, you can use the
     mailing list as the team contact address.
+    >>> simple_browser.getLink('set up a mailing list for this team').click()
+    >>> simple_browser.title
+    'Configure mailing list'
 
 
 == Clean up ==
