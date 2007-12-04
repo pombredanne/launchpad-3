@@ -556,3 +556,45 @@ The base class allows security bugs to be filed.
     u'Security bug'
     >>> filebug_view.added_bug.security_related
     True
+
+== Validation ==
+
+=== The comment field ===
+
+When filing a bug, supplying an empty comment causes a validation error:
+
+    >>> from canonical.launchpad.browser import FileBugGuidedView
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.actions.submit_bug': 'Submit Bug Request'})
+    >>> filebug_view = FileBugGuidedView(ubuntu_firefox, request)
+    >>> filebug_view.submit_bug_action.submitted()
+    True
+    >>> bug_data = dict(title='Test Title', comment='')
+    >>> filebug_view.setUpFields()
+    >>> filebug_view.setUpWidgets()
+    >>> filebug_view.validate(bug_data)
+    >>> print filebug_view.getFieldError('comment')
+    Required input is missing.
+
+Comments can be up to 50000 characters in length:
+
+    >>> comment = 'x' * 50000
+    >>> bug_data = dict(title='Test Title', comment=comment)
+    >>> filebug_view = FileBugGuidedView(ubuntu_firefox, request)
+    >>> filebug_view.setUpFields()
+    >>> filebug_view.setUpWidgets()
+    >>> filebug_view.validate(bug_data)
+    >>> print filebug_view.hasFieldError('comment')
+    False
+
+Suppling a comment that is too long causes a validation error:
+
+    >>> comment = 'x' * 50001
+    >>> bug_data = dict(title='Test Title', comment=comment)
+    >>> filebug_view = FileBugGuidedView(ubuntu_firefox, request)
+    >>> filebug_view.setUpFields()
+    >>> filebug_view.setUpWidgets()
+    >>> filebug_view.validate(bug_data)
+    >>> print filebug_view.getFieldError('comment')
+    The description is too long.
+    
