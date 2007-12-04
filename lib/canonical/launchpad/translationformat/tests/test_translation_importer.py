@@ -143,31 +143,46 @@ class TranslationImporterTestCase(unittest.TestCase):
         msg1.msgid_singular = "foo"
         msg2.msgid_singular = "foo"
 
-        self.assertTrue(is_identical_translation(msg1, msg2))
+        self.assertTrue(is_identical_translation(msg1, msg2),
+            "Two blank translation messages do not evaluate as identical.")
         msg2.flags = "fuzzy"
-        self.assertFalse(is_identical_translation(msg1, msg2))
+        self.assertFalse(is_identical_translation(msg1, msg2),
+            "Fuzzy message is not distinguished from non-fuzzy one.")
         msg2.flags = ""
-        self.assertTrue(is_identical_translation(msg1, msg2))
+        self.assertTrue(is_identical_translation(msg1, msg2),
+            "Clearing flags string does not make message identical to "
+            "non-fuzzy equivalent.")
 
         msg1.msgid_plural = "foos"
-        self.assertFalse(is_identical_translation(msg1, msg2))
+        self.assertFalse(is_identical_translation(msg1, msg2),
+            "Message with fewer plural forms is accepted as identical.")
+        msg2.msgid_plural = "splat"
+        self.assertFalse(is_identical_translation(msg1, msg2),
+            "Messages with different plurals accepted as identical.")
         msg2.msgid_plural = "foos"
-        self.assertTrue(is_identical_translation(msg1, msg2))
+        self.assertTrue(is_identical_translation(msg1, msg2),
+            "Messages with identical plural forms not accepted as identical.")
 
         msg1._translations = ["le foo"]
-        self.assertFalse(is_identical_translation(msg1, msg2))
+        self.assertFalse(is_identical_translation(msg1, msg2),
+            "Failed to distinguish translated message from untranslated one.")
         msg2._translations = ["le foo"]
-        self.assertTrue(is_identical_translation(msg1, msg2))
+        self.assertTrue(is_identical_translation(msg1, msg2),
+            "Identical translations not accepted as identical.")
 
         msg1._translations = ["le foo", "les foos"]
-        self.assertFalse(is_identical_translation(msg1, msg2))
+        self.assertFalse(is_identical_translation(msg1, msg2),
+            "Failed to distinguish message with missing plural translation.")
         msg2._translations = ["le foo", "les foos"]
-        self.assertTrue(is_identical_translation(msg1, msg2))
+        self.assertTrue(is_identical_translation(msg1, msg2),
+            "Identical plural translations not accepted as equal.")
 
         msg1._translations = ["le foo", "les foos", "beaucoup des foos"]
-        self.assertFalse(is_identical_translation(msg1, msg2))
+        self.assertFalse(is_identical_translation(msg1, msg2),
+            "Failed to distinguish message with extra plural translations.")
         msg2._translations = ["le foo", "les foos", "beaucoup des foos", None]
-        self.assertTrue(is_identical_translation(msg1, msg2))
+        self.assertTrue(is_identical_translation(msg1, msg2),
+            "Identical multi-form messages not accepted as identical.")
 
 
 def test_suite():

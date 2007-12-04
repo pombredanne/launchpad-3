@@ -57,6 +57,9 @@ def is_identical_translation(existing_msg, new_msg):
         existing one, or False if replacing existing_msg with new_msg
         would make a semantic difference.
     """
+    assert new_msg.msgid_singular == existing_msg.msgid_singular, (
+        "Comparing translations for different messages.")
+
     if ((existing_msg.msgid_plural != new_msg.msgid_plural) or
         (existing_msg.fuzzy != ('fuzzy' in new_msg.flags))):
         return False
@@ -64,18 +67,18 @@ def is_identical_translation(existing_msg, new_msg):
         return False
     length_overlap = min(
         len(existing_msg.translations), len(new_msg.translations))
-    for pluralform in xrange(length_overlap):
+    for pluralform_index in xrange(length_overlap):
         # Plural forms that both messages have.  Translations for each
         # must match.
-        existing_text = existing_msg.translations[pluralform]
-        new_text = new_msg.translations[pluralform]
+        existing_text = existing_msg.translations[pluralform_index]
+        new_text = new_msg.translations[pluralform_index]
         if existing_text != new_text:
             return False
-    for pluralform in xrange(length_overlap, len(new_msg.translations)):
+    for pluralform_index in xrange(length_overlap, len(new_msg.translations)):
         # Plural forms that exist in new_translations but not in
         # existing_translations.  That's okay, as long as all of them are
         # None.
-        if new_msg.translations[pluralform] is not None:
+        if new_msg.translations[pluralform_index] is not None:
             return False
     return True
 
