@@ -86,7 +86,7 @@
         </tr>
         <tr>
           <th>For this mailing list...</th>
-          <td>Subscribe with this address</td>
+          <td><strong>Subscribe with this address</strong></td>
         </tr>
         <metal:block tal:repeat="widget view/mailing_list_widgets">
           <metal:block use-macro="context/@@launchpad_form/widget_row" />
