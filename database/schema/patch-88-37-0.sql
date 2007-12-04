@@ -12,5 +12,4 @@ ALTER TABLE BinaryPackageRelease ADD COLUMN pre_depends text;
 ALTER TABLE BinaryPackageRelease ADD COLUMN enhances text;
 ALTER TABLE BinaryPackageRelease ADD COLUMN breaks text;
 
-
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (88, 37, 0);
