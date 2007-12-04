@@ -587,7 +587,7 @@ Comments can be up to 50000 characters in length:
     >>> print filebug_view.hasFieldError('comment')
     False
 
-Suppling a comment that is too long causes a validation error:
+Supplying a comment that is too long causes a validation error:
 
     >>> comment = 'x' * 50001
     >>> bug_data = dict(title='Test Title', comment=comment)
