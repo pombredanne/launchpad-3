@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import os
 import unittest
 
 from openid.consumer.consumer import Consumer
@@ -16,6 +17,8 @@ from openid.store.memstore import MemoryStore
 from canonical.launchpad.ftests.openidhelpers import (
     complete_from_browser, make_endpoint, make_identifier_select_endpoint,
     maybe_fixup_identifier_select_request)
+from canonical.launchpad.ftests.test_pages import (
+    PageTestSuite, setUpGlobs)
 
 
 class MakeEndpointTests(unittest.TestCase):
@@ -136,4 +139,14 @@ class CompleteFromBrowserTests(unittest.TestCase):
 
 
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    suite = unittest.TestLoader().loadTestsFromName(__name__)
+
+    # Add per-version page tests to the suite, once for each OpenID
+    # version.
+    pagetestsdir = os.path.join('..', 'pagetests', 'openid', 'per-version')
+    for PROTOCOL_URI in [OPENID_1_1_TYPE, OPENID_2_0_TYPE]:
+        def setUp(test, PROTOCOL_URI=PROTOCOL_URI):
+            setUpGlobs(test)
+            test.globs['PROTOCOL_URI'] = PROTOCOL_URI
+        suite.addTest(PageTestSuite(pagetestsdir, setUp=setUp))
+    return suite

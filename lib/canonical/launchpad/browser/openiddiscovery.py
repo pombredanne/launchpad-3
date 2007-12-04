@@ -43,7 +43,7 @@ class OpenIdApplicationNavigation(Navigation):
     def traverse_id(self, name):
         """Traverse to persistent OpenID identity URLs."""
         person = getUtility(IPersonSet).getByOpenIdIdentifier(name)
-        if person is not None and person.is_openid_enabled:
+        if person is not None:
             return OpenIDPersistentIdentity(person)
         else:
             return None

@@ -2000,18 +2000,8 @@ class PersonSet:
         return Person.selectOne(query)
 
     def getByOpenIdIdentifier(self, openid_identifier):
-        """Returns a Person with the given openid_identifier, or None.
-
-        None is returned if the person is not enabled for OpenID usage
-        (see Person.is_openid_enabled).
-        """
-        person = Person.selectOne(
-                Person.q.openid_identifier == openid_identifier
-                )
-        if person is not None and person.is_openid_enabled:
-            return person
-        else:
-            return None
+        """Returns a Person with the given openid_identifier, or None."""
+        return Person.selectOneBy(openid_identifier=openid_identifier)
 
     def updateStatistics(self, ztm):
         """See `IPersonSet`."""
