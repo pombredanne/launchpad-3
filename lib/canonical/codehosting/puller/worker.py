@@ -251,8 +251,13 @@ class PullerWorker:
         else:
             # Check that destination branch is in the same format as the source.
             if identical_formats(self._source_branch, branch):
-                # The destination exists, and is in the same format.  So all we
-                # need to do is pull the new revisions.
+                # The destination exists, and is in the same format.  So all
+                # we need to do is pull the new revisions.  Unless the branch
+                # is lock, but the only thing that locks these branches is the
+                # puller and there is protection against running more than one
+                # puller at once... so break the lock.
+                if branch.get_physical_lock_status():
+                    branch.break_lock()
                 branch.pull(self._source_branch, overwrite=True)
             else:
                 # The destination is in a different format to the source, so
@@ -407,6 +412,15 @@ class WorkerProgressBar(DummyProgress):
         return self
 
 
+class PullerWorkerUIFactory(ProgressUIFactory):
+    """An UIFactory that always says yes to breaking locks."""
+
+    def get_boolean(self, prompt):
+        """Assuming that we're been asked if we want to break a lock, say yes.
+        """
+        assert prompt.startswith('Break lock'), "Didn't expect prompt %r" % (prompt,)
+        return True
+
 def install_worker_progress_factory(puller_worker_protocol):
     """Install an UIFactory that informs a PullerWorkerProtocol of progress.
     """
@@ -414,4 +428,4 @@ def install_worker_progress_factory(puller_worker_protocol):
         r = WorkerProgressBar(*args, **kw)
         r.puller_worker_protocol = puller_worker_protocol
         return r
-    bzrlib.ui.ui_factory = ProgressUIFactory(factory)
+    bzrlib.ui.ui_factory = PullerWorkerUIFactory(factory)

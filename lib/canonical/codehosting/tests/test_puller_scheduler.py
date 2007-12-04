@@ -11,6 +11,7 @@ import unittest
 import pytz
 
 from bzrlib.branch import Branch
+from bzrlib.errors import LockBroken
 from bzrlib.urlutils import local_path_to_url
 
 from twisted.internet import defer, error, task
@@ -537,8 +538,8 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
 
         # XXX.
         def check_unlocked(ignored):
-            self.assertIs(
-                b.get_physical_lock_status(), None)
+            self.assertFalse(destination_branch.get_physical_lock_status())
+            self.assertRaises(LockBroken, destination_branch.unlock)
             return ignored
         deferred.addCallback(check_unlocked)
 
