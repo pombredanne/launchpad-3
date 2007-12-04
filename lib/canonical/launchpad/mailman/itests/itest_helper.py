@@ -230,7 +230,7 @@ def review_list(list_name, status=None):
     mailing_list = list_set.get(list_name)
     mailing_list.review(lpadmin, status)
     commit()
-    # Wait until Mailman has actually creating the mailing list.
+    # Wait until Mailman has actually created the mailing list.
     wait_for_mailman()
     # Return an updated mailing list object.
     return list_set.get(list_name)

@@ -34,7 +34,7 @@ DOCTEST_FLAGS = (doctest.ELLIPSIS |
 
 
 def integrationTestCleanUp(test):
-    """Common set up for the integration tests."""
+    """Common tear down for the integration tests."""
     cursor().execute("""
     CREATE TEMP VIEW DeathRow AS SELECT id FROM Person WHERE name IN (
     'itest-one', 'itest-two', 'itest-three',
@@ -57,6 +57,9 @@ def integrationTestCleanUp(test):
     WHERE team IN (SELECT id FROM DeathRow);
 
     DELETE FROM WikiName
+    WHERE person IN (SELECT id FROM DeathRow);
+
+    DELETE FROM BugSubscription
     WHERE person IN (SELECT id FROM DeathRow);
 
     DELETE FROM Person

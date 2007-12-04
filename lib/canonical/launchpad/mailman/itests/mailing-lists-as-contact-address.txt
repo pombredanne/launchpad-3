@@ -1,0 +1,67 @@
+= Using a mailing list as a team's contact address =
+
+Mailing lists hosted by Launchpad can be used as the contact address of any
+team in Launchpad.  When this feature is used, all notifications sent by
+Launchapd to the team will be sent to the mailing list's address, in fact.
+
+    # This test requires us to start an SMTP server that accepts messages
+    # sent by Mailman's outgoing qrunner and stores these in a Unix mbox.
+    >>> import os
+    >>> import tempfile
+    >>> descriptor, mbox_filename = tempfile.mkstemp()
+    >>> os.close(descriptor)
+
+    >>> import itest_helper
+    >>> smtpd = itest_helper.SMTPServer(mbox_filename)
+    >>> smtpd.start()
+
+We'll now register and approve the mailing list we'll be using as the
+contact address of our new team.
+
+    # Create a mailing list for this test.
+    >>> browser = itest_helper.make_browser()
+    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.getControl(name='field.name').value = 'itest-one'
+    >>> browser.getControl('Display Name').value = 'ITest One'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+
+    >>> list_one = itest_helper.review_list('itest-one')
+    >>> from Mailman.Utils import list_names
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    ['itest-one']
+
+Once the mailing list is used as the team's contact address, all
+notifications directed to the team will be delivered at the mailing list's
+address.
+
+    >>> browser.open('http://launchpad.dev/~itest-one/+contactaddress')
+    >>> browser.getControl('The Launchpad mailing list').selected = True
+    >>> browser.getControl('Change').click()
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0The Launchpad mailing list for this team...]
+
+    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
+
+    >>> browser.open('http://launchpad.dev/bugs/1')
+    >>> browser.getLink('Subscribe someone else').click()
+    >>> browser.getControl('Person').value = 'itest-one'
+
+    >>> import pdb; pdb.set_trace()
+
+    >>> browser.getControl('Add').click()
+
+    >>> smtp_watcher.wait_for_growth()
+    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
+    >>> len(messages)
+    1
+
+    >>> message = messages[0]
+    >>> print message.as_string()
+
+    >>> smtpd.stop()
