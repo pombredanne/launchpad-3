@@ -2,8 +2,8 @@
 
 Teams can have mailing lists associated with them, and a member of a
 team with a usable mailing list can subscribe to that list. A person
-can subscribe to a mailing list using any of their email addresses, or
-a dynamic subscription which uses whichever email address is their
+can subscribe to a mailing list using any of his email addresses, or a
+dynamic subscription which uses whichever email address is his
 preferred address at a given time.
 
 ==Setup==
@@ -124,8 +124,8 @@ Finally, he can unsubscribe from lists.
 
 == Hidden by configuration variable ==
 
-XXX: See similar section in xx-team-contactemail.txt -- Leonard
-Richardson 2007-12-03
+# XXX: Leonard Richardson 2007-12-03: See similar section in
+# xx-team-contactemail.txt
 
     >>> from canonical.config import config
     >>> config.mailman.expose_hosted_mailing_lists

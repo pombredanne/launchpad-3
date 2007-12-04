@@ -148,8 +148,9 @@ from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView, 
-    Link, Navigation, smartquote, StandardLaunchpadFacets, stepthrough, stepto)
+    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
+    Link, Navigation, smartquote, StandardLaunchpadFacets, stepthrough,
+    stepto)
 
 from canonical.launchpad import _
 
@@ -891,7 +892,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'add_member', 'memberships', 'received_invitations', 'mugshots',
              'editemail', 'configure_mailing_list', 'editlanguages', 'polls',
              'add_poll', 'joinleave', 'mentorships', 'reassign',
-             'common_packages', 'related_projects', 'activate_ppa', 'show_ppa']
+             'common_packages', 'related_projects', 'activate_ppa',
+             'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1112,7 +1114,8 @@ class PersonDeactivateAccountView(LaunchpadFormView):
     schema = IPerson
     field_names = ['account_status_comment', 'password']
     label = "Deactivate your Launchpad account"
-    custom_widget('account_status_comment', TextAreaWidget, height=5, width=60)
+    custom_widget('account_status_comment', TextAreaWidget, height=5,
+                  width=60)
 
     def validate(self, data):
         loginsource = getUtility(IPlacelessLoginSource)
@@ -2725,7 +2728,6 @@ class PersonEditEmailsView(LaunchpadFormView):
                    for email in self.context.validatedemails]
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
-            from canonical.config import config
             if mailing_list is not None and mailing_list.isUsable():
                 name = 'subscription.%s' % team.name
                 value = self._mailing_list_subscription_type(mailing_list)
@@ -2808,8 +2810,6 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "You can't remove %s because it's your contact email "
                 "address." % self.context.preferredemail.email)
             return self.errors
-        assert (self.context.preferredemail is not None,
-                "User no longer has a preferred email!")
         return self.errors
 
     @action(_("Remove"), name="remove_validated",
@@ -2991,12 +2991,12 @@ class PersonEditEmailsView(LaunchpadFormView):
             if new_value_string != old_value:
                 dirty = True
                 if new_value == "Don't subscribe":
-                    # Delete subscription
+                    # Delete the subscription.
                     mailing_list.unsubscribe(self.context)
                 else:
                     if new_value == "Preferred address":
                         # If the user is subscribed but not under any
-                        # particular address, their current preferred
+                        # particular address, her current preferred
                         # address will always be used.
                         new_value = None
                     subscription = mailing_list.getSubscription(self.context)
