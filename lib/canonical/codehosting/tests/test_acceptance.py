@@ -14,7 +14,7 @@ import unittest
 import xmlrpclib
 
 import bzrlib.branch
-from bzrlib.builtins import cmd_push
+from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
     BzrCommandError, NotBranchError, TransportNotPossible)
 from bzrlib.repository import format_registry
@@ -26,7 +26,7 @@ except ImportError:
     from bzrlib.errors import ReadOnlyError as ReadOnlyFailureException
 
 from bzrlib.urlutils import local_path_from_url
-from bzrlib.tests import TestCaseWithTransport
+from bzrlib.tests import default_transport, TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
 
 from canonical.codehosting.tests.helpers import (
@@ -85,6 +85,24 @@ class SSHTestCase(ServerTestCase, TestCaseWithTransport):
             return func(*args, **kwargs)
         finally:
             os.chdir(old_dir)
+
+    def branch(self, remote_url, local_directory):
+        """Branch from the given URL to a local directory.
+
+        This method is used to test then end-to-end behaviour of pushing
+        Bazaar branches to the SSH server.
+
+        Do NOT run this method in the main thread! It does a blocking read
+        from the SSH server, which is running in the Twisted reactor in the
+        main thread.
+        """
+        self.assertNotInMainThread('branch')
+        output = StringIO()
+        push_command = cmd_branch()
+        push_command.outf = output
+        self.server.runAndWaitForDisconnect(
+            push_command.run, remote_url, local_directory)
+        return output.getvalue()
 
     def push(self, local_directory, remote_url):
         """Push the local branch to the given URL.
@@ -162,19 +180,25 @@ class SmokeTest(SSHTestCase):
     def getDefaultServer(self):
         return make_bzr_ssh_server()
 
-    def setRepositoryFormat(self, format):
-        """Set the repository format that we'll use to test."""
-        self.repo_format = format
-
     def setUp(self):
         super(SmokeTest, self).setUp()
         self.first_tree = 'first'
         self.second_tree = 'second'
 
+    def make_branch_specifying_repo_format(self, relpath, repo_format):
+        bd = self.make_bzrdir(relpath, format=self.bzrdir_format)
+        repo_format.initialize(bd)
+        return bd.create_branch()
+
+    def make_branch_and_tree(self, relpath):
+        b = self.make_branch_specifying_repo_format(
+            relpath, self.repository_format)
+        return b.bzrdir.create_workingtree()
+
+    @deferToThread
     def test_smoke(self):
         # Make a new branch
-        tree = self.make_branch_and_tree(
-            self.first_tree, format=self.repo_format)
+        tree = self.make_branch_and_tree(self.first_tree)
 
         # Push up a new branch.
         remote_url = self.getTransportURL('~testuser/+junk/new-branch')
@@ -193,7 +217,7 @@ class SmokeTest(SSHTestCase):
         self.assertBranchesMatch(self.first_tree, remote_url)
 
         # Pull it back down.
-        self.pull(remote_url, self.second_tree)
+        self.branch(remote_url, self.second_tree)
         self.assertBranchesMatch(self.first_tree, self.second_tree)
 
 
@@ -575,24 +599,14 @@ def make_server_tests(base_suite, servers):
     return adapt_suite(adapter, base_suite)
 
 
-class RepositoryTestAdapter:
-
-    def __init__(self, repositories):
-        self.repositories = repositories
-
-    def adapt(self, test):
-        result = unittest.TestSuite()
-        for repository in self.repositories:
-            new_test = clone_test(test, '%s(%s)' % (test.id(), str(repository)))
-            new_test.setRepositoryFormat(repository)
-            result.addTest(new_test)
-        return result
-
-
 def make_smoke_tests(base_suite):
-    repositories = [
+    from bzrlib.tests.repository_implementations import (
+        RepositoryTestProviderAdapter)
+    all_formats = [
         format_registry.get(key) for key in format_registry.keys()]
-    adapter = RepositoryTestAdapter(repositories)
+    adapter = RepositoryTestProviderAdapter(
+        default_transport, None,
+        [(format, format._matchingbzrdir) for format in all_formats])
     return adapt_suite(adapter, base_suite)
 
 
