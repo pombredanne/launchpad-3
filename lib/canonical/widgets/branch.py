@@ -32,7 +32,7 @@ class TargetBranchWidget(LaunchpadRadioWidget):
     the product that the branch owner has specified as target branches
     for other merge proposals.
 
-    Finally therer is an "other" button that gets the user to use the
+    Finally there is an "other" button that gets the user to use the
     normal branch selector.
     """
 
@@ -68,7 +68,7 @@ class TargetBranchWidget(LaunchpadRadioWidget):
         branches that the user has specified before as a target for a proposed
         merge.
         """
-        assert(branch.product)
+        assert branch.product, "A product is needed to build the vocabulary."
         self.dev_focus = branch.product.development_focus.user_branch
         logged_in_user = getUtility(ILaunchBag).user
         target_branches = shortlist(
@@ -95,10 +95,9 @@ class TargetBranchWidget(LaunchpadRadioWidget):
         get the value from the branch widget, otherwise get the branch
         reference from the built up vocabulary.
         """
-        use_branch_selector = (
-            len(self.branch_selector_vocab) == 0 or
-            form_value == "other")
-        if use_branch_selector:
+        if (len(self.branch_selector_vocab) == 0 or
+            form_value == "other"):
+            # Get the value from the branch selector widget.
             return self.other_branch_widget.getInputValue()
         else:
             term = self.branch_selector_vocab.getTermByToken(form_value)
@@ -137,9 +136,10 @@ class TargetBranchWidget(LaunchpadRadioWidget):
         """Render a label for the option based on a branch."""
         option_id = '%s.%s' % (self.name, index)
 
-        # In order to have text that is selectable in order to select the
-        # radio button, it was decided not to have the entire text as a link,
-        # but instead to have a separate link to the branch details.
+        # To aid usability there needs to be some text connected with the
+        # radio buttons that is not a hyperlink in order to select the radio
+        # button.  It was decided not to have the entire text as a link, but
+        # instead to have a separate link to the branch details.
         text = '%s (<a href="%s">branch details</a>)' % (
             branch.displayname, canonical_url(branch))
         # If the branch is the development focus, say so.
@@ -160,7 +160,7 @@ class TargetBranchWidget(LaunchpadRadioWidget):
         # Render each of the branches with the first selected.
         for index, term in enumerate(self.branch_selector_vocab):
             branch = term.value
-            if len(items) == 0:
+            if index == 0:
                 renderfunc = self.renderSelectedItem
             else:
                 renderfunc = self.renderItem

@@ -42,11 +42,10 @@ from canonical.launchpad.browser.objectreassignment import (
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchType, BranchVisibilityRule, IBranch,
-    IBranchMergeProposal, InvalidBranchMergeProposal,
-    IBranchSet, IBranchSubscription, IBugSet,
-    ICodeImportSet, ILaunchpadCelebrities, IPersonSet,
-    UICreatableBranchType)
+    BranchCreationForbidden, BranchType, BranchVisibilityRule,
+    IBranch, IBranchMergeProposal, IBranchSet, IBranchSubscription, IBugSet,
+    ICodeImportSet, ILaunchpadCelebrities,
+    InvalidBranchMergeProposal, IPersonSet, UICreatableBranchType)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,

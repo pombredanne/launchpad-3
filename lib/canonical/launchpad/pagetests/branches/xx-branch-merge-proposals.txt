@@ -224,8 +224,8 @@ Gone from the target branch.
 Almost all of the proposals to merge branches will be created
 on feature branches where the target branch is the development
 focus branch.  With that in mind, we want the default option
-when proposing a new branch to land is to have it target the
-development focus branch.
+(when proposing a new branch to land) to target the development
+focus branch.
 
 If there is no development focus branch, then just the normal
 branch widget is shown.
