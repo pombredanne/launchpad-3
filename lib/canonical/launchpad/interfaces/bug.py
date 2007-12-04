@@ -145,7 +145,8 @@ class IBug(IMessageTarget, ICanBeMentored):
     description = Text(
         title=_('Description'), required=True,
         description=_("""A detailed description of the problem,
-        including the steps required to reproduce it."""))
+        including the steps required to reproduce it."""), 
+        max_length=50000)
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = Attribute("The owner's IPerson")
     duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
@@ -478,27 +479,6 @@ class IBugDelta(Interface):
         "A sequence of IBugTaskDeltas, one IBugTaskDelta or None.")
 
 
-def lengthValidator(length, error_message):
-    """Returns a unary function to validate the length of a string.
-
-    The function accepts a string and returns True for strings of length
-    less than or equal to :length:. It also returns True for an argument
-    equal to None.
-
-    The function raises a `LaunchpadValidationError` with :error_message:
-    for strings longer than :length:.
-    """
-    def validate(string):
-        if string is None:
-            return True
-        else:
-            if len(string) <= length:
-                return True
-            else:
-                raise LaunchpadValidationError(error_message)
-    return validate
-
-
 class IBugAddForm(IBug):
     """Information we need to create a bug"""
     id = Int(title=_("Bug #"), required=False)
@@ -525,7 +505,7 @@ class IBugAddForm(IBug):
     comment = Text(
         title=_('Further information, steps to reproduce,'
                 ' version information, etc.'),
-        required=False, constraint=lengthValidator(100, 'Too Long'))
+        required=False)
     bug_already_reported_as = Choice(
         title=_("This bug has already been reported as ..."), required=False,
         vocabulary="Bug")
