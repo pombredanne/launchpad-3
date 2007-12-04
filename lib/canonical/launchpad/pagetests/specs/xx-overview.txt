@@ -101,7 +101,56 @@ Now, on distribution.
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for Ubuntu...
     Priority ...Specification        ...Design    ...Delivery...
-    Undefined...media-integrity-check...Discussion...Unknown...
+    Undefined...media-integrity-check...Discussion...Unknown
 
     
 === Viewing blueprints targeted to a distribution series ===
+
+First target to a series:
+
+    >>> browser = admin_browser
+    >>> browser.open('http://launchpad.dev/ubuntu/+specs')
+    >>> browser.getLink('media-integrity-check').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Blueprint overview...
+    >>> browser.getLink('Propose as goal').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Target to a distribution series...
+    >>> series = browser.getControl('Series Goal')
+    >>> series.displayValue = ['ubuntu grumpy']
+    >>> browser.getControl('Continue').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Blueprint overview...
+    Series goal: Accepted for grumpy...
+
+Next create a milestone:
+
+    >>> browser.open('http://launchpad.dev/ubuntu/grumpy/')
+    >>> browser.getLink('Add milestone').click()
+    >>> browser.getControl('Name').value = 'drift-1'
+    >>> browser.getControl('Date Targeted').value = '2050-05-05'
+    >>> browser.getControl('Description').value = 'First drift of groundhogs!'
+    >>> browser.getControl('Add').click()
+    
+Next target the milestone:
+
+    >>> browser.open('http://launchpad.dev/ubuntu/+specs')
+    >>> browser.getLink('media-integrity-check').click()
+    >>> browser.getLink('Target milestone').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Target to a milestone...
+    >>> milestones = browser.getControl('Milestone')
+    >>> milestones.displayValue = ['Ubuntu: drift-1']
+    >>> browser.getControl('Change').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Blueprint overview...
+    Milestone target:...drift-1...
+
+Now list the blueprints for the Grumpy series:
+
+    >>> user_browser.open('http://launchpad.dev/ubuntu/grumpy/+specs')
+    >>> main = find_main_content(user_browser.contents)  
+    >>> print extract_text(main).encode('ascii', 'backslashreplace')
+    Blueprints for Grumpy...
+    Priority ...Specification        ...Design    ...Delivery...Milestone...
+    Undefined...media-integrity-check...Discussion...Unknown ...drift-1  ...
