@@ -216,6 +216,13 @@ k            </description>
             The maximum number of minutes that Bug feeds should be cached for.
             </description>
         </key>
+        <key name="is_bug_search_feed_active" required="no"
+            datatype="boolean" default="false">
+            <description>
+            The bug search feed isn't ready to be active in production
+            because of performance concerns.
+            </description>
+        </key>
         <key name="bzr_imports_root_url" datatype="canonical.config.urlbase"
             default="http://escudero.ubuntu.com:680/">
             <description>
