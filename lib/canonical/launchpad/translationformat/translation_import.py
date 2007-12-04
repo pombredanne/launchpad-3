@@ -35,11 +35,52 @@ from canonical.launchpad.translationformat.translation_common_format import (
 
 from canonical.launchpad.webapp import canonical_url
 
+
 importers = {
     TranslationFileFormat.KDEPO: KdePOImporter(),
     TranslationFileFormat.PO: GettextPOImporter(),
     TranslationFileFormat.XPI: MozillaXpiImporter(),
     }
+
+
+def _is_identical_translation(existing_msg, new_msg):
+    """Is a new translation substantially the same as the existing one?
+
+    Compares fuzzy flags, msgid and msgid_plural, and all translations.
+
+    :param existing_msg: a `TranslationMessage` currently kept in the
+        database.
+    :param new_msg: an alternative `TranslationMessage` translating the
+        same original message.
+    :return: True if the new message is effectively identical to the
+        existing one, or False if replacing existing_msg with new_msg
+        would make a semantic difference.
+    """
+    if ((existing_msg.msgid_plural != new_msg.msgid_plural) or
+        (existing_msg.fuzzy != ('fuzzy' in new_msg.flags))):
+        return False
+    translations_existing = existing_msg.translations
+    translations_new = new_msg.translations
+    length_existing = len(translations_existing)
+    length_new = len(translations_new)
+    if length_new < length_existing:
+        return False
+    length_overlap = min(length_existing, length_new)
+    for pluralform in xrange(length_overlap):
+        # Plural forms that both messages have.  Translations for each
+        # must match.
+        existing_text = translations_existing[pluralform]
+        new_text = translations_new[pluralform]
+        if existing_text != new_text:
+            return False
+    for pluralform in xrange(length_overlap, length_new):
+        # Plural forms that exist in new_translations but not in
+        # existing_translations.  That's okay, as long as all of them are
+        # None.
+        if translations_new[pluralform] is not None:
+            return False
+    return True
+
 
 class ExistingPOFileInDatabase:
     """All existing translations for a PO file.
@@ -151,25 +192,6 @@ class ExistingPOFileInDatabase:
                 unseen.add((msgid, context))
         return unseen
 
-    def _compareTwoMessages(self, msg1, msg2):
-        """Compare if two translation messages msg1 and msg2 are the same.
-
-        Compares fuzzy flags, msgid and msgid_plural, and all translations.
-        Returns True when messages match, and False when they don't.
-        """
-        if ((msg1.msgid_plural != msg2.msgid_plural) or
-            (msg1.fuzzy != ('fuzzy' in msg2.flags))):
-            return False
-        if len(msg2.translations) < len(msg1.translations):
-            return False
-        for pluralform, translation in enumerate(msg2.translations):
-            if translation and len(msg1.translations) <= pluralform:
-                return False
-            elif translation != msg1.translations[pluralform]:
-                return False
-        return True
-
-
     def isAlreadyTranslatedTheSame(self, message):
         """Check whether this message is already translated in exactly
         the same way.
@@ -177,7 +199,7 @@ class ExistingPOFileInDatabase:
         (msgid, context) = (message.msgid_singular, message.context)
         if (msgid, context) in self.messages:
             msg_in_db = self.messages[(msgid, context)]
-            return self._compareTwoMessages(msg_in_db, message)
+            return _is_identical_translation(msg_in_db, message)
         else:
             return False
 
@@ -189,7 +211,7 @@ class ExistingPOFileInDatabase:
         (msgid, context) = (message.msgid_singular, message.context)
         if ((msgid, context) in self.imported) and self.is_imported:
             msg_in_db = self.imported[(msgid, context)]
-            return self._compareTwoMessages(msg_in_db, message)
+            return _is_identical_translation(msg_in_db, message)
         else:
             return False
 
