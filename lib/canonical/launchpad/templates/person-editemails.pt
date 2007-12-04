@@ -11,12 +11,13 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Your e-mail addresses</h1>
+      <h1>Change e-mail settings</h1>
     </metal:heading>
 
 <div metal:fill-slot="main">
   <div metal:use-macro="context/@@launchpad_form/form">
     <metal:extra-info fill-slot="extra_info">
+      <h2>Your e-mail addresses</h2>
       <tal:block condition="context/preferredemail">
         <p>Your preferred contact address for all Launchpad e-mail is:</p>
         <ul id="preferred-email">
@@ -74,7 +75,7 @@
       <tal:subscriptions tal:condition="view/mailing_list_widgets">
         <tr>
           <td colspan="2">
-            <h1>Mailing list subscriptions</h1>
+            <h2>Mailing list subscriptions</h2>
           </td>
         </tr>
         <tr>
