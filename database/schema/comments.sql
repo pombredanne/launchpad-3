@@ -1526,6 +1526,7 @@ COMMENT ON COLUMN DistributionMirror.rsync_base_url IS 'The Rsync URL used to ac
 COMMENT ON COLUMN DistributionMirror.displayname IS 'The displayname of the mirror.';
 COMMENT ON COLUMN DistributionMirror.description IS 'A description of the mirror.';
 COMMENT ON COLUMN DistributionMirror.owner IS 'The owner of the mirror.';
+COMMENT ON COLUMN DistributionMirror.reviewer IS 'The person who reviewed the mirror.';
 COMMENT ON COLUMN DistributionMirror.speed IS 'The speed of the mirror\'s Internet link.';
 COMMENT ON COLUMN DistributionMirror.country IS 'The country where the mirror is located.';
 COMMENT ON COLUMN DistributionMirror.content IS 'The content that is mirrored.';
@@ -1533,6 +1534,8 @@ COMMENT ON COLUMN DistributionMirror.official_candidate IS 'Is the mirror a cand
 COMMENT ON COLUMN DistributionMirror.enabled IS 'Is this mirror enabled?';
 COMMENT ON COLUMN DistributionMirror.status IS 'This mirror\'s status.';
 COMMENT ON COLUMN DistributionMirror.whiteboard IS 'Notes on the current status of the mirror';
+COMMENT ON COLUMN DistributionMirror.date_created IS 'The date and time the mirror was created.';
+COMMENT ON COLUMN DistributionMirror.date_reviewed IS 'The date and time the mirror was reviewed.';
 
 -- MirrorDistroArchSeries
 COMMENT ON TABLE MirrorDistroArchSeries IS 'The mirror of the packages of a given Distro Arch Release.';

@@ -62,11 +62,11 @@
     </browser:page>
 
     <browser:page
-        name="+mark-official"
+        name="+review"
         for="canonical.launchpad.interfaces.IDistributionMirror"
         permission="launchpad.Admin"
-        class="canonical.launchpad.browser.DistributionMirrorOfficialApproveView"
-        template="../templates/distributionmirror-mark-official.pt">
+        class="canonical.launchpad.browser.DistributionMirrorReviewView"
+        template="../templates/distributionmirror-review.pt">
     </browser:page>
 
     <browser:page

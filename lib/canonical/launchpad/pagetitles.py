@@ -412,9 +412,9 @@ distributionmirror_edit = ContextTitle('Edit mirror %s')
 
 distributionmirror_index = ContextTitle('Mirror %s')
 
-distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
-
 distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
+
+distributionmirror_review = ContextTitle('Review mirror %s')
 
 distribution_add = 'Register a new distribution'
 

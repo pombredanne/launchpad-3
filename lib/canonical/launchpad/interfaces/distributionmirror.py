@@ -278,6 +278,8 @@ class IDistributionMirror(Interface):
     id = Int(title=_('The unique id'), required=True, readonly=True)
     owner = Choice(title=_('Owner'), required=False, readonly=True,
                    vocabulary='ValidOwner')
+    reviewer = Choice(title=_('Reviewer'), required=False, readonly=False,
+                      vocabulary='ValidPersonOrTeam')
     distribution = Attribute(_("The distribution that is mirrored"))
     name = DistributionMirrorNameField(
         title=_('Name'), required=True, readonly=False,
@@ -338,6 +340,8 @@ class IDistributionMirror(Interface):
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    date_reviewed = Datetime(
+        title=_('Date reviewed'), required=False, readonly=False)
     whiteboard = Whiteboard(
         title=_('Whiteboard'), required=False,
         description=_("Notes on the current status of the mirror (only "

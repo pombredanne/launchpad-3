@@ -11,8 +11,7 @@ ALTER TABLE DistributionMirror ALTER COLUMN status SET NOT NULL;
 ALTER TABLE DistributionMirror DROP COLUMN official_approved;
 
 ALTER TABLE DistributionMirror 
-    ADD COLUMN date_reviewed timestamp without time zone NOT NULL
-        DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC');
+    ADD COLUMN date_reviewed timestamp without time zone;
 ALTER TABLE DistributionMirror 
     ADD COLUMN reviewer integer REFERENCES Person(id);
 
@@ -24,4 +23,4 @@ CREATE INDEX distributionmirror__country__status__idx
 CREATE INDEX distributionmirror__status__idx
     ON DistributionMirror (status);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 55, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (88, 36, 0);

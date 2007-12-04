@@ -54,6 +54,8 @@ class DistributionMirror(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
+    reviewer = ForeignKey(
+        dbName='reviewer', foreignKey='Person', default=None)
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution', notNull=True)
     name = StringCol(
@@ -81,6 +83,7 @@ class DistributionMirror(SQLBase):
     status = EnumCol(
         notNull=True, default=MirrorStatus.PENDING_REVIEW, enum=MirrorStatus)
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    date_reviewed = UtcDateTimeCol(default=None)
     whiteboard = StringCol(
         notNull=False, default=None)
 

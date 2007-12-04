@@ -4,7 +4,7 @@ __metaclass__ = type
 
 __all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
            'DistributionMirrorOverviewMenu', 'DistributionMirrorAddView',
-           'DistributionMirrorView', 'DistributionMirrorOfficialApproveView',
+           'DistributionMirrorView', 'DistributionMirrorReviewView',
            'DistributionMirrorReassignmentView',
            'DistributionMirrorDeleteView']
 
@@ -36,7 +36,7 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionMirror
     facet = 'overview'
-    links = ['proberlogs', 'edit', 'admin', 'reassign', 'delete']
+    links = ['proberlogs', 'edit', 'review', 'reassign', 'delete']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -62,12 +62,9 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
         return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
-    def admin(self):
-        if self.context.isOfficial():
-            text = 'Mark as unofficial'
-        else:
-            text = 'Mark as official'
-        return Link('+mark-official', text, icon='edit')
+    def review(self):
+        text = 'Review mirror'
+        return Link('+review', text, icon='edit')
 
 
 class _FlavoursByDistroSeries:
@@ -182,11 +179,11 @@ class DistributionMirrorAddView(LaunchpadFormView):
         notify(ObjectCreatedEvent(mirror))
 
 
-class DistributionMirrorOfficialApproveView(LaunchpadEditFormView):
+class DistributionMirrorReviewView(LaunchpadEditFormView):
 
     schema = IDistributionMirror
     field_names = ['status', 'whiteboard']
-    label = "Mark as official/unofficial"
+    label = "Review mirror"
 
     @action(_("Save"), name="save")
     def action_save(self, action, data):
