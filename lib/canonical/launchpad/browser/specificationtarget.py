@@ -25,6 +25,7 @@ from canonical.launchpad.interfaces import (
     )
 
 from canonical.config import config
+from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -329,6 +330,16 @@ class HasSpecificationsView(LaunchpadView):
             SpecificationFilter.INCOMPLETE,
             SpecificationFilter.ACCEPTED]
         specs = set(self.context.specifications(filter=filter))
+        
+        cur = cursor()
+        cur.execute("""
+        SELECT specification, dependency
+        FROM SpecificationDependency
+        WHERE specification IN %s
+        """ % sqlvalues([spec.id for spec in specs]))
+        dependencies = cur.fetchall()
+        cur.close()
+
         found_spec = True
         while found_spec:
             found_spec = False
@@ -340,8 +351,12 @@ class HasSpecificationsView(LaunchpadView):
                     plan.append(spec)
                     continue
                 all_clear = True
-                for depspec in spec.dependencies:
-                    if depspec not in plan:
+                spec_dependencies = [
+                    dep_id for (spec_id, dep_id)
+                    in dependencies
+                    if spec_id == spec.id]
+                for depspec_id in spec_dependencies:
+                    if depspec_id not in [p_spec.id for p_spec in plan]:
                         all_clear = False
                         break
                 if all_clear:
