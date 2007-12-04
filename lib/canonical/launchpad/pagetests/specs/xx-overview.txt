@@ -51,8 +51,8 @@ page from any context by following the "Blueprints" tab.
 
 === Viewing blueprints targeted to a product ===
 
-Let's use the Mozilla Firefox as an example. Users can see the list of
-blueprints attached to Mozilla Firefox by following the "Blueprints" tab:
+Let's use the Mozilla Firefox product as an example. Users can see the list
+of blueprints attached to Mozilla Firefox by following the "Blueprints" tab:
 
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> user_browser.getLink('Blueprints').click()
@@ -94,17 +94,28 @@ Let's target an existing Mozilla Firefox blueprint to the 1.0 series:
     Blueprint overview...
     Series goal: Accepted for 1.0...
 
-We'll also target the blueprint to the 1.0 milestone:
+We'll also target the blueprint to a milestone. First we'll create a milestone:
+
+    >>> browser.open('http://launchpad.dev/firefox/1.0')
+    >>> browser.getLink('Add milestone').click()
+    >>> browser.getControl('Name').value = '1.0.0'
+    >>> browser.getControl('Date Targeted').value = '2050-05-05'
+    >>> browser.getControl('Description').value = 'First ever milestone!'
+    >>> browser.getControl('Add').click()
+
+Now we'll target our chosen blueprint to the new milestone:
     
+    >>> browser.open('http://launchpad.dev/firefox/+specs')
+    >>> browser.getLink('svg-support').click()
     >>> browser.getLink('Target milestone').click()
     >>> print extract_text(find_main_content(browser.contents))
     Target to a milestone...
     >>> milestones = browser.getControl('Milestone')
-    >>> milestones.displayValue = ['Mozilla Firefox: 1.0']
+    >>> milestones.displayValue = ['Mozilla Firefox: 1.0.0']
     >>> browser.getControl('Change').click()
     >>> print extract_text(find_main_content(browser.contents))
     Blueprint overview...
-    Milestone target:...1.0...
+    Milestone target:...1.0.0...
  
 Now the blueprint listing for the 1.0 series includes an entry for our chosen
 blueprint. It also lists the milestone to which the blueprint is targeted:
@@ -115,7 +126,13 @@ blueprint. It also lists the milestone to which the blueprint is targeted:
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
     Blueprints for 1.0...
     Priority...Specification...Design  ...Delivery...Assignee...Milestone...
-    High    ...svg-support  ...Approved...Beta    ...Carlos  ...1.0      ...
+    High    ...svg-support  ...Approved...Beta    ...Carlos  ...1.0.0    ...
+
+It's possible to navigate to the milestone directly:
+
+    >>> user_browser.getLink('1.0.0').click()
+    >>> print user_browser.title
+    Milestone 1.0.0 for Mozilla Firefox...
 
 
 === Viewing blueprints targeted to a distribution ===
@@ -196,3 +213,9 @@ blueprint. It also lists the milestone to which the blueprint is targeted:
     Blueprints for Grumpy...
     Priority ...Specification        ...Design    ...Delivery...Milestone...
     Undefined...media-integrity-check...Discussion...Unknown ...drift-1  ...
+
+It's possible to navigate to the milestone directly:
+
+    >>> user_browser.getLink('drift-1').click()
+    >>> print user_browser.title
+    Milestone drift-1 for Ubuntu...

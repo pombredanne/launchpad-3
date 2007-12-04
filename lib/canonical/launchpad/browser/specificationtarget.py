@@ -69,7 +69,8 @@ class HasSpecificationsView(LaunchpadView):
     has_drivers = False
 
     # XXX: jsk: 2007-07-12: This method might be improved by
-    # replacing the conditional statement with polymorphism.
+    # replacing the conditional execution with polymorphism.
+    # See https://bugs.launchpad.net/blueprint/+bug/173972.
     def initialize(self):
         mapping = {'name': self.context.displayname}
         if self.is_person:
