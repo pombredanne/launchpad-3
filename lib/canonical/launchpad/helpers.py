@@ -13,6 +13,7 @@ import gettextpo
 import os
 import random
 import re
+import sys
 import tarfile
 import warnings
 from StringIO import StringIO
@@ -109,11 +110,12 @@ def shortest(sequence):
     Return an empty list if the sequence is empty.
     """
     shortest_list = []
+    shortest_length = None
 
     for item in list(sequence):
         new_length = len(item)
 
-        if not shortest_list:
+        if shortest_length is None:
             # First item.
             shortest_list.append(item)
             shortest_length = new_length
@@ -192,6 +194,46 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
             )
     (output, nothing) = p.communicate(input)
     return output
+
+
+def run_command(command, args=None, input=None, shell=False):
+    """Run an external command in a separate process.
+
+    :param command: executable to run.
+    :param args: optional list of command-line arguments.
+    :param input: optional text to feed to command's standard input.
+    :param shell: passed directly to `subprocess.Popen`.
+    :return: tuple of return value, standard output, and standard error.
+    """
+    command_line = [command]
+    if args:
+        command_line.extend(args)
+    if input is not None:
+        stdin = subprocess.PIPE
+    else:
+        stdin = None
+
+    child = subprocess.Popen(
+        command_line, stdin=stdin, stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE)
+    stdout, stderr = child.communicate(input)
+    result = child.wait()
+    return (result, stdout, stderr)
+
+
+def run_script(script, args=None, input=None):
+    """Run a Python script in a child process, using current interpreter.
+
+    :param script: Python script to run.
+    :param args: optional list of command-line arguments.
+    :param input: optional string to feed to standard input.
+    :return: tuple of return value, standard output, and standard error.
+    """
+    interpreter_args = [script]
+    if args:
+        interpreter_args.extend(args)
+
+    return run_command(sys.executable, interpreter_args, input)
 
 
 def contactEmailAddresses(person):
@@ -431,7 +473,8 @@ def get_filename_from_message_id(message_id):
     It generates a file name that's not easily guessable.
     """
     return '%s.msg' % (
-            canonical.base.base(long(sha.new(message_id).hexdigest(), 16), 62))
+            canonical.base.base(
+                long(sha.new(message_id).hexdigest(), 16), 62))
 
 
 def getFileType(fname):

@@ -11,6 +11,8 @@ This test will:
   * Check results
   * Cleanup
 
+  >>> from canonical.lp import initZopeless
+  >>> ztm = initZopeless()
 
 == Pre-creating directories ==
 
@@ -20,7 +22,6 @@ files in.
   >>> import os
   >>> import tempfile
   >>> temp_dir = tempfile.mkdtemp()
-  >>> uploader_log = tempfile.mktemp()
   >>> incoming_dir = os.path.join(temp_dir, "incoming")
   >>> accepted_dir = os.path.join(temp_dir, "accepted")
   >>> rejected_dir = os.path.join(temp_dir, "rejected")
@@ -91,11 +92,6 @@ Add disk content for file inherited from ubuntu/breezy-autotest:
   >>> from canonical.librarian.ftests.harness import fillLibrarianFile
   >>> fillLibrarianFile(54)
 
-Commit all that so that the scripts can see it.
-
-  >>> import transaction
-  >>> transaction.commit()
-
 Now that the infrastructure is ready, we prepare a set of useful methods.
 
 Firstly, we need a way to copy a test upload into the queue
@@ -115,28 +111,40 @@ We need a way to count the items in a queue directory
 
 And then we need a way to process the uploads from the queue
 
+  >>> import logging
   >>> from canonical.config import config
-  >>> import subprocess, sys
-  >>> def process_uploads(upload_policy, build_id, series):
-  ...     # reset previous log content if it exists
-  ...     if os.path.exists(uploader_log):
-  ...         open(uploader_log, 'w').write('')
-  ...     script = os.path.join(config.root, "scripts", "process-upload.py")
-  ...     args = [sys.executable, script, "-v", "-C",
-  ...             upload_policy]
+  >>> from canonical.launchpad.ftests.logger import MockLogger
+  >>> from canonical.launchpad.scripts.soyuz_process_upload import (
+  ...     ProcessUpload)
+  >>> def process_uploads(upload_policy, build_id, series, loglevel):
+  ...     """Simulate process-upload.py script run.
+  ...
+  ...     :param upload_policy: context in which to consider the upload
+  ...         (equivalent to script's --context option).
+  ...     :param build_id: build to which to attach this upload.
+  ...         (equivalent to script's --buildid option).
+  ...     :param series: distro series to give back from.
+  ...         (equivalent to script's --series option).
+  ...     :param loglevel: logging level (as defined in logging module).  Any
+  ...         log messages below this level will be suppressed.
+  ...     """
+  ...     args = [temp_dir, "-C", upload_policy]
   ...     if build_id is not None:
   ...         args.extend(["-b", build_id])
   ...     if series is not None:
   ...         args.extend(["-s", series])
-  ...     args.extend([temp_dir, "--log-file", uploader_log])
-  ...     process = subprocess.Popen(args)
-  ...     return process.wait() == 0
+  ...     process = ProcessUpload(
+  ...         'process-upload', dbuser=config.uploader.dbuser, test_args=args)
+  ...     process.logger = MockLogger()
+  ...     if loglevel is not None:
+  ...         process.logger.setLevel(loglevel)
+  ...     process.txn = ztm
+  ...     process.main()
 
 And we need a way to process the accepted queue
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
   >>> from canonical.launchpad.interfaces import PackageUploadStatus
-  >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.ftests import login
   >>> from canonical.launchpad.ftests import syncUpdate
 
@@ -208,118 +216,112 @@ given upload into the published state, so here's a very simplistic publisher
   ...         published_one = True
   ...     return published_one
 
-Now that we have all the structures we need in the form of the
-functions punt_upload_into_queue, process_uploads, process_accepted,
-process_new and simple_publish we are in a position to run the tests.
 
-We can also define another helper function...
+We'll be doing a lot of uploads with sanity checks, and expect them to succeed.
+A helper function, simulate_upload does that with all the checking.
 
-  >>> def expect_okays(leafname, is_new=False, upload_policy='anything',
-  ...                  build_id=None, series=None, distro="ubuntutest"):
-  ...     transaction.commit()
+  >>> import transaction
+  >>> import shutil
+  >>> from canonical.launchpad.mail import stub
+
+  >>> def simulate_upload(
+  ...     leafname, is_new=False, upload_policy='anything', build_id=None,
+  ...     series=None, distro="ubuntutest", loglevel=logging.WARN):
+  ...     """Process upload(s).  Options are as for process_uploads()."""
   ...     punt_upload_into_queue(leafname, distro=distro)
-  ...     assert (process_uploads(upload_policy, build_id, series),
-  ...             "Upload processes failed")
-  ...     assert len(os.listdir(incoming_dir)) == 1, "Incoming should only contain a lockfile: %s" % os.listdir(incoming_dir)
-  ...     assert len(os.listdir(rejected_dir)) == 0, "Rejected should be empty: %s" % os.listdir(rejected_dir)
-  ...     assert len(os.listdir(failed_dir)) == 0, "Failed should be empty: %s" % os.listdir(failed_dir)
+  ...     process_uploads(upload_policy, build_id, series, loglevel)
+  ...     assert (len(os.listdir(incoming_dir)) == 0,
+  ...         "Incoming should be empty: %s" % os.listdir(incoming_dir))
+  ...
+  ...     rejected_contents = os.listdir(rejected_dir)
+  ...     if len(rejected_contents) > 0:
+  ...         # Clean up rejected entry
+  ...         shutil.rmtree(os.path.join(rejected_dir, leafname))
+  ...         print "Rejected uploads: %s" % rejected_contents
+  ...         return
+  ...
+  ...     assert (len(os.listdir(failed_dir)) == 0,
+  ...         "Failed should be empty: %s" % os.listdir(failed_dir))
   ...     if is_new:
   ...         process_new(distro=distro, series=series)
   ...     process_accepted(distro=distro)
   ...     assert (simple_publish(distro=distro),
   ...             "Should publish at least one item")
-  ...     transaction.commit()
+  ...     if not (loglevel is not None and loglevel > logging.INFO):
+  ...         print "done"
+
+  >>> def read_email():
+  ...     """Pop an email from the test mailbox, and summarize it."""
+  ...     sender, recipients, text = stub.test_emails.pop()
+  ...     print "To:"
+  ...     for address in recipients:
+  ...         print address
+  ...     past_header = False
+  ...     for line in text.splitlines():
+  ...         if line.startswith('Subject:') or past_header:
+  ...             print line
+  ...         elif line == '':
+  ...             past_header = True
+  ...         else:
+  ...             # Header line.  Ignore.
+  ...             pass
 
 The 'bar' package' is an arch-all package. We have four stages to the
 bar test. Each stage should be simple enough. First we have a new
 source, then a new binary, then an overridable source and then an
 overridable binary. This tests the simple overriding of both sources
-and arch-independant binaries.
+and arch-independent binaries.
 
-  >>> expect_okays('bar_1.0-1', is_new=True)
+  >>> simulate_upload('bar_1.0-1', is_new=True, loglevel=logging.INFO)
+  log> Processing upload
+  ...
+  done
 
-  >>> expect_okays('bar_1.0-1_binary', is_new=True)
+  >>> simulate_upload('bar_1.0-1_binary', is_new=True)
 
-  >>> expect_okays('bar_1.0-2')
+  >>> simulate_upload('bar_1.0-2')
 
 Check the rejection of bar_1.0-2_binary when uploaded to the wrong build id.
 
-  >>> expect_okays('bar_1.0-2_binary', upload_policy="buildd",
-  ...     build_id="2")
-  Traceback (most recent call last):
+  >>> simulate_upload(
+  ...     'bar_1.0-2_binary', upload_policy="buildd", build_id="2",
+  ...     loglevel=logging.ERROR)
+  log> Exception while accepting:
+  Attempt to upload binaries specifying build 2, where they don't fit.
   ...
-  AssertionError: Rejected should be empty...
+  Rejected uploads: ['bar_1.0-2_binary']
 
-  >>> print open(uploader_log).read()
-  INFO    creating lockfile
-  DEBUG   Initialising connection.
-  ...
-  ...Attempt to upload binaries specifying build 2, where they don't fit...
-  ...
+Try it again without the bogus build id.
 
-
-Remove that failed upload.
-
-  >>> import shutil
-  >>> shutil.rmtree(os.path.join(rejected_dir, 'bar_1.0-2_binary'))
-
-...and try it again without the bogus build id.
-
-  >>> expect_okays('bar_1.0-2_binary')
-
+  >>> simulate_upload('bar_1.0-2_binary')
 
 Check the rejection of a malicious version of bar package which refers
 to a different 'bar_1.0.orig.tar.gz'.
 
-  >>> expect_okays('bar_1.0-3')
-  Traceback (most recent call last):
+  >>> simulate_upload('bar_1.0-3', loglevel=logging.ERROR)
+  Rejected uploads: ['bar_1.0-3']
+
+  >>> read_email()
+  To:
+    Foo Bar <foo.bar@canonical.com>
+    Daniel Silverstone <daniel.silverstone@canonical.com>
+  Subject: bar_1.0-3_source.changes rejected
   ...
-  AssertionError: Rejected should be empty...
-
-Inspect the uploader log to find the rejection message.
-
-  >>> print open(uploader_log).read()
-  INFO    creating lockfile
-  DEBUG   Initialising connection.
-  ...
-  DEBUG       Subject: bar_1.0-3_source.changes rejected
-  DEBUG       Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
-  DEBUG       Body:
-  DEBUG    Rejected:
-  DEBUG    MD5 sum of uploaded file does not match existing file in archive
-  ...
-  <BLANKLINE>
-
-Remove rejected uploads.
-
-  >>> import shutil
-  >>> shutil.rmtree(os.path.join(rejected_dir, 'bar_1.0-3'))
 
 Check the rejection (instead of failure) of an upload to a series or
 pocket which does not exist. We use the security upload policy for easier
 testing, as unsigned uploads are allowed.
 
-  >>> expect_okays('unstable_1.0-1', upload_policy="security")
-  Traceback (most recent call last):
-  ...
-  AssertionError: Rejected should be empty...
+  >>> simulate_upload(
+  ...     'unstable_1.0-1', upload_policy="security", loglevel=logging.ERROR)
+  Rejected uploads: ['unstable_1.0-1']
 
-  >>> print open(uploader_log).read()
-  INFO    creating lockfile
-  DEBUG   Initialising connection.
+  >>> read_email()
+  To: Celso Providelo <celso.providelo@canonical.com>
+  Subject: unstable_1.0-1_source.changes rejected
+  Rejected:
+  Unable to find distroseries: unstable
   ...
-  DEBUG       Subject: unstable_1.0-1_source.changes rejected
-  DEBUG       Recipients: Celso Providelo <celso.providelo@canonical.com>
-  DEBUG       Body:
-  DEBUG   Rejected:
-  DEBUG   Unable to find distroseries: unstable
-  ...
-  <BLANKLINE>
-
-Remove rejected uploads.
-
-  >>> import shutil
-  >>> shutil.rmtree(os.path.join(rejected_dir, 'unstable_1.0-1'))
 
 Force weird behavior with rfc2047 sentences containing '.' on
 bar_1.0-4, which caused bug # 41102.
@@ -328,56 +330,44 @@ bar_1.0-4, which caused bug # 41102.
   >>> name16 = getUtility(IPersonSet).getByName('name16')
   >>> name16.displayname = "Foo B. Bar"
   >>> syncUpdate(name16)
-  >>> transaction.commit()
 
 Check the email recipient for displayname containing special chars,
-'.', must be rfc2047 compilant:
+'.', must be rfc2047 compliant:
 
-  >>> expect_okays('bar_1.0-4')
-  >>> print open(uploader_log).read()
-  INFO    creating lockfile
-  DEBUG   Initialising connection.
+  >>> simulate_upload('bar_1.0-4')
+  >>> uninteresting_email = stub.test_emails.pop()
+  >>> read_email()
+  To:
+    "Foo B. Bar" <foo.bar@canonical.com>
+    Celso Providelo <celso.providelo@canonical.com>
+  Subject: Accepted: bar 1.0-4 (source)
   ...
-  DEBUG       Subject: Accepted: bar 1.0-4 (source)
-  DEBUG       Recipients: "Foo B. Bar" <foo.bar@canonical.com>, Celso Providelo <celso.providelo@canonical.com>
-  ...
-  <BLANKLINE>
 
 Revert changes:
 
   >>> name16.displayname = "Foo Bar"
   >>> syncUpdate(name16)
-  >>> transaction.commit()
 
 Check if we forcibly add the changer as recipient for "sync" uploads,
 which contains unsigned changesfile. Ensure it sends email to the
-changer.
+changer and the distroseries changes mailing list..
 
-  >>> expect_okays('bar_1.0-5', upload_policy='sync')
-  >>> print open(uploader_log).read()
-  INFO    creating lockfile
-  DEBUG   Initialising connection.
+  >>> while stub.test_emails:
+  ...     dummy = stub.test_emails.pop()
+
+  >>> simulate_upload('bar_1.0-5', upload_policy='sync')
+  >>> read_email()
+  To: Celso Providelo <celso.providelo@canonical.com>
+  Subject: Accepted: bar 1.0-5 (source)
   ...
-  DEBUG   Building recipients list.
-  DEBUG   Changes file is unsigned, adding changer as recipient
-  DEBUG   Adding recipient: 'Celso Providelo <celso.providelo@canonical.com>'
-  DEBUG   Sent a mail:
-  DEBUG       Subject: Accepted: bar 1.0-5 (source)
-  DEBUG       Recipients: Celso Providelo <celso.providelo@canonical.com>
-  ...
-  DEBUG   Announcing to breezy-changes@ubuntu.com
-  DEBUG
-  DEBUG   Thank you for your contribution to Ubuntu Test.
-  ...
-  <BLANKLINE>
 
 
 Add a new series of bar sourcepackage, rename its binary package to
 'bar-bin', upload the binary and look for a spurious sourcepackagename
 created with the binary package name.
 
-  >>> expect_okays('bar_1.0-6', upload_policy='sync')
-  >>> expect_okays('bar_1.0-6_binary', is_new=True)
+  >>> simulate_upload('bar_1.0-6', upload_policy='sync')
+  >>> simulate_upload('bar_1.0-6_binary', is_new=True)
 
   >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
   >>> spn_set = getUtility(ISourcePackageNameSet)
@@ -412,22 +402,16 @@ implied as '0'.
 Check if upload system interpret epochs properly, inter-epoch versions
 will get compared in this case (see bug #85201):
 
-  >>> expect_okays('bar_1.0-7', upload_policy='sync')
-
-  >>> print open(uploader_log).read()
-  INFO    creating lockfile
-  DEBUG   Initialising connection.
-  ...
-  DEBUG       Subject: Accepted: bar 1:1.0-7 (source)
+  >>> simulate_upload('bar_1.0-7', upload_policy='sync')
+  >>> read_email()
+  To: ...
+  Subject: Accepted: bar 1:1.0-7 (source)
   ...
 
-  >>> expect_okays('bar_1.0-8', upload_policy='sync')
-
-  >>> print open(uploader_log).read()
-  INFO    creating lockfile
-  DEBUG   Initialising connection.
-  ...
-  DEBUG       Subject: Accepted: bar 1:1.0-8 (source)
+  >>> simulate_upload('bar_1.0-8', upload_policy='sync')
+  >>> read_email()
+  To: ...
+  Subject: Accepted: bar 1:1.0-8 (source)
   ...
 
 == Pocket Version Consistency ==
@@ -438,38 +422,34 @@ bug #34089, #58144 and #83976 for further info)
 Let's start a new package series by uploading foo_1.0-1  source in
 ubututest/breezy-RELEASE:
 
-  >>> expect_okays('foo_1.0-1', upload_policy='sync', is_new=True)
-
-  >>> print open(uploader_log).read()
-  INFO    creating lockfile
-  DEBUG   Initialising connection.
+  >>> simulate_upload(
+  ...     'foo_1.0-1', upload_policy='sync', is_new=True,
+  ...     loglevel=logging.DEBUG)
+  log> ...
+  log> NEW: foo_1.0.orig.tar.gz
+  log> NEW: foo_1.0-1.diff.gz
+  log> NEW: foo_1.0-1.dsc
   ...
-  DEBUG    NEW: foo_1.0.orig.tar.gz
-  DEBUG    NEW: foo_1.0-1.diff.gz
-  DEBUG    NEW: foo_1.0-1.dsc
+  log> Distribution: breezy
   ...
-  DEBUG    Distribution: breezy
-  ...
+  done
 
 And its binary:
 
-  >>> expect_okays('foo_1.0-1_i386_binary', upload_policy='anything',
-  ...              is_new=True)
-
-  >>> print open(uploader_log).read()
-  INFO    creating lockfile
-  DEBUG   Initialising connection.
+  >>> simulate_upload(
+  ...     'foo_1.0-1_i386_binary', upload_policy='anything', is_new=True,
+  ...     loglevel=logging.DEBUG)
+  log> ...
+  log> foo: (binary) NEW
   ...
-  DEBUG   foo: (binary) NEW
-  ...
+  done
 
 Set ubuntutest/breezy as the "current series" to activate post-release
 pockets.
 
   >>> from canonical.launchpad.interfaces import DistroSeriesStatus
   >>> breezy.status = DistroSeriesStatus.CURRENT
-  >>> syncUpdate(breezy)
-  >>> transaction.commit()
+  >>> ztm.commit()
 
 Since we are using 'sync' policy in the following tests the packages
 are auto-approved, however, in the real environment the 'insecure'
@@ -478,19 +458,17 @@ UNAPPROVED queue.
 
 Upload a newer version of source package "foo" to breezy-backports:
 
-  >>> expect_okays('foo_2.9-1', upload_policy='sync')
-
-  >>> print open(uploader_log).read()
-  INFO    creating lockfile
-  DEBUG   Initialising connection.
+  >>> simulate_upload(
+  ...     'foo_2.9-1', upload_policy='sync', loglevel=logging.DEBUG)
+  log> ...
+  log> OK: foo_2.9.orig.tar.gz
+  log> OK: foo_2.9-1.diff.gz
+  log> OK: foo_2.9-1.dsc
+  log> -> Component: main Section: devel
   ...
-  DEBUG     OK: foo_2.9.orig.tar.gz
-  DEBUG     OK: foo_2.9-1.diff.gz
-  DEBUG     OK: foo_2.9-1.dsc
-  DEBUG         -> Component: main Section: devel
+  log> Distribution: breezy-backports
   ...
-  DEBUG    Distribution: breezy-backports
-  ...
+  done
 
 
 In order to verify if the binary ancestry lookup algorithm works we
@@ -508,15 +486,15 @@ After having the respective DistroArchSeries in place we will submit a
 binary upload for the last source in BACKPORTS. The ancestry should be
 found in i386/RELEASE, because it's the only one available.
 
-  >>> expect_okays('foo_2.9-1_binary', upload_policy='anything')
+  >>> simulate_upload(
+  ...     'foo_2.9-1_binary', upload_policy='anything',
+  ...     loglevel=logging.DEBUG)
+  log> ...
+  log> Checking for foo/2.9-1/powerpc binary ancestry
+  log> foo-1.0-1 (binary) exists in i386/RELEASE
+  ...
+  done
 
-  >>> print open(uploader_log).read()
-  INFO    creating lockfile
-  DEBUG   Initialising connection.
-  ...
-  DEBUG   Checking for foo/2.9-1/powerpc binary ancestry
-  DEBUG   foo-1.0-1 (binary) exists in i386/RELEASE
-  ...
 
 Due the constraints relaxation requested by bug #83976, even having
 foo_2.9-1 as the current version in BACKPORTS, we should be able to
@@ -524,80 +502,61 @@ upload foo_2.9-2 to UPDATES. If it strongly affects the users' system
 it should be rejected by the package reviewer, otherwise people can
 live with this inconsistency.
 
-  >>> expect_okays('foo_2.9-2', upload_policy='sync')
-
-  >>> print open(uploader_log).read()
-  INFO    creating lockfile
-  DEBUG   Initialising connection.
+  >>> simulate_upload(
+  ...     'foo_2.9-2', upload_policy='sync', loglevel=logging.DEBUG)
+  log> ...
+  log> OK: foo_2.9-2.diff.gz
+  log> OK: foo_2.9-2.dsc
+  log> -> Component: main Section: devel
   ...
-  DEBUG     OK: foo_2.9-2.diff.gz
-  DEBUG     OK: foo_2.9-2.dsc
-  DEBUG         -> Component: main Section: devel
+  log> Distribution: breezy-updates
   ...
-  DEBUG    Distribution: breezy-updates
-  ...
+  done
 
 Same behaviour is expected for a version in SECURITY lower than that
 in PROPOSED:
 
-  >>> expect_okays('foo_2.9-4', upload_policy='sync')
+  >>> simulate_upload(
+  ...     'foo_2.9-4', upload_policy='sync', loglevel=logging.DEBUG)
+  log> ...
+  log> OK: foo_2.9-4.diff.gz
+  log> OK: foo_2.9-4.dsc
+  log> -> Component: main Section: devel
+  ...
+  log> Distribution: breezy-proposed
+  ...
+  done
 
-  >>> print open(uploader_log).read()
-  INFO    creating lockfile
-  DEBUG   Initialising connection.
+  >>> simulate_upload(
+  ...     'foo_2.9-3', upload_policy='sync', loglevel=logging.DEBUG)
+  log> ...
+  log> OK: foo_2.9-3.diff.gz
+  log> OK: foo_2.9-3.dsc
+  log> -> Component: main Section: devel
   ...
-  DEBUG     OK: foo_2.9-4.diff.gz
-  DEBUG     OK: foo_2.9-4.dsc
-  DEBUG         -> Component: main Section: devel
+  log> Distribution: breezy-security
   ...
-  DEBUG    Distribution: breezy-proposed
-  ...
-
-  >>> expect_okays('foo_2.9-3', upload_policy='sync')
-
-  >>> print open(uploader_log).read()
-  INFO    creating lockfile
-  DEBUG   Initialising connection.
-  ...
-  DEBUG     OK: foo_2.9-3.diff.gz
-  DEBUG     OK: foo_2.9-3.dsc
-  DEBUG         -> Component: main Section: devel
-  ...
-  DEBUG    Distribution: breezy-security
-  ...
+  done
 
 However, the source upload of a smaller version than the one already
 published inside the target pocket should be rejected:
 
-  >>> expect_okays('foo_1.0-3', upload_policy='sync')
-  Traceback (most recent call last):
+  >>> simulate_upload(
+  ...     'foo_1.0-3', upload_policy='sync', loglevel=logging.INFO)
+  log> ...
+  log> Upload was rejected:
+  log> foo_1.0-3.dsc: Version older than that in the archive. 1.0-3 <= 2.9-2
   ...
-  AssertionError: Rejected should be empty: ['foo_1.0-3']
-
-  >>> print open(uploader_log).read()
-  INFO    creating lockfile
-  DEBUG   Initialising connection.
-  ...
-  
-  DEBUG    foo_1.0-3.dsc: Version older than that in the archive. 1.0-3 <= 2.9-2
-  ...
-  DEBUG    Distribution: breezy-updates
-  ...
+  Rejected uploads: ['foo_1.0-3']
 
 Note that the ancestry pointed in the rejection message (2.9-2) is what
 we expect.
-
-Remove rejected upload:
-
-  >>> shutil.rmtree(os.path.join(rejected_dir, 'foo_1.0-3'))
-
 
 Set ubuntutest/breezy to 'experimental' state again to not affect the
 rest of the test:
 
   >>> breezy.status = DistroSeriesStatus.EXPERIMENTAL
-  >>> flush_database_updates()
-  >>> transaction.commit()
+  >>> breezy.syncUpdate()
 
 
 == Staged Security Uploads ==
@@ -612,9 +571,9 @@ eg ubuntu/warty.
   >>> warty = ubuntu['warty']
   >>> devel = Section.selectOneBy(name="devel")
   >>> ss = SectionSelection(distroseries=warty, section=devel)
-  >>> transaction.commit()
 
-  >>> expect_okays('baz_1.0-1', is_new=True, upload_policy="security",
+  >>> simulate_upload(
+  ...     'baz_1.0-1', is_new=True, upload_policy="security",
   ...     series="warty-security", distro="ubuntu")
 
 Check there's a SourcePackageRelease with no build.
@@ -630,15 +589,13 @@ Check there's a SourcePackageRelease with no build.
   >>> len(list(builds))
   0
 
-Manually create a build for this spr in i386, and commit so the script
-can see it. This simulates the buildd-queuebuilder having run inbetween
-the source and binary uploads.
+Manually create a build for this spr in i386.  This simulates the
+buildd-queuebuilder having run inbetween the source and binary uploads.
 
   >>> warty_i386 = ubuntu['warty']['i386']
   >>> main_archive = ubuntu.main_archive
   >>> build = spr.createBuild(warty_i386, PackagePublishingPocket.SECURITY,
   ...                         main_archive, status=BuildStatus.NEEDSBUILD)
-  >>> transaction.commit()
 
 Check build created
 
@@ -647,7 +604,7 @@ Check build created
 
 Upload the i386 binary:
 
-  >>> expect_okays(
+  >>> simulate_upload(
   ...     'baz_1.0-1_single_binary', is_new=True, upload_policy="security",
   ...     distro="ubuntu", series="warty-security")
 
@@ -681,17 +638,27 @@ First a couple helpers.
   >>> import stat
   >>> import subprocess
   >>> import sys
+  >>> from canonical.launchpad.helpers import run_script
   >>> from canonical.config import config
 
-  >>> def run_publish_distro(extra_args):
-  ...     """Run publish-distro on ubuntutest with given extra args."""
+  >>> def run_publish_distro(careful=False, careful_publishing=False):
+  ...     """Run publish-distro on ubuntutest with given extra args.
+  ...
+  ...     :param careful: turns on all "careful" options to the publish-distro
+  ...         script.  Equivalent to the script's --careful option.
+  ...     :param careful_publishing: passes the --careful-publishing option
+  ...         to the publish-distro script.
+  ...     """
+  ...     args = ["-v", "-d", "ubuntutest"]
+  ...     if careful:
+  ...         args.append("-C")
+  ...     if careful_publishing:
+  ...         args.append("-P")
   ...     script = os.path.join(config.root, "scripts", "publish-distro.py")
-  ...     args = [sys.executable, script, "-vv", "-d", "ubuntutest"]
-  ...     args.extend(extra_args)
-  ...     process = subprocess.Popen(
-  ...          args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  ...     stdout, stderr = process.communicate()
-  ...     return (process.returncode, stdout, stderr)
+  ...     result, stdout, stderr = run_script(script, args)
+  ...     print stderr
+  ...     if result != 0:
+  ...         print "Script returned", result
 
   >>> def release_file_has_uncompressed_packages(path):
   ...     """Return whether the release file includes uncompressed Packages."""
@@ -711,13 +678,7 @@ files that are published in the sample data.
   >>> fillLibrarianFile(68)
   >>> fillLibrarianFile(70)
 
-  >>> (result, stdout, stderr) = run_publish_distro(["-C"])
-  >>> result
-  0
-
-Check the results:
-
-  >>> print stderr
+  >>> run_publish_distro(careful=True)
   INFO      Distribution: ubuntutest
   ...
   DEBUG   Added /var/tmp/archive/ubuntutest/pool/main/b/bar/bar_1.0-2_i386.deb from library
@@ -742,15 +703,10 @@ Re-publish the distribution, with careful publishing only. This will mean
 only pockets into which we've done some publication will have apt-ftparchive
 work done.
 
-  >>> (result, stdout, stderr) = run_publish_distro(["-P"])
-  >>> result
-  0
+Check that breezy-autotest is skipped, to ensure that changes to what's
+uploaded in the test above don't break the assumptions of this test.
 
-Check the logging to ensure breezy-autotest was skipped. This ensures
-changes to what's uploaded in the test above don't break the assumptions
-of this test.
-
-  >>> print stderr
+  >>> run_publish_distro(careful_publishing=True)
   INFO      Distribution: ubuntutest
   ...
   DEBUG   /var/tmp/archive/ubuntutest/pool/main/b/bar/bar_1.0-2_i386.deb is already in pool with the same content.
@@ -783,7 +739,7 @@ everything up.
 
   >>> shutil.rmtree("/var/tmp/archive/")
   >>> shutil.rmtree(temp_dir)
-  >>> os.remove(uploader_log)
 
   >>> ZecaTestSetup().tearDown()
+  >>> ztm.uninstall()
 
