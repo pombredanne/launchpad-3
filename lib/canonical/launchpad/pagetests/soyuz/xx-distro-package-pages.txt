@@ -1,4 +1,4 @@
-= Distribution Package Pecularities =
+= Distribution Package Peculiarities =
 
 There are a number of pages for packages under the distribution
 hierarchy. This test verifies some peculiar features in that hierarchy.
@@ -42,7 +42,7 @@ And if you go to fetch it, you'll see it's actually a librarian URL:
   >>> print http(r"""
   ... GET %s HTTP/1.1
   ... """ % path)
-  HTTP/1.1 301 Moved Permanently
+  HTTP/1.1 303 See Other
   ...
   Location: http://localhost:58000/68/commercialpackage_1.0-1.dsc
   <BLANKLINE>
