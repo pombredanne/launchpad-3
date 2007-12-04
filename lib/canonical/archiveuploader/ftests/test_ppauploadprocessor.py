@@ -7,6 +7,7 @@ __metaclass__ = type
 import os
 import shutil
 import unittest
+import shutil
 
 from email import message_from_string
 
@@ -246,6 +247,66 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
             version="1.0-1", exact_match=True, archive=cprov.archive)
+        self.assertEqual(queue_items.count(), 1)
+
+    def testPPASizeQuotaCheck(self):
+        """Verifying the size quota check for PPA uploads.
+
+        New source uploads are submitted to the size quota check, where
+        the size of the upload plus the current PPA size must be smaller
+        than the PPA.authorized_size, otherwise the upload will be rejected.
+
+        Binary uploads are not submitted to this check, since they are
+        automatically generated, rejecting them would just cause unnecessary
+        hassle.
+        """
+        # Reducing the target PPA size quota to 1 byte.
+        self.name16.archive.authorized_size = 1
+
+        # Since the authorized_size is very low the upload will be rejected.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "PPA exceeded its size limit of 1 bytes. Contact a Launchpad "
+            "administrator if you really need more space."]
+        self.assertEmail(contents)
+
+        # Cleanup the upload queue directory.
+        shutil.rmtree(self.queue_folder)
+
+        # Increasing the size_quota again to fit the source upload.
+        self.name16.archive.authorized_size = 10000
+
+        # Re-uploading the source, which now can be accepted.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+        self.assertEmail(contents)
+
+        # Create a build record for source bar in breezy-i386
+        # distroarchseries, and setup a appropriate upload policy
+        # in preparation to the corresponding binary upload.
+        pub_sources = self.name16.archive.getPublishedSources(name='bar')
+        [pub_bar] = pub_sources
+        build_bar_i386 = pub_bar.sourcepackagerelease.createBuild(
+            self.breezy['i386'], PackagePublishingPocket.RELEASE,
+            self.name16.archive)
+        self.options.context = 'buildd'
+        self.options.buildid = build_bar_i386.id
+
+        # Drastically reduce the size quota again to check if it doesn't
+        # affect binary uploads as expected.
+        self.name16.archive.authorized_size = 1
+
+        upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        # The binary upload was accepted, and it's waiting in the queue.
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED, name="bar",
+            version="1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
     def testUploadDoesNotEmailMaintainerOrChangedBy(self):

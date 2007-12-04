@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchType, BranchVisibilityRule, IBranchSet,
     IPersonSet, IProductSet, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
     PersonCreationRationale, TeamSubscriptionPolicy)
+from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -99,6 +100,53 @@ class TestBranchSet(TestCase):
             self.assertEqual(expected_branches, branches)
         finally:
             logout()
+
+
+class TestBranchSetNewNameValidation(TestCase):
+    """Test of the validation of the branch name done by BranchSet.new()."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCase.setUp(self)
+        login(ANONYMOUS)
+        # This person should be considered to be wholly arbitrary.
+        self.person = getUtility(IPersonSet).getByName('name12')
+        assert self.person is not None, "Sample Person not found."
+        self.branch_set = getUtility(IBranchSet)
+
+    def tearDown(self):
+        logout()
+        TestCase.tearDown(self)
+
+    def makeNewBranchWithName(self, name):
+        """Attempt to create a new branch with name 'name'.
+
+        It will a +junk branch owned and authored by Sample Person, but this
+        shouldn't be important.
+        """
+        return self.branch_set.new(
+            BranchType.HOSTED, name, self.person, self.person, None, None)
+
+    def testPermittedFirstCharacter(self):
+        # The first character of a branch name must be a letter or a number.
+        for c in [chr(i) for i in range(128)]:
+            if c.isalnum():
+                self.makeNewBranchWithName(c)
+            else:
+                self.assertRaises(
+                    LaunchpadValidationError, self.makeNewBranchWithName, c)
+
+    def testPermittedSubsequentCharacter(self):
+        # After the first character, letters, numbers and certain punctuation
+        # is permitted.
+        for c in [chr(i) for i in range(128)]:
+            if c.isalnum() or c in '+-_@.':
+                self.makeNewBranchWithName('a' + c)
+            else:
+                self.assertRaises(
+                    LaunchpadValidationError,
+                    self.makeNewBranchWithName, 'a' + c)
 
 
 class TestMirroringForHostedBranches(BranchTestCase):

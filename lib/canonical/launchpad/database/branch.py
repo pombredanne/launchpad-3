@@ -6,7 +6,6 @@ __all__ = [
     'Branch',
     'BranchSet',
     'BranchWithSortKeys',
-    'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'DEFAULT_BRANCH_LISTING_SORT',
     ]
 
@@ -48,7 +47,6 @@ from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.validators import LaunchpadValidationError
 
 
 class Branch(SQLBase):
@@ -453,7 +451,8 @@ class Branch(SQLBase):
             # No mirror was requested since we started mirroring.
             if self.branch_type == BranchType.MIRRORED:
                 self.mirror_request_time = (
-                    datetime.now(pytz.timezone('UTC')) + MIRROR_TIME_INCREMENT)
+                    datetime.now(pytz.timezone('UTC')) +
+                    MIRROR_TIME_INCREMENT)
             else:
                 self.mirror_request_time = None
         self.last_mirrored_id = last_revision_id
@@ -527,11 +526,6 @@ LISTING_SORT_TO_COLUMN = {
 
 DEFAULT_BRANCH_LISTING_SORT = [
     'product_name', '-lifecycle_status', 'author_name', 'name']
-
-
-BRANCH_NAME_VALIDATION_ERROR_MESSAGE = (
-    "Branch names must start with a number or letter.  The characters +, -, "
-    "_ and @ are also allowed after the first character.")
 
 
 class BranchSet:
@@ -609,7 +603,8 @@ class BranchSet:
         """
         PUBLIC_BRANCH = (False, None)
         PRIVATE_BRANCH = (True, None)
-        # You are not allowed to specify an owner that you are not a member of.
+        # You are not allowed to specify an owner that you are not a member
+        # of.
         if not creator.inTeam(owner):
             if owner.isTeam():
                 raise BranchCreatorNotMemberOfOwnerTeam(
@@ -673,7 +668,7 @@ class BranchSet:
             return PUBLIC_BRANCH
         else:
             membership_teams = rule_memberships.itervalues()
-            owner_membership = reduce(lambda x,y: x+y, membership_teams)
+            owner_membership = reduce(lambda x, y: x + y, membership_teams)
             assert len(owner_membership) == 0, (
                 'The owner should not be a member of any team that has '
                 'a specified team policy.')
@@ -703,16 +698,12 @@ class BranchSet:
         private, implicit_subscription = self._checkVisibilityPolicy(
             creator, owner, product)
 
-        # XXX: MichaelHudson 2007-10-26 bug=95109: This regular expression is
-        # a copy of the one in the database constraint, which is different
-        # from that used by IBranch['name'].validate()!  This needs to be
-        # sorted out, but for now we just want to present a nicer error than
-        # 'ERROR: new row for relation "branch" violates check constraint
-        # "valid_name"...' to the user.
-        pat = r"^(?i)[a-z0-9][a-z0-9+\.\-@_]*\Z"
-        if not re.match(pat, name):
-            raise LaunchpadValidationError(
-                BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+        # Not all code paths that lead to branch creation go via a
+        # schema-validated form (e.g. the register_branch XML-RPC call or
+        # pushing a new branch to the supermirror), so we validate the branch
+        # name here to give a nicer error message than 'ERROR: new row for
+        # relation "branch" violates check constraint "valid_name"...'.
+        IBranch['name'].validate(unicode(name))
 
         branch = Branch(
             name=name, owner=owner, author=author, product=product, url=url,
@@ -770,14 +761,14 @@ class BranchSet:
                      + " AND Branch.product IS NULL"
                      + " AND Person.name = " + quote(owner_name)
                      + " AND Branch.name = " + quote(branch_name))
-            tables=['Person']
+            tables = ['Person']
         else:
             query = ("Branch.owner = Person.id"
                      + " AND Branch.product = Product.id"
                      + " AND Person.name = " + quote(owner_name)
                      + " AND Product.name = " + quote(product_name)
                      + " AND Branch.name = " + quote(branch_name))
-            tables=['Person', 'Product']
+            tables = ['Person', 'Product']
         branch = Branch.selectOne(query, clauseTables=tables)
         if branch is None:
             return default
@@ -1119,3 +1110,13 @@ class BranchSet:
             AND(Branch.q.branch_type == branch_type,
                 Branch.q.mirror_request_time < UTC_NOW),
             prejoins=['owner', 'product'], orderBy='mirror_request_time')
+
+    def getTargetBranchesForUsersMergeProposals(self, user, product):
+        """See `IBranchSet`."""
+        return Branch.select("""
+            BranchMergeProposal.target_branch = Branch.id
+            AND BranchMergeProposal.registrant = %s
+            AND Branch.product = %s
+            """ % sqlvalues(user, product),
+            clauseTables=['BranchMergeProposal'],
+            orderBy=['owner', 'name'], distinct=True)

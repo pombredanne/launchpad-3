@@ -44,7 +44,7 @@ from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.launchpad.interfaces import (
     AccountStatus, ArchivePurpose, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, EmailAddressStatus, IBugTaskSet, IDistribution,
+    BugTaskStatus, EmailAddressStatus, IBugTarget, IBugTaskSet, IDistribution,
     IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet,
     IHWSubmissionSet, IHasIcon, IHasLogo, IHasMugshot, IIrcID, IIrcIDSet,
     IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
@@ -52,10 +52,10 @@ from canonical.launchpad.interfaces import (
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
     IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType, PersonCreationRationale,
-    QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
-    ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType, MailingListStatus,
+    PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
+    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -220,6 +220,21 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         SQLBase._init(self, *args, **kw)
         if self.teamownerID is not None:
             alsoProvides(self, ITeam)
+
+    def convertToTeam(self, team_owner):
+        """See `IPerson`."""
+        assert not self.isTeam(), "Can't convert a team to a team."
+        assert self.account_status == AccountStatus.NOACCOUNT, (
+            "Only Person entries whose account_status is NOACCOUNT can be "
+            "converted into teams.")
+        self.password = None
+        self.creation_rationale = None
+        self.teamowner = team_owner
+        alsoProvides(self, ITeam)
+        # Add the owner as a team admin manually because we know what we're
+        # doing and we don't want any email notifications to be sent.
+        TeamMembershipSet().new(
+            team_owner, self, TeamMembershipStatus.ADMIN, reviewer=team_owner)
 
     # specification-related joins
     @property
@@ -725,6 +740,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         """See `IPerson`."""
         return self.teamowner is not None
 
+    @property
+    def mailing_list(self):
+        """See `IPerson`."""
+        return getUtility(IMailingListSet).get(self.name)
+
     @cachedproperty
     def is_trusted_on_shipit(self):
         """See `IPerson`."""
@@ -1070,9 +1090,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             raise AssertionError(
                 "Unknown subscription policy: %s" % team.subscriptionpolicy)
 
-        self._inTeam_cache = {} # Flush the cache used by the inTeam method
-
         team.addMember(self, reviewer=self, status=status)
+
+    def clearInTeamCache(self):
+        """See `IPerson`."""
+        self._inTeam_cache = {}
 
     #
     # ITeam methods
@@ -1420,7 +1442,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
             # XXX flacoste 2007/11/26 The comparison using id in the assert
-            # below works around a nasty intermittent failure. 
+            # below works around a nasty intermittent failure.
             # See bug #164635.
             assert bug_task.assignee.id == self.id, (
                "Bugtask %s assignee isn't the one expected: %s != %s" % (
@@ -1428,17 +1450,17 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             bug_task.transitionToAssignee(None)
         for spec in self.assigned_specs:
             spec.assignee = None
-        registry = getUtility(ILaunchpadCelebrities).registry
+        registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
         for team in Person.selectBy(teamowner=self):
-            team.teamowner = registry
+            team.teamowner = registry_experts
         for pillar_name in self.getOwnedOrDrivenPillars():
             pillar = pillar_name.pillar
             # XXX flacoste 2007/11/26 The comparison using id below
             # works around a nasty intermittent failure. See bug #164635.
             if pillar.owner.id == self.id:
-                pillar.owner = registry
+                pillar.owner = registry_experts
             elif pillar.driver.id == self.id:
-                pillar.driver = registry
+                pillar.driver = registry_experts
             else:
                 # Since we removed the person from all teams, something is
                 # seriously broken here.
@@ -1799,9 +1821,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 'sourcepackagerelease.maintainer = %s' % quote(self.id))
 
         if ppa_only:
-            clauses.append('archive.purpose = %s' % quote(ArchivePurpose.PPA))
+            clauses.append(
+                'archive.purpose = %s' % quote(ArchivePurpose.PPA))
         else:
-            clauses.append('archive.purpose != %s' % quote(ArchivePurpose.PPA))
+            clauses.append(
+                'archive.purpose != %s' % quote(ArchivePurpose.PPA))
 
         query_clause = " AND ".join(clauses)
         query = """
@@ -1857,6 +1881,20 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def archive(self):
         """See `IPerson`."""
         return Archive.selectOneBy(owner=self)
+
+    def isBugContributor(self, user=None):
+        """See `IPerson`."""
+        search_params = BugTaskSearchParams(user=user, assignee=self)
+        bugtask_count = self.searchTasks(search_params).count()
+        return bugtask_count > 0
+
+    def isBugContributorInTarget(self, user=None, target=None):
+        """See `IPerson`."""
+        assert IBugTarget.providedBy(target), (
+            "%s isn't a valid bug target." % target)
+        search_params = BugTaskSearchParams(user=user, assignee=self)
+        bugtask_count = target.searchTasks(search_params).count()
+        return bugtask_count > 0
 
 
 class PersonSet:

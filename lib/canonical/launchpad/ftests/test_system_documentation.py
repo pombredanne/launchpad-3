@@ -20,10 +20,10 @@ from canonical.config import config
 from canonical.database.sqlbase import (
     commit, flush_database_updates, READ_COMMITTED_ISOLATION)
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
-from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.ftests.bug import (
-    create_old_bug, summarize_bugtasks)
+    create_old_bug, summarize_bugtasks, sync_bugtasks)
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
     IPersonSet)
@@ -41,7 +41,8 @@ here = os.path.dirname(os.path.realpath(__file__))
 default_optionflags = REPORT_NDIFF | NORMALIZE_WHITESPACE | ELLIPSIS
 
 
-def create_view(context, name, form=None, layer=None, server_url=None):
+def create_view(context, name, form=None, layer=None, server_url=None,
+                method='GET'):
     """Return a view based on the given arguments.
 
     :param context: The context for the view.
@@ -49,9 +50,11 @@ def create_view(context, name, form=None, layer=None, server_url=None):
     :param form: A dictionary with the form keys.
     :param layer: The layer where the page we are interested in is located.
     :param server_url: The URL from where this request was done.
+    :param method: The method used in the request. Defaults to 'GET'.
     :return: The view class for the given context and the name.
     """
-    request = LaunchpadTestRequest(form=form, SERVER_URL=server_url)
+    request = LaunchpadTestRequest(
+        form=form, SERVER_URL=server_url, method=method)
     if layer is not None:
         setFirstLayer(request, layer)
     return getView(context, name, request)
@@ -228,7 +231,7 @@ def bugtaskExpirationSetUp(test):
     setUp(test)
     test.globs['create_old_bug'] = create_old_bug
     test.globs['summarize_bugtasks'] = summarize_bugtasks
-    test.globs['sync'] = sync
+    test.globs['sync_bugtasks'] = sync_bugtasks
     test.globs['commit'] = commit
     login('test@canonical.com')
 
@@ -661,6 +664,12 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadZopelessLayer
             ),
+    'openid-fetcher.txt': FunctionalDocFileSuite(
+            '../doc/openid-fetcher.txt',
+            optionflags=default_optionflags,
+            stdout_logging=False,
+            layer=LaunchpadFunctionalLayer
+            ),
     }
 
 
@@ -698,8 +707,6 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
     @classmethod
     def addTestsToSpecial(cls):
         """Adds all the tests related to process-mail.py to special"""
-        global special
-
         for filename in cls.doctests_without_logging:
             special[filename] = cls.createLayeredDocFileSuite(filename)
 

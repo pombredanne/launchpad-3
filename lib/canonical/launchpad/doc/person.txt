@@ -6,7 +6,6 @@ Launchpad users.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.database.sqlbase import sqlvalues, flush_database_updates
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IPerson, IEmailAddressSet, IHasTranslationImports)
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
@@ -179,6 +178,70 @@ account_status will always be NOACCOUNT.
     >>> landscape_devs.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
+=== Turning people into teams ===
+
+Launchpad may create Person entries automatically and it always assumes
+these are actual people.  Sometimes, though, these should actually be teams,
+so we provide an easy way to turn one of these auto created entries into
+teams.
+
+    >>> not_a_person, dummy = personset.createPersonAndEmail(
+    ...     'foo@random.com', PersonCreationRationale.SOURCEPACKAGEIMPORT,
+    ...     comment='when the ed package was imported into Ubuntu Feisty')
+    >>> not_a_person.isTeam()
+    False
+    >>> not_a_person.is_valid_person
+    False
+    >>> not_a_person.account_status
+    <DBItem AccountStatus.NOACCOUNT...
+
+    # Empty stub.test_emails as later we'll want to show that no notifications
+    # are sent when we add the owner as a member of the team.
+    >>> from canonical.launchpad.mail import stub
+    >>> stub.test_emails = []
+
+    >>> not_a_person.convertToTeam(team_owner=ddaa)
+    >>> not_a_person.isTeam()
+    True
+    >>> ITeam.providedBy(not_a_person)
+    True
+    >>> verifyObject(ITeam, not_a_person)
+    True
+    >>> print not_a_person.password
+    None
+
+The team owner is also added as an administrator of its team.
+
+    >>> [member.name for member in not_a_person.adminmembers]
+    [u'ddaa']
+
+    # As said previously, no notifications are sent when we add the team owner
+    # as a member of his team.
+    >>> transaction.commit()
+    >>> stub.test_emails
+    []
+
+And we can even add other members to our new team!
+
+    >>> not_a_person.addMember(lifeless, reviewer=ddaa)
+    >>> [member.name for member in not_a_person.activemembers]
+    [u'ddaa', u'lifeless']
+
+This functionality is only available for non-team Person entries whose
+account_status is NOACCOUNT, though.
+
+    >>> ddaa.account_status
+    <DBItem AccountStatus.ACTIVE...
+    >>> ddaa.convertToTeam(team_owner=landscape_devs)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only Person entries whose account_status is NOACCOUNT...
+
+    >>> not_a_person.convertToTeam(team_owner=landscape_devs)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Can't convert a team to a team.
+
 === Team members ===
 
 The relationship between a person and a team is stored in TeamMemberships
@@ -280,6 +343,13 @@ was a cause of a number of timeouts
     >>> naked_lifeless._inTeam_cache[vcs_imports.id] = True
     >>> lifeless.inTeam(vcs_imports)
     True
+
+IPerson has a method to clear it; this is used between IPerson instances
+to ensure that the cache can be kept consistent when membership changes.
+
+    >>> naked_lifeless.clearInTeamCache()
+    >>> naked_lifeless._inTeam_cache
+    {}
 
 ** See lib/canonical/launchpad/doc/teammembership.txt for more information
    about team membership/participation.
@@ -436,12 +506,13 @@ It's also important to note that the teams/pillars owned/driven by Foo Bar
 are now owned/driven by the registry admins team.
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> registry = getUtility(ILaunchpadCelebrities).registry
-    >>> registry_pillars = set(registry.getOwnedOrDrivenPillars())
+    >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
+
+    >>> registry_pillars = set(registry_experts.getOwnedOrDrivenPillars())
     >>> registry_pillars.issuperset(foobar_pillars)
     True
 
-    >>> registry_teams = set(Person.selectBy(teamowner=registry))
+    >>> registry_teams = set(Person.selectBy(teamowner=registry_experts))
     >>> registry_teams.issuperset(foobar_teams)
     True
 
@@ -470,6 +541,7 @@ trying to match the text only against the beginning of an email address:
     >>> print_people(personset.find('ubuntu'))
     Mirror Administrators (ubuntu-mirror-admins): []
     Sigurd Gartmann (sigurd-ubuntu): [u'sigurd-ubuntu@brogar.org']
+    Ubuntu Doc Team (doc): [u'doc@lists.ubuntu.com']
     Ubuntu Gnome Team (name18): []
     Ubuntu Team (ubuntu-team): [u'support@ubuntu.com']
     Ubuntu Translators (ubuntu-translators): []
@@ -828,7 +900,6 @@ We can filter for specifications that contain specific text:
 
 Inactive products are excluded from the listings.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> from canonical.launchpad.ftests import login
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -866,3 +937,53 @@ or not.
     >>> kiko.isUploader(ubuntu)
     False
 
+
+== Bug contribution ==
+
+We can check whether a person has any bugs assigned to them, either
+within the context of a specific bug target, or in Launchpad in general.
+
+A person with bugs assigned to them in a context is considered a 'Bug
+Contributor'.
+
+    >>> cprov.searchTasks(
+    ...     BugTaskSearchParams(user=foobar, assignee=cprov)).count()
+    0
+
+Celso has no bug tasks assigned to him. In other words, he isn't a bug
+contributor.
+
+    >>> cprov.isBugContributor(user=foobar)
+    False
+
+We assign a bug task to Celso.
+
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> search_params = BugTaskSearchParams(user=foobar)
+    >>> search_params.setProduct(firefox)
+    >>> firefox_bugtask = getUtility(IBugTaskSet).search(search_params)[0]
+    >>> firefox_bugtask.transitionToAssignee(cprov)
+    >>> flush_database_updates()
+
+Now Celso is a bug contributor in Launchpad.
+
+    >>> cprov.isBugContributor(user=foobar)
+    True
+
+Celso is a bug contributer in the context of the `firefox` product.
+
+    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> cprov.isBugContributorInTarget(user=foobar, target=firefox)
+    True
+
+And also in the context of the `mozilla` project, by association.
+
+    >>> cprov.isBugContributorInTarget(user=foobar,
+    ...     target=getUtility(IProjectSet).getByName('mozilla'))
+    True
+
+But not in other contexts.
+
+    >>> cprov.isBugContributorInTarget(user=foobar,
+    ...     target=getUtility(IProductSet).getByName('jokosher'))
+    False

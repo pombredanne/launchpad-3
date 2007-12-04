@@ -119,7 +119,7 @@ and work with that:
     1
     >>> add_comment_view.error_count
     'There is 1 error.'
-    >>> add_comment_view.getWidgetError('filecontent')
+    >>> add_comment_view.getFieldError('filecontent')
     u'Cannot upload empty file.'
 
 It's possible to limit the maximum size of the attachments by setting

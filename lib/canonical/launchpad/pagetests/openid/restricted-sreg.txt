@@ -16,7 +16,7 @@ configured, then no details are disclosed in the response.
 
 First acquire an association handle:
 
-    >>> from canonical.launchpad.ftests.openid import (
+    >>> from canonical.launchpad.ftests.openidhelpers import (
     ...     install_consumer, uninstall_consumer)
     >>> install_consumer()
 
@@ -51,9 +51,11 @@ Now perform an OpenID authentication request:
     openid.assoc_handle:...
     openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
     openid.mode:id_res
+    openid.op_endpoint:http://openid.launchpad.dev/+openid
+    openid.response_nonce:...
     openid.return_to:http://launchpad.dev/+openid-consumer
     openid.sig:...
-    openid.signed:return_to,mode,identity
+    openid.signed:...
     <BLANKLINE>
 
 
@@ -87,9 +89,11 @@ been requested.
     openid.assoc_handle:...
     openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
     openid.mode:id_res
+    openid.op_endpoint:http://openid.launchpad.dev/+openid
+    openid.response_nonce:...
     openid.return_to:http://launchpad.dev/+openid-consumer
     openid.sig:...
-    openid.signed:return_to,mode,identity,sreg.fullname,sreg.nickname,sreg.email
+    openid.signed:...
     openid.sreg.email:mark@hbd.com
     openid.sreg.fullname:Mark Shuttleworth
     openid.sreg.nickname:sabdfl

@@ -5,8 +5,6 @@ named %(profile_name)s, to which the email address
 %(email)s belongs.
 
 To finish claiming that profile, just follow the link below.
-You will need to enter this email address and choose a password for
-the claimed profile.
 
     %(token_url)s
 

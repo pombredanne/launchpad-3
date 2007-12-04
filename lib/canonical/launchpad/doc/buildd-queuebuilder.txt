@@ -345,14 +345,13 @@ marked as NEEDSBUILD we can create BuildQueue entries for it
   >>> print BuildQueue.select().count() - len(old_jobs)
   8
 
-A separate method, sanitiseAndScoreCandidates, is responsible for
-cleaning up the BuildQueue and scroring the jobs properly. Since we
-haven't run it yet, we'll see that the new entries we've created have
-the default score value of 0:
+The BuildQueue entries created are already 'scored', it means that the job
+can be already dispatched once operation is commited, i.e.,
+dispatching can happen in parallel with build creation.
 
   >>> bq = BuildQueue.select(orderBy='id')[len(old_jobs)]
   >>> bq.lastscore
-  0
+  1005
 
 Check the published component name retriever, they might be different,
 i.e., the published component can be different than the original component.
@@ -362,32 +361,38 @@ i.e., the published component can be different than the original component.
   >>> bq.build.sourcepackagerelease.component.name
   u'main'
 
-Sanitise the queue
-------------------
+== Re-scoring all pending builds ==
 
-After sanitising the jobs, only the ones containing
-sourcepackagerelease files should remain:
+In order to test the "re-scoring" procedure we will change the source
+package urgency related to a specific item, then we can see it getting a
+different score (for more information on scoring check
+buildd-scoring.txt):
 
-  >>> jobs = bm.sanitiseAndScoreCandidates()
+  >>> bq.lastscore
+  1005
 
-  >>> new_jobs = [job for job in jobs if job not in old_jobs]
+  >>> from canonical.launchpad.interfaces import SourcePackageUrgency
+  >>> bq.build.sourcepackagerelease.urgency = SourcePackageUrgency.EMERGENCY
+  >>> flush_database_updates()
+
+All pending queued records will be simply 're-scored'.
+
+  >>> bm.scoreCandidates()
+
+  >>> new_jobs = [job for job in BuildQueue.select(orderBy='id')
+  ...             if job not in old_jobs]
   >>> len(new_jobs)
   8
 
+As we expected, you can clearly verify that the queued record modified
+above was 're-scored' due to its higher score value.
+
   >>> job = new_jobs[0]
-  >>> job.build.sourcepackagerelease.name
-  u'test-buildd'
-
-And we grant some score depending on: time pending on the buildqueue,
-component the package belongs to, and the urgency of the upload.
-There is still some work to do here, for further information see the
-buildmaster/master.py code. The job presented should won
-exactly ** 1005 ** points last turn (5 for the default urgency 'LOW'
-and 1000 for the 'Main' component, further tests for scoring are in
-buildd-scoring.txt)
-
+  >>> job.id == bq.id
+  True
   >>> job.lastscore
-  1005
+  1020
+
 
 == PPA work ==
 
@@ -430,9 +435,10 @@ allowed for PPA (see further comments in buildmaster/master.py).
 Check if BuildQueue are also created for ppa_builds:
 
   >>> bm.addMissingBuildQueueEntries()
-  >>> jobs = bm.sanitiseAndScoreCandidates()
+  >>> bm.scoreCandidates()
 
-  >>> new_jobs = [job for job in jobs if job not in old_jobs]
+  >>> new_jobs = [job for job in BuildQueue.select(orderBy='id')
+  ...             if job not in old_jobs]
   >>> len(new_jobs)
   1
 
