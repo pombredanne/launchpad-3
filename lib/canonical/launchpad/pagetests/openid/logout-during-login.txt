@@ -18,18 +18,26 @@ There are a number of ways that this situation could occur:
 To test this, we will first authenticate to the Launchpad OpenID
 provider:
 
-    >>> from canonical.launchpad.ftests.openidhelpers import install_consumer
+    >>> from openid.consumer.consumer import Consumer
+    >>> from openid.consumer.discover import OPENID_1_1_TYPE
+    >>> from openid.fetchers import setDefaultFetcher
+    >>> from openid.sreg import SRegRequest, SRegResponse
+    >>> from openid.store.memstore import MemoryStore
+    >>> from canonical.launchpad.ftests.openidhelpers import (
+    ...     complete_from_browser, install_consumer,
+    ...     make_endpoint, uninstall_consumer, PublisherFetcher)
     >>> install_consumer()
+    >>> setDefaultFetcher(PublisherFetcher())
 
-    >>> from urllib import urlencode
-    >>> args = urlencode({
-    ...     'openid.mode': 'checkid_setup',
-    ...     'openid.identity': 'http://openid.launchpad.dev/+id/sabdfl_oid',
-    ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
-    ...     'openid.trust_root': 'http://launchpad.dev/+openid-consumer',
-    ...     })
-    >>> setup_url = 'http://openid.launchpad.dev/+openid?%s' % args
-    >>> browser.open(setup_url)
+
+    >>> openid_store = MemoryStore()
+    >>> consumer = Consumer(session={}, store=openid_store)
+
+    >>> request = consumer.beginWithoutDiscovery(make_endpoint(
+    ...     OPENID_1_1_TYPE, 'http://openid.launchpad.dev/+id/sabdfl_oid'))
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+
     >>> print browser.title
     Launchpad Login Service
     >>> browser.getControl(name='field.email').value = 'mark@hbd.com'
@@ -41,15 +49,21 @@ provider:
     >>> print browser.contents
     Consumer received GET
     ...
-    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
-    ...
+    >>> info = complete_from_browser(consumer, browser)
+    >>> print info.status
+    success
+    >>> print info.identity_url
+    http://openid.launchpad.dev/+id/sabdfl_oid
 
 Now lets begin another OpenID authentication request, which will
 present a different form asking if we want to authenticate:
 
-    >>> browser.open(setup_url)
+    >>> request = consumer.beginWithoutDiscovery(make_endpoint(
+    ...     OPENID_1_1_TYPE, 'http://openid.launchpad.dev/+id/sabdfl_oid'))
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
     >>> print browser.title
-    Authenticate to http://launchpad.dev/+openid-consumer
+    Authenticate to http://launchpad.dev/
 
 We will now log out using the "I'm someone else" button, which will
 present us with the login form.  We will then go back to the first
@@ -60,7 +74,7 @@ page:
     Launchpad Login Service
     >>> browser.goBack()
     >>> print browser.title
-    Authenticate to http://launchpad.dev/+openid-consumer
+    Authenticate to http://launchpad.dev/
 
 Now when we try to sign in, we should be directed to the login page:
 
@@ -79,12 +93,15 @@ From this point, we can log in as usual:
     >>> print browser.contents
     Consumer received GET
     ...
-    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
-    ...
+    >>> info = complete_from_browser(consumer, browser)
+    >>> print info.status
+    success
+    >>> print info.identity_url
+    http://openid.launchpad.dev/+id/sabdfl_oid
 
 
 == Cleanup ==
 
-    >>> from canonical.launchpad.ftests.openidhelpers import uninstall_consumer
+    >>> setDefaultFetcher(None)
     >>> uninstall_consumer()
 

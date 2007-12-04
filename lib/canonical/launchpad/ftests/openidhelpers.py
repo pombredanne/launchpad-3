@@ -58,9 +58,6 @@ def install_consumer():
 
 def uninstall_consumer():
     undefineChecker(ConsumerView)
-    # Don't bother - work out how to do this if it is a problem, but I
-    # think YAGNI.
-    pass
 
 
 class PublisherFetcher(fetchers.Urllib2Fetcher):
@@ -163,6 +160,8 @@ def complete_from_browser(consumer, browser, expected_claimed_id=None):
     If the third argument is provided, it will also attempt to fix up
     1.x identifier select requests.
     """
+    assert browser.contents.startswith('Consumer received '), (
+        "Browser contents does not look like it came from +openid-consumer")
     # Skip the first "Consumer received GET" line
     query = dict(line.split(':', 1)
                  for line in browser.contents.splitlines()[1:])
