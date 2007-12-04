@@ -11,6 +11,7 @@ import unittest
 import pytz
 
 from bzrlib.branch import Branch
+from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import LockBroken
 from bzrlib.urlutils import local_path_to_url
 
@@ -488,7 +489,7 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         return failure
 
     def makePullerMaster(self):
-        """XXX."""
+        """Construct a PullerMaster suited to the test environment."""
         puller_master = scheduler.PullerMaster(
             self.db_branch.id, local_path_to_url('src-branch'),
             self.db_branch.unique_name, self.db_branch.branch_type,
@@ -497,11 +498,10 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         return puller_master
 
     def test_mirror(self):
-        """Actually mirror a branch using a worker sub-process.
-
-        This test actually launches a worker process and makes sure that it
-        runs successfully and that we report the successful run.
-        """
+        # Actually mirror a branch using a worker sub-process.
+        #
+        # This test actually launches a worker process and makes sure that it
+        # runs successfully and that we report the successful run.
         revision_id = self.bzr_tree.branch.last_revision()
 
         puller_master = self.makePullerMaster()
@@ -524,24 +524,35 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
 
         return deferred
 
-    def test_mirror_with_branch_initially_locked(self):
-        """XXX."""
+    def test_mirror_with_destination_locked(self):
+        # If the destination branch is locked, the worker should break the
+        # lock and mirror the branch regardless.
         revision_id = self.bzr_tree.branch.last_revision()
 
         puller_master = self.makePullerMaster()
 
-        new_bzr_dir = self.bzr_tree.bzrdir.clone(puller_master.destination_url)
-        destination_branch = new_bzr_dir.open_branch()
+        destination_branch = BzrDir.create_branch_convenience(
+            puller_master.destination_url)
         destination_branch.lock_write()
 
         deferred = puller_master.mirror().addErrback(self._dumpError)
 
-        # XXX.
         def check_unlocked(ignored):
+            # Check that the worker unlocked the branch.
             self.assertFalse(destination_branch.get_physical_lock_status())
+            # We call unlock() here to prevent warnings about the branch not
+            # being unlocked being spewed when the branch is garbage
+            # collected.
             self.assertRaises(LockBroken, destination_branch.unlock)
             return ignored
         deferred.addCallback(check_unlocked)
+
+        def check_branch_mirrored(ignored):
+            self.assertEqual(
+                revision_id,
+                Branch.open(puller_master.destination_url).last_revision())
+            return ignored
+        deferred.addCallback(check_branch_mirrored)
 
         return deferred
 
