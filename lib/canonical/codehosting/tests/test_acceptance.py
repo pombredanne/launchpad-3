@@ -175,25 +175,26 @@ class SmokeTest(SSHTestCase):
         # Make a new branch
         tree = self.make_branch_and_tree(
             self.first_tree, format=self.repo_format)
+
         # Push up a new branch.
-        self.push(
-            self.first_tree,
-            self.getTransportURL('~testuser/+junk/new-branch'))
+        remote_url = self.getTransportURL('~testuser/+junk/new-branch')
+        self.push(self.first_tree, remote_url)
+        self.assertBranchesMatch(self.first_tree, remote_url)
+
         # Commit to it.
-        file = open(os.path.join(self.second_tree, 'foo'), 'w')
+        file = open(os.path.join(self.first_tree, 'foo'), 'w')
         file.write('Content!\n')
         file.close()
         tree.add('foo')
         tree.commit('new revision')
-        # Push it up again.
-        self.push(
-            self.first_tree,
-            self.getTransportURL('~testuser/+junk/new-branch'))
-        # Pull it back down.
-        self.pull(
-            self.getTransportURL('~testuser/+junk/new-branch'),
-            self.second_tree)
 
+        # Push it up again.
+        self.push(self.first_tree, remote_url)
+        self.assertBranchesMatch(self.first_tree, remote_url)
+
+        # Pull it back down.
+        self.pull(remote_url, self.second_tree)
+        self.assertBranchesMatch(self.first_tree, self.second_tree)
 
 
 class AcceptanceTests(SSHTestCase):
