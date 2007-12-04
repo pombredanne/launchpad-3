@@ -1,0 +1,46 @@
+= Bug Reporting Guidelines =
+
+Some helpful explanatory text - guidelines - can be set for
+distributions, product groups and products.
+
+    >>> context_names = 'ubuntu mozilla firefox'.split()
+
+    >>> for context_name in context_names:
+    ...     edit_url = 'http://launchpad.dev/%s/+edit' % (context_name,)
+    ...     admin_browser.open(edit_url)
+    ...     admin_browser.getControl('Bug reporting guidelines').value = (
+    ...         "Welcome to %s! Don't forget to attach a log file."
+    ...             % (context_name.capitalize(),))
+    ...     admin_browser.getControl('Change').click()
+
+The guidelines are displayed on the first bug reporting page:
+
+    >>> for context_name in context_names:
+    ...     filebug_url = 'http://launchpad.dev/%s/+filebug' % (context_name,)
+    ...     user_browser.open(filebug_url)
+    ...     print user_browser.url
+    ...     print extract_text(find_tag_by_id(
+    ...         user_browser.contents, 'bug-reporting-guidelines'))
+    http://launchpad.dev/ubuntu/+filebug
+        Welcome to Ubuntu! Don't forget to attach a log file.
+    http://launchpad.dev/mozilla/+filebug
+        Welcome to Mozilla! Don't forget to attach a log file.
+    http://launchpad.dev/firefox/+filebug
+        Welcome to Firefox! Don't forget to attach a log file.
+
+They are also displayed on the advanced bug filing form:
+
+    >>> for context_name in context_names:
+    ...     filebug_url = (
+    ...         'http://launchpad.dev/%s/+filebug-advanced'
+    ...             % (context_name,))
+    ...     user_browser.open(filebug_url)
+    ...     print user_browser.url
+    ...     print extract_text(find_tag_by_id(
+    ...         user_browser.contents, 'bug-reporting-guidelines'))
+    http://launchpad.dev/ubuntu/+filebug-advanced
+        Welcome to Ubuntu! Don't forget to attach a log file.
+    http://launchpad.dev/mozilla/+filebug-advanced
+        Welcome to Mozilla! Don't forget to attach a log file.
+    http://launchpad.dev/firefox/+filebug-advanced
+        Welcome to Firefox! Don't forget to attach a log file.
