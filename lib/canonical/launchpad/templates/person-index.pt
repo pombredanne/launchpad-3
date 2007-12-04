@@ -315,14 +315,24 @@
               /></a>
             </td>
           </tr>
-          <tr tal:condition="context/isTeam">
-            <td colspan="2" id="subscription_policy">
-              <strong tal:content="context/subscriptionpolicy/title">
+          <tal:is_team condition="context/isTeam">
+            <tr>
+                <td colspan="2" id="subscription_policy">
+                <strong tal:content="context/subscriptionpolicy/title">
                 Moderated
-              </strong>:
-              <span tal:replace="context/subscriptionpolicy/description" />
-            </td>
-          </tr>
+                </strong>:
+                <span tal:replace="context/subscriptionpolicy/description" />
+                </td>
+            </tr>
+            <tr tal:define="archive_url view/archive_url"
+                 tal:condition="archive_url">
+              <th>Mailing list archive:</th>
+              <td><a tal:content="archive_url"
+                     tal:attributes="href archive_url"
+                   >http://lists.launchpad.dev/archives/team_name</a>
+              </td>
+            </tr>
+          </tal:is_team>
         </tbody>
       </table>
     </div>
