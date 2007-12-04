@@ -129,6 +129,26 @@ class ContentNegotiationTests(unittest.TestCase):
         self.assertEqual(request.response.getHeader('Location'),
                          'http://launchpad.dev/~sabdfl')
 
+    def test_disable_discovery(self):
+        """Test enable_xrds_discovery=False case."""
+        request, view = self.createRequestAndView(
+            'launchpad.dev', '/~sabdfl', '', '')
+        view.enable_xrds_discovery = False
+        content = view()
+        self.assertEqual(content, 'Normal content')
+        self.assertEqual(
+            request.response.getHeader('x-xrds-location'), None)
+        # The same goes if application/xrds+xml is preferred to HTML
+        request, view = self.createRequestAndView(
+            'launchpad.dev', '/~sabdfl', '',
+            'text/html;q=0.5, application/xrds+xml, */*')
+        view.enable_xrds_discovery = False
+        content = view()
+        self.assertEqual(content, 'Normal content')
+        self.assertEqual(
+            request.response.getHeader('x-xrds-location'), None)
+
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
