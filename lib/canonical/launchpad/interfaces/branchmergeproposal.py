@@ -5,16 +5,18 @@
 
 __metaclass__ = type
 __all__ = [
+    'BranchMergeProposalStatus',
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
+    'UserNotBranchReviewer',
     ]
 
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Int
 
 from canonical.launchpad import _
-
 from canonical.launchpad.fields import Whiteboard
+from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -22,6 +24,61 @@ class InvalidBranchMergeProposal(Exception):
 
     The text of the exception is the rule violation.
     """
+
+
+class UserNotBranchReviewer(Exception):
+    """The user who attempted to review the merge proposal isn't a reviewer.
+
+    A specific reviewer may be set on a branch.  If a specific reviewer
+    isn't set then any user in the team of the owner of the branch is
+    considered a reviewer.
+    """
+
+
+class BranchMergeProposalStatus(DBEnumeratedType):
+    """Branch Merge Proposal Status
+
+    The current state of a proposal to merge.
+    """
+
+    WORK_IN_PROGRESS = DBItem(1, """
+        Work in progress
+
+        The source branch is actively being worked on.
+        """)
+
+    NEEDS_REVIEW = DBItem(2, """
+        Needs review
+
+        A review of the changes has been requested.
+        """)
+
+    CODE_APPROVED = DBItem(3, """
+        Code approved
+
+        The changes have been approved for merging.
+        """)
+
+    RESUBMIT = DBItem(4, """
+        Resubmit
+
+        The changes were not approved by the reviewer, and the author
+        has the option to resubmit new changes.
+        """)
+
+    MERGED = DBItem(5, """
+        Merged
+
+        The changes from the source branch were merged into the target
+        branch.
+        """)
+
+    MERGE_FAILED = DBItem(6, """
+        Code failed to merge
+
+        The changes from the source branch failed to merge into the
+        target branch for some reason.
+        """)
 
 
 class IBranchMergeProposal(Interface):
@@ -57,6 +114,11 @@ class IBranchMergeProposal(Interface):
         title=_('Whiteboard'), required=False,
         description=_('Notes about the merge.'))
 
+    queue_status = Attribute(_("The current state of the proposal."))
+
+    reviewer = Attribute(
+        _("The person that accepted (or rejected) the code for merging."))
+
     merged_revno = Int(
         title=_("Merged Revision Number"), required=False,
         description=_("The revision number on the target branch which "
@@ -72,6 +134,41 @@ class IBranchMergeProposal(Interface):
 
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    date_review_requested = Datetime(
+        title=_('Date Review Requested'), required=False, readonly=True)
+    date_reviewed = Datetime(
+        title=_('Date Reviewed'), required=False, readonly=True)
+
+    def requestReview():
+        """Set the state of merge proposal to 'Needs review'.
+
+        As long as the branch is not yet merged, a review can be requested.
+        Requesting a review sets the date_review_requested.
+        """
+
+    def approveBranch(reviewer):
+        """Mark the branch as 'Code approved'.
+
+        The time that the branch was approved is recoreded in `date_reviewed`.
+
+        :raises: UserNotBranchReviewer if the reviewer is not in the team of
+                 the branch reviewer for the target branch.
+        """
+
+    def requestResubmit(reviewer):
+        """Mark the branch as 'Resubmit'.
+
+        This is a nicer way of saying 'Rejected', as often we would like the
+        author to have another go.
+
+        The time that the branch was rejected is recoreded in `date_reviewed`.
+
+        :raises: UserNotBranchReviewer if the reviewer is not in the team of
+                 the branch reviewer for the target branch.
+        """
+
+    def mergeFailed(merger):
+        """Mark the proposal as 'Code failed to merge'."""
 
     def markAsMerged(merged_revno=None, date_merged=None, merge_reporter=None):
         """Mark the branch merge proposal as merged.

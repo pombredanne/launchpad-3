@@ -14,10 +14,12 @@ from sqlobject import ForeignKey, IntCol, StringCol
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.database.branchrevision import BranchRevision
-from canonical.launchpad.interfaces import IBranchMergeProposal
+from canonical.launchpad.interfaces import (
+    BranchMergeProposalStatus, IBranchMergeProposal)
 
 
 class BranchMergeProposal(SQLBase):
@@ -41,6 +43,10 @@ class BranchMergeProposal(SQLBase):
         dbName='dependent_branch', foreignKey='Branch', notNull=False)
 
     whiteboard = StringCol(default=None)
+
+    queue_status = EnumCol(
+        enum=BranchMergeProposalStatus, notNull=True,
+        default=BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
     date_merged = UtcDateTimeCol(default=None)
     merged_revno = IntCol(default=None)

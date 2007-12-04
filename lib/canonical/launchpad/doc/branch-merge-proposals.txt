@@ -103,7 +103,7 @@ progress" state.
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
     >>> source_branch = factory.makeBranch(owner=sample_person)
-    # Needs to be the same product to merge into.
+    >>> # Needs to be the same product to merge into.
     >>> target_branch = factory.makeBranch(
     ...     owner=sample_person, product=source_branch.product)
     >>> proposal = source_branch.addLandingTarget(
@@ -114,7 +114,7 @@ progress" state.
 Directly setting the queue_status is not possible.
 
     >>> from canonical.launchpad.interfaces import BranchMergeProposalStatus
-    >>> proposal.queue_status = BranchMergeProposalStatus.REVIEWED
+    >>> proposal.queue_status = BranchMergeProposalStatus.CODE_APPROVED
     Forbidden
 
 Adjusting the state is done through methods on the merge proposal.
@@ -123,7 +123,7 @@ Adjusting the state is done through methods on the merge proposal.
     None
     >>> proposal.requestReview()
     >>> print proposal.queue_status.title
-    Review requested
+    Needs review
 
 When requesting a review, a timestamp is also recorded.
 
@@ -161,37 +161,37 @@ their own code.
     >>> print proposal.queue_status.title
     Code approved
 
-Code that has been accepted, and also be rejected.
+Code that has been accepted can also be set to resubmit.
 
-    >>> proposal.rejectBranch(sample_person)
+    >>> proposal.requestResubmit(sample_person)
     >>> proposal.queue_status.title
-    Code not approved
+    Resubmit
 
-Rejected proposals can also be updated to be approved.
+Resubmit proposals can also be updated to be approved.
 
     >>> proposal.approveBranch(sample_person)
     >>> print proposal.queue_status.title
     Code approved
 
-Proposals with either rejected or accepted reviews can request another
+Proposals with either resubmit or accepted reviews can request another
 review.
 
     >>> proposal.requestReview()
     >>> print proposal.queue_status.title
-    Review requested
-    >>> proposal.rejectBranch(sample_person)
+    Needs review
+    >>> proposal.requestResubmit(sample_person)
     >>> proposal.queue_status.title
-    Code not approved
+    Resubmit
     >>> proposal.requestReview()
     >>> print proposal.queue_status.title
-    Review requested
+    Needs review
 
 If the target branch has specified a specific reviewer, then only
 a user in the reviewer team can approve or reject the branch.
 
     >>> eric_the_reviewer = factory.makePerson(name="eric-reviewer")
     >>> target_branch.reviewer = eric_the_reviewer
-    >>> proposal.rejectBranch(sample_person)
+    >>> proposal.requestResubmit(sample_person)
     Traceback...
     UserNotBranchReviewer
     >>> proposal.acceptBranch(sample_person)
