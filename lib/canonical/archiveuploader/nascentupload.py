@@ -430,8 +430,16 @@ class NascentUpload:
 
     @property
     def warning_message(self):
-        """Aggregates warning messages."""
-        return '\n'.join(self.warnings)
+        """Aggregates warning messages.
+
+        Return a text header containing all the warnings raised during the
+        upload processing or None, if no warnings were issued.
+        """
+        if not self.warnings:
+            return None
+        warning_header = (
+            "\nUpload Warnings:\n%s" % '\n'.join(self.warnings))
+        return warning_header
 
     #
     # Signature and ACL stuff
@@ -789,6 +797,7 @@ class NascentUpload:
             if notify:
                 changes_file_object = open(self.changes.filepath, "r")
                 self.queue_root.notify(
+                    summary_text=self.warning_message,
                     announce_list=self.policy.announcelist,
                     changes_file_object=changes_file_object,
                     logger=self.logger)
