@@ -739,7 +739,6 @@ COMMENT ON COLUMN SourcePackageName.name IS
     'A lowercase name identifying one or more sourcepackages';
 COMMENT ON COLUMN BinaryPackageName.name IS
     'A lowercase name identifying one or more binarypackages';
-COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchseries which pertain.';
 
 
 -- Distribution
@@ -823,7 +822,6 @@ COMMENT ON COLUMN SourcePackageName.name IS
 COMMENT ON COLUMN BinaryPackageName.name IS
     'A lowercase name identifying one or more binarypackages';
 
-COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchseries which pertain.';
 
 
 -- SourcePackageRelease
@@ -848,6 +846,8 @@ COMMENT ON COLUMN SourcePackageRelease.dsc_standards_version IS 'DSC standards v
 COMMENT ON COLUMN SourcePackageRelease.dsc_format IS 'DSC format version (such as "1.0").';
 COMMENT ON COLUMN SourcePackageRelease.dsc_binaries IS 'DSC binary line, claimed binary-names produce by this source.';
 COMMENT ON COLUMN SourcePackageRelease.copyright IS 'The copyright associated with this sourcepackage. Often in the case of debian packages and will be found after the installation in /usr/share/doc/<binarypackagename>/copyright';
+COMMENT ON COLUMN SourcePackageRelease.build_conflicts IS 'The list of packages that will conflict with this source while building, as mentioned in the control file "Build-Conflicts:" field.';
+COMMENT ON COLUMN SourcePackageRelease.build_conflicts_indep IS 'The list of packages that will conflict with this source while building in architecture independent environment, as mentioned in the control file "Build-Conflicts-Indep:" field.';
 
 
 -- SecureBinaryPackagePublishingHistory
@@ -1141,6 +1141,10 @@ COMMENT ON COLUMN BinaryPackageRelease.replaces IS 'The list of packages this bi
 COMMENT ON COLUMN BinaryPackageRelease.provides IS 'The list of virtual packages (or real packages under some circumstances) which this binarypackage provides.';
 COMMENT ON COLUMN BinaryPackageRelease.essential IS 'Whether or not this binarypackage is essential to the smooth operation of a base system';
 COMMENT ON COLUMN BinaryPackageRelease.installedsize IS 'What the installed size of the binarypackage is. This is represented as a number of kilobytes of storage.';
+COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchseries which pertain.';
+COMMENT ON COLUMN BinaryPackageRelease.pre_depends IS 'The list of packages this binary requires to be installed beforehand in apt/dpkg format, as it is in control file "Pre-Depends:" field.';
+COMMENT ON COLUMN BinaryPackageRelease.enhances IS 'The list of packages pointed as "enhanced" after the installation of this package, as it is in control file "Enhances:" field.';
+COMMENT ON COLUMN BinaryPackageRelease.breaks IS 'The list of packages which will be broken by the installtion of this package, as it is in the control file "Breaks:" field.';
 
 
 -- BinaryPackageFile
