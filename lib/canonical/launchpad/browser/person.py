@@ -2693,7 +2693,7 @@ class PersonEditEmailsView(LaunchpadFormView):
             if subscription.email_address is None:
                 return "Preferred address"
             else:
-                return subscription.email_address.email
+                return subscription.email_address
         else:
             return "Don't subscribe"
 
@@ -2707,11 +2707,13 @@ class PersonEditEmailsView(LaunchpadFormView):
         fields = []
         terms = [SimpleTerm("Preferred address"),
                  SimpleTerm("Don't subscribe"),
-                 SimpleTerm(self.context.preferredemail.email)]
+                 SimpleTerm(self.context.preferredemail,
+                            self.context.preferredemail.email)]
         terms += [SimpleTerm(email, email.email)
                    for email in self.context.validatedemails]
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
+            from canonical.config import config
             if mailing_list is not None and mailing_list.isUsable():
                 name = 'subscription.%s' % team.name
                 value = self._mailing_list_subscription_type(mailing_list)
@@ -2964,8 +2966,9 @@ class PersonEditEmailsView(LaunchpadFormView):
         """Change the user's mailing list subscriptions."""
         mailing_list_set = getUtility(IMailingListSet)
         dirty = False
+        prefix_length = len('subscription.')
         for widget in self.mailing_list_widgets:
-            mailing_list_name = widget.context.getName()[len('subscription.'):]
+            mailing_list_name = widget.context.getName()[prefix_length:]
             mailing_list = mailing_list_set.get(mailing_list_name)
             new_value = data[widget.context.getName()]
             old_value = self._mailing_list_subscription_type(mailing_list)
@@ -2986,11 +2989,12 @@ class PersonEditEmailsView(LaunchpadFormView):
                         new_value = None
                     subscription = mailing_list.getSubscription(self.context)
                     if subscription is None:
-                        mailing_list.subscribe(self.context new_value)
+                        mailing_list.subscribe(self.context, new_value)
                     else:
-                        mailing_list.changeAddress(self.context,new_value)
+                        mailing_list.changeAddress(self.context, new_value)
         if dirty:
-            self.request.response.addInfoNotification("Subscriptions updated.")
+            self.request.response.addInfoNotification(
+                "Subscriptions updated.")
         self.next_url = self.action_url
 
 class TeamReassignmentView(ObjectReassignmentView):

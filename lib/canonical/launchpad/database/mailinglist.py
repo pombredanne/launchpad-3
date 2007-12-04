@@ -13,6 +13,7 @@ from sqlobject import ForeignKey, StringCol
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -161,10 +162,11 @@ class MailingList(SQLBase):
 
     def isUsable(self):
         """See `IMailingList`"""
-        return self.status in [MailingListStatus.ACTIVE,
-                               MailingListStatus.MODIFIED,
-                               MailingListStatus.UPDATING,
-                               MailingListStatus.MOD_FAILED]
+        return (config.mailman.expose_hosted_mailing_lists and
+                self.status in [MailingListStatus.ACTIVE,
+                                MailingListStatus.MODIFIED,
+                                MailingListStatus.UPDATING,
+                                MailingListStatus.MOD_FAILED])
 
     def _set_welcome_message(self, text):
         if self.status == MailingListStatus.REGISTERED:

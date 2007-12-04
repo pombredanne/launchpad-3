@@ -372,7 +372,7 @@ class IMailingList(Interface):
         :param person: The person whose subscription details to get.
 
         :return: If the person is subscribed to this mailing list, an
-        IMailingListSubscription. Otherwise, None.
+                 IMailingListSubscription. Otherwise, None.
         """
 
     def subscribe(person, address=None):

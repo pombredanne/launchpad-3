@@ -71,7 +71,7 @@
           </tr>
         </tal:widget>
 
-      <tal:block tal:condition="view/mailing_list_widgets">
+      <tal:subscriptions tal:condition="view/mailing_list_widgets">
         <tr>
           <td colspan="2">
             <h1>Mailing list subscriptions</h1>
@@ -85,8 +85,8 @@
           </td>
         </tr>
         <tr>
-          <th><b>For this mailing list...</b></th>
-          <td><b>Subscribe with this address</b></td>
+          <th>For this mailing list...</th>
+          <td>Subscribe with this address</td>
         </tr>
         <metal:block tal:repeat="widget view/mailing_list_widgets">
           <metal:block use-macro="context/@@launchpad_form/widget_row" />
@@ -98,7 +98,7 @@
                      view/action_update_subscriptions/render" />
             </td>
           </tr>
-      </tal:block>
+      </tal:subscriptions>
 
       </table>
     </metal:widgets>
@@ -126,6 +126,16 @@
     preferred email address. Email from Launchpad will be sent to
     this address.
   </p>
+
+  <p id="mailing-list-help" tal:condition="view/mailing_list_widgets">
+    This page also displays mailing lists for all of your
+    teams that have them. You can subscribe to a list using any of
+    your verified email addresses, or you can choose to have messages
+    delivered to your preferred address. That way, if you change your
+    preferred address, you won't have to change all your subscriptions
+    to use the new address.
+  </p>
+
 </div>
 
 </body>

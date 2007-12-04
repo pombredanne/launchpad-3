@@ -41,6 +41,10 @@ mailing list.
     >>> rosetta_admins = browser.getControl(
     ...     name='field.subscription.rosetta-admins')
 
+    >>> admins.displayOptions
+    ['Preferred address', "Don't subscribe",
+     'carlos@canonical.com', 'carlos@test.com']
+
     >>> print admins.value
     ["Don't subscribe"]
     >>> print rosetta_admins.value
@@ -117,3 +121,36 @@ Finally, he can unsubscribe from lists.
     ["Don't subscribe"]
     >>> print rosetta_admins.value
     ["Don't subscribe"]
+
+== Hidden by configuration variable ==
+
+XXX: See similar section in xx-team-contactemail.txt -- Leonard
+Richardson 2007-12-03
+
+    >>> from canonical.config import config
+    >>> config.mailman.expose_hosted_mailing_lists
+    True
+
+    >>> browser.getControl(name='field.subscription.admins') is None
+    False
+    >>> find_tag_by_id(browser.contents, 'mailing-list-help') is None
+    False
+
+    >>> config.mailman.expose_hosted_mailing_lists = False
+    >>> browser.reload()
+
+    >>> browser.getControl(name='field.subscription.admins')
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.subscription.admins'
+
+    >>> find_tag_by_id(browser.contents, 'mailing-list-help') is None
+    True
+
+    >>> config.mailman.expose_hosted_mailing_lists = True
+    >>> browser.reload()
+
+    >>> browser.getControl(name='field.subscription.admins') is None
+    False
+    >>> find_tag_by_id(browser.contents, 'mailing-list-help') is None
+    False
