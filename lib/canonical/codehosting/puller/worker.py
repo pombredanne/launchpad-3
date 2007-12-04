@@ -118,7 +118,8 @@ class PullerWorkerProtocol:
 
 
 def identical_formats(branch_one, branch_two):
-    """Check if two branches have the same bzrdir, repo, and branch formats."""
+    """Check if two branches have the same bzrdir, repo, and branch formats.
+    """
     # XXX AndrewBennetts 2006-05-18 bug=45277:
     # comparing format objects is ugly.
     b1, b2 = branch_one, branch_two
@@ -142,9 +143,9 @@ class PullerWorker:
         self.dest = dest
         self.branch_id = branch_id
         self.unique_name = unique_name
-        # The branch_type argument should always be set to a BranchType enum in
-        # production use, but it is expected that tests that do not depend on
-        # its value will pass None.
+        # The branch_type argument should always be set to a BranchType enum
+        # in production use, but it is expected that tests that do not depend
+        # on its value will pass None.
         self.branch_type = branch_type
         self._source_branch = None
         self._dest_branch = None
@@ -249,7 +250,8 @@ class PullerWorker:
             # Make a new branch in the same format as the source branch.
             branch = self._createDestBranch()
         else:
-            # Check that destination branch is in the same format as the source.
+            # Check that destination branch is in the same format as the
+            # source.
             if identical_formats(self._source_branch, branch):
                 # The destination exists, and is in the same format.  So all
                 # we need to do is pull the new revisions.  Unless the branch
@@ -356,8 +358,8 @@ class PullerWorker:
             self._mirrorFailed(msg)
 
         except BranchReferenceForbidden, e:
-            msg = ("Branch references are not allowed for branches of type %s."
-                   % (self.branch_type.title,))
+            msg = ("Branch references are not allowed for branches of type "
+                   "%s." % (self.branch_type.title,))
             self._mirrorFailed(msg)
 
         except BranchReferenceValueError, e:
@@ -418,8 +420,10 @@ class PullerWorkerUIFactory(ProgressUIFactory):
     def get_boolean(self, prompt):
         """Assuming that we're been asked if we want to break a lock, say yes.
         """
-        assert prompt.startswith('Break lock'), "Didn't expect prompt %r" % (prompt,)
+        assert prompt.startswith('Break lock'), (
+            "Didn't expect prompt %r" % (prompt,))
         return True
+
 
 def install_worker_progress_factory(puller_worker_protocol):
     """Install an UIFactory that informs a PullerWorkerProtocol of progress.
