@@ -698,11 +698,10 @@ class POFile(SQLBase, POFileMixIn):
         assert entry_to_import.status == RosettaImportStatus.APPROVED, (
             "Attempt to import non-approved entry.")
 
-        # We're handed down the right entry from the import script, but we
-        # need to deal with it more intimately.
-        # XXX: JeroenVermeulen 2007-11-29: If TranslationImportQueueEntry
-        # supported those interactions in a proper API, this would become
-        # unnecessary.
+        # XXX: JeroenVermeulen 2007-11-29: This method is called from the
+        # import script, which can provide the right object but can only
+        # obtain it in security-proxied form.  We need full, unguarded access
+        # to complete the import.
         entry_to_import = removeSecurityProxy(entry_to_import)
 
         translation_importer = getUtility(ITranslationImporter)

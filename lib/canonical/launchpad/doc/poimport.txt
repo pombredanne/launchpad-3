@@ -190,7 +190,8 @@ any other file would be an error.
     >>> other_template.importFromQueue(entry)
     Traceback (most recent call last):
     ...
-    AssertionError: Attempt to import entry to POTemplate it doesn't belong to.
+    AssertionError: Attempt to import entry to POTemplate it doesn't belong
+    to.
 
 
 == Importing a Translation ==
@@ -540,7 +541,8 @@ the exact right POFile.
     >>> potemplate.importFromQueue(entry)
     Traceback (most recent call last):
     ...
-    AssertionError: Attempt to import entry to POTemplate it doesn't belong to.
+    AssertionError: Attempt to import entry to POTemplate it doesn't belong
+    to.
 
 
 == Cron Scripts ==

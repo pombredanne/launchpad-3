@@ -31,7 +31,7 @@ def import_pofile_or_potemplate(file_contents, person, series, pofile=None,
     :return: `TranslationImportQueueEntry` as added to the import queue.
     """
     translation_import_queue = getUtility(ITranslationImportQueue)
-    if pofile:
+    if pofile is not None:
         entry = translation_import_queue.addOrUpdateEntry(
             pofile.path, file_contents, is_imported, person,
             productseries=series, pofile=pofile)

@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 
+
 class ImportProcess:
     """Import .po and .pot files attached to Rosetta."""
 
@@ -102,10 +103,6 @@ class ImportProcess:
                         entry_to_import.import_into.importFromQueue(
                             entry_to_import, self.logger))
 
-                    assert (entry_to_import.status !=
-                        RosettaImportStatus.APPROVED), (
-                        "Import process left request in original state.")
-
                     from_email = config.rosetta.rosettaadmin.email
                     to_email = helpers.contactEmailAddresses(
                         entry_to_import.importer)
@@ -179,6 +176,7 @@ class ImportProcess:
             self.logger.info("Import requests completed.")
         else:
             self.logger.info("Used up available time.")
+
 
 class AutoApproveProcess:
     """Attempt to approve some PO/POT imports without human intervention."""
