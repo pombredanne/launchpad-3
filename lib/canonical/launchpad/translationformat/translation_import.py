@@ -4,7 +4,8 @@ __metaclass__ = type
 
 __all__ = [
     'TranslationImporter',
-    'importers'
+    'importers',
+    'is_identical_translation',
     ]
 
 import gettextpo
@@ -43,14 +44,14 @@ importers = {
     }
 
 
-def _is_identical_translation(existing_msg, new_msg):
+def is_identical_translation(existing_msg, new_msg):
     """Is a new translation substantially the same as the existing one?
 
     Compares fuzzy flags, msgid and msgid_plural, and all translations.
 
-    :param existing_msg: a `TranslationMessage` currently kept in the
-        database.
-    :param new_msg: an alternative `TranslationMessage` translating the
+    :param existing_msg: a `TranslationMessageData` representing a translation
+        message currently kept in the database.
+    :param new_msg: an alternative `TranslationMessageData` translating the
         same original message.
     :return: True if the new message is effectively identical to the
         existing one, or False if replacing existing_msg with new_msg
@@ -59,25 +60,22 @@ def _is_identical_translation(existing_msg, new_msg):
     if ((existing_msg.msgid_plural != new_msg.msgid_plural) or
         (existing_msg.fuzzy != ('fuzzy' in new_msg.flags))):
         return False
-    translations_existing = existing_msg.translations
-    translations_new = new_msg.translations
-    length_existing = len(translations_existing)
-    length_new = len(translations_new)
-    if length_new < length_existing:
+    if len(new_msg.translations) < len(existing_msg.translations):
         return False
-    length_overlap = min(length_existing, length_new)
+    length_overlap = min(
+        len(existing_msg.translations), len(new_msg.translations))
     for pluralform in xrange(length_overlap):
         # Plural forms that both messages have.  Translations for each
         # must match.
-        existing_text = translations_existing[pluralform]
-        new_text = translations_new[pluralform]
+        existing_text = existing_msg.translations[pluralform]
+        new_text = new_msg.translations[pluralform]
         if existing_text != new_text:
             return False
-    for pluralform in xrange(length_overlap, length_new):
+    for pluralform in xrange(length_overlap, len(new_msg.translations)):
         # Plural forms that exist in new_translations but not in
         # existing_translations.  That's okay, as long as all of them are
         # None.
-        if translations_new[pluralform] is not None:
+        if new_msg.translations[pluralform] is not None:
             return False
     return True
 
@@ -199,7 +197,7 @@ class ExistingPOFileInDatabase:
         (msgid, context) = (message.msgid_singular, message.context)
         if (msgid, context) in self.messages:
             msg_in_db = self.messages[(msgid, context)]
-            return _is_identical_translation(msg_in_db, message)
+            return is_identical_translation(msg_in_db, message)
         else:
             return False
 
@@ -211,7 +209,7 @@ class ExistingPOFileInDatabase:
         (msgid, context) = (message.msgid_singular, message.context)
         if ((msgid, context) in self.imported) and self.is_imported:
             msg_in_db = self.imported[(msgid, context)]
-            return _is_identical_translation(msg_in_db, message)
+            return is_identical_translation(msg_in_db, message)
         else:
             return False
 

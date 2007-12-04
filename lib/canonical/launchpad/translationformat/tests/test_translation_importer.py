@@ -7,11 +7,12 @@ import unittest
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.launchpad.translationformat import (
-    importers, TranslationImporter)
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateSet, ITranslationImporter,
     TranslationFileFormat)
+from canonical.launchpad.translationformat import (
+    importers, is_identical_translation, TranslationImporter,
+    TranslationMessageData)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -133,6 +134,40 @@ class TranslationImporterTestCase(unittest.TestCase):
         self.assertEqual(
             self.translation_importer.supported_file_extensions,
             ['.po', '.pot', '.xpi'])
+
+    def testIsIdenticalTranslation(self):
+        """Test `is_identical_translation`."""
+        msg1 = TranslationMessageData()
+        msg2 = TranslationMessageData()
+        msg1.fuzzy = False
+        msg1.msgid_singular = "foo"
+        msg2.msgid_singular = "foo"
+
+        self.assertTrue(is_identical_translation(msg1, msg2))
+        msg2.flags = "fuzzy"
+        self.assertFalse(is_identical_translation(msg1, msg2))
+        msg2.flags = ""
+        self.assertTrue(is_identical_translation(msg1, msg2))
+
+        msg1.msgid_plural = "foos"
+        self.assertFalse(is_identical_translation(msg1, msg2))
+        msg2.msgid_plural = "foos"
+        self.assertTrue(is_identical_translation(msg1, msg2))
+
+        msg1._translations = ["le foo"]
+        self.assertFalse(is_identical_translation(msg1, msg2))
+        msg2._translations = ["le foo"]
+        self.assertTrue(is_identical_translation(msg1, msg2))
+
+        msg1._translations = ["le foo", "les foos"]
+        self.assertFalse(is_identical_translation(msg1, msg2))
+        msg2._translations = ["le foo", "les foos"]
+        self.assertTrue(is_identical_translation(msg1, msg2))
+
+        msg1._translations = ["le foo", "les foos", "beaucoup des foos"]
+        self.assertFalse(is_identical_translation(msg1, msg2))
+        msg2._translations = ["le foo", "les foos", "beaucoup des foos", None]
+        self.assertTrue(is_identical_translation(msg1, msg2))
 
 
 def test_suite():
