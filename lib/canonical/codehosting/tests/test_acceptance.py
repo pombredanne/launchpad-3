@@ -67,6 +67,12 @@ class SSHTestCase(ServerTestCase, TestCaseWithTransport):
         TestCaseWithTransport.tearDown(self)
         return ServerTestCase.tearDown(self)
 
+    def assertBranchesMatch(self, local_url, remote_url):
+        """Assert that two branches have the same last revision."""
+        local_revision = self.getLastRevision(local_url)
+        remote_revision = self.getLastRevision(remote_url)
+        self.assertEqual(local_revision, remote_revision)
+
     def assertNotInMainThread(self, function_name):
         self.assertNotEqual(
             thread.get_ident(), self._main_thread_id,
@@ -256,8 +262,7 @@ class AcceptanceTests(SSHTestCase):
         """
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(self.local_branch_path, remote_url)
-        remote_revision = self.getLastRevision(remote_url)
-        self.assertEqual(self.local_branch.last_revision(), remote_revision)
+        self.assertBranchesMatch(self.local_branch_path, remote_url)
 
     @deferToThread
     def test_push_to_existing_branch(self):
@@ -272,8 +277,7 @@ class AcceptanceTests(SSHTestCase):
         tree.commit('Empty commit', rev_id='rev2')
         # Push the new revision.
         self.push(self.local_branch_path, remote_url)
-        remote_revision = self.getLastRevision(remote_url)
-        self.assertEqual(remote_revision, 'rev2')
+        self.assertBranchesMatch(self.local_branch_path, remote_url)
 
     @deferToThread
     def test_rename_branch(self):
@@ -301,9 +305,9 @@ class AcceptanceTests(SSHTestCase):
             self.getTransportURL('~testuser/+junk/test-branch'))
 
         # Check that it *is* at the new location.
-        remote_revision = self.getLastRevision(
+        self.assertBranchesMatch(
+            self.local_branch_path,
             self.getTransportURL('~testuser/+junk/renamed-branch'))
-        self.assertEqual(remote_revision, self.local_branch.last_revision())
 
 
     @deferToThread
@@ -322,10 +326,9 @@ class AcceptanceTests(SSHTestCase):
         self.assertNotBranch(
             self.getTransportURL('~testuser/+junk/test-branch'))
 
-        remote_revision = self.getLastRevision(
+        self.assertBranchesMatch(
+            self.local_branch_path,
             self.getTransportURL('~testuser/firefox/test-branch'))
-        self.assertEqual(remote_revision,
-                         self.local_branch.last_revision())
 
     @deferToThread
     def test_rename_user(self):
@@ -345,18 +348,16 @@ class AcceptanceTests(SSHTestCase):
                 '~testuser/+junk/test-branch', 'renamed-user'))
 
         # Check that it *is* at the new location.
-        url = self.getTransportURL(
-            '~renamed-user/+junk/test-branch', 'renamed-user')
-        remote_revision = self.getLastRevision(url)
-        self.assertEqual(remote_revision, self.local_branch.last_revision())
+        self.assertBranchesMatch(
+            self.local_branch_path,
+            self.getTransportURL(
+                '~renamed-user/+junk/test-branch', 'renamed-user'))
 
     @deferToThread
     def test_push_team_branch(self):
         remote_url = self.getTransportURL('~testteam/firefox/a-new-branch')
         self.push(self.local_branch_path, remote_url)
-        remote_revision = self.getLastRevision(remote_url)
-        # Check that the pushed branch looks right
-        self.assertEqual(remote_revision, self.local_branch.last_revision())
+        self.assertBranchesMatch(self.local_branch_path, remote_url)
 
     @deferToThread
     def test_push_new_branch_creates_branch_in_database(self):
@@ -438,8 +439,7 @@ class AcceptanceTests(SSHTestCase):
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
         self.push(self.local_branch_path, remote_url)
-        remote_revision = self.getLastRevision(remote_url)
-        self.assertEqual(self.local_branch.last_revision(), remote_revision)
+        self.assertBranchesMatch(self.local_branch_path, remote_url)
 
     @deferToThread
     def test_cant_push_to_existing_mirrored_branch(self):
