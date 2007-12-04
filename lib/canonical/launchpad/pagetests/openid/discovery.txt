@@ -101,6 +101,8 @@ allows the user to log in using the directed identity mode.
 
     >>> print_endpoints('http://openid.launchpad.dev/+id/name12_oid')
     Claimed ID: http://openid.launchpad.dev/+id/name12_oid
+    ----
+    Local ID: http://openid.launchpad.dev/+id/name12_oid
     ...
 
 
