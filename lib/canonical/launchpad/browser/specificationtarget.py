@@ -330,7 +330,11 @@ class HasSpecificationsView(LaunchpadView):
             SpecificationFilter.INCOMPLETE,
             SpecificationFilter.ACCEPTED]
         specs = set(self.context.specifications(filter=filter))
-        
+
+        # In order to optimize this for targets with a large
+        # set of blueprints, we first fetch all the dependencies
+        # in one go (rather than ask SQLObject to get a related
+        # join for every iteration).
         cur = cursor()
         cur.execute("""
         SELECT specification, dependency
@@ -340,6 +344,8 @@ class HasSpecificationsView(LaunchpadView):
         dependencies = cur.fetchall()
         cur.close()
 
+        # We loop over all the blueprints, adding them only
+        # after their dependencies have been added.
         found_spec = True
         while found_spec:
             found_spec = False
@@ -355,14 +361,15 @@ class HasSpecificationsView(LaunchpadView):
                     dep_id for (spec_id, dep_id)
                     in dependencies
                     if spec_id == spec.id]
+                planned_spec_dependencies = [p_spec.id for p_spec in plan]
                 for depspec_id in spec_dependencies:
-                    if depspec_id not in [p_spec.id for p_spec in plan]:
+                    if depspec_id not in planned_spec_dependencies:
                         all_clear = False
                         break
                 if all_clear:
                     found_spec = True
                     plan.append(spec)
-        # ok. at this point, plan contains the ones that can move
+        # At this point, plan contains the ones that can move
         # immediately. we need to find the dangling ones
         dangling = []
         for spec in specs:
