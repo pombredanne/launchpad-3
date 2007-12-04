@@ -1,4 +1,6 @@
 #!/usr/bin/python2.4
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0403
 
 import _pythonpath
 
@@ -151,11 +153,11 @@ def main():
 
         # The primary archive uses apt-ftparchive to generate the indexes,
         # everything else uses the newer internal LP code.
-        if archive.purpose != ArchivePurpose.PRIMARY:
-            try_and_commit("building indexes", publisher.C_writeIndexes,
+        if archive.purpose != ArchivePurpose.PPA:
+            try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
                            options.careful or options.careful_apt)
         else:
-            try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
+            try_and_commit("building indexes", publisher.C_writeIndexes,
                            options.careful or options.careful_apt)
 
         try_and_commit("doing release files", publisher.D_writeReleaseFiles,
