@@ -197,20 +197,6 @@ class LaunchpadFormView(LaunchpadView):
         else:
             return self.widgets[field_name].error()
 
-    def hasFieldError(self, field_name):
-        """Indicates whether or not the specified field has an associated error.
-        
-        Returns true if there is a widget corresponding to :field: and
-        only if that widget also has an error associated with it.
-        """
-        error = self.getFieldError(field_name)
-        if error is None:
-            return False
-        elif error is "":
-            return False
-        else:
-            return True
-
     def setFieldError(self, field_name, message):
         """Set the error associated with a particular field.
 
