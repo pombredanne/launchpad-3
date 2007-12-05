@@ -73,6 +73,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectView"
         permission="zope.Public">
         <browser:page
             name="+index"

@@ -45,6 +45,7 @@ from canonical.launchpad.interfaces import (
     DistroSeriesStatus, IDistributionMirrorSet, IDistributionSet, 
     IDistribution, ILaunchBag, ILaunchpadCelebrities, IPublishedPackageSet,
     MirrorContent, MirrorSpeed, NotFoundError)
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -94,6 +95,10 @@ class DistributionNavigation(
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
+
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
 
     @stepthrough('+spec')
     def traverse_spec(self, name):
@@ -191,7 +196,7 @@ class DistributionOverviewMenu(ApplicationMenu):
              'mirror_admin', 'reassign', 'addseries', 'top_contributors',
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
-             'upload_admin', 'ppas']
+             'announce', 'announcements', 'upload_admin', 'ppas']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -284,6 +289,19 @@ class DistributionOverviewMenu(ApplicationMenu):
     def addseries(self):
         text = 'Add series'
         return Link('+addseries', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        enabled = self.isBetaUser
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, enabled=enabled, icon='add')
+
+    def announcements(self):
+        text = 'Show announcements'
+        enabled = bool(self.context.announcements().count()
+                       and self.isBetaUser)
+        return Link('+announcements', text, enabled=enabled)
 
     def builds(self):
         text = 'Builds'
@@ -380,7 +398,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+select-language-pack-admin', text, icon='edit')
 
 
-class DistributionView(BuildRecordsView):
+class DistributionView(HasAnnouncementsView, BuildRecordsView):
     """Default Distribution view class."""
 
     def initialize(self):
@@ -790,7 +808,7 @@ class DistributionDynMenu(
     menus = {
         '': 'mainMenu',
         'meetings': 'meetingsMenu',
-        'series': 'seriesesMenu',
+        'series': 'seriesMenu',
         'milestones': 'milestoneMenu',
         }
 
