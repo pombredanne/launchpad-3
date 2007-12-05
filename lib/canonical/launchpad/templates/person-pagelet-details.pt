@@ -77,10 +77,8 @@
         Moderated
       </strong>:
       <tal:description replace="context/subscriptionpolicy/description" />
-      <br />
-      <br />
 
-      <table class="slimpadding" id="membership-summary">
+      <table class="slimpadding" id="membership-summary" style="margin-top: 1em">
         <tr>
           <th>Membership:</th>
           <td tal:content="string: ${context/all_member_count} active members" />
