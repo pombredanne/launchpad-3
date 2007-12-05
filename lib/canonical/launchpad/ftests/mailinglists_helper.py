@@ -16,6 +16,8 @@ import xmlrpclib
 
 from zope.component import getUtility
 
+from canonical.launchpad.database import MailingListSet
+from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities,
     IMailingListSet, IPersonSet, MailingListStatus, PersonCreationRationale,
@@ -142,6 +144,32 @@ def new_person(first_name):
                                      EmailAddressStatus.VALIDATED)
     return person
 
+def new_list_for_team(team_name, make_contact_address=False):
+    """Create a mailing list for the named team.
+
+    :param team_name: The name of the team for which to create a list.
+    :param make_contact_address: If True, the newly created list will be
+           made the team's contact address.
+    """
+    login('foo.bar@canonical.com')
+    list_set = MailingListSet()
+    team = getUtility(IPersonSet).getByName(team_name)
+    mailing_list = list_set.new(team)
+
+    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    admin = list(experts.allmembers)[0]
+    mailing_list = list_set.get(team_name)
+    mailing_list.review(admin, MailingListStatus.APPROVED)
+    mailing_list.syncUpdate()
+    mailing_list.startConstructing()
+    mailing_list.syncUpdate()
+    mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
+    mailing_list.syncUpdate()
+
+    if make_contact_address:
+        team.setContactAddress(
+            getUtility(IEmailAddressSet).getByEmail(mailing_list.address))
+    logout()
 
 def get_alternative_email(person):
     """Return a non-preferred IEmailAddress for a person.
