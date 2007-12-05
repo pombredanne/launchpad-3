@@ -45,7 +45,6 @@
           <tal:buglisting content="structure batch_navigator/@@+table-view" />
         </div>
       </tal:expirable-bugs>
-      
     </div>
 
     <div metal:fill-slot="help">
