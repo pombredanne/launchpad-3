@@ -230,6 +230,12 @@
                  tal:content="spec/distroseries/name">1.0</a>
             </tal:distroseries>
           </td>
+          <td tal:condition="view/show_milestone">
+            <tal:milestone condition="spec/milestone">
+              <a tal:attributes="href spec/milestone/fmt:url"
+                 tal:content="spec/milestone/name">1.0.0</a>
+            </tal:milestone>
+          </td>
         </tr>
       </tbody>
     </table>
