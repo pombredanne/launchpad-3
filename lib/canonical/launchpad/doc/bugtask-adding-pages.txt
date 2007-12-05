@@ -190,7 +190,7 @@ package linked to an inactive upstream. -- Guilherme Salgado, 2007-09-18
     This package is linked to an inactive upstream...
 
     # Mark the upstream back as active.
-    >>> removeSecurityProxy(upstream).active = False
+    >>> removeSecurityProxy(upstream).active = True
     >>> removeSecurityProxy(upstream).syncUpdate()
 
 Let's take a look at the second step now, where we may enter the URL of

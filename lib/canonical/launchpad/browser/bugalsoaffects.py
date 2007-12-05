@@ -608,7 +608,8 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         This extra field is setup only if there is one or more products using
         that bugtracker.
         """
-        super(BugAlsoAffectsProductWithProductCreationView, self).setUpFields()
+        super(
+            BugAlsoAffectsProductWithProductCreationView, self).setUpFields()
         self._loadProductsUsingBugTracker()
         if self.existing_products is None or len(self.existing_products) < 1:
             # No need to setup any extra fields.
