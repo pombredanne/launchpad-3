@@ -205,8 +205,9 @@ class FileBugViewBase(LaunchpadFormView):
             comment = data.get('comment')
             if comment:
                 if len(comment) > IBug['description'].max_length:
-                    self.setFieldError('comment', 
-                                       'The description is too long.')
+                    self.setFieldError('comment',
+                        'The description is too long. If you have lots '
+                        'text to add, attach a file to the bug instead.')
             else:
                 self.setFieldError('comment', "Required input is missing.")
         # Check a bug has been selected when the user wants to
