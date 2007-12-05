@@ -360,6 +360,7 @@
     <tal:imported-submission
       define="submission translation_dictionary/imported_translation_message"
       condition="submission">
+      <tal:imported-not-empty condition="not:submission/is_empty">
   <tr class="secondary"
     tal:attributes="id string:msgset_${context/potmsgset/id}_packaged">
     <th colspan="3">
@@ -431,7 +432,7 @@
       </span>
     </td>
   </tr>
-
+      </tal:imported-not-empty>
     </tal:imported-submission>
     <tal:locked condition="not:context/potmsgset/is_translation_credit">
       <tal:suggestions-title

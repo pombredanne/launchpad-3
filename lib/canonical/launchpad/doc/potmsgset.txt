@@ -353,6 +353,8 @@ Given that we removed a fuzzy translation, statistics remain unchanged.
 
     >>> upstream_pofile.updateStatistics()
     (1, 0, 0, 0)
+    >>> upstream_pofile.updatesCount()
+    1
 
 However, if we change a non fuzzy translation...
 
