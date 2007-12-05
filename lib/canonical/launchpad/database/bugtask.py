@@ -62,6 +62,7 @@ from canonical.launchpad.interfaces import (
     IProduct,
     IProductSeries,
     IProductSeriesBugTask,
+    IProject,
     IProjectMilestone,
     ISourcePackage,
     IUpstreamBugTask,
@@ -1663,19 +1664,24 @@ class BugTaskSet:
                         WHERE official_malone IS TRUE)"""
             target_clause = "DistroSeries.id = %s" % sqlvalues(target)
         elif IProduct.providedBy(target):
-            target_join =  """
+            target_join = """
                  %(product)s %(productseries)s""" % bugtarget_joins
             target_clause = """
                 (BugTask.product = %s
                  OR ProductSeries.product = %s)""" % sqlvalues(target, target)
         elif IProductSeries.providedBy(target):
-            target_join =  """
+            target_join = """
                 INNER JOIN ProductSeries
                     ON BugTask.productseries = ProductSeries.id
                     AND ProductSeries.product IN (
                         SELECT id FROM Product
                         WHERE official_malone IS TRUE)"""
             target_clause = "ProductSeries.id = %s" % sqlvalues(target)
+        elif (IProject.providedBy(target)
+            or ISourcePackage.providedBy(target)
+            or IDistributionSourcePackage.providedBy(target)):
+            raise NotImplementedError(
+                "BugTarget %s is not supported by ." % target)
         else:
             raise AssertionError("Unknown BugTarget type.")
 
