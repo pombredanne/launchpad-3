@@ -33,6 +33,17 @@ def process(mlist, msg, msgdata):
     # This handler can just return if the sender is a member of Launchpad.
     if is_member:
         return
+    # Some automated processes will also send messages to the mailing list.
+    # For example, if the list is a contact address for a team and that team
+    # is the contact address for a project's answer tracker, an automated
+    # message will be sent from Launchpad.  Check for a header that indicates
+    # this was a Launchpad generated message.
+    if msg['x-generated-by'] == 'Launchpad (canonical.com)':
+        # Since this message is coming from Launchpad, pre-approve it.  Yes,
+        # this could be spoofed, but there's really no other way (currently)
+        # to do it.
+        msgdata['approved'] = True
+        return
     # IncomingRunner already posts the Message-ID to the logs/vette for
     # discarded messages, so we only need to add a little more detail here.
     syslog('vette', 'Sender is not a Launchpad member: %s', sender)

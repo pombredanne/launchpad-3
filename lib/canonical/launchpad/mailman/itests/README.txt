@@ -18,6 +18,30 @@ Here are the steps to run these integration tests:
 
   We'll make this better when the new config stuff lands.
   
+- Add the following text to the file override-includes/+mail-configure.zcml
+
+-----snip snip-----
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:mail="http://namespaces.zope.org/mail"
+    i18n_domain="zope">
+
+    <mail:smtpMailer
+        name="itests"
+        hostname="localhost"
+        port="9025"
+        />
+    <mail:directDelivery
+        permission="zope.SendMail"
+        mailer="itests" />
+
+</configure>
+-----snip snip-----
+
+  Just be careful to move this file aside when you want to do normal Launchpad
+  development.  This basically tells Launchpad to email the integration test
+  smtp server instead of the normal localhost:25 server.
+
 - make schema
 - make mailman_instance
 - make run_all

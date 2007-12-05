@@ -41,6 +41,12 @@ def integrationTestCleanUp(test):
     'anne', 'bart', 'cris', 'dirk'
     );
 
+    DELETE FROM AnswerContact
+    WHERE person in (SELECT id FROM DeathRow);
+
+    DELETE FROM PersonLanguage
+    WHERE person in (SELECT id FROM DeathRow);
+
     DELETE FROM MailingListSubscription
     WHERE person in (SELECT id FROM DeathRow);
 
