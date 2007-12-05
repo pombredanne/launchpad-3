@@ -1977,6 +1977,18 @@ class PersonView(LaunchpadView):
             keys.append("%s %s %s" % (type_name, key.keytext, key.comment))
         return "\n".join(keys)
 
+    @cachedproperty
+    def archive_url(self):
+        """Return a url to a mailing list archive for the team's list.
+
+        If the person is not a team, does not have a mailing list, or that
+        mailing list has never been activated, return None instead.
+        """
+        mailing_list = self.context.mailing_list
+        if mailing_list is None:
+            return None
+        return mailing_list.archive_url
+
 
 class PersonRelatedProjectsView(LaunchpadView):
 

@@ -18,8 +18,8 @@ We'll be going through usual steps of the PO file lifetime:
     ...     flush_database_updates, flush_database_caches)
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet,
-    ...     IProductSet, ITranslationImportQueue, TranslationFileFormat)
+    ...     ILaunchpadCelebrities, IPersonSet, IProductSet,
+    ...     TranslationFileFormat)
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
     >>> from canonical.launchpad.scripts.po_import import (
@@ -29,56 +29,12 @@ We'll be going through usual steps of the PO file lifetime:
     >>> UTC = pytz.timezone('UTC')
     >>> def ISO_FORMATTED_DATE(): return datetime.datetime.now(UTC).isoformat()
 
-We need this for the Librarian to work properly.
+To ease the pain of importing many files during testing, we use this
+helper function to import either a PO file or a PO template from a
+string with the contents of the file.
 
-    >>> import transaction
-
-We also need the DBEnumeratedType to change the import status.
-
-    >>> from canonical.launchpad.interfaces import RosettaImportStatus
-
-Then, let's get a handle to our mailer. This is the thing we'll examine to show
-what email has been sent, to whom, and what the body of the message contains:
-
-    >>> import email
-    >>> from canonical.launchpad.mail import stub
-
-Here's a fake logger to capture any errors that happen.
-
-    >>> from canonical.launchpad.scripts import FakeLogger
-
-To ease the pain of importing many files during testing, lets introduce
-a helper function to import either a PO file or a PO template from the string
-with the contents of the file.
-
-
-    >>> def import_pofile_or_potemplate(file_contents, person, series,
-    ...                                 pofile=None, potemplate=None,
-    ...                                 is_imported=True):
-    ...     """Import a `POFile` or `POTemplate` from the string.
-    ...
-    ...	    If pofile is None, it imports a potemplate.
-    ...	    Returns `TranslationImportQueueEntry` as added to the import queue.
-    ...	    """
-    ...     translation_import_queue = getUtility(ITranslationImportQueue)
-    ...     if pofile:
-    ...         entry = translation_import_queue.addOrUpdateEntry(
-    ...             pofile.path, file_contents, is_imported, person,
-    ...             productseries=series, pofile=pofile)
-    ...     else:
-    ...         # A POTemplate can only be 'imported', so setting
-    ...         # the is_imported flag makes no difference.
-    ...         entry = translation_import_queue.addOrUpdateEntry(
-    ...             potemplate.path, file_contents, True, person,
-    ...             productseries=series, potemplate=potemplate)
-    ...     transaction.commit()
-    ...     entry.status = RosettaImportStatus.APPROVED
-    ...     syncUpdate(entry)
-    ...     if pofile:
-    ...         pofile.importFromQueue(FakeLogger())
-    ...     else:
-    ...         potemplate.importFromQueue(FakeLogger())
-    ...     return entry
+    >>> from canonical.launchpad.translationformat.tests.helpers import (
+    ...     import_pofile_or_potemplate)
 
 And lets define a nice printout function for PO files.
 

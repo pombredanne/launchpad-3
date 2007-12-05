@@ -505,6 +505,64 @@ One email generated:
   'Accepted: bar 1.0-2 (i386)'
 
 
+A mixed mode upload to the SECURITY pocket via the 'security' policy
+will generate a notification to the uploader and an announcement to
+the distroseries changes list.
+
+First, upload and accept foo_1.0-1_mixed to make 'foo' source
+and binary known in hoary, then our operations in post-release
+pockets can work:
+
+  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
+  >>> modified_sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
+  >>> modified_sync_policy.can_upload_mixed = True
+  >>> modified_sync_policy.can_upload_binaries = True
+  >>> modified_sync_policy.can_upload_source = True
+  >>> foo_v1 = NascentUpload(
+  ...     datadir('suite/foo_1.0-1_mixed/foo_1.0-1_i386.changes'),
+  ...     modified_sync_policy, mock_logger_quiet)
+  >>> foo_v1.process()
+  >>> result = foo_v1.do_accept()
+  >>> foo_v1.queue_root.setAccepted()
+  >>> foo_v1.queue_root.realiseUpload()
+  >>> hoary.status = DistroSeriesStatus.CURRENT
+
+Get rid of any emails generated:
+
+  >>> msgs = pop_notifications()
+
+Now we can upload a security fix:
+
+  >>> security_policy = getPolicy(
+  ...     name='security', distro='ubuntu', distroseries=None)
+  >>> security_policy.setDistroSeriesAndPocket('hoary-security')
+  >>> foo_mixed = NascentUpload(
+  ...     datadir('suite/foo_1.0-2.1/foo_1.0-2.1_source.changes'),
+  ...     security_policy, mock_logger_quiet)
+  >>> foo_mixed.process()
+  >>> foo_mixed.logger = mock_logger
+  >>> result = foo_mixed.do_accept()
+  DEBUG: Creating queue entry
+  ...
+
+Two emails generated:
+
+  >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
+  >>> len(msgs)
+  2
+
+  >>> [message['To'] for message in msgs]
+  ['Daniel Silverstone <daniel.silverstone@canonical.com>',
+    'hoary-announce@lists.ubuntu.com']
+
+  >>> [message['Subject'] for message in msgs]
+  ['Accepted: foo 1.0-2.1 (source)', 'Accepted: foo 1.0-2.1 (source)']
+
+  >>> [message['X-Katie'] for message in msgs]
+  ['Launchpad actually', 'Launchpad actually']
+
+
 Dry run uploads should not generate any emails.  Call do_accept with
 notify=False:
 
@@ -540,7 +598,7 @@ dry_run, which when True will not send any emails.  It will also log at
 the INFO level what it /would/ have sent.
 
   >>> from canonical.launchpad.interfaces import PackageUploadStatus
-  >>> random_package_upload = hoary.getQueueItems()[0]
+  >>> random_package_upload = hoary.getQueueItems()[2]
   >>> random_package_upload.notify(dry_run=True, logger=mock_logger)
   DEBUG: Building recipients list.
   ...
