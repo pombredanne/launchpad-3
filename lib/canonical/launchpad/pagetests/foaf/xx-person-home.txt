@@ -1,94 +1,156 @@
+= Personal Home Pages =
 
-Personal Home Pages
-===================
-
-  >>> from canonical.launchpad.database import Person
+    >>> from canonical.launchpad.database import Person
 
 Carlos can never see name12's email addresses: he has chosen not to disclose
 them.
 
-  >>> browser = setupBrowser(auth='Basic marilize@hbd.com:test')
-  >>> browser.open('http://launchpad.dev/~name12')
+    >>> browser = setupBrowser(auth='Basic marilize@hbd.com:test')
+    >>> browser.open('http://launchpad.dev/~name12')
 
-  >>> name12 = Person.get(12)
-  >>> name12.preferredemail.email
-  u'test@canonical.com'
-  >>> name12.hide_email_addresses
-  True
+    >>> name12 = Person.get(12)
+    >>> name12.preferredemail.email
+    u'test@canonical.com'
+    >>> name12.hide_email_addresses
+    True
 
-  >>> str(name12.preferredemail.email) in browser.contents
-  False
-
-Mark has a registered email address, and he has chosen to disclose it to
-the world.
-
-  >>> mark = Person.get(1)
-  >>> mark.preferredemail.email
-  u'mark@hbd.com'
-  >>> mark.hide_email_addresses
-  False
-
-If you are not logged in, you will not be able to see it:
-
-  >>> anon_browser.open('http://launchpad.dev/~sabdfl')
-  >>> str(mark.preferredemail.email) in anon_browser.contents
-  False
-
-If you log in, however, you will:
-
-  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-  >>> browser.open('http://launchpad.dev/~sabdfl')
-  >>> str(mark.preferredemail.email) in browser.contents
-  True
-
-A person's homepage also lists timezone, Karma and status information:
-
-  >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
-  Summary
-  Karma: 130
-  Timezone: UTC
-  Member since: 2005-06-06
-
-Negative Ubuntero status is only displayed for yourself; others won't
-see it:
-
-  >>> "Ubuntero:" in browser.contents
-  False
-
-  >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
-  >>> browser.open('http://launchpad.dev/~sabdfl')
-  >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
-  Summary
-  ...
-  Ubuntero: No (apply now)
-  ...
-
-You can grab certain bits of information programatically:
-
-  >>> print extract_text(find_tag_by_id(browser.contents, 'karma-total'))
-  130
-  >>> print extract_text(find_tag_by_id(browser.contents, 'member-since'))
-  2005-06-06
-
-Teams don't have member-since; they have created-date:
-
-  >>> browser.open('http://launchpad.dev/~guadamen')
-  >>> print extract_text(find_tag_by_id(browser.contents, 'created-date'))
-  2005-06-06
+    >>> str(name12.preferredemail.email) in browser.contents
+    False
 
 Launchpad creates profiles for people that have contributed to free software
 (e.g. in a bug import or a translation template upload). It's clearly
 stated that those people don't use Launchpad and why there's a profile for
 them.
 
-  >>> browser.open('http://launchpad.dev/~limi')
-  >>> browser.title
-  'Alexander Limi does not use Launchpad'
+    >>> browser.open('http://launchpad.dev/~limi')
+    >>> browser.title
+    'Alexander Limi does not use Launchpad'
 
-  >>> content = find_main_content(browser.contents).find('p')
-  >>> print extract_text(content)
-  Alexander Limi does not use Launchpad. This page was created on 2005-06-06
-  when importing bugs from http://bugzilla.ubuntu.com/.
+    >>> content = find_main_content(browser.contents).find('p')
+    >>> print extract_text(content)
+    Alexander Limi does not use Launchpad. This page was created on 2005-06-06
+    when importing bugs from http://bugzilla.ubuntu.com/.
+
+
+== Email address disclosure ==
+
+Mark has a registered email address, and he has chosen to disclose it to
+the world.
+
+    >>> mark = Person.get(1)
+    >>> mark.preferredemail.email
+    u'mark@hbd.com'
+    >>> mark.hide_email_addresses
+    False
+
+If you are not logged in, you will not be able to see it:
+
+    >>> anon_browser.open('http://launchpad.dev/~sabdfl')
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'contact-details'))
+    Contact details
+    Email: Log in for email information.
+    ...
+
+If you log in, however, you will:
+
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~sabdfl')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
+    Contact details
+    Email: mark@hbd.com
+    ...
+
+As for Sample Person, he has chosen not to disclose his email address.
+Anonymous users can't see it:
+
+    >>> anon_browser.open('http://launchpad.dev/~name12')
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'contact-details'))
+    Contact details
+    Email: Log in for email information.
+    ...
+
+And neither can unprivileged users:
+
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~name12')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
+    Contact details
+    Email: No public address provided.
+    ...
+
+But good ole Foo Bar can:
+
+    >>> admin_browser.open('http://launchpad.dev/~name12')
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'contact-details'))
+    Contact details
+    Email: test@canonical.com
+    ...
+
+In the case of teams, it works similarly. No email address is disclosed if
+you're not logged in:
+
+    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team')
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'contact-details'))
+    Contact details
+    Email: Log in for email information.
+    ...
+
+But if you are, you can:
+
+    >>> browser.open('http://launchpad.dev/~ubuntu-team')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
+    Contact details
+    Email: support@ubuntu.com
+    ...
+
+That is, of course, unless the team doesn't have one:
+
+    >>> browser.open('http://launchpad.dev/~landscape-developers')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
+    Contact details
+    Email: No contact address
+      (Launchpad notifications are sent to all team members)
+
+== Summary Pagelets ==
+
+A person's homepage also lists timezone, Karma and status information:
+
+    >>> browser.open('http://launchpad.dev/~sabdfl')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
+    Summary
+    Karma: 130
+    Timezone: UTC
+    Member since: 2005-06-06
+    SSH Keys:
+      Private key in lib/canonical/codehosting/tests/id_dsa
+      (view key text)
+
+Negative Ubuntero status is only displayed for yourself; others won't
+see it:
+
+    >>> "Ubuntero:" in browser.contents
+    False
+
+    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser.open('http://launchpad.dev/~sabdfl')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
+    Summary
+    ...
+    Ubuntero: No (apply now)
+    ...
+
+You can grab certain bits of information programatically:
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'karma-total'))
+    130
+    >>> print extract_text(find_tag_by_id(browser.contents, 'member-since'))
+    2005-06-06
+
+Teams don't have member-since; they have created-date:
+
+    >>> browser.open('http://launchpad.dev/~guadamen')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'created-date'))
+    2005-06-06
 
 
 == Table of contributions ==
