@@ -127,6 +127,7 @@ class ProductReleaseRdfView(object):
 
 
 class ProductReleaseAddDownloadFileView(LaunchpadFormView):
+    """A view for adding a file to an `IProductRelease`."""
     schema = IProductReleaseFileAddForm
 
     custom_widget('description', TextWidget, width=62)
@@ -136,17 +137,19 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
 
     @action('Upload', name='add')
     def add_action(self, action, data):
-        file_upload = self.request.form.get(self.widgets['filecontent'].name)
-        signature_upload = self.request.form.get(self.widgets['signature'].name)
+        form = self.request.form
+        file_upload = form.get(self.widgets['filecontent'].name)
+        signature_upload = form.get(self.widgets['signature'].name)
+        filetype = data['contenttype']
         # XXX: BradCrittenden 2007-04-26 bug=115215 Write a proper upload widget.
         if file_upload and data['description']:
-            # replace slashes in the filename with less problematic dashes.
+            # Replace slashes in the filename with less problematic dashes.
             contentType, encoding = mimetypes.guess_type(file_upload.filename)
             # Set the mime-type to be x-gzip if the encoding is gzip. This is
             # to work around an oddity with Safari where it appends ".tar"
             # to files with a Content-Type of 'application/x-tar'.
-            if encoding == 'gzip':
-                contentType="application/x-gzip"
+            #if encoding == 'gzip':
+            #    contentType="application/gzip"
             if contentType is None:
                 contentType = "text/plain"
 
@@ -171,8 +174,9 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
             else:
                 sig_alias = None
             self.context.addFileAlias(alias=alias,
-                                      signature_alias=sig_alias,
+                                      signature=sig_alias,
                                       uploader=self.user,
+                                      filetype=filetype,
                                       description=data['description'])
             self.request.response.addNotification(
                 "Your file '%s' has been uploaded." % filename)

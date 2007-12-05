@@ -134,7 +134,7 @@ class IProductRelease(Interface):
     product = Attribute(_('The upstream project of this release.'))
     files = Attribute(_('Iterable of product release files.'))
 
-    def addFileAlias(alias, signature_alias,
+    def addFileAlias(alias, signature,
                      uploader,
                      file_type=UpstreamFileType.CODETARBALL,
                      description=None):
@@ -172,13 +172,13 @@ class IProductReleaseFileAddForm(Interface):
         title=u"File", required=True,
         constraint=productrelease_file_size_constraint)
 
-    contenttype = Choice(title=_("File content type"), required=True,
-                         vocabulary=UpstreamFileType,
-                         default=UpstreamFileType.CODETARBALL)
-
     signature = Bytes(
         title=u"GPG signature (recommended)", required=False,
         constraint=productrelease_signature_size_constraint)
+
+    contenttype = Choice(title=_("File content type"), required=True,
+                         vocabulary=UpstreamFileType,
+                         default=UpstreamFileType.CODETARBALL)
 
 class IProductReleaseSet(Interface):
     """Auxiliary class for ProductRelease handling."""

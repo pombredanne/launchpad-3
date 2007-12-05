@@ -57,14 +57,14 @@ class ProductRelease(SQLBase):
             thetitle += ' "' + self.codename + '"'
         return thetitle
 
-    def addFileAlias(self, alias, signature_alias,
+    def addFileAlias(self, alias, signature,
                      uploader,
                      file_type=UpstreamFileType.CODETARBALL,
                      description=None):
         """See `IProductRelease`."""
         return ProductReleaseFile(productrelease=self,
                                   libraryfile=alias,
-                                  signature=signature_alias,
+                                  signature=signature,
                                   filetype=file_type,
                                   description=description,
                                   uploader=uploader)

@@ -74,7 +74,7 @@
                   <tal:signature condition="file/signature">
                     <img alt="download icon" src="/@@/download" />
                     <a tal:attributes="href python:view.fileURL(file.signature,release)"
-                       tal:content="file/signaturefile/filename">signature</a>
+                       tal:content="file/signature/filename">signature</a>
                   </tal:signature>
                 </td>
                 <td>
