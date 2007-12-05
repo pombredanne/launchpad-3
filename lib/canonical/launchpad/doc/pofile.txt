@@ -1182,6 +1182,8 @@ If we submit non-published translation, it's refused.
     ...     alsa_translation, alsa_translation.owner,
     ...     {0: u'Unhappy translator'}, is_fuzzy=False, is_imported=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> print no_credits
+    None
     >>> flush_database_updates()
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     alsa_translation.language)

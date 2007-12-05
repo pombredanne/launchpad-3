@@ -541,15 +541,16 @@ class TranslationImporter:
 
                 errors.append(error)
 
-            translation_message.flags_comment = flags_comment
-            translation_message.comment = message.comment
-            if translation_import_queue_entry.is_published:
-                translation_message.was_obsolete_in_last_import = (
-                    message.is_obsolete)
-                translation_message.was_fuzzy_in_last_import = fuzzy
+            if translation_message is not None:
+                translation_message.flags_comment = flags_comment
+                translation_message.comment = message.comment
+                if translation_import_queue_entry.is_published:
+                    translation_message.was_obsolete_in_last_import = (
+                        message.is_obsolete)
+                    translation_message.was_fuzzy_in_last_import = fuzzy
 
 
-        # Finally, lets expire messages which we have not seen in the new upload
+        # Finally, retire messages that we have not seen in the new upload.
         if use_pofile is not None:
             unseen = pofile_in_db.getUnseenMessages()
             for unseen_message in unseen:
