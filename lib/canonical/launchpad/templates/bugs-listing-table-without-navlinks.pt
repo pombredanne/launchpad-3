@@ -18,7 +18,8 @@
         <th tal:condition="context/show_column/productname|nothing">
           Project
         </th>
-        <th tal:condition="context/show_column/importance|nothing">Importance</th>
+        <th tal:condition="context/show_column/importance|nothing">
+          Importance</th>
         <th tal:condition="context/show_column/status|nothing">Status</th>
         <th tal:condition="context/show_column/date_last_updated|nothing">
           Date last updated</th>

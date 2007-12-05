@@ -1618,7 +1618,7 @@ class BugTaskSet:
 
     def _getTargetJoinAndClause(self, target):
         """Return a SQL join clause to a `BugTarget`.
-        
+
         :param target: A supported BugTarget or None. The target param must
             be either a Distribution, DistroSeries, Product, or ProductSeries.
             If target is None, the clause joins BugTask to all the supported

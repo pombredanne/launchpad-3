@@ -880,7 +880,7 @@ class IBugTaskSet(Interface):
         """Return a list of bugtasks that are at least min_days_old.
 
         :param min_days_old: An int representing the minimum days of
-            inactivty for a bugtask to be considered expirable. Setting
+            inactivity for a bugtask to be considered expirable. Setting
             this parameter to 0 will return all bugtask that can expire.
         :param bug: An `IBug`. If a bug is provided, only bugtasks that belong
             to the bug may be returned. If bug is None, all bugs are searched.
