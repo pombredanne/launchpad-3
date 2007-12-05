@@ -1,0 +1,123 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="section" condition="context/preferredemail">
+
+  <div class="portlet" id="contact-details">
+
+    <h2>Contact details</h2>
+
+    <table>
+      <tbody>
+
+        <tr>
+
+          <th>Email:</th>
+
+          <tal:has_preferredemail condition="context/preferredemail">
+            <tal:logged_in condition="request/lp:person">
+              <tal:hidden_emails condition="context/hide_email_addresses">
+
+                <tal:can-view-hidden-emails condition="context/required:launchpad.Edit">
+                  <td title="This email address is not disclosed to others.">
+                    <span style="white-space: nowrap">
+                      <img src="/@@/private" alt="" /> 
+                      <span tal:replace="context/preferredemail/email">foo@bar.com</span>
+                    </span>
+                    <br />
+                  </td>
+                </tal:can-view-hidden-emails>
+
+                <tal:cant-view-hidden-emails
+                    condition="not: context/required:launchpad.Edit">
+                  <td>
+                    No public address provided.
+                  </td>
+                </tal:cant-view-hidden-emails>
+
+              </tal:hidden_emails>
+
+              <tal:visible_emails condition="not: context/hide_email_addresses">
+                <td>
+                <img src="/@@/mail" alt="" />
+                  <span tal:replace="context/preferredemail/email">foo@bar.com</span>
+                </td>
+              </tal:visible_emails>
+
+            </tal:logged_in>
+
+            <tal:not_logged_in condition="not: request/lp:person">
+              <td>
+                <a href="+login">Log in</a> for email information.
+              <td>
+            </tal:not_logged_in>
+
+          </tal:has_preferredemail>
+
+          <tal:no_preferredemail condition="not: context/preferredemail">
+            <tal:is-team condition="context/isTeam">
+              <td>
+                No contact address <br /><small>(Launchpad notifications are sent to
+                all team members).</small>
+              </td>
+            </tal:is-team>
+            <tal:not-team condition="not:context/isTeam">
+              <td>
+                No public address provided.
+              </td>
+            </tal:not-team>
+          </tal:no_preferredemail>
+
+        </tr>
+
+        <tr tal:condition="context/icon">
+          <th>Icon:</th>
+          <td><tal:icon replace="structure context/image:icon" /></td>
+        </tr>
+        <tr tal:condition="context/allwikis">
+          <th>Wiki:</th>
+          <td>
+            <span tal:repeat="wiki context/allwikis">
+              <a tal:content="wiki/url"
+                 tal:attributes="href wiki/url"
+               >WikiName</a><tal:block condition="not: repeat/wiki/end">,
+               </tal:block>
+            </span>
+          </td>
+        </tr>
+        <tr tal:repeat="ircnick context/ircnicknames">
+          <th>IRC:</th>
+          <td><code style="font-size: 120%"
+                    tal:content="ircnick/nickname"/>
+              on network <code style="font-size: 120%"
+                               tal:content="ircnick/network" />
+          </td>
+        </tr>
+        <tr tal:condition="context/jabberids">
+          <th>Jabber:</th>
+          <td>
+            <tal:block repeat="jabberid view/htmlJabberIDs">
+              <span tal:replace="structure jabberid"
+                /><span tal:condition="not: repeat/jabberid/end">,</span>
+            </tal:block>
+          </td>
+        </tr>
+        <tr tal:condition="context/gpgkeys">
+          <th>OpenPGP keys:</th>
+          <td>
+            <tal:block repeat="key context/gpgkeys">
+              <a tal:attributes="href key/keyserverURL">
+                <span tal:replace="key/keyid"
+                  /></a><span tal:condition="not: repeat/key/end">,</span>
+            </tal:block>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</tal:root>

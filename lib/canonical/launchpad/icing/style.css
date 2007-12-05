@@ -161,6 +161,7 @@ table.listing div.actions {
 }
 textarea {width: 100%;}
 table.form {width: 100%;}
+table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
 
 /* --- Other --- */
 

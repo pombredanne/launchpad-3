@@ -1,0 +1,116 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-details">
+
+  <div class="portletBody portletContent">
+
+    <h2>Summary</h2>
+
+    <tal:valid_person condition="context/is_valid_person">
+
+      <b>Karma:</b>
+      <span id="karma-total" tal:content="context/karma">342</span><br />
+
+      <b>Timezone:</b>
+      <span tal:replace="context/timezone">UTC</span>
+      <i tal:condition="not: context/timezone">None given</i><br />
+
+      <tal:block condition="context/is_ubuntero"><b>Ubuntero:</b> Yes<br />
+      </tal:block>
+
+      <tal:block condition="not: context/is_ubuntero">
+          <tal:is_request_person condition="view/viewingOwnPage">
+            <b>Ubuntero:</b> No
+            <small>(<a href="/codeofconduct">apply now</a>)</small>
+            <br />
+          </tal:is_request_person>
+      </tal:block>
+
+      <b>Member since:</b>
+      <span id="member-since"
+      tal:content="context/datecreated/fmt:date" /><br />
+
+      <div tal:condition="context/teams_with_icons/count">
+        <a tal:repeat="team context/teams_with_icons"
+           tal:attributes="href team/fmt:url"
+          ><img tal:attributes="src team/icon/getURL;
+                                title string:Icon of ${team/name}"
+        /></a>
+      </div>
+
+      <table tal:condition="context/sshkeys" class="slimpadding">
+        <tal:keys repeat="sshkey context/sshkeys">
+          <tr>
+            <th tal:condition="repeat/sshkey/start">
+              SSH Keys:</th>
+            <th tal:condition="not: repeat/sshkey/start">
+            </th>
+            <td tal:content="sshkey/comment" />
+          </tr>
+          <tr tal:condition="repeat/sshkey/end">
+            <td>&nbsp;</td>
+            <td><small><a href="+sshkeys">(view key text)</a></small></td>
+          </tr>
+        </tal:keys>
+      </table>
+
+    </tal:valid_person>
+
+    <tal:is_team condition="context/teamowner">
+
+      <b>Team owner:</b>
+        <a
+          tal:attributes="href context/teamowner/fmt:url"
+          tal:content="context/teamowner/browsername"
+        >sabdfl</a>
+      <br />
+
+      <b>Created on:</b>
+      <span id="created-date"
+            tal:content="context/datecreated/fmt:date" /><br />
+
+      <strong tal:content="context/subscriptionpolicy/title">
+        Moderated
+      </strong>:
+      <span tal:replace="context/subscriptionpolicy/description" />
+      <br />
+      <br />
+
+      <table class="slimpadding" id="membership-summary">
+        <tr>
+          <th>Membership:</th>
+          <td>
+            <span tal:replace="context/all_member_count">12</span>
+            active members
+          </td>
+        </tr>
+        <tr tal:define="count context/proposed_member_count"
+            tal:condition="count">
+          <th />
+          <td><span tal:replace="count" /> proposed members
+          </td>
+        </tr>
+        <tr tal:define="count context/invited_member_count"
+            tal:condition="count">
+          <th />
+          <td><span tal:replace="count" /> invited members
+          </td>
+        </tr>
+        <tr tal:define="count context/inactive_member_count"
+            tal:condition="count">
+          <th />
+          <td><span tal:replace="count" /> inactive members
+          </td>
+        </tr>
+      </table>
+
+    </tal:is_team>
+
+  </div>
+
+</div>
+</tal:root>

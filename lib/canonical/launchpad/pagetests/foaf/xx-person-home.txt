@@ -41,19 +41,40 @@ If you log in, however, you will:
   >>> str(mark.preferredemail.email) in browser.contents
   True
 
-A person's homepage also lists timezone, Karma and Ubuntero status
-information:
+A person's homepage also lists timezone, Karma and status information:
 
-  >>> print browser.contents
-  <...
-  <b>Timezone:</b>
-  UTC
+  >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
+  Summary
+  Karma: 130
+  Timezone: UTC
+  Member since: 2005-06-06
+
+Negative Ubuntero status is only displayed for yourself; others won't
+see it:
+
+  >>> "Ubuntero:" in browser.contents
+  False
+
+  >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+  >>> browser.open('http://launchpad.dev/~sabdfl')
+  >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
+  Summary
   ...
-  <b>Ubuntero:</b>
-  No
+  Ubuntero: No (apply now)
   ...
-  <b>Karma:</b>
-  <span id="karma-total">...
+
+You can grab certain bits of information programatically:
+
+  >>> print extract_text(find_tag_by_id(browser.contents, 'karma-total'))
+  130
+  >>> print extract_text(find_tag_by_id(browser.contents, 'member-since'))
+  2005-06-06
+
+Teams don't have member-since; they have created-date:
+
+  >>> browser.open('http://launchpad.dev/~guadamen')
+  >>> print extract_text(find_tag_by_id(browser.contents, 'created-date'))
+  2005-06-06
 
 Launchpad creates profiles for people that have contributed to free software
 (e.g. in a bug import or a translation template upload). It's clearly
