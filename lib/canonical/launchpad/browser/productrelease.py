@@ -138,28 +138,36 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     def add_action(self, action, data):
         file_upload = self.request.form.get(self.widgets['filecontent'].name)
         signature_upload = self.request.form.get(self.widgets['signature'].name)
-        # XXX BradCrittenden 2007-04-26: Write a proper upload widget.
+        # XXX: BradCrittenden 2007-04-26 bug=115215 Write a proper upload widget.
         if file_upload and data['description']:
             # replace slashes in the filename with less problematic dashes.
-            contentType = mimetypes.guess_type(file_upload.filename)[0]
+            contentType, encoding = mimetypes.guess_type(file_upload.filename)
+            # Set the mime-type to be x-gzip if the encoding is gzip. This is
+            # to work around an oddity with Safari where it appends ".tar"
+            # to files with a Content-Type of 'application/x-tar'.
+            if encoding == 'gzip':
+                contentType="application/x-gzip"
             if contentType is None:
                 contentType = "text/plain"
+
             filename = self.normalizeFilename(file_upload.filename)
+
             # Create the alias for the file.
             alias = getUtility(ILibraryFileAliasSet).create(
                         name=filename,
                         size=len(data['filecontent']),
                         file=StringIO(data['filecontent']),
                         contentType=contentType)
+
             # Create the alias for the signature file, if one was uploaded.
-            if signature_upload is not None:
+            if signature_upload:
                 sig_filename = self.normalizeFilename(
                     signature_upload.filename)
                 sig_alias = getUtility(ILibraryFileAliasSet).create(
                                 name=sig_filename,
                                 size=len(data['signature']),
                                 file=StringIO(data['signature']),
-                                contentType='text/plain')
+                                contentType='application/pgp-signature')
             else:
                 sig_alias = None
             self.context.addFileAlias(alias=alias,

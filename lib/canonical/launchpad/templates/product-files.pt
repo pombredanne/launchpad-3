@@ -50,6 +50,7 @@
             <tr>
               <th tal:condition="has_edit" width="10%">Delete</th>
               <th>Download</th>
+              <th>Signature</th>
               <th>Release</th>
               <th width="50%">Description</th>
             </tr>
@@ -68,6 +69,13 @@
                   <img alt="download icon" src="/@@/download" />
                   <a tal:attributes="href python:view.fileURL(file.libraryfile,release)"
                        tal:content="file/libraryfile/filename">filename</a>
+                </td>
+                <td>
+                  <tal:signature condition="file/signature">
+                    <img alt="download icon" src="/@@/download" />
+                    <a tal:attributes="href python:view.fileURL(file.signature,release)"
+                       tal:content="file/signaturefile/filename">signature</a>
+                  </tal:signature>
                 </td>
                 <td>
                    <tal:version content="release/version">version</tal:version>

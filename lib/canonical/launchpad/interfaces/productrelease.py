@@ -154,8 +154,8 @@ class IProductReleaseFile(Interface):
     libraryfile = Object(schema=ILibraryFileAlias, title=_("File"),
                          description=_("The attached file."),
                          required=True)
-    signaturefile = Object(schema=ILibraryFileAlias, title=_("Signature"),
-                           description=_("The signature of the attached file."))
+    signature = Object(schema=ILibraryFileAlias, title=_("Signature"),
+                       description=_("The signature of the attached file."))
     filetype = Choice(title=_("Upstream file type"), required=True,
                       vocabulary=UpstreamFileType,
                       default=UpstreamFileType.CODETARBALL)

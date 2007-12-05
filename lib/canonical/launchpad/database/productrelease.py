@@ -64,7 +64,7 @@ class ProductRelease(SQLBase):
         """See `IProductRelease`."""
         return ProductReleaseFile(productrelease=self,
                                   libraryfile=alias,
-                                  signaturefile=signature_alias,
+                                  signature=signature_alias,
                                   filetype=file_type,
                                   description=description,
                                   uploader=uploader)
@@ -79,11 +79,11 @@ class ProductRelease(SQLBase):
 
     def getFileAliasByName(self, name):
         """See `IProductRelease`."""
-        for f in self.files:
-            if f.libraryfile.filename == name:
-                return f.libraryfile
-            elif f.signaturefile.filename == name:
-                return f.signaturefile
+        for file_ in self.files:
+            if file_.libraryfile.filename == name:
+                return file_.libraryfile
+            elif file_.signature.filename == name:
+                return file_.signature
         raise NotFoundError(name)
 
 
@@ -99,8 +99,8 @@ class ProductReleaseFile(SQLBase):
     libraryfile = ForeignKey(dbName='libraryfile',
                              foreignKey='LibraryFileAlias', notNull=True)
 
-    signaturefile = ForeignKey(dbName='signaturefile',
-                               foreignKey='LibraryFileAlias')
+    signature = ForeignKey(dbName='signature',
+                           foreignKey='LibraryFileAlias')
 
     filetype = EnumCol(dbName='filetype', enum=UpstreamFileType,
                        notNull=True, default=UpstreamFileType.CODETARBALL)
