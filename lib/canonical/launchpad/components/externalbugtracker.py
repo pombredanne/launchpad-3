@@ -24,6 +24,7 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical import encoding
+from canonical.database import Message, MessageSet
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.scripts import log, debbugs
@@ -744,6 +745,15 @@ class DebBugs(ExternalBugTracker):
         flush_database_updates()
         self.updateBugWatches([bug_watch])
 
+        # We can now import the comments for the bug.
+        self.debbugs_dub.load_log(debian_bug)
+
+        message_set = MessageSet()
+        for comment in debian_bug.comments:
+            # Each comment is an email, so we can happily create a
+            # Message from it.
+            message = message_set.fromEmail(comment,
+                create_missing_persons=True)
         return bug
 
 #
