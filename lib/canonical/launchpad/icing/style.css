@@ -970,6 +970,7 @@ ul.person, li.person                 {list-style-image: url(/@@/person);}
 ul.product, li.product               {list-style-image: url(/@@/product);}
 dl.products>dt:before                {content: url(/@@/product);}
 ul.question, li.question             {list-style-image: url(/@@/question);}
+ul.rss, li.rss                       {list-style-image: url(/@@/rss);}
 ul.search, li.search                 {list-style-image: url(/@@/search);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
 ul.translation, li.translation       {list-style-image: url(/@@/translation);}
@@ -1463,9 +1464,9 @@ div.three.column.left, div.three.column.middle, div.three.column.right {
 .title {
   font-weight: bold;
 }
-ul.buttons {margin: 2em 0 4em 0 !important; padding: 0 !important;}
+ul.buttons {margin: 0.5em 0 0.5em 0 !important; padding: 0 !important;}
 /*- without !important, gets overridden by the '#maincontent ol' etc rule -*/
-ul.buttons li {display: inline; margin-right: 1em;}
+ul.buttons li {display: inline; margin: 0 0 0 0;}
 body.applicationhome ul.buttons {float: right; margin: 0 0 0 1em !important;}
 body.applicationhome ul.buttons li {display: block; margin-right: 0;}
 ul.cross-reference {font-size: 1.25em;}

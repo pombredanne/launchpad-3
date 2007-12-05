@@ -13,6 +13,13 @@ person:
 
     >>> beta_browser = setupBrowser(auth='Basic beta-admin@launchpad.net:test')
 
+Normally, we run the development system (launchpad.dev) with no beta
+redirection host. For the purposes of this test, however, we will set it to
+beta.launchpad.net
+
+    >>> from canonical.config import config
+    >>> config.launchpad.beta_testers_redirection_host = "beta.launchpad.dev"
+
 XXX 20070131 jamesh:
 zope.testbrowser does not handle redirects to remote sites, so we
 disable the redireciton handling at the mechanize layer.  We then need
@@ -47,7 +54,6 @@ In contrast, members of the beta testers get redirected:
 The redirection is controlled by the beta_testers_redirection_host
 config item.  If it is set to None, no redirection occurs:
 
-    >>> from canonical.config import config
     >>> print config.launchpad.beta_testers_redirection_host
     beta.launchpad.dev
     >>> config.launchpad.beta_testers_redirection_host = None
