@@ -16,19 +16,19 @@
       <span id="karma-total" tal:content="context/karma">342</span><br />
 
       <b>Timezone:</b>
-      <span tal:replace="context/timezone">UTC</span>
+      <tal:timezone replace="context/timezone">UTC</tal:timezone>
       <i tal:condition="not: context/timezone">None given</i><br />
 
-      <tal:block condition="context/is_ubuntero"><b>Ubuntero:</b> Yes<br />
-      </tal:block>
+      <tal:ubuntero condition="context/is_ubuntero"><b>Ubuntero:</b>
+        Yes<br /></tal:ubuntero>
 
-      <tal:block condition="not: context/is_ubuntero">
-          <tal:is_request_person condition="view/viewingOwnPage">
-            <b>Ubuntero:</b> No
-            <small>(<a href="/codeofconduct">apply now</a>)</small>
-            <br />
-          </tal:is_request_person>
-      </tal:block>
+      <tal:not-ubuntero condition="not: context/is_ubuntero">
+        <tal:is_request_person condition="view/viewingOwnPage">
+          <b>Ubuntero:</b> No
+          <small>(<a href="/codeofconduct">apply now</a>)</small>
+          <br />
+        </tal:is_request_person>
+      </tal:not-ubuntero>
 
       <b>Member since:</b>
       <span id="member-since"
@@ -76,35 +76,23 @@
       <strong tal:content="context/subscriptionpolicy/title">
         Moderated
       </strong>:
-      <span tal:replace="context/subscriptionpolicy/description" />
+      <tal:description replace="context/subscriptionpolicy/description" />
       <br />
       <br />
 
       <table class="slimpadding" id="membership-summary">
         <tr>
           <th>Membership:</th>
-          <td>
-            <span tal:replace="context/all_member_count">12</span>
-            active members
-          </td>
-        </tr>
-        <tr tal:define="count context/proposed_member_count"
-            tal:condition="count">
-          <th />
-          <td><span tal:replace="count" /> proposed members
-          </td>
-        </tr>
-        <tr tal:define="count context/invited_member_count"
-            tal:condition="count">
-          <th />
-          <td><span tal:replace="count" /> invited members
-          </td>
-        </tr>
-        <tr tal:define="count context/inactive_member_count"
-            tal:condition="count">
-          <th />
-          <td><span tal:replace="count" /> inactive members
-          </td>
+          <td tal:content="string: ${context/all_member_count} active members" />
+        </tr><tr tal:condition="context/proposed_member_count">
+          <td></td>
+          <td tal:content="string: ${context/proposed_member_count} proposed members" />
+        </tr><tr tal:condition="context/invited_member_count">
+          <td></td>
+          <td tal:content="string: ${context/invited_member_count} invited members" />
+        </tr><tr tal:condition="context/inactive_member_count">
+          <td></td>
+          <td tal:content="string: ${context/inactive_member_count} inactive members" />
         </tr>
       </table>
 

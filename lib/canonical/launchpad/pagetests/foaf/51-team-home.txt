@@ -39,8 +39,8 @@ details about the team.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'contact-details'))
     Contact details
-    Wiki:
-    https://wiki.ubuntu.com/UbuntuTeam
+    Email: Log in for email information.
+    Wiki: https://wiki.ubuntu.com/UbuntuTeam
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subteam-of'))

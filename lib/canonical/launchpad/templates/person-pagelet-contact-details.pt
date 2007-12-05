@@ -25,7 +25,7 @@
                   <td title="This email address is not disclosed to others.">
                     <span style="white-space: nowrap">
                       <img src="/@@/private" alt="" /> 
-                      <span tal:replace="context/preferredemail/email">foo@bar.com</span>
+                      <tal:email replace="context/preferredemail/email">foo@bar.com</tal:email>
                     </span>
                     <br />
                   </td>
@@ -43,7 +43,7 @@
               <tal:visible_emails condition="not: context/hide_email_addresses">
                 <td>
                 <img src="/@@/mail" alt="" />
-                  <span tal:replace="context/preferredemail/email">foo@bar.com</span>
+                  <tal:email replace="context/preferredemail/email">foo@bar.com</tal:email>
                 </td>
               </tal:visible_emails>
 
@@ -61,7 +61,7 @@
             <tal:is-team condition="context/isTeam">
               <td>
                 No contact address <br /><small>(Launchpad notifications are sent to
-                all team members).</small>
+                all team members)</small>
               </td>
             </tal:is-team>
             <tal:not-team condition="not:context/isTeam">
