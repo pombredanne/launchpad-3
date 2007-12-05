@@ -106,27 +106,41 @@ Again, the link takes you to the list of the bugs fixed elsewhere.:
 == Expirable Bugs ==
 
 The bugs page displays the number of bugs that can expire if they are
-not confirmed when the project uses Launchpad to track bugs.
+not confirmed when the project has enabled bug expiration. Jokosher
+is such a project.
 
-    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> anon_browser.open('http://bugs.launchpad.dev/jokosher')
     >>> expirable_bugs_link = anon_browser.getLink(
-    ...     'bugs will expire if they are not confirmed')
+    ...     'Incomplete bugs can expire')
     >>> expirable_bugs_link.text
-    '0 bugs will expire if they are not confirmed'
+    '0 Incomplete bugs can expire'
 
 The link goes to the expirable bugs page, where the anonymous user can
 see which bugs will expire if they are not confirmed.
 
     >>> expirable_bugs_link.click()
     >>> anon_browser.title
-    'Bugs that can expire in Firefox'
+    'Bugs that can expire in Jokosher'
 
-Thunderbird does not use Launchpad to track bugs; the anonymous user
+Product series may also have a link to exirable bugs. Jokosher's trunk
+series has the link because Jokosher has enabled bug expiration.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/jokosher/trunk')
+    >>> expirable_bugs_link = anon_browser.getLink(
+    ...     'Incomplete bugs can expire')
+    >>> expirable_bugs_link.text
+    '0 Incomplete bugs can expire'
+
+    >>> expirable_bugs_link.click()
+    >>> anon_browser.title
+    'Bugs that can expire in Jokosher'
+
+Thunderbird has not enabled bug expiration; the anonymous user
 cannot see any link reporting that bugs can expire.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/thunderbird')
     >>> expirable_bugs_link = anon_browser.getLink(
-    ...     'bugs will expire if they are not confirmed')
+    ...     'Incomplete bugs can expire')
     Traceback (most recent call last):
     ...
     LinkNotFoundError

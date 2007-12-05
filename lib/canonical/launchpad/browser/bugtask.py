@@ -2051,6 +2051,39 @@ class BugTaskSearchListingView(LaunchpadFormView):
             canonical_url(self.context))
         return dict(count=count, url=search_url, label=label)
 
+    @property
+    def expirable_bugs_info(self):
+        """Return a dict with count, and url of bugs that can expire, or None.
+
+        If the bugtarget is not a supported implementation, or its pillar
+        does not have enable_bug_expiration set to True, None is returned.
+        The bugtarget may be an `IDistribution`, `IDistroSeries`, `IProduct`,
+        or `IProductSeries`.
+
+        The available keys are:
+        * 'count' - The number of bugs.
+        * 'url' - The URL of the search, or None.
+        * 'label' - Either 'bug' or 'bugs' depending on the count.
+        """
+        if hasattr(self.context, 'enable_bug_expiration'):
+            pillar = self.context
+        elif IProductSeries.providedBy(self.context):
+            pillar = self.context.product
+        elif IDistroSeries.providedBy(self.context):
+            pillar = self.context.distribution
+        else:
+            # This context is not a supported bugtarget.
+            return None
+        if not pillar.enable_bug_expiration:
+            return None
+        bugtaskset = getUtility(IBugTaskSet)
+        expirable_bugtasks = bugtaskset.findExpirableBugTasks(
+            0, target=self.context)
+        count = len(expirable_bugtasks)
+        label = gettext.ngettext('bug', 'bugs', count)
+        url = "%s/+expirable-bugs" % canonical_url(self.context)
+        return dict(count=count, url=url, label=label)
+
 
 class BugNominationsView(BugTaskSearchListingView):
     """View for accepting/declining bug nominations."""

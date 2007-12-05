@@ -1614,14 +1614,16 @@ class BugTaskSet:
         return sorted(bugtasks, key=date_last_updated_key)
 
     def _getTargetJoinAndClause(self, target):
-        """Return a SQL join clause to a BugTarget.
+        """Return a SQL join clause to a `BugTarget`.
         
-        If target is None, the clause joins BugTask to Distribution,
-        DistroSeries, Product, and ProductSeries.
-        
-        The target param must be either a Distribution, DistroSeries,
-        Product, or ProductSeries. Other BugTarget types will raise
-        NotImplementedError.
+        :param target: A supported BugTarget or None. The target param must
+            be either a Distribution, DistroSeries, Product, or ProductSeries.
+            If target is None, the clause joins BugTask to all the supported
+            BugTarget tabled.
+        :raises NotImplementedError: If the target is an IProject,
+            ISourcePackage, or and IDistributionSourcePackage.
+        :raises AssertionError: If the target is not a known implementer of
+            `IBugTarget`
         """
         bugtarget_joins = dict(
             distribution="""

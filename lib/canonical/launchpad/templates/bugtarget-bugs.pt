@@ -111,6 +111,16 @@
                 need forwarding upstream
               </a>
             </li>
+            <li tal:define="expirable_bugs view/expirable_bugs_info"
+              tal:condition="expirable_bugs">
+              <a tal:attributes="href expirable_bugs/url">
+                <strong tal:content="expirable_bugs/count"></strong>
+                Incomplete
+                <tal:label
+                  tal:replace="expirable_bugs/label">bugs</tal:label>
+                can expire
+              </a>
+            </li>
             <li style="font-weight: bold;">
               <a href="+bugs">List all open bugs</a>
             </li>
