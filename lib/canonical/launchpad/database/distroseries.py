@@ -68,11 +68,11 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBinaryPackageName,
     IBuildSet, IDistroSeries, IDistroSeriesSet, IHasBuildRecords,
     IHasTranslationTemplates, IHasQueueItems, ILibraryFileAliasSet,
-    IPublishedPackageSet, ICanPublishPackages, ISourcePackage, ISourcePackageName,
-    ISourcePackageNameSet, LanguagePackType, NotFoundError,
-    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
-    SpecificationFilter, SpecificationGoalStatus, SpecificationSort,
-    SpecificationImplementationStatus)
+    IPublishedPackageSet, ICanPublishPackages, ISourcePackage,
+    ISourcePackageName, ISourcePackageNameSet, LanguagePackType,
+    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
+    PackageUploadStatus, SpecificationFilter, SpecificationGoalStatus,
+    SpecificationSort, SpecificationImplementationStatus)
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -711,7 +711,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
             # XXX: this should come from a single location where this
             # is specified, not sprinkled around the code.
-            allow_release_builds = (ArchivePurpose.PPA, ArchivePurpose.PARTNER)
+            allow_release_builds = (
+                ArchivePurpose.PPA, ArchivePurpose.PARTNER)
 
             query += ("""AND (Archive.purpose in %s OR
                             SourcePackagePublishingHistory.pocket != %s)""" %

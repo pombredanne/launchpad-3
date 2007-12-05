@@ -181,7 +181,8 @@ class DistributionSourcePackage(BugTargetBase,
         contact_to_remove = self.isBugContact(person)
 
         if not contact_to_remove:
-            raise DeleteBugContactError("%s is not a bug contact for this package.")
+            raise DeleteBugContactError(
+                "%s is not a bug contact for this package.")
         else:
             contact_to_remove.destroySelf()
 
