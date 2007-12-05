@@ -17,9 +17,8 @@
 
 <div metal:fill-slot="main">
 
-  <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
-        tal:attributes="
-        href string:${modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/feeds/rooturl}${context/fmt:url}/announcements.atom" />
+   <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+         tal:attributes="href view/feed_url" />
 
       <span tal:replace="structure context/image:mugshot" />
       <h1 tal:content="context/title">Ubuntu Linux</h1>

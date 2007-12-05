@@ -15,33 +15,31 @@
 <metal:portlets fill-slot="portlets">
 </metal:portlets>
 
-<p metal:fill-slot="help-hasannouncements-announcements">
+<p metal:fill-slot="help">
   Project administrators can publish additional announcements, edit these
   announcements or retract them.
 </p>
 
-<metal:heading fill-slot="pageheading">
-  <h1>News and announcements</h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
 <tal:beta-testers-only condition="view/isBetaUser">
+
+  <h1>News and announcements</h1>
 
   <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
         tal:attributes="href view/feed_url" />
 
-  <p tal:condition="not: view/batchnav/batch/listlength">
+  <p tal:condition="not: view/announcement_nav/batch/listlength">
     There are no announcements for this project.
   </p>
 
-  <div tal:condition="view/batchnav/batch/listlength" id="announcements">
+  <div tal:condition="view/announcement_nav/batch/listlength" id="announcements">
     <tal:per_announcement
-        repeat="announcement view/batchnav/currentBatch"
+        repeat="announcement view/announcement_nav/currentBatch"
         replace="structure announcement/@@+listing-detailed" />
   </div>
 
   <div class="lesser"
-       tal:content="structure view/batchnav/@@+navigation-links-lower" />
+       tal:content="structure view/announcement_nav/@@+navigation-links-lower" />
 
 </tal:beta-testers-only>
 </div>

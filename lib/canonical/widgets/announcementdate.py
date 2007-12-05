@@ -26,6 +26,7 @@ from canonical.launchpad import _
 class IAnnouncementDateWidget(ISimpleInputWidget):
     """A widget for selecting the date of a news item."""
 
+
 class AnnouncementDateWidget(SimpleInputWidget):
     """See IAnnouncementDateWidget."""
 

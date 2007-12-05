@@ -23,6 +23,7 @@ __all__ = [
     'ProjectAnswersMenu',
     'ProjectTranslationsMenu',
     'ProjectSetContextMenu',
+    'ProjectView',
     'ProjectEditView',
     'ProjectAddProductView',
     'ProjectSetView',
@@ -41,6 +42,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBranchSet, IProductSet, IProject, IProjectSet, NotFoundError)
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -329,6 +331,7 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         summary = 'Register a new blueprint for %s' % self.context.title
         return Link('+addspec', text, summary, icon='add')
 
+
 class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
     """Menu for the answers facet of projects."""
 
@@ -350,6 +353,10 @@ class ProjectTranslationsMenu(ApplicationMenu):
     def changetranslators(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
+
+
+class ProjectView(HasAnnouncementsView):
+    pass
 
 
 class ProjectEditView(LaunchpadEditFormView):

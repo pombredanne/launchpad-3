@@ -27,7 +27,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad.interfaces import (
-    IAnnouncement, IAnnouncementSet, IHasAnnouncements)
+    IAnnouncement, IAnnouncementSet, IHasAnnouncements, ILaunchpadRoot)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import AnnouncementDate, Summary, Title
@@ -80,15 +80,10 @@ class AnnouncementSHP(StructuralHeaderPresentation):
 class AddAnnouncementForm(Interface):
     """Form definition for the view which creates new Announcements."""
 
-    title = Title(
-        title=_('Headline'), required=True)
-    summary = Summary(
-        title=_('Summary'), required=True)
-    url = TextLine(
-        title=_('URL'), required=False,
-        description=_(
-            "The web location of your announcement."),
-        constraint=valid_webref)
+    title = Title(title=_('Headline'), required=True)
+    summary = Summary(title=_('Summary'), required=True)
+    url = TextLine(title=_('URL'), required=False, constraint=valid_webref,
+        description=_("The web location of your announcement."))
     publication_date = AnnouncementDate(title=_('Date'), required=True)
 
 
@@ -245,6 +240,8 @@ class HasAnnouncementsView(LaunchpadView):
         base_url = allvhosts.configs['feeds'].rooturl
         if IAnnouncementSet.providedBy(self.context):
             return urlparse.urljoin(base_url, 'announcements.atom')
+        elif ILaunchpadRoot.providedBy(self.context):
+            return urlparse.urljoin(base_url, 'announcements.atom')
         elif IHasAnnouncements.providedBy(self.context):
             pillar_path = urlparse.urlparse(canonical_url(self.context))[2]
             return urlparse.urljoin(
@@ -254,18 +251,19 @@ class HasAnnouncementsView(LaunchpadView):
 
     @cachedproperty
     def announcements(self):
+        published_only = not check_permission('launchpad.Edit', self.context)
         return self.context.announcements(
-                    limit=None, published_only=self._published_only)
+                    limit=None, published_only=published_only)
 
     @cachedproperty
     def latest_announcements(self):
+        published_only = not check_permission('launchpad.Edit', self.context)
         return self.context.announcements(
-                    limit=5, published_only=self._published_only)
+                    limit=5, published_only=published_only)
 
-    def initialize(self):
-        self._published_only = not check_permission(
-                                        'launchpad.Edit', self.context)
-        self.batchnav = BatchNavigator(
+    @cachedproperty
+    def announcement_nav(self):
+        return BatchNavigator(
             self.announcements, self.request,
             size=config.launchpad.default_batch_size)
 

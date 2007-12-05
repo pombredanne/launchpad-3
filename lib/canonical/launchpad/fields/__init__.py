@@ -57,7 +57,7 @@ class IAnnouncementDate(IDatetime):
     This is used in cases where we either want to publish something
     immediately, or come back in future to publish it, or set a date for
     publication in advance. Essentially this amounts to a Datetime that can
-    give NOW, None, or a Datetime.
+    be None.
     """
 
 class IShipItRecipientDisplayname(ITextLine):
@@ -195,6 +195,7 @@ class Whiteboard(Text):
 
 class AnnouncementDate(Datetime):
     implements(IDatetime)
+
 
 # TimeInterval
 # A field to capture an interval in time, such as X days, Y hours, Z

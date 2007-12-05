@@ -87,19 +87,19 @@ class Announcement(SQLBase):
         self.date_last_modified = UTC_NOW
 
     def retract(self):
-        """See IAnnouncement."""
+        """See `IAnnouncement`."""
         self.active = False
         self.date_last_modified = UTC_NOW
 
     def set_publication_date(self, publication_date):
-        """See IAnnouncement."""
+        """See `IAnnouncement`."""
         self.date_announced = publication_date
         self.date_last_modified = None
         self.active = True
 
     @property
     def future(self):
-        """See IAnnouncement."""
+        """See `IAnnouncement`."""
         if self.date_announced is None:
             return True
         return self.date_announced > \
@@ -107,7 +107,7 @@ class Announcement(SQLBase):
 
     @property
     def published(self):
-        """See IAnnouncement."""
+        """See `IAnnouncement`."""
         if self.active is False:
             return False
         return not self.future
@@ -125,7 +125,7 @@ class HasAnnouncements:
             announcement = Announcement.get(announcement_id)
         except SQLObjectNotFound:
             return None
-        if announcement.target.id != self.id:
+        if announcement.target.name != self.name:
             return None
         return announcement
 

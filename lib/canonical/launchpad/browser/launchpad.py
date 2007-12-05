@@ -12,7 +12,6 @@ __all__ = [
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
-    'LaunchpadRootIndexView',
     'OneZeroTemplateStatus',
     'IcingFolder',
     'StructuralHeaderPresentationView',
@@ -574,19 +573,6 @@ class SoftTimeoutView(LaunchpadView):
         return (
             'Soft timeout threshold is set to %s ms. This page took'
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
-
-
-class LaunchpadRootIndexView(LaunchpadView):
-    """An view for the default view of the LaunchpadRoot."""
-
-    def isRedirectInhibited(self):
-        """Returns True if redirection has been inhibited."""
-        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
-
-    def canRedirect(self):
-        return bool(
-            config.launchpad.beta_testers_redirection_host is not None and
-            self.isBetaUser)
 
 
 class ObjectForTemplate:

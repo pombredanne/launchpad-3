@@ -206,10 +206,6 @@ class ArchiveActivateView(LaunchpadFormView):
             description=data['description'])
         self.next_url = canonical_url(ppa)
 
-    def validate_cancel(self, action, data):
-        """Noop validation in case we cancel"""
-        return []
-
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
     def action_cancel(self, action, data):
         self.next_url = canonical_url(self.context)

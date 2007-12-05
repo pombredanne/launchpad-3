@@ -20,13 +20,14 @@ from canonical.lazr.feed import (
 
 
 class AnnouncementsFeed(FeedBase):
+    """Publish an Atom feed of all public announcements in Launchpad."""
 
     usedfor = IFeedsApplication
     feedname = "announcements"
 
     def getItems(self):
         """See `IFeed`."""
-        # quantity is defined in FeedBase or config file
+        # The quantity is defined in FeedBase or config file.
         items = getUtility(IAnnouncementSet).announcements(limit=self.quantity)
         # Convert the items into their feed entry representation.
         items = [self.itemToFeedEntry(item) for item in items]
@@ -77,13 +78,14 @@ class AnnouncementsFeed(FeedBase):
 
 
 class TargetAnnouncementsFeed(FeedBase):
+    """Publish an Atom feed of all announcements for a project."""
 
     usedfor = IHasAnnouncements
     feedname = "announcements"
 
     def getItems(self):
         """See `IFeed`."""
-        # quantity is defined in FeedBase or config file
+        # The quantity is defined in FeedBase or config file.
         items = self.context.announcements(limit=self.quantity)
         # Convert the items into their feed entry representation.
         items = [self.itemToFeedEntry(item) for item in items]

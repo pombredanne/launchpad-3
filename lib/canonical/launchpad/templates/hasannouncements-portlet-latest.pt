@@ -9,10 +9,7 @@
   tal:condition="announcements"
   class="portlet"
   id="portlet-latest-announcements">
-  <h2>Latest news
-        <a title="Atom 1.0 feed" tal:attributes="
-           href string:${modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/feeds/rooturl}${context/fmt:url}/announcements.atom">
-           <img src="/@@/rss" /></a></h2>
+  <h2>Latest news</h2>
   <div class="portletBody portletContent">
     <ul class="news">
       <li tal:repeat="announcement announcements" class="news">
@@ -23,7 +20,9 @@
         <tal:summary replace="announcement/summary/fmt:shorten/80" />
       </li>
     </ul>
-  <a href="+announcements">&raquo; See all announcements...</a><br />
+  <a href="+announcements">&raquo; See all announcements...</a>
+  <a title="Atom 1.0 feed"
+     tal:attributes="href view/feed_url"><img src="/@@/rss" /></a><br />
   <a tal:condition="context/required:launchpad.Edit"
      href="+announce">&raquo; Make a new announcement...</a>
   </div>

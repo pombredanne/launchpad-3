@@ -44,9 +44,14 @@ class IMakesAnnouncements(IHasAnnouncements):
 
 
 class IAnnouncement(Interface):
-    """An Announcement."""
+    """An Announcement.
 
-    # Attributes relating to the lifecycle of the Announcement
+    An announcement is a piece of news which has a headline, summary, and
+    possibly a URL where further information can be found. It also has
+    attributes that determine its publishing state.
+    """
+
+    # Attributes relating to the lifecycle of the Announcement.
     id = Attribute("The unique ID of this announcement")
     date_created = Attribute("The date this announcement was registered")
     registrant = Attribute("The person who registered this announcement")
@@ -54,14 +59,14 @@ class IAnnouncement(Interface):
         "The date this announcement was last modified, if ever.")
 
     # The potential pillars to which the Announcement could belong, of which
-    # only 1 should not be None
+    # only 1 should not be None.
     product = Attribute("The product for this announcement.")
     project = Attribute("The project for this announcement.")
     distribution = Attribute("The distribution for this announcement.")
 
     target = Attribute("The pillar to which this announcement belongs.")
 
-    # The core details of the announcement
+    # The core details of the announcement.
     title = Attribute("The headline of your announcement.")
     summary = Attribute("A single-paragraph summary of the announcement.")
     url = Attribute("The web location of your announcement.")
@@ -71,14 +76,14 @@ class IAnnouncement(Interface):
         "published on that date if the 'active' flag is True.")
     active = Attribute("Whether or not this announcement can be published.")
 
-    # Emergent properties of the announcement
+    # Emergent properties of the announcement.
     future = Attribute("Whether or not this announcement is yet public.")
     published = Attribute(
         "Whether or not this announcement is published. This is different "
         "to IAnnouncement.future because it factors in retraction, while "
         "IAnnouncement.future looks only at the date_announced.")
 
-    def modify(title, summary=None, url=None):
+    def modify(title, summary, url):
         """Update the details of the announcement. This will record the
         date_last_modified."""
 

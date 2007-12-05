@@ -20,7 +20,8 @@ from canonical.launchpad.interfaces.branchvisibilitypolicy import (
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasIcon, IHasLogo, IHasMugshot, IHasOwner)
+    IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
+    IHasOwner)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
@@ -41,10 +42,11 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
-               IHasIcon, IHasLogo, IHasMentoringOffers, IHasMilestones,
-               IHasMugshot, IHasOwner, IHasSpecifications,
-               IHasSprints, IHasTranslationGroup, IMakesAnnouncements,
+class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
+               IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
+               IHasMentoringOffers, IHasMilestones, IHasMugshot,
+               IHasOwner, IHasSpecifications, IHasSprints,
+               IHasTranslationGroup, IMakesAnnouncements,
                IKarmaContext):
     """A Project."""
 
@@ -103,9 +105,6 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             "just want to leave this space blank, and instead let the "
             "individual projects and series have drivers."),
         required=False, vocabulary='ValidPersonOrTeam')
-
-    drivers = Attribute("A list of drivers, to make Object.drivers a "
-        "standard pattern of access.")
 
     homepageurl = URIField(
         title=_('Homepage URL'),

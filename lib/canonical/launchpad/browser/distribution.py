@@ -45,6 +45,7 @@ from canonical.launchpad.interfaces import (
     DistroSeriesStatus, IDistributionMirrorSet, IDistributionSet, 
     IDistribution, ILaunchBag, ILaunchpadCelebrities, IPublishedPackageSet,
     MirrorContent, MirrorSpeed, NotFoundError)
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -397,7 +398,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+select-language-pack-admin', text, icon='edit')
 
 
-class DistributionView(BuildRecordsView):
+class DistributionView(HasAnnouncementsView, BuildRecordsView):
     """Default Distribution view class."""
 
     def initialize(self):

@@ -115,13 +115,14 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def drivers(self):
+        """See `IHasDrivers`."""
         if self.driver is not None:
             return [self.driver]
         return []
 
     @property
     def mentoring_offers(self):
-        """See `IProject`"""
+        """See `IProject`."""
         via_specs = MentoringOffer.select("""
             Product.project = %s AND
             Specification.product = Product.id AND

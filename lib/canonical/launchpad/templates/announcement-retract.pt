@@ -22,7 +22,7 @@
     <p metal:fill-slot="extra_info" class="documentDescription">
       If you want to remove this announcement from the publishing list, so
       that it is not published accidentally, press "Retract" below. Note
-      that someone else can still come along and publish the item. 
+      that someone else can still come along and publish the item.
       Alternatively, you can <a href="+delete">delete this announcement
       permanently</a>.
     </p>

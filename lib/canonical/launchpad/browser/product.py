@@ -59,6 +59,7 @@ from canonical.launchpad.interfaces import (
     License, NotFoundError, RESOLVED_BUGTASK_STATUSES,
     UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
@@ -556,7 +557,7 @@ class SortSeriesMixin:
         return series_list
 
 
-class ProductView(LaunchpadView, SortSeriesMixin):
+class ProductView(HasAnnouncementsView, LaunchpadView, SortSeriesMixin):
 
     __used_for__ = IProduct
 
