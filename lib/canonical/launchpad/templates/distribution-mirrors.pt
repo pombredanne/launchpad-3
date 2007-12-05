@@ -22,7 +22,7 @@
   <div tal:condition="not: mirrors_by_country">
     <p tal:condition="not: mirrors_by_country">
       We don't know of any <span tal:replace="view/heading">Archive
-      Mirrors</span> of this distribution. If you know of one, please
+      Mirrors</span> for this distribution. If you know of one, please
       <a tal:attributes="href string:${context/fmt:url}/+newmirror">register
       it</a>.
     </p>

@@ -331,9 +331,11 @@ class IDistributionMirror(Interface):
     title = Attribute('The title of this mirror')
     cdimage_serieses = Attribute(
         'All MirrorCDImageDistroSerieses of this mirror')
-    source_serieses = Attribute('All MirrorDistroSeriesSources of this mirror')
+    source_serieses = Attribute(
+        'All MirrorDistroSeriesSources of this mirror')
     arch_serieses = Attribute('All MirrorDistroArchSerieses of this mirror')
-    last_probe_record = Attribute('The last MirrorProbeRecord for this mirror.')
+    last_probe_record = Attribute(
+        'The last MirrorProbeRecord for this mirror.')
     all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
     has_ftp_or_rsync_base_url = Bool(
         title=_('Does this mirror have a ftp or rsync base URL?'))

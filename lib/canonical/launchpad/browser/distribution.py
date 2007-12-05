@@ -238,32 +238,27 @@ class DistributionOverviewMenu(ApplicationMenu):
         enabled = self.context.full_functionality
         return Link('+archivemirrors', text, enabled=enabled, icon='info')
 
+    def _userCanSeeNonPublicMirrorListings(self):
+        """Does the user have rights to see non-public mirrors listings?"""
+        user = getUtility(ILaunchBag).user
+        return (self.context.full_functionality
+                and user is not None
+                and user.inTeam(self.context.mirror_admin))
+
     def disabled_mirrors(self):
         text = 'Show disabled mirrors'
-        enabled = False
-        user = getUtility(ILaunchBag).user
-        if (self.context.full_functionality and user is not None and
-            user.inTeam(self.context.mirror_admin)):
-            enabled = True
+        enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+disabledmirrors', text, enabled=enabled, icon='info')
 
     def pending_review_mirrors(self):
         text = 'Show pending-review mirrors'
-        enabled = False
-        user = getUtility(ILaunchBag).user
-        if (self.context.full_functionality and user is not None and
-            user.inTeam(self.context.mirror_admin)):
-            enabled = True
+        enabled = self._userCanSeeNonPublicMirrorListings()
         return Link(
             '+pendingreviewmirrors', text, enabled=enabled, icon='info')
 
     def unofficial_mirrors(self):
         text = 'Show unofficial mirrors'
-        enabled = False
-        user = getUtility(ILaunchBag).user
-        if (self.context.full_functionality and user is not None and
-            user.inTeam(self.context.mirror_admin)):
-            enabled = True
+        enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
     def allpkgs(self):

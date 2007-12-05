@@ -61,7 +61,8 @@ class TestDistributionMirror(unittest.TestCase):
 
     def test_cdimage_mirror_missing_content_should_be_disabled(self):
         expected_file_count = 1
-        self.failUnless(self.cdimage_mirror.shouldDisable(expected_file_count))
+        self.failUnless(
+            self.cdimage_mirror.shouldDisable(expected_file_count))
 
     def test_delete_all_mirror_cdimage_serieses(self):
         mirror = self.cdimage_mirror.ensureMirrorCDImageSeries(

@@ -69,7 +69,7 @@ class RequestManager:
 
 
 class MultiLock(defer._ConcurrencyPrimitive):
-    """A lock that acquires multiple underlying locks before it is acquired."""
+    """Lock that acquires multiple underlying locks before it is acquired."""
 
     def __init__(self, overall_lock, host_lock):
         defer._ConcurrencyPrimitive.__init__(self)
@@ -431,7 +431,8 @@ class ArchiveMirrorProberCallbacks(object):
             prober = ProberFactory(url)
             deferred = request_manager.run(prober.request_host, prober.probe)
             deferred.addCallback(
-                self.setMirrorFreshness, arch_or_source_mirror, freshness, url)
+                self.setMirrorFreshness, arch_or_source_mirror, freshness,
+                url)
             deferred.addErrback(self.logError, url)
             deferredList.append(deferred)
         return defer.DeferredList(deferredList)
@@ -444,10 +445,10 @@ class ArchiveMirrorProberCallbacks(object):
         recent date than the current one.
         """
         if freshness < arch_or_source_mirror.freshness:
-            msg = ('Found that %s exists. Updating %s of %s freshness to %s.\n'
-                   % (url, self.mirror_class_name,
-                      self._getSeriesPocketAndComponentDescription(),
-                      freshness.title))
+            msg = ('Found that %s exists. Updating %s of %s freshness to '
+                   '%s.\n' % (url, self.mirror_class_name,
+                              self._getSeriesPocketAndComponentDescription(),
+                              freshness.title))
             self.log_file.write(msg)
             arch_or_source_mirror.freshness = freshness
 

@@ -38,7 +38,8 @@ from canonical.launchpad.database.country import Country
 from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.publishing import (
-    SecureSourcePackagePublishingHistory, SecureBinaryPackagePublishingHistory)
+    SecureSourcePackagePublishingHistory,
+    SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses, shortlist)
 from canonical.launchpad.webapp import urlappend, canonical_url
@@ -119,7 +120,8 @@ class DistributionMirror(SQLBase):
     @property
     def has_ftp_or_rsync_base_url(self):
         """See IDistributionMirror"""
-        return self.ftp_base_url is not None or self.rsync_base_url is not None
+        return (self.ftp_base_url is not None
+                or self.rsync_base_url is not None)
 
     def destroySelf(self):
         """Delete this mirror from the database.
@@ -172,7 +174,8 @@ class DistributionMirror(SQLBase):
 
     def isOfficial(self):
         """See IDistributionMirror"""
-        return self.official_candidate and self.status == MirrorStatus.OFFICIAL
+        return (self.official_candidate
+                and self.status == MirrorStatus.OFFICIAL)
 
     def shouldDisable(self, expected_file_count=None):
         """See IDistributionMirror"""
@@ -456,7 +459,8 @@ class DistributionMirrorSet:
             query += " LIMIT %d" % limit
 
         conn = DistributionMirror._connection
-        ids = ", ".join(str(id) for (id, date_created) in conn.queryAll(query))
+        ids = ", ".join(str(id)
+                        for (id, date_created) in conn.queryAll(query))
         query = '1 = 2'
         if ids:
             query = 'id IN (%s)' % ids
@@ -506,8 +510,8 @@ class _MirrorSeriesMixIn:
         ]
 
     def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
-        """Given a publishing record, return a dictionary mapping MirrorFreshness
-        items to URLs of files on this mirror.
+        """Given a publishing record, return a dictionary mapping
+        MirrorFreshness items to URLs of files on this mirror.
 
         Must be overwritten on subclasses.
         """
@@ -646,7 +650,8 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
             query = (query + " AND datepublished >= %s AND datepublished < %s"
                      % sqlvalues(start, end))
         return SecureBinaryPackagePublishingHistory.selectFirst(
-            query, clauseTables=['BinaryPackageFile'], orderBy='-datepublished')
+            query, clauseTables=['BinaryPackageFile'],
+            orderBy='-datepublished')
 
 
     def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):

@@ -4,7 +4,7 @@ There are several pages which list the mirrors of a given distribution based
 on their status and content.
 
     # First we'll define a helper function to extract some data from the
-    # pages we're going to have a look.
+    # pages we're going to use.
     >>> def print_mirrors_by_countries(contents):
     ...     mirrors_table = find_tag_by_id(contents, 'mirrors_list')
     ...     header = mirrors_table.find('tr')
@@ -73,7 +73,7 @@ seen by distro owners, mirror admins of the distro or launchpad admins.
     Disabled Mirrors
     >>> print find_tag_by_id(browser.contents, 'mainarea').renderContents()
     <BLANKLINE>
-    ...We don't know of any Disabled Mirrors of this distribution...
+    ...We don't know of any Disabled Mirrors for this distribution...
 
   
 == Unofficial mirrors ==
@@ -101,7 +101,7 @@ launchpad admins.
 == Pending-review mirrors ==
 
 These are the mirrors that were created but none of the mirror admins have
-looked at it yet.
+looked at yet.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/+pendingreviewmirrors')
     Traceback (most recent call last):
