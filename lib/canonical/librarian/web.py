@@ -101,6 +101,9 @@ class LibraryFileAliasResource(resource.Resource):
         if dbfilename.encode('utf-8') != filename:
             return fourOhFour
         if self.storage.hasFile(dbcontentID) or self.upstreamHost is None:
+            # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are stored
+            # as part of a file's metadata this logic will be replaced.
+
             # This fix is in response to Bug 173096.  The Ubuntu team wants their
             # log files to be automatically unzipped.  Previously this was done by
             # having Apache add an encoding for all content that was .gz or .tgz.
@@ -111,20 +114,7 @@ class LibraryFileAliasResource(resource.Resource):
             # encoding.  Apache will be changed to remove the Content-Encoding
             # header for gzip.
             if filename.endswith(".txt.gz"):
-                # We want to set the encoding to a variation of gzip.  We must
-                # see what if the browser has advertised an expected encoding.
-                accept_encoding_header = request.getHeader('accept-encoding')
-                if accept_encoding_header is not None:
-                    accept_encodings = accept_encoding_header.split(',')
-                else:
-                    accept_encodings = []
-                # Set the default encoding to "gzip" in case one is not
-                # advertised.  Otherwise, take the first one that looks good.
                 encoding = "gzip"
-                for enc in accept_encodings:
-                    if 'gzip' in enc:
-                        encoding = enc
-                        break
                 mimetype = "text/plain"
             else:
                 encoding = None
