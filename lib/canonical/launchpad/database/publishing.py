@@ -333,7 +333,6 @@ class ArchivePublisherBase:
         current = self.secure_record
         current.status = PackagePublishingStatus.DELETED
         current.datesuperseded = UTC_NOW
-        current.scheduleddeletiondate = UTC_NOW
         current.removed_by = removed_by
         current.removal_comment = removal_comment
         return current

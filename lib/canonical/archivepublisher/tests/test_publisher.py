@@ -11,6 +11,8 @@ import stat
 import tempfile
 import unittest
 
+from datetime import datetime, timedelta
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -503,14 +505,19 @@ class TestPublisher(TestNativePublishingBase):
         shutil.rmtree(config.personalpackagearchive.root)
 
     def testDirtyingPocketsWithDeletedPackages(self):
-        """Test that dirtying pockets with deleted packages works."""
+        """Test that dirtying pockets with deleted packages works.
+
+        The publisher run should make dirty pockets where there are
+        outstanding deletions, so that the domination process will
+        work on the deleted publications.
+        """
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
         # Run the deletion detection too see how many existing dirty pockets
         # there are.
-        publisher.B2_markPocketsWithDeletionsDirty()
+        publisher.A2_markPocketsWithDeletionsDirty()
         existing_num_dirty = len(publisher.dirty_pockets)
 
         # There should be none.
@@ -532,19 +539,17 @@ class TestPublisher(TestNativePublishingBase):
             status=PackagePublishingStatus.DELETED)
 
         deleted_source = self.getPubSource(
-            scheduleddeletiondate = UTC_NOW,
             pocket=PackagePublishingPocket.SECURITY,
             status=PackagePublishingStatus.DELETED)
 
         deleted_binary = self.getPubBinary(
-            scheduleddeletiondate = UTC_NOW,
             pocket=PackagePublishingPocket.BACKPORTS,
             status=PackagePublishingStatus.DELETED)
 
         self.layer.txn.commit()
 
         # Run the deletion detection.
-        publisher.B2_markPocketsWithDeletionsDirty()
+        publisher.A2_markPocketsWithDeletionsDirty()
 
         # There should now be two dirty pockets.
         num_dirtied = len(publisher.dirty_pockets)
@@ -581,6 +586,9 @@ class TestPublisher(TestNativePublishingBase):
             status=PackagePublishingStatus.OBSOLETE)
         self.assertTrue(obsoleted_source.scheduleddeletiondate is None)
 
+        # Ensure the stay of execution is 5 days:
+        publisher._config.stayofexecution = 5
+
         publisher.B_dominate(True)
         self.layer.txn.commit()
 
@@ -595,13 +603,30 @@ class TestPublisher(TestNativePublishingBase):
         obsoleted_source = SourcePackagePublishingHistory.get(
             obsoleted_source.id)
 
-        # Publishing records got scheduled for removal
+        # The publishing records will be scheduled for removal.
+        # DELETED publications are set to be deleted immediately, whereas
+        # SUPERSEDED ones get a stay of execution according to the
+        # configuration.
+        #
+        # Hopefully this check is not causing a time bomb for the test
+        # harness.
         self.assertEqual(
             superseded_source.status, PackagePublishingStatus.SUPERSEDED)
-        self.assertTrue(superseded_source.scheduleddeletiondate is not None)
+        expected_date = datetime.utcnow() + timedelta(
+            days=publisher._config.stayofexecution)
+        self.assertTrue(
+            superseded_source.scheduleddeletiondate.day == expected_date.day,
+            "SUPERSEDED scheduleddeletiondate.day is %s, expected %s" % (
+                superseded_source.scheduleddeletiondate.day,
+                expected_date.day))
         self.assertEqual(
             deleted_source.status, PackagePublishingStatus.DELETED)
-        self.assertTrue(deleted_source.scheduleddeletiondate is not None)
+        self.assertTrue(
+            deleted_source.scheduleddeletiondate.day == datetime.utcnow().day,
+            "DELETED scheduleddeletiondate.day is not today")
+
+        # OBSOLETE does not go through domination so I don't care too much
+        # what its scheduleddeletiondate is, as long as it's set.
         self.assertEqual(
             obsoleted_source.status, PackagePublishingStatus.OBSOLETE)
         self.assertTrue(obsoleted_source.scheduleddeletiondate is not None)

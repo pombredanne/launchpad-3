@@ -32,7 +32,7 @@ class TestPublishDistro(TestNativePublishingBase):
         stdout, stderr = process.communicate()
         return (process.returncode, stdout, stderr)
 
-    def testRun(self):
+    def testPublishDistroRun(self):
         """Try a simple publish-distro run.
 
         Expect database publishing record to be updated to PUBLISHED and
@@ -49,6 +49,25 @@ class TestPublishDistro(TestNativePublishingBase):
 
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'foo')
+
+        # Let's make the source DELETED to see if the dirty pocket processing
+        # works for deletions.
+        # XXX Julian 2007-12-05
+        # This should really be its own test but I want to avoid additional
+        # calls to runPublishDistro where possible because it is calling a
+        # script, which considerably slows down the test harness.  A separate
+        # test would mean an additional call to the script to set things up.
+        # We need to refactor publish-distro so its internals can be called
+        # from this test harness.
+        random_person = getUtility(IPersonSet).getByName('name16')
+        pub_source.requestDeletion(random_person)
+        self.layer.txn.commit()
+        self.assertTrue(pub_source.scheduleddeletiondate is None,
+            "pub_source.scheduleddeletiondate should not be set, and it is.")
+        rc, out, err = self.runPublishDistro([])
+        pub_source.sync()
+        self.assertTrue(pub_source.scheduleddeletiondate is not None,
+            "pub_source.scheduleddeletiondate should be set, and it's not.")
 
     def assertExists(self, path):
         """Assert if the given path exists."""

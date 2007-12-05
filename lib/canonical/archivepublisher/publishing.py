@@ -202,25 +202,11 @@ class Publisher(object):
 
                 self.dirty_pockets.update(more_dirt)
 
-    def B_dominate(self, force_domination):
-        """Second step in publishing: domination."""
-        self.log.debug("* Step B: dominating packages")
-        judgejudy = Dominator(self.log, self.archive)
-        for distroseries in self.distro.serieses:
-            for pocket in PackagePublishingPocket.items:
-                if not force_domination:
-                    if not self.isDirty(distroseries, pocket):
-                        self.log.debug("Skipping domination for %s/%s" %
-                                   (distroseries.name, pocket.name))
-                        continue
-                    self.checkDirtySuiteBeforePublishing(distroseries, pocket)
-                judgejudy.judgeAndDominate(distroseries, pocket, self._config)
-
-    def B2_markPocketsWithDeletionsDirty(self):
+    def A2_markPocketsWithDeletionsDirty(self):
         """An intermediate step in publishing to detect deleted packages.
 
         Mark pockets containing deleted packages (status DELETED or
-        OBSOLETE), scheduledeletiondate not NULL and dateremoved NULL as
+        OBSOLETE), scheduledeletiondate NULL and dateremoved NULL as
         dirty, to ensure that they are processed in death row.
         """
         self.log.debug("* Step B2: Mark pockets with deletions as dirty")
@@ -229,7 +215,7 @@ class Publisher(object):
         base_query = """
             archive = %s AND
             status = %s AND
-            scheduleddeletiondate IS NOT NULL AND
+            scheduleddeletiondate IS NULL AND
             dateremoved is NULL
             """ % sqlvalues(self.archive,
                             PackagePublishingStatus.DELETED)
@@ -261,6 +247,20 @@ class Publisher(object):
                     clauseTables=['DistroArchSeries'])
                 if binaries.count() > 0:
                     self.dirty_pockets.add((distroseries.name, pocket))
+
+    def B_dominate(self, force_domination):
+        """Second step in publishing: domination."""
+        self.log.debug("* Step B: dominating packages")
+        judgejudy = Dominator(self.log, self.archive)
+        for distroseries in self.distro.serieses:
+            for pocket in PackagePublishingPocket.items:
+                if not force_domination:
+                    if not self.isDirty(distroseries, pocket):
+                        self.log.debug("Skipping domination for %s/%s" %
+                                   (distroseries.name, pocket.name))
+                        continue
+                    self.checkDirtySuiteBeforePublishing(distroseries, pocket)
+                judgejudy.judgeAndDominate(distroseries, pocket, self._config)
 
     def C_doFTPArchive(self, is_careful):
         """Does the ftp-archive step: generates Sources and Packages."""
