@@ -401,7 +401,7 @@ class POTMsgSet(SQLBase):
         # If the update is on the translation credits message, yet
         # update is not is_imported, silently return.
         if self.is_translation_credit and not is_imported:
-            return
+            return None
 
         # Sanitize translations
         sanitized_translations = self._sanitizeTranslations(

@@ -15,7 +15,7 @@ Here are some imports we need to get this test running.
     ...     ILanguageSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
     ...     ITranslationImportQueue)
     >>> from canonical.launchpad.database import (
-    ...     POFile, POTemplate, POTemplateSubset, SourcePackageName)
+    ...     POTemplateSubset, SourcePackageName)
     >>> from canonical.launchpad.scripts.po_import import (
     ...     AutoApproveProcess, ImportProcess)
     >>> import datetime
