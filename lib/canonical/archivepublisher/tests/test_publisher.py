@@ -586,7 +586,8 @@ class TestPublisher(TestNativePublishingBase):
             status=PackagePublishingStatus.OBSOLETE)
         self.assertTrue(obsoleted_source.scheduleddeletiondate is None)
 
-        # Ensure the stay of execution is 5 days:
+        # Ensure the stay of execution is 5 days.  This is so that we
+        # can do a sensible check later (see comment below).
         publisher._config.stayofexecution = 5
 
         publisher.B_dominate(True)
@@ -608,8 +609,8 @@ class TestPublisher(TestNativePublishingBase):
         # SUPERSEDED ones get a stay of execution according to the
         # configuration.
         #
-        # Hopefully this check is not causing a time bomb for the test
-        # harness.
+        # Hopefully I crafted this check well enough so not to cause a time
+        # bomb for the test harness.
         self.assertEqual(
             superseded_source.status, PackagePublishingStatus.SUPERSEDED)
         expected_date = datetime.utcnow() + timedelta(
