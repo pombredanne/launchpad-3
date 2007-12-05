@@ -224,7 +224,8 @@ class OpenIdMixin:
         """Perform team membership checks.
 
         If any team membership checks have been requested as part of
-        the OpenID request, annotate the response with 
+        the OpenID request, annotate the response with the list of
+        teams the user is actually a member of.
         """
         assert self.user is not None, (
             'Must be logged in to calculate team membership')
@@ -239,6 +240,10 @@ class OpenIdMixin:
             team = personset.getByName(team_name)
             if team is None or not team.isTeam():
                 continue
+            # XXX jamesh 2007-12-05 bug=174076:
+            # When private membership teams are added, this method
+            # needs to be updated to not disclose membership of such
+            # teams.
             if self.user.inTeam(team):
                 memberships.append(team_name)
         openid_response.fields.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
