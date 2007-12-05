@@ -1560,7 +1560,8 @@ class BugTaskSet:
         2. The bug is not a duplicate.
         3. The bug has at least one message (a request for more information).
         4. The bug does not have any other valid bugtasks.
-        5. The bugtask belongs to a project with official_malone is True.
+        5. The bugtask belongs to a project with enable_bug_expiration set
+           to True.
         6. The bugtask has the status Incomplete.
         7. The bugtask is not assigned to anyone.
         8. The bugtask does not have a milestone.
@@ -1617,28 +1618,32 @@ class BugTaskSet:
         
         If target is None, the clause joins BugTask to Distribution,
         DistroSeries, Product, and ProductSeries.
+        
+        The target param must be either a Distribution, DistroSeries,
+        Product, or ProductSeries. Other BugTarget types will raise
+        NotImplementedError.
         """
         bugtarget_joins = dict(
             distribution="""
                 LEFT OUTER JOIN Distribution
                     ON BugTask.distribution = Distribution.id
-                    AND Distribution.official_malone IS TRUE""",
+                    AND Distribution.enable_bug_expiration IS TRUE""",
             distroseries="""
                 LEFT OUTER JOIN DistroSeries
                         ON BugTask.distroseries = DistroSeries.id
                         AND DistroSeries.distribution IN (
                             SELECT id FROM Distribution
-                            WHERE official_malone IS TRUE)""",
+                            WHERE enable_bug_expiration IS TRUE)""",
             product="""
                 LEFT OUTER JOIN Product
                         ON BugTask.product = Product.id
-                        AND Product.official_malone IS TRUE""",
+                        AND Product.enable_bug_expiration IS TRUE""",
             productseries="""
                 LEFT OUTER JOIN ProductSeries
                         ON BugTask.productseries = ProductSeries.id
                         AND ProductSeries.product IN (
                             SELECT id FROM Product
-                            WHERE official_malone IS TRUE)""")
+                            WHERE enable_bug_expiration IS TRUE)""")
         if target is None:
             target_join = """
                 %(distribution)s %(distroseries)s
@@ -1661,7 +1666,7 @@ class BugTaskSet:
                     ON BugTask.distroseries = DistroSeries.id
                     AND DistroSeries.distribution IN (
                         SELECT id FROM Distribution
-                        WHERE official_malone IS TRUE)"""
+                        WHERE enable_bug_expiration IS TRUE)"""
             target_clause = "DistroSeries.id = %s" % sqlvalues(target)
         elif IProduct.providedBy(target):
             target_join = """
@@ -1675,7 +1680,7 @@ class BugTaskSet:
                     ON BugTask.productseries = ProductSeries.id
                     AND ProductSeries.product IN (
                         SELECT id FROM Product
-                        WHERE official_malone IS TRUE)"""
+                        WHERE enable_bug_expiration IS TRUE)"""
             target_clause = "ProductSeries.id = %s" % sqlvalues(target)
         elif (IProject.providedBy(target)
             or ISourcePackage.providedBy(target)

@@ -135,6 +135,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
         default=False)
+    enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
+        notNull=True, default=False)
     translation_focus = ForeignKey(dbName='translation_focus',
         foreignKey='DistroSeries', notNull=False, default=None)
     source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',
