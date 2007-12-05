@@ -2,19 +2,18 @@
 """Test native publication workflow for Soyuz. """
 
 from unittest import TestLoader
+import operator
 import os
 import shutil
 import tempfile
 from StringIO import StringIO
 
 from zope.component import getUtility
-
-from canonical.database.constants import UTC_NOW
-
 from canonical.archivepublisher.config import Config
 from canonical.archivepublisher.diskpool import DiskPool
-from canonical.archivepublisher.tests.util import FakeLogger
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase)
 from canonical.launchpad.database.publishing import (
@@ -26,49 +25,45 @@ from canonical.launchpad.interfaces import (
     ISectionSet, IComponentSet, ISourcePackageNameSet, IBinaryPackageNameSet,
     IGPGKeySet, PackagePublishingStatus, PackagePublishingPocket,
     PackagePublishingPriority, SourcePackageUrgency)
+from canonical.launchpad.scripts import FakeLogger
 
 from canonical.librarian.client import LibrarianClient
 
 
-class TestNativePublishingBase(LaunchpadZopelessTestCase):
-    dbuser = config.archivepublisher.dbuser
+class SoyuzTestPublisher:
+    """Helper class able to publish coherent source and binaires in Soyuz."""
 
-    def setUp(self):
-        """Setup creates a pool dir and setup librarian.
+    def prepareBreezyAutotest(self):
+        """Prepare ubuntutest/breezy-autotest for publications.
 
-        Also instantiate DiskPool component.
+        It's also called during the normal test-case setUp.
         """
-        LaunchpadZopelessTestCase.setUp(self)
-        self.library = LibrarianClient()
-
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
         self.person = getUtility(IPersonSet).getByName('sabdfl')
         self.breezy_autotest_i386 = self.breezy_autotest.newArch(
             'i386', ProcessorFamily.get(1), False, self.person)
+        self.breezy_autotest_hppa = self.breezy_autotest.newArch(
+            'hppa', ProcessorFamily.get(4), False, self.person)
+        self.breezy_autotest.nominatedarchindep = self.breezy_autotest_i386
         self.signingkey = getUtility(IGPGKeySet).get(1)
         self.section = getUtility(ISectionSet)['base']
-
-        self.config = Config(self.ubuntutest)
-        self.config.setupArchiveDirs()
-        self.pool_dir = self.config.poolroot
-        self.temp_dir = self.config.temproot
-        self.logger = FakeLogger()
-        self.disk_pool = DiskPool(self.pool_dir, self.temp_dir, self.logger)
 
     def addMockFile(self, filename, filecontent='nothing'):
         """Add a mock file in Librarian.
 
         Returns a ILibraryFileAlias corresponding to the file uploaded.
         """
-        alias_id = self.library.addFile(
+        library = LibrarianClient()
+        alias_id = library.addFile(
             filename, len(filecontent), StringIO(filecontent),
             'application/text')
-        self.layer.commit()
+        commit()
         return getUtility(ILibraryFileAliasSet)[alias_id]
 
     def getPubSource(self, sourcename='foo', version='666', component='main',
-                     filename=None, filecontent='I do not care about sources.',
+                     filename=None,
+                     filecontent='I do not care about sources.',
                      status=PackagePublishingStatus.PENDING,
                      pocket=PackagePublishingPocket.RELEASE,
                      distroseries=None, archive=None, builddepends=None,
@@ -76,7 +71,6 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
                      dsc_standards_version='3.6.2', dsc_format='1.0',
                      dsc_binaries='foo-bin',
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>'):
-
         """Return a mock source publishing record."""
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
 
@@ -130,38 +124,62 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
         # of SSPPH and other useful attributes.
         return SourcePackagePublishingHistory.get(sspph.id)
 
-    def getPubBinary(self, binaryname='foo-bin', summary='Foo app is great',
-                     description='Well ...\nit does nothing, though',
-                     shlibdep=None, depends=None, recommends=None,
-                     suggests=None, conflicts=None, replaces=None,
-                     provides=None, filecontent='bbbiiinnnaaarrryyy',
-                     status=PackagePublishingStatus.PENDING,
-                     pocket=PackagePublishingPocket.RELEASE,
-                     pub_source=None):
-        """Return a mock binary publishing record."""
+    def getPubBinaries(self, binaryname='foo-bin', summary='Foo app is great',
+                       description='Well ...\nit does nothing, though',
+                       shlibdep=None, depends=None, recommends=None,
+                       suggests=None, conflicts=None, replaces=None,
+                       provides=None, filecontent='bbbiiinnnaaarrryyy',
+                       status=PackagePublishingStatus.PENDING,
+                       pocket=PackagePublishingPocket.RELEASE,
+                       pub_source=None):
+        """Return a list of binary publishing records."""
         sourcename = "%s" % binaryname.split('-')[0]
-
         if pub_source is None:
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket)
 
+        # Determine architecture to build.
+        from canonical.buildmaster.master import determineArchitecturesToBuild
+        legal_archs = [das for das in self.breezy_autotest.architectures]
+        archs = determineArchitecturesToBuild(
+            pub_source, legal_archs, self.breezy_autotest)
+
+        # Build and publish binaries.
         archive = pub_source.archive
         spr = pub_source.sourcepackagerelease
-        build = spr.createBuild(
-            self.breezy_autotest_i386, archive=archive,
-            pocket=PackagePublishingPocket.RELEASE)
+        published_binaries = []
+        for arch in archs:
+            pub_binaries = self._buildAndPublishBinaryForSource(
+                arch, archive, spr, status, pocket, filecontent,
+                binaryname, summary, description, shlibdep, depends,
+                recommends, suggests, conflicts, replaces, provides)
+            published_binaries.extend(pub_binaries)
 
+        return sorted(
+            published_binaries, key=operator.attrgetter('id'), reverse=True)
+
+    def _buildAndPublishBinaryForSource(self, distroarchseries, archive,
+                                        sourcepackagerelease, status,
+                                        pocket, filecontent, binaryname,
+                                        summary, description, shlibdep,
+                                        depends, recommends, suggests,
+                                        conflicts, replaces, provides):
+        """Return the corresponding BinaryPackagePublishingHistory."""
+        # Create a Build record.
+        build = sourcepackagerelease.createBuild(
+            distroarchseries=distroarchseries, archive=archive, pocket=pocket)
+
+        # Create a BinaryPackageRelease
         bpn = getUtility(IBinaryPackageNameSet).getOrCreateByName(binaryname)
-
+        architecturespecific = (
+            not sourcepackagerelease.architecturehintlist == 'all')
         bpr = build.createBinaryPackageRelease(
+            version=sourcepackagerelease.version,
+            component=sourcepackagerelease.component.id,
+            section=sourcepackagerelease.section.id,
             binarypackagename=bpn.id,
-            version=spr.version,
             summary=summary,
             description=description,
-            binpackageformat=BinaryPackageFormat.DEB,
-            component=spr.component.id,
-            section=spr.section.id,
-            priority=PackagePublishingPriority.STANDARD,
             shlibdeps=shlibdep,
             depends=depends,
             recommends=recommends,
@@ -171,30 +189,69 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             provides=provides,
             essential=False,
             installedsize=100,
-            architecturespecific=False
+            architecturespecific=architecturespecific,
+            binpackageformat=BinaryPackageFormat.DEB,
+            priority=PackagePublishingPriority.STANDARD
             )
 
-        filename = '%s.deb' % binaryname
+        # Create the corresponding DEB file.
+        if architecturespecific:
+            filearchtag = distroarchseries.architecturetag
+        else:
+            filearchtag = 'all'
+        filename = '%s_%s.deb' % (binaryname, filearchtag)
         alias = self.addMockFile(filename, filecontent=filecontent)
         bpr.addFile(alias)
 
-        sbpph = SecureBinaryPackagePublishingHistory(
-            distroarchseries=self.breezy_autotest_i386,
-            binarypackagerelease=bpr,
-            component=bpr.component,
-            section=bpr.section,
-            priority=bpr.priority,
-            status=status,
-            datecreated=UTC_NOW,
-            pocket=pocket,
-            embargo=False,
-            archive=archive
-            )
+        # Publish the binary.
+        if architecturespecific:
+            archs = [distroarchseries]
+        else:
+            archs = distroarchseries.distroseries.architectures
 
-        return BinaryPackagePublishingHistory.get(sbpph.id)
+        secure_pub_binaries = []
+        for arch in archs:
+            pub = SecureBinaryPackagePublishingHistory(
+                distroarchseries=arch,
+                binarypackagerelease=bpr,
+                component=bpr.component,
+                section=bpr.section,
+                priority=bpr.priority,
+                status=status,
+                datecreated=UTC_NOW,
+                pocket=pocket,
+                embargo=False,
+                archive=archive
+                )
+            secure_pub_binaries.append(pub)
+
+        return [BinaryPackagePublishingHistory.get(pub.id)
+                for pub in secure_pub_binaries]
+
+
+class TestNativePublishingBase(LaunchpadZopelessTestCase,
+                               SoyuzTestPublisher):
+    dbuser = config.archivepublisher.dbuser
+
+    def setUp(self):
+        """Setup creates a pool dir and setup librarian.
+
+        Also instantiate DiskPool component.
+        """
+        LaunchpadZopelessTestCase.setUp(self)
+        self.prepareBreezyAutotest()
+        self.config = Config(self.ubuntutest)
+        self.config.setupArchiveDirs()
+        self.pool_dir = self.config.poolroot
+        self.temp_dir = self.config.temproot
+        self.logger = FakeLogger()
+        def message(self, prefix, *stuff, **kw):
+            pass
+        self.logger.message = message
+        self.disk_pool = DiskPool(self.pool_dir, self.temp_dir, self.logger)
 
     def tearDown(self):
-        """Tear down blows the pool dir away and stops librarian."""
+        """Tear down blows the pool dir away."""
         shutil.rmtree(self.config.distroroot)
         LaunchpadZopelessTestCase.tearDown(self)
 

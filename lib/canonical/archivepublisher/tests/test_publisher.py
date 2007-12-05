@@ -424,11 +424,11 @@ class TestPublisher(TestNativePublishingBase):
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=cprov.archive)
-        pub_bin = self.getPubBinary(
+        pub_bin = self.getPubBinaries(
             pub_source=pub_source,
             description="   My leading spaces are normalised to a single "
                         "space but not trailing.  \n    It does nothing, "
-                        "though")
+                        "though")[0]
 
         archive_publisher.A_publish(False)
         self.layer.txn.commit()
@@ -468,7 +468,7 @@ class TestPublisher(TestNativePublishingBase):
              'Maintainer: Foo Bar <foo@bar.com>',
              'Architecture: all',
              'Version: 666',
-             'Filename: pool/main/f/foo/foo-bin.deb',
+             'Filename: pool/main/f/foo/foo-bin_all.deb',
              'Size: 18',
              'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              'Description: Foo app is great',
@@ -607,25 +607,23 @@ class TestPublisher(TestNativePublishingBase):
         publisher.C_doFTPArchive(False)
 
         # Check if apt_handler.release_files_needed has the right requests.
-        # 'source' and 'binary-i386' Release files should be regenerated
-        # for all breezy-autotest components.
+        # 'source', 'binary-i386' and 'binary-hppa' Release files should
+        # be regenerated for all breezy-autotest components.
         # We always regenerate all Releases file for a given suite.
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'main', 'source')
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'main', 'binary-i386')
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'restricted', 'source')
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'restricted', 'binary-i386')
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'universe', 'source')
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'universe', 'binary-i386')
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'multiverse', 'source')
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'multiverse', 'binary-i386')
+        available_components = sorted([
+            c.name for c in self.breezy_autotest.components])
+        self.assertEqual(available_components,
+                         ['main', 'multiverse', 'restricted', 'universe'])
+
+        available_archs = ['binary-%s' % a.architecturetag
+                           for a in self.breezy_autotest.architectures]
+        dists = ['source'] + available_archs
+        self.assertEqual(dists, ['source', 'binary-hppa', 'binary-i386'])
+
+        for component in available_components:
+            for dist in dists:
+                self.assertReleaseFileRequested(
+                    publisher, 'breezy-autotest', component, dist)
 
         publisher.D_writeReleaseFiles(False)
 
@@ -636,7 +634,7 @@ class TestPublisher(TestNativePublishingBase):
         md5_header = 'MD5Sum:'
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
-        first_md5_line = release_contents[md5_header_index + 10]
+        first_md5_line = release_contents[md5_header_index + 17]
         self.assertEqual(
             first_md5_line,
             (' a5e5742a193740f17705c998206e18b6              '
@@ -645,7 +643,7 @@ class TestPublisher(TestNativePublishingBase):
         sha1_header = 'SHA1:'
         self.assertTrue(sha1_header in release_contents)
         sha1_header_index = release_contents.index(sha1_header)
-        first_sha1_line = release_contents[sha1_header_index + 10]
+        first_sha1_line = release_contents[sha1_header_index + 17]
         self.assertEqual(
             first_sha1_line,
             (' 6222b7e616bcc20a32ec227254ad9de8d4bd5557              '
@@ -654,7 +652,7 @@ class TestPublisher(TestNativePublishingBase):
         sha256_header = 'SHA256:'
         self.assertTrue(sha256_header in release_contents)
         sha256_header_index = release_contents.index(sha256_header)
-        first_sha256_line = release_contents[sha256_header_index + 10]
+        first_sha256_line = release_contents[sha256_header_index + 17]
         self.assertEqual(
             first_sha256_line,
             (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
@@ -692,55 +690,55 @@ class TestPublisher(TestNativePublishingBase):
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
 
-        plain_sources_md5_line = release_contents[md5_header_index + 4]
+        plain_sources_md5_line = release_contents[md5_header_index + 7]
         self.assertEqual(
             plain_sources_md5_line,
             (' 77b1655f4038b2f4e95c29429c3981bd              '
              '211 main/source/Sources'))
-        release_md5_line = release_contents[md5_header_index + 5]
+        release_md5_line = release_contents[md5_header_index + 8]
         self.assertEqual(
             release_md5_line,
             (' a5e5742a193740f17705c998206e18b6              '
              '114 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
-        gz_sources_md5_line = release_contents[md5_header_index + 6]
+        gz_sources_md5_line = release_contents[md5_header_index + 9]
         self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
 
         sha1_header = 'SHA1:'
         self.assertTrue(sha1_header in release_contents)
         sha1_header_index = release_contents.index(sha1_header)
 
-        plain_sources_sha1_line = release_contents[sha1_header_index + 4]
+        plain_sources_sha1_line = release_contents[sha1_header_index + 7]
         self.assertEqual(
             plain_sources_sha1_line,
             (' db70d9d7421a78b2e009be3d8f2546678beb734c              '
              '211 main/source/Sources'))
-        release_sha1_line = release_contents[sha1_header_index + 5]
+        release_sha1_line = release_contents[sha1_header_index + 8]
         self.assertEqual(
             release_sha1_line,
             (' 6222b7e616bcc20a32ec227254ad9de8d4bd5557              '
              '114 main/source/Release'))
         # See above.
-        gz_sources_sha1_line = release_contents[sha1_header_index + 6]
+        gz_sources_sha1_line = release_contents[sha1_header_index + 9]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha1_line)
 
         sha256_header = 'SHA256:'
         self.assertTrue(sha256_header in release_contents)
         sha256_header_index = release_contents.index(sha256_header)
 
-        plain_sources_sha256_line = release_contents[sha256_header_index + 4]
+        plain_sources_sha256_line = release_contents[sha256_header_index + 7]
         self.assertEqual(
             plain_sources_sha256_line,
             (' 1ad45a96a6c7b35145a52fddc3c60daea9791fdde6639425289e58'
              'cf3be3813a              211 main/source/Sources'))
-        release_sha256_line = release_contents[sha256_header_index + 5]
+        release_sha256_line = release_contents[sha256_header_index + 8]
         self.assertEqual(
             release_sha256_line,
             (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
              '8d106a6338              114 main/source/Release'))
         # See above.
-        gz_sources_sha256_line = release_contents[sha256_header_index + 6]
+        gz_sources_sha256_line = release_contents[sha256_header_index + 9]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
 
 

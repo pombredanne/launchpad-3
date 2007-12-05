@@ -11,14 +11,14 @@ from canonical.launchpad.interfaces import (
 class TestICanPublishPackagesAPI(TestNativePublishingBase):
 
     def _createLinkedPublication(self, name, pocket):
-        """Create and return a linked pair of source and binary publications."""
+        """Return a linked pair of source and binary publications."""
         pub_source = self.getPubSource(
             sourcename=name, filecontent="Hello", pocket=pocket)
 
         binaryname = '%s-bin' % name
-        pub_bin = self.getPubBinary(
+        pub_bin = self.getPubBinaries(
             binaryname=binaryname, filecontent="World",
-            pub_source=pub_source, pocket=pocket)
+            pub_source=pub_source, pocket=pocket)[0]
 
         return (pub_source, pub_bin)
 
@@ -50,7 +50,8 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
             status=PackagePublishingStatus.PENDING,
             pocket=PackagePublishingPocket.UPDATES)
 
-        return (pub_pending_release, pub_published_release, pub_pending_updates)
+        return (pub_pending_release, pub_published_release,
+                pub_pending_updates)
 
     def _createDefaulBinaryPublications(self):
         """Create and return default binary publications.
@@ -65,22 +66,23 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
 
         Returns the respective IBPPH objects as a tuple.
         """
-        pub_pending_release = self.getPubBinary(
+        pub_pending_release = self.getPubBinaries(
             binaryname='first',
             status=PackagePublishingStatus.PENDING,
-            pocket=PackagePublishingPocket.RELEASE)
+            pocket=PackagePublishingPocket.RELEASE)[0]
 
-        pub_published_release = self.getPubBinary(
+        pub_published_release = self.getPubBinaries(
             binaryname='second',
             status=PackagePublishingStatus.PUBLISHED,
-            pocket=PackagePublishingPocket.RELEASE)
+            pocket=PackagePublishingPocket.RELEASE)[0]
 
-        pub_pending_updates = self.getPubBinary(
+        pub_pending_updates = self.getPubBinaries(
             binaryname='third',
             status=PackagePublishingStatus.PENDING,
-            pocket=PackagePublishingPocket.UPDATES)
+            pocket=PackagePublishingPocket.UPDATES)[0]
 
-        return (pub_pending_release, pub_published_release, pub_pending_updates)
+        return (pub_pending_release, pub_published_release,
+                pub_pending_updates)
 
     def _publish(self, pocket, is_careful=False):
         """Publish the test IDistroSeries.
@@ -113,7 +115,7 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
         # source and binary PUBLISHED on disk.
         foo_dsc = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_dsc).read().strip(),'Hello')
-        foo_deb = "%s/main/f/foo/foo-bin.deb" % self.pool_dir
+        foo_deb = "%s/main/f/foo/foo-bin_all.deb" % self.pool_dir
         self.assertEqual(open(foo_deb).read().strip(), 'World')
 
     def checkPublicationsAreIgnored(self, pocket):
@@ -341,11 +343,15 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
             expected_result=[pub_published_release, pub_pending_release])
 
     def testPublicationLookUpForStableDistroArchSeries(self):
-        """Binary publishing record lookup for stable/released DistroArchSeries.
+        """Binary publishing record lookup for released DistroArchSeries.
 
-        Check if the ICanPublishPackages.getPendingPublications() works properly for
-        a DistroArchSeries when it is not in development anymore, i.e.,
-        'released'.
+        Check if the ICanPublishPackages.getPendingPublications() works
+        properly for a DistroArchSeries when it is not in development
+        anymore, i.e., 'released'.
+
+        Released DistroArchseries can't be modified, so we expect empty
+        results in the lookups, even if there are pending publishing
+        records available.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulBinaryPublications())
@@ -366,7 +372,8 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
         # mirrors/clients out.
         # At the end, "careful" mode is such a gross hack.
         self.checkBinaryLookupForPocket(
-            PackagePublishingPocket.RELEASE, is_careful=True, expected_result=[])
+            PackagePublishingPocket.RELEASE, is_careful=True,
+            expected_result=[])
 
         # Publications targeted to other pockets than RELEASE are
         # still reachable.
@@ -377,8 +384,8 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
     def testPublicationLookUpForFrozenDistroArchSeries(self):
         """Binary publishing record lookup for a frozen DistroArchSeries.
 
-        Check if the ICanPublishPackages.getPendingPublications() works properly for
-        a DistroArchSeries when it is frozen state.
+        Check if the ICanPublishPackages.getPendingPublications() works
+        properly for a DistroArchSeries when it is frozen state.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulBinaryPublications())
