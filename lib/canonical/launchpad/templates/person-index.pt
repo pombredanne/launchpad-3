@@ -12,27 +12,23 @@
 
 <head>
   <tal:block metal:fill-slot="head_epilogue">
-    <tal:valid_person_or_team
-        condition="context/is_valid_person_or_team"
-        tal:define="vhosts
-            modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
+    <tal:valid_person_or_team condition="context/is_valid_person_or_team">
       <link
           tal:condition="not:context/hide_email_addresses" 
           rel="meta" type="application/rdf+xml"
           title="FOAF" href="+rdf"
           />
-      <link
-          tal:condition="context/is_openid_enabled"
-          rel="openid.server"
-          tal:attributes="href string:${vhosts/openid/rooturl}+openid"
-          />
-      <link
-          tal:condition="context/is_openid_enabled"
-          rel="openid.delegate"
-          tal:attributes="href string:${vhosts/openid/rooturl
-              }+id/${context/openid_identifier}"
-          />
     </tal:valid_person_or_team>
+    <tal:openid_enabled condition="context/is_openid_enabled">
+      <link
+          rel="openid.server"
+          tal:attributes="href view/openid_server_url"
+          />
+      <link
+          rel="openid.delegate"
+          tal:attributes="href view/openid_identity_url"
+          />
+    </tal:openid_enabled>
     <meta tal:condition="not: context/is_valid_person_or_team"
           name="robots" content="noindex,nofollow" />
   </tal:block>
@@ -315,14 +311,24 @@
               /></a>
             </td>
           </tr>
-          <tr tal:condition="context/isTeam">
-            <td colspan="2" id="subscription_policy">
-              <strong tal:content="context/subscriptionpolicy/title">
+          <tal:is_team condition="context/isTeam">
+            <tr>
+                <td colspan="2" id="subscription_policy">
+                <strong tal:content="context/subscriptionpolicy/title">
                 Moderated
-              </strong>:
-              <span tal:replace="context/subscriptionpolicy/description" />
-            </td>
-          </tr>
+                </strong>:
+                <span tal:replace="context/subscriptionpolicy/description" />
+                </td>
+            </tr>
+            <tr tal:define="archive_url view/archive_url"
+                 tal:condition="archive_url">
+              <th>Mailing list archive:</th>
+              <td><a tal:content="archive_url"
+                     tal:attributes="href archive_url"
+                   >http://lists.launchpad.dev/archives/team_name</a>
+              </td>
+            </tr>
+          </tal:is_team>
         </tbody>
       </table>
     </div>

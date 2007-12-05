@@ -168,10 +168,6 @@
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonView">
     <browser:page
-      name="+index"
-      template="../templates/person-index.pt"
-      />
-    <browser:page
       name="+ask-a-question-button"
       template="../templates/null.pt"
       />
@@ -213,6 +209,20 @@
     <browser:page
       name="+teamlist"
       template="../templates/team-listing.pt"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonIndexView">
+    <browser:page
+      name="+index"
+      template="../templates/person-index.pt"
+      />
+    <browser:page
+      name="+xrds"
+      attribute="xrds"
       />
   </browser:pages>
 

@@ -52,10 +52,10 @@ from canonical.launchpad.interfaces import (
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
     IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType, PersonCreationRationale,
-    QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
-    ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType, MailingListStatus,
+    PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
+    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -739,6 +739,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def isTeam(self):
         """See `IPerson`."""
         return self.teamowner is not None
+
+    @property
+    def mailing_list(self):
+        """See `IPerson`."""
+        return getUtility(IMailingListSet).get(self.name)
 
     @cachedproperty
     def is_trusted_on_shipit(self):
@@ -1437,7 +1442,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
             # XXX flacoste 2007/11/26 The comparison using id in the assert
-            # below works around a nasty intermittent failure. 
+            # below works around a nasty intermittent failure.
             # See bug #164635.
             assert bug_task.assignee.id == self.id, (
                "Bugtask %s assignee isn't the one expected: %s != %s" % (
@@ -1995,18 +2000,8 @@ class PersonSet:
         return Person.selectOne(query)
 
     def getByOpenIdIdentifier(self, openid_identifier):
-        """Returns a Person with the given openid_identifier, or None.
-
-        None is returned if the person is not enabled for OpenID usage
-        (see Person.is_openid_enabled).
-        """
-        person = Person.selectOne(
-                Person.q.openid_identifier == openid_identifier
-                )
-        if person is not None and person.is_openid_enabled:
-            return person
-        else:
-            return None
+        """Returns a Person with the given openid_identifier, or None."""
+        return Person.selectOneBy(openid_identifier=openid_identifier)
 
     def updateStatistics(self, ztm):
         """See `IPersonSet`."""

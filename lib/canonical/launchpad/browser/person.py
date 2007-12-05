@@ -65,6 +65,7 @@ __all__ = [
     'PersonTeamBranchesView',
     'PersonTranslationView',
     'PersonView',
+    'PersonIndexView',
     'RedirectToEditLanguagesView',
     'ReportedBugTaskSearchListingView',
     'SearchAnsweredQuestionsView',
@@ -131,6 +132,8 @@ from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
+from canonical.launchpad.browser.openiddiscovery import (
+    OpenIDPersistentIdentity, XRDSContentNegotiationMixin)
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -1975,6 +1978,31 @@ class PersonView(LaunchpadView):
                 type_name = 'Unknown key type'
             keys.append("%s %s %s" % (type_name, key.keytext, key.comment))
         return "\n".join(keys)
+
+    @cachedproperty
+    def archive_url(self):
+        """Return a url to a mailing list archive for the team's list.
+
+        If the person is not a team, does not have a mailing list, or that
+        mailing list has never been activated, return None instead.
+        """
+        mailing_list = self.context.mailing_list
+        if mailing_list is None:
+            return None
+        return mailing_list.archive_url
+
+
+class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
+
+    xrds_template = ViewPageTemplateFile("../templates/person-xrds.pt")
+
+    @cachedproperty
+    def enable_xrds_discovery(self):
+        return self.context.is_openid_enabled
+
+    @cachedproperty
+    def openid_identity_url(self):
+        return canonical_url(OpenIDPersistentIdentity(self.context))
 
 
 class PersonRelatedProjectsView(LaunchpadView):
