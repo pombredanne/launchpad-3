@@ -1,0 +1,34 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:portlets fill-slot="portlets">
+</metal:portlets>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+
+    <p metal:fill-slot="extra_info" class="documentDescription">
+      Publishing this announcement will put it on your project home page and
+      into the Atom/RSS news feed for your project. You can leave an
+      item unannounced for as long as you like, it will be visible only to
+      your project administrators.
+    </p>
+
+  </div>
+
+</div>
+
+</body>
+</html>

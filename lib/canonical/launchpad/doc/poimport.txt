@@ -11,10 +11,9 @@ Rosetta.
 Here are some imports we need to get this test running.
 
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.launchpad.interfaces import ITranslationImportQueue
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from canonical.launchpad.interfaces import IProductSet
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILanguageSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
+    ...     ITranslationImportQueue)
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
     >>> from canonical.launchpad.scripts.po_import import (
@@ -65,6 +64,7 @@ And this is the POTemplate where the import will be done.
     ...     translation_domain='firefox',
     ...     path='po/firefox.pot',
     ...     owner=person)
+    >>> potemplate_id = potemplate.id
 
 This is the file that'll get imported.
 
@@ -95,6 +95,9 @@ This is the file that'll get imported.
     ... msgid_plural "Plural %%d"
     ... msgstr[0] ""
     ... msgstr[1] ""
+    ...
+    ... msgid "translator-credits"
+    ... msgstr ""
     ... ''' % datetime.datetime.now(UTC).isoformat()
 
 Attach the import to the translations import queue:
@@ -153,7 +156,7 @@ The correct message IDs now show up in the template.
 
     >>> potmsgsets = list(potemplate.getPOTMsgSets())
     >>> [potmsgset.msgid_singular.msgid for potmsgset in potmsgsets]
-    [u'foo', u'bar', u'baz', u'Foo %s', u'Singular %d']
+    [u'foo', u'bar', u'baz', u'Foo %s', u'Singular %d', u'translator-credits']
 
 The file references field should be there
 
@@ -400,6 +403,9 @@ Now, let's import one without errors.
     ...
     ... msgid "foo"
     ... msgstr "blah"
+    ...
+    ... msgid "translator-credits"
+    ... msgstr "helpful@example.com"
     ... ''' % datetime.datetime.now(UTC).isoformat()
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_without_errors, True, rosetta_experts,
@@ -446,7 +452,7 @@ files are now counted as coming from Launchpad translations
 (rosettaCount) because latest imported file doesn't have them anymore.
 
     >>> pofile.currentCount()
-    1
+    2
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
@@ -461,8 +467,20 @@ This time, our notification email reports complete success.
     <BLANKLINE>
     ...
 
-Check to be sure that we notify when a msgid_plural is changed without touch
-the msgid
+The translation has been augmented with the strings from the imported
+file.  The translation credits are special; upstream uploads can
+"translate" credits messages to provide translator names, but since
+credits for translations in Launchpad are generated automatically,
+non-upstream translations for these messages are ignored.
+
+    >>> pofile['foo'].msgstr0.translation
+    u'blah'
+    >>> pofile['translator-credits'].msgstr0.translation
+    u'helpful@example.com'
+
+When a plural version of an English string (msgid_plural) is changed but
+the singular msgid (msgid_singular) remains the same, that may be a sign
+of a mistake.
 
     >>> pofile_content = r'''
     ... msgid ""
@@ -639,10 +657,8 @@ that have just been imported.
     INFO    Removed 2 entries from the queue.
     >>> transaction.commit()
 
-It's time to test the import queue.
-
-Here, we are going to test that if a file is imported twice, both are imported
-following the order the users uploaded them.
+If users upload two versions of the same file, they are imported in the
+order in which they were uploaded.
 
     >>> first_pofile_content = r'''
     ... msgid ""
@@ -652,8 +668,11 @@ following the order the users uploaded them.
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "X-Rosetta-Export-Date: %s\n"
     ...
-    ... msgid "Foo"
+    ... msgid "Foo %%s"
     ... msgstr "Bar"
+    ...
+    ... msgid "translator-credits"
+    ... msgstr "The world will never know."
     ... ''' % datetime.datetime.now(UTC).isoformat()
 
     >>> second_pofile_content = r'''
@@ -664,8 +683,11 @@ following the order the users uploaded them.
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "X-Rosetta-Export-Date: %s\n"
     ...
-    ... msgid "Foo"
+    ... msgid "Foo %%s"
     ... msgstr "Bars"
+    ...
+    ... msgid "translator-credits"
+    ... msgstr "I'd like to thank John, Kathy, my pot plants, and all the..."
     ... ''' % datetime.datetime.now(UTC).isoformat()
 
 We flush the entry contents.
@@ -738,6 +760,21 @@ And there are no more entries to import
     >>> translation_import_queue.getFirstEntryToImport() is None
     True
 
+We've imported a new translation for "Foo %s."
+
+    >>> welsh = getUtility(ILanguageSet).getLanguageByCode('cy')
+    >>> foos = potemplate['Foo %s'].getLocalTranslationMessages(welsh)
+    >>> sorted([foo.msgstr0.translation for foo in foos])
+    [u'Bar', u'Bars', u'blah %i']
+
+Since this last upload was not the upstream one, however, its credits
+message translations were ignored.
+
+    >>> pofile['translator-credits'].msgstr0.translation
+    u'helpful@example.com'
+    >>> potemplate['translator-credits'].getLocalTranslationMessages(welsh)
+    []
+
 Imports so far have been associated with a product series.  We can also submit
 translations for a distroseries.
 
@@ -802,6 +839,7 @@ Once imports are allowed again, the import is done after all.
     >>> print entry.status.name
     IMPORTED
 
+
 == Plural forms handling ==
 
 Apart from the basic plural form handling, which is documented above as
@@ -812,7 +850,6 @@ For a language such as Divehi, which has no plural forms defined, we
 default to two plural forms (the most common value for the number of
 plural forms).
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> divehi = getUtility(ILanguageSet)['dv']
     >>> print divehi.pluralforms
     None
@@ -873,3 +910,4 @@ should not have to reimport all translations):
 
     >>> current_dv.msgstr2.translation
     u'Third form %d'
+
