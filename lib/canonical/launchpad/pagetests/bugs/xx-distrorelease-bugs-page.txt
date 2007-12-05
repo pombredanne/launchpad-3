@@ -57,7 +57,7 @@ see which bugs will expire if they are not confirmed.
 
     >>> expirable_bugs_link.click()
     >>> anon_browser.title
-    'Bugs that can expire in Warty'
+    'Bugs that can expire in The Warty Warthog Release'
 
 
 == Bugs Statistics ==

@@ -254,6 +254,8 @@ def buglisting_embedded_advanced_search(context, view):
     """Return the view's page heading."""
     return view.getSearchPageHeading()
 
+bug_listing_expirable = ContextTitle("Bugs that can expire in %s")
+
 def bugnomination_edit(context, view):
     """Return the title for the page to manage bug nominations."""
     return 'Manage nomination for bug #%d in %s' % (

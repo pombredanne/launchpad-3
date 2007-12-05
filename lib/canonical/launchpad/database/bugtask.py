@@ -1582,7 +1582,8 @@ class BugTaskSet:
 
         (target_join, target_clause) = self._getTargetJoinAndClause(target)
         all_bugtasks = BugTask.select("""
-            BugTask.id IN (
+            BugTask.bug = Bug.id
+            AND BugTask.id IN (
                 SELECT BugTask.id
                 FROM BugTask
                 INNER JOIN Bug
@@ -1598,7 +1599,9 @@ class BugTaskSet:
                     AND Bug.duplicateof IS NULL
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
-            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old))
+            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old),
+            clauseTables=['Bug'],
+            orderBy='Bug.date_last_updated')
         bugtasks = []
         for bugtask in all_bugtasks:
             # Only add bugtasks that are not product or distribution

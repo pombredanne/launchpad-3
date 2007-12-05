@@ -120,9 +120,9 @@ see which bugs will expire if they are not confirmed.
 
     >>> expirable_bugs_link.click()
     >>> anon_browser.title
-    'Bugs that can expire in Jokosher'
+    'Bugs that can expire in Jokosher Audio Editor'
 
-Product series may also have a link to exirable bugs. Jokosher's trunk
+Product series may also have a link to expirable bugs. Jokosher's trunk
 series has the link because Jokosher has enabled bug expiration.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/jokosher/trunk')
@@ -133,7 +133,7 @@ series has the link because Jokosher has enabled bug expiration.
 
     >>> expirable_bugs_link.click()
     >>> anon_browser.title
-    'Bugs that can expire in Jokosher'
+    'Bugs that can expire in Jokosher Series: trunk'
 
 Thunderbird has not enabled bug expiration; the anonymous user
 cannot see any link reporting that bugs can expire.

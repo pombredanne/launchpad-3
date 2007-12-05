@@ -14,6 +14,7 @@ __all__ = [
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
     'BugTaskEditView',
+    'BugTaskExpirableListingView',
     'BugTaskListingView',
     'BugTaskNavigation',
     'BugTaskPortletView',
@@ -232,6 +233,23 @@ def rewrite_old_bugtask_status_query_string(query_string):
         return query_string
     else:
         return urllib.urlencode(query_elements_mapped, doseq=True)
+
+
+def target_has_expirable_bugs_listing(target):
+    """Return True or False if the target has the expirable-bugs listing.
+
+    The target must be a Distribution, DistroSeries, Product, or
+    ProductSeries, and the pillar must have enabled bug expiration.
+    """
+    if IDistribution.providedBy(target) or IProduct.providedBy(target):
+        return target.enable_bug_expiration
+    elif IProductSeries.providedBy(target):
+        return target.product.enable_bug_expiration
+    elif IDistroSeries.providedBy(target):
+        return target.distribution.enable_bug_expiration
+    else:
+        # This context is not a supported bugtarget.
+        return False
 
 
 class BugTargetTraversalMixin:
@@ -2065,16 +2083,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
         * 'url' - The URL of the search, or None.
         * 'label' - Either 'bug' or 'bugs' depending on the count.
         """
-        if hasattr(self.context, 'enable_bug_expiration'):
-            pillar = self.context
-        elif IProductSeries.providedBy(self.context):
-            pillar = self.context.product
-        elif IDistroSeries.providedBy(self.context):
-            pillar = self.context.distribution
-        else:
-            # This context is not a supported bugtarget.
-            return None
-        if not pillar.enable_bug_expiration:
+        if not target_has_expirable_bugs_listing(self.context):
             return None
         bugtaskset = getUtility(IBugTaskSet)
         expirable_bugtasks = bugtaskset.findExpirableBugTasks(
@@ -2508,3 +2517,37 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
                 owner=getUtility(ILaunchBag).user,
                 subject=self.context.bug.followup_subject(),
                 content=comment)
+
+
+class BugTaskExpirableListingView(LaunchpadView):
+    """View for listing Incomplete bugs that can expire."""
+    @property
+    def can_show_expirable_bugs(self):
+        """Return True or False if expirable bug listing can be shown."""
+        return target_has_expirable_bugs_listing(self.context)
+
+    @property
+    def inactive_expiration_age(self):
+        """Return the number of days an bug must be inactive to expire."""
+        return config.malone.days_before_expiration
+
+    @property
+    def columns_to_show(self):
+        """Show the columns that summarise expirable bugs."""
+        if (IDistribution.providedBy(self.context)
+            or IDistroSeries.providedBy(self.context)):
+            return ['id', 'summary', 'packagename', 'date_last_updated']
+        else:
+            return ['id', 'summary', 'date_last_updated']
+
+    def search(self):
+        """Return an `ITableBatchNavigator` for the expirable bugtasks."""
+        bugtasks = self.searchUnbatched()
+        return BugListingBatchNavigator(
+            bugtasks, self.request, columns_to_show=self.columns_to_show,
+            size=config.malone.buglist_batch_size)
+
+    def searchUnbatched(self):
+        """Return a list of `IBugTask`s that can expire for this target."""
+        bugtaskset = getUtility(IBugTaskSet)
+        return bugtaskset.findExpirableBugTasks(0, target=self.context)

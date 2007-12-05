@@ -16,7 +16,8 @@ No Privileges Person opens a bug and sets its status to 'Incomplete'.
 No Privileges Person can now search for the bug using the advanced
 search form.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
 
 Bugs that have been marked 'Incomplete' but for which no new information
 was supplied (through comments) are 'Incomplete (without response)'.
@@ -103,7 +104,7 @@ expirable bug. No Privileges Person marks another bug as incomplete.
 
     >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bug/12')
     >>> user_browser.getControl('Status').value = ['Incomplete']
-    >>> user_browser.getControl('Save Changes').click()
+    >>> user_browser.getControl('Save Changes', index=0).click()
 
 The project's bug page reports the number of bugs that will expire if
 they are not confirmed. No Privileges Person sees that Jokosher has 2
@@ -111,7 +112,7 @@ bugs that can expire.
 
     >>> user_browser.getLink('Bugs').click()
     >>> user_browser.title
-    'bugs in Jokosher Audio Editor'
+    'Bugs in Jokosher Audio Editor'
 
     >>> expirable_bugs_link = user_browser.getLink(
     ...     'Incomplete bugs can expire')
@@ -124,22 +125,23 @@ the file-a-bug link because this is a specialized search.
 
     >>> expirable_bugs_link.click()
     >>> user_browser.title
-    'Bugs that can expire in Firefox'
+    'Bugs that can expire in Jokosher Audio Editor'
 
     >>> contents = find_main_content(user_browser.contents)
-    >>> extract_text(content.find('td', {'class' : 'batch-navigation-index'}))
+    >>> print extract_text(contents.find(
+    ...     'td', {'class' : 'batch-navigation-index'}))
     1 ... 2  of 2 results
 
     >>> buglisting = contents.find('table', id='buglisting')
     >>> for tr in buglisting.tbody.findAll('tr'):
     ...     print extract_text(tr)
-    11  Make Jokosher use autoaudiosink  Undecided  Incomplete
-    12  Copy, Cut and Delete operations should work ...  Critical  Incomplete
+    11  Make Jokosher use autoaudiosink  ...
+    12  Copy, Cut and Delete operations should work  ...
 
     >>> user_browser.getControl('Search')
     Traceback (most recent call last):
     ...
-    LookupError
+    LookupError:...
 
     >>> user_browser.getLink('Report a bug')
     Traceback (most recent call last):
@@ -152,15 +154,19 @@ When No Privileges Person adds a comment to the oldest bug, it is
 pushed to the bottom of the list.
 
     >>> user_browser.getLink('Make Jokosher use autoaudiosink').click()
-    >>> user_browser.getControl('comment').value = "bump"
+    >>> user_browser.getControl('Comment', index=1).value = "bump"
     >>> user_browser.getControl('Save Changes', index=1).click()
-    >>> user_browser.goBack(1)
-    >>> user_browser.reload()
+    >>> user_browser.getLink('Bugs').click()
+    >>> user_browser.getLink('Incomplete bugs can expire').click()
+    >>> contents = find_main_content(user_browser.contents)
     >>> buglisting = contents.find('table', id='buglisting')
+    >>> print extract_text(buglisting.thead)
+    Summary  Date last updated
+
     >>> for tr in buglisting.tbody.findAll('tr'):
     ...     print extract_text(tr)
-    12  Copy, Cut and Delete operations should work ...  Critical  Incomplete
-    11  Make Jokosher use autoaudiosink  Undecided  Incomplete
+    12  Copy, Cut and Delete operations should work  ...
+    11  Make Jokosher use autoaudiosink  ...
 
 When No Privileges Person confirms the bug, the notice is removed.
 He sees that the number on expirable bugs is updated when he returns
@@ -174,16 +180,16 @@ Jokosher's bug page.
 
     >>> user_browser.getLink('Bugs').click()
     >>> expirable_bugs_link = user_browser.getLink(
-    ...     'Incomplete bugs can expire')
+    ...     'Incomplete bug can expire')
     >>> expirable_bugs_link.text
-    '0 Incomplete bugs can expire'
+    '1 Incomplete bug can expire'
 
-    >>> user_browser.goBack(1)
-    >>> user_browser.reload()
+    >>> expirable_bugs_link.click()
+    >>> contents = find_main_content(user_browser.contents)
     >>> buglisting = contents.find('table', id='buglisting')
     >>> for tr in buglisting.tbody.findAll('tr'):
     ...     print extract_text(tr)
-    12  Copy, Cut and Delete operations should work ...  Critical  Incomplete
+    12  Copy, Cut and Delete operations should work ...
 
 
 == Incomplete bugs that do not expire ==
@@ -204,5 +210,6 @@ expirable bugs he reads that Debian does not use bug expiration.
 
     >>> user_browser.open('http://bugs.launchpad.dev/debian/+expirable-bugs')
     >>> print extract_text(find_main_content(user_browser.contents).p)
-    Bug expiration is a feature of Launchpad Bugs. Debian does not use
-    Launchpad to track bugs.
+    This project has not enabled bug expiration. No bugs can expire.
+    Project administrator's may choose to enable bug expiration by
+    updating the project's details.
