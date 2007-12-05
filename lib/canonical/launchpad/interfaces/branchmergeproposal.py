@@ -59,11 +59,11 @@ class BranchMergeProposalStatus(DBEnumeratedType):
         The changes have been approved for merging.
         """)
 
-    RESUBMIT = DBItem(4, """
-        Resubmit
+    REJECTED = DBItem(4, """
+        Rejected
 
-        The changes were not approved by the reviewer, and the author
-        has the option to resubmit new changes.
+        The changes have been rejected and will not be merged in their
+        current state.
         """)
 
     MERGED = DBItem(5, """
@@ -147,7 +147,7 @@ class IBranchMergeProposal(Interface):
         """
 
     def approveBranch(reviewer):
-        """Mark the branch as 'Code approved'.
+        """Mark the proposal as 'Code approved'.
 
         The time that the branch was approved is recoreded in `date_reviewed`.
 
@@ -155,11 +155,8 @@ class IBranchMergeProposal(Interface):
                  the branch reviewer for the target branch.
         """
 
-    def requestResubmit(reviewer):
-        """Mark the branch as 'Resubmit'.
-
-        This is a nicer way of saying 'Rejected', as often we would like the
-        author to have another go.
+    def rejectBranch(reviewer):
+        """Mark the proposal as 'Rejected'.
 
         The time that the branch was rejected is recoreded in `date_reviewed`.
 

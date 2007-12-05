@@ -16,7 +16,8 @@
                         private owner author product home_page lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
                         mirror_failures pull_disabled mirror_request_time
-                        last_scanned last_scanned_id revision_count branch_type"
+                        last_scanned last_scanned_id revision_count branch_type
+                        reviewer"
         />
     <require
         permission="launchpad.AnyPerson"

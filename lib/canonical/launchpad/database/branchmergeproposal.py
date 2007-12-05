@@ -19,7 +19,7 @@ from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.interfaces import (
-    BranchMergeProposalStatus, IBranchMergeProposal)
+    BranchMergeProposalStatus, IBranchMergeProposal, UserNotBranchReviewer)
 
 
 class BranchMergeProposal(SQLBase):
@@ -48,6 +48,10 @@ class BranchMergeProposal(SQLBase):
         enum=BranchMergeProposalStatus, notNull=True,
         default=BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
+    reviewer = ForeignKey(
+        dbName='reviewer', foreignKey='Person', notNull=False,
+        default=None)
+
     date_merged = UtcDateTimeCol(default=None)
     merged_revno = IntCol(default=None)
 
@@ -56,10 +60,61 @@ class BranchMergeProposal(SQLBase):
         default=None)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    date_review_requested = UtcDateTimeCol(notNull=False, default=None)
+    date_reviewed = UtcDateTimeCol(notNull=False, default=None)
+
+    def requestReview(self):
+        """See `IBranchMergeProposal`."""
+        if self.queue_status == BranchMergeProposalStatus.MERGED:
+            raise AssertionError('Merged proposals cannot change state.')
+        self.queue_status = BranchMergeProposalStatus.NEEDS_REVIEW
+        self.date_review_requested = UTC_NOW
+
+    def _reviewProposal(self, reviewer, next_state):
+        """Set the proposal to one of the two review statuses."""
+        # Check the reviewer can review the code for the target branch.
+        target_review_team = self.target_branch.reviewer
+        if target_review_team is None:
+            target_review_team = self.target_branch.owner
+        if not reviewer.inTeam(target_review_team):
+            raise UserNotBranchReviewer
+        # Check the current state of the proposal.
+        if self.queue_status in [
+            BranchMergeProposalStatus.WORK_IN_PROGRESS,
+            BranchMergeProposalStatus.NEEDS_REVIEW ,
+            BranchMergeProposalStatus.CODE_APPROVED,
+            BranchMergeProposalStatus.REJECTED]:
+            # These are valid state transitions
+            self.queue_status = next_state
+        else:
+            raise AssertionError(
+                'Invalid state transition for merge proposal: %s -> %s'
+                % (self.queue_state.title, next_state.title))
+        # Record the reviewer
+        self.reviewer = reviewer
+        self.date_reviewed = UTC_NOW
+        # Record the reviewed revision id
+        # XXX: should use revision id on the source branch...
+
+    def approveBranch(self, reviewer):
+        """See `IBranchMergeProposal`."""
+        self._reviewProposal(
+            reviewer, BranchMergeProposalStatus.CODE_APPROVED)
+
+    def rejectBranch(self, reviewer):
+        """See `IBranchMergeProposal`."""
+        self._reviewProposal(
+            reviewer, BranchMergeProposalStatus.REJECTED)
+
+    def mergeFailed(self, merger):
+        """See `IBranchMergeProposal`."""
+        self.queue_status = BranchMergeProposalStatus.MERGE_FAILED
+        self.merger = merger
 
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):
         """See `IBranchMergeProposal`."""
+        self.queue_status = BranchMergeProposalStatus.MERGED
         self.merged_revno = merged_revno
         self.merge_reporter = merge_reporter
 

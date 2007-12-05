@@ -93,7 +93,7 @@ A branch merge proposal can be in one of several states:
  * Work in progress
  * Review requested
  * Code approved
- * Code not approved
+ * Rejected
  * Merged
  * Code failed to merge
 
@@ -115,7 +115,9 @@ Directly setting the queue_status is not possible.
 
     >>> from canonical.launchpad.interfaces import BranchMergeProposalStatus
     >>> proposal.queue_status = BranchMergeProposalStatus.CODE_APPROVED
-    Forbidden
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ('queue_status', <BranchMergeProposal at ...>)
 
 Adjusting the state is done through methods on the merge proposal.
 
@@ -161,11 +163,11 @@ their own code.
     >>> print proposal.queue_status.title
     Code approved
 
-Code that has been accepted can also be set to resubmit.
+Code that has been accepted can also be set to rejected.
 
-    >>> proposal.requestResubmit(sample_person)
-    >>> proposal.queue_status.title
-    Resubmit
+    >>> proposal.rejectBranch(sample_person)
+    >>> print proposal.queue_status.title
+    Rejected
 
 Resubmit proposals can also be updated to be approved.
 
@@ -173,15 +175,15 @@ Resubmit proposals can also be updated to be approved.
     >>> print proposal.queue_status.title
     Code approved
 
-Proposals with either resubmit or accepted reviews can request another
+Proposals with either rejected or accepted reviews can request another
 review.
 
     >>> proposal.requestReview()
     >>> print proposal.queue_status.title
     Needs review
-    >>> proposal.requestResubmit(sample_person)
-    >>> proposal.queue_status.title
-    Resubmit
+    >>> proposal.rejectBranch(sample_person)
+    >>> print proposal.queue_status.title
+    Rejected
     >>> proposal.requestReview()
     >>> print proposal.queue_status.title
     Needs review
@@ -191,15 +193,17 @@ a user in the reviewer team can approve or reject the branch.
 
     >>> eric_the_reviewer = factory.makePerson(name="eric-reviewer")
     >>> target_branch.reviewer = eric_the_reviewer
-    >>> proposal.requestResubmit(sample_person)
-    Traceback...
+    >>> proposal.rejectBranch(sample_person)
+    Traceback (most recent call last):
+    ...
     UserNotBranchReviewer
-    >>> proposal.acceptBranch(sample_person)
-    Traceback...
+    >>> proposal.approveBranch(sample_person)
+    Traceback (most recent call last):
+    ...
     UserNotBranchReviewer
 
-    >>> proposal.acceptBranch(eric_the_reviewer)
-    >>> proposal.queue_status.title
+    >>> proposal.approveBranch(eric_the_reviewer)
+    >>> print proposal.queue_status.title
     Code approved
 
 
@@ -209,7 +213,7 @@ Anyone that has rights to edit the merge proposal can say that the
 merge failed.
 
     >>> proposal.mergeFailed(merger=sample_person)
-    >>> proposal.queue_status.title
+    >>> print proposal.queue_status.title
     Code failed to merge
 
 
@@ -249,7 +253,7 @@ The user that marked the branch as merged can also be recorded.
     1234
     >>> print merge_proposal.merge_reporter.browsername
     Mark Shuttleworth
-    >>> proposal.queue_status.title
+    >>> print merge_proposal.queue_status.title
     Merged
     >>> flush_database_updates()
 
