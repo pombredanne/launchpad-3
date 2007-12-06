@@ -11,7 +11,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests.externalbugtracker import login
+from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.externalbugtracker import (new_bugtracker,
     TestRoundup)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
@@ -20,8 +20,6 @@ from canonical.launchpad.interfaces import (BugTrackerType, IBugSet,
 
 class TestCheckwatches(LaunchpadZopelessTestCase):
     """Tests for the bugwatch updating system."""
-
-    dbuser = config.checkwatches.dbuser
 
     def setUp(self):
         """Set up bugs, watches and questions to test with."""
@@ -43,6 +41,7 @@ class TestCheckwatches(LaunchpadZopelessTestCase):
         self.bugwatch = self.bug.addWatch(self.bugtracker, 1,
             sample_person)
         self.external_bugtracker = TestRoundup(self.bugtracker)
+        commit()
 
     def test_can_update_bug_with_questions(self):
         """Test whether bugs with linked questions can be updated."""
