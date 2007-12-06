@@ -535,8 +535,8 @@ class TestPublisher(TestNativePublishingBase):
             status=PackagePublishingStatus.PUBLISHED)
 
         removed_source = self.getPubSource(
-            scheduleddeletiondate = UTC_NOW,
-            dateremoved = UTC_NOW,
+            scheduleddeletiondate=UTC_NOW,
+            dateremoved=UTC_NOW,
             pocket=PackagePublishingPocket.UPDATES,
             status=PackagePublishingStatus.DELETED)
 
@@ -622,7 +622,7 @@ class TestPublisher(TestNativePublishingBase):
             days=publisher._config.stayofexecution)
         date_diff = expected_date - superseded_source.scheduleddeletiondate
         self.assertTrue(
-            date_diff.seconds < 60,
+            date_diff < timedelta(seconds=60),
             "SUPERSEDED scheduleddeletiondate is %s, expected %s within "
             "a 60 seconds tolerance" % (
                 superseded_source.scheduleddeletiondate,
@@ -634,7 +634,7 @@ class TestPublisher(TestNativePublishingBase):
         date_diff = (
             expected_date - deleted_source.scheduleddeletiondate)
         self.assertTrue(
-            date_diff.seconds < 60,
+            date_diff < timedelta(seconds=60),
             "DELETED scheduleddeletiondate is %s, expected %s within "
             "a 60 seconds tolerance" % (
                 deleted_source.scheduleddeletiondate,
