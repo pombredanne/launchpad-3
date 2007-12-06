@@ -19,8 +19,10 @@ from canonical.launchpad.ftests.openidhelpers import (
 
 
 class MakeEndpointTests(unittest.TestCase):
+    """Tests for the make_openid() helper."""
 
     def test_openid10(self):
+        """Test that OpenID 1.0 endpoints are constructed correctly."""
         endpoint = make_endpoint(
             OPENID_1_0_TYPE, 'http://example.com/claimed',
             'http://example.com/identity')
@@ -31,6 +33,7 @@ class MakeEndpointTests(unittest.TestCase):
         self.assertEqual(endpoint.local_id, 'http://example.com/identity')
 
     def test_openid11(self):
+        """Test that OpenID 1.1 endpoints are constructed correctly."""
         endpoint = make_endpoint(
             OPENID_1_1_TYPE, 'http://example.com/claimed',
             'http://example.com/identity')
@@ -41,6 +44,7 @@ class MakeEndpointTests(unittest.TestCase):
         self.assertEqual(endpoint.local_id, 'http://example.com/identity')
 
     def test_openid20(self):
+        """Test that OpenID 2.0 endpoints are constructed correctly."""
         endpoint = make_endpoint(
             OPENID_2_0_TYPE, 'http://example.com/claimed',
             'http://example.com/identity')
@@ -51,6 +55,10 @@ class MakeEndpointTests(unittest.TestCase):
         self.assertEqual(endpoint.local_id, 'http://example.com/identity')
 
     def test_no_local_id(self):
+        """Test that endpoints with no local ID are constructed correctly.
+
+        In this case, the local ID is the same as the claimed ID.
+        """
         endpoint = make_endpoint(
             OPENID_1_1_TYPE, 'http://example.com/claimed')
         self.assertEqual(endpoint.claimed_id, 'http://example.com/claimed')
@@ -58,8 +66,10 @@ class MakeEndpointTests(unittest.TestCase):
 
 
 class MakeIdentifierSelectEndpointTests(unittest.TestCase):
+    """Tests for the make_identifier_select_endpoint() helper."""
 
     def test_openid10(self):
+        """Test that OpenID 1.0 endpoints are constructed correctly."""
         endpoint = make_identifier_select_endpoint(OPENID_1_0_TYPE)
         self.assertEqual(endpoint.type_uris, [OPENID_1_0_TYPE])
         self.assertEqual(endpoint.claimed_id, IDENTIFIER_SELECT)
@@ -68,6 +78,7 @@ class MakeIdentifierSelectEndpointTests(unittest.TestCase):
         self.assertEqual(endpoint.local_id, IDENTIFIER_SELECT)
 
     def test_openid11(self):
+        """Test that OpenID 1.1 endpoints are constructed correctly."""
         endpoint = make_identifier_select_endpoint(OPENID_1_1_TYPE)
         self.assertEqual(endpoint.type_uris, [OPENID_1_1_TYPE])
         self.assertEqual(endpoint.claimed_id, IDENTIFIER_SELECT)
@@ -76,6 +87,7 @@ class MakeIdentifierSelectEndpointTests(unittest.TestCase):
         self.assertEqual(endpoint.local_id, IDENTIFIER_SELECT)
 
     def test_openid20(self):
+        """Test that OpenID 2.0 endpoints are constructed correctly."""
         endpoint = make_identifier_select_endpoint(OPENID_2_0_TYPE)
         # Use the OP Identifier type URI for 2.0 requests:
         self.assertEqual(endpoint.type_uris, [OPENID_IDP_2_0_TYPE])
@@ -86,8 +98,15 @@ class MakeIdentifierSelectEndpointTests(unittest.TestCase):
 
 
 class MaybeFixupIdentifierSelectRequestTests(unittest.TestCase):
+    """Tests for the maybe_fixup_identifier_select() helper."""
 
     def test_openid1(self):
+        """Test that OpenID 1.1 requests are fixed up correctly.
+
+        In this case, the claimed ID and local ID get changed to the
+        expected claimed ID.  This is needed in order for the response
+        not to look forged.
+        """
         store = MemoryStore()
         consumer = Consumer(session={}, store=store)
         consumer.beginWithoutDiscovery(
@@ -104,6 +123,11 @@ class MaybeFixupIdentifierSelectRequestTests(unittest.TestCase):
         self.assertEqual(endpoint.local_id, 'http://example.com/identifier')
 
     def test_openid20(self):
+        """Test that OpenID 2.0 requests are left untouched.
+
+        The OpenID 2.0 standard supports identifier select, so no
+        special handling is necessary.
+        """
         store = MemoryStore()
         consumer = Consumer(session={}, store=store)
         consumer.beginWithoutDiscovery(
@@ -120,8 +144,10 @@ class MaybeFixupIdentifierSelectRequestTests(unittest.TestCase):
 
 
 class CompleteFromBrowserTests(unittest.TestCase):
+    """Tests for the complete_from_browser() helper."""
 
     def test_complete_from_browser(self):
+        """Test complete_from_browser()'s response parsing."""
         store = MemoryStore()
         consumer = Consumer(session={}, store=store)
         consumer.beginWithoutDiscovery(make_endpoint(
