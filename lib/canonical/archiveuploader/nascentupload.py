@@ -177,7 +177,8 @@ class NascentUpload:
 
         signer_components = self.getAutoAcceptedComponents()
         if not self.is_new:
-            # check rights for OLD packages, the NEW ones goes straight to queue
+            # check rights for OLD packages, the NEW ones goes
+            # straight to queue
             self.verify_acl(signer_components)
 
         # Override archive location if necessary.
@@ -248,8 +249,10 @@ class NascentUpload:
                 files_binaryful = files_binaryful or True
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 files_binaryful = files_binaryful or True
-                files_archindep = files_archindep or uploaded_file.is_archindep
-                files_archdep = files_archdep or not uploaded_file.is_archindep
+                files_archindep = (
+                    files_archindep or uploaded_file.is_archindep)
+                files_archdep = (
+                    files_archdep or not uploaded_file.is_archindep)
             elif isinstance(uploaded_file, SourceUploadFile):
                 files_sourceful = True
             else:
@@ -337,8 +340,9 @@ class NascentUpload:
         Check if the declared number of architectures corresponds to the
         upload contents.
         """
-        considered_archs = [arch_name for arch_name in self.changes.architectures
-                            if not arch_name.endswith("_translations")]
+        considered_archs = [
+            arch_name for arch_name in self.changes.architectures
+            if not arch_name.endswith("_translations")]
         max = 1
         if self.sourceful:
             # When sourceful, the tools add 'source' to the architecture
@@ -390,7 +394,8 @@ class NascentUpload:
             elif isinstance(error, UploadWarning):
                 self.warn(str(error))
             else:
-                raise AssertionError("Unknown error occurred: %s" % str(error))
+                raise AssertionError(
+                    "Unknown error occurred: %s" % str(error))
 
     def run_and_reject_on_error(self, callable):
         """Run given callable and raise EarlyReturnUploadError on errors."""
@@ -416,7 +421,7 @@ class NascentUpload:
 
     @property
     def rejection_message(self):
-        """Aggregates rejection messages."""
+        """Aggregate rejection messages."""
         return '\n'.join(self.rejections)
 
     @property
@@ -638,7 +643,7 @@ class NascentUpload:
         return None
 
     def _checkVersion(self, proposed_version, archive_version, filename):
-        """Check if the proposed version is higher than that in the archive."""
+        """Check if the proposed version is higher than the one in archive."""
         if apt_pkg.VersionCompare(proposed_version, archive_version) < 0:
             self.reject("%s: Version older than that in the archive. %s <= %s"
                         % (filename, proposed_version, archive_version))
@@ -951,7 +956,8 @@ class NascentUpload:
                     # Closing bugs.
                     changesfile_object = open(self.changes.filepath, 'r')
                     close_bugs_for_queue_item(
-                        self.queue_root, changesfile_object=changesfile_object)
+                        self.queue_root,
+                        changesfile_object=changesfile_object)
                     changesfile_object.close()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")

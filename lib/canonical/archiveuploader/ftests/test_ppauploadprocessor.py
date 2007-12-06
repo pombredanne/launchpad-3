@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 import unittest
-import shutil
 
 from email import message_from_string
 
@@ -242,7 +241,7 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(queue_items.count(), 1)
 
     def testPPASizeQuotaSourceRejection(self):
-        """Verifying the size quota check for PPA uploads.
+        """Verify the size quota check for PPA uploads.
 
         New source uploads are submitted to the size quota check, where
         the size of the upload plus the current PPA size must be smaller
@@ -261,20 +260,18 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
             "Subject: [PPA name16] Accepted: bar 1.0-1 (source)",
             "Upload Warnings:",
             "PPA exceeded its size limit (1213 of 1 bytes). "
-            "Contact a Launchpad administrator if you really "
-            "need more space. Source uploads exceeding PPA size "
-            "limit will start to be rejected soon."]
+            "Contact a Launchpad administrator if you need more space."]
         self.assertEmail(contents)
 
     def testPPASizeQuotaSourceWarning(self):
-        """Verifying the size quota warning for PPA near size limit.
+        """Verify the size quota warning for PPA near size limit.
 
         The system start warning users for uploads exceeding 80 % of
         the current size limit.
         """
         # Set a PPA size_quota that doesn't fit 'bar' source upload
-        # under its 80 % 'safe' limit.
-        self.name16.archive.authorized_size = 1500
+        # under its 95 % 'safe' limit.
+        self.name16.archive.authorized_size = 1250
 
         # Ensure the warning is sent in the acceptance notification.
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
@@ -282,13 +279,12 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         contents = [
             "Subject: [PPA name16] Accepted: bar 1.0-1 (source)",
             "Upload Warnings:",
-            "PPA exceeded 80 % of its size limit (1213 of 1500 bytes). "
-            "Contact a Launchpad administrator if you really need "
-            "more space."]
+            "PPA exceeded 95 % of its size limit (1213 of 1250 bytes). "
+            "Contact a Launchpad administrator if you need more space."]
         self.assertEmail(contents)
 
     def testPPADoNotCheckSizeQuotaForBinary(self):
-        """Verifying the size quota check for internal binary PPA uploads.
+        """Verify the size quota check for internal binary PPA uploads.
 
         Binary uploads are not submitted to the size quota check, since
         they are automatically generated, rejecting/warning them would
