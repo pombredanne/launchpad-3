@@ -692,13 +692,7 @@ class POFile(SQLBase, POFileMixIn):
 
     def setPathIfUnique(self, path):
         """See `IPOFile`."""
-        if path == self.path:
-            return
-        other = POFileSet().getPOFileByPathAndOrigin(
-            path, self.potemplate.productseries, self.potemplate.distroseries,
-            self.potemplate.sourcepackagename)
-        have_other = bool(other)
-        if not have_other:
+        if path != self.path and self.potemplate.isPOFilePathAvailable(path):
             self.path = path
 
     def importFromQueue(self, entry_to_import, logger=None):
