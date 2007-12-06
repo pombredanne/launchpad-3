@@ -267,6 +267,9 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
                 "PPA exceeded 95 %% of its size limit (%d of %d bytes). "
                 "Contact a Launchpad administrator if you need "
                 "more space." % (new_size, self.archive.authorized_size))
+        else:
+            # No need to warn user about his PPA's size.
+            pass
 
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now.
