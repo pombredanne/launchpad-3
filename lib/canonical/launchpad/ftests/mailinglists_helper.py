@@ -153,6 +153,8 @@ def new_list_for_team(team_name, make_contact_address=False):
     :param team_name: The name of the team for which to create a list.
     :param make_contact_address: If True, the newly created list will be
            made the team's contact address.
+
+    DO NOT use this in a non-pagetest.
     """
     login('foo.bar@canonical.com')
     list_set = MailingListSet()
@@ -214,7 +216,7 @@ def beta_program_enable(team_name):
     This allows the team to apply for mailing lists.
 
     XXX BarryWarsaw 06-Dec-2007 This function can go away when mailing lists
-    go public.
+    go public.  Also, DO NOT use this in a non-pagetest!
     """
     login('foo.bar@canonical.com')
     person_set = getUtility(IPersonSet)
