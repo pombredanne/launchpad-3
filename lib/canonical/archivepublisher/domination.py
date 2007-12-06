@@ -157,13 +157,57 @@ class Dominator:
                     pubrec.datesuperseded = UTC_NOW
                     pubrec.supersededby = super_release
 
-    def _dominateBinary(self, binaryinput):
+    def _getOtherArchIndep(self, dominated):
+        """Return remaining publications of the same binarypackagerelease."""
+        # This assertion is just to check the the callsite is working as
+        # expected. There shouldn't be any problem if we run it for with
+        # architecturespecific binaires, since the result will be always
+        # empty.
+        assert dominated.binarypackagerelease.architecturespecific is False, (
+            "Only use this methos with architecture independent binaries.")
+
+        dominated_series = dominated.distroarchseries.distroseries
+        available_architectures = [
+            das.id for das in dominated_series.architectures]
+        query = """
+            SecureBinaryPackagePublishingHistory.status IN %s AND
+            SecureBinaryPackagePublishingHistory.distroarchseries IN %s AND
+            SecureBinaryPackagePublishingHistory.binarypackagerelease = %s AND
+            SecureBinaryPackagePublishingHistory.pocket = %s
+        """ % sqlvalues([PUBLISHED, PENDING], available_architectures,
+                        dominated.binarypackagerelease, dominated.pocket)
+        return SecureBinaryPackagePublishingHistory.select(query)
+
+    def _dominateBinary(self, dominated, dominant):
+        """Dominate the given binarypackagerelease publication."""
+        if dominated.status not in [PUBLISHED, PENDING]:
+            self.debug(
+                '%s is not published or pending, cannot be dominated.' %(
+                dominated.binarypackagerelease.title))
+            return
+        dominant_build = dominant.binarypackagerelease.build
+        distroarchseries = dominant_build.distroarchseries
+        self.debug(
+            "The %s build of %s has been judged as superseded by the build "
+            "of %s.  Arch-specific == %s" % (
+            distroarchseries.architecturetag,
+            dominated.binarypackagerelease.title,
+            dominant.binarypackagerelease.title,
+            dominated.binarypackagerelease.architecturespecific))
+        dominated.status = SUPERSEDED
+        dominated.datesuperseded = UTC_NOW
+        # Binary package releases are superseded by the new build,
+        # not the new binary package release. This is because
+        # there may not *be* a new matching binary package -
+        # source packages can change the binaries they build
+        # between releases.
+        dominated.supersededby = dominant_build
+
+    def _dominateBinaries(self, binaryinput):
         """
         Perform dominations for binaries.
         """
-
         self.debug("Dominating binaries...")
-
         for binary in binaryinput:
             # binary is a list of versions ordered most-recent-first
             # basically skip the first entry because that is
@@ -174,30 +218,15 @@ class Dominator:
             # At some future point, this code might automatically locate
             # binaries which are no longer built from source (NBS).
             # Currently this is done in archive cruft check.
-            dominantrelease = binaryinput[binary][0].binarypackagerelease
-            for pubrec in binaryinput[binary][1:]:
-                if pubrec.status == PUBLISHED or pubrec.status == PENDING:
-                    thisrelease = pubrec.binarypackagerelease
-                    distroarchseries = dominantrelease.build.distroarchseries
-                    self.debug("The %s build of %s/%s has been judged "
-                               "as superseded by the %s build of %s/%s.  "
-                               "Arch-specific == %s" % (
-                        thisrelease.build.distroarchseries.architecturetag,
-                        thisrelease.binarypackagename.name,
-                        thisrelease.version,
-                        distroarchseries.architecturetag,
-                        dominantrelease.binarypackagename.name,
-                        dominantrelease.version,
-                        thisrelease.architecturespecific))
-                    pubrec.status = SUPERSEDED
-                    pubrec.datesuperseded = UTC_NOW
-                    # Binary package releases are superseded by the new build,
-                    # not the new binary package release. This is because
-                    # there may not *be* a new matching binary package -
-                    # source packages can change the binaries they build
-                    # between releases.
-                    pubrec.supersededby = dominantrelease.build
-
+            dominant = binaryinput[binary][0]
+            for dominated in binaryinput[binary][1:]:
+                self._dominateBinary(dominated, dominant)
+                # Also dominate all publications of architecture
+                # independent binaries in this distroseries and pocket.
+                if not dominated.binarypackagerelease.architecturespecific:
+                    other_publications = self._getOtherArchIndep(dominated)
+                    for dominated in other_publications:
+                        self._dominateBinary(dominated, dominant)
 
     def _sortPackages(self, pkglist, isSource = True):
         # pkglist is a list of packages with the following
@@ -379,7 +408,7 @@ class Dominator:
                              pocket, PackagePublishingStatus.PUBLISHED),
                 clauseTables=['BinaryPackageRelease'])
 
-            self._dominateBinary(self._sortPackages(binaries, False))
+            self._dominateBinaries(self._sortPackages(binaries, False))
             if do_clear_cache:
                 self.debug("Flushing SQLObject cache.")
                 clear_cache()

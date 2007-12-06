@@ -18,6 +18,8 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.publishing import (
     getPublisher, Publisher)
 from canonical.config import config
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
@@ -527,8 +529,6 @@ class TestPublisher(TestNativePublishingBase):
 
         # Retrieve the publishing record again since the transaction was
         # committed.
-        from canonical.launchpad.database.publishing import (
-            SourcePackagePublishingHistory)
         superseded_source = SourcePackagePublishingHistory.get(
             superseded_source.id)
         deleted_source = SourcePackagePublishingHistory.get(
@@ -569,14 +569,68 @@ class TestPublisher(TestNativePublishingBase):
         self.layer.txn.commit()
 
         # See comment above.
-        from canonical.launchpad.database.publishing import (
-            SourcePackagePublishingHistory)
         pub_source = SourcePackagePublishingHistory.get(pub_source.id)
 
         # Publishing record got scheduled for removal.
         self.assertEqual(
             pub_source.status, PackagePublishingStatus.SUPERSEDED)
         self.assertTrue(pub_source.scheduleddeletiondate is not None)
+
+    def checkPublications(self, source, binaries, status):
+        """Assert source and binary publications as in the given status."""
+        source = SourcePackagePublishingHistory.get(source.id)
+        self.assertEqual(
+            source.status, status, "%s is not %s (%s)" % (
+            source.displayname, status.name, source.status.name))
+        for bin in binaries:
+            bin = BinaryPackagePublishingHistory.get(bin.id)
+            self.assertEqual(
+                bin.status, status, "%s is not %s (%s)" % (
+                bin.displayname, status.name, bin.status.name))
+
+    def testDominationOfOldArchIndepBinaries(self):
+        """Check domination of architecture independent binaries.
+
+        When a architecture independent binary is dominated it should also
+        'carry' the same publications in other architectures independently
+        of whether or not the new binary was successfully built to a specific
+        architecture.
+
+        See bug #48760 for further information about this aspect.
+        """
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        # Create published archindep context.
+        pub_source_archindep = self.getPubSource(
+            version='1.0', status=PackagePublishingStatus.PUBLISHED,
+            architecturehintlist='all')
+        pub_binaries_archindep = self.getPubBinaries(
+            pub_source=pub_source_archindep,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # Emulated new publication of a archdep binary only on i386.
+        pub_source_archdep = self.getPubSource(
+            version='1.1', architecturehintlist='i386')
+        pub_binaries_archdep = self.getPubBinaries(
+            pub_source=pub_source_archdep)
+
+        publisher.A_publish(False)
+        publisher.B_dominate(False)
+
+        # The latest architecture specific source and binary pair is
+        # PUBLISHED.
+        self.checkPublications(
+            pub_source_archdep, pub_binaries_archdep,
+            PackagePublishingStatus.PUBLISHED)
+
+        # The oldest architecture independent source & binaries should
+        # be SUPERSEDED, i.e., the fact that source didn't build in hppa
+        # should hold the condemned architecture independent binary.
+        self.checkPublications(
+            pub_source_archindep, pub_binaries_archindep,
+            PackagePublishingStatus.SUPERSEDED)
 
     def assertReleaseFileRequested(self, publisher, suite_name,
                                    component_name, arch_name):
