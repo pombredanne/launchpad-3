@@ -34,6 +34,7 @@ from canonical.launchpad.interfaces import (
     IBugAttachment,
     IBugNomination,
     IBugSet,
+    IFAQSet,
     IHasIcon,
     IHasLogo,
     IHasMugshot,
@@ -381,8 +382,8 @@ class ObjectFormatterExtendedAPI(ObjectFormatterAPI):
             raise TraversalError, name
 
     def link(self, extra_path):
-        """Return an HTML link to the person's page containing an icon
-        followed by the person's name.
+        """Return an HTML link to the object's page containing an icon
+        followed by the object's name.
         """
         raise NotImplemented
 
@@ -751,6 +752,23 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
         image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
         return '<a href="%s">%s&nbsp;%s</a>' % (
             url, image_html, person.browsername)
+
+
+class PillarFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for IProduct, IDistribution and IProject objects to a
+    formatted string."""
+
+    def link(self, extra_path):
+        """Return an HTML link to the pillar page containing an icon
+        followed by the pillar's display name.
+        """
+        pillar = self._context
+        url = canonical_url(pillar)
+        icon_html = ObjectImageDisplayAPI(pillar).icon()
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        return ('<a href="%s">%s&nbsp;%s</a>' % (
+                          url, icon_html, pillar.displayname))
 
 
 class BranchFormatterAPI(ObjectFormatterExtendedAPI):
@@ -1314,10 +1332,23 @@ class FormattersAPI:
                 url = url[:-len(trailers)]
             else:
                 trailers = ''
+            # We use nofollow for these links to reduce the value of
+            # adding spam URLs to our comments; it's a way of moderately
+            # devaluing the return on effort for spammers that consider
+            # using Launchpad.
             return '<a rel="nofollow" href="%s">%s</a>%s' % (
                 cgi.escape(url, quote=True),
                 add_word_breaks(cgi.escape(url)),
                 cgi.escape(trailers))
+        elif match.group('faq') is not None:
+            text = match.group('faq')
+            faqnum = match.group('faqnum')
+            faqset = getUtility(IFAQSet)
+            faq = faqset.getFAQ(faqnum)
+            if not faq:
+                return text
+            url = canonical_url(faq)
+            return '<a href="%s">%s</a>' % (url, text)
         elif match.group('oops') is not None:
             text = match.group('oops')
 
@@ -1330,7 +1361,7 @@ class FormattersAPI:
                 root_url += '/'
 
             url = root_url + match.group('oopscode')
-            return '<a rel="nofollow" href="%s">%s</a>' % (url, text)
+            return '<a href="%s">%s</a>' % (url, text)
         else:
             raise AssertionError("Unknown pattern matched.")
 
@@ -1440,6 +1471,10 @@ class FormattersAPI:
       (?P<bug>
         \bbug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
         0*(?P<bugnum>\d+)
+      ) |
+      (?P<faq>
+        \bfaq(?:\s|<br\s*/>)*(?:\#|item|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
+        0*(?P<faqnum>\d+)
       ) |
       (?P<oops>
         \boops\s*-?\s*

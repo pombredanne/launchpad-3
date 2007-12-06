@@ -285,8 +285,20 @@ class IMailingList(Interface):
         )
 
     address = TextLine(
-        title=_("This list's email address."), required=True, readonly=True,
-        description=_("The text representation of this team's email address."))
+        title=_("This list's email address."),
+        description=_(
+            "The text representation of this team's email address."),
+        required=True,
+        readonly=True)
+
+    archive_url = TextLine(
+        title=_("The url to the list's archives"),
+        description=_(
+            'This is the url to the archive if the mailing list has ever '
+            'activated.  Such a list, even if now inactive, may still have '
+            'an archive.  If the list has never been activated, this will '
+            'be None.'),
+        readonly=True)
 
     def isUsable():
         """Is this mailing list in a state to accept messages?
@@ -364,6 +376,15 @@ class IMailingList(Interface):
         """Delete this mailing list from the database.
 
         Only mailing lists in the REGISTERED state can be deleted.
+        """
+
+    def getSubscription(person):
+        """Get a person's subscription details for the mailing list.
+
+        :param person: The person whose subscription details to get.
+
+        :return: If the person is subscribed to this mailing list, an
+                 IMailingListSubscription. Otherwise, None.
         """
 
     def subscribe(person, address=None):
@@ -473,8 +494,8 @@ class IMailingListSet(Interface):
 
     deactivated_lists = Set(
         title=_('Deactivated lists'),
-        description=_(
-            'All mailing lists with status `MailingListStatus.DEACTIVATING`.'),
+        description=_('All mailing lists with status '
+                      '`MailingListStatus.DEACTIVATING`.'),
         value_type=Object(schema=IMailingList),
         readonly=True)
 

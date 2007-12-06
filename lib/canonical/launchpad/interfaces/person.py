@@ -847,6 +847,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
 
+    # XXX BarryWarsaw 29-Nov-2007 I'd prefer for this to be an Object() with a
+    # schema of IMailingList, but setting that up correctly causes a circular
+    # import error with interfaces.mailinglists that is too difficult to
+    # unfunge for this one attribute.
+    mailing_list = Attribute(
+        _("The team's mailing list, if it has one, otherwise None."))
+
     def getProjectsAndCategoriesContributedTo(limit=10):
         """Return a list of dicts with projects and the contributions made
         by this person on that project.
@@ -894,6 +901,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
+
+        <team> can be the id of a team, an SQLObject representing the
+        ITeam, or the name of the team.
         """
 
     def clearInTeamCache():
