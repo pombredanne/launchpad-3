@@ -9,6 +9,8 @@ __all__ = [
     'BugTrackerType',
     'IBugTracker',
     'IBugTrackerSet',
+    'IBugTrackerAlias',
+    'IBugTrackerAliasSet',
     'IRemoteBug',
     ]
 
@@ -106,7 +108,7 @@ class BugTrackerType(DBEnumeratedType):
 
 
 class IBugTracker(Interface):
-    """A remote a bug system."""
+    """A remote bug system."""
 
     id = Int(title=_('ID'))
     bugtrackertype = Choice(
@@ -140,6 +142,7 @@ class IBugTracker(Interface):
             'example, its administrators can be contacted about a security '
             'breach).'),
         required=False)
+    aliases = Attribute('Other aliases to this bug tracker.')
     watches = Attribute('The remote watches on this bug tracker.')
     projects = Attribute('The projects that use this bug tracker.')
     products = Attribute('The products that use this bug tracker.')
@@ -198,16 +201,36 @@ class IBugTrackerSet(Interface):
     def search():
         """Search all the IBugTrackers in the system."""
 
-    def normalise_baseurl(baseurl):
-        """Turn https into http, so that we do not create multiple
-        bugtrackers unnecessarily."""
-
     def getMostActiveBugTrackers(limit=None):
         """Return the top IBugTrackers.
 
         Returns a list of IBugTracker objects, ordered by the number
         of bugwatches for each tracker, from highest to lowest.
         """
+
+
+class IBugTrackerAlias(Interface):
+    """Another URL for a remote bug system.
+
+       Used to prevent accidental duplication of bugtrackers and so
+       reduce the gardening burden."""
+
+    id = Int(title=_('ID'))
+    bugtracker = Int(title=_('The bugtracker for which this is an alias.'))
+    base_url = BugTrackerBaseURL(
+        title=_('Base URL'),
+        description=_('Another top-level URL for the bug tracker.'))
+
+
+class IBugTrackerAliasSet(Interface):
+    """A set of BugTrackerAliases."""
+
+    def get(bugtracker_alias_id, default=None):
+        """Get a BugTrackerAlias by its id, or return default if it doesn't
+           exist."""
+
+    def queryByBaseURL(baseurl):
+        """Return one or None BugTrackerAliases by baseurl."""
 
 
 class IRemoteBug(Interface):
