@@ -706,7 +706,7 @@ class ProductDownloadFileMixin:
         raise NotImplementedError
 
     def fileURL(self, file_, release=None):
-        """Create a download URL for the file."""
+        """Create a download URL for the `LibraryFileAlias`."""
         if release is None:
             release = self.context
         return "%s/+download/%s" % (canonical_url(release),

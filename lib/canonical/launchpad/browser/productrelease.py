@@ -176,7 +176,7 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
             self.context.addFileAlias(alias=alias,
                                       signature=sig_alias,
                                       uploader=self.user,
-                                      filetype=filetype,
+                                      file_type=filetype,
                                       description=data['description'])
             self.request.response.addNotification(
                 "Your file '%s' has been uploaded." % filename)

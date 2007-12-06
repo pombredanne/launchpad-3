@@ -53,8 +53,8 @@
           <tr>
             <th tal:condition="has_edit" width="10%">Delete</th>
             <th>Download</th>
-            <th>Signature</th>
-            <th width="50%">Description</th>
+            <th>Checksums</th>
+            <th>Description</th>
           </tr>
         </thead>
         <tbody>
@@ -70,13 +70,16 @@
               <img alt="download icon" src="/@@/download" />
               <a tal:attributes="href python:view.fileURL(file.libraryfile)"
                  tal:content="file/libraryfile/filename">filename</a>
-            </td>
-            <td>
               <tal:signature condition="file/signature">
+                <br>
                 <img alt="download icon" src="/@@/download" />
                 <a tal:attributes="href python:view.fileURL(file.signature)"
                    tal:content="file/signature/filename">signature</a>
               </tal:signature>
+            </td>
+            <td>
+              <div tal:content="string: SHA-1: ${file/libraryfile/content/sha1}">SHA-1</div>
+              <div tal:content="string: MD5: ${file/libraryfile/content/md5}">MD5</div>
             </td>
             <td tal:content="file/description">Installer for i386</td>
           </tr>
@@ -103,7 +106,7 @@
   for a release by <a href="+adddownloadfile">adding files for download</a>.
   </p>
   <p>
-  Files are downloadable at <a tal:attributes="href
+  All files for this project are downloadable at <a tal:attributes="href
   string:${context/productseries/product/fmt:url}/+download">the project download area</a>.
   </p>
 </div>
