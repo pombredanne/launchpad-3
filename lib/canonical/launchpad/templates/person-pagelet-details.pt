@@ -73,8 +73,9 @@
       <span id="created-date"
             tal:content="context/datecreated/fmt:date" /><br />
 
-      <strong tal:content="context/subscriptionpolicy/title">
-        Moderated
+      <strong id="subscription-policy"
+              tal:content="context/subscriptionpolicy/title">
+        Moderated Team
       </strong>:
       <tal:description replace="context/subscriptionpolicy/description" />
 
