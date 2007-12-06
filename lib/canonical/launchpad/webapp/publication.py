@@ -287,12 +287,13 @@ class LaunchpadBrowserPublication(
         redirect.
 
         It also sets the launchpad.userid and launchpad.pageid WSGI
-        environment variables. 
+        environment variables.
         """
         if request.response.getStatus() in [301, 302, 303, 307]:
             return ''
 
-        request.setInWSGIEnvironment('launchpad.userid', request.principal.id)
+        request.setInWSGIEnvironment(
+            'launchpad.userid', request.principal.id)
 
         # Pageid is ContextName:ViewName.
         unrestricted_ob = removeSecurityProxy(ob)
@@ -302,7 +303,7 @@ class LaunchpadBrowserPublication(
         else:
             # ZCML registration will set the name under which the view
             # is accessible in the instance __name__ attribute. We use
-            # that if it's available, otherwise fall back to the class 
+            # that if it's available, otherwise fall back to the class
             # name.
             if getattr(unrestricted_ob, '__name__', None) is not None:
                 view_name = unrestricted_ob.__name__
@@ -372,7 +373,7 @@ class LaunchpadBrowserPublication(
 
     def handleException(self, object, request, exc_info, retry_allowed=True):
         # Reraise Retry exceptions rather than log.
-        # XXX stub 20070317: Remove this when the standard 
+        # XXX stub 20070317: Remove this when the standard
         # handleException method we call does this (bug to be fixed upstream)
         if retry_allowed and isinstance(exc_info[1], Retry):
             raise
@@ -384,7 +385,7 @@ class LaunchpadBrowserPublication(
                                    retry_allowed)
         # If it's a HEAD request, we don't care about the body, regardless of
         # exception.
-        # UPSTREAM: Should this be part of zope, 
+        # UPSTREAM: Should this be part of zope,
         #           or is it only required because of our customisations?
         #        - Andrew Bennetts, 2005-03-08
         if request.method == 'HEAD':

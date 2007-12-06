@@ -599,7 +599,7 @@ All the submitted field names can be iterated over:
 == Page ID ==
 
 Our publication implementation sets a WSGI variable 'launchpad.pageid'.
-This is an identifier of the form ContextName:ViewName. 
+This is an identifier of the form ContextName:ViewName.
 
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IPlacelessAuthUtility)
@@ -635,7 +635,7 @@ name of the context class and the view class name.
     TestContext:TestView
 
 ZCML registration of views will set on the view, the name under which it
-was registered. For these views, that's the name that will be used in 
+was registered. For these views, that's the name that will be used in
 the pageid.
 
     >>> view.__name__ = '+test'
