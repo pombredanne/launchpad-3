@@ -4,7 +4,6 @@ __metaclass__ = type
 
 from zope.publisher.publish import mapply
 
-from new import instancemethod
 import thread
 import traceback
 import urllib
@@ -373,8 +372,8 @@ class LaunchpadBrowserPublication(
 
     def handleException(self, object, request, exc_info, retry_allowed=True):
         # Reraise Retry exceptions rather than log.
-        # TODO: Remove this when the standard handleException method
-        # we call does this (bug to be fixed upstream) -- StuartBishop 20060317
+        # XXX stub 20070317: Remove this when the standard 
+        # handleException method we call does this (bug to be fixed upstream)
         if retry_allowed and isinstance(exc_info[1], Retry):
             raise
         # Retry the request if we get a database disconnection.
@@ -385,8 +384,8 @@ class LaunchpadBrowserPublication(
                                    retry_allowed)
         # If it's a HEAD request, we don't care about the body, regardless of
         # exception.
-        # UPSTREAM: Should this be part of zope, or is it only required because
-        #           of our customisations?
+        # UPSTREAM: Should this be part of zope, 
+        #           or is it only required because of our customisations?
         #        - Andrew Bennetts, 2005-03-08
         if request.method == 'HEAD':
             request.response.setResult('')
