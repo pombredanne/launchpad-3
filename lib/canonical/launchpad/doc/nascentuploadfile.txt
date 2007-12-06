@@ -416,7 +416,7 @@ Sub-DSCFiles are DSCUploadedFile objects.
 
   >>> ed_mixed_dsc.files[0]
   <canonical.archiveuploader.dscfile.DSCUploadedFile ...>
-
+5B
 We can also inspect the list of files declared in this DSC:
 
   >>> for dsc_file in ed_mixed_dsc.files:
@@ -436,14 +436,6 @@ The DSCUploadedFile also inherit the ability to verify file sanity:
 
 
 === Sub-DSC file lookup ===
-
-Files mentioned in DSC can be omitted if they are already published
-in the distribution archive.
-
-This way, both ubuntu and PPA uploaders can save bandwidth and rely on
-the already existing upstream tarballs ('orig.tar.gz').
-
-This feature is implemented by DSCFile.checkFiles (DSCFile._getFileByName).
 
 
 == SourceUploadFile ==

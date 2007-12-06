@@ -631,11 +631,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
 
 class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
-    """Functional test for uploadprocessor.py file-lookups in PPA.
-
-    Lower-level tests on the DSCFile.checkFiles and DSCFile._getFileByName
-    are implemented in launchpad/doc/nascentuploadfile.txt.
-    """
+    """Functional test for uploadprocessor.py file-lookups in PPA."""
     # XXX cprov 20071204: the DSCFile tests are not yet implemented, this
     # issue should be addressed by bug #106084, while implementing those
     # tests we should revisit this test-suite checking if we have a
