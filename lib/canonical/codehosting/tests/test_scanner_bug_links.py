@@ -285,9 +285,8 @@ class TestBugLinking(BzrSyncTestCase):
             None,
             "Should not create a BugBranch.")
 
-    def test_ignore_non_existent_bug(self):
-        # If the bug referred to in the revision properties doesn't actually
-        # exist, then we just ignore it.
+    def test_ignoreNonExistentBug(self):
+        """If the bug doesn't actually exist, we just ignore it."""
         self.assertRaises(NotFoundError, getUtility(IBugSet).get, 99999)
         self.assertEqual([], list(self.db_branch.bug_branches))
         self.commitRevision(
@@ -296,9 +295,8 @@ class TestBugLinking(BzrSyncTestCase):
         self.syncBranch()
         self.assertEqual([], list(self.db_branch.bug_branches))
 
-    def test_multiple_bugs(self):
-        # If a property refers to multiple bugs, create BugBranch links for
-        # all of them.
+    def test_multipleBugsInProperty(self):
+        """Create BugBranch links for *all* bugs in the property."""
         self.commitRevision(
             rev_id='rev1',
             revprops={'bugs': '%s fixed\n%s fixed' % (

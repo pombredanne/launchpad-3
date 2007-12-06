@@ -45,6 +45,13 @@ class RevisionModifiedError(Exception):
 
 
 def set_bug_branch_status(bug, branch, status):
+    """Ensure there's a BugBranch for 'bug' and 'branch' set to 'status'.
+
+    This creates a BugBranch if one doesn't exist, and changes the status if
+    it does. If a BugBranch is created, the registrant is the branch owner.
+
+    :return: The updated BugBranch.
+    """
     bug_branch_set = getUtility(IBugBranchSet)
     bug_branch = bug_branch_set.getBugBranch(bug, branch)
     if bug_branch is None:
