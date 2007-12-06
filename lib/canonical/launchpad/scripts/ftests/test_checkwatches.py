@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.event import SQLObjectCreatedEvent
-from canonical.database.sqlbase import commit
+from canonical.database.sqlbase import commit, flush_database_updates
 from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.externalbugtracker import (new_bugtracker,
     TestRoundup)
@@ -37,7 +37,8 @@ class TestCheckwatches(LaunchpadZopelessTestCase):
         self.question = getUtility(IQuestionSet).get(1)
 
         login('test@canonical.com')
-        self.question.linkBug(self.bug)
+        self.questionbug = self.question.linkBug(self.bug)
+        commit()
 
         # For test_can_update_bug_with_questions we also need a bug
         # watch and by extension a bug tracker.
@@ -45,7 +46,7 @@ class TestCheckwatches(LaunchpadZopelessTestCase):
             'test@canonical.com')
         self.bugtracker = new_bugtracker(BugTrackerType.ROUNDUP)
         self.bugtask = getUtility(IBugTaskSet).createTask(self.bug,
-            self. sample_person, product=getUtility(IProductSet).getByName(
+            self.sample_person, product=getUtility(IProductSet).getByName(
             'firefox'))
         self.bugwatch = self.bug.addWatch(self.bugtracker, 1,
             self.sample_person)
