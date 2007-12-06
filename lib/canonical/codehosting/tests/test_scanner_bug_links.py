@@ -6,14 +6,18 @@ __metaclass__ = type
 
 import unittest
 
+import transaction
 from zope.component import getUtility
 
-from canonical.codehosting.scanner.bzrsync import BzrSync
+from canonical.codehosting.scanner.bzrsync import (
+    BzrSync, set_bug_branch_status)
 from canonical.codehosting.tests.test_scanner_bzrsync import BzrSyncTestCase
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     BugBranchStatus, IBugBranchSet, IBugSet, NotFoundError)
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp import errorlog
-
+from canonical.testing import LaunchpadZopelessLayer
 
 
 class OopsLoggingTest(unittest.TestCase):
@@ -175,6 +179,79 @@ class RevisionPropertyParsing(BzrSyncTestCase, OopsLoggingTest):
         self.assertEquals(
             self.errors,
             ['Invalid bug reference: https://launchpad.net/bugs/foo/1234'])
+
+
+class TestMakeBugBranch(unittest.TestCase):
+    """Tests for making a BugBranch link.
+
+    set_bug_branch_status(bug, branch, status) ensures that a link is created
+    between 'bug' and 'branch' and that the relationship is set to 'status'.
+
+    If no such link exists, it creates one. If such a link exists, it updates
+    the status.
+
+    There is an exception: if the status is already set to BESTFIX, then we
+    won't update it. We do this as a simple measure to avoid overwriting data
+    entered on the website.
+    """
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        factory = LaunchpadObjectFactory()
+        self.branch = factory.makeBranch()
+        self.bug = factory.makeBug()
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+
+    def assertStatusEqual(self, bug, branch, status):
+        """Assert that the BugBranch for `bug` and `branch` has `status`.
+
+        Raises an assertion error if there's no such bug.
+        """
+        for bug_branch in branch.bug_branches:
+            if bug_branch.bug.id == bug.id:
+                self.assertEqual(bug_branch.status, status)
+                break
+        else:
+            self.fail('No BugBranch found for %r, %r' % (bug, branch))
+
+    def test_makeNewLink(self):
+        """set_bug_branch_status makes a BugBranch link if one doesn't
+        exist.
+        """
+        set_bug_branch_status(
+            self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
+        self.assertStatusEqual(
+            self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
+
+    def test_updateLinkStatus(self):
+        """If a link already exists, it updates the status."""
+        # Make the initial link.
+        set_bug_branch_status(
+            self.bug, self.branch, BugBranchStatus.INPROGRESS)
+        # Update the status.
+        set_bug_branch_status(
+            self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
+        self.assertStatusEqual(
+            self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
+
+    def test_doesntDowngradeBestFix(self):
+        """set_bug_branch_status doesn't downgrade BESTFIX.
+
+        A BugBranch can have the status 'BESTFIX'. This is generally set on
+        the web ui by someone who has taken the time to review branches. We
+        don't want to override this status if it has been set.
+        """
+        # Make the initial link.
+        set_bug_branch_status(
+            self.bug, self.branch, BugBranchStatus.BESTFIX)
+        # Try to update the status.
+        # XXX: JonathanLange 2007-12-06: Should this raise an exception?
+        set_bug_branch_status(
+            self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
+        self.assertStatusEqual(
+            self.bug, self.branch, BugBranchStatus.BESTFIX)
 
 
 # class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):

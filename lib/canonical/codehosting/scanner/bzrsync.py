@@ -26,7 +26,7 @@ from bzrlib.revision import NULL_REVISION
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BugBranchStatus,
-    ILaunchpadCelebrities, IBranchRevisionSet, IRevisionSet)
+    ILaunchpadCelebrities, IBranchRevisionSet, IBugBranchSet, IRevisionSet)
 from canonical.launchpad.mailnotification import (
     send_branch_revision_notifications)
 from canonical.launchpad.webapp import canonical_url, errorlog
@@ -54,6 +54,16 @@ class BadLineInBugsProperty(Exception):
 class RevisionModifiedError(Exception):
     """An error indicating that a revision has been modified."""
     pass
+
+
+def set_bug_branch_status(bug, branch, status):
+    for bug_branch in branch.bug_branches:
+        if bug_branch.bug.id == bug.id:
+            if bug_branch.status != BugBranchStatus.BESTFIX:
+                bug_branch.status = status
+            return bug_branch
+    return getUtility(IBugBranchSet).new(
+        bug=bug, branch=branch, status=status, registrant=branch.owner)
 
 
 class BzrSync:

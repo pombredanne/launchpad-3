@@ -52,6 +52,10 @@ class BugBranchSet:
 
     implements(IBugBranchSet)
 
+    def new(self, bug, branch, status, registrant):
+        return BugBranch(
+            bug=bug, branch=branch, status=status, registrant=registrant)
+
     def getBugBranchesForBranches(self, branches, user):
         "See IBugBranchSet."
         branch_ids = [branch.id for branch in branches]
