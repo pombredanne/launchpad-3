@@ -8,19 +8,14 @@ __all__ = []
 from unittest import TestLoader
 
 from zope.component import getUtility
-from zope.event import notify
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.event import SQLObjectCreatedEvent
-from canonical.database.sqlbase import commit, flush_database_updates
+from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import login
-from canonical.launchpad.ftests.externalbugtracker import (new_bugtracker,
-    TestRoundup)
+from canonical.launchpad.ftests.externalbugtracker import new_bugtracker
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (BugTaskStatus, BugTrackerType,
-    IBugSet, IBugTaskSet, ILanguageSet, IPersonSet, IProductSet,
-    IQuestionSet)
+    IBugSet, IBugTaskSet, IPersonSet, IProductSet, IQuestionSet)
 
 class TestCheckwatches(LaunchpadZopelessTestCase):
     """Tests for the bugwatch updating system."""
