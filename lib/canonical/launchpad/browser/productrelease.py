@@ -26,7 +26,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 # launchpad
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILibraryFileAliasSet, IProductRelease,
-    IProductReleaseFileAddForm, IProductReleaseSet, UpstreamFileType)
+    IProductReleaseFileAddForm, IProductReleaseSet)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.product import ProductDownloadFileMixin
@@ -141,7 +141,8 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
         file_upload = form.get(self.widgets['filecontent'].name)
         signature_upload = form.get(self.widgets['signature'].name)
         filetype = data['contenttype']
-        # XXX: BradCrittenden 2007-04-26 bug=115215 Write a proper upload widget.
+        # XXX: BradCrittenden 2007-04-26 bug=115215 Write a proper upload
+        # widget.
         if file_upload and data['description']:
             # Replace slashes in the filename with less problematic dashes.
             contentType, encoding = mimetypes.guess_type(file_upload.filename)
