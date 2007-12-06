@@ -51,11 +51,15 @@ def parse_options():
     parser.add_option("-R", "--distsroot",
                       dest="distsroot", metavar="SUFFIX", default=None,
                       help="Override the dists path for generation of the "
-                           "PRIMARY archive only.")
+                           "PRIMARY and PARTNER archives only.")
 
     parser.add_option("--ppa", action="store_true",
                       dest="ppa", metavar="PPA", default=False,
                       help="Run only over PPA archives.")
+
+    parser.add_option("--partner", action="store_true",
+                      dest="partner", metavar="PARTNER", default=False,
+                      help="Run only over the partner archive.")
 
     return parser.parse_args()
 
@@ -96,6 +100,10 @@ def main():
     else:
         log.info("      Indexing: %s" % careful_msg(options.careful_apt))
 
+    if options.partner and options.ppa:
+        log.error("Can only specify one of partner or ppa")
+        return
+
     log.debug("Initialising zopeless.")
 
     txn = initZopeless(dbuser=config.archivepublisher.dbuser)
@@ -120,9 +128,9 @@ def main():
             raise
         allowed_suites.add((distroseries.name, pocket))
 
-    if not options.ppa:
-        archives = distribution.all_distro_archives
-    else:
+    if options.partner:
+        archives = [distribution.getArchiveByComponent('partner')]
+    elif options.ppa:
         if options.careful or options.careful_publishing:
             archives = distribution.getAllPPAs()
         else:
@@ -131,6 +139,8 @@ def main():
         if options.distsroot is not None:
             log.error("We should not define 'distsroot' in PPA mode !")
             return
+    else:
+        archives = [distribution.main_archive]
 
     for archive in archives:
         if archive.purpose != ArchivePurpose.PPA:
@@ -139,8 +149,9 @@ def main():
         else:
             log.info("Processing %s" % archive.archive_url)
 
-        # Only let the primary archive override the distsroot.
-        if archive.purpose == ArchivePurpose.PRIMARY:
+        # Only let the primary/partner archives override the distsroot.
+        if archive.purpose in (ArchivePurpose.PRIMARY,
+                ArchivePurpose.PARTNER):
             publisher = getPublisher(
                 archive, allowed_suites, log, options.distsroot)
         else:

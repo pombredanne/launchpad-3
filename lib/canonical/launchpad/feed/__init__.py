@@ -2,4 +2,5 @@
 
 """Feeds symbols."""
 
+from canonical.launchpad.feed.announcement import *
 from canonical.launchpad.feed.bug import *
