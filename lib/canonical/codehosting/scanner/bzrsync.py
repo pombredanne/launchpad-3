@@ -12,6 +12,8 @@ __all__ = [
 import logging
 from datetime import datetime, timedelta
 from StringIO import StringIO
+import sys
+import urlparse
 
 import pytz
 from zope.component import getUtility
@@ -23,12 +25,30 @@ from bzrlib.revision import NULL_REVISION
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel, ILaunchpadCelebrities,
-    IBranchRevisionSet, IRevisionSet)
+    BranchSubscriptionNotificationLevel, BugBranchStatus,
+    ILaunchpadCelebrities, IBranchRevisionSet, IRevisionSet)
 from canonical.launchpad.mailnotification import (
     send_branch_revision_notifications)
+from canonical.launchpad.webapp import canonical_url, errorlog
 
 UTC = pytz.timezone('UTC')
+
+
+def log_failure(branch, message, logger):
+    """Log diagnostic for branches that had problems during scanning."""
+    request = errorlog.ScriptRequest([
+        ('branch.id', branch.id),
+        ('branch.unique_name', branch.unique_name),
+        ('branch.url', branch.url),
+        ('branch.warehouse_url', branch.warehouse_url),
+        ('error-explanation', message)])
+    request.URL = canonical_url(branch)
+    errorlog.globalErrorUtility.raising(sys.exc_info(), request)
+    logger.info('%s: %s', request.oopsid, message)
+
+
+class BadLineInBugsProperty(Exception):
+    """Raised when the scanner encounters a bad line in a bug property."""
 
 
 class RevisionModifiedError(Exception):
@@ -89,6 +109,74 @@ class BzrSync:
         self.bzr_branch = None
         self.db_branch = None
         self.bzr_history = None
+
+    def _parseBugLine(self, line):
+        """Parse a line from a bug property.
+
+        :param line: A line from a Bazaar bug property.
+        :raise BadLineInBugsProperty: if the line is invalid.
+        :return: (bug_url, bug_id) if the line is good, None if the line
+            should be skipped.
+        """
+        valid_statuses = {'fixed': BugBranchStatus.FIXAVAILABLE}
+        line = line.strip()
+
+        # Skip blank lines.
+        if len(line) == 0:
+            return None
+
+        # Lines must be <url> <status>.
+        try:
+            url, status = line.split(None, 2)
+        except ValueError:
+            raise BadLineInBugsProperty('Invalid line: %r' % line)
+        protocol, host, path, ignored, ignored = urlparse.urlsplit(url)
+
+        # Skip URLs that don't point to Launchpad.
+        if host != 'launchpad.net':
+            return None
+
+        # Don't allow Launchpad URLs that aren't /bugs/<integer>.
+        try:
+            bug_segment, bug_id = filter(None, path.split('/'))
+            if bug_segment != 'bugs':
+                raise ValueError('Bad path segment')
+            bug = int(path.split('/')[-1])
+        except ValueError:
+            raise BadLineInBugsProperty('Invalid bug reference: %s' % url)
+
+        # Make sure the status is acceptable.
+        try:
+            status = valid_statuses[status.lower()]
+        except KeyError:
+            raise BadLineInBugsProperty('Invalid bug status: %r' % status)
+        return bug, status
+
+    def logFailure(self, message=None):
+        """Register a failure in scanning the branch. Generates an OOPS."""
+        log_failure(self.db_branch, message, self.logger)
+
+    def extractBugInfo(self, bug_property):
+        """Parse bug information out of the given revision property.
+
+        Any errors that occur during parsing will generate OOPS reports.
+
+        :param bug_status_prop: A string containing lines of
+            '<bug_url> <status>'.
+        :return: dict mapping bug IDs to BugBranchStatuses.
+        """
+        bug_statuses = {}
+        for line in bug_property.splitlines():
+            try:
+                parsed_line = self._parseBugLine(line)
+                if parsed_line is None:
+                    continue
+                bug, status = parsed_line
+            except BadLineInBugsProperty, e:
+                self.logFailure(str(e))
+                continue
+            bug_statuses[bug] = status
+        return bug_statuses
 
     def syncBranchAndClose(self):
         """Synchronize the database with a Bazaar branch and release resources.
