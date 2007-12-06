@@ -261,8 +261,8 @@ class BugTaskSetFindExpirableBugTasksTest(LaunchpadFunctionalTestCase):
             expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
                 0, target=target)
             self.assertEqual(len(expirable_bugtasks), 1,
-                         "%s has %d expirable bugtasks." %
-                         (self.distroseries, len(expirable_bugtasks)))
+                 "%s has %d expirable bugtasks." %
+                 (self.distroseries, len(expirable_bugtasks)))
 
     def testUnsupportedBugTargetParam(self):
         """Test that unsupported targets raise errors.
