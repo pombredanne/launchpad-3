@@ -778,8 +778,8 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     field_names = [
         "displayname", "title", "summary", "description",
         "bug_reporting_guidelines", "project", "bugtracker",
-        "official_rosetta", "official_answers", "homepageurl",
-        "sourceforgeproject", "freshmeatproject", "wikiurl",
+        "enable_bug_expiration", "official_rosetta", "official_answers",
+        "homepageurl", "sourceforgeproject", "freshmeatproject", "wikiurl",
         "screenshotsurl", "downloadurl", "programminglang",
         "development_focus", "licenses", "license_info"]
     custom_widget(
