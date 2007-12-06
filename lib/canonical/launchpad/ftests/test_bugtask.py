@@ -9,10 +9,11 @@ import unittest
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.ftests.bug import create_old_bug, sync_bugtasks
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IBugSet, IDistributionSet, IUpstreamBugTask, IBugTaskSet,
-    ILaunchBag, IBugWatchSet, IProductSet)
+    BugTaskStatus, IBugSet, IBugTaskSet, IBugWatchSet, IDistributionSet,
+    ILaunchBag, IProductSet, IProjectSet, IUpstreamBugTask)
 
 
 class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
@@ -27,6 +28,7 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
             LaunchpadFunctionalTestCase.__init__(self, methodName=methodName)
 
     def setUp(self):
+        """."""
         LaunchpadFunctionalTestCase.setUp(self)
         distroset = getUtility(IDistributionSet)
 
@@ -220,10 +222,93 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
                 bugtask.id, bugtask.target.displayname))
 
 
+class BugTaskSetFindExpirableBugTasksTestCase(LaunchpadFunctionalTestCase):
+    """Test `BugTaskSet.findExpirableBugTasks()` behaviour."""
+
+    def setUp(self):
+        """Setup the zope interaction and create expirable bugtasks."""
+        LaunchpadFunctionalTestCase.setUp(self)
+        self.login('test@canonical.com')
+        user = getUtility(ILaunchBag).user
+        self.distribution = getUtility(IDistributionSet).getByName('ubuntu')
+        self.distroseries = self.distribution.getSeries('hoary')
+        self.product = getUtility(IProductSet).getByName('jokosher')
+        self.productseries = self.product.getSeries('trunk')
+        self.bugtaskset = getUtility(IBugTaskSet)
+        bugtasks = []
+        bugtasks.append(
+            create_old_bug("90 days old", 90, self.distribution))
+        bugtasks.append(
+            self.bugtaskset.createTask(
+                bug=bugtasks[-1].bug, owner=user,
+                distroseries=self.distroseries))
+        bugtasks.append(
+            create_old_bug("90 days old", 90, self.product))
+        bugtasks.append(
+            self.bugtaskset.createTask(
+                bug=bugtasks[-1].bug, owner=user,
+                productseries=self.productseries))
+        sync_bugtasks(bugtasks)
+
+    def testTargetParam(self):
+        """The target param supports a limited set of BugTargets."""
+        # Four BugTarget types may passed as the target argument:
+        # Distribution, DistroSeries, Product, ProductSeries.
+        expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
+            0, target=self.distribution)
+        self.assert_(len(expirable_bugtasks) == 1,
+                    "%s has %d expirable bugtasks." %
+                    (self.distribution, len(expirable_bugtasks)))
+
+        expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
+            0, target=self.distroseries)
+        self.assert_(len(expirable_bugtasks) == 1,
+                    "%s has %d expirable bugtasks." %
+                    (self.distroseries, len(expirable_bugtasks)))
+
+        expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
+            0, target=self.product)
+        self.assert_(len(expirable_bugtasks) == 1,
+                    "%s has %d expirable bugtasks." %
+                    (self.product, len(expirable_bugtasks)))
+
+        expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
+            0, target=self.productseries)
+        self.assert_(len(expirable_bugtasks) == 1,
+                    "%s has %d expirable bugtasks." %
+                    (self.productseries, len(expirable_bugtasks)))
+
+        # Three BugTarget types are not supported because the UI does not
+        # provide bug-index to link to the 'bugs that can expire' page.
+        # Project, SourcePackage, and DistributionSourcePackage will
+        # raise an AssertionError.
+        project = getUtility(IProjectSet).getByName('mozilla')
+        self.assertRaises(
+            NotImplementedError, self.bugtaskset.findExpirableBugTasks,
+            0, target=project)
+        distributionsourcepackage = self.distribution.getSourcePackage(
+            'mozilla-firefox')
+        self.assertRaises(
+            NotImplementedError, self.bugtaskset.findExpirableBugTasks,
+            0, target=distributionsourcepackage)
+        sourcepackage = self.distroseries.getSourcePackage(
+            'mozilla-firefox')
+        self.assertRaises(
+            NotImplementedError, self.bugtaskset.findExpirableBugTasks,
+            0, target=sourcepackage)
+
+        # Objects that are not a known BugTarget type raise an AssertionError.
+        self.assertRaises(
+            AssertionError, self.bugtaskset.findExpirableBugTasks,
+            0, target=[])
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(BugTaskSearchBugsElsewhereTest))
+    suite.addTest(unittest.makeSuite(BugTaskSetFindExpirableBugTasksTestCase))
     return suite
+
 
 if __name__ == '__main__':
     unittest.main()
