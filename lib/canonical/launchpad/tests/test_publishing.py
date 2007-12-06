@@ -68,7 +68,8 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
         return getUtility(ILibraryFileAliasSet)[alias_id]
 
     def getPubSource(self, sourcename='foo', version='666', component='main',
-                     filename=None, filecontent='I do not care about sources.',
+                     filename=None,
+                     filecontent='I do not care about sources.',
                      status=PackagePublishingStatus.PENDING,
                      pocket=PackagePublishingPocket.RELEASE,
                      scheduleddeletiondate=None, dateremoved=None,

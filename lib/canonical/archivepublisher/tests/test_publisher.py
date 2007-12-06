@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import gzip
 import os
+import pytz
 import shutil
 import stat
 import tempfile
@@ -521,9 +522,10 @@ class TestPublisher(TestNativePublishingBase):
         existing_num_dirty = len(publisher.dirty_pockets)
 
         # There should be none.
-        self.assertTrue(existing_num_dirty == 0,
+        self.assertEqual(
+            existing_num_dirty, 0,
             "Expected no existing dirty pockets, got %d" %
-            existing_num_dirty)
+                existing_num_dirty)
 
         # Make a published source, a source that's been removed from disk
         # and one that's waiting to be deleted, each in different pockets.
@@ -546,23 +548,25 @@ class TestPublisher(TestNativePublishingBase):
             pocket=PackagePublishingPocket.BACKPORTS,
             status=PackagePublishingStatus.DELETED)
 
-        self.layer.txn.commit()
-
         # Run the deletion detection.
         publisher.A2_markPocketsWithDeletionsDirty()
 
         # There should now be two dirty pockets.
         num_dirtied = len(publisher.dirty_pockets)
-        self.assertTrue(num_dirtied == 2,
+        self.assertEqual(
+            num_dirtied, 2,
             "Expected 2 dirty pockets, got %d" % num_dirtied)
 
         # The security pocket is dirtied by deleted_source, and the backports
         # is dirtied by deleted_binary.
-        [(source_distroname, source_pocket),
-         (binary_distroname, binary_pocket)] = publisher.dirty_pockets
-        self.assertTrue(binary_pocket == PackagePublishingPocket.SECURITY,
+        sorted_pocket_list = sorted(list(publisher.dirty_pockets))
+        [(binary_distroname, binary_pocket),
+        (source_distroname, source_pocket)] = sorted_pocket_list
+        self.assertEqual(
+            binary_pocket, PackagePublishingPocket.SECURITY,
             "Expected security pocket, got %s" % binary_pocket)
-        self.assertTrue(source_pocket == PackagePublishingPocket.BACKPORTS,
+        self.assertEqual(
+            source_pocket, PackagePublishingPocket.BACKPORTS,
             "Expected backports pocket, got %s" % source_pocket)
 
     def testCarefulDominationOnDevelopmentSeries(self):
@@ -611,20 +615,30 @@ class TestPublisher(TestNativePublishingBase):
         #
         # Hopefully I crafted this check well enough so not to cause a time
         # bomb for the test harness.
+        UTC = pytz.timezone("UTC")
         self.assertEqual(
             superseded_source.status, PackagePublishingStatus.SUPERSEDED)
-        expected_date = datetime.utcnow() + timedelta(
+        expected_date = datetime.now(UTC) + timedelta(
             days=publisher._config.stayofexecution)
+        date_diff = expected_date - superseded_source.scheduleddeletiondate
         self.assertTrue(
-            superseded_source.scheduleddeletiondate.day == expected_date.day,
-            "SUPERSEDED scheduleddeletiondate.day is %s, expected %s" % (
-                superseded_source.scheduleddeletiondate.day,
-                expected_date.day))
+            date_diff.seconds < 60,
+            "SUPERSEDED scheduleddeletiondate is %s, expected %s within "
+            "a 60 seconds tolerance" % (
+                superseded_source.scheduleddeletiondate,
+                expected_date))
+
         self.assertEqual(
             deleted_source.status, PackagePublishingStatus.DELETED)
+        expected_date = datetime.now(UTC)
+        date_diff = (
+            expected_date - deleted_source.scheduleddeletiondate)
         self.assertTrue(
-            deleted_source.scheduleddeletiondate.day == datetime.utcnow().day,
-            "DELETED scheduleddeletiondate.day is not today")
+            date_diff.seconds < 60,
+            "DELETED scheduleddeletiondate is %s, expected %s within "
+            "a 60 seconds tolerance" % (
+                deleted_source.scheduleddeletiondate,
+                expected_date))
 
         # OBSOLETE does not go through domination so I don't care too much
         # what its scheduleddeletiondate is, as long as it's set.

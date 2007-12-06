@@ -227,22 +227,26 @@ class Publisher(object):
         # Loop for each pocket in each distroseries:
         for distroseries in self.distro.serieses:
             for pocket, suffix in pocketsuffix.items():
-                # Append the pocket part to the base query.
-                query = base_query + "\nAND pocket = %s" % sqlvalues(pocket)
+                clauses = [base_query]
+                clauses.append("pocket = %s" % sqlvalues(pocket))
+                clauses.append("distroseries = %s" % sqlvalues(distroseries))
 
                 # Make the source publications query.
-                source_query = query + "\nAND distroseries = %s" % sqlvalues(
-                    distroseries)
+                source_query = " AND ".join(clauses)
                 sources = SourcePackagePublishingHistory.select(source_query)
                 if sources.count() > 0:
                     self.dirty_pockets.add((distroseries.name, pocket))
+                    # No need to check binaries if the pocket is already
+                    # dirtied from a source.
+                    continue
 
                 # Make the binary publications query.
-                binary_query = query + """
-                    AND
-                    DistroArchSeries = DistroArchSeries.id AND
-                    DistroArchSeries.distroseries = %s
-                    """ % sqlvalues(distroseries)
+                clauses = [base_query]
+                clauses.append("pocket = %s" % sqlvalues(pocket))
+                clauses.append("DistroArchSeries = DistroArchSeries.id")
+                clauses.append("DistroArchSeries.distroseries = %s" %
+                    sqlvalues(distroseries))
+                binary_query = " AND ".join(clauses)
                 binaries = BinaryPackagePublishingHistory.select(binary_query,
                     clauseTables=['DistroArchSeries'])
                 if binaries.count() > 0:

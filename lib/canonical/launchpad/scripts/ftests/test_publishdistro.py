@@ -56,9 +56,9 @@ class TestPublishDistro(TestNativePublishingBase):
         # This should really be its own test but I want to avoid additional
         # calls to runPublishDistro where possible because it is calling a
         # script, which considerably slows down the test harness.  A separate
-        # test would mean an additional call to the script to set things up.
-        # We need to refactor publish-distro so its internals can be called
-        # from this test harness.
+        # test would mean *two* calls to the script; one to set things up and
+        # one one to do the test.  We need to refactor publish-distro so its
+        # internals can be called from this test harness.
         random_person = getUtility(IPersonSet).getByName('name16')
         pub_source.requestDeletion(random_person)
         self.layer.txn.commit()
