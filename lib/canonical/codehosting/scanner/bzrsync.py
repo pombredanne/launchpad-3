@@ -34,19 +34,6 @@ from canonical.launchpad.webapp import canonical_url, errorlog
 UTC = pytz.timezone('UTC')
 
 
-def log_failure(branch, message, logger):
-    """Log diagnostic for branches that had problems during scanning."""
-    request = errorlog.ScriptRequest([
-        ('branch.id', branch.id),
-        ('branch.unique_name', branch.unique_name),
-        ('branch.url', branch.url),
-        ('branch.warehouse_url', branch.warehouse_url),
-        ('error-explanation', message)])
-    request.URL = canonical_url(branch)
-    errorlog.globalErrorUtility.raising(sys.exc_info(), request)
-    logger.info('%s: %s', request.oopsid, message)
-
-
 class BadLineInBugsProperty(Exception):
     """Raised when the scanner encounters a bad line in a bug property."""
 
@@ -163,10 +150,6 @@ class BzrSync:
             raise BadLineInBugsProperty('Invalid bug status: %r' % status)
         return bug, status
 
-    def logFailure(self, message=None):
-        """Register a failure in scanning the branch. Generates an OOPS."""
-        log_failure(self.db_branch, message, self.logger)
-
     def extractBugInfo(self, bug_property):
         """Parse bug information out of the given revision property.
 
@@ -184,7 +167,6 @@ class BzrSync:
                     continue
                 bug, status = parsed_line
             except BadLineInBugsProperty, e:
-                self.logFailure(str(e))
                 continue
             bug_statuses[bug] = status
         return bug_statuses

@@ -20,38 +20,7 @@ from canonical.launchpad.webapp import errorlog
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class OopsLoggingTest(unittest.TestCase):
-    """Test that temporarily disables the default OOPS reporting and instead
-    keeps any OOPSes in a list on the instance.
-
-    :ivar oopses: A list of oopses, [(info, request, now), ...].
-    """
-
-    def setUp(self):
-        self.oopses = []
-        self._globalErrorUtility = errorlog.globalErrorUtility
-        errorlog.globalErrorUtility = self
-
-    def tearDown(self):
-        self.flushOopses()
-        errorlog.globalErrorUtility = self._globalErrorUtility
-
-    def flushOopses(self):
-        del self.oopses[:]
-
-    def raising(self, info, request=None, now=None):
-        self.oopses.append((info, request, now))
-
-    @property
-    def errors(self):
-        """Return a list of strings of errors logged via OOPS."""
-        errors = []
-        for exc_info, script_request, ignored in self.oopses:
-            errors.append(str(exc_info[1]))
-        return errors
-
-
-class RevisionPropertyParsing(BzrSyncTestCase, OopsLoggingTest):
+class RevisionPropertyParsing(BzrSyncTestCase):
     """Tests for parsing the bugs revision property.
 
     The bugs revision property holds information about Launchpad bugs which are
@@ -63,8 +32,7 @@ class RevisionPropertyParsing(BzrSyncTestCase, OopsLoggingTest):
     entry is of the form '<bug_id> <status>', where '<bug_id>' is the URL for a
     page that describes the bug, and status is one of 'fixed' or 'inprogress'.
 
-    In general, the parser skips over any lines with errors, generating an OOPS
-    error for the bad input.
+    In general, the parser skips over any lines with errors.
 
     Blank lines and extraneous whitespace are ignored. URLs for non-Launchpad
     bugs are ignored. The '<status>' field is case-insensitive.
@@ -75,7 +43,6 @@ class RevisionPropertyParsing(BzrSyncTestCase, OopsLoggingTest):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        OopsLoggingTest.setUp(self)
         self.bzrsync = self.makeBzrSync()
 
     def test_single(self):
@@ -83,7 +50,6 @@ class RevisionPropertyParsing(BzrSyncTestCase, OopsLoggingTest):
         # mapping the bug_id to the status.
         bugs = self.bzrsync.extractBugInfo(
             "https://launchpad.net/bugs/9999 fixed")
-        self.assertEquals([], self.errors)
         self.assertEquals(bugs, {9999: BugBranchStatus.FIXAVAILABLE})
 
     def test_multiple(self):
@@ -101,13 +67,10 @@ class RevisionPropertyParsing(BzrSyncTestCase, OopsLoggingTest):
         self.assertEquals(bugs, {})
 
     def test_bad_status(self):
-        # If the given status is invalid or mispelled, then skip it, generate
-        # an OOPS, and continue processing.
+        # If the given status is invalid or mispelled, then skip it.
         bugs = self.bzrsync.extractBugInfo(
             'https://launchpad.net/bugs/9999 faxed')
         self.assertEquals(bugs, {})
-        self.assertEquals(
-            self.errors, ['Invalid bug status: %r' % 'faxed'])
 
     def test_continues_processing_on_error(self):
         # Bugs that are mentioned after a bad line are still processed.
@@ -115,45 +78,32 @@ class RevisionPropertyParsing(BzrSyncTestCase, OopsLoggingTest):
             'https://launchpad.net/bugs/9999 faxed\n'
             'https://launchpad.net/bugs/8888 fixed')
         self.assertEquals(bugs, {8888: BugBranchStatus.FIXAVAILABLE})
-        self.assertEquals(
-            self.errors, ['Invalid bug status: %r' % 'faxed'])
 
     def test_bad_bug(self):
         # If the given bug is not a valid integer, then skip it, generate an
         # OOPS and continue processing.
-        bugs = self.bzrsync.extractBugInfo(
-            'https://launchpad.net/~jml fixed')
+        bugs = self.bzrsync.extractBugInfo('https://launchpad.net/~jml fixed')
         self.assertEquals(bugs, {})
-        self.assertEquals(
-            self.errors,
-            ['Invalid bug reference: https://launchpad.net/~jml'])
 
     def test_non_launchpad_bug(self):
-        # References to bugs on sites other than launchpad are ignored. No
-        # OOPS is generated.
+        # References to bugs on sites other than launchpad are ignored.
         bugs = self.bzrsync.extractBugInfo(
             'http://bugs.debian.org/1234 fixed')
         self.assertEquals(bugs, {})
-        self.assertEquals(self.errors, [])
 
     def test_bad_line(self):
         # If the line is malformed (doesn't contain enough fields), then skip
-        # it, generate an OOPS and continue processing.
-        bugs = self.bzrsync.extractBugInfo(
-            'https://launchpad.net/bugs/9999')
+        # it.
+        bugs = self.bzrsync.extractBugInfo('https://launchpad.net/bugs/9999')
         self.assertEquals(bugs, {})
-        self.assertEquals(
-            self.errors,
-            ['Invalid line: %r' % 'https://launchpad.net/bugs/9999'])
 
     def test_blank_lines(self):
-        # Blank lines should be silently ignored.
+        # Blank lines are silently ignored.
         bugs = self.bzrsync.extractBugInfo(
             'https://launchpad.net/bugs/9999 fixed\n\n\n'
             'https://launchpad.net/bugs/8888 fixed\n\n')
         self.assertEquals(bugs, {9999: BugBranchStatus.FIXAVAILABLE,
                                  8888: BugBranchStatus.FIXAVAILABLE})
-        self.assertEquals(self.errors, [])
 
     def test_duplicated_line(self):
         # If a particular line is duplicated, silently ignore the duplicates.
@@ -163,22 +113,13 @@ class RevisionPropertyParsing(BzrSyncTestCase, OopsLoggingTest):
         self.assertEquals(bugs, {9999: BugBranchStatus.FIXAVAILABLE})
 
     def test_strict_url_checking(self):
-        # Raise an error for a URL that looks like a Launchpad bug URL but
-        # isn't.
+        # Ignore URLs that look like a Launchpad bug URL but aren't.
         bugs = self.bzrsync.extractBugInfo(
             'https://launchpad.net/people/1234 fixed')
         self.assertEquals(bugs, {})
-        self.assertEquals(
-            self.errors,
-            ['Invalid bug reference: https://launchpad.net/people/1234'])
-
-        self.flushOopses()
         bugs = self.bzrsync.extractBugInfo(
             'https://launchpad.net/bugs/foo/1234 fixed')
         self.assertEquals(bugs, {})
-        self.assertEquals(
-            self.errors,
-            ['Invalid bug reference: https://launchpad.net/bugs/foo/1234'])
 
 
 class TestMakeBugBranch(unittest.TestCase):
@@ -263,6 +204,14 @@ class TestMakeBugBranch(unittest.TestCase):
             self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
         self.assertStatusEqual(
             self.bug, self.branch, BugBranchStatus.BESTFIX)
+
+
+class TestBugLinking:
+    """Tests for creating BugBranch items on scanning branches.
+
+    We create a BugBranch item if we find a good 'bugs' property in a new
+    mainline revision of a branch.
+    """
 
 
 # class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):
