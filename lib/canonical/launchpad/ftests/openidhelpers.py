@@ -142,6 +142,9 @@ def make_identifier_select_endpoint(protocol_uri):
 def maybe_fixup_identifier_select_request(consumer, claimed_id):
     """Fix up an OpenID 1.x identifier select request.
 
+    :arg consumer: an OpenID `Consumer` instance.
+    :arg claimed_id: the expected claimed ID for the response.
+
     OpenID 1.x does not support identifier select, so responses using
     our non-standard identifier select mode appear to be corrupt.
 
@@ -164,6 +167,11 @@ def maybe_fixup_identifier_select_request(consumer, claimed_id):
 
 def complete_from_browser(consumer, browser, expected_claimed_id=None):
     """Complete OpenID request based on output of +openid-consumer.
+
+    :arg consumer: an OpenID `Consumer` instance.
+    :arg browser: a Zope testbrowser `Browser` instance.
+    :arg expected_claimed_id: the expected claimed ID for the response,
+        or None if the request did not use identifier select mode.
 
     This function parses the body of the +openid-consumer view into a
     set of query arguments representing the OpenID response.
