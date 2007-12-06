@@ -19,7 +19,7 @@ This is controlled by a config variable.
 
     >>> config.launchpad.is_demo = False
     >>> browser.open('http://launchpad.dev')
-    >>> 'demo' in browser.contents.lower()
+    >>> 'DEMO' in browser.contents
     False
 
 We could hard code this behavior for certain database names, as was done

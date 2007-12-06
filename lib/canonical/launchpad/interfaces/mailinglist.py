@@ -378,6 +378,15 @@ class IMailingList(Interface):
         Only mailing lists in the REGISTERED state can be deleted.
         """
 
+    def getSubscription(person):
+        """Get a person's subscription details for the mailing list.
+
+        :param person: The person whose subscription details to get.
+
+        :return: If the person is subscribed to this mailing list, an
+                 IMailingListSubscription. Otherwise, None.
+        """
+
     def subscribe(person, address=None):
         """Subscribe a person to the mailing list.
 
