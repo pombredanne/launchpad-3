@@ -61,7 +61,7 @@ class ProcessUpload(LaunchpadScript):
             metavar="ANNOUNCELIST", help="Override the announcement list")
 
     def main(self):
-        if not self.args:
+        if len(self.args) != 1:
             raise LaunchpadScriptFailure(
                 "Need to be given exactly one non-option "
                 "argument, namely the fsroot for the upload.")

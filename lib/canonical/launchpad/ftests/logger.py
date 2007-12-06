@@ -11,8 +11,7 @@ import logging
 # launchpad.scripts.logger.FakeLogger at some point.
 
 class MockLogger:
-    """Imitates a logger, but prints to standard output.
-    """
+    """Imitates a logger, but prints to standard output."""
     loglevel = logging.INFO
 
     def setLevel(self, loglevel):

@@ -92,15 +92,16 @@ Add disk content for file inherited from ubuntu/breezy-autotest:
 
 Now that the infrastructure is ready, we prepare a set of useful methods.
 
-Firstly, we need a way to copy a test upload into the queue
+Firstly, we need a way to copy a test upload into the queue (but skip
+lock files, which have names starting with a dot).
 
   >>> from canonical.archiveuploader.tests import datadir
   >>> def punt_upload_into_queue(leaf, distro):
   ...     inc_dir = os.path.join(incoming_dir, leaf, distro)
   ...     os.makedirs(inc_dir)
   ...     for file_leaf in os.listdir(datadir(os.path.join("suite", leaf))):
-  ...         os.system("cp %s %s" %
-  ...             (datadir(os.path.join("suite", leaf, file_leaf)), inc_dir))
+  ...         os.system("cp %s %s" % (
+  ...             datadir(os.path.join("suite", leaf, file_leaf)), inc_dir))
 
 We need a way to count the items in a queue directory
 
@@ -133,10 +134,12 @@ And then we need a way to process the uploads from the queue
   ...         args.extend(["-b", build_id])
   ...     if series is not None:
   ...         args.extend(["-s", series])
+  ...     # Run script under 'uploader' DB user.  The dbuser argument to the
+  ...     # script constructor is ignored, so we must change DB users here.
   ...     LaunchpadZopelessLayer.txn.commit()
   ...     LaunchpadZopelessLayer.switchDbUser(config.uploader.dbuser)
   ...     process = ProcessUpload(
-  ...         'process-upload', dbuser=config.uploader.dbuser, test_args=args)
+  ...         'process-upload', dbuser='ignored', test_args=args)
   ...     process.logger = MockLogger()
   ...     if loglevel is not None:
   ...         process.logger.setLevel(loglevel)
@@ -234,7 +237,14 @@ A helper function, simulate_upload does that with all the checking.
   ...     """Process upload(s).  Options are as for process_uploads()."""
   ...     punt_upload_into_queue(leafname, distro=distro)
   ...     process_uploads(upload_policy, build_id, series, loglevel)
-  ...     assert (len(os.listdir(incoming_dir)) == 0,
+  ...     # We seem to be leaving a lock file behind here for some reason.
+  ...     # Naturally it doesn't count as an unprocessed incoming file, which
+  ...     # is what we're really looking for.
+  ...     # XXX: JeroenVermeulen 2007-11-07: why this lock file?
+  ...     lockfile = os.path.join(incoming_dir, '.lock')
+  ...     if os.access(lockfile, os.F_OK):
+  ...         os.remove(lockfile)
+  ...     assert len(os.listdir(incoming_dir)) == 0, (
   ...         "Incoming should be empty: %s" % os.listdir(incoming_dir))
   ...
   ...     rejected_contents = os.listdir(rejected_dir)
@@ -244,16 +254,17 @@ A helper function, simulate_upload does that with all the checking.
   ...         print "Rejected uploads: %s" % rejected_contents
   ...         return
   ...
-  ...     assert (len(os.listdir(failed_dir)) == 0,
+  ...     assert len(os.listdir(failed_dir)) == 0, (
   ...         "Failed should be empty: %s" % os.listdir(failed_dir))
   ...     if is_new:
   ...         process_new(distro=distro, series=series)
   ...     process_accepted(distro=distro)
-  ...     assert (simple_publish(distro=distro),
+  ...     assert simple_publish(distro=distro), (
   ...             "Should publish at least one item")
-  ...     if not (loglevel is not None and loglevel > logging.INFO):
+  ...     if loglevel is None or loglevel <= logging.INFO:
   ...         print "done"
 
+  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
   >>> def read_email():
   ...     """Pop an email from the test mailbox, and summarize it."""
   ...     sender, recipients, text = stub.test_emails.pop()
@@ -276,10 +287,7 @@ source, then a new binary, then an overridable source and then an
 overridable binary. This tests the simple overriding of both sources
 and arch-independent binaries.
 
-  >>> simulate_upload('bar_1.0-1', is_new=True, loglevel=logging.INFO)
-  log> Processing upload
-  ...
-  done
+  >>> simulate_upload('bar_1.0-1', is_new=True)
 
   >>> simulate_upload('bar_1.0-1_binary', is_new=True)
 
@@ -295,7 +303,8 @@ Check the rejection of bar_1.0-2_binary when uploaded to the wrong build id.
   ...
   Rejected uploads: ['bar_1.0-2_binary']
 
-Try it again without the bogus build id.
+Try it again without the bogus build id.  This succeeds without
+complaints.
 
   >>> simulate_upload('bar_1.0-2_binary')
 
@@ -354,10 +363,9 @@ Revert changes:
 
 Check if we forcibly add the changer as recipient for "sync" uploads,
 which contains unsigned changesfile. Ensure it sends email to the
-changer and the distroseries changes mailing list..
+changer.
 
-  >>> while stub.test_emails:
-  ...     dummy = stub.test_emails.pop()
+  >>> stub.test_emails = []
 
   >>> simulate_upload('bar_1.0-5', upload_policy='sync')
   >>> read_email()
@@ -642,7 +650,7 @@ First a couple helpers.
   >>> import stat
   >>> import subprocess
   >>> import sys
-  >>> from canonical.launchpad.helpers import run_script
+  >>> from canonical.launchpad.ftests.script import run_script
 
   >>> def run_publish_distro(careful=False, careful_publishing=False):
   ...     """Run publish-distro on ubuntutest with given extra args.
