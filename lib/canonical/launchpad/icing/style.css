@@ -133,8 +133,8 @@ td.error {
   background-image: url(/@@/info);
 }
 /* Guidelines, e.g. bug reporting guidelines. Content is typically
- * rendered by text-to-html, so the only child elements are expected
- * to be paragraphs.
+ * provided by users, and rendered by text-to-html. Child elements
+ * are thus expected to be paragraphs.
  */
 .guidelines {
   font-weight: bold;

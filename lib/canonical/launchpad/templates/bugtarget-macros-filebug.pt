@@ -2,15 +2,15 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
-<metal:basic_filebug_widgets metal:define-macro="basic_filebug_widgets">
+<metal:basic_filebug_widgets define-macro="basic_filebug_widgets">
 
   <metal:bug_reporting_guidelines
-      metal:use-macro="context/@@+filebug-macros/bug_reporting_guidelines" />
+      use-macro="context/@@+filebug-macros/bug_reporting_guidelines" />
 
   <tal:bugtarget
       tal:define="widget nocall:view/widgets/bugtarget|nothing"
       tal:condition="widget">
-    <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+    <metal:widget use-macro="context/@@launchpad_form/widget_row" />
   </tal:bugtarget>
 
   <tr tal:condition="view/widgets/packagename|nothing">
@@ -50,7 +50,7 @@
 
   <tal:product tal:define="widget nocall:view/widgets/product|nothing"
                tal:condition="widget">
-    <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+    <metal:widget use-macro="context/@@launchpad_form/widget_row" />
   </tal:product>
 
   <metal:summary tal:define="widget nocall:view/widgets/title">
@@ -110,7 +110,7 @@
 </metal:basic_filebug_widgets>
 
 
-<metal:not_uses_malone metal:define-macro="not_uses_malone">
+<metal:not_uses_malone define-macro="not_uses_malone">
 
   <tal:not_uses_malone tal:condition="not: view/contextUsesMalone">
 
