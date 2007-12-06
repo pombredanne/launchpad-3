@@ -94,6 +94,18 @@
         </tr>
       </table>
 
+      <table class="slimpadding" style="margin-top: 1em"
+             tal:define="archive_url view/archive_url"
+             tal:condition="archive_url">
+        <tr>
+          <th>Mailing list archive:</th>
+          <td><a id="mailing-list-archive" tal:content="archive_url"
+                 tal:attributes="href archive_url"
+               >http://lists.launchpad.dev/archives/team_name</a>
+          </td>
+        </tr>
+      </table>
+
     </tal:is_team>
 
   </div>
