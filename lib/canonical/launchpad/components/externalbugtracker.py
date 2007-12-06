@@ -745,16 +745,17 @@ class DebBugs(ExternalBugTracker):
         flush_database_updates()
         self.updateBugWatches([bug_watch])
 
-        # We can now import the comments for the bug.
+        return bug
+
+    def importBugComments(self, debian_bug):
+        """Import the comments from a DebBugs bug."""
         self.debbugs_dub.load_log(debian_bug)
 
         message_set = MessageSet()
         for comment in debian_bug.comments:
             # Each comment is an email, so we can happily create a
             # Message from it.
-            message = message_set.fromEmail(comment,
-                create_missing_persons=True)
-        return bug
+            message = message_set.fromEmail(comment)
 
 #
 # Mantis
