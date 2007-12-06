@@ -23,7 +23,7 @@
     distribution.
   </p>
   <p>
-    To create a digital signature, use the following command:<br>
+    To create a digital signature, use the following command:<br />
     <code>% gpg --armor --sign --detach-sig &lt;filename&gt;.</code>
   </p>
   <p>
