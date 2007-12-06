@@ -341,23 +341,6 @@ class Dominator:
 
         It only works across the distroseries and pocket specified.
         """
-        self.debug("Performing domination across %s/%s (Source)" %
-                   (dr.name, pocket.title))
-
-        # We can use SecureSourcePackagePublishingHistory here because
-        # the standard .selectBy automatically says that embargo
-        # should be false.
-
-        sources = SecureSourcePackagePublishingHistory.selectBy(
-            distroseries=dr, archive=self.archive, pocket=pocket,
-            status=PackagePublishingStatus.PUBLISHED)
-
-        self._dominateSource(self._sortPackages(sources))
-
-        if do_clear_cache:
-            self.debug("Flushing SQLObject cache.")
-            clear_cache()
-
         for distroarchseries in dr.architectures:
             self.debug("Performing domination across %s/%s (%s)" % (
                 dr.name, pocket.title, distroarchseries.architecturetag))
@@ -403,6 +386,21 @@ class Dominator:
 
             flush_database_updates()
             cur.execute("DROP TABLE PubDomHelper")
+
+        if do_clear_cache:
+            self.debug("Flushing SQLObject cache.")
+            clear_cache()
+
+        self.debug("Performing domination across %s/%s (Source)" %
+                   (dr.name, pocket.title))
+        # We can use SecureSourcePackagePublishingHistory here because
+        # the standard .selectBy automatically says that embargo
+        # should be false.
+        sources = SecureSourcePackagePublishingHistory.selectBy(
+            distroseries=dr, archive=self.archive, pocket=pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        self._dominateSource(self._sortPackages(sources))
+        flush_database_updates()
 
         sources = SecureSourcePackagePublishingHistory.select("""
             securesourcepackagepublishinghistory.distroseries = %s AND
