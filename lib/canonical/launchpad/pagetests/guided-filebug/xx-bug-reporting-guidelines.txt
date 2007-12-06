@@ -146,3 +146,55 @@ similar bugs are found.
     * Ubuntu Warty (with similar bugs)
       - http://launchpad.dev/ubuntu/+filebug
       - Welcome to Ubuntu!
+
+== Edit Access ==
+
+Unprivileged Launchpad users do not see the link to the page where the
+bug reporting guidelines can be changed, but admins do.
+
+    >>> import sys
+
+    >>> for context_name, context_path in primary_contexts:
+    ...     overview_url = 'http://launchpad.dev/%s' % (context_path,)
+    ...     print '* ' + context_name
+    ...     print '  - User:',
+    ...     user_browser.open(overview_url)
+    ...     try:
+    ...         user_browser.getLink(url='/+edit')
+    ...     except (SystemExit, KeyboardInterrupt):
+    ...         raise
+    ...     except:
+    ...         print sys.exc_info()[0].__name__
+    ...     print '  - Admin:',
+    ...     admin_browser.open(overview_url)
+    ...     print admin_browser.getLink(url='/+edit').text
+    * Ubuntu
+      - User: LinkNotFoundError
+      - Admin: Change distribution details
+    * Mozilla
+      - User: LinkNotFoundError
+      - Admin: Change details
+    * Firefox
+      - User: LinkNotFoundError
+      - Admin: Change details
+
+Unprivileged cannot access the page for changing bug reporting
+guidelines.
+
+    >>> import traceback
+
+    >>> for context_name, context_path in primary_contexts:
+    ...     edit_url = 'http://launchpad.dev/%s/+edit' % (context_path,)
+    ...     print '* ' + context_name
+    ...     try:
+    ...         user_browser.open(edit_url)
+    ...     except (SystemExit, KeyboardInterrupt):
+    ...         raise
+    ...     except:
+    ...         print sys.exc_info()[0].__name__
+    * Ubuntu
+      Unauthorized
+    * Mozilla
+      Unauthorized
+    * Firefox
+      Unauthorized
