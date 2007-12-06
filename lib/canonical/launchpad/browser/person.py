@@ -1993,15 +1993,18 @@ class PersonView(LaunchpadView):
 
 
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
+    """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile("../templates/person-xrds.pt")
 
     @cachedproperty
     def enable_xrds_discovery(self):
+        """Only enable discovery if person is OpenID enabled."""
         return self.context.is_openid_enabled
 
     @cachedproperty
     def openid_identity_url(self):
+        """The identity URL for the person."""
         return canonical_url(OpenIDPersistentIdentity(self.context))
 
 
