@@ -171,7 +171,7 @@
       <thead>
         <tr>
           <th tal:condition="view/show_priority">Priority</th>
-          <th>Specification</th>
+          <th>Blueprint</th>
           <th tal:condition="view/show_design">Design</th>
           <th tal:condition="view/show_implementation">Delivery</th>
           <th tal:condition="view/show_assignee">Assignee</th>

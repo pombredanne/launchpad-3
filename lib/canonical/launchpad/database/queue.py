@@ -214,11 +214,6 @@ class PackageUpload(SQLBase):
         return self.builds
 
     @cachedproperty
-    def _is_mixed_upload(self):
-        """Return true if this is a mixed mode upload."""
-        return self.contains_source and self.contains_build
-
-    @cachedproperty
     def _is_sync_upload(self):
         """Return True if this is a (Debian) sync upload.
 
@@ -543,12 +538,11 @@ class PackageUpload(SQLBase):
             do_sendmail(AcceptedMessage)
             return
 
-        # Auto-approved binary uploads to security skips the announcement,
-        # they are usually processed with the security policy.
+        # Auto-approved binary-only uploads to security skip the
+        # announcement, they are usually processed with the security policy.
         if (self.pocket == PackagePublishingPocket.SECURITY
-            and self.contains_build
-            and not self._is_mixed_upload):
-            # Upload contains a build but is not a mixed mode upload.
+            and not self.contains_source):
+            # We only send announcements if there is any source in the upload.
             debug(self.logger,
                 "Skipping announcement, it is a binary upload to SECURITY.")
             do_sendmail(AcceptedMessage)
