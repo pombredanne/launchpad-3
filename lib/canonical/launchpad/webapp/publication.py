@@ -282,19 +282,35 @@ class LaunchpadBrowserPublication(
             raise OffsiteFormPostError(referrer)
 
     def callObject(self, request, ob):
+        """See zope.publisher.interfaces.IPublication.
 
-        # Don't render any content on a redirect.
+        Our implementation make sure that no result is returned on
+        redirect.
+
+        It also sets the launchpad.userid and launchpad.pageid WSGI
+        environment variables. 
+        """
         if request.response.getStatus() in [301, 302, 303, 307]:
             return ''
 
-        # Set the launchpad user-id and page-id (if available) in the
-        # wsgi environment, so that the request logger can access it.
         request.setInWSGIEnvironment('launchpad.userid', request.principal.id)
-        usedfor = getattr(removeSecurityProxy(ob), '__used_for__', None)
-        if usedfor is not None:
-            name = getattr(removeSecurityProxy(ob), '__name__', '')
-            pageid = '%s:%s' % (usedfor.__name__, name)
-            request.setInWSGIEnvironment('launchpad.pageid', pageid)
+
+        # Pageid is ContextName:ViewName.
+        unrestricted_ob = removeSecurityProxy(ob)
+        context = getattr(unrestricted_ob, 'context', None)
+        if context is None:
+            pageid = ''
+        else:
+            # ZCML registration will set the name under which the view
+            # is accessible in the instance __name__ attribute. We use
+            # that if it's available, otherwise fall back to the class 
+            # name.
+            if getattr(unrestricted_ob, '__name__', None) is not None:
+                view_name = unrestricted_ob.__name__
+            else:
+                view_name = unrestricted_ob.__class__.__name__
+            pageid = '%s:%s' % (context.__class__.__name__, view_name)
+        request.setInWSGIEnvironment('launchpad.pageid', pageid)
 
         return mapply(ob, request.getPositionalArguments(), request)
 
