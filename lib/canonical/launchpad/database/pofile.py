@@ -690,6 +690,17 @@ class POFile(SQLBase, POFileMixIn):
         # Check whether the date is older.
         return old_date > new_date
 
+    def setPathIfUnique(self, path):
+        """See `IPOFile`."""
+        if path == self.path:
+            return
+        other = POFileSet().getPOFileByPathAndOrigin(
+            path, self.potemplate.productseries, self.potemplate.distroseries,
+            self.potemplate.sourcepackagename)
+        have_other = bool(other)
+        if not have_other:
+            self.path = path
+
     def importFromQueue(self, entry_to_import, logger=None):
         """See `IPOFile`."""
         assert entry_to_import is not None, "Attempt to import None entry."
@@ -1172,6 +1183,11 @@ class DummyPOFile(POFileMixIn):
     def isTranslationRevisionDateOlder(self, header):
         """See `IPOFile`."""
         raise NotImplementedError
+
+    def setPathIfUnique(self, path):
+        """See `IPOFile`."""
+        # Any path will do for a DummyPOFile.
+        self.path = path
 
     def getNextToImport(self):
         """See `IPOFile`."""
