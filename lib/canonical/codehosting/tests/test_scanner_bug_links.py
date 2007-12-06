@@ -209,12 +209,10 @@ class TestMakeBugBranch(unittest.TestCase):
 
         Raises an assertion error if there's no such bug.
         """
-        for bug_branch in branch.bug_branches:
-            if bug_branch.bug.id == bug.id:
-                self.assertEqual(bug_branch.status, status)
-                break
-        else:
+        bug_branch = getUtility(IBugBranchSet).getBugBranch(bug, branch)
+        if bug_branch is None:
             self.fail('No BugBranch found for %r, %r' % (bug, branch))
+        self.assertEqual(bug_branch.status, status)
 
     def test_makeNewLink(self):
         """set_bug_branch_status makes a BugBranch link if one doesn't
@@ -224,6 +222,19 @@ class TestMakeBugBranch(unittest.TestCase):
             self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
         self.assertStatusEqual(
             self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
+
+    def test_registrantIsBranchOwnerOnNewLink(self):
+        """When we make a new link, the registrant is the branch owner.
+
+        All BugBranch links have a registrant. When we are creating a link
+        based on data in a Bazaar branch, the most obvious registrant is the
+        person who asked Launchpad to scan that branch, i.e. the Branch owner.
+        """
+        set_bug_branch_status(
+            self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
+        bug_branch = getUtility(IBugBranchSet).getBugBranch(
+            self.bug, self.branch)
+        self.assertEqual(self.branch.owner, bug_branch.registrant)
 
     def test_updateLinkStatus(self):
         """If a link already exists, it updates the status."""

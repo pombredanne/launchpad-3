@@ -90,6 +90,12 @@ class IBugBranch(IHasDateCreated, IHasBug):
 
 class IBugBranchSet(Interface):
 
+    def getBugBranch(bug, branch):
+        """Return the BugBranch for the given bug and branch.
+
+        Return None if there is no such link.
+        """
+
     def getBugBranchesForBranches(branches, user):
         """Return a sequence of IBugBranch instances associated with
         the given branches.

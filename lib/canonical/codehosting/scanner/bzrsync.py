@@ -57,13 +57,14 @@ class RevisionModifiedError(Exception):
 
 
 def set_bug_branch_status(bug, branch, status):
-    for bug_branch in branch.bug_branches:
-        if bug_branch.bug.id == bug.id:
-            if bug_branch.status != BugBranchStatus.BESTFIX:
-                bug_branch.status = status
-            return bug_branch
-    return getUtility(IBugBranchSet).new(
-        bug=bug, branch=branch, status=status, registrant=branch.owner)
+    bug_branch_set = getUtility(IBugBranchSet)
+    bug_branch = bug_branch_set.getBugBranch(bug, branch)
+    if bug_branch is None:
+        return bug_branch_set.new(
+            bug=bug, branch=branch, status=status, registrant=branch.owner)
+    if bug_branch.status != BugBranchStatus.BESTFIX:
+        bug_branch.status = status
+    return bug_branch
 
 
 class BzrSync:
