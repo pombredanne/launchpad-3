@@ -26,7 +26,8 @@ from bzrlib.revision import NULL_REVISION
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BugBranchStatus,
-    ILaunchpadCelebrities, IBranchRevisionSet, IBugBranchSet, IRevisionSet)
+    ILaunchpadCelebrities, IBranchRevisionSet, IBugBranchSet, IBugSet,
+    IRevisionSet, NotFoundError)
 from canonical.launchpad.mailnotification import (
     send_branch_revision_notifications)
 from canonical.launchpad.webapp import canonical_url, errorlog
@@ -452,7 +453,7 @@ class BzrSync:
             # Generate an email if the revision is in the revision_history
             # for the branch.  If the sequence is None then the revision
             # is just in the ancestry so no email is generated.
-            if sequence is not None and not self.initial_scan:
+            if sequence is not None:
                 try:
                     revision = self.bzr_branch.repository.get_revision(
                         revision_id)
@@ -460,10 +461,25 @@ class BzrSync:
                     self.logger.debug("%d of %d: %s is a ghost",
                                       self.curr, self.last, revision_id)
                     continue
-                if self.subscribers_want_notification:
+                if (not self.initial_scan
+                    and self.subscribers_want_notification):
                     message = self.getRevisionMessage(revision)
                     revision_diff = self.getDiff(revision)
                     self.pending_emails.append((message, revision_diff))
+                self.createBugBranchLinksForRevision(db_revision, revision)
+
+    def createBugBranchLinksForRevision(self, db_revision, bzr_revision):
+        bug_property = bzr_revision.properties.get('bugs', None)
+        if bug_property is None:
+            return
+        bug_set = getUtility(IBugSet)
+        for bug_id, status in self.extractBugInfo(bug_property).iteritems():
+            try:
+                bug = bug_set.get(bug_id)
+            except NotFoundError:
+                pass
+            else:
+                set_bug_branch_status(bug, self.db_branch, status)
 
     def updateBranchStatus(self):
         """Update the branch-scanner status in the database Branch table."""

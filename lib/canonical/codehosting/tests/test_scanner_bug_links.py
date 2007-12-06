@@ -206,274 +206,108 @@ class TestMakeBugBranch(unittest.TestCase):
             self.bug, self.branch, BugBranchStatus.BESTFIX)
 
 
-class TestBugLinking:
+class TestBugLinking(BzrSyncTestCase):
     """Tests for creating BugBranch items on scanning branches.
 
     We create a BugBranch item if we find a good 'bugs' property in a new
     mainline revision of a branch.
     """
 
+    def setUp(self):
+        factory = LaunchpadObjectFactory()
+        self.bug1 = factory.makeBug()
+        self.bug2 = factory.makeBug()
+        LaunchpadZopelessLayer.txn.commit()
+        BzrSyncTestCase.setUp(self)
 
-# class TestBugLinking(BzrSyncTestCase, OopsLoggingTest):
-#     """Tests for automatic bug branch linking."""
+    def getBugURL(self, bug):
+        """Get the canonical URL for 'bug'."""
+        return 'https://launchpad.net/bugs/%s' % bug.id
 
-#     def setUp(self):
-#         BzrSyncTestCase.setUp(self)
-#         OopsLoggingTest.setUp(self)
+    def assertStatusEqual(self, bug, branch, status):
+        """Assert that the BugBranch for `bug` and `branch` has `status`.
 
-#     def tearDown(self):
-#         OopsLoggingTest.tearDown(self)
-#         BzrSyncTestCase.tearDown(self)
+        Raises an assertion error if there's no such bug.
+        """
+        bug_branch = getUtility(IBugBranchSet).getBugBranch(bug, branch)
+        if bug_branch is None:
+            self.fail('No BugBranch found for %r, %r' % (bug, branch))
+        self.assertEqual(bug_branch.status, status)
 
-#     def getLinkedInfo(self, branch):
-#         """Return the bugs, revisions and statuses linked to `branch`.
+    def test_newMainlineRevisionAddsBugBranch(self):
+        """New mainline revisions with bugs properties create BugBranches."""
+        self.commitRevision(
+            rev_id='rev1',
+            revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
+        self.syncBranch()
+        self.assertStatusEqual(
+            self.bug1, self.db_branch, BugBranchStatus.FIXAVAILABLE)
 
-#         Return a list of (bug id, revno, status) for every BugBranch entry
-#         associated with `branch`.
-#         """
-#         bb_set = getUtility(IBugBranchSet)
-#         result = []
-#         for bug_branch in bb_set.getBugBranchesForBranches([branch]):
-#             if bug_branch.revision is None:
-#                 revision_id = None
-#             else:
-#                 revision_id = bug_branch.revision.revision_id
-#             result.append((bug_branch.bug.id, revision_id, bug_branch.status))
-#         return result
+    def test_scanningTwiceDoesntMatter(self):
+        """Scanning a branch twice is the same as scanning it once."""
+        self.commitRevision(
+            rev_id='rev1',
+            revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
+        self.syncBranch()
+        self.syncBranch()
+        self.assertStatusEqual(
+            self.bug1, self.db_branch, BugBranchStatus.FIXAVAILABLE)
 
-#     def getLinkedBranches(self, bug):
-#         """Return a list of unique names of branches linked to `bug`."""
-#         return [branch.unique_name for branch in bug.getBranches()]
+    def test_nonMainlineRevisionsDontMakeBugBranches(self):
+        """Don't add BugBranches based on non-mainline revisions."""
+        # Make the base revision.
+        self.bzr_tree.commit(
+            u'common parent', committer=self.AUTHOR, rev_id='r1',
+            allow_pointless=True)
 
-#     def getLinkedBugs(self, branch):
-#         """Return a list of bug IDs linked to `branch`."""
-#         bb_set = getUtility(IBugBranchSet)
-#         bugs = []
-#         for bug_branch in bb_set.getBugBranchesForBranches([branch]):
-#             bugs.append(bug_branch.bug.id)
-#         return bugs
+        # Branch from the base revision.
+        new_tree = self.make_branch_and_tree('bzr_branch_merged')
+        new_tree.pull(self.bzr_branch)
 
-#     def test_bug_branch_revision_twice(self):
-#         # When a branch is scanned twice, it's associated bugs should not
-#         # change.
-#         self.commitRevision(
-#             rev_id='rev1',
-#             revprops={'bugs': 'https://launchpad.net/bugs/1 fixed'})
-#         self.syncBranch()
-#         self.assertEqual([1], self.getLinkedBugs(self.db_branch))
-#         self.syncBranch()
-#         self.assertEqual([1], self.getLinkedBugs(self.db_branch))
+        # Commit to both branches
+        self.bzr_tree.commit(
+            u'commit one', committer=self.AUTHOR, rev_id='r2',
+            allow_pointless=True)
+        new_tree.commit(
+            u'commit two', committer=self.AUTHOR, rev_id='r1.1.1',
+            allow_pointless=True,
+            revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
 
-#     def test_branch_which_has_merged_bugfixing_branch(self):
-#         # Say branch A has a revision which fixes a bug and that branch A has
-#         # been scanned. If branch B merges in branch A and is then scanned,
-#         # then branch A should be linked to the bug and branch B should not
-#         # be.
-#         bug = getUtility(IBugSet).get(1)
-#         self.commitRevision(
-#             rev_id='rev1',
-#             revprops={'bugs': 'https://launchpad.net/bugs/1 fixed'})
-#         self.syncBranch()
+        # Merge and commit.
+        self.bzr_tree.merge_from_branch(new_tree.branch)
+        self.bzr_tree.commit(
+            u'merge', committer=self.AUTHOR, rev_id='r3',
+            allow_pointless=True)
 
-#         # Branch from the base revision.
-#         new_tree, db_branch = self.makeBranch('bzr_branch_merged')
-#         new_tree.pull(self.bzr_branch)
+        self.syncBranch()
+        self.assertEqual(
+            getUtility(IBugBranchSet).getBugBranch(self.bug1, self.db_branch),
+            None,
+            "Should not create a BugBranch.")
 
-#         new_tree.commit(
-#             u'commit two', committer=self.AUTHOR, rev_id='r1.1.1',
-#             revprops={}, allow_pointless=True)
+    def test_ignore_non_existent_bug(self):
+        # If the bug referred to in the revision properties doesn't actually
+        # exist, then we just ignore it.
+        self.assertRaises(NotFoundError, getUtility(IBugSet).get, 99999)
+        self.assertEqual([], list(self.db_branch.bug_branches))
+        self.commitRevision(
+            rev_id='rev1',
+            revprops={'bugs': 'https://launchpad.net/bugs/99999 fixed'})
+        self.syncBranch()
+        self.assertEqual([], list(self.db_branch.bug_branches))
 
-#         bzrsync = BzrSync(self.txn, db_branch, db_branch.url)
-#         bzrsync.syncBranchAndClose()
-
-#         self.assertEqual(
-#             [self.db_branch.unique_name], self.getLinkedBranches(bug))
-
-#     def test_branch_which_has_merged_bugfixing_branch_and_fixed_again(self):
-#         # Say branch A has a revision which fixes a bug and that branch A has
-#         # been scanned. If branch B merges in branch A, commits a revision
-#         # which marks that same bug as fixed and is then scanned, then both A
-#         # and B are linked to the bug.
-#         bug = getUtility(IBugSet).get(1)
-#         self.commitRevision(
-#             rev_id='rev1',
-#             revprops={'bugs': 'https://launchpad.net/bugs/1 fixed'})
-#         self.syncBranch()
-
-#         # Branch from the base revision.
-#         new_tree, db_branch = self.makeBranch('bzr_branch_merged')
-#         new_tree.pull(self.bzr_branch)
-
-#         new_tree.commit(
-#             u'commit two', committer=self.AUTHOR, rev_id='r1.1.1',
-#             revprops={'bugs': 'https://launchpad.net/bugs/1 fixed'},
-#             allow_pointless=True)
-
-#         bzrsync = BzrSync(self.txn, db_branch, db_branch.url)
-#         bzrsync.syncBranchAndClose()
-
-#         self.assertEqual(
-#             set([db_branch.unique_name, self.db_branch.unique_name]),
-#             set(self.getLinkedBranches(bug)))
-
-#     def test_branch_with_overriding_bugfix_updates_bugbranch(self):
-#         # Say branch A has a revision which fixes a bug and that branch A has
-#         # been scanned. If branch B merges in branch A, commits a revision
-#         # which marks that same bug as fixed and is then scanned, then a new
-#         # BugBranch row for the bug should be created, pointing at the new
-#         # branch.
-#         bug = getUtility(IBugSet).get(1)
-
-#         self.commitRevision(
-#             rev_id='rev1',
-#             revprops={'bugs': 'https://launchpad.net/bugs/1 fixed'})
-#         self.syncBranch()
-
-#         # Branch from the base revision.
-#         new_tree, db_branch = self.makeBranch('bzr_branch_merged')
-#         new_tree.pull(self.bzr_branch)
-
-#         new_tree.commit(
-#             u'commit two', committer=self.AUTHOR, rev_id='r1.1.1',
-#             revprops={'bugs': 'https://launchpad.net/bugs/1 fixed'},
-#             allow_pointless=True)
-
-#         bzrsync = BzrSync(self.txn, db_branch, db_branch.url)
-#         bzrsync.syncBranchAndClose()
-
-#         self.assertEqual(
-#             set([db_branch.unique_name, self.db_branch.unique_name]),
-#             set(self.getLinkedBranches(bug)))
-
-#     def test_makes_bug_branch(self):
-#         # If no BugBranch relation exists for the branch and bug, a scan of
-#         # the branch should create one.
-#         self.assertEqual([], self.getLinkedBugs(self.db_branch))
-#         self.commitRevision(
-#             rev_id='rev1',
-#             revprops={'bugs': 'https://launchpad.net/bugs/1 fixed'})
-#         self.syncBranch()
-#         self.assertEqual([(1, 'rev1', BugBranchStatus.FIXAVAILABLE)],
-#                          self.getLinkedInfo(self.db_branch))
-
-#     def test_multiple_bugs(self):
-#         # If a property refers to multiple bugs, create BugBranch links for
-#         # all of them.
-#         self.assertEqual([], self.getLinkedBugs(self.db_branch))
-#         self.commitRevision(
-#             rev_id='rev1',
-#             revprops={'bugs': 'https://launchpad.net/bugs/1 fixed\n'
-#                       'https://launchpad.net/bugs/2 fixed'})
-#         self.syncBranch()
-#         self.assertEqual(set([1, 2]), set(self.getLinkedBugs(self.db_branch)))
-
-#     def test_newer_revision_updates_status(self):
-#         # If the scanner finds a newer revision that fixes a bug in a branch
-#         # that already claims to fix a bug, the bug / branch link should be
-#         # updated to point at the newer revision.
-#         bug = getUtility(IBugSet).get(1)
-#         self.commitRevision(
-#             rev_id='rev1',
-#             revprops={'bugs': 'https://launchpad.net/bugs/1 inprogress\n'})
-#         self.syncBranch()
-#         self.assertEqual(
-#             [(1, 'rev1', BugBranchStatus.INPROGRESS)],
-#             self.getLinkedInfo(self.db_branch))
-#         self.commitRevision(
-#             rev_id='rev2',
-#             revprops={'bugs': 'https://launchpad.net/bugs/1 fixed\n'})
-#         self.syncBranch()
-#         self.assertEqual(
-#             [(1, 'rev2', BugBranchStatus.FIXAVAILABLE)],
-#             self.getLinkedInfo(self.db_branch))
-
-#     def test_older_revision_doesnt_update_status(self):
-#         # If the scanner finds an older revision that fixes a bug in a branch
-#         # that already claims to fix the bug, then the bug / branch link
-#         # should remain unchanged.
-#         #
-#         # We need to test this because the scanner add new revisions in a
-#         # non-deterministic order.
-#         bug = getUtility(IBugSet).get(1)
-#         self.commitRevision(
-#             timestamp=10 ** 9,
-#             rev_id='rev1',
-#             revprops={'bugs': 'https://launchpad.net/bugs/1 inprogress\n'})
-#         self.syncBranch()
-#         self.assertEqual(
-#             [(1, 'rev1', BugBranchStatus.INPROGRESS)],
-#             self.getLinkedInfo(self.db_branch))
-#         self.commitRevision(
-#             timestamp=9 * 10 ** 8,
-#             rev_id='rev2',
-#             revprops={'bugs': 'https://launchpad.net/bugs/1 fixed\n'})
-#         self.syncBranch()
-#         self.assertEqual(
-#             [(1, 'rev1', BugBranchStatus.INPROGRESS)],
-#             self.getLinkedInfo(self.db_branch))
-
-#     def test_status_updated_if_no_revision(self):
-#         # If the BugBranch link was created or modified on the website, then
-#         # the revision will be NULL. If this is the case, then any new
-#         # revision found by the scanner should override the revision and
-#         # status set on the website.
-#         self.txn.begin()
-#         bug = getUtility(IBugSet).get(1)
-#         bug.addBranch(self.db_branch, status=BugBranchStatus.INPROGRESS)
-#         self.txn.commit()
-#         self.assertEqual(
-#             [(1, None, BugBranchStatus.INPROGRESS)],
-#             self.getLinkedInfo(self.db_branch))
-#         self.commitRevision(
-#             rev_id='rev1',
-#             revprops={'bugs': 'https://launchpad.net/bugs/1 fixed\n'})
-#         self.syncBranch()
-#         self.assertEqual(
-#             [(1, 'rev1', BugBranchStatus.FIXAVAILABLE)],
-#             self.getLinkedInfo(self.db_branch))
-
-#     def test_oops_on_non_existent_bug(self):
-#         # If the bug referred to in the revision properties doesn't actually
-#         # exist, then we should generate some sort of OOPS report.
-#         self.assertRaises(NotFoundError, getUtility(IBugSet).get, 99999)
-#         self.commitRevision(
-#             rev_id='rev1',
-#             revprops={'bugs': 'https://launchpad.net/bugs/99999 fixed'})
-#         self.syncBranch()
-#         self.assertEqual(len(self.oopses), 1)
-
-#     def test_revision_properties_in_non_mainline_revision(self):
-#         # We look for bug annotations in ''all'' revisions, not just mainline
-#         # ones.
-
-#         # Make the base revision.
-#         self.bzr_tree.commit(
-#             u'common parent', committer=self.AUTHOR, rev_id='r1',
-#             allow_pointless=True)
-
-#         # Branch from the base revision.
-#         new_tree = self.make_branch_and_tree('bzr_branch_merged')
-#         new_tree.pull(self.bzr_branch)
-
-#         # Commit to both branches
-#         self.bzr_tree.commit(
-#             u'commit one', committer=self.AUTHOR, rev_id='r2',
-#             allow_pointless=True)
-#         new_tree.commit(
-#             u'commit two', committer=self.AUTHOR, rev_id='r1.1.1',
-#             revprops={'bugs': 'https://launchpad.net/bugs/1 fixed'},
-#             allow_pointless=True)
-
-#         # Merge and commit.
-#         self.bzr_tree.merge_from_branch(new_tree.branch)
-#         self.commitRevision(
-#             u'merge', committer=self.AUTHOR, rev_id='r3',
-#             allow_pointless=True)
-
-#         self.syncBranch()
-
-#         self.assertEqual([], self.oopses)
-#         self.assertEqual([1], self.getLinkedBugs(self.db_branch))
+    def test_multiple_bugs(self):
+        # If a property refers to multiple bugs, create BugBranch links for
+        # all of them.
+        self.commitRevision(
+            rev_id='rev1',
+            revprops={'bugs': '%s fixed\n%s fixed' % (
+                    self.getBugURL(self.bug1), self.getBugURL(self.bug2))})
+        self.syncBranch()
+        self.assertStatusEqual(
+            self.bug1, self.db_branch, BugBranchStatus.FIXAVAILABLE)
+        self.assertStatusEqual(
+            self.bug2, self.db_branch, BugBranchStatus.FIXAVAILABLE)
 
 
 def test_suite():
