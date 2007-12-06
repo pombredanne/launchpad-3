@@ -103,9 +103,10 @@ class XpiTestCase(unittest.TestCase):
         entry.status = RosettaImportStatus.APPROVED
         # The file data is stored in the Librarian, so we have to commit the
         # transaction to make sure it's stored properly.
+        entry_id = entry.id
         commit()
 
-        return entry
+        return getUtility(ITranslationImportQueue)[entry_id]
 
     def setUpTranslationImportQueueForTranslation(self):
         """Return an ITranslationImportQueueEntry for testing purposes."""
@@ -141,7 +142,8 @@ class XpiTestCase(unittest.TestCase):
             'msgid and singular_text should be different but both are %s' % (
                 message.msgid_singular.msgid))
 
-        # Plural forms should be None as this format is not able to handle that.
+        # Plural forms should be None as this format is not able to handle
+        # them.
         self.assertEquals(message.msgid_plural, None)
         self.assertEquals(message.plural_text, None)
 
@@ -159,7 +161,7 @@ class XpiTestCase(unittest.TestCase):
         entry = self.setUpTranslationImportQueueForTemplate()
 
         # Now, we tell the PO template to import from the file data it has.
-        self.firefox_template.importFromQueue()
+        (subject, body) = self.firefox_template.importFromQueue(entry)
 
         # The status is now IMPORTED:
         sync(entry)
@@ -250,14 +252,17 @@ class XpiTestCase(unittest.TestCase):
         translation_entry = self.setUpTranslationImportQueueForTranslation()
 
         # Now, we tell the PO template to import from the file data it has.
-        self.firefox_template.importFromQueue()
+        (subject, body) = self.firefox_template.importFromQueue(
+            template_entry)
         # And the Spanish translation.
-        self.spanish_firefox.importFromQueue()
+        (subject, body) = self.spanish_firefox.importFromQueue(
+            translation_entry)
 
         # The status is now IMPORTED:
         sync(translation_entry)
         sync(template_entry)
-        self.assertEquals(translation_entry.status, RosettaImportStatus.IMPORTED)
+        self.assertEquals(
+            translation_entry.status, RosettaImportStatus.IMPORTED)
         self.assertEquals(template_entry.status, RosettaImportStatus.IMPORTED)
 
         # Let's validate the content of the messages.

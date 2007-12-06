@@ -71,14 +71,14 @@ from canonical.launchpad.interfaces import (
     BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay, IBug,
     IBugAttachmentSet, IBugBranchSet, IBugNominationSet, IBugSet, IBugTask,
     IBugTaskSearch, IBugTaskSet, ICreateQuestionFromBugTaskForm, ICveSet,
-    IDistribution, IDistributionSourcePackage, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, IFrontPageBugTaskSearch,
-    ILaunchBag, INominationsReviewTableBatchNavigator, INullBugTask,
-    IPerson, IPersonBugTaskSearch, IProduct, IProductSeries,
-    IProductSeriesBugTask, IProject, IRemoveQuestionFromBugTaskForm,
-    ISourcePackage, IUpstreamBugTask, IUpstreamProductBugTaskSearch,
-    NotFoundError, RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
-    UNRESOLVED_BUGTASK_STATUSES, valid_upstreamtask, validate_distrotask)
+    IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
+    IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
+    INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
+    IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
+    IProject, IRemoveQuestionFromBugTaskForm, ISourcePackage,
+    IUpstreamBugTask, IUpstreamProductBugTaskSearch, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData, valid_upstreamtask, validate_distrotask)
 
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -716,7 +716,6 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
         remaining_time = expiration_date - datetime.now(pytz.timezone('UTC'))
         return remaining_time.days
 
-
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""
 
@@ -1066,19 +1065,41 @@ class BugTaskEditView(LaunchpadEditFormView):
 
         # Set the "changed" flag properly, just in case status and/or assignee
         # happen to be the only values that changed. We explicitly verify that
-        # we got a new status and/or assignee, because our test suite doesn't
-        # always pass all form values.
-        new_status = new_values.pop("status", False)
-        new_assignee = new_values.pop("assignee", False)
-        if ((new_status is not False) and
-            (bugtask.status != new_status)):
+        # we got a new status and/or assignee, because the form is not always
+        # guaranteed to pass all the values. For example: bugtasks linked to a
+        # bug watch don't allow editting the form, and the value is missing
+        # from the form.
+        missing = object()
+        new_status = new_values.pop("status", missing)
+        new_assignee = new_values.pop("assignee", missing)
+        if new_status is not missing and bugtask.status != new_status:
             changed = True
             bugtask.transitionToStatus(new_status, self.user)
 
-        if ((new_assignee is not False) and
-            (bugtask.assignee != new_assignee)):
+        if new_assignee is not missing and bugtask.assignee != new_assignee:
             changed = True
             bugtask.transitionToAssignee(new_assignee)
+
+            if new_assignee is not None and new_assignee != self.user:
+                is_contributor = new_assignee.isBugContributorInTarget(
+                    user=self.user, target=bugtask.pillar)
+                if not is_contributor:
+                    # If we have a new assignee who isn't a bug
+                    # contributor in this pillar, we display a warning
+                    # to the user, in case they made a mistake.
+                    self.request.response.addWarningNotification(
+                        """<a href="%s">%s</a>
+                        did not previously have any assigned bugs in
+                        <a href="%s">%s</a>.
+                        <br /><br />
+                        If this bug was assigned by mistake,
+                        you may <a href="%s/+editstatus"
+                        >change the assignment</a>.""" % (
+                        canonical_url(new_assignee),
+                        new_assignee.displayname,
+                        canonical_url(bugtask.pillar),
+                        bugtask.pillar.title,
+                        canonical_url(bugtask)))
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
             if bugtask.bugwatch is None:

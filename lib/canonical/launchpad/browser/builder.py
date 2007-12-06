@@ -25,6 +25,9 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.launchpad.browser.build import BuildRecordsView
 
+from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.helpers import shortlist
+
 from canonical.launchpad.interfaces import (
     BuildStatus, IPerson, IBuilderSet, IBuilder, IBuildSet, NotFoundError
     )
@@ -136,6 +139,14 @@ class BuilderSetView(CommonBuilderView):
     Simply provides CommonBuilderView for the BuilderSet pagetemplate.
     """
     __used_for__ = IBuilderSet
+
+    @cachedproperty
+    def buildQueueDepthByArch(self):
+        return shortlist(self.context.getBuildQueueDepthByArch())
+
+    @cachedproperty
+    def hasQueuedBuilds(self):
+        return bool(self.buildQueueDepthByArch)
 
 
 class BuilderView(CommonBuilderView, BuildRecordsView):

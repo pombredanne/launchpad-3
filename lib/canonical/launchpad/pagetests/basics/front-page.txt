@@ -36,6 +36,7 @@ and lists of featured projects and marketing material.
   >>> for tag in find_tags_by_class(browser.contents, 'three column right'):
   ...     print extract_text(tag.renderContents())
   Featured projects
+  ...
   Ubuntu
   ...
 

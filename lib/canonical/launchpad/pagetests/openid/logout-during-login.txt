@@ -18,7 +18,7 @@ There are a number of ways that this situation could occur:
 To test this, we will first authenticate to the Launchpad OpenID
 provider:
 
-    >>> from canonical.launchpad.ftests.openid import install_consumer
+    >>> from canonical.launchpad.ftests.openidhelpers import install_consumer
     >>> install_consumer()
 
     >>> from urllib import urlencode
@@ -85,6 +85,6 @@ From this point, we can log in as usual:
 
 == Cleanup ==
 
-    >>> from canonical.launchpad.ftests.openid import uninstall_consumer
+    >>> from canonical.launchpad.ftests.openidhelpers import uninstall_consumer
     >>> uninstall_consumer()
 
