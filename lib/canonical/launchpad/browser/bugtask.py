@@ -2540,14 +2540,11 @@ class BugTaskExpirableListingView(LaunchpadView):
         else:
             return ['id', 'summary', 'date_last_updated']
 
+    @property
     def search(self):
         """Return an `ITableBatchNavigator` for the expirable bugtasks."""
-        bugtasks = self.searchUnbatched()
+        bugtaskset = getUtility(IBugTaskSet)
+        bugtasks = bugtaskset.findExpirableBugTasks(0, target=self.context)
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
-
-    def searchUnbatched(self):
-        """Return a list of `IBugTask`s that can expire for this target."""
-        bugtaskset = getUtility(IBugTaskSet)
-        return bugtaskset.findExpirableBugTasks(0, target=self.context)
