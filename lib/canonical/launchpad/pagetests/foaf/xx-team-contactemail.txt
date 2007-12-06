@@ -150,15 +150,8 @@ If a team's mailing list is declined, there is no link to its non-existent
 archive.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'membership-summary'))
-    Team and membership summary
-    Team owner: Sample Person
-    Membership:
-    ...
-    Moderated Team:
-    All subscriptions for this team are subject to approval by one of
-    the team's administrators.
+    >>> print find_tag_by_id(browser.contents, 'mailing-list-archive')
+    None
 
 Any time before the mailing list is approved, the application can be
 cancelled (and then re-requested afterwards).
@@ -185,15 +178,8 @@ Just because a mailing list has been applied for does not mean it has an
 archive link yet.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'membership-summary'))
-    Team and membership summary
-    Team owner: Sample Person
-    Membership:
-    ...
-    Moderated Team:
-    All subscriptions for this team are subject to approval by one of
-    the team's administrators.
+    >>> print find_tag_by_id(browser.contents, 'mailing-list-archive')
+    None
 
 The mailing list can be used as the team's contact address only when its
 status is ACTIVE. The process of activating a mailing list is invisible to
@@ -245,15 +231,8 @@ be configured until it's made active:
 And still, there is no archive link.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'membership-summary'))
-    Team and membership summary
-    Team owner: Sample Person
-    Membership:
-    ...
-    Moderated Team:
-    All subscriptions for this team are subject to approval by one of
-    the team's administrators.
+    >>> print find_tag_by_id(browser.contents, 'mailing-list-archive')
+    None
 
 Once the team's mailing list is active though, there is a link to its
 archive.  This is true even if no messages have yet been posted to the mailing
@@ -266,16 +245,7 @@ list (since the archiver will display an informative message to that effect).
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'membership-summary'))
-    Team and membership summary
-    Team owner:
-    Sample Person
-    Membership:
-    ...
-    Moderated Team:
-    All subscriptions for this team are subject to approval by one of
-    the team's administrators.
-    Mailing list archive:
+    ...     find_tag_by_id(browser.contents, 'mailing-list-archive'))
     http://lists.launchpad.dev/archives/landscape-developers
 
 The archive link is clickable, though we won't click it because Mailman isn't
@@ -488,16 +458,7 @@ are never deleted.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'membership-summary'))
-    Team and membership summary
-    Team owner:
-    Sample Person
-    Membership:
-    ...
-    Moderated Team:
-    All subscriptions for this team are subject to approval by one of
-    the team's administrators.
-    Mailing list archive:
+    ...     find_tag_by_id(browser.contents, 'mailing-list-archive'))
     http://lists.launchpad.dev/archives/landscape-developers
 
 An inactive mailing list can be reactivated.
@@ -533,16 +494,7 @@ Of course, the reactivated list still has a link to its archive.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'membership-summary'))
-    Team and membership summary
-    Team owner:
-    Sample Person
-    Membership:
-    ...
-    Moderated Team:
-    All subscriptions for this team are subject to approval by one of
-    the team's administrators.
-    Mailing list archive:
+    ...     find_tag_by_id(browser.contents, 'mailing-list-archive'))
     http://lists.launchpad.dev/archives/landscape-developers
 
 
