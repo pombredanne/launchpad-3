@@ -1611,7 +1611,7 @@ class BugTaskSet:
                 bugtasks.append(bugtask)
 
         def date_last_updated_key(bugtask):
-            """Return the date the bugtask was lasted updated."""
+            """Return the date the bugtask was last updated."""
             return bugtask.bug.date_last_updated
 
         return sorted(bugtasks, key=date_last_updated_key)
@@ -1622,9 +1622,9 @@ class BugTaskSet:
         :param target: A supported BugTarget or None. The target param must
             be either a Distribution, DistroSeries, Product, or ProductSeries.
             If target is None, the clause joins BugTask to all the supported
-            BugTarget tabled.
+            BugTarget tables.
         :raises NotImplementedError: If the target is an IProject,
-            ISourcePackage, or and IDistributionSourcePackage.
+            ISourcePackage, or an IDistributionSourcePackage.
         :raises AssertionError: If the target is not a known implementer of
             `IBugTarget`
         """
@@ -1635,20 +1635,20 @@ class BugTaskSet:
                     AND Distribution.enable_bug_expiration IS TRUE""",
             distroseries="""
                 LEFT OUTER JOIN DistroSeries
-                        ON BugTask.distroseries = DistroSeries.id
-                        AND DistroSeries.distribution IN (
-                            SELECT id FROM Distribution
-                            WHERE enable_bug_expiration IS TRUE)""",
+                    ON BugTask.distroseries = DistroSeries.id
+                    AND DistroSeries.distribution IN (
+                        SELECT id FROM Distribution
+                        WHERE enable_bug_expiration IS TRUE)""",
             product="""
                 LEFT OUTER JOIN Product
-                        ON BugTask.product = Product.id
-                        AND Product.enable_bug_expiration IS TRUE""",
+                    ON BugTask.product = Product.id
+                    AND Product.enable_bug_expiration IS TRUE""",
             productseries="""
                 LEFT OUTER JOIN ProductSeries
-                        ON BugTask.productseries = ProductSeries.id
-                        AND ProductSeries.product IN (
-                            SELECT id FROM Product
-                            WHERE enable_bug_expiration IS TRUE)""")
+                    ON BugTask.productseries = ProductSeries.id
+                    AND ProductSeries.product IN (
+                        SELECT id FROM Product
+                        WHERE enable_bug_expiration IS TRUE)""")
         if target is None:
             target_join = """
                 %(distribution)s %(distroseries)s
@@ -1688,8 +1688,8 @@ class BugTaskSet:
                         WHERE enable_bug_expiration IS TRUE)"""
             target_clause = "ProductSeries.id = %s" % sqlvalues(target)
         elif (IProject.providedBy(target)
-            or ISourcePackage.providedBy(target)
-            or IDistributionSourcePackage.providedBy(target)):
+              or ISourcePackage.providedBy(target)
+              or IDistributionSourcePackage.providedBy(target)):
             raise NotImplementedError(
                 "BugTarget %s is not supported by ." % target)
         else:

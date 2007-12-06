@@ -28,7 +28,6 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
             LaunchpadFunctionalTestCase.__init__(self, methodName=methodName)
 
     def setUp(self):
-        """."""
         LaunchpadFunctionalTestCase.setUp(self)
         distroset = getUtility(IDistributionSet)
 
@@ -222,7 +221,7 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
                 bugtask.id, bugtask.target.displayname))
 
 
-class BugTaskSetFindExpirableBugTasksTestCase(LaunchpadFunctionalTestCase):
+class BugTaskSetFindExpirableBugTasksTest(LaunchpadFunctionalTestCase):
     """Test `BugTaskSet.findExpirableBugTasks()` behaviour."""
 
     def setUp(self):
@@ -250,52 +249,42 @@ class BugTaskSetFindExpirableBugTasksTestCase(LaunchpadFunctionalTestCase):
                 productseries=self.productseries))
         sync_bugtasks(bugtasks)
 
-    def testTargetParam(self):
-        """The target param supports a limited set of BugTargets."""
-        # Four BugTarget types may passed as the target argument:
-        # Distribution, DistroSeries, Product, ProductSeries.
-        expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
-            0, target=self.distribution)
-        self.assert_(len(expirable_bugtasks) == 1,
-                    "%s has %d expirable bugtasks." %
-                    (self.distribution, len(expirable_bugtasks)))
+    def testSupportedTargetParam(self):
+        """The target param supports a limited set of BugTargets.
 
-        expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
-            0, target=self.distroseries)
-        self.assert_(len(expirable_bugtasks) == 1,
-                    "%s has %d expirable bugtasks." %
-                    (self.distroseries, len(expirable_bugtasks)))
+        Four BugTarget types may passed as the target argument:
+        Distribution, DistroSeries, Product, ProductSeries.
+        """
+        supported_targets = [self.distribution, self.distroseries,
+                             self.product, self.productseries]
+        for target in supported_targets:
+            expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
+                0, target=target)
+            self.assertEqual(len(expirable_bugtasks), 1,
+                 "%s has %d expirable bugtasks." %
+                 (self.distroseries, len(expirable_bugtasks)))
 
-        expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
-            0, target=self.product)
-        self.assert_(len(expirable_bugtasks) == 1,
-                    "%s has %d expirable bugtasks." %
-                    (self.product, len(expirable_bugtasks)))
+    def testUnsupportedBugTargetParam(self):
+        """Test that unsupported targets raise errors.
 
-        expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
-            0, target=self.productseries)
-        self.assert_(len(expirable_bugtasks) == 1,
-                    "%s has %d expirable bugtasks." %
-                    (self.productseries, len(expirable_bugtasks)))
+        Three BugTarget types are not supported because the UI does not
+        provide bug-index to link to the 'bugs that can expire' page.
+        Project, SourcePackage, and DistributionSourcePackage will
+        raise an NotImplementedError.
 
-        # Three BugTarget types are not supported because the UI does not
-        # provide bug-index to link to the 'bugs that can expire' page.
-        # Project, SourcePackage, and DistributionSourcePackage will
-        # raise an AssertionError.
+        Passing an unknown bugtarget type will raise an AssertionError.
+        """
         project = getUtility(IProjectSet).getByName('mozilla')
-        self.assertRaises(
-            NotImplementedError, self.bugtaskset.findExpirableBugTasks,
-            0, target=project)
         distributionsourcepackage = self.distribution.getSourcePackage(
             'mozilla-firefox')
-        self.assertRaises(
-            NotImplementedError, self.bugtaskset.findExpirableBugTasks,
-            0, target=distributionsourcepackage)
         sourcepackage = self.distroseries.getSourcePackage(
             'mozilla-firefox')
-        self.assertRaises(
-            NotImplementedError, self.bugtaskset.findExpirableBugTasks,
-            0, target=sourcepackage)
+        unsupported_targets = [project, distributionsourcepackage,
+                               sourcepackage]
+        for target in unsupported_targets:
+            self.assertRaises(
+                NotImplementedError, self.bugtaskset.findExpirableBugTasks,
+                0, target=target)
 
         # Objects that are not a known BugTarget type raise an AssertionError.
         self.assertRaises(
@@ -305,8 +294,7 @@ class BugTaskSetFindExpirableBugTasksTestCase(LaunchpadFunctionalTestCase):
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(BugTaskSearchBugsElsewhereTest))
-    suite.addTest(unittest.makeSuite(BugTaskSetFindExpirableBugTasksTestCase))
+    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
 
 

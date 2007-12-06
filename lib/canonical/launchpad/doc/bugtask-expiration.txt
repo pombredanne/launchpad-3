@@ -270,9 +270,9 @@ are returned.
 
 
 When a bug is passed as an argument to findExpirableBugTasks(), it
-returns that bug's expirable BugTasks, or None. Passing the bug that
-has the hoary and ubuntu bugtasks with 0 min_days_old returns just the
-hoary bugtask.
+returns that bug's expirable BugTasks, or an empty list. Passing the bug
+that has the hoary and ubuntu bugtasks with 0 min_days_old returns just
+the hoary bugtask.
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
     ...     0, bug=hoary_bugtask.bug)
@@ -281,10 +281,10 @@ hoary bugtask.
     hoary        True    351  Incomplete  False     False  False  False
 
 When a BugTarget is passed as an argument to findExpirableBugTasks(), it
-returns all the target's expirable bugtasks, or None. If the target's
-pillar does not use Launchpad Bugs, None is always returned. Passing
-ubuntu with 0 min_days_old shows that the distribution has two bugtasks
-that can expire if they are not confirmed.
+returns all the target's expirable bugtasks, or an empty list. If the
+target's pillar does not use Launchpad Bugs, None is always returned.
+Passing ubuntu with 0 min_days_old shows that the distribution has two
+bugtasks that can expire if they are not confirmed.
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
     ...     0, target=ubuntu)
