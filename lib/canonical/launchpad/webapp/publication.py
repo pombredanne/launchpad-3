@@ -281,7 +281,7 @@ class LaunchpadBrowserPublication(
             raise OffsiteFormPostError(referrer)
 
     def callObject(self, request, ob):
-        """See zope.publisher.interfaces.IPublication.
+        """See `zope.publisher.interfaces.IPublication`.
 
         Our implementation make sure that no result is returned on
         redirect.
@@ -295,9 +295,11 @@ class LaunchpadBrowserPublication(
         request.setInWSGIEnvironment(
             'launchpad.userid', request.principal.id)
 
-        # Pageid is ContextName:ViewName.
+        # launchpad.pageid contains an identifier of the form 
+        # ContextName:ViewName. It will end up in the page log.
         unrestricted_ob = removeSecurityProxy(ob)
-        context = getattr(unrestricted_ob, 'context', None)
+        context = removeSecurityProxy(
+            getattr(unrestricted_ob, 'context', None))
         if context is None:
             pageid = ''
         else:

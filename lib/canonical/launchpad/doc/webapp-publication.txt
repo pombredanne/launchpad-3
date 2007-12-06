@@ -612,7 +612,7 @@ Originally, this variable isn't set.
     >>> request._orig_env.has_key('launchpad.pageid')
     False
 
-It is set when during the callObject() hook. The pageid is made of the
+It is set during the callObject() hook. The pageid is made of the
 name of the context class and the view class name.
 
     >>> class TestView(object):
@@ -634,8 +634,9 @@ name of the context class and the view class name.
     >>> print request._orig_env['launchpad.pageid']
     TestContext:TestView
 
-ZCML registration of views will set on the view, the name under which it
-was registered. For these views, that's the name that will be used in
+When a view is registered using ZCML, the Zope machinery will store 
+the name under which the view was registered in the view's '__name__'
+attribute. For these views, that's the name that will be used in
 the pageid.
 
     >>> view.__name__ = '+test'
