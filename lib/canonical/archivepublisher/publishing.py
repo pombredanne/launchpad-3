@@ -209,7 +209,7 @@ class Publisher(object):
         OBSOLETE), scheduledeletiondate NULL and dateremoved NULL as
         dirty, to ensure that they are processed in death row.
         """
-        self.log.debug("* Step B2: Mark pockets with deletions as dirty")
+        self.log.debug("* Step A2: Mark pockets with deletions as dirty")
 
         # Query part that is common to both queries below.
         base_query = """

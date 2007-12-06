@@ -248,7 +248,6 @@ class Dominator:
         else:
             pub_record.scheduleddeletiondate = (
                 UTC_NOW + timedelta(days=conf.stayofexecution))
-        return pub_record
 
     def _judgeSuperseded(self, source_records, binary_records, conf):
         """Determine whether the superseded packages supplied should
