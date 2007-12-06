@@ -246,7 +246,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
                     self.setFieldError('contact_address', str(error))
         elif data['contact_method'] == TeamContactMethod.HOSTED_LIST:
             mailing_list = getUtility(IMailingListSet).get(self.context.name)
-            if (mailing_list is None or not mailing_list.isUsable()):
+            if mailing_list is None or not mailing_list.isUsable():
                 self.addError(
                     "This team's mailing list is not active and may not be "
                     "used as its contact address yet")
@@ -287,7 +287,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
                 context.preferredemail.status = EmailAddressStatus.VALIDATED
         elif contact_method == TeamContactMethod.HOSTED_LIST:
             mailing_list = list_set.get(context.name)
-            assert (mailing_list is not None and mailing_list.isUsable()), (
+            assert mailing_list is not None and mailing_list.isUsable(), (
                 "A team can only use a usable mailing list as its contact "
                 "address.")
             context.setContactAddress(

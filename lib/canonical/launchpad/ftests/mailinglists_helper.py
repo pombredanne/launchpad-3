@@ -3,6 +3,7 @@
 """Helper functions for testing XML-RPC services."""
 
 __all__ = [
+    'beta_program_enable',
     'fault_catcher',
     'get_alternative_email',
     'new_person',
@@ -16,6 +17,7 @@ import xmlrpclib
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.database import MailingListSet
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
@@ -144,6 +146,7 @@ def new_person(first_name):
                                      EmailAddressStatus.VALIDATED)
     return person
 
+
 def new_list_for_team(team_name, make_contact_address=False):
     """Create a mailing list for the named team.
 
@@ -170,6 +173,7 @@ def new_list_for_team(team_name, make_contact_address=False):
         team.setContactAddress(
             getUtility(IEmailAddressSet).getByEmail(mailing_list.address))
     logout()
+
 
 def get_alternative_email(person):
     """Return a non-preferred IEmailAddress for a person.
@@ -202,3 +206,20 @@ def review_list(list_name, status=None):
     list_set = getUtility(IMailingListSet)
     mailing_list = list_set.get(list_name)
     mailing_list.review(lpadmin, status)
+
+
+def beta_program_enable(team_name):
+    """Join a team to the mailing list beta program team.
+
+    This allows the team to apply for mailing lists.
+
+    XXX BarryWarsaw 06-Dec-2007 This function can go away when mailing lists
+    go public.
+    """
+    login('foo.bar@canonical.com')
+    person_set = getUtility(IPersonSet)
+    testers_team = person_set.getByName(config.mailman.beta_testers_team)
+    target_team = person_set.getByName(team_name)
+    reviewer = testers_team.teamowner
+    testers_team.addMember(target_team, reviewer, force_team_add=True)
+    logout()

@@ -2698,8 +2698,8 @@ class PersonEditEmailsView(LaunchpadFormView):
     def _mailing_list_subscription_type(self, mailing_list):
         """Return the context user's subscription type for the given list.
 
-        This is "Preferred address" if the user is subscribed using her
-        preferred address and "Don't subscribe" if the user is not
+        This is 'Preferred address' if the user is subscribed using her
+        preferred address and 'Don't subscribe' if the user is not
         subscribed at all. Otherwise it's the EmailAddress under
         which the user is subscribed to this mailing list.
         """

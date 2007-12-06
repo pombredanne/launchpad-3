@@ -1,4 +1,4 @@
-== Mailing list subscription management ==
+= Mailing list subscription management =
 
 Teams can have mailing lists associated with them, and a member of a
 team with a usable mailing list can subscribe to that list. A person
@@ -6,7 +6,7 @@ can subscribe to a mailing list using any of his email addresses, or a
 dynamic subscription which uses whichever email address is his
 preferred address at a given time.
 
-==Setup==
+== Setup ==
 
 We're going to use the sample user Carlos, who belongs to four teams
 (`admins`, `rosetta-admins`, `testing-spanish-team`, and
@@ -21,16 +21,33 @@ approve it.
     >>> new_list_for_team('admins', True)
     >>> new_list_for_team('rosetta-admins', False)
 
+The testing-spanish-team must be made a member of the mailing list beta
+testers team, otherwise it cannot have a mailing list.
+
+XXX BarryWarsaw 06-Dec-2007 This can't use new_list_for_team() because we
+don't want to approve and activate testing-spanish-team yet.  But without this
+stanza, Carlos wouldn't be able to apply for a mailing list.  This should get
+refactored as part of bug 163130, and eventually go away altogether when
+mailing lists go public.
+
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     beta_program_enable)
+    >>> beta_program_enable('testing-spanish-team')
+
+Now Carlos can apply for a mailing list for his team.
+
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~testing-spanish-team')
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
-==Subscription management==
 
-To subscribe to a mailing list, Carlos needs to use his subscription
-management screen, which shows a subscription control for every
-mailing list.
+== Subscription management ==
+
+To subscribe to a mailing list, Carlos uses his subscription management
+screen, which shows a subscription control for the mailing lists of every team
+he's a member of.  Mailing lists show up in this list regardless of whether
+it's currently the team contact method.
 
     >>> browser.open('http://launchpad.dev/~carlos/')
     >>> browser.getLink("Change e-mail settings").click()
@@ -50,11 +67,18 @@ mailing list.
     >>> print rosetta_admins.value
     ["Don't subscribe"]
 
-Note that a mailing list shows up whether or not it's currently the
-team contact method. Also note that the not-fully-created mailing list
-doesn't show up.
+However, testing-spanish-team's list doesn't show up because its creation has
+not been completed (specifically, Mailman hasn't constructed it yet).
 
-Carlos can subscribe to a list under his preferred email address:
+    >>> browser.getControl(name='field.subscription.testing-spanish-team')
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.subscription.testing-spanish-team'
+
+Carlos can subscribe to a list using his preferred email address.  Such
+subscriptions will track changes to his preferred address without requiring
+him to update his subscription.  So this is not the same as subscripting
+explicitly with whatever is his preferred email address.
 
     >>> admins = browser.getControl(name='field.subscription.admins')
     >>> admins.value = ['Preferred address']
@@ -72,11 +96,8 @@ Carlos can subscribe to a list under his preferred email address:
     >>> print rosetta_admins.value
     ["Don't subscribe"]
 
-He can subscribe to a list under one or the other of his
-addresses. Note that having mail delivered to the address that happens
-to be your preferred address right now, is *not* the same as having
-mail delivered to whatever your preferred address is at the time of
-delivery.
+Carlos can subscribe to a list using any of his validated addresses
+explicitly.
 
     >>> admins.value = ['carlos@canonical.com']
     >>> rosetta_admins.value = ['carlos@test.com']
@@ -105,7 +126,8 @@ to the preferred address.
     >>> print rosetta_admins.value
     ['carlos@canonical.com']
 
-Finally, he can unsubscribe from lists.
+Finally, he can unsubscribe from any mailing list by setting the subscription
+menu item to "Don't subscribe".
 
     >>> admins = browser.getControl(name='field.subscription.admins')
     >>> rosetta_admins = browser.getControl(
@@ -121,36 +143,3 @@ Finally, he can unsubscribe from lists.
     ["Don't subscribe"]
     >>> print rosetta_admins.value
     ["Don't subscribe"]
-
-== Hidden by configuration variable ==
-
-# XXX: Leonard Richardson 2007-12-03: See similar section in
-# xx-team-contactemail.txt
-
-    >>> from canonical.config import config
-    >>> config.mailman.expose_hosted_mailing_lists
-    True
-
-    >>> browser.getControl(name='field.subscription.admins') is None
-    False
-    >>> find_tag_by_id(browser.contents, 'mailing-list-help') is None
-    False
-
-    >>> config.mailman.expose_hosted_mailing_lists = False
-    >>> browser.reload()
-
-    >>> browser.getControl(name='field.subscription.admins')
-    Traceback (most recent call last):
-    ...
-    LookupError: name 'field.subscription.admins'
-
-    >>> find_tag_by_id(browser.contents, 'mailing-list-help') is None
-    True
-
-    >>> config.mailman.expose_hosted_mailing_lists = True
-    >>> browser.reload()
-
-    >>> browser.getControl(name='field.subscription.admins') is None
-    False
-    >>> find_tag_by_id(browser.contents, 'mailing-list-help') is None
-    False
