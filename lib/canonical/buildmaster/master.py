@@ -196,13 +196,10 @@ class BuilddMaster:
             "Found %d source(s) published." % sources_published.count())
 
         for pubrec in sources_published:
-            # XXX cprov 2007-07-11 bug=129491: Fix me please, 'ppa_archtags'
-            # should be modeled as DistroArchSeries.ppa_supported.
             if pubrec.archive.purpose == ArchivePurpose.PPA:
-                ppa_archtags = ('i386', 'amd64', 'lpia')
                 local_archs = [
                     distro_arch_series for distro_arch_series in legal_archs
-                    if distro_arch_series.architecturetag in ppa_archtags]
+                    if distro_arch_series.ppa_supported]
             else:
                 local_archs = legal_archs
 
