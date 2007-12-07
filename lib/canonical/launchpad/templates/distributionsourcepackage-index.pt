@@ -82,10 +82,10 @@
                     class="deleteBox"
                     action=""
                     method="POST"
-                    tal:attributes="action request/URL">
+                    tal:attributes="action request/URL; id row/delete_packaging_form_id">
                 <tal:hidden replace="structure row/packaging_field" />
 	        <tal:action
-	          replace="structure view/delete_packaging_action/render" />
+	            replace="structure view/renderDeletePackagingAction" />
               </form>
             </tal:can-delete-package-link>
           </tal:distroseries_row>

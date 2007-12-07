@@ -15,7 +15,8 @@ The No Privilege User may open the same page in two browser tabs.
 Then the user click the "Delete Link" button in the first tab. The
 deletion succeeds and the usual informational message is displayed.
 
-    >>> first_browser.getControl("Delete Link").click()
+    >>> form = first_browser.getForm("delete_warty_alsa-utils_trunk")
+    >>> form.getControl("Delete Link").click()
     >>> content = first_browser.contents
     >>> for tag in find_tags_by_class(content, 'informational'):
     ...     print extract_text(tag)
@@ -32,7 +33,8 @@ message, but it would be too much trouble for a corner case like this.
 So we resort to just displaying a helpful error message.
 -- David Allouche 2007-12-07
 
-    >>> second_browser.getControl("Delete Link").click()
+    >>> form = second_browser.getForm("delete_warty_alsa-utils_trunk")
+    >>> form.getControl("Delete Link").click()
     >>> content = second_browser.contents
     >>> for tag in find_tags_by_class(content, 'informational'):
     ...     print extract_text(tag)

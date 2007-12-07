@@ -26,24 +26,22 @@ A button is displayed to authenticated users to delete existing
 packaging links.
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/+source/alsa-utils')
-    >>> print user_browser.getControl("Delete Link")
+    >>> form = user_browser.getForm("delete_warty_alsa-utils_trunk")
+    >>> print form.getControl("Delete Link")
     <SubmitControl name='field.actions.delete_packaging' type='submit'>
-
-XXX: When there are multiple "Delete Link" controls, they have the same
-name and id attributes, which makes the document not well-formed XHTML.
--- David Allouche 2007-12-02
 
 This button is not displayed to anonymous users.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+source/alsa-utils')
-    >>> print anon_browser.getControl("Delete Link")
+    >>> anon_browser.getForm("delete_warty_alsa-utils_trunk")
     Traceback (most recent call last):
     ...
-    LookupError: label 'Delete Link'
+    LookupError
 
 Clicking this button deletes the corresponding packaging association.
 
-    >>> user_browser.getControl("Delete Link").click()
+    >>> form = user_browser.getForm("delete_warty_alsa-utils_trunk")
+    >>> form.getControl("Delete Link").click()
     >>> content = user_browser.contents
     >>> for tag in find_tags_by_class(content, 'informational'):
     ...     print extract_text(tag)

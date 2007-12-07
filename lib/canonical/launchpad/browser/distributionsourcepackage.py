@@ -333,6 +333,11 @@ class DistributionSourcePackageView(LaunchpadFormView):
         return '<input type="hidden" name="field.packaging" value="%s" />' % (
             vocabulary.getTerm(packaging).token)
 
+    def renderDeletePackagingAction(self):
+        """Render a submit input for the delete_packaging_action."""
+        return ('<input type="submit" class="button" value="Delete Link" '
+                'name="field.actions.delete_packaging""/>')
+
     def handleDeletePackagingError(self, action, data, errors):
         """Handle errors on package link deletion.
 
@@ -345,7 +350,6 @@ class DistributionSourcePackageView(LaunchpadFormView):
         if data.get('packaging') is None:
             self.setFieldError(
                 'packaging', "This upstream association was deleted already.")
-
 
     @action(_("Delete Link"), name='delete_packaging',
             failure=handleDeletePackagingError)
@@ -366,8 +370,13 @@ class DistributionSourcePackageView(LaunchpadFormView):
         for sourcepackage in self.context.get_distroseries_packages():
             packaging = sourcepackage.direct_packaging
             if packaging is None:
+                delete_packaging_form_id = None
                 packaging_field = None
             else:
+                delete_packaging_form_id = "delete_%s_%s_%s" % (
+                    packaging.distroseries.name,
+                    packaging.productseries.product.name,
+                    packaging.productseries.name)
                 packaging_field = self._renderHiddenPackagingField(packaging)
             series_result = []
             for published in \
@@ -378,6 +387,7 @@ class DistributionSourcePackageView(LaunchpadFormView):
                         'pocket': published[0].name.lower(),
                         'package': drspr,
                         'packaging': packaging,
+                        'delete_packaging_form_id': delete_packaging_form_id,
                         'packaging_field': packaging_field,
                         'sourcepackage': sourcepackage
                         })
