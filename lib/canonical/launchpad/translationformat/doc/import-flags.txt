@@ -76,6 +76,15 @@ And lets define a nice printout function for PO files.
     ...             strip_to_length(imported_translation),
     ...             strip_to_length(imported_fuzzy, 4))
 
+We need to print out stats for the pofile as well.
+
+    >>> def print_pofile_stats(pofile):
+    ...     pofile.updateStatistics()
+    ...     print "total:", pofile.messageCount()
+    ...     print "translated:", pofile.translatedCount()
+    ...     print "  imported:", pofile.currentCount()
+    ...     print "    changed:", pofile.updatesCount()
+    ...     print "  new:", pofile.rosettaCount()
 
 We'll be doing all our imports into Firefox trunk as
 carlos@canonical.com.
@@ -179,6 +188,16 @@ one, and fuzzy flags are carried over as well.
      5. fifth              None                    None                    *
      6. sixth              None                    None                    *
 
+If we look at the statistics, only non-fuzzy imported messages are counted
+as valid translations.
+
+    >>> print_pofile_stats(firefox_serbian)
+    total: 6
+    translated: 2
+      imported: 2
+        changed: 0
+      new: 0
+
 After initial translation import from the package, it's common for
 translators to work either directly in Launchpad or to upload PO files
 with their updates.  This is a file where the "second" and "fourth"
@@ -236,6 +255,17 @@ imported fuzzy is still on).
      4. fourth             d-from-LP               d                  yes  *
      5. fifth              e-from-LP               None                    *
      6. sixth              None                    None                    *
+
+We can notice that we have 4 translations, with "second" imported one
+now considered 'changed in LP', and two new translations through Launchpad
+("d-from-LP" and "e-from-LP"):
+
+    >>> print_pofile_stats(firefox_serbian)
+    total: 6
+    translated: 4
+      imported: 2
+        changed: 1
+      new: 2
 
 
 Common next step is having a new package upload which provides us with
@@ -295,6 +325,17 @@ preference to translations done inside Launchpad over imported ones.
      4. fourth             d-from-LP               d                       *
      5. fifth              e-from-LP               e                       *
      6. sixth              f                       f                       *
+
+With this latest import, we've got five non-fuzzy messages, but since we
+are preferring Launchpad-done translations, we now have 5 translations,
+but 3 of them are marked as 'changed in LP':
+
+    >>> print_pofile_stats(firefox_serbian)
+    total: 6
+    translated: 5
+      imported: 5
+        changed: 3
+      new: 0
 
 
 A new translation for "second" message through Launchpad is added.  We also
@@ -357,6 +398,18 @@ translation.
      5. fifth              e-from-LP-two           e                       *
      6. sixth              f                       f                       *
 
+Removing a fuzzy flag from imported translation for "third" actually makes
+a 'new' translation, which is reflected in the statistics below, and
+reverting a "fourth" translation to the imported one is shown by the decreased
+'changed' count:
+
+    >>> print_pofile_stats(firefox_serbian)
+    total: 6
+    translated: 6
+      imported: 5
+        changed: 2
+      new: 1
+
 Finally, we make sure that adding another suggestion to the "second" message
 works properly, even if it makes us have two non-current and non-imported
 suggestions.
@@ -412,3 +465,13 @@ one ("b-from-LP", "b-from-LP-two").
      4. fourth             d                       d                       *
      5. fifth              e-from-LP-two           e                       *
      6. sixth              f                       f                       *
+
+Statistics have not changed from the previous, since translation for "second"
+was already 'changed':
+
+    >>> print_pofile_stats(firefox_serbian)
+    total: 6
+    translated: 6
+      imported: 5
+        changed: 2
+      new: 1
