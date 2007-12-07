@@ -1634,10 +1634,12 @@ class ObsoleteDistroseries(SoyuzScript):
 
         self.logger.info("Obsoleting sources...")
         for package in sources:
+            self.logger.debug("Obsoleting %s" % package.displayname)
             package.requestObsolescence()
 
         self.logger.info("Obsoleting binaries...")
         for package in binaries:
+            self.logger.debug("Obsoleting %s" % package.displayname)
             package.requestObsolescence()
 
         # The obsoleted packages will be caught by death row processing
