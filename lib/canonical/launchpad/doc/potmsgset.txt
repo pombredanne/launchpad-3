@@ -904,3 +904,42 @@ from getCurrentTranslationMessage().
     ...     pofile_es.language, variant='not-existing-variant')
     >>> print current_non_existing
     None
+
+== Suggestions for translator credits ==
+
+Messages with translator credits are translated automatically by
+Launchpad, so we should not get any suggestions for them.
+
+To put 'external' suggestions in database, let's translate
+'translation-credits' message in alsa-utils template to Spanish.
+
+    >>> alsa = getUtility(IProductSet).getByName('alsa-utils')
+    >>> alsa_trunk = alsa.getSeries('trunk')
+    >>> alsa_potemplate = alsa_trunk.getPOTemplate('alsa-utils')
+    >>> translator_credits = alsa_potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'translation-credits')
+
+    >>> spanish_pofile = alsa_potemplate.getPOFileByLang('es')
+    >>> spanish = spanish_pofile.language
+
+    >>> new_translation = translator_credits.updateTranslation(spanish_pofile,
+    ...     carlos, {0: u'Some Translator'}, is_fuzzy=False, is_imported=True,
+    ...     lock_timestamp=datetime.now(UTC))
+
+    >>> current = translator_credits.getCurrentTranslationMessage(
+    ...     spanish)
+    >>> current.translations
+    [u'Some Translator']
+
+Now, let's add 'translation-credits' message to a different POTemplate:
+
+     >>> new_credits = evolution_potemplate.createMessageSetFromText(
+     ...     singular_text=u'translation-credits', plural_text=None)
+
+However, this one doesn't show up as external suggestion for Spanish.
+
+    >>> new_credits.getExternallyUsedTranslationMessages(spanish)
+    []
+    >>> new_credits.getExternallySuggestedTranslationMessages(spanish)
+    []
+

@@ -146,6 +146,9 @@ class POTMsgSet(SQLBase):
         A message is used if it's either imported or current, and unused
         otherwise.
         """
+        # Return empty list (no suggestions) for translation credit strings
+        if self.is_translation_credit:
+            return []
         # Watch out when changing this condition: make sure it's done in
         # a way so that indexes are indeed hit when the query is executed.
         # Also note that there is a NOT(in_use_clause) index.
