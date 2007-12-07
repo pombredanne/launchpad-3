@@ -46,7 +46,7 @@ class Archive(SQLBase):
     enabled = BoolCol(dbName='enabled', notNull=False, default=True)
 
     authorized_size = IntCol(
-        dbName='authorized_size', notNull=False, default=104857600)
+        dbName='authorized_size', notNull=False, default=1073741824)
 
     whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
 
@@ -118,9 +118,10 @@ class Archive(SQLBase):
                 self.distribution.name + '-partner')
             pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
             pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
-            pubconf.overrideroot = None
-            pubconf.cacheroot = None
-            pubconf.miscroot = None
+            pubconf.overrideroot = os.path.join(
+                pubconf.archiveroot, 'overrides')
+            pubconf.cacheroot = os.path.join(pubconf.archiveroot, 'cache')
+            pubconf.miscroot = os.path.join(pubconf.archiveroot, 'misc')
         else:
             raise AssertionError(
                 "Unknown archive purpose %s when getting publisher config.",
@@ -193,20 +194,22 @@ class Archive(SQLBase):
     @property
     def sources_size(self):
         """See `IArchive`."""
+        cur = cursor()
         query = """
-            LibraryFileContent.id=LibraryFileAlias.content AND
-            LibraryFileAlias.id=
-                SourcePackageFilePublishing.libraryfilealias AND
-            SourcePackageFilePublishing.archive=%s
+            SELECT SUM(filesize) FROM LibraryFileContent WHERE id IN (
+               SELECT DISTINCT(lfc.id) FROM
+                   LibraryFileContent lfc, LibraryFileAlias lfa,
+                   SourcePackageFilePublishing spfp
+               WHERE
+                   lfc.id=lfa.content AND
+                   lfa.id=spfp.libraryfilealias AND
+                   spfp.archive=%s);
         """ % sqlvalues(self)
-
-        clauseTables = ['LibraryFileAlias', 'SourcePackageFilePublishing']
-        result = LibraryFileContent.select(query, clauseTables=clauseTables)
-
-        size = result.sum('filesize')
+        cur.execute(query)
+        size = cur.fetchall()[0][0]
         if size is None:
             return 0
-        return size
+        return int(size)
 
     def _getBinaryPublishingBaseClauses (
         self, name=None, version=None, status=None, distroarchseries=None,
@@ -260,7 +263,7 @@ class Archive(SQLBase):
                 distroarchseries = [distroarchseries]
             # XXX cprov 20071016: there is no sqlrepr for DistroArchSeries
             # uhmm, how so ?
-            das_ids = "(%s)" % ", ".join([str(d.id) for d in distroarchseries])
+            das_ids = "(%s)" % ", ".join(str(d.id) for d in distroarchseries)
             clauses.append("""
                 BinaryPackagePublishingHistory.distroarchseries IN %s
             """ % das_ids)
@@ -275,7 +278,8 @@ class Archive(SQLBase):
             distroarchseries=distroarchseries, exact_match=exact_match)
 
         all_binaries = BinaryPackagePublishingHistory.select(
-            ' AND '.join(clauses) , clauseTables=clauseTables, orderBy=orderBy)
+            ' AND '.join(clauses) , clauseTables=clauseTables,
+            orderBy=orderBy)
 
         return all_binaries
 
@@ -315,8 +319,9 @@ class Archive(SQLBase):
         """]
         no_nominated_arch_independent_query = ' AND '.join(
             clauses + no_nominated_arch_independent_clause)
-        no_nominated_arch_independents = BinaryPackagePublishingHistory.select(
-            no_nominated_arch_independent_query, clauseTables=clauseTables)
+        no_nominated_arch_independents = (
+            BinaryPackagePublishingHistory.select(
+            no_nominated_arch_independent_query, clauseTables=clauseTables))
 
         # XXX cprov 20071016: It's not possible to use the same ordering
         # schema returned by self._getBinaryPublishingBaseClauses.

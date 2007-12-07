@@ -5,6 +5,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n">
 
     <!-- Content class configuration -->
+    <include file="announcement.zcml" />
     <include file="batchnavigator.zcml" />
     <include file="binarypackagepublishinghistory.zcml" />
     <include file="binarypackagerelease.zcml" />

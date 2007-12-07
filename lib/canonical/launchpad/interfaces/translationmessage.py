@@ -206,8 +206,8 @@ class ITranslationMessageSuggestions(Interface):
     When displaying `POTMsgSet`s in `CurrentTranslationMessageView`
     we display different types of suggestions: non-reviewer translations,
     translations that occur in other contexts, and translations in
-    alternate languages. See `CurrentTranslationMessageView._buildSuggestions`
-    for details.
+    alternate languages. See
+    `CurrentTranslationMessageView._buildAllSuggestions` for details.
     """
     title = Attribute("The name displayed next to the suggestion, "
                       "indicating where it came from.")

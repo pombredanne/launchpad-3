@@ -45,6 +45,7 @@ from canonical.launchpad.interfaces import (
     DistroSeriesStatus, IDistributionMirrorSet, IDistributionSet, 
     IDistribution, ILaunchBag, ILaunchpadCelebrities, IPublishedPackageSet,
     MirrorContent, MirrorSpeed, NotFoundError)
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -94,6 +95,10 @@ class DistributionNavigation(
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
+
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
 
     @stepthrough('+spec')
     def traverse_spec(self, name):
@@ -191,7 +196,7 @@ class DistributionOverviewMenu(ApplicationMenu):
              'mirror_admin', 'reassign', 'addseries', 'top_contributors',
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
-             'upload_admin', 'ppas']
+             'announce', 'announcements', 'upload_admin', 'ppas']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -284,6 +289,19 @@ class DistributionOverviewMenu(ApplicationMenu):
     def addseries(self):
         text = 'Add series'
         return Link('+addseries', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        enabled = self.isBetaUser
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, enabled=enabled, icon='add')
+
+    def announcements(self):
+        text = 'Show announcements'
+        enabled = bool(self.context.announcements().count()
+                       and self.isBetaUser)
+        return Link('+announcements', text, enabled=enabled)
 
     def builds(self):
         text = 'Builds'
@@ -380,7 +398,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+select-language-pack-admin', text, icon='edit')
 
 
-class DistributionView(BuildRecordsView):
+class DistributionView(HasAnnouncementsView, BuildRecordsView):
     """Default Distribution view class."""
 
     def initialize(self):
@@ -521,7 +539,8 @@ class DistributionEditView(LaunchpadEditFormView):
     schema = IDistribution
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
-                   'official_malone', 'official_rosetta', 'official_answers']
+                   'official_malone', 'enable_bug_expiration',
+                   'official_rosetta', 'official_answers']
 
     def isAdmin(self):
         return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
@@ -530,7 +549,17 @@ class DistributionEditView(LaunchpadEditFormView):
         LaunchpadFormView.setUpFields(self)
         if not self.isAdmin():
             self.form_fields = self.form_fields.omit(
-                'official_malone', 'official_rosetta', 'official_answers')
+                'official_malone', 'official_rosetta', 'official_answers',
+                'enable_bug_expiration')
+
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        # enable_bug_expiration is disabled by JavaScript when official_malone
+        # is set False. The contraint is enforced here in case the JavaScript
+        # fails to load or activate.
+        official_malone = data.get('official_malone', False)
+        if not official_malone:
+            data['enable_bug_expiration'] = False
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -606,6 +635,12 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
         body = "\n".join(mirror.base_url for mirror in mirrors)
         self.request.response.setHeader(
             'content-type', 'text/plain;charset=utf-8')
+        if country is None:
+            country_name = 'Unknown'
+        else:
+            country_name = country.name
+        self.request.response.setHeader(
+            'X-Generated-For-Country', country_name)
         return body.encode('utf-8')
 
 
@@ -773,7 +808,7 @@ class DistributionDynMenu(
     menus = {
         '': 'mainMenu',
         'meetings': 'meetingsMenu',
-        'series': 'seriesesMenu',
+        'series': 'seriesMenu',
         'milestones': 'milestoneMenu',
         }
 
