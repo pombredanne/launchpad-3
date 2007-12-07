@@ -33,6 +33,8 @@ from canonical.launchpad.webapp import (
     redirection)
 from canonical.launchpad.webapp.batching import BatchNavigator
 
+from canonical.widgets import WhitespaceDelimitedListWidget
+
 
 class BugTrackerSetNavigation(GetitemNavigation):
 
@@ -65,7 +67,7 @@ class BugTrackerSetContextMenu(ContextMenu):
 
 
 class BugTrackerAddView(LaunchpadFormView):
-    
+
     schema = IBugTracker
     label = "Register an external bug tracker"
     field_names = ['name', 'bugtrackertype', 'title', 'summary',
@@ -102,7 +104,7 @@ class BugTrackerAddView(LaunchpadFormView):
             contactdetails=data['contactdetails'],
             owner=getUtility(ILaunchBag).user)
         self.next_url = canonical_url(bugtracker)
-        
+
 #     def create(self, name, bugtrackertype, title, summary, baseurl,
 #                contactdetails):
 #         """Create the IBugTracker."""
@@ -148,9 +150,10 @@ class BugTrackerEditView(LaunchpadEditFormView):
 
     schema = IBugTracker
     field_names = ['name', 'title', 'bugtrackertype',
-                   'summary', 'baseurl', 'contactdetails']
+                   'summary', 'baseurl', 'aliases', 'contactdetails']
 
     custom_widget('summary', TextAreaWidget, width=30, height=5)
+    custom_widget('aliases', WhitespaceDelimitedListWidget)
 
     @action('Change', name='change')
     def change_action(self, action, data):

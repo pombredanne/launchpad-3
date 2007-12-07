@@ -96,8 +96,6 @@ class BugTracker(SQLBase):
     baseurl = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     contactdetails = StringCol(notNull=False)
-    aliases = SQLMultipleJoin(
-        'BugTrackerAlias', joinColumn='bugtracker', orderBy='base_url')
     projects = SQLMultipleJoin(
         'Project', joinColumn='bugtracker', orderBy='name')
     products = SQLMultipleJoin(
@@ -126,6 +124,34 @@ class BugTracker(SQLBase):
                 OR lastchecked IS NULL)""" % sqlvalues(
                     self.id, hours_since_last_check))
         return BugWatch.select(query, orderBy=["remotebug", "id"])
+
+    _bugtracker_aliases = SQLMultipleJoin(
+        'BugTrackerAlias', joinColumn='bugtracker', orderBy='base_url')
+
+    def _get_aliases(self):
+        return [alias.base_url for alias in self._bugtracker_aliases]
+
+    def _set_aliases(self, alias_urls):
+        current_aliases_by_url = dict(
+            (alias.base_url, alias) for alias in self._bugtracker_aliases)
+
+        alias_urls = set(alias_urls)
+        current_alias_urls = set(current_aliases_by_url)
+
+        to_add = alias_urls - current_alias_urls
+        to_del = current_alias_urls - alias_urls
+
+        for url in to_add:
+            BugTrackerAlias(bugtracker=self, base_url=url)
+        for url in to_del:
+            alias = current_aliases_by_url[url]
+            alias.destroySelf()
+
+    def _del_aliases(self):
+        for alias in self._bugtracker_aliases:
+            alias.destroySelf()
+
+    aliases = property(_get_aliases, _set_aliases, _del_aliases)
 
 
 class BugTrackerSet:
@@ -231,6 +257,8 @@ class BugTrackerAlias(SQLBase):
 class BugTrackerAliasSet:
     """See `IBugTrackerAliasSet`."""
     implements(IBugTrackerAliasSet)
+
+    table = BugTrackerAlias
 
     def get(self, bugtrackeralias_id, default=None):
         """See `IBugTrackerAliasSet`."""

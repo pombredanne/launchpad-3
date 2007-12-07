@@ -15,12 +15,12 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Int, Text, TextLine, Choice
+from zope.schema import Int, List, Text, TextLine, Choice
 from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, StrippedTextLine, UniqueField)
+    ContentNameField, StrippedTextLine, UniqueField, URIField)
 from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr import DBEnumeratedType, DBItem
@@ -142,7 +142,9 @@ class IBugTracker(Interface):
             'example, its administrators can be contacted about a security '
             'breach).'),
         required=False)
-    aliases = Attribute('Other aliases to this bug tracker.')
+    aliases = List(
+        title=_('Other aliases to this bug tracker.'),
+        value_type=URIField(), required=False)
     watches = Attribute('The remote watches on this bug tracker.')
     projects = Attribute('The projects that use this bug tracker.')
     products = Attribute('The products that use this bug tracker.')
@@ -172,7 +174,8 @@ class IBugTrackerSet(Interface):
     bugtracker_count = Attribute("The number of registered bug trackers.")
 
     def get(bugtracker_id, default=None):
-        """Get a BugTracker by its id, or return default if it doesn't exist."""
+        """Get a BugTracker by its id, or return default if it doesn't
+           exist."""
 
     def getByName(name, default=None):
         """Get a BugTracker by its name, or return default if it doesn't
@@ -244,7 +247,8 @@ class IRemoteBug(Interface):
         readonly=False, description=_("The bug number of this bug in the "
         "remote bug system."))
 
-    bugs = Attribute(_("A list of the Launchpad bugs watching the remote bug"))
+    bugs = Attribute(
+        _("A list of the Launchpad bugs watching the remote bug"))
 
     title = TextLine(
         title=_('Title'),
