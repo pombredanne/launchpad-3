@@ -19,8 +19,11 @@ First we'll set up the OpenID consumer:
     >>> consumer = Consumer(session={}, store=openid_store)
 
 Now perform an OpenID authentication request, querying membership in
-three teams: one that the user is a member of, one that does not exist
-and one that does exist but the user is not a member of:
+four team names:
+ * one that the user is a member of
+ * one that does not exist
+ * one that does exist but the user is not a member of
+ * one that is actually the user's name
 
     >>> endpoint = make_endpoint(
     ...     PROTOCOL_URI, 'http://openid.launchpad.dev/+id/sabdfl_oid')
@@ -34,7 +37,7 @@ and one that does exist but the user is not a member of:
     'lp'
     >>> request.addExtensionArg(
     ...     LAUNCHPAD_TEAMS_NS, 'query_membership',
-    ...     'ubuntu-team,no-such-team,launchpad-beta-testers')
+    ...     'ubuntu-team,no-such-team,launchpad-beta-testers,sabdfl')
 
     >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
     >>> browser.open(request.redirectURL(

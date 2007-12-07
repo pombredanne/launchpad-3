@@ -235,9 +235,9 @@ class OpenIdMixin:
             return
         team_names = team_names.split(',')
         memberships = []
-        personset = getUtility(IPersonSet)
+        person_set = getUtility(IPersonSet)
         for team_name in team_names:
-            team = personset.getByName(team_name)
+            team = person_set.getByName(team_name)
             if team is None or not team.isTeam():
                 continue
             # XXX jamesh 2007-12-05 bug=174076:
