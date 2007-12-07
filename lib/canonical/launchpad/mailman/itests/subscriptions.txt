@@ -11,6 +11,14 @@ list.  First, create the mailing list.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
+
+XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
+program in order to apply for mailing lists.  When mailing lists go public,
+this stanza can be removed.
+
+    >>> itest_helper.beta_program_enable('itest-one')
+
+    >>> browser.reload()
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
@@ -27,6 +35,8 @@ people and join them to teams through the backdoor.
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from zope.component import getUtility
     >>> person_set = getUtility(IPersonSet)
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')    
     >>> team_one = person_set.getByName('itest-one')
 
     # Subscribe Anne with her preferred address.
@@ -78,6 +88,7 @@ preferred email address, and Bart unsubscribes from the mailing list.
     # Change Anne's email address to her alternative.
     >>> sync(anne)
     >>> anne.setPreferredEmail(get_alternative_email(anne))
+    >>> logout()
     >>> commit()
     >>> itest_helper.wait_for_mailman()
 

@@ -19,14 +19,13 @@ from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.publisher.interfaces import NotFound
-from zope.schema import Choice, TextLine
+from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import (
     HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
 
-from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
@@ -37,7 +36,8 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
     IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
     ITeamCreation, ITeamMember, LoginTokenType, MailingListStatus,
-    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
+    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData,
+    is_participant_in_beta_program)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 class HasRenewalPolicyMixin:
@@ -143,10 +143,11 @@ class MailingListTeamBaseView(LaunchpadFormView):
     def can_create_mailing_list(self):
         """Is it allowed to create a mailing list for this team?
 
-        `list_is_usable` must return false and mailing lists must
-        be enabled. Once mailing lists are enabled globally, this should
-        be replacable with not list_is_usable."""
-        return (config.mailman.expose_hosted_mailing_lists and
+        `list_is_usable` must return false and mailing lists must be enabled
+        for this team.  Once mailing lists are enabled globally, this should
+        be replacable with not list_is_usable.
+        """
+        return (is_participant_in_beta_program(self.context) and
                 not self.list_is_usable)
 
     @property
@@ -199,8 +200,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
             if term.value == TeamContactMethod.HOSTED_LIST:
                 hosted_list_term_index = i
                 break
-        if (config.mailman.expose_hosted_mailing_lists
-            and self.list_is_usable):
+        if self.list_is_usable:
             # The team's mailing list can be used as the contact
             # address. However we need to change the title of the
             # corresponding term to include the list's email address.
@@ -246,7 +246,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
                     self.setFieldError('contact_address', str(error))
         elif data['contact_method'] == TeamContactMethod.HOSTED_LIST:
             mailing_list = getUtility(IMailingListSet).get(self.context.name)
-            if (mailing_list is None or not mailing_list.isUsable()):
+            if mailing_list is None or not mailing_list.isUsable():
                 self.addError(
                     "This team's mailing list is not active and may not be "
                     "used as its contact address yet")
@@ -287,7 +287,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
                 context.preferredemail.status = EmailAddressStatus.VALIDATED
         elif contact_method == TeamContactMethod.HOSTED_LIST:
             mailing_list = list_set.get(context.name)
-            assert (mailing_list is not None and mailing_list.isUsable()), (
+            assert mailing_list is not None and mailing_list.isUsable(), (
                 "A team can only use a usable mailing list as its contact "
                 "address.")
             context.setContactAddress(
@@ -341,14 +341,18 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         self.mailing_list = list_set.get(self.context.name)
 
     def initialize(self):
-        """Hide this view if mailing lists are disabled.
+        """Hide this view if mailing lists are not enabled for this team.
 
         Once mailing lists are enabled globally, this method should be
         removed.
         """
-        if not config.mailman.expose_hosted_mailing_lists:
+        if is_participant_in_beta_program(self.context):
+            # It's okay to let this team configure its mailing list, so let
+            # the normal view initialization procedure continue.
+            super(TeamMailingListConfigurationView, self).initialize()
+        else:
+            # Pretend as if this view doesn't exist at all.
             raise NotFound(self, '+mailinglist', request=self.request)
-        super(TeamMailingListConfigurationView, self).initialize()
 
     @action('Save', name='save')
     def save_action(self, action, data):
