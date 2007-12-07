@@ -262,7 +262,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "or obsolete.")
 
     def isUnstable():
-        """Return True if in unstable (or "development") phase, False otherwise.
+        """Whether or not a distroseries in in unstable.
 
         The distribution is "unstable" until it is released; after that
         point, all development on the Release pocket is stopped and

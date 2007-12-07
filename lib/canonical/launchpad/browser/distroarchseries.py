@@ -46,7 +46,8 @@ class DistroArchSeriesContextMenu(ContextMenu):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
-    # Search link not necessary, because there's a search form on the overview page.
+    # Search link not necessary, because there's a search form on
+    # the overview page.
 
     def builds(self):
         text = 'Show builds'
