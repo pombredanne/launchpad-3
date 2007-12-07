@@ -30,9 +30,6 @@ def process(mlist, msg, msgdata):
         syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
     except xmlrpclib.Fault, error:
         syslog('xmlrpc', 'Launchpad exception: %s', error)
-    # This handler can just return if the sender is a member of Launchpad.
-    if is_member:
-        return
     # Some automated processes will also send messages to the mailing list.
     # For example, if the list is a contact address for a team and that team
     # is the contact address for a project's answer tracker, an automated
@@ -43,6 +40,9 @@ def process(mlist, msg, msgdata):
         # this could be spoofed, but there's really no other way (currently)
         # to do it.
         msgdata['approved'] = True
+        return
+    # This handler can just return if the sender is a member of Launchpad.
+    if is_member:
         return
     # IncomingRunner already posts the Message-ID to the logs/vette for
     # discarded messages, so we only need to add a little more detail here.

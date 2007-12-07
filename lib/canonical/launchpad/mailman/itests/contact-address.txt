@@ -38,6 +38,7 @@ contact address of our new team.
     >>> browser.getControl('Apply for Mailing List').click()
 
     >>> list_one = itest_helper.review_list('itest-one')
+    >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
@@ -95,49 +96,19 @@ new questions will email the mailing list.
 
     >>> print messages[0].as_string()
     MIME-Version: 1.0
-    X-Launchpad-Question: product=firefox; status=Open; assignee=None;
-      priority=Normal; language=en
-    X-Launchpad-Message-Rationale: Answer Contact (firefox) @itest-one
+    ...
     To: itest-one@lists.launchpad.net
     From: No Privileges Person <question...@answers.launchpad.net>
     Message-Id: ...
-    Date: ...
-    Return-Path: bounces@canonical.com
-    Precedence: bulk
-    X-Generated-By: Launchpad (canonical.com)
-    Received: by smtp2mbox
+    ...
     Subject: [Itest-one] [Question #...]: A new question
-    X-BeenThere: itest-one@launchpad.dev
-    X-Mailman-Version: ...
-    Reply-To: question...@answers.launchpad.net
-    List-Id: <itest-one.launchpad.dev>
-    List-Unsubscribe: <http://.../mailman/listinfo/itest-one>,
-      <mailto:itest-one-request@launchpad.dev?subject=unsubscribe>
-    List-Archive: <http://.../pipermail/itest-one>
-    List-Post: <mailto:itest-one@launchpad.dev>
-    List-Help: <mailto:itest-one-request@launchpad.dev?subject=help>
-    List-Subscribe: <http://.../mailman/listinfo/itest-one>,
-      <mailto:itest-one-request@launchpad.dev?subject=subscribe>
-    Content-Type: text/plain; charset="us-ascii"
-    Content-Transfer-Encoding: 7bit
-    Sender: itest-one-bounces@launchpad.dev
-    Errors-To: itest-one-bounces@launchpad.dev
-    Received: by smtp2mbox
+    ...
     <BLANKLINE>
     New question #... on Mozilla Firefox:
     http://answers.launchpad.dev/firefox/+question/...
     <BLANKLINE>
     More detail.
-    <BLANKLINE>
-    --
-    You received this question notification because you are a member of
-    ITest One, which is an answer contact for Mozilla Firefox.
-    _______________________________________________
-    Itest-one mailing list
-    Itest-one@launchpad.dev
-    http://.../mailman/listinfo/itest-one
-    <BLANKLINE>
-    <BLANKLINE>
+    ...
 
 Similarly, if we subscribe our new team to a blueprint, a notification will be
 sent to its mailing list.
@@ -159,6 +130,16 @@ sent to its mailing list.
     1
 
     >>> print messages[0].as_string()
+    MIME-Version: 1.0
+    To: itest-one@lists.launchpad.net
+    From: No Privileges Person <no-priv@canonical.com>
+    ...
+    <BLANKLINE>
+    You are now subscribed to the blueprint canvas - Support <canvas>
+    Objects.
+    <BLANKLINE>
+    ...
+
 
 If we change the team's contact address to something other than the
 launchpad-hosted mailing list, though, the notifications won't be sent to the
@@ -217,11 +198,6 @@ used as the team's contact address.
     ...
     <BLANKLINE>
     Hi, I am a member of Launchpad.
-    _______________________________________________
-    Itest-one mailing list
-    Itest-one@launchpad.dev
-    http://.../mailman/listinfo/itest-one
-    <BLANKLINE>
-    <BLANKLINE>
+    ...
 
     >>> smtpd.stop()
