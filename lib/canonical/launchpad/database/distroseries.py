@@ -158,6 +158,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables=["ComponentSelection"])
 
     @property
+    def ppa_architectures(self):
+        return DistroArchSeries.select("""
+        DistroArchSeries.distroseries = %s AND
+        DistroArchSeries.ppa_supported = True
+        """ % sqlvalues(self), orderBy='architecturetag')
+
+    @property
     def all_milestones(self):
         """See IDistroSeries."""
         return Milestone.selectBy(
