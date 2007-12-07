@@ -55,7 +55,7 @@ class GettextPOImporter:
 
         if translation_import_queue_entry.pofile is not None:
             pluralformula = (
-                translation_import_queue_entry.pofile.language.pluralformula)
+                translation_import_queue_entry.pofile.language.pluralexpression)
         else:
             pluralformula = None
         parser = POParser(pluralformula)

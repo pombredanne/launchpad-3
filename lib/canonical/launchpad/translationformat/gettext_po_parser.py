@@ -28,6 +28,9 @@ from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFileData, TranslationMessageData)
 from canonical.launchpad.versioninfo import revno
 
+# XXX Danilo 20071207: c2py is currently not listed in __all__
+# inside Python 2.4 gettext.py module.  How to avoid the warning
+# or maybe copy and paste this method here as well?
 from gettext import c2py
 
 def plural_form_mapper(first_formula, second_formula):
