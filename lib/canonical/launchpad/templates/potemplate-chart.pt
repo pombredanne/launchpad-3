@@ -10,7 +10,7 @@
       <th>Language</th>
       <th>Status</th>
       <th class="amount">Untranslated</th>
-      <th class="amount">Unreviewed</th>
+      <th class="amount">Need review</th>
       <th class="amount">Changed</th>
       <th>Last Edited</th>
       <th>By</th>
