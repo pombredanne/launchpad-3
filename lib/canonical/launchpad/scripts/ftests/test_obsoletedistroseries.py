@@ -16,10 +16,10 @@ from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     ObsoleteDistroseries, SoyuzScriptError)
 from canonical.launchpad.database.publishing import (
-    SecureSourcePackagePublishingHistory,
-    SourcePackagePublishingHistory,
+    BinaryPackagePublishingHistory,
     SecureBinaryPackagePublishingHistory,
-    BinaryPackagePublishingHistory)
+    SecureSourcePackagePublishingHistory,
+    SourcePackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     DistroSeriesStatus, IDistributionSet, PackagePublishingStatus)
 
@@ -29,8 +29,10 @@ class TestObsoleteDistroseriesScript(LaunchpadZopelessTestCase):
 
     def runCopyPackage(self, extra_args=None):
         """Run obsolete-distroseries.py, returning the result and output.
-        Returns a tuple of the process's return code, stdout output and
-        stderr output."""
+
+        Return a tuple of the process's return code, stdout output and
+        stderr output.
+        """
         if extra_args is None:
             extra_args = []
         script = os.path.join(
@@ -46,8 +48,8 @@ class TestObsoleteDistroseriesScript(LaunchpadZopelessTestCase):
     def testSimpleRun(self):
         """Try a simple obsolete-distroseries.py run.
 
-        This test purely ensures that the script starts up and runs.
-        We'll try and obsolete a non-obsolete distroseries, so it will
+        This test ensures that the script starts up and runs.
+        We'll try to obsolete a non-obsolete distroseries, so it will
         just exit without doing anything.
         """
         returncode, out, err = self.runCopyPackage(extra_args=['-s', 'warty'])
@@ -78,11 +80,10 @@ class TestObsoleteDistroseries(LaunchpadZopelessTestCase):
         """Return an ObsoleteDistroseries instance.
 
         Allow tests to use a set of default options and pass an
-        inactive logger to ObsoleteDistroseries
+        inactive logger to ObsoleteDistroseries.
         """
         test_args = ['-s', suite,
-                     '-d', distribution,
-                    ]
+                     '-d', distribution,]
 
         if confirm_all:
             test_args.append('-y')
@@ -102,15 +103,15 @@ class TestObsoleteDistroseries(LaunchpadZopelessTestCase):
         if distroseries is None:
             distroseries = self.warty
         published_sources = SecureSourcePackagePublishingHistory.select("""
-            DistroSeries = %s AND
-            Status = %s AND
-            Archive IN %s
+            distroseries = %s AND
+            status = %s AND
+            archive IN %s
             """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
                             self.main_archive_ids))
         published_binaries = SecureBinaryPackagePublishingHistory.select("""
             SecureBinaryPackagePublishingHistory.distroarchseries =
                 DistroArchSeries.id AND
-            DistroArchseries.DistroSeries = DistroSeries.id AND
+            DistroArchSeries.DistroSeries = DistroSeries.id AND
             DistroSeries.id = %s AND
             SecureBinaryPackagePublishingHistory.status = %s AND
             SecureBinaryPackagePublishingHistory.archive IN %s
@@ -127,7 +128,7 @@ class TestObsoleteDistroseries(LaunchpadZopelessTestCase):
         self.assertRaises(SoyuzScriptError, obsoleter.mainTask)
 
     def testNothingToDoCase(self):
-        """When there is nothing to, we expect an exception."""
+        """When there is nothing to do, we expect an exception."""
         obsoleter = self.getObsoleter()
         self.warty.status = DistroSeriesStatus.OBSOLETE
 
@@ -146,7 +147,7 @@ class TestObsoleteDistroseries(LaunchpadZopelessTestCase):
         self.assertRaises(SoyuzScriptError, obsoleter.mainTask)
 
     def testObsoleteDistroseriesWorks(self):
-        """A full run to make sure the required publications are obsoleted."""
+        """Make sure the required publications are obsoleted."""
         obsoleter = self.getObsoleter()
         self.warty.status = DistroSeriesStatus.OBSOLETE
 

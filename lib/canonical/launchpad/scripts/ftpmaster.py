@@ -8,15 +8,15 @@ __all__ = [
     'ArchiveOverriderError',
     'ArchiveCruftChecker',
     'ArchiveCruftCheckerError',
-    'PubSourceChecker',
     'ChrootManager',
     'ChrootManagerError',
+    'LpQueryDistro',
+    'ObsoleteDistroseries',
+    'PackageCopier',
+    'PackageRemover',
+    'PubSourceChecker',
     'SyncSource',
     'SyncSourceError',
-    'PackageCopier',
-    'LpQueryDistro',
-    'PackageRemover',
-    'ObsoleteDistroseries',
     ]
 
 import apt_pkg
@@ -1606,7 +1606,8 @@ class ObsoleteDistroseries(SoyuzScript):
         In this case the caller can override test_args on __init__
         to set the command line arguments.
 
-        Can raise SoyuzScriptError.
+        :raise SoyuzScriptError: If the distroseries is not provided or
+            it is already obsolete.
         """
         assert self.location, (
             "location is not available, call SoyuzScript.setupLocation() "

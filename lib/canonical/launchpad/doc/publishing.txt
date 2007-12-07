@@ -163,7 +163,7 @@ IArchiveSafePublisher.
 
 == Binary and Binary File Publishing ===
 
-Symetric behaviour is offered for BinaryPackagePublishing,
+Symmetric behaviour is offered for BinaryPackagePublishing,
 BinaryPackageFile and ISecureBinaryPackagePublishingHistory
 
  >>> from canonical.launchpad.database import BinaryPackagePublishingHistory

@@ -689,9 +689,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # the PUBLISHED state.
         archives = self.distribution.getArchiveIDList()
         return SourcePackagePublishingHistory.select("""
-            DistroSeries = %s AND
-            Status = %s AND
-            Archive in %s
+            distroseries = %s AND
+            status = %s AND
+            archive in %s
             """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED,
                             archives),
             orderBy="id")
@@ -703,9 +703,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         archives = self.distribution.getArchiveIDList()
         return BinaryPackagePublishingHistory.select("""
             BinaryPackagePublishingHistory.distroarchseries =
-                distroarchseries.id AND
-            distroarchseries.distroseries = distroseries.id AND
-            distroseries.id = %s AND
+                DistroArchSeries.id AND
+            DistroArchSeries.distroseries = DistroSeries.id AND
+            DistroSeries.id = %s AND
             BinaryPackagePublishingHistory.status = %s AND
             BinaryPackagePublishingHistory.archive in %s
             """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED,

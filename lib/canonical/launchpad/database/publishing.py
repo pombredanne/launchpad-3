@@ -609,9 +609,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def distroarchseriesbinarypackagerelease(self):
         """See `IBinaryPackagePublishingHistory`."""
-        # import here to avoid circular import
-        from canonical.launchpad.database.distroarchseriesbinarypackagerelease \
-            import DistroArchSeriesBinaryPackageRelease
+        # Import here to avoid circular import.
+        from canonical.launchpad.database import (
+            DistroArchSeriesBinaryPackageRelease)
 
         return DistroArchSeriesBinaryPackageRelease(
             self.distroarchseries,

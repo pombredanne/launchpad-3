@@ -361,13 +361,13 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getAllPublishedSources():
         """Return all currently published sources for the distroseries.
 
-        Returns publications in the main archives only.
+        Return publications in the main archives only.
         """
 
     def getAllPublishedBinaries():
         """Return all currently published binaries for the distroseries.
 
-        Returns publications in the main archives only.
+        Return publications in the main archives only.
         """
 
     def getSourcesPublishedForAllArchives():
