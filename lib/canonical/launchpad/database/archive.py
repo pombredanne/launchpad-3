@@ -118,9 +118,10 @@ class Archive(SQLBase):
                 self.distribution.name + '-partner')
             pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
             pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
-            pubconf.overrideroot = None
-            pubconf.cacheroot = None
-            pubconf.miscroot = None
+            pubconf.overrideroot = os.path.join(
+                pubconf.archiveroot, 'overrides')
+            pubconf.cacheroot = os.path.join(pubconf.archiveroot, 'cache')
+            pubconf.miscroot = os.path.join(pubconf.archiveroot, 'misc')
         else:
             raise AssertionError(
                 "Unknown archive purpose %s when getting publisher config.",
@@ -262,7 +263,7 @@ class Archive(SQLBase):
                 distroarchseries = [distroarchseries]
             # XXX cprov 20071016: there is no sqlrepr for DistroArchSeries
             # uhmm, how so ?
-            das_ids = "(%s)" % ", ".join([str(d.id) for d in distroarchseries])
+            das_ids = "(%s)" % ", ".join(str(d.id) for d in distroarchseries)
             clauses.append("""
                 BinaryPackagePublishingHistory.distroarchseries IN %s
             """ % das_ids)
@@ -277,7 +278,8 @@ class Archive(SQLBase):
             distroarchseries=distroarchseries, exact_match=exact_match)
 
         all_binaries = BinaryPackagePublishingHistory.select(
-            ' AND '.join(clauses) , clauseTables=clauseTables, orderBy=orderBy)
+            ' AND '.join(clauses) , clauseTables=clauseTables,
+            orderBy=orderBy)
 
         return all_binaries
 
@@ -317,8 +319,9 @@ class Archive(SQLBase):
         """]
         no_nominated_arch_independent_query = ' AND '.join(
             clauses + no_nominated_arch_independent_clause)
-        no_nominated_arch_independents = BinaryPackagePublishingHistory.select(
-            no_nominated_arch_independent_query, clauseTables=clauseTables)
+        no_nominated_arch_independents = (
+            BinaryPackagePublishingHistory.select(
+            no_nominated_arch_independent_query, clauseTables=clauseTables))
 
         # XXX cprov 20071016: It's not possible to use the same ordering
         # schema returned by self._getBinaryPublishingBaseClauses.

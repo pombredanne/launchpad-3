@@ -188,7 +188,8 @@ class MenuBase(UserAttributeCache):
     _baseclassname = 'MenuBase'
     _initialized = False
     _forbiddenlinknames = set(
-        ['user', 'initialize', 'links', 'enable_only', 'iterlinks'])
+        ['user', 'initialize', 'links', 'enable_only', 'isBetaUser',
+         'iterlinks'])
 
     def __init__(self, context):
         # The attribute self.context is defined in IMenuBase.
