@@ -106,9 +106,8 @@ page.
     Team claimed successfully
 
     >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'membership-summary'))
-    Team and membership summary
+    ...     find_tag_by_id(user_browser.contents, 'portlet-details'))
+    Summary
     Team owner: No Privileges Person
-    Membership: 1 active members
     ...
 

@@ -68,9 +68,11 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
         return getUtility(ILibraryFileAliasSet)[alias_id]
 
     def getPubSource(self, sourcename='foo', version='666', component='main',
-                     filename=None, filecontent='I do not care about sources.',
+                     filename=None,
+                     filecontent='I do not care about sources.',
                      status=PackagePublishingStatus.PENDING,
                      pocket=PackagePublishingPocket.RELEASE,
+                     scheduleddeletiondate=None, dateremoved=None,
                      distroseries=None, archive=None, builddepends=None,
                      builddependsindep=None, architecturehintlist='all',
                      dsc_standards_version='3.6.2', dsc_format='1.0',
@@ -121,6 +123,8 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             section=spr.section,
             status=status,
             datecreated=UTC_NOW,
+            dateremoved=dateremoved,
+            scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
             embargo=False,
             archive=archive
@@ -137,6 +141,7 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
                      provides=None, filecontent='bbbiiinnnaaarrryyy',
                      status=PackagePublishingStatus.PENDING,
                      pocket=PackagePublishingPocket.RELEASE,
+                     scheduleddeletiondate=None, dateremoved=None,
                      pub_source=None):
         """Return a mock binary publishing record."""
         sourcename = "%s" % binaryname.split('-')[0]
@@ -186,6 +191,8 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             priority=bpr.priority,
             status=status,
             datecreated=UTC_NOW,
+            dateremoved=dateremoved,
+            scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
             embargo=False,
             archive=archive

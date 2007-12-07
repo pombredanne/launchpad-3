@@ -740,6 +740,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         """See `IPerson`."""
         return self.teamowner is not None
 
+    @property
+    def mailing_list(self):
+        """See `IPerson`."""
+        return getUtility(IMailingListSet).get(self.name)
+
     @cachedproperty
     def is_trusted_on_shipit(self):
         """See `IPerson`."""
@@ -1015,6 +1020,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         """See `IPerson`."""
         if team is None:
             return False
+
+        # Translate the team name to an ITeam if we were passed a team.
+        if isinstance(team, str):
+            team = PersonSet().getByName(team)
 
         if team.id == self.id: # Short circuit - would return True anyway
             return True
@@ -1437,7 +1446,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
             # XXX flacoste 2007/11/26 The comparison using id in the assert
-            # below works around a nasty intermittent failure. 
+            # below works around a nasty intermittent failure.
             # See bug #164635.
             assert bug_task.assignee.id == self.id, (
                "Bugtask %s assignee isn't the one expected: %s != %s" % (

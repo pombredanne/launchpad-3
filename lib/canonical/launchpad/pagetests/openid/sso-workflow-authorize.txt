@@ -6,9 +6,16 @@ Launchpad-SSO web site, they are not prompted for a password.
 First we will set up the helper view that lets us test the final
 portion of the authentication process:
 
-    >>> from canonical.launchpad.ftests.openid import (
-    ...     install_consumer, uninstall_consumer)
+    >>> from openid.consumer.consumer import Consumer
+    >>> from openid.consumer.discover import OPENID_1_1_TYPE
+    >>> from openid.fetchers import setDefaultFetcher
+    >>> from openid.store.memstore import MemoryStore
+    >>> from canonical.launchpad.ftests.openidhelpers import (
+    ...     complete_from_browser, install_consumer,
+    ...     make_identifier_select_endpoint, uninstall_consumer,
+    ...     PublisherFetcher)
     >>> install_consumer()
+    >>> setDefaultFetcher(PublisherFetcher())
 
 The authentication process is started by the relying party issuing a
 checkid_setup request, sending the user to Launchpad.  We will
@@ -16,22 +23,19 @@ authenticate before starting the login procedure:
 
     >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
 
-    >>> from urllib import urlencode
-    >>> args = urlencode({
-    ...     'openid.mode': 'checkid_setup',
-    ...     'openid.identity':
-    ...         'http://specs.openid.net/auth/2.0/identifier_select',
-    ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
-    ...     'openid.trust_root': 'http://launchpad.dev/+openid-consumer',
-    ...     })
-    >>> setup_url = 'http://openid.launchpad.dev/+openid?%s' % args
-    >>> browser.open(setup_url)
+    >>> openid_store = MemoryStore()
+    >>> consumer = Consumer(session={}, store=openid_store)
+
+    >>> request = consumer.beginWithoutDiscovery(
+    ...     make_identifier_select_endpoint(OPENID_1_1_TYPE))
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
 
 At this point, the user is presented with a form asking if they want
 to authenticate to the relying party
 
     >>> print browser.title
-    Authenticate to http://launchpad.dev/+openid-consumer
+    Authenticate to http://launchpad.dev/
 
 By clicking the "Sign In" button, the user is returned to the relying
 party with their identity URL:
@@ -39,14 +43,12 @@ party with their identity URL:
     >>> browser.getControl('Sign In', index=0).click()
     >>> print browser.url
     http://launchpad.dev/+openid-consumer?...
-    >>> print browser.contents
-    Consumer received GET
-    ...
-    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
-    openid.mode:id_res
-    ...
-    openid.return_to:http://launchpad.dev/+openid-consumer
-    ...
+    >>> info = complete_from_browser(
+    ...     consumer, browser, 'http://openid.launchpad.dev/+id/sabdfl_oid')
+    >>> print info.status
+    success
+    >>> print info.endpoint.claimed_id
+    http://openid.launchpad.dev/+id/sabdfl_oid
 
 
 == Declining to Authenticate ==
@@ -54,19 +56,23 @@ party with their identity URL:
 Alternatively, the user could have declined to authenticate.  This
 time, we will cancel the authentication request:
 
-    >>> browser.open(setup_url)
+    >>> request = consumer.beginWithoutDiscovery(
+    ...     make_identifier_select_endpoint(OPENID_1_1_TYPE))
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+
     >>> print browser.title
-    Authenticate to http://launchpad.dev/+openid-consumer
+    Authenticate to http://launchpad.dev/
     >>> browser.getControl("Not Now").click()
     >>> print browser.url
     http://launchpad.dev/+openid-consumer?...
-    >>> print browser.contents
-    Consumer received GET
-    openid.mode:cancel
-    <BLANKLINE>
+    >>> info = complete_from_browser(
+    ...     consumer, browser, 'http://openid.launchpad.dev/+id/sabdfl_oid')
+    >>> print info.status
+    cancel
 
 
 == Cleanup ==
 
+    >>> setDefaultFetcher(None)
     >>> uninstall_consumer()
-
