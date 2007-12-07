@@ -40,7 +40,8 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IBranchSet, IProductSet, IProject, IProjectSet, NotFoundError)
+    IBranchSet, IProductSet, IProject, IProjectSeriesSpecifications,
+    IProjectSeriesSpecificationsSet, IProjectSet, NotFoundError)
 from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -69,6 +70,15 @@ class ProjectNavigation(Navigation):
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
+
+    @stepthrough('+series')
+    def traverse_series(self, series_name):
+        specifications_set = getUtility(IProjectSeriesSpecificationsSet)
+        result = specifications_set.getProjectSeriesSpecifications(
+            self.context, series_name)
+        if result is None:
+            raise NotFoundError(series_name)
+        return result
 
 
 class ProjectDynMenu(DynMenu):
@@ -289,22 +299,32 @@ class ProjectSpecificationsMenu(ApplicationMenu):
     facet = 'specifications'
     links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
 
+    def _selectTarget(self):
+        if IProjectSeriesSpecifications.providedBy(self.context):
+            return '+series/%s/' % self.context.series
+        else:
+            return ''
+
     def listall(self):
+        link_target = self._selectTarget() + '+specs?show=all'
         text = 'List all blueprints'
-        return Link('+specs?show=all', text, icon='info')
+        return Link(link_target, text, icon='info')
 
     def doc(self):
+        link_target = self._selectTarget() + '+documentation'
         text = 'List documentation'
         summary = 'Show all completed informational specifications'
-        return Link('+documentation', text, summary, icon="info")
+        return Link(link_target, text, summary, icon="info")
 
     def roadmap(self):
+        link_target = self._selectTarget() + '+roadmap'
         text = 'Roadmap'
-        return Link('+roadmap', text, icon='info')
+        return Link(link_target, text, icon='info')
 
     def assignments(self):
+        link_target = self._selectTarget() + '+assignments'
         text = 'Assignments'
-        return Link('+assignments', text, icon='info')
+        return Link(link_target, text, icon='info')
 
     def new(self):
         text = 'Register a blueprint'

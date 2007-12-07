@@ -177,6 +177,124 @@ and all valid specifications via the valid_specifications property:
  e4x
 
 
+== Specification Listings for a Project Series ==
+
+ProjectSeriesSpecifications.specifications allows to retrieve specifications 
+related to a Project's series. An IProjectSeriesSpecifications object can be 
+retrieved by IProjectSeriesSpecificationsSet.getProjectSeriesSpecifictations.
+
+ >>> from canonical.launchpad.interfaces import IProjectSeriesSpecificationsSet
+ >>> project_series_set = getUtility(IProjectSeriesSpecificationsSet)
+ >>> mozilla_series_1_0 = project_series_set.getProjectSeriesSpecifications(
+ ...     mozilla, '1.0')
+ >>> mozilla_series_1_0
+ <canonical.launchpad.database.project.ProjectSeriesSpecifications object at...
+
+If no series with the given name exists, 
+IProjectSeriesSpecificationsSet.getProjectSeriesSpecifications returns None.
+
+ >>> print project_series_set.getProjectSeriesSpecifications(
+ ...     mozilla, 'nonsense')
+ None
+
+IProjectSeriesSpecificationsSet.all_specifications lists all specifications
+assigned to a series. Currently, no specifications are assigned to the 
+Mozilla series 1.0.
+
+ >>> specs = mozilla_series_1_0.all_specifications
+ >>> specs.count()
+ 0
+
+If a specification is assigned to series 1.0, it appears in 
+mozilla_1_0_series.all_specifications.
+
+ >>> from canonical.launchpad.ftests import syncUpdate
+ >>> filter = [SpecificationFilter.INFORMATIONAL]
+ >>> extension_manager_upgrades = mozilla.specifications(filter=filter)[0]
+ >>> series_1_0 = firefox.getSeries('1.0')
+ >>> extension_manager_upgrades.proposeGoal(series_1_0, no_priv)
+ >>> syncUpdate(extension_manager_upgrades)
+ >>> for spec in mozilla_series_1_0.all_specifications:
+ ...     print spec.name
+ extension-manager-upgrades
+
+This specification is not listed for other serieses.
+
+ >>> mozilla_trunk = project_series_set.getProjectSeriesSpecifications(
+ ...     mozilla, 'trunk')
+ >>> print mozilla_trunk.all_specifications.count()
+ 0
+
+Filtered lists of project series related specifications are generated
+the same way as for project related specifications.
+
+ >>> for spec in mozilla_series_1_0.specifications(filter=filter):
+ ...     print spec.name
+ extension-manager-upgrades
+
+If all existing specifications are assigned to the 1.0 series,...
+
+ >>> for spec in mozilla.all_specifications:
+ ...     spec.proposeGoal(series_1_0, no_priv)
+ ...     syncUpdate(spec)
+
+we have the save five incomplete specs in the series 1.0 as we have for the
+project itself.
+
+ >>> filter = [SpecificationFilter.INCOMPLETE]
+ >>> for spec in mozilla_series_1_0.specifications(filter=filter):
+ ...     print spec.name
+ svg-support
+ canvas
+ extension-manager-upgrades
+ mergewin
+ e4x
+
+ Searching for text is also possible.
+
+ >>> for spec in mozilla_series_1_0.specifications(filter=['install']):
+ ...     print spec.name
+ extension-manager-upgrades
+
+Inactive products are excluded from the series listings.
+
+ >>> filter = [SpecificationFilter.INCOMPLETE]
+ >>> specs = mozilla_series_1_0.specifications(filter=filter)
+ >>> print specs.count()
+ 5
+
+ >>> firefox = getUtility(IProductSet).getByName('firefox')
+ >>> firefox.active = False
+ >>> syncUpdate(firefox)
+ >>> filter = [SpecificationFilter.INCOMPLETE]
+ >>> mozilla_series_1_0.specifications(filter=filter).count()
+ 0
+
+Reset firefox so we don't mess up later tests.
+
+ >>> firefox.active = True
+ >>> syncUpdate(firefox)
+
+We can get all the specifications via the all_specifications property,
+and all valid specifications via the valid_specifications property:
+
+ >>> for spec in mozilla_series_1_0.all_specifications:
+ ...    print spec.name
+ svg-support
+ canvas
+ extension-manager-upgrades
+ mergewin
+ e4x
+
+ >>> for spec in mozilla_series_1_0.valid_specifications:
+ ...    print spec.name
+ svg-support
+ canvas
+ extension-manager-upgrades
+ mergewin
+ e4x
+
+
 == translatables ==
 
 A project would have IProduct objects that have resources to translate. This

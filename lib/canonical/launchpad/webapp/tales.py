@@ -42,6 +42,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet,
     IProduct,
     IProject,
+    IProjectSeriesSpecifications,
     ISprint,
     IDistribution,
     IStructuralHeaderPresentation,
@@ -399,7 +400,8 @@ class ObjectImageDisplayAPI:
     def default_icon_resource(self, context):
         if IProduct.providedBy(context):
             return '/@@/product'
-        elif IProject.providedBy(context):
+        elif (IProject.providedBy(context) or
+              IProjectSeriesSpecifications.providedBy(context)):
             return '/@@/project'
         elif IPerson.providedBy(context):
             if context.isTeam():
@@ -416,7 +418,8 @@ class ObjectImageDisplayAPI:
         return '/@@/nyet-icon'
 
     def default_logo_resource(self, context):
-        if IProject.providedBy(context):
+        if (IProject.providedBy(context) or
+            IProjectSeriesSpecifications.providedBy(context)):
             return '/@@/project-logo'
         elif IPerson.providedBy(context):
             if context.isTeam():
@@ -435,7 +438,8 @@ class ObjectImageDisplayAPI:
         return '/@@/nyet-logo'
 
     def default_mugshot_resource(self, context):
-        if IProject.providedBy(context):
+        if (IProject.providedBy(context) or
+            IProjectSeriesSpecifications.providedBy(context)):
             return '/@@/project-mugshot'
         elif IPerson.providedBy(context):
             if context.isTeam():

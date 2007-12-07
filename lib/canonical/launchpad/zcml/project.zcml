@@ -316,7 +316,6 @@
         facet="bugs"
         permission="launchpad.AnyPerson" />
 
-
     <!-- ProjectSet-->
     <content class="canonical.launchpad.database.ProjectSet">
         <allow interface="canonical.launchpad.interfaces.IProjectSet" />
@@ -377,5 +376,34 @@
             template="../templates/registry-review.pt"
             />
     </browser:pages>
+
+    <!-- ProjectSeriesSpecifications -->
+    <content class="canonical.launchpad.database.ProjectSeriesSpecifications">
+        <allow interface="canonical.launchpad.interfaces.IProjectSeriesSpecifications" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IProjectSeriesSpecifications"
+        />
+    </content>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProjectSeriesSpecifications"
+        class="canonical.launchpad.browser.HasSpecificationsView"
+        facet="specifications"
+        permission="zope.Public"
+        name="index.html"
+        template="../templates/hasspecifications-specs.pt" />
+        />
+
+    <!-- ProjectSeriesSet-->
+    <content class="canonical.launchpad.database.ProjectSeriesSpecificationsSet">
+        <allow interface="canonical.launchpad.interfaces.IProjectSeriesSpecificationsSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ProjectSeriesSpecificationsSet"
+        provides="canonical.launchpad.interfaces.IProjectSeriesSpecificationsSet">
+        <allow interface="canonical.launchpad.interfaces.IProjectSeriesSpecificationsSet" />
+    </securedutility>
 
 </configure>

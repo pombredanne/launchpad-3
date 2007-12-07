@@ -7,6 +7,8 @@ __metaclass__ = type
 
 __all__ = [
     'IProject',
+    'IProjectSeriesSpecifications',
+    'IProjectSeriesSpecificationsSet',
     'IProjectSet',
     ]
 
@@ -77,7 +79,8 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     summary = Summary(
         title=_('Project Group Summary'),
-        description=_("""A brief (one-paragraph) summary of the project group."""))
+        description=_(
+            """A brief (one-paragraph) summary of the project group."""))
 
     description = Text(
         title=_('Description'),
@@ -88,7 +91,8 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     datecreated = TextLine(
         title=_('Date Created'),
-        description=_("""The date this project group was created in Launchpad."""))
+        description=_(
+            """The date this project group was created in Launchpad."""))
 
     driver = Choice(
         title=_("Driver"),
@@ -106,7 +110,8 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         title=_('Homepage URL'),
         required=False,
         allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
-        description=_("""The project group home page. Please include the http://"""))
+        description=_(
+            """The project group home page. Please include the http://"""))
 
     wikiurl = URIField(
         title=_('Wiki URL'),
@@ -146,8 +151,8 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         default_image_resource='/@@/project',
         description=_(
             "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this project group. The icon will be "
-            "displayed in Launchpad everywhere that we link to this "
+            "that can be used to identify this project group. The icon will "
+            "be displayed in Launchpad everywhere that we link to this "
             "project group. For example in listings or tables of active "
 	    "project groups."))
 
@@ -156,8 +161,8 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         default_image_resource='/@@/project-logo',
         description=_(
             "An image of exactly 64x64 pixels that will be displayed in "
-            "the heading of all pages related to this project group. It should "
-            "be no bigger than 50kb in size."))
+            "the heading of all pages related to this project group. It "
+            "should be no bigger than 50kb in size."))
 
     mugshot = MugshotImageUpload(
         title=_("Brand"), required=False,
@@ -189,7 +194,9 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         """Get a product with name `name`."""
 
     def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this project group. Return None.
+        """Ensure that the bounty is linked to this project group.
+
+        Return None.
         """
 
     def translatables():
@@ -203,6 +210,25 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         otherwise.
         """
 
+    def filter_specifications(sort=None, quantity=None, filter=None,
+                              series=None):
+        """Specifications for this target.
+
+        The sort is a dbschema which indicates the preferred sort order. The
+        filter is an indicator of the kinds of specs to be returned, and
+        appropriate filters depend on the kind of object this method is on.
+        If there is a quantity, then limit the result to that number.
+
+        In the case where the filter is [] or None, the content class will
+        decide what its own appropriate "default" filter is. In some cases,
+        it will show all specs, in others, all approved specs, and in
+        others, all incomplete specs.
+
+        If series is None, all specifications related to this project are
+        returned else those related to the given project series name.
+        NOTE: This method does not check, if any series of the given name
+        exists.
+        """
 
 # Interfaces for set
 
@@ -255,3 +281,30 @@ class IProjectSet(Interface):
     def forSyncReview():
         """Return a list of projects that have productseries ready to
         import which need review."""
+
+class IProjectSeriesSpecifications(IHasSpecifications, IHasIcon, IHasLogo,
+                                   IHasMugshot):
+    """Interface for ProjectSeries.
+
+    This class provides the specifications related to a "virtual project
+    series", i.e., to those speicifactions that are assigned to a series
+    of a product which is part of this project.
+    """
+    displayname = Attribute('Display Name')
+
+    title = Attribute('The full name of the project group.')
+
+    icon = Attribute('The icon of the project.')
+
+    logo = Attribute('The logo of the project.')
+
+    mugshot = Attribute('The mugshot of the project.')
+
+class IProjectSeriesSpecificationsSet(Interface):
+    """The collection of IProjectSeries."""
+
+    def getProjectSeriesSpecifications(project, series_name):
+        """Return a ProjectSeries object for the given project and series.
+
+        If no such series exists, return None.
+        """

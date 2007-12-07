@@ -206,16 +206,50 @@ blueprint targets:
     >>> browser.url
     'http://blueprints.launchpad.dev/mozilla/+specs?show=all'
 
- * projects:
+ * products:
 
     >>> browser.open('http://blueprints.launchpad.dev/firefox')
     >>> browser.getLink('List all blueprints').click()
     >>> browser.url
     'http://blueprints.launchpad.dev/firefox/+specs?show=all'
 
- * project series:
+ * product series:
 
     >>> browser.open('http://blueprints.launchpad.dev/firefox/1.0')
     >>> browser.getLink('List all blueprints').click()
     >>> browser.url
     'http://blueprints.launchpad.dev/firefox/1.0/+specs?show=all'
+
+ * projects:
+
+    >>> browser.open('http://blueprints.launchpad.dev/mozilla')
+    >>> browser.getLink('List all blueprints').click()
+    >>> browser.url
+    'http://blueprints.launchpad.dev/mozilla/+specs?show=all'
+    >>> specs = find_tag_by_id(browser.contents, 'speclisting')
+    >>> print extract_text(specs)
+    Priority Specification Design Delivery Assignee Project Series
+    ...High svg-support ... Approved ... Beta Available Carlos ... firefox
+    ...Medium canvas ... New ... Unknown firefox
+    ...Medium extension-manager-upgrades ... New ... Informational Carlos ... 
+       firefox
+    ...Medium mergewin ... New ... Unknown firefox
+    ...Not e4x ... Review ... Unknown Dafydd Harries firefox
+
+* project series:
+
+  In order to see any blueprints, we must first assign a Mozilla Firefox
+  blueprint to a series.
+
+    >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
+    >>> browser.open('http://blueprints.launchpad.dev/mozilla')
+    >>> browser.getLink('svg-support').click()
+    >>> browser.getLink('Propose as goal').click()
+    >>> series_goal = browser.getControl('Series Goal')
+    >>> series_goal.value = ['2']
+    >>> browser.getControl('Continue').click()
+    >>> browser.open('http://blueprints.launchpad.dev/mozilla/+series/1.0')
+    >>> specs = find_tag_by_id(browser.contents, 'speclisting')
+    >>> print extract_text(specs)
+    Priority Specification Design Delivery Assignee Project Series
+    ...High svg-support ... Approved ... Beta Available Carlos ... firefox 1.0
