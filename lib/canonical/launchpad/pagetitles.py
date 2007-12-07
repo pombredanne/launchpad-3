@@ -412,9 +412,9 @@ distributionmirror_edit = ContextTitle('Edit mirror %s')
 
 distributionmirror_index = ContextTitle('Mirror %s')
 
-distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
-
 distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
+
+distributionmirror_review = ContextTitle('Review mirror %s')
 
 distribution_add = 'Register a new distribution'
 
@@ -556,6 +556,8 @@ def hasmentoringoffers_mentoring(context, view):
                     context.displayname)
     else:
         return 'Mentoring available in %s' % context.displayname
+
+hasannouncements_index = ContextDisplayName('%s news and announcements')
 
 def hasspecifications_specs(context, view):
     """Return the secifications title for the context."""
@@ -736,6 +738,20 @@ milestone_add = ContextTitle('Add new milestone for %s')
 milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
+
+announcement_add = 'Make an announcement'
+
+announcement_delete = 'Permanently delete this announcement'
+
+announcement_edit = 'Modify this announcement'
+
+announcement_publish = 'Publish this announcement'
+
+announcement_retarget = 'Move this announcement to a different project'
+
+announcement_retract = 'Retract this announcement'
+
+announcements_all = 'Announcements from all projects hosted in Launchpad'
 
 notification_test = 'Notification test'
 

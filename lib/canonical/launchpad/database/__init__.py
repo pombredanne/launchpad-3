@@ -18,6 +18,7 @@ from canonical.launchpad.database.productrelease import *
 from canonical.launchpad.database.project import *
 from canonical.launchpad.database.projectbounty import *
 from canonical.launchpad.database.poll import *
+from canonical.launchpad.database.announcement import *
 from canonical.launchpad.database.answercontact import *
 from canonical.launchpad.database.bug import *
 from canonical.launchpad.database.bugbranch import *
