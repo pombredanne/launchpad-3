@@ -53,13 +53,16 @@ def plural_form_mapper(first_formula, second_formula):
                 cache[pluralform] = set([number])
         return cache
 
+    # We can have a maximum of 4 plural forms.
+    no_change_map = {0:0, 1:1, 2:2, 3:3}
+
+    if first_formula is None or second_formula is None:
+        return no_change_map
     first_cache = evaluate_formula_for_range(first_formula, range(0,1000))
     first_count = len(first_cache.keys())
     second_cache = evaluate_formula_for_range(second_formula, range(0,1000))
     second_count = len(second_cache.keys())
 
-    # We can have a maximum of 4 plural forms.
-    no_change_map = {0:0, 1:1, 2:2, 3:3}
     if first_count != second_count:
         return no_change_map
 
@@ -412,9 +415,13 @@ class POHeader:
 class POParser(object):
     """Parser class for Gettext files."""
 
-    def __init__(self):
+    def __init__(self, plural_formula=None):
         self._translation_file = None
         self._lineno = 0
+        # This is a default plural form mapping (i.e. no mapping) when
+        # no header is present in the PO file.
+        self._plural_form_mapping = {0: 0, 1: 1, 2: 2, 3: 3}
+        self._expected_plural_formula = plural_formula
 
     def _decode(self):
         # is there anything to convert?
@@ -578,6 +585,13 @@ class POParser(object):
                 POSyntaxWarning(
                     self._lineno, 'Header entry is not first entry'))
 
+        plural_formula = self._translation_file.header.plural_form_expression
+        if plural_formula is None:
+            # We default to a simple plural formula which uses
+            # a single form for translations.
+            plural_formula = '0'
+        self._plural_form_mapping = plural_form_mapper(
+            plural_formula, self._expected_plural_formula)
         # convert buffered input to the encoding specified in the PO header
         self._decode()
 
@@ -781,7 +795,8 @@ class POParser(object):
             self._translation_file.header.has_plural_forms = True
         elif self._section == 'msgstr':
             self._message.addTranslation(
-                self._plural_case, self._parsed_content)
+                self._plural_form_mapping[self._plural_case],
+                self._parsed_content)
         else:
             raise AssertionError('Unknown section %s' % self._section)
 

@@ -53,7 +53,12 @@ class GettextPOImporter:
         self.content = librarian_client.getFileByAlias(
             translation_import_queue_entry.content.id)
 
-        parser = POParser()
+        if translation_import_queue_entry.pofile is not None:
+            pluralformula = (
+                translation_import_queue_entry.pofile.language.pluralformula)
+        else:
+            pluralformula = None
+        parser = POParser(pluralformula)
         return parser.parse(self.content.read())
 
     def getHeaderFromString(self, header_string):

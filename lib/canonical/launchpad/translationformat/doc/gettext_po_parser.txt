@@ -4,7 +4,7 @@ The PO parser handles GNU gettext format human readable files.
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     ITranslationMessageData, ITranslationHeaderData)
+    ...     ILanguageSet, ITranslationMessageData, ITranslationHeaderData)
     >>> from canonical.launchpad.translationformat import (
     ...     TranslationMessageData)
     >>> from canonical.launchpad.translationformat.gettext_po_parser import (
@@ -428,5 +428,35 @@ we'll get a return matrix which indicates no change (so we import them as-is):
 
     >>> plural_form_mapper(form_1, 'n!=1')
     {0: 0, 1: 1, 2: 2, 3: 3}
+
+    # First form uses zero for both 0 and 1, compared to only 1 for the latter.
     >>> plural_form_mapper('n>1', 'n!=1')
     {0: 0, 1: 1, 2: 2, 3: 3}
+
+Let's parse a Spanish PO file with an inverted plural formula.
+
+    >>> spanish_pluralformula = 'n!=1'
+
+    >>> content = """
+    ... msgid ""
+    ... msgstr ""
+    ... "POT-Creation-Date: 2004-05-11 20:22+0800\\n"
+    ... "PO-Revision-Date: 2004-05-11 20:22+0800\\n"
+    ... "Content-Type: text/plain; charset=UTF-8\\n"
+    ... "Content-Transfer-Encoding: 8bit\\n"
+    ... "Plural-Forms: nplurals=2; plural=n==1\\n"
+    ... #: foo/bar.c: 42
+    ... msgid "file"
+    ... msgid_plural "files"
+    ... msgstr[0] "plural translation"
+    ... msgstr[1] "singular translation"
+    ... """
+
+    >>> parser = POParser(spanish_pluralformula)
+    >>> translation_file = parser.parse(content)
+
+The messages in the import are now inverted to match the expected plural
+formula for the Spanish language.
+
+    >>> translation_file.messages[0].translations
+    [u'singular translation', u'plural translation']
