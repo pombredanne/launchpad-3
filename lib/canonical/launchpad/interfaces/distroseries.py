@@ -516,7 +516,8 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         the changesfile is unsigned.
         """
 
-    def newArch(architecturetag, processorfamily, official, owner):
+    def newArch(architecturetag, processorfamily, official, owner,
+                ppa_supported):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
     def newMilestone(name, dateexpected=None, description=None):

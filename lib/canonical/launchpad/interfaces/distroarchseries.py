@@ -35,15 +35,23 @@ class IDistroArchSeries(IHasOwner):
         required=True)
     package_count = Attribute('A cache of the number of packages published '
         'in the RELEASE pocket of this port.')
+    ppa_supported = Bool(
+        title=_("PPA support available"),
+        description=_("Indicate whether or not this port has support "
+                      "for building PPA packages."),
+        required=False)
 
-    #joins
+    # Joins.
     packages = Attribute('List of binary packages in this port.')
 
-    # for page layouts etc
+    # Page layouts helpers.
     title = Attribute('Title')
     displayname = Attribute('Display name')
+    details = Attribute(
+        'Architecture details string, e.g.: "(official, ppa)", "(official)" '
+        'or None.')
 
-    # useful attributes
+    # Other usefult bits.
     isNominatedArchIndep = Attribute(
         'True if this distroarchseries is the NominatedArchIndep one.')
 

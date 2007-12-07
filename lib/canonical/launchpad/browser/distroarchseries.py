@@ -102,10 +102,11 @@ class DistroArchSeriesAddView(SQLObjectAddView):
         self._nextURL = '.'
         SQLObjectAddView.__init__(self, context, request)
 
-    def create(self, architecturetag, processorfamily, official, owner):
+    def create(self, architecturetag, processorfamily, official, owner,
+               ppa_supported):
         """Create a new Port."""
         dar = self.context.newArch(architecturetag, processorfamily,
-            official, owner)
+            official, owner, ppa_supported)
         self._nextURL = canonical_url(dar)
         return dar
 

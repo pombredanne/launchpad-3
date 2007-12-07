@@ -47,6 +47,7 @@ class DistroArchSeries(SQLBase):
     official = BoolCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     package_count = IntCol(notNull=True, default=DEFAULT)
+    ppa_supported = BoolCol(notNull=False, default=False)
 
     packages = SQLRelatedJoin('BinaryPackageRelease',
         joinColumn='distroarchseries',
@@ -83,6 +84,22 @@ class DistroArchSeries(SQLBase):
     def displayname(self):
         """See IDistroArchSeries."""
         return '%s %s' % (self.distroseries.name, self.architecturetag)
+
+    @property
+    def details(self):
+        """See IDistroArchSeries."""
+        details = []
+
+        if self.official:
+            details.append('official')
+
+        if self.ppa_supported:
+            details.append('ppa')
+
+        if details:
+            return "(%s)" % ', '.join(details)
+
+        return None
 
     def updatePackageCount(self):
         """See IDistroArchSeries """

@@ -988,11 +988,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             distroseries=self,
             binarypackagename=drpc.binarypackagename) for drpc in drpcaches]
 
-    def newArch(self, architecturetag, processorfamily, official, owner):
+    def newArch(self, architecturetag, processorfamily, official, owner,
+                ppa_supported):
         """See IDistroSeries."""
         dar = DistroArchSeries(architecturetag=architecturetag,
             processorfamily=processorfamily, official=official,
-            distroseries=self, owner=owner)
+            distroseries=self, owner=owner, ppa_supported=ppa_supported)
         return dar
 
     def newMilestone(self, name, dateexpected=None, description=None):

@@ -72,7 +72,7 @@
       name="+admin"
       schema="canonical.launchpad.interfaces.IDistroArchSeries"
       facet="overview"
-      fields="architecturetag official"
+      fields="architecturetag official ppa_supported"
       template="../templates/distroarchseries-admin.pt"
       />
 
