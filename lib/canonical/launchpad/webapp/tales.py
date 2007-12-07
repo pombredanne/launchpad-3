@@ -524,14 +524,12 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     """
     implements(ITraversable)
 
-    # The templates have trailing spaces to avoid the icons smashing
-    # into each other when multiple ones are presented.
     icon_template = (
-        '<img height="14" width="14" alt="%s" title="%s" src="%s" /> ')
+        '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
 
     linked_icon_template = (
         '<a href="%s"><img height="14" width="14"'
-        ' alt="%s" title="%s" src="%s" /></a> ')
+        ' alt="%s" title="%s" src="%s" /></a>')
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for icons with an optional rootsite."""
@@ -570,31 +568,33 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def badges(self):
 
-        badges = ''
+        badges = []
         if self._context.bug.private:
-            badges += self.icon_template % (
-                "private", "Private","/@@/private")
+            badges.append(self.icon_template % (
+                "private", "Private","/@@/private"))
 
         if self._context.bug.mentoring_offers.count() > 0:
-            badges += self.icon_template % (
-                "mentoring", "Mentoring offered", "/@@/mentoring")
+            badges.append(self.icon_template % (
+                "mentoring", "Mentoring offered", "/@@/mentoring"))
 
         if self._context.bug.bug_branches.count() > 0:
-            badges += self.icon_template % (
-                "branch", "Branch exists", "/@@/branch")
+            badges.append(self.icon_template % (
+                "branch", "Branch exists", "/@@/branch"))
 
         if self._context.bug.specifications.count() > 0:
-            badges += self.icon_template % (
-                "blueprint", "Related to a blueprint", "/@@/blueprint")
+            badges.append(self.icon_template % (
+                "blueprint", "Related to a blueprint", "/@@/blueprint"))
 
         if self._context.milestone:
             milestone_text = "milestone %s" % self._context.milestone.name
-            badges += self.linked_icon_template % (
+            badges.append(self.linked_icon_template % (
                 canonical_url(self._context.milestone),
                 milestone_text , "Linked to %s" % milestone_text,
-                "/@@/milestone")
+                "/@@/milestone"))
 
-        return badges
+        # Join with spaces to avoid the icons smashing into each other
+        # when multiple ones are presented.
+        return " ".join(badges)
 
 
 class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
