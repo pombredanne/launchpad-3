@@ -161,6 +161,11 @@ table.listing div.actions {
 }
 textarea {width: 100%;}
 table.form {width: 100%;}
+/* XXX: this is just to make tables look more consistent when used in a
+ * summary pagelet; the concrete use case is in
+ * person-pagelet-details.pt. We should move to use tables everywhere
+ * and then kill this class I guess. -- kiko, 2007-12-05 */
+table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
 
 /* --- Other --- */
 

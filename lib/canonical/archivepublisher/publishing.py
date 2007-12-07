@@ -22,6 +22,9 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
+from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IComponentSet, pocketsuffix, PackagePublishingPocket,
     PackagePublishingStatus)
@@ -198,6 +201,56 @@ class Publisher(object):
                     is_careful=force_publishing)
 
                 self.dirty_pockets.update(more_dirt)
+
+    def A2_markPocketsWithDeletionsDirty(self):
+        """An intermediate step in publishing to detect deleted packages.
+
+        Mark pockets containing deleted packages (status DELETED or
+        OBSOLETE), scheduledeletiondate NULL and dateremoved NULL as
+        dirty, to ensure that they are processed in death row.
+        """
+        self.log.debug("* Step A2: Mark pockets with deletions as dirty")
+
+        # Query part that is common to both queries below.
+        base_query = """
+            archive = %s AND
+            status = %s AND
+            scheduleddeletiondate IS NULL AND
+            dateremoved is NULL
+            """ % sqlvalues(self.archive,
+                            PackagePublishingStatus.DELETED)
+
+        # We need to get a set of (distroseries, pocket) tuples that have
+        # publications that are waiting to be deleted.  Each tuple is
+        # added to the dirty_pockets set.
+
+        # Loop for each pocket in each distroseries:
+        for distroseries in self.distro.serieses:
+            for pocket, suffix in pocketsuffix.items():
+                clauses = [base_query]
+                clauses.append("pocket = %s" % sqlvalues(pocket))
+                clauses.append("distroseries = %s" % sqlvalues(distroseries))
+
+                # Make the source publications query.
+                source_query = " AND ".join(clauses)
+                sources = SourcePackagePublishingHistory.select(source_query)
+                if sources.count() > 0:
+                    self.dirty_pockets.add((distroseries.name, pocket))
+                    # No need to check binaries if the pocket is already
+                    # dirtied from a source.
+                    continue
+
+                # Make the binary publications query.
+                clauses = [base_query]
+                clauses.append("pocket = %s" % sqlvalues(pocket))
+                clauses.append("DistroArchSeries = DistroArchSeries.id")
+                clauses.append("DistroArchSeries.distroseries = %s" %
+                    sqlvalues(distroseries))
+                binary_query = " AND ".join(clauses)
+                binaries = BinaryPackagePublishingHistory.select(binary_query,
+                    clauseTables=['DistroArchSeries'])
+                if binaries.count() > 0:
+                    self.dirty_pockets.add((distroseries.name, pocket))
 
     def B_dominate(self, force_domination):
         """Second step in publishing: domination."""
