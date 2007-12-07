@@ -29,86 +29,57 @@
     />
 
   <content class="canonical.launchpad.database.Person">
-    <allow attributes="
-        account_status account_status_comment
-        activesignatures addressline1
-        addressline2
-        allwikis
-        approver_specs archive assigned_specs
-        assigned_specs_in_progress authored_branches branches
-        browsername city claimedBounties
-        country created_specs creation_comment
-        creation_rationale datecreated
-        defaultexpirationdate defaultmembershipperiod
-        defaultrenewalperiod defaultrenewedexpirationdate displayname
-        drafted_specs entitlements
-        feedback_specs gpgkeys
-        guessedemails hide_email_addresses homepage_content
-        id
-        inactivegpgkeys inactivesignatures
-        ircnicknames
-        is_openid_enabled is_trusted_on_shipit is_ubuntero
-        is_valid_person is_valid_person_or_team jabberids
-        karma karma_category_caches languages
-        merged
-        myactivememberships name open_membership_invitations
-        openid_identifier organization otherwikis
-        ownedBounties password pendinggpgkeys
-        phone postcode
-        preferredemail preferredemail_sha1
-        province registered_branches
-        registrant renewal_policy reviewerBounties
-        safe_email_or_blank signedcocs 
-        sshkeys subscribedBounties subscribed_branches
-        subscribed_specs subscriptionpolicy team_mentorships
-        teamdescription teamowner teamownerID
-        teams_indirectly_participated_in teams_participated_in 
-        teams_with_icons timezone title translatable_languages
-        translation_groups translation_history ubuntuwiki
-        unique_displayname unvalidatedemails validatedemails
-        visibility
-        assignKarma
-        currentShipItRequest
-        defaultRenewalPeriodIsRequiredForSomeTeams
-        findPathToTeam
-        getActiveMemberships
-        getAdministratedTeams
-        getBranch
-        getBugContactOpenBugCounts
-        getBugContactPackages
-        getDirectAnswerQuestionTargets
-        getInactiveMemberships
-        getInvitedMemberships
-        getLatestApprovedMembershipsForPerson
-        getLatestMaintainedPackages
-        getLatestUploadedButNotMaintainedPackages
-        getLatestUploadedPPAPackages
-        getOwnedOrDrivenPillars
-        getProjectsAndCategoriesContributedTo
-        getProposedMemberships
-        getSuperTeams
-        getTeamAdminsEmailAddresses
-        getTeamAnswerQuestionTargets
-        hasParticipationEntryFor
-        inTeam
-        isTeam
-        isUploader
-        iterTopProjectsContributedTo
-        join
-        lastShippedRequest
-        latestKarma
-        leave
-        pastShipItRequests
-        personCannotHaveIcon
-        removeLanguage
-        searchTasks
-        setContactAddress
-        setMembershipData
-        setPreferredEmail
-        shippedShipItRequestsOfCurrentSeries
-        validateAndEnsurePreferredEmail
-        mailing_list
-       "/> 
+    <allow attributes="account_status account_status_comment activesignatures
+      addressline1 addressline2 allwikis
+      approver_specs archive assignKarma
+      assigned_specs assigned_specs_in_progress authored_branches
+      branches browsername city
+      claimedBounties clearInTeamCache country created_specs
+      creation_comment creation_rationale currentShipItRequest
+      datecreated defaultRenewalPeriodIsRequiredForSomeTeams 
+      defaultexpirationdate
+      defaultmembershipperiod defaultrenewalperiod 
+      defaultrenewedexpirationdate
+      displayname drafted_specs entitlements
+      feedback_specs findPathToTeam getActiveMemberships
+      getAdministratedTeams getBranch getBugContactOpenBugCounts
+      getBugContactPackages getDirectAnswerQuestionTargets 
+      getInactiveMemberships
+      getInvitedMemberships getLatestApprovedMembershipsForPerson 
+      getLatestMaintainedPackages
+      getLatestUploadedButNotMaintainedPackages getLatestUploadedPPAPackages 
+      getOwnedOrDrivenPillars
+      getProjectsAndCategoriesContributedTo getProposedMemberships 
+      getSuperTeams
+      getTeamAdminsEmailAddresses getTeamAnswerQuestionTargets gpgkeys
+      guessedemails hasParticipationEntryFor hide_email_addresses
+      homepage_content id inTeam
+      inactivegpgkeys inactivesignatures ircnicknames
+      isTeam isUploader is_openid_enabled
+      is_trusted_on_shipit is_ubuntero is_valid_person
+      is_valid_person_or_team iterTopProjectsContributedTo jabberids
+      join karma karma_category_caches
+      languages lastShippedRequest latestKarma
+      leave mailing_list merged
+      myactivememberships name open_membership_invitations
+      openid_identifier organization otherwikis
+      ownedBounties password pastShipItRequests
+      pendinggpgkeys personCannotHaveIcon phone
+      postcode preferredemail preferredemail_sha1
+      province registered_branches registrant
+      removeLanguage renewal_policy reviewerBounties
+      safe_email_or_blank searchTasks setContactAddress
+      setMembershipData setPreferredEmail 
+      shippedShipItRequestsOfCurrentSeries
+      signedcocs sshkeys subscribedBounties
+      subscribed_branches subscribed_specs subscriptionpolicy
+      team_mentorships teamdescription teamowner
+      teamownerID teams_indirectly_participated_in teams_participated_in
+      teams_with_icons timezone title
+      translatable_languages translation_groups translation_history
+      ubuntuwiki unique_displayname unvalidatedemails
+      validateAndEnsurePreferredEmail validatedemails visibility"
+      /> 
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IHasSpecifications"/>
     <allow interface="canonical.launchpad.interfaces.IHasMentoringOffers"/>
@@ -120,30 +91,16 @@
     <require
       permission="launchpad.View"
       attributes="
-        active_member_count
-        activemembers
-        adminmembers
-        all_member_count
-        allmembers
-        approvedmembers
-        deactivated_member_count
-        deactivatedmembers
-        expired_member_count
-        expiredmembers
-        getDirectAdministrators
-        getSubTeams
-        inactive_member_count
-        inactivemembers
-        invited_member_count
-        invited_members
-        pendingmembers
-        proposed_member_count
-        proposedmembers
-        getMembersByStatus
-        "
+        active_member_count activemembers adminmembers all_member_count
+        allmembers approvedmembers deactivated_member_count
+        deactivatedmembers expired_member_count expiredmembers
+        getDirectAdministrators getMembersByStatus getSubTeams
+        inactive_member_count inactivemembers invited_member_count
+        invited_members pendingmembers proposed_member_count
+        proposedmembers"
       />
     <require
-      permission="launchpad.Admin"
+      permission="launchpad.Edit"
       attributes="addLanguage addMember"
       />
     <require

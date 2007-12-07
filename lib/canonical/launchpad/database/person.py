@@ -17,6 +17,7 @@ import sha
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
+from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, MultipleJoin, SQLMultipleJoin,
@@ -1098,7 +1099,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             raise AssertionError(
                 "Unknown subscription policy: %s" % team.subscriptionpolicy)
 
-        team.addMember(self, reviewer=self, status=status)
+        naked_team = removeSecurityProxy(team)
+        naked_team.addMember(self, reviewer=self, status=status)
 
     def clearInTeamCache(self):
         """See `IPerson`."""
