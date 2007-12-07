@@ -219,6 +219,13 @@ class ExternalBugTracker:
         page_contents = url.read()
         return page_contents
 
+    def _updateBugWatch(self, bug_watch):
+        """Carry out bugtracker-specific tasks for updating a  bugwatch."""
+        # This method isn't implemented here because it should be
+        # implemented on a bugtracker by bugtracker basis (c.f.
+        # DebBugs._updateBugWatch().
+        pass
+
     def updateBugWatches(self, bug_watches):
         """Update the given bug watches."""
         # Save the url for later, since we might need it to report an
@@ -292,9 +299,11 @@ class ExternalBugTracker:
                 for bug_watch in bug_watches:
                     bug_watch.lastchecked = UTC_NOW
                     bug_watch.last_error_type = error
+                    self._updateBugWatch(bug_watch)
                     if new_malone_status is not None:
                         bug_watch.updateStatus(new_remote_status,
                                                new_malone_status)
+
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -746,12 +755,18 @@ class DebBugs(ExternalBugTracker):
         # is linked from a bug task.
         flush_database_updates()
         self.updateBugWatches([bug_watch])
-        self.importBugComments(debian_bug, bug)
 
         return bug
 
-    def importBugComments(self, debian_bug, malone_bug):
+    def _updateBugWatch(self, bug_watch):
+        """See `ExternalBugTracker`."""
+        log.info("Importing comments for remote bug %s (local bug %s) on %s."
+            % (bug_watch.remotebug, bug_watch.bug.id, self.baseurl))
+        self.importBugComments(bug_watch.remotebug, bug_watch.bug)
+
+    def importBugComments(self, remote_bug, bug_watch):
         """Import the comments from a DebBugs bug."""
+        debian_bug = self._findBug(remote_bug)
         self.debbugs_db.load_log(debian_bug)
 
         for comment in debian_bug.comments:
@@ -774,7 +789,7 @@ class DebBugs(ExternalBugTracker):
                 # carry on.
                 log.warn("Unable to parse comment %s on Debian bug %s: "
                     "No valid sender address found." %
-                    (parsed_comment.get('message_id', ''), bug.id))
+                    (parsed_comment.get('message_id', ''), debian_bug.id))
                 continue
 
             display_name, email_addr = parseaddr(owner_email)
@@ -786,7 +801,8 @@ class DebBugs(ExternalBugTracker):
             message = getUtility(IMessageSet).fromEmail(comment, owner,
                 parsed_message=parsed_comment)
 
-            malone_bug.linkMessage(message)
+            bug_message = bug_watch.bug.linkMessage(message)
+            bug_message.bugwatch = bug_watch
             flush_database_updates()
 
 
