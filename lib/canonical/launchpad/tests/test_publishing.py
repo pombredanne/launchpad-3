@@ -66,6 +66,7 @@ class SoyuzTestPublisher:
                      filecontent='I do not care about sources.',
                      status=PackagePublishingStatus.PENDING,
                      pocket=PackagePublishingPocket.RELEASE,
+                     scheduleddeletiondate=None, dateremoved=None,
                      distroseries=None, archive=None, builddepends=None,
                      builddependsindep=None, architecturehintlist='all',
                      dsc_standards_version='3.6.2', dsc_format='1.0',
@@ -115,6 +116,8 @@ class SoyuzTestPublisher:
             section=spr.section,
             status=status,
             datecreated=UTC_NOW,
+            dateremoved=dateremoved,
+            scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
             embargo=False,
             archive=archive
@@ -131,6 +134,7 @@ class SoyuzTestPublisher:
                        provides=None, filecontent='bbbiiinnnaaarrryyy',
                        status=PackagePublishingStatus.PENDING,
                        pocket=PackagePublishingPocket.RELEASE,
+                       scheduleddeletiondate=None, dateremoved=None,
                        pub_source=None):
         """Return a list of binary publishing records."""
         sourcename = "%s" % binaryname.split('-')[0]
@@ -150,9 +154,10 @@ class SoyuzTestPublisher:
         published_binaries = []
         for arch in archs:
             pub_binaries = self._buildAndPublishBinaryForSource(
-                arch, archive, spr, status, pocket, filecontent,
-                binaryname, summary, description, shlibdep, depends,
-                recommends, suggests, conflicts, replaces, provides)
+                arch, archive, spr, status, pocket, scheduleddeletiondate,
+                dateremoved, filecontent, binaryname, summary, description,
+                shlibdep, depends, recommends, suggests, conflicts, replaces,
+                provides)
             published_binaries.extend(pub_binaries)
 
         return sorted(
@@ -160,7 +165,8 @@ class SoyuzTestPublisher:
 
     def _buildAndPublishBinaryForSource(self, distroarchseries, archive,
                                         sourcepackagerelease, status,
-                                        pocket, filecontent, binaryname,
+                                        pocket, scheduleddeletiondate,
+                                        dateremoved, filecontent, binaryname,
                                         summary, description, shlibdep,
                                         depends, recommends, suggests,
                                         conflicts, replaces, provides):
@@ -218,6 +224,8 @@ class SoyuzTestPublisher:
                 section=bpr.section,
                 priority=bpr.priority,
                 status=status,
+                scheduleddeletiondate=scheduleddeletiondate,
+                dateremoved=dateremoved,
                 datecreated=UTC_NOW,
                 pocket=pocket,
                 embargo=False,

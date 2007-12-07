@@ -80,6 +80,10 @@ class BugWatchUpdater(object):
                 self.txn.abort()
         self._logout()
 
+    def _getExternalBugTracker(self, bug_tracker):
+        """Return an `ExternalBugTracker` instance for `bug_tracker`."""
+        return externalbugtracker.get_external_bugtracker(bug_tracker)
+
     def updateBugTracker(self, bug_tracker):
         """Updates the given bug trackers's bug watches."""
         # We want 1 day, but we'll use 23 hours because we can't count
@@ -88,8 +92,7 @@ class BugWatchUpdater(object):
             bug_tracker.getBugWatchesNeedingUpdate(23))
 
         try:
-            remotesystem = externalbugtracker.get_external_bugtracker(
-                bug_tracker)
+            remotesystem = self._getExternalBugTracker(bug_tracker)
         except externalbugtracker.UnknownBugTrackerTypeError, error:
             self.log.info(
                 "ExternalBugtracker for BugTrackerType '%s' is not "

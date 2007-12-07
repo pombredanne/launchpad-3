@@ -6,10 +6,13 @@ __metaclass__ = type
 
 import gzip
 import os
+import pytz
 import shutil
 import stat
 import tempfile
 import unittest
+
+from datetime import datetime, timedelta
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -18,6 +21,7 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.publishing import (
     getPublisher, Publisher)
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
@@ -503,6 +507,70 @@ class TestPublisher(TestNativePublishingBase):
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
 
+    def testDirtyingPocketsWithDeletedPackages(self):
+        """Test that dirtying pockets with deleted packages works.
+
+        The publisher run should make dirty pockets where there are
+        outstanding deletions, so that the domination process will
+        work on the deleted publications.
+        """
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        # Run the deletion detection too see how many existing dirty pockets
+        # there are.
+        publisher.A2_markPocketsWithDeletionsDirty()
+        existing_num_dirty = len(publisher.dirty_pockets)
+
+        # There should be none.
+        self.assertEqual(
+            existing_num_dirty, 0,
+            "Expected no existing dirty pockets, got %d" %
+                existing_num_dirty)
+
+        # Make a published source, a source that's been removed from disk
+        # and one that's waiting to be deleted, each in different pockets.
+        # We'll also have a binary waiting to be deleted.
+        published_source = self.getPubSource(
+            pocket=PackagePublishingPocket.RELEASE,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        removed_source = self.getPubSource(
+            scheduleddeletiondate=UTC_NOW,
+            dateremoved=UTC_NOW,
+            pocket=PackagePublishingPocket.UPDATES,
+            status=PackagePublishingStatus.DELETED)
+
+        deleted_source = self.getPubSource(
+            pocket=PackagePublishingPocket.SECURITY,
+            status=PackagePublishingStatus.DELETED)
+
+        deleted_binary = self.getPubBinaries(
+            pocket=PackagePublishingPocket.BACKPORTS,
+            status=PackagePublishingStatus.DELETED)[0]
+
+        # Run the deletion detection.
+        publisher.A2_markPocketsWithDeletionsDirty()
+
+        # There should now be two dirty pockets.
+        num_dirtied = len(publisher.dirty_pockets)
+        self.assertEqual(
+            num_dirtied, 2,
+            "Expected 2 dirty pockets, got %d" % num_dirtied)
+
+        # The security pocket is dirtied by deleted_source, and the backports
+        # is dirtied by deleted_binary.
+        sorted_pocket_list = sorted(list(publisher.dirty_pockets))
+        [(binary_distroname, binary_pocket),
+        (source_distroname, source_pocket)] = sorted_pocket_list
+        self.assertEqual(
+            binary_pocket, PackagePublishingPocket.SECURITY,
+            "Expected security pocket, got %s" % binary_pocket)
+        self.assertEqual(
+            source_pocket, PackagePublishingPocket.BACKPORTS,
+            "Expected backports pocket, got %s" % source_pocket)
+
     def testCarefulDominationOnDevelopmentSeries(self):
         """Test the careful domination procedure.
 
@@ -524,6 +592,10 @@ class TestPublisher(TestNativePublishingBase):
             status=PackagePublishingStatus.OBSOLETE)
         self.assertTrue(obsoleted_source.scheduleddeletiondate is None)
 
+        # Ensure the stay of execution is 5 days.  This is so that we
+        # can do a sensible check later (see comment below).
+        publisher._config.stayofexecution = 5
+
         publisher.B_dominate(True)
         self.layer.txn.commit()
 
@@ -536,13 +608,40 @@ class TestPublisher(TestNativePublishingBase):
         obsoleted_source = SourcePackagePublishingHistory.get(
             obsoleted_source.id)
 
-        # Publishing records got scheduled for removal
+        # The publishing records will be scheduled for removal.
+        # DELETED publications are set to be deleted immediately, whereas
+        # SUPERSEDED ones get a stay of execution according to the
+        # configuration.
+        #
+        # Hopefully I crafted this check well enough so not to cause a time
+        # bomb for the test harness.
+        UTC = pytz.timezone("UTC")
         self.assertEqual(
             superseded_source.status, PackagePublishingStatus.SUPERSEDED)
-        self.assertTrue(superseded_source.scheduleddeletiondate is not None)
+        expected_date = datetime.now(UTC) + timedelta(
+            days=publisher._config.stayofexecution)
+        date_diff = expected_date - superseded_source.scheduleddeletiondate
+        self.assertTrue(
+            date_diff < timedelta(seconds=60),
+            "SUPERSEDED scheduleddeletiondate is %s, expected %s within "
+            "a 60 seconds tolerance" % (
+                superseded_source.scheduleddeletiondate,
+                expected_date))
+
         self.assertEqual(
             deleted_source.status, PackagePublishingStatus.DELETED)
-        self.assertTrue(deleted_source.scheduleddeletiondate is not None)
+        expected_date = datetime.now(UTC)
+        date_diff = (
+            expected_date - deleted_source.scheduleddeletiondate)
+        self.assertTrue(
+            date_diff < timedelta(seconds=60),
+            "DELETED scheduleddeletiondate is %s, expected %s within "
+            "a 60 seconds tolerance" % (
+                deleted_source.scheduleddeletiondate,
+                expected_date))
+
+        # OBSOLETE does not go through domination so I don't care too much
+        # what its scheduleddeletiondate is, as long as it's set.
         self.assertEqual(
             obsoleted_source.status, PackagePublishingStatus.OBSOLETE)
         self.assertTrue(obsoleted_source.scheduleddeletiondate is not None)

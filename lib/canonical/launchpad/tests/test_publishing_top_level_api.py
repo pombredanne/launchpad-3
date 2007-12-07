@@ -56,7 +56,7 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
     def _createDefaulBinaryPublications(self):
         """Create and return default binary publications.
 
-        See TestNativePublishingBase.getPubBinary for more information.
+        See TestNativePublishingBase.getPubBinaries for more information.
 
         It creates the following publications in brezzy-autotest context:
 
