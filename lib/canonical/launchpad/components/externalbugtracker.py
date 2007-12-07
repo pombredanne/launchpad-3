@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import cgi
 import csv
+import email
 import os.path
 import re
 import socket
@@ -24,14 +25,15 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical import encoding
-from canonical.database import Message, MessageSet
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.database import MessageSet
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTrackerType, BugWatchErrorType, CreateBugParams,
     IBugWatchSet, IDistribution, IExternalBugTracker, ILaunchpadCelebrities,
-    IPersonSet, PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+    IMessageSet, IPersonSet, PersonCreationRationale,
+    UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
@@ -744,18 +746,49 @@ class DebBugs(ExternalBugTracker):
         # is linked from a bug task.
         flush_database_updates()
         self.updateBugWatches([bug_watch])
+        self.importBugComments(debian_bug, bug)
 
         return bug
 
-    def importBugComments(self, debian_bug):
+    def importBugComments(self, debian_bug, malone_bug):
         """Import the comments from a DebBugs bug."""
-        self.debbugs_dub.load_log(debian_bug)
+        self.debbugs_db.load_log(debian_bug)
 
-        message_set = MessageSet()
         for comment in debian_bug.comments:
-            # Each comment is an email, so we can happily create a
-            # Message from it.
-            message = message_set.fromEmail(comment)
+            # Debian comments are all rfc822 compliant, so we can use
+            # the email module to parse them. We do this rather than
+            # simply passing the raw message to MessageSet.fromEmail()
+            # so that we can have finer control over the rationale for
+            # any new Persons that we create.
+            parsed_comment = email.message_from_string(comment)
+
+            # We need to assign this comment to an owner, so we look for
+            # a From header to the email or, failing that, a Reply-to
+            # header.
+            if parsed_comment.has_key('from'):
+                owner_email = parsed_comment['from']
+            elif parsed_comment.has_key('reply-to'):
+                owner_email = parsed_comment['email']
+            else:
+                # If we can't find an owner for the comment we can't
+                # carry on.
+                log.warn("Unable to parse comment %s on Debian bug %s: "
+                    "No valid sender address found." %
+                    (parsed_comment.get('message_id', ''), bug.id))
+                continue
+
+            display_name, email_addr = parseaddr(owner_email)
+            owner = getUtility(IPersonSet).ensurePerson(email_addr.lower(),
+                display_name, PersonCreationRationale.BUGIMPORT,
+                "Created automatically during Debian bug import.",
+                getUtility(ILaunchpadCelebrities).bug_watch_updater)
+
+            message = getUtility(IMessageSet).fromEmail(comment, owner,
+                parsed_message=parsed_comment)
+
+            malone_bug.linkMessage(message)
+            flush_database_updates()
+
 
 #
 # Mantis
