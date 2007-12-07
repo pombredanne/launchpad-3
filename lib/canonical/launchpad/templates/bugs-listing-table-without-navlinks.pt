@@ -8,7 +8,7 @@
   <table class="listing" id="buglisting">
     <thead>
       <tr>
-        <th colspan="3">Summary</th>
+        <th colspan="4">Summary</th>
         <th tal:condition="context/show_column/bugtargetdisplayname|nothing">
           In
         </th>
@@ -42,6 +42,8 @@
              tal:condition="context/show_column/summary|nothing">
             drop-down list in search bar disappears when using blah blah blah
           </a>
+        </td>
+        <td align="right" style="padding-right: 5px">
           <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
         </td>
         <td tal:content="bugtask/bugtargetdisplayname"

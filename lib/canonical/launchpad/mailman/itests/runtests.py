@@ -50,8 +50,14 @@ def integrationTestCleanUp(test):
     DELETE FROM TeamMembership
     WHERE team IN (SELECT id FROM DeathRow);
 
+    DELETE FROM TeamMembership
+    WHERE person IN (SELECT id FROM DeathRow);
+
     DELETE FROM TeamParticipation
     WHERE team IN (SELECT id FROM DeathRow);
+
+    DELETE FROM TeamParticipation
+    WHERE person IN (SELECT id FROM DeathRow);
 
     DELETE FROM MailingList
     WHERE team IN (SELECT id FROM DeathRow);
