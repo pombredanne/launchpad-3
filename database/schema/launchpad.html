@@ -121,7 +121,7 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2007-11-29</p>
+Dumped on 2007-12-07</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
@@ -177,6 +177,8 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.bugtag">bugtag</a></li>
 <li><a href="#public.table.bugtask">bugtask</a></li>
 <li><a href="#public.table.bugtracker">bugtracker</a></li>
+<li><a href=
+"#public.table.bugtrackeralias">bugtrackeralias</a></li>
 <li><a href="#public.table.bugwatch">bugwatch</a></li>
 <li><a href="#public.table.build">build</a></li>
 <li><a href="#public.table.builder">builder</a></li>
@@ -487,6 +489,9 @@ displayname text, name text )</a></li>
 )</a></li>
 <li><a href=
 "#public.function.set-bug-date-last-message">set_bug_date_last_message(
+)</a></li>
+<li><a href=
+"#public.function.set-bug-number-of-duplicates">set_bug_number_of_duplicates(
 )</a></li>
 <li><a href=
 "#public.function.set-openid-identifier">set_openid_identifier(
@@ -3079,6 +3084,34 @@ distroarchseries which pertain.</td>
 <td>timestamp without time zone</td>
 <td><i>NOT NULL DEFAULT timezone('UTC'::text,
 ('now'::text)::timestamp(6) with time zone)</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>pre_depends</td>
+<td>text</td>
+<td><br />
+<br />
+The list of packages this binary requires to be installed
+beforehand in apt/dpkg format, as it is in control file
+"Pre-Depends:" field.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>enhances</td>
+<td>text</td>
+<td><br />
+<br />
+The list of packages pointed as "enhanced" after the installation
+of this package, as it is in control file "Enhances:" field.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>breaks</td>
+<td>text</td>
+<td><br />
+<br />
+The list of packages which will be broken by the installtion of
+this package, as it is in the control file "Breaks:" field.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -5934,6 +5967,15 @@ Is this bug a security issue?</td>
 <br />
 When the last BugMessage was attached to this Bug. Maintained by a
 trigger on the BugMessage table.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>number_of_duplicates</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The number of bugs marked as duplicates of this bug, populated by a
+trigger after setting the duplicateof of bugs.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -9218,7 +9260,7 @@ page.</td>
 <br />
 The base URL for this bug tracker. Using our knowledge of the
 bugtrackertype, and the details in the BugWatch table we are then
-able to calculate relative URL's for relevant pages in the bug
+able to calculate relative URLs for relevant pages in the bug
 tracker based on this baseurl.</td>
 </tr>
 <tr class="tr0">
@@ -9266,6 +9308,10 @@ bug tracker with the responsible people on the other side.</td>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
+<li><a href=
+"#public.table.bugtrackeralias">public.bugtrackeralias</a></li>
+</ul>
+<ul>
 <li><a href="#public.table.bugwatch">public.bugwatch</a></li>
 </ul>
 <ul>
@@ -9280,6 +9326,212 @@ bugtracker_owner_idx "owner" <!-- View Definition -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to public.bugtracker</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>checkwatches</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>processmail</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.bugtrackeralias" id=
+"public.table.bugtrackeralias">bugtrackeralias</a></h2>
+<p>A bugtracker alias is a URL that also refers to the same
+bugtracker as the master bugtracker. For example, a bugtracker
+might be accessible as both http://www.bugsrus.com/ and
+http://bugsrus.com/. A bugtracker can have many aliases, and all of
+them are checked to prevents users registering duplicate
+bugtrackers inadvertently.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.bugtrackeralias Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.bugtracker">public.bugtracker.id</a></td>
+<td>bugtracker</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The master bugtracker that this alias refers to.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>base_url</td>
+<td>text</td>
+<td><i>UNIQUE NOT NULL</i><br />
+<br />
+Another base URL for this bug tracker. See BugTracker.baseurl.</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+bugtrackeralias__bugtracker__idx bugtracker 
+<!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.bugtrackeralias</caption>
 <tr>
 <th>User</th>
 <th>
@@ -9512,6 +9764,15 @@ with time zone)</i></td>
 The type of error which last prevented this entry from being
 updated. Legal values are defined by the BugWatchErrorType
 enumeration.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>remote_importance</td>
+<td>text</td>
+<td><br />
+<br />
+The importance of the bug as returned by the remote server. This
+will be converted into a Launchpad BugTaskImportance value.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -13404,6 +13665,15 @@ release.</td>
 <td><i>NOT NULL DEFAULT false</i><br />
 <br />
 Indicates whether automatic bug expiration is enabled.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>bug_reporting_guidelines</td>
+<td>text</td>
+<td><br />
+<br />
+Guidelines to the end user for reporting bugs on this
+distribution.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -29082,6 +29352,12 @@ dbschema.MailingListAutoSubscribePolicy.</td>
 True means the user wants to receive list copies of messages on
 which they are explicitly named as a recipient.</td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>visibility</td>
+<td>integer</td>
+<td></td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -34385,6 +34661,14 @@ will be actively watching the blueprints in Launchpad.</td>
 <br />
 Indicates whether automatic bug expiration is enabled.</td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>bug_reporting_guidelines</td>
+<td>text</td>
+<td><br />
+<br />
+Guidelines to the end user for reporting bugs on this product.</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -35570,13 +35854,24 @@ The date this file was uploaded.</td>
 <td>tsvector</td>
 <td></td>
 </tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
+<td>signature</td>
+<td>integer</td>
+<td><br />
+<br />
+This is the signature of the librarian entry as uploaded by the
+user.</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
-productreleasefile__uploader__idx uploader productreleasefile_fti
-fti <!-- View Definition -->
+productreleasefile__signature__idx signature) WHERE (signature IS
+NOT NULL productreleasefile__uploader__idx uploader
+productreleasefile_fti fti <!-- View Definition -->
  <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -36722,6 +37017,15 @@ branding of a project, on its home page.</td>
 <br />
 The library file alias of a smaller version of this product's
 mugshot.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>bug_reporting_guidelines</td>
+<td>text</td>
+<td><br />
+<br />
+Guidelines to the end user for reporting bugs on products in this
+project.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -44570,6 +44874,26 @@ The copyright associated with this sourcepackage. Often in the case
 of debian packages and will be found after the installation in
 /usr/share/doc/&lt;binarypackagename&gt;/copyright</td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>build_conflicts</td>
+<td>text</td>
+<td><br />
+<br />
+The list of packages that will conflict with this source while
+building, as mentioned in the control file "Build-Conflicts:"
+field.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>build_conflicts_indep</td>
+<td>text</td>
+<td><br />
+<br />
+The list of packages that will conflict with this source while
+building in architecture independent environment, as mentioned in
+the control file "Build-Conflicts-Indep:" field.</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -49419,6 +49743,8 @@ it.</td>
 "#public.table.pofiletranslator">public.pofiletranslator</a></li>
 </ul>
 <!-- Indexes -->
+translationmessage__83fix2__idx potmsgset) WHERE (((is_current IS
+TRUE) OR (is_imported IS TRUE)) AND (is_fuzzy IS NOT TRUE)
 translationmessage__msgstr0__idx msgstr0
 translationmessage__msgstr1__idx msgstr1
 translationmessage__msgstr2__idx msgstr2
@@ -51291,6 +51617,43 @@ BEGIN
             ) AS MessageSummary
         WHERE Bug.id = MessageSummary.bug;
     END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.set-bug-number-of-duplicates" id=
+"public.function.set-bug-number-of-duplicates">set_bug_number_of_duplicates(
+)</a></h2>
+<h3>Returns: "trigger"</h3>
+<h3>Language: PLPGSQL</h3>
+<p>AFTER UPDATE trigger on Bug maintaining the
+Bug.number_of_duplicates column</p>
+<pre>
+BEGIN
+    -- Short circuit on an update that doesn't change duplicateof
+    IF TG_OP = 'UPDATE' THEN
+        IF NEW.duplicateof = OLD.duplicateof THEN
+            RETURN NULL; -- Ignored - this is an AFTER trigger
+        END IF;
+    END IF;
+
+    -- For update or delete, possibly decrement a bug's dupe count
+    IF TG_OP &lt;&gt; 'INSERT' THEN
+        IF OLD.duplicateof IS NOT NULL THEN
+            UPDATE Bug SET number_of_duplicates = number_of_duplicates - 1
+                WHERE Bug.id = OLD.duplicateof;
+        END IF;
+    END IF;
+
+    -- For update or insert, possibly increment a bug's dupe cout
+    IF TG_OP &lt;&gt; 'DELETE' THEN
+        IF NEW.duplicateof IS NOT NULL THEN
+            UPDATE Bug SET number_of_duplicates = number_of_duplicates + 1
+                WHERE Bug.id = NEW.duplicateof;
+        END IF;
+    END IF;
+
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
 </pre>
