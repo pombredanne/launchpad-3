@@ -545,6 +545,103 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ALTER TABLE announcement DISABLE TRIGGER ALL;
+
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (1, '2007-11-25 00:44:32.186178', '2007-11-20 03:00:00', 1, NULL, 1, NULL, 'Every Macedonian Student to Use Ubuntu-Powered Computer Workstations', 'The Macedonia Ministry of Education and Science will deploy more than 180,000 workstations running Canonical’s Edubuntu 7.04 as part of its "Computer for Every Child" project.', 'http://www.ubuntu.com/news/macedonia-school-computers', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (2, '2007-11-25 00:48:53.347225', '2007-10-15 07:00:00', 1, NULL, 1, NULL, 'Ubuntu 7.10 Released, Delivering the Best of Open Source Software', 'Canonical Ltd. announced today the upcoming availability of version 7.10 of the Ubuntu Server, Desktop, Kubuntu and Edubuntu Editions. All will be available for free download on Thursday 18 October. Canonical is the commercial sponsor of Ubuntu.
+
+', 'http://www.ubuntu.com/news/ubuntu710', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (3, '2007-11-25 00:50:56.337934', '2007-09-11 04:00:00', 1, NULL, 1, NULL, 'Canonical to Provide Optimized Ubuntu OS Layer for VMware Virtual Appliances', 'Canonical Ltd., the commercial sponsor of Ubuntu, today announced the availability of its Ubuntu JeOS (Just Enough Operating System) edition. Ubuntu JeOS (pronounced "Juice") is an efficient variant of the popular desktop and server operating system, configured specifically for virtual appliances.', 'http://www.ubuntu.com/news/ubuntu-jeos', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (4, '2007-11-25 00:52:09.015964', '2007-08-07 04:29:00', 1, NULL, 1, NULL, 'Dell Answers Customer Calls for Linux in Europe', 'Dell today unveiled two consumer PCs in Europe – the Inspiron 6400n and the Inspiron 530n – with the Ubuntu 7.04 Linux operating system factory installed. Available now in the United Kingdom, Germany and France, the systems are Dell’s first steps to meet the needs of the Linux enthusiast community outside of the United States.
+
+', 'http://www.ubuntu.com/news/dell-available-in-europe', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (5, '2007-11-25 00:53:11.94385', '2007-08-03 10:56:00', 1, NULL, 1, NULL, 'Canonical and Altkom Akademia partner to deliver Ubuntu Certified Professional training in Poland', 'Canonical Ltd, the commercial sponsor of Ubuntu, today announced it has signed an agreement with Altkom Akademia to deliver ''Ubuntu Certified Professional'' (UCP) training in Poland. Altkom will deliver official courses in Warsaw starting in September 2007.
+
+Two five day courses, Ubuntu Professional Courses 1 & 2, will assist system administrators in passing the required LPI 101, LPI 102 and the Ubuntu 199 exams, and achieve the Ubuntu Certified Professional certification. These courses are part of a series of classroom and e-learning courses scheduled for launch throughout 2007.', 'http://www.ubuntu.com/news/canonical-altkom-akademia-deliver-training-in-poland', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (6, '2007-11-25 00:54:20.800516', '2007-07-22 14:43:00', 1, NULL, 1, NULL, 'Canonical Launches Web-Based Systems Management Tool For Ubuntu Deployments', 'Canonical announced today the availability of Landscape, its web-based systems management tool for Ubuntu servers and desktops.
+
+Available to Canonical''s support subscribers, Landscape provides a key tool for the growing number of businesses that want to take advantage of the ease of use of Ubuntu and have previously seen system administration or support as a hurdle.', 'http://www.ubuntu.com/news/landscape-system-management-tool', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (7, '2007-11-25 00:55:21.295487', '2007-06-29 17:28:00', 1, NULL, 1, NULL, 'Ubuntu Receives Readers'' Choice Award for ''Best Linux Distribution''', 'Canonical, Ltd., the commercial sponsor of Ubuntu, today announced that it won Enterprise Open Source Magazine’s Readers’ Choice Award for the “Best Linux Distribution,” voted on by members of the open source community.
+
+The winners of the Readers’ Choice Awards were revealed by SYS-CON, the parent publishing company for Enterprise Open Source Magazine, at the second annual Enterprise Open Source Conference in New York last week. This year the Enterprise Open Source Conference has been co-located with the SOA World Conference & Expo 2007.
+
+', 'http://www.ubuntu.com/news/enterprise-open-source-best-distribution-award', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (8, '2007-11-25 00:59:12.513928', '2007-11-25 00:59:12.513928', 1, NULL, 1, NULL, 'Ubuntu takes majority market share in Bapetikosweti', 'In a stunning turnaround, the independent republic of Bapetikosweti has declared that all computers sold within its borders should have Ubuntu preinstalled, fully translated into the local dialect, Uysh. A government spokesman said "we wanted to show that this could be nation of change".', NULL, false, '2007-11-25 00:59:23.363818');
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (9, '2007-11-25 01:00:57.90496', NULL, 1, NULL, 1, NULL, 'Ubuntu 8.04 Wins a "100 Best Products of 2008 Award" from PC World', 'Ubuntu 7.08, commercially sponsored by Canonical Ltd., was honored by PC World with a 100 Best Products of 2008 Award. The article is available now on PCWorld.com, and will also be featured in the July 2008 issue of PC World, which hits newsstands June 12.
+
+Ubuntu is the award-winning Linux distribution for the desktop, laptop, thin client and server which brings together the best of open source software every 6 months. Version 8.04 launched in April as a secure, feature-rich alternative to Microsoft Windows. Recently, Canonical has announced partnerships with leading technology companies including Dell, VMware and Zimbra to expand the distribution''s reach.', NULL, true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (10, '2007-11-25 01:13:31.234806', '2007-11-19 20:00:00', 1, 4, NULL, NULL, 'Firefox 3 Beta 1 Ready for Testing', 'Mozilla announced Firefox 3 Beta 1 today. Mike Betlzner has a comprehensive post on DevNews, crossposted below. Reminder that the Firefox 3 Beta 1 milestone release is intended for testing purposes only and is not for casual users.', 'http://blog.mozilla.com/blog/2007/11/20/firefox-3-beta-1-ready-for-testing/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (11, '2007-11-25 01:14:42.885968', '2007-10-25 08:02:00', 1, 4, NULL, NULL, 'Extend Firefox 2 is Here!', 'Will you be the brain behind the next great web innovation? Get ready to show the world what you’re made of… Extend Firefox 2 is here! Extend Firefox 2 is a developer contest with prizes awarded for creating new Firefox Add-ons. All entries will be judged by a panel of experts.', 'http://blog.mozilla.com/blog/2007/10/25/extend-firefox-2-is-here/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (12, '2007-11-25 01:16:01.858804', '2007-07-09 12:00:00', 1, 4, NULL, NULL, 'Four Hundred Million Firefox Downloads', 'On November 9th, 2004, you all started a movement. Spread Firefox, supported by tens of thousands of contributors, took just 99 days to deliver 25 million downloads of Firefox to a world of people desperate for a better Web — a Web that didn’t overwhelm them with pop-ups, a Web that didn’t infect their systems with viruses and spyware, a Web that was fun again, simply put, a Web that worked.', 'http://blog.mozilla.com/blog/2007/09/07/four-hundred-million-firefox-downloads/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (13, '2007-11-25 01:17:47.035452', '2007-08-06 09:45:00', 1, 4, NULL, NULL, 'Rock Your Firefox!', ' We’re excited to announce the launch of another tool that will allow you to surf your web, your way: Rock Your Firefox! Rock Your Firefox is an application built on the Facebook® Platform allowing you to personalize, customize, and essentially rock out your browser, and share it with your friends. Browse through more than 2000 add-ons and recommend those you like to your friends - and see what they recommend for you.', 'http://blog.mozilla.com/blog/2007/08/06/rock-your-firefox/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (14, '2007-11-25 01:19:22.075917', '2007-06-19 22:23:00', 1, 4, NULL, NULL, 'Firefox support options', 'We often get letters, voicemails and emails asking, “How do I get help for Firefox?” That’s a good question, so I thought I would share the available and very helpful resources.', 'http://blog.mozilla.com/blog/2007/06/20/firefox-support-options/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (15, '2007-11-25 01:20:14.590274', '2007-06-15 02:13:00', 1, 4, NULL, NULL, 'A few foxy tips', 'A great deal of Firefox’s popularity is due to the ability to personalize it and add all sorts of functionality via add-ons. But there are some nifty shortcuts and features right in Firefox. I asked around here at Mozilla for favorite Firefox features and time savers.', 'http://blog.mozilla.com/blog/2007/06/15/a-few-foxy-tips/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (16, '2007-11-25 01:21:54.413156', '2007-09-18 02:24:00', 1, 8, NULL, NULL, 'Mozilla’s New Focus on Thunderbird and Internet Communications', 'Mozilla has been investing in email since the Foundation was created. We have a good, solid client in Thunderbird, and we have aspirations to do more. We’ve spent the last few months working on how to meet those aspirations. Many thanks to everyone who participated in the discussions.
+
+The result is that Mozilla is launching a new effort to improve email and internet communications. We will increase our investment and focus on our current email client — Thunderbird — and on innovations in the email and communications areas.', 'http://blog.mozilla.com/blog/2007/09/18/mozillas-new-focus-on-thunderbird-and-internet-communications/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (17, '2007-11-25 01:25:18.801758', '2007-09-10 10:28:00', 1, NULL, NULL, 4, 'Air Mozilla Live this Wednesday - Window Snyder, Mozilla Security', 'Air Mozilla is the live “call in” show featuring influential Mozilla contributors from all over the world. This week’s show will feature Window Snyder, Chief Security Something or Other, talking about Mozilla and Web security. So join us this Wednesday at air.mozilla.com and on IRC or IM to be a part of the fun.', 'http://blog.mozilla.com/blog/2007/10/09/air-mozilla-live-this-wednesday-window-snyder-mozilla-security/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (18, '2007-11-25 01:26:23.455036', '2007-09-18 12:28:00', 1, NULL, NULL, 4, 'Special Edition of Air Mozilla: Mitchell Baker and David Ascher', 'Tomorrow’s Air Mozilla Live will be focused on the recent announcements around Mozilla’s increasing investment in email and messaging. We’ll have both Mitchell Baker, Chairman of the Board, and David Ascher, the leader of Mozilla’s new messaging company taking your questions, live just after 2PM Pacific. So join us this Wednesday at air.mozilla.com and on IRC or IM to be a part of the fun.', 'http://blog.mozilla.com/blog/2007/09/18/special-edition-of-air-mozilla-mitchell-baker-and-david-ascher/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (19, '2007-11-25 01:27:29.708004', '2007-09-15 07:03:00', 1, NULL, NULL, 4, 'Mozilla 24 is LIVE!', 'Our colleagues in Japan kicked off Mozilla 24 in Tokyo this evening. If you weren’t able to make it there like me, you don’t have to miss out on all the action. You can watch live from the Mozilla 24 site now.', 'http://blog.mozilla.com/blog/2007/09/15/mozilla-24-is-live/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (20, '2007-11-25 01:28:31.840429', '2007-09-10 07:26:00', 1, NULL, NULL, 4, 'Count down to Mozilla 24!', 'We’re just a few days away from Mozilla 24, our global community event that will be taking place in Paris, Tokyo, the S.F. Bay Area (Stanford University) and now Thailand! Here is a recap of the Mozilla 24 events near you.', 'http://blog.mozilla.com/blog/2007/09/10/count-down-to-mozilla-24/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (21, '2007-11-25 01:30:55.41149', '2007-08-07 12:22:00', 1, NULL, NULL, 4, 'Announcing the Grand Re-Opening of the Mozilla Store', 'Hi all. I’m excited to announce that the revamped Mozilla Store is now live!
+Here are a few quick high points of what’s new:
+- new site design, featuring Mozilla employees as models.
+- 12 new items (plus many old favorites) including t-shirts, stickers and more.
+- interactive features including a Store Blog, Community Spotlight', 'http://blog.mozilla.com/blog/2007/08/17/announcing-the-grand-re-opening-of-the-mozilla-store/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (22, '2007-11-25 01:32:06.722004', NULL, 1, NULL, NULL, 4, 'Google become Platinum Sponsor of Mozilla', 'In a landmark deal for an open source project, Mozilla and Google have agreed that Google will provide free food to all Mozilla contributors, regardless of their domicile.', NULL, true, NULL);
+
+
+ALTER TABLE announcement ENABLE TRIGGER ALL;
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -688,38 +785,38 @@ ALTER TABLE bountysubscription ENABLE TRIGGER ALL;
 
 ALTER TABLE branch DISABLE TRIGGER ALL;
 
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (1, 'Mozilla Firefox Mainline', 'text', 12, 4, 12, 'main', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--MAIN--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:42.98217', 0, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (2, 'Mozilla Thunderbird Mainline', 'Bazaar import of the Mozilla Thunderbird CVS mainline.', 11, 8, 1, 'main', NULL, 'http://bazaar.example.com/thunderbird@arch.ubuntu.com/thunderbird--MAIN--0', NULL, 1, NULL, '2006-04-08 01:40:15.816029', 1, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.042944', 0, '2006-04-08 07:40:15.816029', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (3, 'Python Twisted Trunk', 'Bazaar import of the Twisted SVN trunk.', 7, NULL, 3, 'trunk', NULL, 'http://bazaar.example.com/twisted@arch.ubuntu.com/twisted--trunk--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.04419', 0, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (4, 'Bugzila Mainline', 'text', 3, NULL, NULL, 'main', NULL, 'http://bazaar.example.com/bugzilla@arch.ubuntu.com/bugzila--MAIN--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.045278', 0, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (5, 'Arch Devel', 'text', 8, NULL, NULL, 'devel-1.0', NULL, 'http://bazaar.example.com/arch@arch.ubuntu.com/arch--devel--1.0', NULL, 1, NULL, '2006-04-08 22:20:14.973705', 9, false, 'I do not like Arch, so I am pretending it failed to mirror.', NULL, NULL, NULL, '2006-10-16 18:31:43.046996', 0, '2006-04-09 04:20:14.973705', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (6, 'Kiwi2 Mainline', 'text', 9, NULL, NULL, 'main', NULL, 'http://bazaar.example.com/kiwi2@arch.ubuntu.com/kiwi2--MAIN--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.048164', 0, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (7, 'Plone Trunk', 'text', 10, NULL, NULL, 'trunk', NULL, 'http://bazaar.example.com/plone@arch.ubuntu.com/plone--trunk--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.049222', 0, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (8, 'Evolution 2.0', 'text', 13, 5, NULL, '2.0', NULL, 'http://bazaar.example.com/gnome@arch.ubuntu.com/gnome--evolution--2.0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.050317', 0, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (9, 'Iso-codes 0.35', 'text', 13, 7, NULL, '0.35', NULL, 'http://bazaar.example.com/iso-codes@arch.ubuntu.com/iso-codes--iso-codes--0.35', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.051395', 0, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (10, 'Mozilla Firefox 0.9.2', 'text', 1, 4, NULL, 'release-0.9.2', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.2', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.2--base-0', NULL, '2006-10-16 18:31:43.052449', 1, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (11, 'Mozilla Firefox 0.9.1', 'text', 1, 4, NULL, 'release--0.9.1', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.1', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.1--base-0', NULL, '2006-10-16 18:31:43.053511', 1, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (12, 'Mozilla Firefox 0.9', 'text', 1, 4, NULL, 'release-0.9', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9--base-0', NULL, '2006-10-16 18:31:43.054581', 1, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (13, 'Mozilla Firefox 0.8', 'text', 1, 4, NULL, 'release-0.8', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.8', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.055661', 0, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (14, NULL, NULL, 24, 5, NULL, 'main', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.056714', 0, NULL, false, 3);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (15, 'GNOME Terminal Mainline', 'Main branch of development for GNOME Terminal. Stable branches are based on that one.', 12, 6, NULL, 'main', 'http://example.com/gnome-terminal', 'http://example.com/gnome-terminal/main', NULL, 30, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.057682', 0, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (16, 'GNOME Terminal 2.6 Releases', 'Release branch of GNOME Terminal for the GNOME 2.6 environment.', 12, 6, NULL, '2.6', 'http://example.com/gnome-terminal/', 'http://example.com/gnome-terminal/2.6', NULL, 50, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.058953', 0, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (17, 'GNOME Terminal 2.4 Releases', 'Obsolete branch for GNOME 2.4 releases of GNOME Terminal.', 12, 6, NULL, '2.4', NULL, 'http://example.com/gnome-terminal/2.4', NULL, 80, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.060078', 0, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (18, 'Klingon support in GNOME Terminal', 'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.', 12, 6, 12, 'klingon', 'http://trekkies.example.com/k12n', 'http://trekkies.example.com/gnome-terminal/klingon', NULL, 10, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.061162', 0, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (19, 'Slowing GNOME Terminal scrolling', 'Feature branch for slowing down the scrolling of text in GNOME Terminal.', 12, 6, 12, 'slowness', NULL, 'http://users.example.com/gnome-terminal/slowness', NULL, 70, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.062427', 0, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (20, 'Ubuntu Junk Code', 'Sample junk branch.', 12, NULL, 17, 'junk.dev', NULL, 'http://localhost:8000/a', NULL, 10, NULL, NULL, 0, false, NULL, NULL, 'foo@localhost-20051031170357-1301ad6d387feb23', NULL, '2006-10-16 18:31:43.06351', 6, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (21, 'Junk Code Contributions', 'Contribute code to the junk branch.', 12, NULL, 12, 'junk.contrib', NULL, 'http://localhost:8000/b', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'foo@localhost-20051031170357-1301ad6d387feb23', NULL, '2006-10-16 18:31:43.064578', 6, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (22, 'Python twisted feature', 'Feature branch for twisted.', 7, NULL, 4, 'feature', NULL, 'http://not.launchpad.server.com/a-branch', NULL, 1, NULL, '2005-03-09 15:45:00', 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.065642', 0, '2005-03-09 21:45:00', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (23, 'Another Python twisted feature', 'Another Feature branch for twisted.', 7, NULL, 4, 'feature2', NULL, 'http://whynot.launchpad.server.com/another-branch', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.066804', 0, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (24, 'Launchpad support for Gnome Terminal', 'Add Launchpad support to Gnome Terminal', 57, 6, 57, 'launchpad', NULL, 'http://users.example.com/gnome-terminal/launchpad', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.067922', 0, '2007-08-20 00:19:05.300799', false, 2);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (25, NULL, NULL, 12, 6, NULL, 'pushed', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.06897', 0, NULL, false, 1);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (26, NULL, NULL, 12, 6, NULL, 'mirrored', NULL, NULL, NULL, 1, '2007-03-16 14:12:49.050332', NULL, 0, false, NULL, NULL, NULL, NULL, '2007-03-16 03:12:49.050332', 0, '2007-08-20 00:19:05.300799', false, 1);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (27, NULL, NULL, 12, 6, NULL, 'scanned', NULL, NULL, NULL, 1, '2007-03-16 14:14:29.935752', NULL, 0, false, NULL, '2007-03-16 14:14:29.935752', NULL, NULL, '2007-03-16 03:14:29.935752', 0, '2007-08-20 00:19:05.300799', false, 1);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (28, NULL, NULL, 1, NULL, 1, 'testdoc', NULL, NULL, NULL, 1, NULL, NULL, 1, false, 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum', NULL, NULL, NULL, '2007-05-04 01:16:03.75446', 0, '2007-05-04 01:16:26.640702', false, 1);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (29, 'Landscape trunk', NULL, 64, 16, 12, 'trunk', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, '2007-08-20 00:19:05.300799', true, 1);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (30, NULL, NULL, 12, 16, 12, 'feature-x', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, '2007-08-20 00:19:05.300799', true, 1);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (75, 'GNOME Terminal Import Branch', NULL, 24, 6, NULL, 'import', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-06-25 20:04:03.9465', 0, NULL, false, 3);
-INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type) VALUES (76, 'Evolution Import Branch', NULL, 24, 5, NULL, 'import', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-06-25 20:04:04.218451', 0, NULL, false, 3);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (1, 'Mozilla Firefox Mainline', 'text', 12, 4, 12, 'main', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--MAIN--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:42.98217', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.837773');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (2, 'Mozilla Thunderbird Mainline', 'Bazaar import of the Mozilla Thunderbird CVS mainline.', 11, 8, 1, 'main', NULL, 'http://bazaar.example.com/thunderbird@arch.ubuntu.com/thunderbird--MAIN--0', NULL, 1, NULL, '2006-04-08 01:40:15.816029', 1, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.042944', 0, '2006-04-08 07:40:15.816029', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.842033');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (3, 'Python Twisted Trunk', 'Bazaar import of the Twisted SVN trunk.', 7, NULL, 3, 'trunk', NULL, 'http://bazaar.example.com/twisted@arch.ubuntu.com/twisted--trunk--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.04419', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.843681');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (4, 'Bugzila Mainline', 'text', 3, NULL, NULL, 'main', NULL, 'http://bazaar.example.com/bugzilla@arch.ubuntu.com/bugzila--MAIN--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.045278', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.844341');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (5, 'Arch Devel', 'text', 8, NULL, NULL, 'devel-1.0', NULL, 'http://bazaar.example.com/arch@arch.ubuntu.com/arch--devel--1.0', NULL, 1, NULL, '2006-04-08 22:20:14.973705', 9, false, 'I do not like Arch, so I am pretending it failed to mirror.', NULL, NULL, NULL, '2006-10-16 18:31:43.046996', 0, '2006-04-09 04:20:14.973705', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.844975');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (6, 'Kiwi2 Mainline', 'text', 9, NULL, NULL, 'main', NULL, 'http://bazaar.example.com/kiwi2@arch.ubuntu.com/kiwi2--MAIN--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.048164', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.84562');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (7, 'Plone Trunk', 'text', 10, NULL, NULL, 'trunk', NULL, 'http://bazaar.example.com/plone@arch.ubuntu.com/plone--trunk--0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.049222', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.846258');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (8, 'Evolution 2.0', 'text', 13, 5, NULL, '2.0', NULL, 'http://bazaar.example.com/gnome@arch.ubuntu.com/gnome--evolution--2.0', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.050317', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.846899');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (9, 'Iso-codes 0.35', 'text', 13, 7, NULL, '0.35', NULL, 'http://bazaar.example.com/iso-codes@arch.ubuntu.com/iso-codes--iso-codes--0.35', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.051395', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.847595');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (10, 'Mozilla Firefox 0.9.2', 'text', 1, 4, NULL, 'release-0.9.2', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.2', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.2--base-0', NULL, '2006-10-16 18:31:43.052449', 1, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.848365');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (11, 'Mozilla Firefox 0.9.1', 'text', 1, 4, NULL, 'release--0.9.1', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.1', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.1--base-0', NULL, '2006-10-16 18:31:43.053511', 1, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.849077');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (12, 'Mozilla Firefox 0.9', 'text', 1, 4, NULL, 'release-0.9', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.9', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9--base-0', NULL, '2006-10-16 18:31:43.054581', 1, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.84976');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (13, 'Mozilla Firefox 0.8', 'text', 1, 4, NULL, 'release-0.8', NULL, 'http://bazaar.example.com/mozilla@arch.ubuntu.com/mozilla--release--0.8', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.055661', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.850415');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (14, NULL, NULL, 24, 5, NULL, 'main', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.056714', 0, NULL, false, 3, NULL, NULL, 1, '2007-12-06 19:58:26.85103');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (15, 'GNOME Terminal Mainline', 'Main branch of development for GNOME Terminal. Stable branches are based on that one.', 12, 6, NULL, 'main', 'http://example.com/gnome-terminal', 'http://example.com/gnome-terminal/main', NULL, 30, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.057682', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.851575');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (16, 'GNOME Terminal 2.6 Releases', 'Release branch of GNOME Terminal for the GNOME 2.6 environment.', 12, 6, NULL, '2.6', 'http://example.com/gnome-terminal/', 'http://example.com/gnome-terminal/2.6', NULL, 50, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.058953', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.852227');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (17, 'GNOME Terminal 2.4 Releases', 'Obsolete branch for GNOME 2.4 releases of GNOME Terminal.', 12, 6, NULL, '2.4', NULL, 'http://example.com/gnome-terminal/2.4', NULL, 80, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.060078', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.852889');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (18, 'Klingon support in GNOME Terminal', 'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.', 12, 6, 12, 'klingon', 'http://trekkies.example.com/k12n', 'http://trekkies.example.com/gnome-terminal/klingon', NULL, 10, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.061162', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.85354');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (19, 'Slowing GNOME Terminal scrolling', 'Feature branch for slowing down the scrolling of text in GNOME Terminal.', 12, 6, 12, 'slowness', NULL, 'http://users.example.com/gnome-terminal/slowness', NULL, 70, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.062427', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.854214');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (20, 'Ubuntu Junk Code', 'Sample junk branch.', 12, NULL, 17, 'junk.dev', NULL, 'http://localhost:8000/a', NULL, 10, NULL, NULL, 0, false, NULL, NULL, 'foo@localhost-20051031170357-1301ad6d387feb23', NULL, '2006-10-16 18:31:43.06351', 6, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.854821');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (21, 'Junk Code Contributions', 'Contribute code to the junk branch.', 12, NULL, 12, 'junk.contrib', NULL, 'http://localhost:8000/b', NULL, 1, NULL, NULL, 0, false, NULL, NULL, 'foo@localhost-20051031170357-1301ad6d387feb23', NULL, '2006-10-16 18:31:43.064578', 6, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.855432');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (22, 'Python twisted feature', 'Feature branch for twisted.', 7, NULL, 4, 'feature', NULL, 'http://not.launchpad.server.com/a-branch', NULL, 1, NULL, '2005-03-09 15:45:00', 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.065642', 0, '2005-03-09 21:45:00', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.856045');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (23, 'Another Python twisted feature', 'Another Feature branch for twisted.', 7, NULL, 4, 'feature2', NULL, 'http://whynot.launchpad.server.com/another-branch', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.066804', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.856677');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (24, 'Launchpad support for Gnome Terminal', 'Add Launchpad support to Gnome Terminal', 57, 6, 57, 'launchpad', NULL, 'http://users.example.com/gnome-terminal/launchpad', NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.067922', 0, '2007-08-20 00:19:05.300799', false, 2, NULL, NULL, 1, '2007-12-06 19:58:26.857318');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (25, NULL, NULL, 12, 6, NULL, 'pushed', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.06897', 0, NULL, false, 1, NULL, NULL, 1, '2007-12-06 19:58:26.857983');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (26, NULL, NULL, 12, 6, NULL, 'mirrored', NULL, NULL, NULL, 1, '2007-03-16 14:12:49.050332', NULL, 0, false, NULL, NULL, NULL, NULL, '2007-03-16 03:12:49.050332', 0, '2007-08-20 00:19:05.300799', false, 1, NULL, NULL, 1, '2007-12-06 19:58:26.858547');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (27, NULL, NULL, 12, 6, NULL, 'scanned', NULL, NULL, NULL, 1, '2007-03-16 14:14:29.935752', NULL, 0, false, NULL, '2007-03-16 14:14:29.935752', NULL, NULL, '2007-03-16 03:14:29.935752', 0, '2007-08-20 00:19:05.300799', false, 1, NULL, NULL, 1, '2007-12-06 19:58:26.85913');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (28, NULL, NULL, 1, NULL, 1, 'testdoc', NULL, NULL, NULL, 1, NULL, NULL, 1, false, 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum', NULL, NULL, NULL, '2007-05-04 01:16:03.75446', 0, '2007-05-04 01:16:26.640702', false, 1, NULL, NULL, 1, '2007-12-06 19:58:26.859847');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (29, 'Landscape trunk', NULL, 64, 16, 12, 'trunk', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, '2007-08-20 00:19:05.300799', true, 1, NULL, NULL, 1, '2007-12-06 19:58:26.860757');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (30, NULL, NULL, 12, 16, 12, 'feature-x', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, '2007-08-20 00:19:05.300799', true, 1, NULL, NULL, 1, '2007-12-06 19:58:26.861424');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (75, 'GNOME Terminal Import Branch', NULL, 24, 6, NULL, 'import', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-06-25 20:04:03.9465', 0, NULL, false, 3, NULL, NULL, 1, '2007-12-06 19:58:26.862009');
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private, branch_type, reviewer, merge_robot, merge_control_status, date_last_modified) VALUES (76, 'Evolution Import Branch', NULL, 24, 5, NULL, 'import', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-06-25 20:04:04.218451', 0, NULL, false, 3, NULL, NULL, 1, '2007-12-06 19:58:26.862857');
 
 
 ALTER TABLE branch ENABLE TRIGGER ALL;
@@ -730,6 +827,13 @@ ALTER TABLE branchmergeproposal DISABLE TRIGGER ALL;
 
 
 ALTER TABLE branchmergeproposal ENABLE TRIGGER ALL;
+
+
+ALTER TABLE branchmergerobot DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE branchmergerobot ENABLE TRIGGER ALL;
 
 
 ALTER TABLE branchrevision DISABLE TRIGGER ALL;
@@ -1087,32 +1191,32 @@ ALTER TABLE bugwatch ENABLE TRIGGER ALL;
 
 ALTER TABLE build DISABLE TRIGGER ALL;
 
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (2, '2004-09-27 11:57:13', 1, 1, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, 14, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (6, '2006-12-01 00:00:00', 1, 1, 2, '2006-12-01 00:00:01', '00:00:01', 1, 1, 32, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (7, '2005-03-24 00:00:00', 1, 6, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (8, '2005-09-30 00:00:00', 1, 6, 6, NULL, NULL, NULL, NULL, 14, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (9, '2005-10-01 00:00:00', 1, 1, 2, '2005-10-02 00:00:01', '00:03:20', 1, 1, 20, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (10, '2006-01-27 00:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 26, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (11, '2006-02-14 00:00:00', 1, 6, 0, NULL, NULL, NULL, NULL, 25, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (12, '2006-02-28 00:00:00', 1, 6, 3, '2006-02-28 00:00:01', '00:06:02', 1, 1, 27, 0, 'cpp (>= 4:4.0.1-3), gcc-4.0 (>= 4.0.1-2)', 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (13, '2006-03-21 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 17, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (14, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 28, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (15, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 29, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (16, '2005-03-24 00:00:00', 1, 11, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (17, '2005-10-01 00:00:00', 1, 8, 2, '2005-10-02 00:00:01', '00:03:20', 1, 1, 20, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (18, '2004-09-27 11:57:14', 1, 8, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, 14, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (19, '2005-03-24 00:00:00', 1, 8, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (20, '2006-07-25 00:00:00', 1, 1, 0, NULL, NULL, NULL, NULL, 29, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (21, '2006-12-01 00:00:00', 1, 1, 2, NULL, NULL, NULL, NULL, 33, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (22, '2007-04-20 00:00:00', 1, 8, 7, '2007-04-20 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (23, '2006-04-11 12:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 35, 0, NULL, 1);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (24, '2007-05-30 00:00:00', 1, 1, 2, '2007-05-30 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 11);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (25, '2007-07-08 12:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 35, 0, NULL, 9);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (26, '2007-07-08 00:00:00', 1, 1, 2, '2007-07-08 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 9);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (27, '2007-07-24 00:00:00', 1, 1, 1, '2007-07-24 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 9);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (28, '2007-08-10 00:00:00', 3, 12, 1, '2007-08-10 00:00:13', '00:00:13', 1, 1, 14, 0, NULL, 9);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (29, '2007-08-09 21:54:18.553132', 1, 8, 1, '2007-08-09 23:59:59', NULL, NULL, NULL, 36, 0, NULL, 12);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (30, '2007-08-10 00:00:00', 3, 12, 1, '2007-08-10 00:00:13', '00:00:13', 1, 1, 14, 0, NULL, 1);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (2, '2004-09-27 11:57:13', 1, 1, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, 14, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (6, '2006-12-01 00:00:00', 1, 1, 2, '2006-12-01 00:00:01', '00:00:01', 1, 1, 32, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (7, '2005-03-24 00:00:00', 1, 6, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (8, '2005-09-30 00:00:00', 1, 6, 6, NULL, NULL, NULL, NULL, 14, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (9, '2005-10-01 00:00:00', 1, 1, 2, '2005-10-02 00:00:01', '00:03:20', 1, 1, 20, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (10, '2006-01-27 00:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 26, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (11, '2006-02-14 00:00:00', 1, 6, 0, NULL, NULL, NULL, NULL, 25, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (12, '2006-02-28 00:00:00', 1, 6, 3, '2006-02-28 00:00:01', '00:06:02', 1, 1, 27, 0, 'cpp (>= 4:4.0.1-3), gcc-4.0 (>= 4.0.1-2)', 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (13, '2006-03-21 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 17, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (14, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 28, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (15, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 29, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (16, '2005-03-24 00:00:00', 1, 11, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (17, '2005-10-01 00:00:00', 1, 8, 2, '2005-10-02 00:00:01', '00:03:20', 1, 1, 20, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (18, '2004-09-27 11:57:14', 1, 8, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, 14, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (19, '2005-03-24 00:00:00', 1, 8, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (20, '2006-07-25 00:00:00', 1, 1, 0, NULL, NULL, NULL, NULL, 29, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (21, '2006-12-01 00:00:00', 1, 1, 2, NULL, NULL, NULL, NULL, 33, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (22, '2007-04-20 00:00:00', 1, 8, 7, '2007-04-20 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (23, '2006-04-11 12:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 35, 0, NULL, 1, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (24, '2007-05-30 00:00:00', 1, 1, 2, '2007-05-30 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 11, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (25, '2007-07-08 12:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 35, 0, NULL, 9, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (26, '2007-07-08 00:00:00', 1, 1, 2, '2007-07-08 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 9, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (27, '2007-07-24 00:00:00', 1, 1, 1, '2007-07-24 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 9, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (28, '2007-08-10 00:00:00', 3, 12, 1, '2007-08-10 00:00:13', '00:00:13', 1, 1, 14, 0, NULL, 9, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (29, '2007-08-09 21:54:18.553132', 1, 8, 1, '2007-08-09 23:59:59', NULL, NULL, NULL, 36, 0, NULL, 12, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (30, '2007-08-10 00:00:00', 3, 12, 1, '2007-08-10 00:00:13', '00:00:13', 1, 1, 14, 0, NULL, 1, NULL, NULL);
 
 
 ALTER TABLE build ENABLE TRIGGER ALL;
@@ -1120,8 +1224,8 @@ ALTER TABLE build ENABLE TRIGGER ALL;
 
 ALTER TABLE builder DISABLE TRIGGER ALL;
 
-INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual, date_created) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, false, NULL, true, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724');
-INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual, date_created) VALUES (2, 1, 'frog', 'The frog builder', 'The untrusted build-slave', 61, NULL, false, NULL, false, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724');
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual, date_created, vm_host) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, false, NULL, true, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL);
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual, date_created, vm_host) VALUES (2, 1, 'frog', 'The frog builder', 'The untrusted build-slave', 61, NULL, false, NULL, false, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', NULL);
 
 
 ALTER TABLE builder ENABLE TRIGGER ALL;
@@ -1587,15 +1691,16 @@ ALTER TABLE distributionbounty ENABLE TRIGGER ALL;
 
 ALTER TABLE distributionmirror DISABLE TRIGGER ALL;
 
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (1, 1, 'archive-mirror', 'http://localhost:11375/valid-mirror/', NULL, NULL, NULL, NULL, 1, 10, 75, 1, true, true, true, '2006-10-16 18:31:43.434567', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (2, 1, 'invalid-mirror', 'http://localhost:11375/invalid-mirror/', NULL, NULL, NULL, NULL, 12, 50, 75, 2, true, false, true, '2006-10-16 18:31:43.436833', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (3, 1, 'unreachable-mirror', 'http://localhost:11375/timeout/', NULL, NULL, NULL, NULL, 12, 30, 75, 2, true, true, true, '2006-10-16 18:31:43.437635', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (4, 1, 'archive-404-mirror', 'http://localhost:11375/archive-mirror/', NULL, NULL, NULL, NULL, 12, 30, 75, 1, true, true, true, '2006-10-16 18:31:43.438573', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (5, 1, 'releases-mirror', 'http://localhost:11375/valid-mirror/releases/', NULL, NULL, NULL, NULL, 12, 50, 75, 2, true, true, true, '2006-10-16 18:31:43.439336', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (6, 1, 'releases-mirror2', 'http://localhost:11375/valid-mirror/releases2/', NULL, NULL, NULL, NULL, 12, 50, 82, 2, true, true, true, '2006-10-16 18:31:43.440079', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (7, 1, 'archive-mirror2', 'http://localhost:11375/valid-mirror2/', NULL, NULL, NULL, NULL, 1, 10, 9, 1, true, true, true, '2006-10-16 18:31:43.440832', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (8, 1, 'canonical-archive', 'http://archive.ubuntu.com/ubuntu/', NULL, NULL, NULL, NULL, 1, 70, 225, 1, true, true, true, '2006-10-16 18:31:43.434567', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (9, 1, 'canonical-releases', 'http://releases.ubuntu.com/', NULL, NULL, NULL, NULL, 1, 70, 225, 2, true, true, true, '2006-10-16 18:31:43.434567', NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (1, 1, 'archive-mirror', 'http://localhost:11375/valid-mirror/', NULL, NULL, NULL, NULL, 1, 10, 75, 1, true, true, '2006-10-16 18:31:43.434567', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (2, 1, 'invalid-mirror', 'http://localhost:11375/invalid-mirror/', NULL, NULL, NULL, NULL, 12, 50, 75, 2, true, true, '2006-10-16 18:31:43.436833', NULL, 20);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (3, 1, 'unreachable-mirror', 'http://localhost:11375/timeout/', NULL, NULL, NULL, NULL, 12, 30, 75, 2, true, true, '2006-10-16 18:31:43.437635', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (4, 1, 'archive-404-mirror', 'http://localhost:11375/archive-mirror/', NULL, NULL, NULL, NULL, 12, 30, 75, 1, true, true, '2006-10-16 18:31:43.438573', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (5, 1, 'releases-mirror', 'http://localhost:11375/valid-mirror/releases/', NULL, NULL, NULL, NULL, 12, 50, 75, 2, true, true, '2006-10-16 18:31:43.439336', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (6, 1, 'releases-mirror2', 'http://localhost:11375/valid-mirror/releases2/', NULL, NULL, NULL, NULL, 12, 50, 82, 2, true, true, '2006-10-16 18:31:43.440079', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (7, 1, 'archive-mirror2', 'http://localhost:11375/valid-mirror2/', NULL, NULL, NULL, NULL, 1, 10, 9, 1, true, true, '2006-10-16 18:31:43.440832', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (8, 1, 'canonical-archive', 'http://archive.ubuntu.com/ubuntu/', NULL, NULL, NULL, NULL, 1, 70, 225, 1, true, true, '2006-10-16 18:31:43.434567', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (9, 1, 'canonical-releases', 'http://releases.ubuntu.com/', NULL, NULL, NULL, NULL, 1, 70, 225, 2, true, true, '2006-10-16 18:31:43.434567', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (10, 1, 'random-releases-mirror', 'http://releases.random.com/', NULL, NULL, NULL, NULL, 1, 70, 225, 2, true, true, '2006-10-16 18:31:43.434567', NULL, 10);
 
 
 ALTER TABLE distributionmirror ENABLE TRIGGER ALL;
@@ -1631,14 +1736,14 @@ ALTER TABLE distributionsourcepackagecache ENABLE TRIGGER ALL;
 
 ALTER TABLE distroarchseries DISABLE TRIGGER ALL;
 
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (1, 1, 1, 'i386', 1, true, 5, '2006-10-16 18:31:43.454475');
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (6, 3, 1, 'i386', 1, true, 1, '2006-10-16 18:31:43.456532');
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (7, 6, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457028');
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (8, 10, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457484');
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (9, 13, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457938');
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (10, 13, 3, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434');
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (11, 3, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.458892');
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created) VALUES (12, 1, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.459349');
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (1, 1, 1, 'i386', 1, true, 5, '2006-10-16 18:31:43.454475', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (6, 3, 1, 'i386', 1, true, 1, '2006-10-16 18:31:43.456532', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (7, 6, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457028', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (8, 10, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457484', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (9, 13, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457938', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (10, 13, 3, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (11, 3, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.458892', false);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (12, 1, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.459349', false);
 
 
 ALTER TABLE distroarchseries ENABLE TRIGGER ALL;
@@ -1788,6 +1893,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (63, '
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (64, 'beta-admin@launchpad.net', 68, 4, '2007-01-31 06:56:25.096519');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (66, 'launchpad@julian-edwards.com', 243606, 1, '2007-08-09 21:25:37.832976');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (67, 'doc@lists.ubuntu.com', 243608, 1, '2007-11-12 15:23:19.847132');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (68, 'carlos@test.com', 13, 2, '2006-10-16 18:31:43.548591');
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -1883,6 +1989,34 @@ INSERT INTO gpgkey (id, "owner", keyid, fingerprint, active, algorithm, keysize,
 ALTER TABLE gpgkey ENABLE TRIGGER ALL;
 
 
+ALTER TABLE hwdevice DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwdevice ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwdevicedriverlink DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwdevicedriverlink ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwdevicenamevariant DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwdevicenamevariant ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwdriver DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwdriver ENABLE TRIGGER ALL;
+
+
 ALTER TABLE hwsubmission DISABLE TRIGGER ALL;
 
 INSERT INTO hwsubmission (id, date_created, date_submitted, format, status, private, contactable, submission_key, "owner", distroarchseries, raw_submission, system_fingerprint, raw_emailaddress) VALUES (1, '2007-09-11 00:00:00', '2007-09-11 15:23:45.653316', 1, 1, false, false, 'test_submission_id_1', 12, NULL, 63, 1, 'test@canonical.com');
@@ -1891,12 +2025,75 @@ INSERT INTO hwsubmission (id, date_created, date_submitted, format, status, priv
 ALTER TABLE hwsubmission ENABLE TRIGGER ALL;
 
 
+ALTER TABLE hwsubmissiondevice DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwsubmissiondevice ENABLE TRIGGER ALL;
+
+
 ALTER TABLE hwsystemfingerprint DISABLE TRIGGER ALL;
 
 INSERT INTO hwsystemfingerprint (id, fingerprint) VALUES (1, 'TONKA TUFFBOOK2600');
 
 
 ALTER TABLE hwsystemfingerprint ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwtest DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwtest ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwtestanswer DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwtestanswer ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwtestanswerchoice DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwtestanswerchoice ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwtestanswercount DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwtestanswercount ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwtestanswercountdevice DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwtestanswercountdevice ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwtestanswerdevice DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwtestanswerdevice ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwvendorid DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwvendorid ENABLE TRIGGER ALL;
+
+
+ALTER TABLE hwvendorname DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE hwvendorname ENABLE TRIGGER ALL;
 
 
 ALTER TABLE ircid DISABLE TRIGGER ALL;
@@ -3223,10 +3420,10 @@ ALTER TABLE mirrorcontent ENABLE TRIGGER ALL;
 
 ALTER TABLE mirrordistroarchseries DISABLE TRIGGER ALL;
 
-INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, status, pocket, component, date_created) VALUES (1, 7, 1, 2, 10, 1, '2006-10-16 18:31:44.309753');
-INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, status, pocket, component, date_created) VALUES (2, 7, 1, 2, 10, 2, '2006-10-16 18:31:44.31093');
-INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, status, pocket, component, date_created) VALUES (3, 7, 1, 3, 10, 3, '2006-10-16 18:31:44.311317');
-INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, status, pocket, component, date_created) VALUES (4, 7, 6, 2, 10, 1, '2006-10-16 18:31:44.311687');
+INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, freshness, pocket, component, date_created) VALUES (1, 7, 1, 2, 10, 1, '2006-10-16 18:31:44.309753');
+INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, freshness, pocket, component, date_created) VALUES (2, 7, 1, 2, 10, 2, '2006-10-16 18:31:44.31093');
+INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, freshness, pocket, component, date_created) VALUES (3, 7, 1, 3, 10, 3, '2006-10-16 18:31:44.311317');
+INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, freshness, pocket, component, date_created) VALUES (4, 7, 6, 2, 10, 1, '2006-10-16 18:31:44.311687');
 
 
 ALTER TABLE mirrordistroarchseries ENABLE TRIGGER ALL;
@@ -3234,11 +3431,11 @@ ALTER TABLE mirrordistroarchseries ENABLE TRIGGER ALL;
 
 ALTER TABLE mirrordistroseriessource DISABLE TRIGGER ALL;
 
-INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, status, pocket, component, date_created) VALUES (1, 7, 1, 1, 10, 1, '2006-10-16 18:31:44.314175');
-INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, status, pocket, component, date_created) VALUES (2, 7, 3, 1, 10, 1, '2006-10-16 18:31:44.315297');
-INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, status, pocket, component, date_created) VALUES (3, 7, 1, 4, 20, 1, '2006-10-16 18:31:44.315707');
-INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, status, pocket, component, date_created) VALUES (4, 7, 3, 1, 20, 1, '2006-10-16 18:31:44.316079');
-INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, status, pocket, component, date_created) VALUES (5, 7, 1, 2, 10, 2, '2006-10-16 18:31:44.316449');
+INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, freshness, pocket, component, date_created) VALUES (1, 7, 1, 1, 10, 1, '2006-10-16 18:31:44.314175');
+INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, freshness, pocket, component, date_created) VALUES (2, 7, 3, 1, 10, 1, '2006-10-16 18:31:44.315297');
+INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, freshness, pocket, component, date_created) VALUES (3, 7, 1, 4, 20, 1, '2006-10-16 18:31:44.315707');
+INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, freshness, pocket, component, date_created) VALUES (4, 7, 3, 1, 20, 1, '2006-10-16 18:31:44.316079');
+INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, freshness, pocket, component, date_created) VALUES (5, 7, 1, 2, 10, 2, '2006-10-16 18:31:44.316449');
 
 
 ALTER TABLE mirrordistroseriessource ENABLE TRIGGER ALL;
@@ -3522,6 +3719,7 @@ INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (35, 'jokosher', 20, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (36, 'bzr', 21, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (37, 'redfish', 22, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (38, 'derby', 23, NULL, NULL, true);
 
 
 ALTER TABLE pillarname ENABLE TRIGGER ALL;
@@ -6315,6 +6513,14 @@ INSERT INTO product (id, project, "owner", name, displayname, title, summary, de
 
 Distributed revision control systems allow multiple people to have their own branch of a project, and merge code efficiently between them. This enables new contributors to immediately have access to the full tools that previously have been limited to just the committers to a project.', '2007-03-27 16:28:27.763632', 'http://bazaar-vcs.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 23, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration) VALUES (22, NULL, 12, 'redfish', 'Redfish', 'Redfish', 'The redfish project.', 'The redfish project.', '2007-04-18 20:58:56.846607', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, true, 64, NULL, NULL, NULL, 24, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration) VALUES (23, 1, 1, 'derby', 'Derby', 'Derby - Java Database', 'Apache Derby, an Apache DB subproject, is an open source relational database implemented entirely in Java and available under the Apache License, Version 2.0.', 'Some key advantages include:
+
+    * Derby has a small footprint -- about 2 megabytes for the base engine and embedded JDBC driver.
+    * Derby is based on the Java, JDBC, and SQL standards.
+    * Derby provides an embedded JDBC driver that lets you embed Derby in any Java-based solution.
+    * Derby also supports the more familiar client/server mode with the Derby Network Client JDBC driver and Derby Network Server.
+    * Derby is easy to install, deploy, and use.
+', '2007-11-19 12:44:30.603892', 'http://db.apache.org/derby/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 25, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false);
 
 
 ALTER TABLE product ENABLE TRIGGER ALL;
@@ -6340,6 +6546,7 @@ ALTER TABLE productlicense DISABLE TRIGGER ALL;
 
 INSERT INTO productlicense (id, product, license) VALUES (1, 1, 10);
 INSERT INTO productlicense (id, product, license) VALUES (2, 1, 20);
+INSERT INTO productlicense (id, product, license) VALUES (3, 23, 30);
 
 
 ALTER TABLE productlicense ENABLE TRIGGER ALL;
@@ -6420,7 +6627,7 @@ INSERT INTO productrelease (id, datereleased, version, codename, description, ch
    #62109 - Inconsistent ways of determining 8-bit Subject: and From: header charsets (Jeff)
    #34153 - Confusing Outbox semantics for deleted outgoing messages (Michael)
    #71528 - Search Selection Widget Has Repeated Items (Michael)
-   #71967 - Evolution delete mail from POP3 server even is checked the option "leave the mail on server (Michael)
+   #71967 - Evolution delete mail from POP3 server even is checked the option "leave the mail on server" (Michael)
    #40515 - Signature scripts do not allow switches (Michael)
    #68866 - Forward button doesn''t put newline between headers and body (Michael)
    #35219 - flag-for-followup crufting (Michael)
@@ -6562,6 +6769,7 @@ INSERT INTO productseries (id, product, name, summary, import_branch, importstat
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (22, 20, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-15 20:11:49.501871', NULL, 14, NULL, NULL);
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (23, 21, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-27 16:28:27.763632', NULL, 12, NULL, NULL);
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (24, 22, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-04-18 20:58:56.846607', NULL, 12, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (25, 23, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-11-19 12:44:30.603892', NULL, 1, NULL, NULL);
 
 
 ALTER TABLE productseries ENABLE TRIGGER ALL;
@@ -7208,7 +7416,7 @@ INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetyp
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (32, 53, 3, 7);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (33, 54, 3, 8);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (34, 61, 3, 9);
-INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (35, 3, 1, 10);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (35, 3, 4, 10);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (35, 62, 3, 11);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (36, 66, 4, 12);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (36, 67, 5, 13);
@@ -7644,6 +7852,13 @@ INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, 
 
 
 ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;
+
+
+ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;
 
 
 ALTER TABLE teammembership DISABLE TRIGGER ALL;
