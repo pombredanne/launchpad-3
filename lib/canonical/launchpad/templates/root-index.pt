@@ -106,12 +106,12 @@
             <a href="http://news.launchpad.net">More...</a>
           </div>
         </div>
-        <div class="three column right">
+        <div class="three column right" id="featured-projects">
           <h2>Featured projects</h2>
-          <ul>
-            <li class="product"><a href="/phpwms">PHP Site Management
-              System</a>
-            </li>
+          <tal:featured repeat="project view/featured_projects">
+            <tal:link replace="structure project/fmt:link" /><br />
+          </tal:featured>
+          <ul tal:condition="not: view/featured_projects">
             <li class="product"><a href="/exaile">Exaile Media Player</a></li>
             <li class="product"><a href="/deluge">Deluge Torrent Client</a></li>
             <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
@@ -121,6 +121,10 @@
             <li class="product"><a href="/schooltool">SchoolTool</a></li>
             <li class="product"><a href="/tangocms">TangoCMS</a></li>
           </ul>
+          <p>
+            <a tal:condition="context/required:launchpad.Admin"
+               href="+featuredprojects">&raquo; Manage featured project list</a>
+          </p>
         </div>
     </div><!--main-->
     <div metal:fill-slot="help">

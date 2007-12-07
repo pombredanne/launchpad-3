@@ -22,6 +22,8 @@ from canonical.launchpad.interfaces import (
         IDistributionSet, IProductSet, IProjectSet,
         )
 
+from canonical.launchpad.database.featuredproject import FeaturedProject
+
 __all__ = [
     'pillar_sort_key',
     'PillarNameSet',
@@ -52,7 +54,7 @@ class PillarNameSet:
     implements(IPillarNameSet)
 
     def __contains__(self, name):
-        """See IPillarNameSet."""
+        """See `IPillarNameSet`."""
         # XXX flacoste 20071009 Workaround bug #90983.
         name = name.encode('ASCII')
         cur = cursor()
@@ -67,7 +69,7 @@ class PillarNameSet:
             return True
 
     def __getitem__(self, name):
-        """See IPillarNameSet."""
+        """See `IPillarNameSet`."""
         # XXX flacoste 20071009 Workaround bug #90983.
         name = name.encode('ASCII')
         pillar = self.getByName(name, ignore_inactive=True)
@@ -185,7 +187,7 @@ class PillarNameSet:
         return cur.fetchone()[0]
 
     def search(self, text, limit):
-        """See IPillarSet."""
+        """See `IPillarSet`."""
         if limit is None:
             limit = config.launchpad.default_batch_size
         query = self.build_search_query(text) + """
@@ -204,11 +206,32 @@ class PillarNameSet:
             [dict(zip(keys, values)) for values in cur.fetchall()],
             longest_expected=longest_expected)
 
+    def add_featured_project(self, project):
+        """See `IPillarSet`."""
+        existing = FeaturedProject.selectOneBy(name=project.name)
+        if existing is None:
+            return FeaturedProject(name=project.name)
+
+    def remove_featured_project(self, project):
+        """See `IPillarSet`."""
+        existing = FeaturedProject.selectOneBy(name=project.name)
+        if existing is not None:
+            existing.destroySelf()
+
+    @property
+    def featured_projects(self):
+        """See `IPillarSet`."""
+
+        query = "PillarName.name = FeaturedProject.name"
+        return [pillarname.pillar for pillarname in PillarName.select(
+                    query, clauseTables=['FeaturedProject'])]
+
 
 class PillarName(SQLBase):
     implements(IPillarName)
 
     _table = 'PillarName'
+    _defaultOrder = 'name'
 
     name = StringCol(dbName='name', notNull=True, unique=True, alternateID=True)
     product = ForeignKey(foreignKey='Product', dbName='product')

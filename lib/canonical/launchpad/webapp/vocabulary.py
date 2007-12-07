@@ -192,6 +192,8 @@ class SQLObjectVocabularyBase:
         params = {}
         if self._orderBy:
             params['orderBy'] = self._orderBy
+        if self._clauseTables:
+            params['clauseTables'] = self._clauseTables
         for obj in self._table.select(self._filter, **params):
             yield self.toTerm(obj)
 

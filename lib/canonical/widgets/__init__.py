@@ -13,6 +13,7 @@ from popup import (
     ISinglePopupWidget, SearchForUpstreamPopupWidget, SinglePopupWidget)
 from announcementdate import IAnnouncementDateWidget, AnnouncementDateWidget
 from context import IContextWidget, ContextWidget
+from featuredprojects import *
 from itemswidgets import *
 from password import PasswordChangeWidget
 from textwidgets import (

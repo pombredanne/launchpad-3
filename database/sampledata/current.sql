@@ -1977,6 +1977,20 @@ ALTER TABLE faq ENABLE TRIGGER ALL;
 
 
 
+ALTER TABLE featuredproject DISABLE TRIGGER ALL;
+
+INSERT INTO featuredproject (id, name) VALUES (1, 'ubuntu');
+INSERT INTO featuredproject (id, name) VALUES (2, 'gentoo');
+INSERT INTO featuredproject (id, name) VALUES (3, 'firefox');
+INSERT INTO featuredproject (id, name) VALUES (4, 'mozilla');
+INSERT INTO featuredproject (id, name) VALUES (5, 'thunderbird');
+INSERT INTO featuredproject (id, name) VALUES (6, 'gnome');
+INSERT INTO featuredproject (id, name) VALUES (7, 'gnome-terminal');
+INSERT INTO featuredproject (id, name) VALUES (8, 'applets');
+INSERT INTO featuredproject (id, name) VALUES (9, 'bazaar');
+
+ALTER TABLE featuredproject ENABLE TRIGGER ALL;
+
 
 
 
