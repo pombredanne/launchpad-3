@@ -217,12 +217,29 @@ def review_list(list_name, status=None):
     # These imports are at file scope because the paths are not yet set up
     # correctly when this module is imported.
     from canonical.database.sqlbase import commit
-    from canonical.launchpad.ftests import mailinglists_helper
+    from canonical.launchpad.ftests import login, logout, mailinglists_helper
     from canonical.launchpad.interfaces import IMailingListSet
     from zope.component import getUtility
+    login('foo.bar@canonical.com')
     mailinglists_helper.review_list(list_name, status)
     commit()
     # Wait until Mailman has actually creating the mailing list.
     wait_for_mailman()
     # Return an updated mailing list object.
-    return getUtility(IMailingListSet).get(list_name)
+    mailing_list = getUtility(IMailingListSet).get(list_name)
+    logout()
+    return mailing_list
+
+
+def beta_program_enable(team_name):
+    """Helper for joining the mailing list beta program.
+
+    This is a pure convenience function, which can go away when mailing lists
+    go public.
+    """
+    # These imports are at file scope because the paths are not yet set up
+    # correctly when this module is imported.
+    from canonical.database.sqlbase import commit
+    from canonical.launchpad.ftests import mailinglists_helper
+    mailinglists_helper.beta_program_enable(team_name)
+    commit()
