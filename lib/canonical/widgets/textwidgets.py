@@ -4,7 +4,7 @@ import datetime
 import pytz
 
 from zope.app.datetimeutils import parse, DateTimeError
-from zope.app.form.browser.textwidgets import TextWidget
+from zope.app.form.browser.textwidgets import TextAreaWidget, TextWidget
 from zope.app.form.interfaces import ConversionError
 
 from canonical.launchpad.interfaces import UnexpectedFormData
@@ -148,3 +148,23 @@ class URIWidget(TextWidget):
                     uri = uri.ensureNoSlash()
             input = str(uri)
         return TextWidget._toFieldValue(self, input)
+
+
+class WhitespaceDelimitedListWidget(TextAreaWidget):
+    """A widget that represents a list as whitespace-delimited text."""
+
+    def __init__(self, field, value_type, request):
+        # We don't use value_type.
+        super(WhitespaceDelimitedListWidget, self).__init__(field, request)
+
+    def _toFormValue(self, value):
+        """Convert the list of URIs to a newline separated string."""
+        if value:
+            value = '\n'.join(value)
+        return super(WhitespaceDelimitedListWidget, self)._toFormValue(value)
+
+    def _toFieldValue(self, value):
+        """Convert the input string into a list."""
+        value = super(
+            WhitespaceDelimitedListWidget, self)._toFieldValue(value)
+        return value.split()
