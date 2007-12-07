@@ -18,9 +18,9 @@ from sqlobject import (
     StringCol)
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -32,16 +32,12 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
-from canonical.launchpad.database.translationimportqueue import (
-    TranslationImportQueueEntry)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
     ITranslationExporter, ITranslationFileData, ITranslationImporter,
     IVPOTExportSet, LanguageNotFound, NotFoundError, RosettaImportStatus,
     TranslationFileFormat, TranslationFormatInvalidInputError,
     TranslationFormatSyntaxError)
-from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.translationformat import TranslationMessageData
 
 
@@ -423,8 +419,8 @@ class POTemplate(SQLBase, RosettaStats):
 
     def hasMessageID(self, messageID, context=None):
         """See `IPOTemplate`."""
-        results = POTMsgSet.selectBy(potemplate=self, msgid_singular=messageID,
-                                     context=context)
+        results = POTMsgSet.selectBy(
+            potemplate=self, msgid_singular=messageID, context=context)
         return bool(results)
 
     def hasPluralMessage(self):
@@ -610,21 +606,19 @@ class POTemplate(SQLBase, RosettaStats):
         for pofile in self.pofiles:
             pofile.invalidateCache()
 
-    def getNextToImport(self):
+    def importFromQueue(self, entry_to_import, logger=None):
         """See `IPOTemplate`."""
-        flush_database_updates()
-        return TranslationImportQueueEntry.selectFirstBy(
-                potemplate=self,
-                status=RosettaImportStatus.APPROVED,
-                orderBy='dateimported')
+        assert entry_to_import is not None, "Attempt to import None entry."
+        assert entry_to_import.import_into.id == self.id, (
+            "Attempt to import entry to POTemplate it doesn't belong to.")
+        assert entry_to_import.status == RosettaImportStatus.APPROVED, (
+            "Attempt to import non-approved entry.")
 
-    def importFromQueue(self, logger=None):
-        """See `IPOTemplate`."""
-        entry_to_import = self.getNextToImport()
-
-        if entry_to_import is None:
-            # There is no new import waiting for being imported.
-            return
+        # XXX: JeroenVermeulen 2007-11-29: This method is called from the
+        # import script, which can provide the right object but can only
+        # obtain it in security-proxied form.  We need full, unguarded access
+        # to complete the import.
+        entry_to_import = removeSecurityProxy(entry_to_import)
 
         translation_importer = getUtility(ITranslationImporter)
 
@@ -647,50 +641,38 @@ class POTemplate(SQLBase, RosettaStats):
             'file_link': entry_to_import.content.http_url,
             'import_title': 'translation templates for %s' % self.displayname,
             'importer': entry_to_import.importer.displayname,
-            'template': self.displayname
+            'template': self.displayname,
             }
 
-        # Send email: confirmation or error.
+        if entry_to_import.status != RosettaImportStatus.FAILED:
+            entry_to_import.status = RosettaImportStatus.IMPORTED
+
+            # Assign karma to the importer if this is not an automatic import
+            # (all automatic imports come from the rosetta expert team).
+            celebs = getUtility(ILaunchpadCelebrities)
+            rosetta_experts = celebs.rosetta_experts
+            if entry_to_import.importer.id != rosetta_experts.id:
+                entry_to_import.importer.assignKarma(
+                    'translationtemplateimport',
+                    product=self.product,
+                    distribution=self.distribution,
+                    sourcepackagename=self.sourcepackagename)
+
+            # Synchronize changes to database so we can calculate fresh
+            # statistics on the server side.
+            flush_database_updates()
+
+            # Update cached number of msgsets.
+            self.messagecount = self.getPOTMsgSetsCount()
+
+            # The upload affects the statistics for all translations of this
+            # template.  Recalculate those as well.
+            for pofile in self.pofiles:
+                pofile.updateStatistics()
+
         template = helpers.get_email_template(template_mail)
         message = template % replacements
-
-        fromaddress = config.rosetta.rosettaadmin.email
-        toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
-
-        simple_sendmail(fromaddress,
-            toaddress,
-            subject,
-            MailWrapper().format(message))
-
-        if entry_to_import.status == RosettaImportStatus.FAILED:
-            # Give up on this file.
-            return
-
-        # The import has been done, we mark it that way.
-        entry_to_import.status = RosettaImportStatus.IMPORTED
-        # And add karma to the importer if it's not imported automatically
-        # (all automatic imports come from the rosetta expert team).
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-        if entry_to_import.importer.id != rosetta_experts.id:
-            # The admins should not get karma.
-            entry_to_import.importer.assignKarma(
-                'translationtemplateimport',
-                product=self.product,
-                distribution=self.distribution,
-                sourcepackagename=self.sourcepackagename)
-
-        # Ask for a sqlobject sync before reusing the data we just
-        # updated.
-        flush_database_updates()
-
-        # We update the cached value that tells us the number of msgsets
-        # this .pot file has
-        self.messagecount = self.getPOTMsgSetsCount()
-
-        # And now, we should update the statistics for all po files this
-        # .pot file has because msgsets will have changed.
-        for pofile in self.pofiles:
-            pofile.updateStatistics()
+        return (subject, message)
 
 
 class POTemplateSubset:

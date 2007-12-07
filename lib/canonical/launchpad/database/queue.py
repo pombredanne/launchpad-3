@@ -381,7 +381,8 @@ class PackageUpload(SQLBase):
         if self.contains_source:
             [source] = self.sources
             spr = source.sourcepackagerelease
-            # Bail out early if this is an upload for the translations section.
+            # Bail out early if this is an upload for the translations
+            # section.
             if spr.section.name == 'translations':
                 debug(self.logger,
                     "Skipping acceptance and announcement, it is a "
@@ -537,10 +538,11 @@ class PackageUpload(SQLBase):
             do_sendmail(AcceptedMessage)
             return
 
-        # Auto-approved binary uploads to security skips the announcement,
-        # they are usually processed with the security policy.
+        # Auto-approved binary-only uploads to security skip the
+        # announcement, they are usually processed with the security policy.
         if (self.pocket == PackagePublishingPocket.SECURITY
-            and self.contains_build):
+            and not self.contains_source):
+            # We only send announcements if there is any source in the upload.
             debug(self.logger,
                 "Skipping announcement, it is a binary upload to SECURITY.")
             do_sendmail(AcceptedMessage)
@@ -564,7 +566,8 @@ class PackageUpload(SQLBase):
                 AnnouncementMessage,
                 recipients=[str(announce_list)],
                 from_addr=from_addr,
-                bcc="%s_derivatives@packages.qa.debian.org" % self.displayname)
+                bcc="%s_derivatives@packages.qa.debian.org" %
+                    self.displayname)
 
     def notify(self, announce_list=None, summary_text=None,
                changes_file_object=None, logger=None, dry_run=False):
@@ -682,7 +685,7 @@ class PackageUpload(SQLBase):
         return person
 
     def _isPersonUploader(self, person):
-        """Return True if the person is an uploader to the package's distro."""
+        """Return True if person is an uploader to the package's distro."""
         debug(self.logger, "Attempting to decide if %s is an uploader." % (
             person.displayname))
         uploader = person.isUploader(self.distroseries.distribution)
@@ -777,8 +780,9 @@ class PackageUploadBuild(SQLBase):
                     % (binary.component.name, distroseries.name))
             if binary.section not in distroseries.sections:
                 raise QueueBuildAcceptError(
-                    'Section "%s" is not allowed in %s' % (binary.section.name,
-                                                           distroseries.name))
+                    'Section "%s" is not allowed in %s' %
+                        (binary.section.name,
+                         distroseries.name))
 
     def publish(self, logger=None):
         """See `IPackageUploadBuild`."""
@@ -879,8 +883,8 @@ class PackageUploadSource(SQLBase):
                 if proposed_sha1 == published_sha1:
                     continue
                 raise QueueInconsistentStateError(
-                    '%s is already published in archive for %s with a different '
-                    'SHA1 hash (%s != %s)' % (
+                    '%s is already published in archive for %s with a '
+                    'different SHA1 hash (%s != %s)' % (
                     filename, self.packageupload.distroseries.name,
                     proposed_sha1, published_sha1))
 
@@ -971,7 +975,8 @@ class PackageUploadCustom(SQLBase):
     def temp_filename(self):
         """See `IPackageUploadCustom`."""
         temp_dir = tempfile.mkdtemp()
-        temp_file_name = os.path.join(temp_dir, self.libraryfilealias.filename)
+        temp_file_name = os.path.join(
+            temp_dir, self.libraryfilealias.filename)
         temp_file = file(temp_file_name, "wb")
         self.libraryfilealias.open()
         copy_and_close(self.libraryfilealias, temp_file)

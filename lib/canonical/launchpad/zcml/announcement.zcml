@@ -1,0 +1,140 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+  <!-- Announcement -->
+  <content class="canonical.launchpad.database.Announcement">
+    <allow attributes="id date_created registrant target title summary url
+                       date_announced date_last_modified active future
+                       published" />
+    <require permission="launchpad.Edit"
+             attributes="modify retarget retract set_publication_date
+                         destroySelf" />
+  </content>
+
+  <browser:menus
+    module="canonical.launchpad.browser"
+    classes="AnnouncementContextMenu"
+    />
+
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
+    for="canonical.launchpad.interfaces.IAnnouncement"
+    factory="canonical.launchpad.browser.AnnouncementSHP"
+    permission="zope.Public"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IAnnouncement"
+    name="+edit" />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IAnnouncement"
+    path_expression="string:+announcement/${id}"
+    attribute_to_parent="target"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IAnnouncement"
+    facet="overview"
+    permission="zope.Public"
+    template="../templates/announcement-listing-detailed.pt"
+    name="+listing-detailed"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IAnnouncement"
+    class="canonical.launchpad.browser.announcement.AnnouncementEditView"
+    facet="overview"
+    permission="launchpad.Edit"
+    name="+edit"
+    template="../templates/announcement-edit.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IAnnouncement"
+    class="canonical.launchpad.browser.announcement.AnnouncementRetargetView"
+    facet="overview"
+    permission="launchpad.Edit"
+    name="+retarget"
+    template="../templates/announcement-retarget.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IAnnouncement"
+    class="canonical.launchpad.browser.announcement.AnnouncementPublishView"
+    facet="overview"
+    permission="launchpad.Edit"
+    name="+publish"
+    template="../templates/announcement-publish.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IAnnouncement"
+    class="canonical.launchpad.browser.announcement.AnnouncementRetractView"
+    facet="overview"
+    permission="launchpad.Edit"
+    name="+retract"
+    template="../templates/announcement-retract.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IAnnouncement"
+    class="canonical.launchpad.browser.announcement.AnnouncementDeleteView"
+    facet="overview"
+    permission="launchpad.Edit"
+    name="+delete"
+    template="../templates/announcement-delete.pt"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IHasAnnouncements"
+    class="canonical.launchpad.browser.announcement.HasAnnouncementsView"
+    facet="overview"
+    permission="zope.Public">
+    <browser:page
+      name="+announcements"
+      template="../templates/hasannouncements-index.pt" />
+    <browser:page
+      name="+portlet-latestannouncements"
+      template="../templates/hasannouncements-portlet-latest.pt" />
+  </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IMakesAnnouncements"
+    class="canonical.launchpad.browser.announcement.AnnouncementAddView"
+    facet="overview"
+    permission="launchpad.Edit"
+    name="+announce"
+    template="../templates/announcement-add.pt"
+    />
+
+  <!-- AnnouncementSet -->
+  <securedutility
+    class="canonical.launchpad.database.AnnouncementSet"
+    provides="canonical.launchpad.interfaces.IAnnouncementSet">
+    <allow interface="canonical.launchpad.interfaces.IAnnouncementSet" />
+  </securedutility>
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IAnnouncementSet"
+    path_expression="string:+announcements"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IAnnouncementSet"
+    name="+announcements" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IAnnouncementSet"
+    name="+announcements"
+    facet="overview"
+    class="canonical.launchpad.browser.HasAnnouncementsView"
+    permission="zope.Public"
+    template="../templates/announcements-all.pt"
+    />
+
+</configure>

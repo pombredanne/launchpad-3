@@ -175,7 +175,8 @@ class IPOFile(IRosettaStats):
         """
 
     def __iter__():
-        """Return an iterator over Current `IPOMessageSets` in this PO file."""
+        """Return an iterator over Current `IPOMessageSets` in this PO file.
+        """
 
     def getHeader():
         """Return an `ITranslationHeaderData` representing its header."""
@@ -285,14 +286,15 @@ class IPOFile(IRosettaStats):
     def isTranslationRevisionDateOlder(header):
         """Whether given header revision date is newer then self one."""
 
-    def getNextToImport():
-        """Return the next entry on the import queue to be imported."""
+    def importFromQueue(entry_to_import, logger=None):
+        """Import given queue entry.
 
-    def importFromQueue(logger=None):
-        """Execute the import of the next entry on the queue, if needed.
+        :param entry_to_import: `TranslationImportQueueEntry` specifying an
+            approved import for this `POFile`
+        :param logger: optional logger to report problems to.
 
-        If a logger argument is given, any problem found with the
-        import will be logged there.
+        :return: a tuple of the subject line and body for a notification email
+            to be sent to the uploader.
         """
 
 
