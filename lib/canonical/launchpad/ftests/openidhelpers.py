@@ -63,6 +63,7 @@ def uninstall_consumer():
 class PublisherFetcher(fetchers.Urllib2Fetcher):
     """An `HTTPFetcher` that passes requests on to the Zope publisher."""
     def __init__(self):
+        super(PublisherFetcher, self).__init__()
         self.urlopen = urllib2.build_opener(PublisherHTTPHandler).open
 
     def fetch(self, url, body=None, headers=None):
@@ -93,7 +94,14 @@ class PublisherFetcher(fetchers.Urllib2Fetcher):
 
 
 def make_endpoint(protocol_uri, claimed_id, local_id=None):
-    """Create an endpoint for use with `Consumer.beginWithoutDiscovery`."""
+    """Create an endpoint for use with `Consumer.beginWithoutDiscovery`.
+
+    :arg protocol_uri: The URI for the OpenID protocol version.  This
+        should be one of the OPENID_X_Y_TYPE constants.
+    :arg claimed_id: The claimed identity URL for the endpoint.
+    :arg local_id: The OP local identifier for the endpoint.  If this
+        argument is not provided, it defaults to claimed_id.
+    """
     assert protocol_uri in [
         OPENID_1_0_TYPE, OPENID_1_1_TYPE, OPENID_2_0_TYPE], (
         "Unexpected protocol URI: %s" % protocol_uri)
@@ -107,7 +115,10 @@ def make_endpoint(protocol_uri, claimed_id, local_id=None):
 
 
 def make_identifier_select_endpoint(protocol_uri):
-    """Create an identifier select OpenID endpoint.
+    """Create an endpoint for use in OpenID identifier select mode.
+
+    :arg protocol_uri: The URI for the OpenID protocol version.  This
+        should be one of the OPENID_X_Y_TYPE constants.
 
     If the OpenID 1.x protocol is selected, the endpoint will be
     suitable for use with Launchpad's non-standard identifier select
@@ -131,6 +142,9 @@ def make_identifier_select_endpoint(protocol_uri):
 def maybe_fixup_identifier_select_request(consumer, claimed_id):
     """Fix up an OpenID 1.x identifier select request.
 
+    :arg consumer: an OpenID `Consumer` instance.
+    :arg claimed_id: the expected claimed ID for the response.
+
     OpenID 1.x does not support identifier select, so responses using
     our non-standard identifier select mode appear to be corrupt.
 
@@ -153,6 +167,11 @@ def maybe_fixup_identifier_select_request(consumer, claimed_id):
 
 def complete_from_browser(consumer, browser, expected_claimed_id=None):
     """Complete OpenID request based on output of +openid-consumer.
+
+    :arg consumer: an OpenID `Consumer` instance.
+    :arg browser: a Zope testbrowser `Browser` instance.
+    :arg expected_claimed_id: the expected claimed ID for the response,
+        or None if the request did not use identifier select mode.
 
     This function parses the body of the +openid-consumer view into a
     set of query arguments representing the OpenID response.

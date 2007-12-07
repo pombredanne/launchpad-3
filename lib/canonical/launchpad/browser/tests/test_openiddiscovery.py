@@ -130,7 +130,7 @@ class ContentNegotiationTests(unittest.TestCase):
                          'http://launchpad.dev/~sabdfl')
 
     def test_disable_discovery(self):
-        """Test enable_xrds_discovery=False case."""
+        """Test that XRDS discovery fails if enable_xrds_discovery=False."""
         request, view = self.createRequestAndView(
             'launchpad.dev', '/~sabdfl', '', '')
         view.enable_xrds_discovery = False

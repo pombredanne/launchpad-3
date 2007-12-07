@@ -52,10 +52,10 @@ from canonical.launchpad.interfaces import (
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
     IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType, MailingListStatus,
-    PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
-    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType, PersonCreationRationale,
+    QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
+    ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -956,9 +956,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     @property
     def is_openid_enabled(self):
         """See `IPerson`."""
-        if self.isTeam():
-            return False
-
         if not self.is_valid_person:
             return False
 
@@ -1020,6 +1017,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         """See `IPerson`."""
         if team is None:
             return False
+
+        # Translate the team name to an ITeam if we were passed a team.
+        if isinstance(team, str):
+            team = PersonSet().getByName(team)
 
         if team.id == self.id: # Short circuit - would return True anyway
             return True
@@ -2001,7 +2002,11 @@ class PersonSet:
 
     def getByOpenIdIdentifier(self, openid_identifier):
         """Returns a Person with the given openid_identifier, or None."""
-        return Person.selectOneBy(openid_identifier=openid_identifier)
+        person = Person.selectOneBy(openid_identifier=openid_identifier)
+        if person.is_valid_person:
+            return person
+        else:
+            return None
 
     def updateStatistics(self, ztm):
         """See `IPersonSet`."""
