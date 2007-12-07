@@ -14,7 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database import (
-    CodeImportJob, CodeImportMachine, CodeImportResult)
+    CodeImportMachine, CodeImportResult)
 from canonical.launchpad.interfaces import (
     CodeImportResultStatus, CodeImportReviewStatus, ICodeImportJobSet,
     ICodeImportSet, ICodeImportJobWorkflow)

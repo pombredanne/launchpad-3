@@ -12,7 +12,6 @@ __all__ = [
 from sqlobject import ForeignKey, IntCol, SQLObjectNotFound, StringCol
 
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
