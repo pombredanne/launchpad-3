@@ -183,7 +183,7 @@ it'll say so.
 
 == Bug Badge Decoration ==
 
-We are wanting to have badges for associated branches, mentorship,
+We display bug badges for associated branches, mentorship,
 specifications etc.
 
     >>> def names_and_branches(contents):
@@ -191,10 +191,13 @@ specifications etc.
     ...     for row in table.tbody.fetch('tr'):
     ...         description_cell = row.fetch('td')[2]
     ...         anchors = description_cell.fetch('a')
-    ...         imgs = description_cell.fetch('img')
+    ...         badge_cell = row.fetch('td')[3]
+    ...         imgs = badge_cell.fetch('img')
     ...         print anchors[0].get('href')
     ...         for img in imgs:
     ...            print "  Badge:", img.get('alt')
+
+For instance, these are the badges on the firefox bug listing:
 
     >>> browser.open('http://bugs.launchpad.dev/firefox/+bugs')
     >>> names_and_branches(browser.contents)
@@ -204,4 +207,15 @@ specifications etc.
       Badge: branch
     /firefox/+bug/1
       Badge: blueprint
+
+Milestones are also presented as badges on bugs, and linked to the
+relevant listings:
+
+    >>> browser.open('http://bugs.launchpad.dev/debian/sarge/+source/mozilla-firefox')
+    >>> names_and_branches(browser.contents)
+    /debian/sarge/+source/mozilla-firefox/+bug/3
+      Badge: milestone 3.1
+    >>> link = browser.getLink(url='http://bugs.launchpad.dev/debian/+milestone/3.1')
+    >>> link.text
+    'milestone 3.1[IMG]'
 
