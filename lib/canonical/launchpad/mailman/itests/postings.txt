@@ -23,6 +23,14 @@ by a sender who is not a Launchpad member will be summarily discarded.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
+
+XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
+program in order to apply for mailing lists.  When mailing lists go public,
+this stanza can be removed.
+
+    >>> itest_helper.beta_program_enable('itest-one')
+
+    >>> browser.reload()
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
@@ -69,6 +77,8 @@ equivalent to making it unvalidated.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     get_alternative_email, new_person)
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')    
     >>> anne = new_person('Anne')
     >>> alternative_email = get_alternative_email(anne)
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
@@ -154,6 +164,7 @@ to the mailing list.
     # Subscribe Anne with her preferred address.
     >>> anne.join(team_one)
     >>> list_one.subscribe(anne)
+    >>> logout()
     >>> commit()
     >>> itest_helper.wait_for_mailman()
 
