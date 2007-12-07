@@ -10,10 +10,11 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
     IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
-    IBuilder, IBuilderSet, ICodeImport, ICodeImportMachine,
-    ICodeImportMachineSet, ICodeImportSet, IDistribution, IDistributionMirror,
-    IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
-    IHasBug, IHasDrivers, IHasOwner, IHWSubmission, ILanguage, ILanguagePack,
+    IBuilder, IBuilderSet, ICodeImport, ICodeImportJob, ICodeImportJobSet,
+    ICodeImportJobWorkflow, ICodeImportMachine, ICodeImportMachineSet,
+    ICodeImportSet, IDistribution, IDistributionMirror, IDistroSeries,
+    IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHasBug,
+    IHasDrivers, IHasOwner, IHWSubmission, ILanguage, ILanguagePack,
     ILanguageSet, ILaunchpadCelebrities, IMilestone, IPackageUpload,
     IPackageUploadQueue, IPerson, IPOFile, IPoll, IPollSubset, IPollOption,
     IPOTemplate, IPOTemplateSubset, IProduct, IProductRelease, IProductSeries,
@@ -750,6 +751,36 @@ class EditCodeImports(OnlyVcsImportsAndAdmins):
     """
     permission = 'launchpad.Edit'
     usedfor = ICodeImport
+
+
+class SeeCodeImportJobs(OnlyVcsImportsAndAdmins):
+    """Control who can see the object view of a CodeImportJob.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImportJob
+
+
+class SeeCodeImportJobSet(OnlyVcsImportsAndAdmins):
+    """Control who can see the CodeImportJobSet utility.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImportJobSet
+
+
+class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
+    """Control who can use the CodeImportJobWorkflow utility.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = ICodeImportJobWorkflow
 
 
 class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):

@@ -139,6 +139,12 @@ class ICodeImport(Interface):
         "If the user did not specify an update interval, this is a default "
         "value selected by Launchpad adminstrators."))
 
+    import_job = Choice(
+        title=_("Current job"),
+        readonly=True, vocabulary='CodeImportJob',
+        description=_(
+            "The current job for this import, either pending or running."))
+
     def updateFromData(data, user):
         """Modify attributes of the `CodeImport`.
 

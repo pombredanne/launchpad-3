@@ -12,7 +12,8 @@ __all__ = [
 
 from datetime import timedelta
 
-from sqlobject import ForeignKey, IntervalCol, StringCol, SQLObjectNotFound
+from sqlobject import (
+    ForeignKey, IntervalCol, SingleJoin, StringCol, SQLObjectNotFound)
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -79,6 +80,8 @@ class CodeImport(SQLBase):
                 config.codeimport.default_interval_subversion}
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
+
+    import_job = SingleJoin('CodeImportJob', joinColumn='code_importID')
 
     def updateFromData(self, data, user):
         """See `ICodeImport`."""
