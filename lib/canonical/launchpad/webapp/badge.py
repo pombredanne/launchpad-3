@@ -122,3 +122,4 @@ class HasBadgeBase:
         """Return the badge instance for the name specified."""
         # Can be overridden to provide non-standard badges.
         return STANDARD_BADGES.get(badge_name)
+
