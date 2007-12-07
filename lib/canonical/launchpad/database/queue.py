@@ -222,8 +222,6 @@ class PackageUpload(SQLBase):
         """
         katie = getUtility(ILaunchpadCelebrities).katie
         changed_by = self._emailToPerson(changed_by_email)
-        if not changed_by:
-            return False
         return (not self.signing_key
                 and self.contains_source and not self.contains_build
                 and changed_by == katie
