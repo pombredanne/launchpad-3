@@ -12,6 +12,7 @@ __all__ = [
     'plural_form_mapper',
     ]
 
+import gettext
 import datetime
 import re
 import codecs
@@ -28,11 +29,6 @@ from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFileData, TranslationMessageData)
 from canonical.launchpad.versioninfo import revno
 
-# XXX Danilo 20071207: c2py is currently not listed in __all__
-# inside Python 2.4 gettext.py module.  How to avoid the warning
-# or maybe copy and paste this method here as well?
-from gettext import c2py
-
 def plural_form_mapper(first_formula, second_formula):
     """Maps plural forms from one plural formula to the other.
 
@@ -46,7 +42,11 @@ def plural_form_mapper(first_formula, second_formula):
         Return a dict indexed by plural form indices and containing
         all numbers from the `range` that correspond to it.
         """
-        plural_function = c2py(formula)
+        # gettext.c2py parses a plural form expression as can be found in
+        # PO files, and returns a lambda function with number as the
+        # parameter.  We are using it as 'gettext.c2py' to avoid warnings
+        # from importfascist about it not being in gettext.__all__.
+        plural_function = gettext.c2py(formula)
         cache = {}
         for number in range:
             pluralform = plural_function(number)
@@ -61,10 +61,13 @@ def plural_form_mapper(first_formula, second_formula):
 
     if first_formula is None or second_formula is None:
         return no_change_map
-    first_cache = evaluate_formula_for_range(first_formula, range(0,1000))
-    first_count = len(first_cache.keys())
-    second_cache = evaluate_formula_for_range(second_formula, range(0,1000))
-    second_count = len(second_cache.keys())
+    try:
+        first_cache = evaluate_formula_for_range(first_formula, range(0,1000))
+        first_count = len(first_cache.keys())
+        second_cache = evaluate_formula_for_range(second_formula, range(0,1000))
+        second_count = len(second_cache.keys())
+    except ValueError:
+        return no_change_map
 
     if first_count != second_count:
         return no_change_map
