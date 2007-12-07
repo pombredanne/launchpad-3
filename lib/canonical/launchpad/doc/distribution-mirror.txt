@@ -107,32 +107,32 @@ From every distribution, you can easily get a list with its official ARCHIVE
 or RELEASE mirrors. This is available through the archive_mirrors and 
 cdimage_mirrors properties of IDistribution.
 
-    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.status.name) 
     ...  for mirror in ubuntu.archive_mirrors]
-    [(u'canonical-archive', '100 Mbps', u'United Kingdom'),
-     (u'archive-404-mirror', '512 Kbps', u'France'),
-     (u'archive-mirror', '128 Kbps', u'France'),
-     (u'archive-mirror2', '128 Kbps', u'Antarctica')]
+    [(u'canonical-archive', '100 Mbps', 'OFFICIAL'),
+     (u'archive-404-mirror', '512 Kbps', 'OFFICIAL'),
+     (u'archive-mirror', '128 Kbps', 'OFFICIAL'),
+     (u'archive-mirror2', '128 Kbps', 'OFFICIAL')]
 
-    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.status.name) 
     ...  for mirror in ubuntu.cdimage_mirrors]
-    [(u'canonical-releases', '100 Mbps', u'United Kingdom'),
-     (u'releases-mirror', '2 Mbps', u'France'),
-     (u'releases-mirror2', '2 Mbps', u'Germany'),
-     (u'unreachable-mirror', '512 Kbps', u'France')]
+    [(u'canonical-releases', '100 Mbps', 'OFFICIAL'),
+     (u'releases-mirror', '2 Mbps', 'OFFICIAL'),
+     (u'releases-mirror2', '2 Mbps', 'OFFICIAL'),
+     (u'unreachable-mirror', '512 Kbps', 'OFFICIAL')]
 
 The list of pending review mirrors can easily be obtained, so that the
 distribution owner can see all the ones that need to be reviewed.
 
-    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.status.name) 
     ...  for mirror in ubuntu.pending_review_mirrors]
-    [(u'foo.bar.com-archive', '2 Mbps', u'Brazil')]
+    [(u'random-releases-mirror', '100 Mbps', 'PENDING_REVIEW')]
 
 We also have a property which returns all unofficial mirrors.
 
-    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.status.name) 
     ...  for mirror in ubuntu.unofficial_mirrors]
-    [(u'invalid-mirror', '2 Mbps', u'France')]
+    [(u'invalid-mirror', '2 Mbps', 'UNOFFICIAL')]
 
 It's possible to retrieve a mirror by its name:
 

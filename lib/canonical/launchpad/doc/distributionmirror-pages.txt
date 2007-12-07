@@ -33,8 +33,16 @@ changed.
     >>> harness.submit('save', {'field.status': 'UNOFFICIAL'})
     >>> print mirror.status.name
     UNOFFICIAL
-    >>> from datetime import datetime
-    >>> print mirror.date_reviewed.date() == datetime.today().date()
-    True
     >>> print mirror.reviewer.name
     karl
+
+    # This is to check that the mirror's date_reviewed has just been updated,
+    # but since this test could run at 23:59:59 of any given day we can only
+    # reliably check that the timedelta from now to the date it was reviewed
+    # is less than or equal to 1 day.
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> utc_now = datetime.now(pytz.timezone('UTC'))
+    >>> abs((mirror.date_reviewed.date() - utc_now.date()).days) <= 1
+    True
+
