@@ -916,6 +916,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
 
+    @enabled_with_permission('launchpad.View')
     def members(self):
         target = '+members'
         text = 'Show all members'
@@ -946,6 +947,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, summary=summary, enabled=enabled,
                     icon='info')
 
+    @enabled_with_permission('launchpad.View')
     def mugshots(self):
         target = '+mugshots'
         text = 'Show group photo'

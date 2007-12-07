@@ -83,7 +83,6 @@
         getLatestMaintainedPackages
         getLatestUploadedButNotMaintainedPackages
         getLatestUploadedPPAPackages
-        getMembersByStatus
         getOwnedOrDrivenPillars
         getProjectsAndCategoriesContributedTo
         getProposedMemberships
@@ -108,6 +107,7 @@
         setPreferredEmail
         shippedShipItRequestsOfCurrentSeries
         validateAndEnsurePreferredEmail
+        mailing_list
        "/> 
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IHasSpecifications"/>
@@ -139,6 +139,7 @@
         pendingmembers
         proposed_member_count
         proposedmembers
+        getMembersByStatus
         "
       />
     <require
@@ -281,6 +282,11 @@
     for="canonical.launchpad.interfaces.IPerson"
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonView">
+
+    <browser:page
+      name="+members"
+      template="../templates/team-members.pt"
+      />
     <browser:page
       name="+index"
       template="../templates/person-index.pt"
@@ -727,13 +733,6 @@
     label="Create a new poll"
     permission="launchpad.Edit"
     template="../templates/team-newpoll.pt"
-    />
-
-  <browser:page
-    name="+members"
-    for="canonical.launchpad.interfaces.ITeam"
-    permission="zope.Public"
-    template="../templates/team-members.pt"
     />
 
   <browser:page

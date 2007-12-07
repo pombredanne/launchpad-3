@@ -80,19 +80,27 @@
       <tal:description replace="context/subscriptionpolicy/description" />
 
       <table class="slimpadding" id="membership-summary" style="margin-top: 1em">
-        <tr>
-          <th>Membership:</th>
-          <td tal:content="string: ${context/all_member_count} active members" />
-        </tr><tr tal:condition="context/proposed_member_count">
-          <td></td>
-          <td tal:content="string: ${context/proposed_member_count} proposed members" />
-        </tr><tr tal:condition="context/invited_member_count">
-          <td></td>
-          <td tal:content="string: ${context/invited_member_count} invited members" />
-        </tr><tr tal:condition="context/inactive_member_count">
-          <td></td>
-          <td tal:content="string: ${context/inactive_member_count} inactive members" />
-        </tr>
+        <tal:private_membership condition="not: view/userCanViewMembership">
+          <tr>
+            <th>Membership:</th>
+            <td>You are not allowed to view this team's membership.</td>
+          </tr>
+        </tal:private_membership>
+        <tal:private_membership condition="view/userCanViewMembership">
+          <tr>
+            <th>Membership:</th>
+            <td tal:content="string: ${context/all_member_count} active members" />
+          </tr><tr tal:condition="context/proposed_member_count">
+            <td></td>
+            <td tal:content="string: ${context/proposed_member_count} proposed members" />
+          </tr><tr tal:condition="context/invited_member_count">
+            <td></td>
+            <td tal:content="string: ${context/invited_member_count} invited members" />
+          </tr><tr tal:condition="context/inactive_member_count">
+            <td></td>
+            <td tal:content="string: ${context/inactive_member_count} inactive members" />
+          </tr>
+        </tal:private_membership>
       </table>
 
       <table class="slimpadding" style="margin-top: 1em"

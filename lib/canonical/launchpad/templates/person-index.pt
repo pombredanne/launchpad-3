@@ -180,20 +180,22 @@
         </tal:block>
       </div>
       </div>
-      <div tal:condition="view/recently_approved_members" class="section">
+      <div tal:condition="python: view.userCanViewMembership() and view.recently_approved_members" 
+           class="section">
       <div class="portlet" id="recently-approved">
         <h2>Recently approved</h2>
         <ul>
           <li class="person"
               tal:repeat="person view/recently_approved_members">
             <a tal:attributes="href person/fmt:url"
-               tal:content="person/unique_displayname"
+              tal:content="person/unique_displayname"
             >Foo Bar (name16)</a>
           </li>
         </ul>
       </div>
       </div>
-      <div tal:condition="view/recently_proposed_members" class="section">
+      <div tal:condition="python: view.userCanViewMembership() and view.recently_proposed_members" 
+           class="section">
       <div class="portlet" id="recently-applied">
         <h2>Recently applied</h2>
         <ul>
