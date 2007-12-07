@@ -167,4 +167,7 @@ class WhitespaceDelimitedListWidget(TextAreaWidget):
         """Convert the input string into a list."""
         value = super(
             WhitespaceDelimitedListWidget, self)._toFieldValue(value)
-        return value.split()
+        if value:
+            return value.split()
+        else:
+            return []
