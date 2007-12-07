@@ -111,10 +111,6 @@ def find_tests(match_regexps):
     # Ensure we start with a clean world.
     integrationTestCleanUp(None)
     suite = unittest.TestSuite()
-    suite.addTest(doctest.DocFileSuite('contact-address.txt',
-                                       tearDown=integrationTestCleanUp,
-                                       optionflags=DOCTEST_FLAGS))
-    return suite
     for filename in os.listdir(itest_helper.HERE):
         if match_regexps:
             for regexp in match_regexps:
