@@ -1,0 +1,9 @@
+<configure
+   xmlns="http://namespaces.zope.org/zope"
+   >
+  <view
+      name="debug" type="*"
+      provides="zope.app.traversing.interfaces.ITraversable" for="*"
+      factory="zope.app.traversing.namespace.debug"
+      />
+</configure>
