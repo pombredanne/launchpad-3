@@ -3,7 +3,7 @@
   <head>
     <title>Oops!</title>
     <style type="text/css" media="screen, print">
-      @import url(https://launchpad.net/+icing/rev5/+style-slimmer.css);
+      @import url(/+icing/rev5/+style-slimmer.css);
     </style>
   </head>
   <body>
