@@ -9,6 +9,7 @@ __metaclass__ = type
 __all__ = [
     'POHeader',
     'POParser',
+    'plural_form_mapper',
     ]
 
 import datetime
@@ -27,6 +28,54 @@ from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFileData, TranslationMessageData)
 from canonical.launchpad.versioninfo import revno
 
+from gettext import c2py
+
+def plural_form_mapper(first_formula, second_formula):
+    """Maps plural forms from one plural formula to the other.
+
+    Returns a dict indexed by indices in the `first_formula`
+    pointing to corresponding indices in the `second_formula`.
+    """
+
+    def evaluate_formula_for_range(formula, range):
+        """Evaluate a plural `formula` for a list of numbers.
+
+        Return a dict indexed by plural form indices and containing
+        all numbers from the `range` that correspond to it.
+        """
+        plural_function = c2py(formula)
+        cache = {}
+        for number in range:
+            pluralform = plural_function(number)
+            if cache.has_key(pluralform):
+                cache[pluralform].add(number)
+            else:
+                cache[pluralform] = set([number])
+        return cache
+
+    first_cache = evaluate_formula_for_range(first_formula, range(0,1000))
+    first_count = len(first_cache.keys())
+    second_cache = evaluate_formula_for_range(second_formula, range(0,1000))
+    second_count = len(second_cache.keys())
+
+    # We can have a maximum of 4 plural forms.
+    no_change_map = {0:0, 1:1, 2:2, 3:3}
+    if first_count != second_count:
+        return no_change_map
+
+    # Let's compare and match these plural forms.
+    match_count = 0
+    result = no_change_map
+    for pluralform in first_cache:
+        for compare_to in second_cache:
+            if first_cache[pluralform]==second_cache[compare_to]:
+                result[pluralform] = compare_to
+                match_count += 1
+
+    if match_count == first_count:
+        return result
+    else:
+        return no_change_map
 
 class POSyntaxWarning(Warning):
     """ Syntax warning in a po file """
