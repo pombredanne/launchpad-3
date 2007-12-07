@@ -6,18 +6,34 @@
 
 <tal:block condition="request/lp:person">
 <tal:block condition="not: context/hide_email_addresses">
-  <tal:block condition="context/validatedemails">
+  <tal:block condition="python:context.validatedemails or context.preferredemail">
     <div class="portlet" id="portlet-emails">
 
-      <h2>Additional e-mails</h2>
+      <h2>Confirmed e-mail addresses</h2>
 
       <div class="portletBody portletContent">
 
         <ul>
           <li class="mail"
+              tal:condition="context/preferredemail"
+              tal:content="context/preferredemail/email">
+              foo@bar.com
+          </li>
+          <li class="mail"
               tal:repeat="email context/validatedemails"
               tal:content="email/email">
               foo@bar.com
+          </li>
+        </ul>
+
+        <ul tal:condition="context/required:launchpad.Edit">
+          <li class="edit">
+            <a tal:condition="not: context/isTeam" href="+editemails">
+              Manage Addresses
+            </a>
+            <a tal:condition="context/isTeam" href="+editemail">
+              Manage Addresses
+            </a>
           </li>
         </ul>
 
