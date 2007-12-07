@@ -1691,15 +1691,16 @@ ALTER TABLE distributionbounty ENABLE TRIGGER ALL;
 
 ALTER TABLE distributionmirror DISABLE TRIGGER ALL;
 
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (1, 1, 'archive-mirror', 'http://localhost:11375/valid-mirror/', NULL, NULL, NULL, NULL, 1, 10, 75, 1, true, true, true, '2006-10-16 18:31:43.434567', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (2, 1, 'invalid-mirror', 'http://localhost:11375/invalid-mirror/', NULL, NULL, NULL, NULL, 12, 50, 75, 2, true, false, true, '2006-10-16 18:31:43.436833', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (3, 1, 'unreachable-mirror', 'http://localhost:11375/timeout/', NULL, NULL, NULL, NULL, 12, 30, 75, 2, true, true, true, '2006-10-16 18:31:43.437635', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (4, 1, 'archive-404-mirror', 'http://localhost:11375/archive-mirror/', NULL, NULL, NULL, NULL, 12, 30, 75, 1, true, true, true, '2006-10-16 18:31:43.438573', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (5, 1, 'releases-mirror', 'http://localhost:11375/valid-mirror/releases/', NULL, NULL, NULL, NULL, 12, 50, 75, 2, true, true, true, '2006-10-16 18:31:43.439336', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (6, 1, 'releases-mirror2', 'http://localhost:11375/valid-mirror/releases2/', NULL, NULL, NULL, NULL, 12, 50, 82, 2, true, true, true, '2006-10-16 18:31:43.440079', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (7, 1, 'archive-mirror2', 'http://localhost:11375/valid-mirror2/', NULL, NULL, NULL, NULL, 1, 10, 9, 1, true, true, true, '2006-10-16 18:31:43.440832', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (8, 1, 'canonical-archive', 'http://archive.ubuntu.com/ubuntu/', NULL, NULL, NULL, NULL, 1, 70, 225, 1, true, true, true, '2006-10-16 18:31:43.434567', NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, official_approved, enabled, date_created, whiteboard) VALUES (9, 1, 'canonical-releases', 'http://releases.ubuntu.com/', NULL, NULL, NULL, NULL, 1, 70, 225, 2, true, true, true, '2006-10-16 18:31:43.434567', NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (1, 1, 'archive-mirror', 'http://localhost:11375/valid-mirror/', NULL, NULL, NULL, NULL, 1, 10, 75, 1, true, true, '2006-10-16 18:31:43.434567', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (2, 1, 'invalid-mirror', 'http://localhost:11375/invalid-mirror/', NULL, NULL, NULL, NULL, 12, 50, 75, 2, true, true, '2006-10-16 18:31:43.436833', NULL, 20);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (3, 1, 'unreachable-mirror', 'http://localhost:11375/timeout/', NULL, NULL, NULL, NULL, 12, 30, 75, 2, true, true, '2006-10-16 18:31:43.437635', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (4, 1, 'archive-404-mirror', 'http://localhost:11375/archive-mirror/', NULL, NULL, NULL, NULL, 12, 30, 75, 1, true, true, '2006-10-16 18:31:43.438573', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (5, 1, 'releases-mirror', 'http://localhost:11375/valid-mirror/releases/', NULL, NULL, NULL, NULL, 12, 50, 75, 2, true, true, '2006-10-16 18:31:43.439336', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (6, 1, 'releases-mirror2', 'http://localhost:11375/valid-mirror/releases2/', NULL, NULL, NULL, NULL, 12, 50, 82, 2, true, true, '2006-10-16 18:31:43.440079', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (7, 1, 'archive-mirror2', 'http://localhost:11375/valid-mirror2/', NULL, NULL, NULL, NULL, 1, 10, 9, 1, true, true, '2006-10-16 18:31:43.440832', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (8, 1, 'canonical-archive', 'http://archive.ubuntu.com/ubuntu/', NULL, NULL, NULL, NULL, 1, 70, 225, 1, true, true, '2006-10-16 18:31:43.434567', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (9, 1, 'canonical-releases', 'http://releases.ubuntu.com/', NULL, NULL, NULL, NULL, 1, 70, 225, 2, true, true, '2006-10-16 18:31:43.434567', NULL, 30);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, official_candidate, enabled, date_created, whiteboard, status) VALUES (10, 1, 'random-releases-mirror', 'http://releases.random.com/', NULL, NULL, NULL, NULL, 1, 70, 225, 2, true, true, '2006-10-16 18:31:43.434567', NULL, 10);
 
 
 ALTER TABLE distributionmirror ENABLE TRIGGER ALL;
@@ -3419,10 +3420,10 @@ ALTER TABLE mirrorcontent ENABLE TRIGGER ALL;
 
 ALTER TABLE mirrordistroarchseries DISABLE TRIGGER ALL;
 
-INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, status, pocket, component, date_created) VALUES (1, 7, 1, 2, 10, 1, '2006-10-16 18:31:44.309753');
-INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, status, pocket, component, date_created) VALUES (2, 7, 1, 2, 10, 2, '2006-10-16 18:31:44.31093');
-INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, status, pocket, component, date_created) VALUES (3, 7, 1, 3, 10, 3, '2006-10-16 18:31:44.311317');
-INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, status, pocket, component, date_created) VALUES (4, 7, 6, 2, 10, 1, '2006-10-16 18:31:44.311687');
+INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, freshness, pocket, component, date_created) VALUES (1, 7, 1, 2, 10, 1, '2006-10-16 18:31:44.309753');
+INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, freshness, pocket, component, date_created) VALUES (2, 7, 1, 2, 10, 2, '2006-10-16 18:31:44.31093');
+INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, freshness, pocket, component, date_created) VALUES (3, 7, 1, 3, 10, 3, '2006-10-16 18:31:44.311317');
+INSERT INTO mirrordistroarchseries (id, distribution_mirror, distroarchseries, freshness, pocket, component, date_created) VALUES (4, 7, 6, 2, 10, 1, '2006-10-16 18:31:44.311687');
 
 
 ALTER TABLE mirrordistroarchseries ENABLE TRIGGER ALL;
@@ -3430,11 +3431,11 @@ ALTER TABLE mirrordistroarchseries ENABLE TRIGGER ALL;
 
 ALTER TABLE mirrordistroseriessource DISABLE TRIGGER ALL;
 
-INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, status, pocket, component, date_created) VALUES (1, 7, 1, 1, 10, 1, '2006-10-16 18:31:44.314175');
-INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, status, pocket, component, date_created) VALUES (2, 7, 3, 1, 10, 1, '2006-10-16 18:31:44.315297');
-INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, status, pocket, component, date_created) VALUES (3, 7, 1, 4, 20, 1, '2006-10-16 18:31:44.315707');
-INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, status, pocket, component, date_created) VALUES (4, 7, 3, 1, 20, 1, '2006-10-16 18:31:44.316079');
-INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, status, pocket, component, date_created) VALUES (5, 7, 1, 2, 10, 2, '2006-10-16 18:31:44.316449');
+INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, freshness, pocket, component, date_created) VALUES (1, 7, 1, 1, 10, 1, '2006-10-16 18:31:44.314175');
+INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, freshness, pocket, component, date_created) VALUES (2, 7, 3, 1, 10, 1, '2006-10-16 18:31:44.315297');
+INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, freshness, pocket, component, date_created) VALUES (3, 7, 1, 4, 20, 1, '2006-10-16 18:31:44.315707');
+INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, freshness, pocket, component, date_created) VALUES (4, 7, 3, 1, 20, 1, '2006-10-16 18:31:44.316079');
+INSERT INTO mirrordistroseriessource (id, distribution_mirror, distroseries, freshness, pocket, component, date_created) VALUES (5, 7, 1, 2, 10, 2, '2006-10-16 18:31:44.316449');
 
 
 ALTER TABLE mirrordistroseriessource ENABLE TRIGGER ALL;
