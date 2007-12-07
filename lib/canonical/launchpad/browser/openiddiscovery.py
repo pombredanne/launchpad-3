@@ -119,7 +119,7 @@ class XRDSContentNegotiationMixin:
             accept_content = self.request.get('HTTP_ACCEPT', '')
             acceptable = getAcceptable(accept_content,
                                        ['text/html', YADIS_CONTENT_TYPE])
-            # Show the XRDS if it is preferred to text/html
+            # Return the XRDS document if it is preferred to text/html.
             for mtype in acceptable:
                 if mtype == 'text/html':
                     break

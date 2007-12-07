@@ -103,8 +103,10 @@ allows the user to log in using the directed identity mode.
     Claimed ID: http://openid.launchpad.dev/+id/name12_oid
     ----
     Local ID: http://openid.launchpad.dev/+id/name12_oid
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
+      http://specs.openid.net/auth/2.0/signon
     ...
-
 
 == OP Identifier Discovery ==
 
@@ -120,6 +122,38 @@ URL.
     Supports:
       http://specs.openid.net/auth/2.0/server
     ----
+
+
+== No OpenID for Teams ==
+
+Launchpad teams do not have OpenID identifiers:
+
+    >>> print_endpoints('http://launchpad.dev/~simple-team')
+    Claimed ID: http://launchpad.dev/~simple-team
+    ----
+    No services discovered
+
+    >>> print_endpoints('http://openid.launchpad.dev/+id/simple-team_oid')
+    Traceback (most recent call last):
+      ...
+    DiscoveryFailure: ...
+
+
+== No OpenID for Invalid Users ==
+
+People who are not valid Launchpad users do not have OpenID
+identifiers:
+
+    >>> print_endpoints('http://launchpad.dev/~spiv')
+    Claimed ID: http://launchpad.dev/~spiv
+    ----
+    No services discovered
+
+    >>> print_endpoints('http://openid.launchpad.dev/+id/spiv_oid')
+    Traceback (most recent call last):
+      ...
+    DiscoveryFailure: ...
+
 
 == Cleanup ==
 
