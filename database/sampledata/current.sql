@@ -1839,6 +1839,8 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (64, '
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (66, 'launchpad@julian-edwards.com', 243606, 1, '2007-08-09 21:25:37.832976');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (67, 'doc@lists.ubuntu.com', 243608, 1, '2007-11-12 15:23:19.847132');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (68, 'carlos@test.com', 13, 2, '2006-10-16 18:31:43.548591');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (69, 'archive@ubuntu.com', 243609, 4, '2007-12-07 13:43:20.393704');
+
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
 
@@ -3511,6 +3513,7 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates) VALUES (243606, 'Julian Edwards', NULL, NULL, NULL, 'launchpad-julian-edwards', NULL, NULL, NULL, NULL, 1, NULL, '2007-08-09 21:25:37.832976', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 7, 'when the commercialpackage_1.0-1 package was uploaded to breezy-autotest/RELEASE', NULL, NULL, 10, 'neMCQNd', NULL, 10, 9, NULL, NULL, 1, true);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates) VALUES (243607, 'Mailing List Experts', NULL, 25, 'This team is responsible for the management of Launchpad-hosted mailing lists.', 'mailing-list-experts', NULL, NULL, NULL, NULL, 3, NULL, '2007-10-04 19:59:03.615674', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'CQGNewe', NULL, 10, 0, NULL, NULL, 1, true);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates) VALUES (243608, 'Ubuntu Doc Team', NULL, NULL, NULL, 'doc', NULL, NULL, NULL, NULL, 1, NULL, '2007-11-12 15:23:19.847132', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 3, NULL, NULL, NULL, 10, 'WQPMHdf', NULL, 10, 0, NULL, NULL, 1, true);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates) VALUES (243609, 'Katie', NULL, NULL, NULL, 'katie', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-07 13:43:20.393704', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, '6w7kmzC', NULL, 20, 0, NULL, NULL, 1, true);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -7927,6 +7930,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (151, 243607, 2);
 INSERT INTO teamparticipation (id, team, person) VALUES (152, 243607, 11);
 INSERT INTO teamparticipation (id, team, person) VALUES (153, 243607, 22);
 INSERT INTO teamparticipation (id, team, person) VALUES (154, 243608, 243608);
+INSERT INTO teamparticipation (id, team, person) VALUES (155, 243609, 243609);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -8841,6 +8845,7 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (55, 243602, 'https://w
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (56, 243603, 'https://wiki.ubuntu.com/', 'OneMembership');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (58, 243606, 'https://wiki.ubuntu.com/', 'JulianEdwards');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (59, 243608, 'https://wiki.ubuntu.com/', 'UbuntuDocTeam');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (60, 243609, 'https://wiki.ubuntu.com/', 'Katie');
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;

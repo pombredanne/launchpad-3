@@ -440,7 +440,28 @@ distroseries.
   >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
 
   >>> bar_src = NascentUpload(
-  ...     datadir('suite/bar_1.0-5/bar_1.0-5_source.changes'),
+  ...     datadir(
+  ...          'suite/bar_1.0-5_debian_auto_sync/bar_1.0-5_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src.process()
+
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
+  DEBUG: Creating queue entry
+  x...
+
+One email generated:
+
+  >>> [notification] = pop_notifications()
+  >>> notification['Subject']
+  'Accepted: bar 1.0-5 (source)'
+
+
+In contrast, manual sync uploads do generate the announcement:
+
+  >>> bar_src = NascentUpload(
+  ...     datadir(
+  ...          'suite/bar_1.0-6/bar_1.0-6_source.changes'),
   ...     sync_policy, mock_logger_quiet)
   >>> bar_src.process()
 
@@ -449,16 +470,24 @@ distroseries.
   DEBUG: Creating queue entry
   ...
 
-One email generated:
+Two emails generated:
 
-  >>> [notification] = pop_notifications()
-  >>> notification['Subject']
-  'Accepted: bar 1.0-5 (source)'
+  >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
+  >>> len(msgs)
+  2
 
-Reset hoary back to released and remove disk file created during processing:
+  >>> [message['To'] for message in msgs]
+  ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
+
+  >>> [message['Subject'] for message in msgs]
+  ['Accepted: bar 1.0-5 (source)', 'Accepted: bar 1.0-5 (source)']
+
+Reset hoary back to released and remove disk files created during processing:
 
   >>> hoary.status = DistroSeriesStatus.CURRENT
-  >>> os.remove(os.path.join(datadir('suite/bar_1.0-5'),
+  >>> os.remove(os.path.join(datadir('suite/bar_1.0-5_debian_auto_sync'),
+  ...     'bar_1.0.orig.tar.gz'))
+  >>> os.remove(os.path.join(datadir('suite/bar_1.0-6'),
   ...     'bar_1.0.orig.tar.gz'))
 
 
