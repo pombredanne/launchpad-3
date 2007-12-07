@@ -25,7 +25,7 @@ Now we can see the new owner and also the old owner which has been made an
 administrator of the team.
 
     >>> browser.url
-    'http://launchpad.dev/~landscape-developers/'
+    'http://launchpad.dev/~landscape-developers'
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
     Team and membership summary
@@ -72,7 +72,7 @@ But cprov can.
     >>> browser.getControl('Change Registrant').click()
 
     >>> browser.url
-    'http://launchpad.dev/~landscape-developers/'
+    'http://launchpad.dev/~landscape-developers'
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
     Team and membership summary
