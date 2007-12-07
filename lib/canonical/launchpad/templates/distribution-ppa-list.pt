@@ -11,7 +11,9 @@
 >
 <body>
 
-  <metal:portlets fill-slot="portlets" />
+  <metal:portlets fill-slot="portlets">
+    <tal:portlet replace="structure context/@@+portlet-ppa-architectures" />
+  </metal:portlets>
 
   <metal:heading fill-slot="pageheading">
     <h1>Personal Package Archives for
@@ -59,17 +61,17 @@
           <tr tal:repeat="ppa batch" tal:replace="structure ppa/@@+ppa-row" />
         </tbody>
       </table>
- 
+
       <tal:navigation_bottom
            replace="structure view/batchnav/@@+navigation-links-lower" />
- 
+
       <div id="empty-result" tal:condition="not: batch">
         <tal:has_filter condition="view/name_filter">
            No matching Personal Package Archive
            for '<span tal:replace="view/name_filter" />'.
         </tal:has_filter>
       </div>
- 
+
     </tal:batch>
 
   </div>

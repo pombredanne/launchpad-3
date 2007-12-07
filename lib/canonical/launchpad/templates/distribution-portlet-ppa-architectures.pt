@@ -1,0 +1,32 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet"
+  tal:define="serieses context/serieses"
+  tal:condition="serieses">
+
+  <h2>PPA supported series</h2>
+  <div  class="portletBody portletContent">
+    <ul style="padding: 0 0 0 2em;" class="distroseries">
+      <tal:per_series repeat="series serieses">
+        <li tal:condition="series/active">
+          <a tal:attributes="href series/fmt:url">
+             <tal:version replace="series/version"
+             /> "<tal:codename replace="series/displayname" />"</a
+          > - <tal:status replace="series/status/name/fmt:lower" />
+
+          <ul class="architecture" tal:define="archs series/ppa_architectures"
+              tal:condition="archs">
+            <li tal:repeat="arch archs">
+              <a tal:attributes="href arch/fmt:url">
+                <tal:title replace="arch/displayname" />
+                <tal:details replace="arch/details" />
+              </a>
+            </li>
+          </ul>
+        </li>
+      </tal:per_series>
+     </ul>
+   </div>
+</div>

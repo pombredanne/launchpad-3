@@ -1,4 +1,4 @@
-<html 
+<html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
@@ -17,6 +17,7 @@
     </metal:heading>
 
     <metal:leftportlets fill-slot="portlets_one">
+       <tal:portlet replace="structure context/distribution/@@+portlet-ppa-architectures" />
     </metal:leftportlets>
 
     <div metal:fill-slot="main">

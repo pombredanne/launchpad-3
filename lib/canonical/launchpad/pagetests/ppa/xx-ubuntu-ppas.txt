@@ -13,9 +13,19 @@ The Ubuntu Linux page contains a link to get to the Personal Package Archives.
 The PPA page contains a search box and a table of known PPAs with columns
 Owner, Description, Sources and Binaries, the latter two being a count.
 
+Along with the search form this page also presents a list of ubuntu
+series and corresponding architectures supported for PPA.
+
+    >>> print extract_text(
+    ...    find_portlet(browser.contents, 'PPA supported series'))
+    PPA supported series
+    5.04 "Hoary" - development
+    hoary i386 (official, ppa)
+    4.10 "Warty" - current
+    warty i386 (official, ppa)
+
 The sample data contains three PPAs.  Only Celso has any packages, with two
 sources and one binary.
-
 
 == Searching PPAs ==
 
@@ -95,6 +105,17 @@ clickable link to his PPA page:
     >>> browser.getLink("Celso Providelo").click()
     >>> browser.title
     'PPA for Celso Providelo'
+
+The PPA page contiains a portlet listing all series and architectures
+which supports PPA building in ubuntu.
+
+    >>> print extract_text(
+    ...    find_portlet(browser.contents, 'PPA supported series'))
+    PPA supported series
+    5.04 "Hoary" - development
+    hoary i386 (official, ppa)
+    4.10 "Warty" - current
+    warty i386 (official, ppa)
 
 Let's see his sources.list entries:
 

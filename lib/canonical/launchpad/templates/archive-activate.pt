@@ -12,6 +12,8 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
+  <tal:portlet
+    replace="structure view/distribution/@@+portlet-ppa-architectures" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
