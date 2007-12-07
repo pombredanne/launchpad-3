@@ -70,7 +70,9 @@
           class="section"
           tal:content="structure context/@@+portlet-latestannouncements"
         />
-        <div class="portlet" tal:condition="context/serieses">
+        <div
+          class="portlet section"
+          tal:condition="context/serieses">
           <h2>Series</h2>
           <ul class="distroseries">
             <tal:per_series repeat="series context/serieses">
@@ -85,44 +87,21 @@
           </ul>
           <a href="+series">See all versions...</a>
         </div>
-        <div class="portlet" tal:condition="context/currentseries">
-          <h2>
-            Architectures for
-            <tal:latestseries replace="context/currentseries/displayname" />
-          </h2>
-          <p tal:condition="not:context/currentseries/architectures">
-            <tal:name replace="context/currentseries/displayname" />
-            has no architectures managed in Launchpad.
-          </p>
-          <ul
-            tal:condition="context/currentseries/architectures"
-            class="architecture"
-          >
-            <tal:official
-                 repeat="architecture context/currentseries/architectures">
-              <li tal:condition="architecture/official">
-                <a tal:attributes="href architecture/fmt:url"
-                   tal:content="architecture/displayname"
-                   />
-            </li>
-            </tal:official>
-            <tal:unofficial
-                 repeat="architecture context/currentseries/architectures">
-              <li tal:condition="not: architecture/official">
-                <a tal:attributes="href architecture/fmt:url"
-                   tal:content="architecture/displayname"
-                   />
-                (unofficial)
-            </li>
-            </tal:unofficial>
-          </ul>
-        </div>
-        <div tal:content="structure context/@@+portlet-latestbugs" />
         <div
+          class="section"
+          tal:condition="context/currentseries"
+          tal:content="structure context/currentseries/@@+portlet-architectures"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestbugs" />
+        <div
+          class="section"
           tal:condition="context/currentseries"
           tal:content="structure context/currentseries/@@+portlet-latestuploads"
         />
       </div>
+
       <div class="right">
         <div
           class="two column section"
@@ -137,7 +116,7 @@
           tal:content="structure context/@@+portlet-latestspecs"
         />
         <div
-          class="section"
+          class="two column section"
           tal:content="structure context/@@+portlet-latestquestions"
         />
       </div>

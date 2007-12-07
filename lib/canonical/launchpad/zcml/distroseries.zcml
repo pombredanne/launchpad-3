@@ -196,6 +196,10 @@
       name="+portlet-latestuploads"
       template="../templates/distroseries-portlet-latestuploads.pt"
       />
+    <browser:page
+      name="+portlet-architectures"
+      template="../templates/distroseries-portlet-architectures.pt"
+      />
   </browser:pages>
 
   <browser:page
