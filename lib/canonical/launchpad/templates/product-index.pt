@@ -17,7 +17,10 @@
 
 <div metal:fill-slot="main">
 
-  <p id="project-inactive" tal:condition="not: context/active" class="warning message"> 
+   <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+         tal:attributes="href view/feed_url" />
+
+  <p id="project-inactive" tal:condition="not: context/active" class="warning message">
     This project is currently inactive <a href="+review">(change this)</a>
   </p>
 
@@ -99,11 +102,15 @@
           class="section"
           tal:content="structure context/@@+portlet-coming-sprints"
         />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestannouncements"
+        />
         <div class="portlet">
           <h2>Timeline</h2>
 
           <div class="project series"
-               tal:repeat="series view/sorted_serieses">
+               tal:repeat="series view/sorted_series_list">
 
             <div tal:define="
                    is_focus python:context.development_focus == series"

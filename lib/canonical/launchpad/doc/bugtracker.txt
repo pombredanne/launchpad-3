@@ -1,5 +1,4 @@
-Monitoring External Bug Trackers in Malone
-==========================================
+= Monitoring External Bug Trackers in Malone =
 
 Malone allows you to monitor bugs in external bug tracking systems. This
 document discusses the API of external bug trackers. To learn more about
@@ -51,8 +50,7 @@ The watches needing updating should the ones with old statuses, 2000 and 42:
     42 1
 
 
-Top Bug Trackers
-================
+== Top Bug Trackers ==
 
 The Malone front page shows a list of the top Malone bug trackers, as
 ordered by the number of bugs being monitored by Malone in each of
@@ -65,8 +63,7 @@ them. Use IBugTrackerSet.getMostActiveBugTrackers to get this list.
      (4, u'debbugs'), (4, u'mozilla.org')]
 
 
-Getting Bug Trackers
-====================
+== Getting Bug Trackers ==
 
 You can get a specific bug tracker from the database by querying by its
 base URL.
@@ -84,14 +81,21 @@ It's necessary to specify the exact URL, differences in the schema
     >>> mozilla_bugzilla.baseurl
     u'https://bugzilla.mozilla.org/'
 
+If the exact bugtracker isn't found but a the url searched for
+is a substring of an existing bugtracker, we use the first match.
+
+    >>> mozilla_bugzilla = bugtracker_set.queryByBaseURL(
+    ...     u'zilla.mozilla.org')
+    >>> mozilla_bugzilla.baseurl
+    u'https://bugzilla.mozilla.org/'
+
 If no bug tracker can be found None is returned.
 
     >>> bugtracker_set.queryByBaseURL('http://no/such/bugtracker') is None
     True
 
 
-checkwatches.py
-===============
+== checkwatches.py ==
 
 The updating and syncing of bug watches is done by a cronscript. We
 can't test it properly, since we don't yet have a mock HTTP server we
@@ -181,3 +185,56 @@ created in its last_error_type field.
     >>> from canonical.launchpad.interfaces import BugWatchErrorType
     >>> example_bugwatch.last_error_type == BugWatchErrorType.TIMEOUT
     True
+
+== Batched Bugwatch Updating ==
+
+checkwatches.py will only update those bugs that need updating, but
+there is a further limit on the amount of bugs which will be updated for
+a given ExternalBugTracker in each checkwatches run: the batch size.
+
+We need to add some bug watches again since
+BugWatchUpdate.updateBugTracker() automatically rolls back the
+transaction if something goes wrong.
+
+    >>> login('test@canonical.com')
+    >>> example_bug_tracker = BugTracker(
+    ...     name="example-bugs",
+    ...     title="Example.com Roundup",
+    ...     bugtrackertype=BugTrackerType.ROUNDUP,
+    ...     baseurl="http://bugs.example.com",
+    ...     summary="Contains bugs for Example.com",
+    ...     contactdetails="foo.bar@example.com",
+    ...     owner=sample_person)
+    >>> example_bug = getUtility(IBugSet).get(10)
+    >>> for bug_id in range(1, 10):
+    ...     example_bugwatch = example_bug.addWatch(
+    ...         example_bug_tracker, bug_id, sample_person)
+
+Since we know how many bugwatches example_bug has we will be able to see
+when checkwatches only updates a subset of them.
+
+    >>> example_bug.watches.count()
+    9
+
+Since our example bug tracker is a Roundup bug tracker we can
+monkey-patch the Roundup ExternalBugTrackerClass in order to set its
+batch size. We will also monkey-patch urllib2.urlopen again so that no
+requests are actually made.
+
+    >>> from canonical.launchpad.components import externalbugtracker
+    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> original_log = externalbugtracker.log
+    >>> batch_size = externalbugtracker.Roundup.batch_size
+    >>> try:
+    ...     updater = BugWatchUpdater(transaction)
+    ...     updater._login()
+    ...     urllib2.urlopen = do_not_urlopen
+    ...     externalbugtracker.Roundup.batch_size = 5
+    ...     externalbugtracker.log = FakeLogger()
+    ...     updater.updateBugTracker(example_bug_tracker)
+    ... finally:
+    ...     externalbugtracker.log = original_log
+    ...     externalbugtracker.Roundup.batch_size = batch_size
+    ...     urllib2.urlopen = urlopen
+    INFO Updating 5 watches on http://bugs.example.com
+    ERROR:root:Connection timed out when updating http://bugs.example.com

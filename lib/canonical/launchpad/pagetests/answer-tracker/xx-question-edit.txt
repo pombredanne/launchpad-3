@@ -29,8 +29,7 @@ When we post the form, we should be redirected back to the question page.
 
 And viewing that page should show the updated information.
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> soup = find_main_content(user_browser.contents)
     >>> print soup.first('div', 'report').renderContents().strip()
     <p>Hi! I'm trying to learn about SVG but I can't get it to work at
     all in firefox. Maybe there is a plugin? Help! Thanks. Mark</p>
@@ -41,9 +40,9 @@ You can even modify the title and description of 'Answered' and
 'Invalid' questions:
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/+question/3')
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(user_browser.contents)
-    >>> soup.first('b', text='Status:').next.strip()
+    >>> portlet_details = find_tag_by_id(
+    ...     user_browser.contents, 'portlet-details')
+    >>> portlet_details.first('b', text='Status:').next.strip()
     u'Invalid'
     >>> user_browser.getLink('Edit question')
     <Link...>
@@ -61,8 +60,9 @@ Any logged in user can change the question source package on the
     ...     name='field.target.package').value = 'linux-source-2.6.15'
     >>> user_browser.getControl('Continue').click()
 
-    >>> soup = BeautifulSoup(user_browser.contents)
-    >>> print soup.first('b', text='For:').next.strip()
+    >>> portlet_details = find_tag_by_id(
+    ...     user_browser.contents, 'portlet-details')
+    >>> print portlet_details.first('b', text='For:').next.strip()
     ubuntu linux-source-2.6.15
 
 Product questions ignore sourcepackage information if it is submitted:
@@ -72,8 +72,9 @@ Product questions ignore sourcepackage information if it is submitted:
     >>> user_browser.getControl(
     ...     name='field.target.package').value = 'linux-source-2.6.15'
     >>> user_browser.getControl('Continue').click()
-    >>> soup = BeautifulSoup(user_browser.contents)
-    >>> print soup.first('b', text='For:').next.strip()
+    >>> portlet_details = find_tag_by_id(
+    ...     user_browser.contents, 'portlet-details')
+    >>> print portlet_details.first('b', text='For:').next.strip()
     firefox
 
 
@@ -92,16 +93,17 @@ edit the Status Whiteboard using the 'Edit Question' page.
     >>> browser.getControl('Status Whiteboard').value = 'Some note'
     >>> browser.getControl('Continue').click()
 
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> print soup.first('b', text='Whiteboard:').findNext('td').renderContents()
     Some note
-    >>> 'Foo Bar' in extract_text(soup.first('b', text='Assignee:').findNext('a'))
-    True
+    >>> portlet_details = find_tag_by_id(browser.contents, 'portlet-details')
+    >>> print extract_text(portlet_details.first('b', text='Assignee:').findNext('a'))
+    Foo Bar
 
 Since the assignee is notified of changes to the question, his name also
 appears under the 'Also notified' list in the 'Subscribers' portlet:
 
-    >>> portlet = soup.first('div', id='portlet-subscribers')
+    >>> portlet = find_tag_by_id(browser.contents, id='portlet-subscribers')
     >>> also_notified = portlet.first('b')
     >>> also_notified
     <b>Also notified:</b>
@@ -124,3 +126,5 @@ These fields cannot be modified by a non-privileged user:
     Traceback (most recent call last):
     ...
     LookupError...
+
+

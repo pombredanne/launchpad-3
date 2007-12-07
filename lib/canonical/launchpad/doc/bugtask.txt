@@ -718,8 +718,7 @@ to anyone.
 
     >>> from zope.event import notify
     >>> from zope.publisher.browser import TestRequest
-    >>> from canonical.launchpad.event.sqlobjectevent import (
-    ...     SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
+    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
 
 
 == Privacy and Unprivileged Users ==
@@ -743,12 +742,11 @@ entitled _Privacy and Team Awareness_):
     >>> subscription = bug_upstream_firefox_no_svg_support.bug.subscribe(
     ...     ubuntu_team)
 
-    >>> notify(SQLObjectToBeModifiedEvent(
-    ...     bug_upstream_firefox_no_svg_support.bug, {'private' : True}))
-
     >>> old_state = Snapshot(
     ...     bug_upstream_firefox_no_svg_support.bug, providing=IBug)
-    >>> bug_upstream_firefox_no_svg_support.bug.private = True
+    >>> bug_upstream_firefox_no_svg_support.bug.setPrivate(
+    ...     True, getUtility(ILaunchBag).user)
+    True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, old_state,
     ...     ["id", "title", "private"])

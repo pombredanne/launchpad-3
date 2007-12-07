@@ -51,13 +51,15 @@
              tal:condition="context/bug/mentoring_offers/count" />
         <img src="/@@/branch-large" title="(Branch available)"
              tal:condition="context/bug/bug_branches/count" />
-        <img
-          tal:condition="context/bug/private"
-          alt="(Private)"
-          id="privatebadge"
-          src="/@@/private-large"
-          title="This bug report is private"
-        />
+        <tal:privatebadge condition="context/bug/private"
+                          define="date_made_private context/bug/date_made_private;
+                                  who_made_private context/bug/who_made_private">
+          <img tal:condition="date_made_private"
+               tal:attributes="title string:This bug report was made private by ${who_made_private/displayname} ${date_made_private/fmt:displaydate}"
+               alt="(Private)" id="privatebadge" src="/@@/private-large" />
+          <img tal:condition="not:date_made_private" title="This bug report is private"
+               alt="(Private)" id="privatebadge" src="/@@/private-large" />
+        </tal:privatebadge>
       </div>
       <h1 style="clear: left;" tal:content="context/bug/title">Bug summary</h1>
 
@@ -71,6 +73,17 @@
   </p>
 
   <p class="informational message"
+     id="can-expire"
+     tal:condition="context/bug/can_expire"
+    >This bug report will expire in
+    <tal:days_to_expiration replace="view/days_to_expiration">
+      59
+    </tal:days_to_expiration>
+    days if no further activity occurs.
+    (<a href="https://help.launchpad.net/BugStatuses">find out why</a>)
+  </p>
+
+  <p class="informational message"
      id="number_of_dupes"
      tal:condition="context/bug/duplicates"
      tal:define="number_of_dupes context/bug/duplicates/count"
@@ -78,7 +91,7 @@
      <tal:num-dupes condition="python:number_of_dupes == 1">1 duplicate</tal:num-dupes>
      <tal:num-dupes condition="python:number_of_dupes > 1" content="string:${number_of_dupes} duplicates"
        >2 duplicates</tal:num-dupes>
-    </p>
+  </p>
 
   <tal:duplicate-of define="duplicateof context/bug/duplicateof"
                     condition="duplicateof">
@@ -92,6 +105,16 @@
     </p>
   </tal:duplicate-of>
 
+
+  <p id="bug-is-question" class="informational message"
+    tal:condition="context/bug/getQuestionCreatedFromBug"
+    tal:define="question context/bug/getQuestionCreatedFromBug">
+    This bug report was converted into a question:
+    question #<tal:question-id replace="question/id" />:
+    <a href=""
+      tal:attributes="href question/fmt:url"
+      tal:content="question/title">%s</a>.
+  </p>
       <form
         tal:condition="not:view/isReportedInContext"
         class="error message"
@@ -176,8 +199,17 @@
              href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
     </div>
 
+    <tal:user condition="view/user">
+      <tal:description
+        define="global description context/bug/description/fmt:text-to-html" />
+    </tal:user>
+    <tal:not-user condition="not:view/user">
+      <tal:description
+        define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
+    </tal:not-user>
+
     <div id="bug-description"
-         tal:content="structure context/bug/description/fmt:text-to-html" />
+         tal:content="structure description" />
 
   </div>
 

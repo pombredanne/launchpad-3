@@ -161,6 +161,11 @@ table.listing div.actions {
 }
 textarea {width: 100%;}
 table.form {width: 100%;}
+/* XXX: this is just to make tables look more consistent when used in a
+ * summary pagelet; the concrete use case is in
+ * person-pagelet-details.pt. We should move to use tables everywhere
+ * and then kill this class I guess. -- kiko, 2007-12-05 */
+table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
 
 /* --- Other --- */
 
@@ -704,7 +709,11 @@ body {min-width: 480px;}
   padding: 48px 20px 40px 240px;
   position: relative;
 }
-* html #container {margin-top: 28px; position: static;} /* fixes in IE6 */
+* html #container {margin-top: 0; position: static;} /* fixes in IE6 */
+
+/* Something private for a public project has a cordon inside the tabs: */
+#container.private {background: url(/@@/private-bg) left 28px repeat-x;}
+
 body.applicationhome #container {padding-left: 20px;}
 #maincontent {
   width: 100%;
@@ -966,6 +975,7 @@ ul.person, li.person                 {list-style-image: url(/@@/person);}
 ul.product, li.product               {list-style-image: url(/@@/product);}
 dl.products>dt:before                {content: url(/@@/product);}
 ul.question, li.question             {list-style-image: url(/@@/question);}
+ul.rss, li.rss                       {list-style-image: url(/@@/rss);}
 ul.search, li.search                 {list-style-image: url(/@@/search);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
 ul.translation, li.translation       {list-style-image: url(/@@/translation);}
@@ -1459,9 +1469,9 @@ div.three.column.left, div.three.column.middle, div.three.column.right {
 .title {
   font-weight: bold;
 }
-ul.buttons {margin: 2em 0 4em 0 !important; padding: 0 !important;}
+ul.buttons {margin: 0.5em 0 0.5em 0 !important; padding: 0 !important;}
 /*- without !important, gets overridden by the '#maincontent ol' etc rule -*/
-ul.buttons li {display: inline; margin-right: 1em;}
+ul.buttons li {display: inline; margin: 0 0 0 0;}
 body.applicationhome ul.buttons {float: right; margin: 0 0 0 1em !important;}
 body.applicationhome ul.buttons li {display: block; margin-right: 0;}
 ul.cross-reference {font-size: 1.25em;}

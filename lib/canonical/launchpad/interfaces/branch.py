@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Branch interfaces."""
 
@@ -7,12 +8,15 @@ __metaclass__ = type
 __all__ = [
     'BranchCreationException',
     'BranchCreationForbidden',
+    'BranchCreationNoTeamOwnedJunkBranches',
     'BranchCreatorNotMemberOfOwnerTeam',
+    'BranchCreatorNotOwner',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchListingSort',
     'BranchType',
     'BranchTypeError',
+    'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'CannotDeleteBranch',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
@@ -27,6 +31,7 @@ __all__ = [
     ]
 
 from datetime import timedelta
+import re
 from zope.interface import Interface, Attribute
 
 from zope.component import getUtility
@@ -37,7 +42,6 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import (
@@ -127,7 +131,8 @@ class BranchType(DBEnumeratedType):
         Imported
 
         Imported branches have been converted from some other revision
-        control system into bzr and are made available through the supermirror.
+        control system into bzr and are made available through the
+        supermirror.
         """)
 
     REMOTE = DBItem(4, """
@@ -185,6 +190,21 @@ class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
     """
 
 
+class BranchCreationNoTeamOwnedJunkBranches(BranchCreationException):
+    """We forbid the creation of team-owned +junk branches.
+
+    Raised when a user is attempting to create a team-owned +junk branch.
+    """
+
+
+class BranchCreatorNotOwner(BranchCreationException):
+    """A user cannot create a branch belonging to another user.
+
+    Raised when a user is attempting to create a branch and set the owner of
+    the branch to another user.
+    """
+
+
 class BranchTypeError(Exception):
     """An operation cannot be performed for a particular branch type.
 
@@ -214,8 +234,8 @@ class BranchURIField(URIField):
         launchpad_domain = config.launchpad.vhosts.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             message = _(
-                "For Launchpad to mirror a branch, the original branch cannot "
-                "be on <code>%s</code>." % launchpad_domain)
+                "For Launchpad to mirror a branch, the original branch "
+                "cannot be on <code>%s</code>." % launchpad_domain)
             raise LaunchpadValidationError(message)
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
@@ -233,6 +253,37 @@ class BranchURIField(URIField):
                 "with this URL.")
             raise LaunchpadValidationError(
                 message, canonical_url(branch), branch.displayname)
+
+
+BRANCH_NAME_VALIDATION_ERROR_MESSAGE = _(
+    "Branch names must start with a number or letter.  The characters +, -, "
+    "_, . and @ are also allowed after the first character.")
+
+
+# This is a copy of the pattern in database/schema/trusted.sql.  Don't
+# change this without changing that.
+valid_branch_name_pattern = re.compile(r"^(?i)[a-z0-9][a-z0-9+\.\-@_]*\Z")
+
+
+def valid_branch_name(name):
+    """Return True if the name is valid as a branch name, otherwise False.
+
+    The rules for what is a valid branch name are described in
+    BRANCH_NAME_VALIDATION_ERROR_MESSAGE.
+    """
+    if valid_branch_name_pattern.match(name):
+        return True
+    return False
+
+
+def branch_name_validator(name):
+    """Return True if the name is valid, or raise a LaunchpadValidationError.
+    """
+    if not valid_branch_name(name):
+        raise LaunchpadValidationError(
+            _("Invalid branch name '%s'. %s"), name,
+            BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+    return True
 
 
 class IBranchBatchNavigator(ITableBatchNavigator):
@@ -267,7 +318,7 @@ class IBranch(IHasOwner):
         title=_('Name'), required=True, description=_("Keep very "
         "short, unique, and descriptive, because it will be used in URLs. "
         "Examples: main, devel, release-1.0, gnome-vfs."),
-        constraint=name_validator)
+        constraint=branch_name_validator)
     title = Title(
         title=_('Title'), required=False, description=_("Describe the "
         "branch as clearly as possible in up to 70 characters. This "
@@ -300,8 +351,6 @@ class IBranch(IHasOwner):
         default=False)
 
     # People attributes
-    """Product owner, it can either a valid Person or Team
-            inside Launchpad context."""
     owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
         description=_("Branch owner, either a valid Person or Team."))
     author = Choice(
@@ -412,11 +461,14 @@ class IBranch(IHasOwner):
         the revisions that match the revision history from bzrlib for this
         branch.
         """)
-    subscriptions = Attribute("BranchSubscriptions associated to this branch.")
+    subscriptions = Attribute(
+        "BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    date_last_modified = Datetime(
+        title=_('Date Last Modified'), required=True, readonly=False)
 
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
@@ -655,7 +707,8 @@ class IBranchSet(Interface):
         """
 
     def getRecentlyChangedBranches(
-        branch_count=None, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """Return a result set of branches that have been recently updated.
 
@@ -678,7 +731,8 @@ class IBranchSet(Interface):
         """
 
     def getRecentlyImportedBranches(
-        branch_count=None, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """Return a result set of branches that have been recently imported.
 
@@ -701,7 +755,8 @@ class IBranchSet(Interface):
         """
 
     def getRecentlyRegisteredBranches(
-        branch_count=None, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """Return a result set of branches that have been recently registered.
 
@@ -899,9 +954,13 @@ class IBranchSet(Interface):
         :param branch_type: A value from the `BranchType` enum.
         """
 
+    def getTargetBranchesForUsersMergeProposals(user, product):
+        """Return a sequence of branches the user has targetted before."""
+
 
 class IBranchDelta(Interface):
-    """The quantitative changes made to a branch that was edited or altered."""
+    """The quantitative changes made to a branch that was edited or altered.
+    """
 
     branch = Attribute("The IBranch, after it's been edited.")
     user = Attribute("The IPerson that did the editing.")

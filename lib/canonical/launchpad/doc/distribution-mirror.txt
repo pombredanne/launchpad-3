@@ -323,7 +323,7 @@ anyway.
     archive-404-mirror NEVER
     archive-mirror2 2006-05-24...
 
-    
+
 If when we finish probing a mirror, that mirror doesn't have any
 MirrorDistroSeriesSource or MirrorDistroArchSeries, that mirror is marked as
 disabled and a notification is sent to its owner and to the distribution's
@@ -714,6 +714,45 @@ the case here.  Otherwise, their status is unknown.
     >>> cdimage_mirror.getOverallStatus().title
     'Up to date'
 
+
+== Mirror counts and bandwidth aggregates ==
+
+We include a count of the number of mirrors per country, and the total
+bandwidth (approximate) that they output. Here we test the aggregation
+functions that achieve that.
+
+First we import the classes required to test the view:
+
+  >>> from zope.component import getView
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistribution)
+  >>> from canonical.launchpad.browser.distribution import (
+  ...     DistributionMirrorsView)
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+Create a view to test:
+
+  >>> request = LaunchpadTestRequest()
+  >>> view = getView(ubuntu, '+archivemirrors', request)
+
+Verify that the view is a DistributionMirrorsView:
+
+  >>> isinstance(view, DistributionMirrorsView)
+  True
+
+We want to make sure that the view._sum_throughput method knows about all
+the possible mirror speeds.
+
+  >>> from canonical.launchpad.interfaces import MirrorSpeed
+  >>> class MockMirror:
+  ...     speed = None
+  >>> mirrors = []
+  >>> for speed in MirrorSpeed.items:
+  ...     a = MockMirror()
+  ...     a.speed = speed
+  ...     mirrors.append(a)
+  >>> print view._sum_throughput(mirrors)
+  37 Gbps
 
 == Deleting mirrors ==
 

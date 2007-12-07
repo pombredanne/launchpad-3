@@ -9,8 +9,10 @@ import errno
 import base64
 import signal
 import socket
+import mailbox
 import datetime
 
+from email import message_from_file
 from subprocess import Popen, PIPE
 
 __all__ = [
@@ -20,6 +22,8 @@ __all__ = [
     'TOP',
     'create_transaction_manager',
     'make_browser',
+    'mbox_iterator'
+    'review_list',
     'run_mailman',
     'transactionmgr',
     'wait_for_mailman',
@@ -194,3 +198,48 @@ class LogWatcher:
     def resync(self):
         """Re-sync the file size so that we can watch it again."""
         self._last_size = get_size(self._log_path)
+
+
+def mbox_iterator(mbox_filename):
+    """Iterate over the messages in a mailbox."""
+    # We have to use Python 2.4's icky mailbox module until Launchpad upgrades
+    # Zope to a Python 2.5 compatible version.
+    mbox = mailbox.UnixMailbox(open(mbox_filename), message_from_file)
+    for message in mbox:
+        yield message
+
+
+def review_list(list_name, status=None):
+    """Helper for approving a mailing list.
+
+    This functionality is not yet exposed through the web.
+    """
+    # These imports are at file scope because the paths are not yet set up
+    # correctly when this module is imported.
+    from canonical.database.sqlbase import commit
+    from canonical.launchpad.ftests import login, logout, mailinglists_helper
+    from canonical.launchpad.interfaces import IMailingListSet
+    from zope.component import getUtility
+    login('foo.bar@canonical.com')
+    mailinglists_helper.review_list(list_name, status)
+    commit()
+    # Wait until Mailman has actually creating the mailing list.
+    wait_for_mailman()
+    # Return an updated mailing list object.
+    mailing_list = getUtility(IMailingListSet).get(list_name)
+    logout()
+    return mailing_list
+
+
+def beta_program_enable(team_name):
+    """Helper for joining the mailing list beta program.
+
+    This is a pure convenience function, which can go away when mailing lists
+    go public.
+    """
+    # These imports are at file scope because the paths are not yet set up
+    # correctly when this module is imported.
+    from canonical.database.sqlbase import commit
+    from canonical.launchpad.ftests import mailinglists_helper
+    mailinglists_helper.beta_program_enable(team_name)
+    commit()

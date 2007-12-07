@@ -259,6 +259,27 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.IProduct"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IProject"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IDistribution"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IBug"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugFormatterAPI"
@@ -412,17 +433,6 @@
             />
     </content>
 -->
-    <!-- Launchpad publication machinery. We have customized publication
-    and requests that need to be hooked up.
-    -->
-    <publisher
-        name="BROWSER"
-        factory="canonical.launchpad.webapp.servers.LaunchpadRequestPublicationFactory"
-        methods="GET POST HEAD"
-        mimetypes="*"
-        priority="15"
-        />
-
     <!-- LaunchpadBrowserResponse needs to be able to find the session -->
     <adapter
         for="canonical.launchpad.webapp.servers.LaunchpadBrowserResponse"

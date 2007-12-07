@@ -149,6 +149,14 @@
         permission="launchpad.AnyPerson"
         template="../templates/bug-mark-as-duplicate.pt" />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTask"
+        name="+text"
+        class="canonical.launchpad.browser.BugTaskTextView"
+        permission="zope.Public"
+        attribute="__call__"
+        />
+
     <!-- NullBugTask -->
     <content class="canonical.launchpad.database.bugtask.NullBugTask">
         <require
@@ -206,14 +214,10 @@
         permission="launchpad.Edit"
         template="../templates/bug-nominate-for-series.pt" />
 
-    <browser:generalform
+    <browser:page
         name="+addbranch"
-        schema="canonical.launchpad.interfaces.IBugBranch"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugBranchAddView"
-        label="Add a branch"
-        fields="branch whiteboard"
-        keyword_arguments="branch whiteboard"
         permission="launchpad.AnyPerson"
         template="../templates/bug-branch-add.pt"
         />
@@ -234,6 +238,13 @@
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugAlsoAffectsProductMetaView"
         permission="launchpad.AnyPerson" />
+
+    <browser:page
+        name="+affects-new-product"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugAlsoAffectsProductWithProductCreationView"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugtask-affects-new-product.pt" />
 
     <browser:page
         name="+distrotask"
@@ -327,6 +338,20 @@
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt">
     </browser:page>
+
+    <browser:page
+      for="canonical.launchpad.interfaces.IBugTask"
+      name="+create-question"
+      class="canonical.launchpad.browser.BugTaskCreateQuestionView"
+      permission="launchpad.Edit"
+      template="../templates/bug-create-question.pt" />
+
+    <browser:page
+      for="canonical.launchpad.interfaces.IBugTask"
+      name="+remove-question"
+      class="canonical.launchpad.browser.BugTaskRemoveQuestionView"
+      permission="launchpad.Edit"
+      template="../templates/bug-remove-question.pt" />
 
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"

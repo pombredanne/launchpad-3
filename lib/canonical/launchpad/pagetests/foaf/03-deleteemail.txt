@@ -1,20 +1,17 @@
-  'foo' doesn't want to use baz.foo@canonical.com on Launchpad. He removes it.
+= Removing an email =
 
-  >>> print http(r"""
-  ... POST /~foo/+editemails HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... VALIDATED_SELECTED=baz.foo%40canonical.com&REMOVE_VALIDATED=Remove""")
-  HTTP/1.1 200 Ok
-  ...
-  ...The email address...has been removed...
-  ...
+'foo' doesn't want to use baz.foo@canonical.com on Launchpad. He removes it.
 
+    >>> browser = setupBrowser(auth='Basic foo@baz.com:f')
+    >>> browser.open('http://launchpad.dev/~foo/+editemails')
+    >>> browser.getControl('baz.foo@canonical.com').selected = True
+    >>> browser.getControl('Remove').click()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    The email address...has been removed...
 
-  Now we check in the database to make sure that email is not there anymore.
-
-  >>> from canonical.launchpad.database import EmailAddressSet
-  >>> EmailAddressSet().getByEmail('baz.foo@canonical.com') is None
-  True
+    >>> browser.getControl('baz.foo@canonical.com')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'baz.foo@canonical.com'
 

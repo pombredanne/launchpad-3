@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Question models."""
 
@@ -12,7 +13,10 @@ __all__ = [
     'QuestionTargetMixin',
     ]
 
+from datetime import datetime
 import operator
+import pytz
+
 from email.Utils import make_msgid
 
 from zope.component import getUtility
@@ -993,12 +997,31 @@ class QuestionTargetMixin:
         return {}
 
     def newQuestion(self, owner, title, description, language=None,
-                  datecreated=None):
+        datecreated=None):
         """See `IQuestionTarget`."""
-        return QuestionSet.new(
+        question = QuestionSet.new(
             title=title, description=description, owner=owner,
             datecreated=datecreated, language=language,
             **self.getTargetTypes())
+        notify(SQLObjectCreatedEvent(question))
+        return question
+
+    def createQuestionFromBug(self, bug):
+        """See `IQuestionTarget`."""
+        question = self.newQuestion(
+            bug.owner, bug.title, bug.description,
+            datecreated=bug.datecreated)
+        # Give the datelastresponse a current datetime, otherwise the
+        # Launchpad Janitor would quickly expire questions made from old bugs.
+        question.datelastresponse = datetime.now(pytz.timezone('UTC'))
+        question.linkBug(bug)
+        for message in bug.messages[1:]:
+            # Bug.message[0] is the original message, and probably a duplicate
+            # of Bug.description.
+            question.addComment(
+                message.owner, message.text_contents,
+                datecreated=message.datecreated)
+        return question
 
     def getQuestion(self, question_id):
         """See `IQuestionTarget`."""

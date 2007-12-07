@@ -26,7 +26,8 @@ import operator
 
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
-from zope.interface import implements
+from zope.event import notify
+from zope.interface import implements, providedBy
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
@@ -41,15 +42,17 @@ from canonical.launchpad.interfaces import (
     ILaunchBag,
     NotFoundError,
     )
+from canonical.launchpad.event import SQLObjectModifiedEvent
 
 from canonical.launchpad.mailnotification import (
     MailWrapper, format_rfc2822_date)
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
-    LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
+    LaunchpadFormView, LaunchpadView, LaunchpadEditFormView, stepthrough,
     Link, Navigation, structured, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.project import ProjectScopeWidget
@@ -109,7 +112,8 @@ class BugContextMenu(ContextMenu):
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
              'nominate', 'addbranch', 'linktocve', 'unlinkcve',
-             'offermentoring', 'retractmentoring', 'activitylog']
+             'offermentoring', 'retractmentoring', 'createquestion',
+             'removequestion', 'activitylog']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -221,11 +225,22 @@ class BugContextMenu(ContextMenu):
                    user)
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
+    def createquestion(self):
+        """Create a question from this bug."""
+        text = 'Convert to question'
+        enabled = self.context.bug.getQuestionCreatedFromBug() is None
+        return Link('+create-question', text, icon='edit', enabled=enabled)
+
+    def removequestion(self):
+        """Remove the created question from this bug."""
+        text = 'Convert back to bug'
+        enabled = self.context.bug.getQuestionCreatedFromBug() is not None
+        return Link('+remove-question', text, icon='edit', enabled=enabled)
+
     def activitylog(self):
         """Return the 'Activity log' Link."""
         text = 'View activity log'
         return Link('+activity', text, icon='list')
-
 
 
 class MaloneView(LaunchpadFormView):
@@ -250,7 +265,7 @@ class MaloneView(LaunchpadFormView):
     @property
     def target_error(self):
         """The error message for the target widget."""
-        return self.getWidgetError('scope')
+        return self.getFieldError('scope')
 
     def initialize(self):
         """Initialize the view to handle the request."""
@@ -476,6 +491,28 @@ class BugSecrecyEditView(BugEditViewBase):
     @action('Change', name='change')
     def change_action(self, action, data):
         """Update the bug."""
+        # We will modify data later, so take a copy now.
+        data = dict(data)
+
+        # We handle privacy changes by hand instead of leaving it to
+        # the usual machinery because we must use bug.setPrivate() to
+        # ensure auditing information is recorded.
+        bug = self.context.bug
+        bug_before_modification = Snapshot(
+            bug, providing=providedBy(bug))
+        private = data.pop('private')
+        private_changed = bug.setPrivate(
+            private, getUtility(ILaunchBag).user)
+        if private_changed:
+            # Although the call to updateBugFromData later on will
+            # send notification of changes, it will only do so if it
+            # makes the change. We have applied the 'private' change
+            # already, so updateBugFromData will only send an event if
+            # 'security_related' is changed, and we can't have that.
+            notify(SQLObjectModifiedEvent(
+                    bug, bug_before_modification, ['private']))
+
+        # Apply other changes.
         self.updateBugFromData(data)
 
 
@@ -535,6 +572,8 @@ class BugTextView(LaunchpadView):
         for attachment in bug.attachments:
             text.append(' %s' % self.attachment_text(attachment))
 
+        text.append('tags: %s' % ' '.join(bug.tags))
+
         text.append('subscribers: ')
         for subscription in bug.subscriptions:
             text.append(' %s' % subscription.person.unique_displayname)
@@ -552,7 +591,8 @@ class BugTextView(LaunchpadView):
                        "closed", "incomplete"]:
             date = getattr(task, "date_%s" % status)
             if date:
-                text.append("date-%s: %s" % (status, date))
+                text.append("date-%s: %s" % (
+                    status, format_rfc2822_date(date)))
 
         text.append('reporter: %s' % task.owner.unique_displayname)
 

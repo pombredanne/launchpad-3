@@ -442,7 +442,7 @@ class POParser(object):
         while line is not None:
             self._parseLine(line.decode(charset))
             if (self._translation_file.header is not None or
-                self._message.msgid):
+                self._message.msgid_singular):
                 # Either found the header already or it's a message with a
                 # non empty msgid which means is not a header.
                 break
@@ -450,7 +450,7 @@ class POParser(object):
 
         if line is None:
             if (self._translation_file.header is None and
-                not self._message.msgid):
+                not self._message.msgid_singular):
                 # Seems like the file has only the header without any message,
                 # we parse it.
                 self._dumpCurrentSection()
@@ -486,7 +486,7 @@ class POParser(object):
 
     def _storeCurrentMessage(self):
         if self._message is not None:
-            msgkey = self._message.msgid
+            msgkey = self._message.msgid_singular
             if self._message.context is not None:
                 msgkey = '%s\2%s' % (self._message.context, msgkey)
             if msgkey in self._messageids:
@@ -725,7 +725,7 @@ class POParser(object):
         elif self._section == 'msgctxt':
             self._message.context = self._parsed_content
         elif self._section == 'msgid':
-            self._message.msgid = self._parsed_content
+            self._message.msgid_singular = self._parsed_content
         elif self._section == 'msgid_plural':
             self._message.msgid_plural = self._parsed_content
             # Note in the header that there are plural forms.
@@ -758,7 +758,7 @@ class POParser(object):
             if self._message is None:
                 # first entry - do nothing.
                 pass
-            elif self._message.msgid:
+            elif self._message.msgid_singular:
                 self._dumpCurrentSection()
                 self._storeCurrentMessage()
             elif self._translation_file.header is None:

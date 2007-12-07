@@ -1,4 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd. All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
 
@@ -39,7 +40,6 @@ from zope.app.form.interfaces import WidgetsError
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.cve import valid_cve
@@ -403,6 +403,8 @@ def valid_upstreamtask(bug, product):
 
     If it exists, WidgetsError will be raised.
     """
+    # Local import to avoid circular imports.
+    from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
     errors = []
     user = getUtility(ILaunchBag).user
     params = BugTaskSearchParams(user, bug=bug)

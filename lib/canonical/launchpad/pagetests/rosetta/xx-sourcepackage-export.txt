@@ -10,18 +10,28 @@ The option is shown in the Translations action bar for a source package.  The
 link is called "Download translations."
 
     >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
-    >>> user_browser.getLink('Download translations').click()
+    >>> download = user_browser.getLink('Download translations')
+    >>> download_url = download.url
+    >>> download.click()
     >>> print user_browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/+export
 
 
 == Anonymous access ==
 
-In order to request a download, a user must be logged in.  This protects us
+Only logged-in users are offered the Download link.  This protects us
 from overload by spambots.
 
     >>> anon_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
     >>> anon_browser.getLink('Download translations').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Even going straight to the download URL will not work for anonymous
+visitors.
+
+    >>> anon_browser.open(download_url)
     Traceback (most recent call last):
     ...
     Unauthorized:...
@@ -40,7 +50,7 @@ export format, and request the download.
     >>> print user_browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla
 
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     Your request has been received. Expect to receive an email shortly.
 
@@ -67,14 +77,14 @@ If the file format for one of these templates were different from the other's,
 a warning would appear on the export request form that wasn't there before.
 
     >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+export')
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
 
     >>> an_evolution_template.source_file_format = TranslationFileFormat.MO
     >>> flush_database_updates()
 
     >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+export')
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     This package has templates with different native file formats.  If you
     proceed, all translations will be exported in the single format you

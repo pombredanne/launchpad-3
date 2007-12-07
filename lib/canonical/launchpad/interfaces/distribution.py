@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistribution."""
 
@@ -10,7 +11,7 @@ __all__ = [
     ]
 
 from zope.schema import (
-    Object, Choice, Int, Text, TextLine, Bool)
+    Object, Choice, Int, Text, TextLine)
 from zope.interface import (
     Interface, Attribute)
 
@@ -22,25 +23,28 @@ from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces import (
     IBugTarget, IHasAppointedDriver, IHasDrivers, IHasOwner,
-    IHasSecurityContact, ISpecificationTarget, PillarNameField)
+    IHasSecurityContact, ILaunchpadUsage, ISpecificationTarget)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
-    IconImageUpload, LogoImageUpload, MugshotImageUpload)
+    IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
 
 class DistributionNameField(PillarNameField):
-
+    """The pillar for a distribution."""
     @property
     def _content_iface(self):
+        """Return the interface of this pillar object."""
         return IDistribution
 
 class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
-    IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
-    IHasSprints, IHasTranslationGroup, IKarmaContext, ISpecificationTarget):
+    IHasMentoringOffers, IHasMilestones, IMakesAnnouncements, IHasOwner,
+    IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
+    ILaunchpadUsage, ISpecificationTarget):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -156,15 +160,6 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         required=False, vocabulary='ValidPersonOrTeam')
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
-    official_answers = Bool(
-        title=_('People can ask questions in Launchpad Answers'),
-        required=True)
-    official_malone = Bool(
-        title=_('Bugs in this distribution are tracked in Launchpad'),
-        required=True)
-    official_rosetta = Bool(
-        title=_('Translations for this distribution are done in Launchpad'),
-        required=True)
 
     # properties
     currentseries = Attribute(

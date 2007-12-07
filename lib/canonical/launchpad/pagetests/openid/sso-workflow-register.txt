@@ -6,37 +6,40 @@ Launchpad account, they can register directly from the login page.
 First we will set up the helper view that lets us test the final
 portion of the authentication process:
 
-    >>> from canonical.launchpad.ftests.openid import (
-    ...     install_consumer, uninstall_consumer)
+    >>> from openid.consumer.consumer import Consumer
+    >>> from openid.consumer.discover import OPENID_1_1_TYPE
+    >>> from openid.fetchers import setDefaultFetcher
+    >>> from openid.store.memstore import MemoryStore
+    >>> from canonical.launchpad.ftests.openidhelpers import (
+    ...     complete_from_browser, install_consumer,
+    ...     make_identifier_select_endpoint, uninstall_consumer,
+    ...     PublisherFetcher)
     >>> install_consumer()
+    >>> setDefaultFetcher(PublisherFetcher())
 
 The authentication process is started by the relying party issuing a
 checkid_setup request, sending the user to Launchpad:
 
-    >>> from urllib import urlencode
-    >>> trust_root = 'http://launchpad.dev/+openid-consumer'
-    >>> args = urlencode({
-    ...     'openid.mode': 'checkid_setup',
-    ...     'openid.identity':
-    ...         'http://specs.openid.net/auth/2.0/identifier_select',
-    ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
-    ...     'openid.trust_root': trust_root,
-    ...     })
-    >>> setup_url = 'http://openid.launchpad.dev/+openid?%s' % args
-    >>> browser.open(setup_url)
+    >>> openid_store = MemoryStore()
+    >>> consumer = Consumer(session={}, store=openid_store)
+
+    >>> request = consumer.beginWithoutDiscovery(
+    ...     make_identifier_select_endpoint(OPENID_1_1_TYPE))
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
 
 When a new account is created we'll use the creation rationale specified for
 the trust_root given by the relying party.  We will set up an RP
 configuration that uses the UBUNTU_SHOP creation rationale:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> from canonical.launchpad.interfaces import (
-    ...     IOpenIDRPConfigSet, PersonCreationRationale)
+    ...     IOpenIDRPConfigSet, IPersonSet, PersonCreationRationale)
 
     >>> login('foo.bar@canonical.com')
     >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(
-    ...     trust_root=trust_root,
+    ...     trust_root='http://launchpad.dev/',
     ...     displayname='The Ubuntu Store from Canonical',
     ...     description="For the Ubuntu Store, you need a Launchpad account "
     ...                 "so  we can remember your order details and keep in "
@@ -66,8 +69,7 @@ If we instead pick a new email address, we can register an account:
 
     >>> browser.getControl(name='field.email').value = 'new-user@example.com'
     >>> browser.getControl('Continue').click()
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> print soup.find('h1').renderContents()
     Registration mail sent
 
@@ -121,22 +123,27 @@ directed back to the original site:
 
     >>> print browser.url
     http://launchpad.dev/+openid-consumer?...
-    >>> print browser.contents
-    Consumer received GET
-    ...
-    openid.identity:http://openid.launchpad.dev/+id/...
-    openid.mode:id_res
-    openid.return_to:http://launchpad.dev/+openid-consumer
-    ...
 
-And the creation rationale for the new account has been set.
+The creation rationale has been set correctly:
 
-    >>> from canonical.launchpad.database import Person
-    >>> print Person.selectOneBy(name='new-user').creation_rationale.title
-    Created by the owner himself, coming from the Ubuntu Shop.
+    >>> login(ANONYMOUS)
+    >>> person = getUtility(IPersonSet).getByEmail('new-user@example.com')
+    >>> expected_claimed_id = (
+    ...     'http://openid.launchpad.dev/+id/' + person.openid_identifier)
+    >>> print person.creation_rationale.name
+    OWNER_CREATED_UBUNTU_SHOP
+    >>> logout()
+
+And the response matches the new OpenID:
+
+    >>> info = complete_from_browser(consumer, browser, expected_claimed_id)
+    >>> print info.status
+    success
+    >>> info.endpoint.claimed_id == expected_claimed_id
+    True
 
 
 == Cleanup ==
 
+    >>> setDefaultFetcher(None)
     >>> uninstall_consumer()
-

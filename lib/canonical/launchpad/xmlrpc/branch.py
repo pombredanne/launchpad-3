@@ -1,5 +1,8 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
+# Disable pylint 'should have "self" as first argument' warnings.
+# pylint: disable-msg=E0213
+
 """Branch XMLRPC API."""
 
 __metaclass__ = type
@@ -11,7 +14,6 @@ import os
 
 from zope.component import getUtility
 from zope.interface import Interface, implements
-from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -92,7 +94,8 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         if product is None:
             unique_name = '~%s/+junk/%s' % (owner.name, branch_name)
         else:
-            unique_name = '~%s/%s/%s' % (owner.name, product.name, branch_name)
+            unique_name = '~%s/%s/%s' % (
+                owner.name, product.name, branch_name)
         if getUtility(IBranchSet).getByUniqueName(unique_name) is not None:
             return faults.BranchUniqueNameConflict(unique_name)
 
@@ -125,7 +128,10 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         if not whiteboard:
             whiteboard = None
 
-        bug.addBranch(branch, whiteboard=whiteboard)
+        # Since this API is controlled using launchpad.AnyPerson there must be
+        # an authenticated person, so use this person as the registrant.
+        registrant = getUtility(ILaunchBag).user
+        bug.addBranch(branch, registrant=registrant, whiteboard=whiteboard)
         return canonical_url(bug)
 
 
@@ -157,7 +163,7 @@ class PublicCodehostingAPI(LaunchpadXMLRPCView):
 
     implements(IPublicCodehostingAPI)
 
-    supported_schemes = 'bzr+ssh', 'sftp', 'http'
+    supported_schemes = 'bzr+ssh', 'http'
 
     def _getBazaarHost(self):
         """Return the hostname for the codehosting server."""

@@ -24,9 +24,11 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.sourceslist import (
+    SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchive, IPPAActivateForm, IArchiveSet, IBuildSet, IHasBuildRecords,
-    NotFoundError)
+    ArchivePurpose, IArchive, IPPAActivateForm, IArchiveSet, IBuildSet,
+    IHasBuildRecords, NotFoundError, PackagePublishingStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
@@ -95,29 +97,68 @@ class ArchiveView(LaunchpadView):
 
     def initialize(self):
         """Set up select control and our batched list of publishing records."""
-        self.terms = [SimpleTerm(s, s.name, s.title)
-                 for s in self.context.series_with_sources]
-        field = Choice(
-                __name__='series', title=_("Distro Series"),
-                vocabulary=SimpleVocabulary(self.terms), required=True)
-        setUpWidget(self, 'series',  field, IInputWidget)
-        self.series_widget.extra = "onChange='updateSeries(this);'"
+        entries = SourcesListEntries(self.context.distribution,
+                                     self.context.archive_url,
+                                     self.context.series_with_sources)
+        self.sources_list_entries = SourcesListEntriesView(entries,
+                                                           self.request)
 
-        self.name_filter = self.request.get('name_filter', None)
+        self.name_filter = self.request.get('field.name_filter')
+        status_filter = self.request.get('field.status_filter', 'published')
+        self.setupStatusFilterWidget(status_filter)
+
         publishing = self.context.getPublishedSources(
-            name=self.name_filter)
+            name=self.name_filter,
+            status=self.selected_status_filter.value.collection)
+
         self.batchnav = BatchNavigator(publishing, self.request)
         self.search_results = self.batchnav.currentBatch()
 
-    @property
-    def plain_series_widget(self):
-        """Render a <select> control with no <div>s around it."""
-        return self.series_widget.renderValue(None)
+    def setupStatusFilterWidget(self, status_filter):
+        """Setup a customized publishing status select widget.
+
+        Receives the one of the established field values:
+
+        ('published', 'superseded', 'any').
+
+        Allow user to select between:
+
+         * Published:  PENDING and PUBLISHED records,
+         * Superseded: SUPERSEDED and DELETED records,
+         * Any Status
+
+        """
+        class StatusCollection:
+            def __init__(self, collection=None):
+                self.collection = collection
+
+        published_status = [PackagePublishingStatus.PENDING,
+                            PackagePublishingStatus.PUBLISHED]
+        superseded_status = [PackagePublishingStatus.SUPERSEDED,
+                             PackagePublishingStatus.DELETED]
+
+        status_terms = [
+            SimpleTerm(StatusCollection(published_status),
+                       'published', 'Published'),
+            SimpleTerm(StatusCollection(superseded_status),
+                       'superseded', 'Superseded'),
+            SimpleTerm(StatusCollection(), 'any', 'Any Status')
+            ]
+        status_vocabulary = SimpleVocabulary(status_terms)
+
+        self.selected_status_filter = status_vocabulary.getTermByToken(
+            status_filter)
+
+        field = Choice(
+            __name__='status_filter', title=_("Status Filter"),
+            vocabulary=status_vocabulary, required=True)
+        setUpWidget(self, 'status_filter',  field, IInputWidget)
 
     @property
-    def sources_in_more_than_one_series(self):
-        """Whether this archive has sources in more than one distro series."""
-        return len(self.terms) > 1
+    def plain_status_filter_widget(self):
+        """Render a <select> control with no <div>s around it."""
+        return self.status_filter_widget.renderValue(
+            self.selected_status_filter.value)
 
     def source_count_text(self):
         if self.context.number_of_sources == 1:
@@ -156,10 +197,6 @@ class ArchiveActivateView(LaunchpadFormView):
                 self.addError(
                     "PPA Terms of Service must be accepted to activate "
                     "your PPA.")
-
-    def validate_cancel(self, action, data):
-        """Noop validation in case we cancel"""
-        return []
 
     @action(_("Activate"), name="activate")
     def action_save(self, action, data):

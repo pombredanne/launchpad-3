@@ -44,7 +44,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     DistroSeriesStatus, IDistributionMirrorSet, IDistributionSet, 
     IDistribution, ILaunchBag, ILaunchpadCelebrities, IPublishedPackageSet,
-    MirrorContent, NotFoundError)
+    MirrorContent, MirrorSpeed, NotFoundError)
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -94,6 +95,10 @@ class DistributionNavigation(
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
+
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
 
     @stepthrough('+spec')
     def traverse_spec(self, name):
@@ -191,7 +196,7 @@ class DistributionOverviewMenu(ApplicationMenu):
              'mirror_admin', 'reassign', 'addseries', 'top_contributors',
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
-             'upload_admin', 'ppas']
+             'announce', 'announcements', 'upload_admin', 'ppas']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -284,6 +289,19 @@ class DistributionOverviewMenu(ApplicationMenu):
     def addseries(self):
         text = 'Add series'
         return Link('+addseries', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        enabled = self.isBetaUser
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, enabled=enabled, icon='add')
+
+    def announcements(self):
+        text = 'Show announcements'
+        enabled = bool(self.context.announcements().count()
+                       and self.isBetaUser)
+        return Link('+announcements', text, enabled=enabled)
 
     def builds(self):
         text = 'Builds'
@@ -380,7 +398,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+select-language-pack-admin', text, icon='edit')
 
 
-class DistributionView(BuildRecordsView):
+class DistributionView(HasAnnouncementsView, BuildRecordsView):
     """Default Distribution view class."""
 
     def initialize(self):
@@ -521,7 +539,8 @@ class DistributionEditView(LaunchpadEditFormView):
     schema = IDistribution
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
-                   'official_malone', 'official_rosetta', 'official_answers']
+                   'official_malone', 'enable_bug_expiration',
+                   'official_rosetta', 'official_answers']
 
     def isAdmin(self):
         return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
@@ -530,7 +549,17 @@ class DistributionEditView(LaunchpadEditFormView):
         LaunchpadFormView.setUpFields(self)
         if not self.isAdmin():
             self.form_fields = self.form_fields.omit(
-                'official_malone', 'official_rosetta', 'official_answers')
+                'official_malone', 'official_rosetta', 'official_answers',
+                'enable_bug_expiration')
+
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        # enable_bug_expiration is disabled by JavaScript when official_malone
+        # is set False. The contraint is enforced here in case the JavaScript
+        # fails to load or activate.
+        official_malone = data.get('official_malone', False)
+        if not official_malone:
+            data['enable_bug_expiration'] = False
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -606,6 +635,12 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
         body = "\n".join(mirror.base_url for mirror in mirrors)
         self.request.response.setHeader(
             'content-type', 'text/plain;charset=utf-8')
+        if country is None:
+            country_name = 'Unknown'
+        else:
+            country_name = country.name
+        self.request.response.setHeader(
+            'X-Generated-For-Country', country_name)
         return body.encode('utf-8')
 
 
@@ -613,17 +648,72 @@ class DistributionMirrorsView(LaunchpadView):
 
     show_status = True
 
-    def _groupMirrorsByCountry(self, mirrors):
+    @cachedproperty
+    def mirror_count(self):
+        return self.mirrors.count()
+
+    def _sum_throughput(self, mirrors):
+        """Given a list of mirrors, calculate the total bandwidth
+        available.
+        """
+        throughput = 0
+        # this would be a wonderful place to have abused DBItem.sort_key ;-)
+        for mirror in mirrors:
+            if mirror.speed == MirrorSpeed.S128K:
+                throughput += 128
+            elif mirror.speed == MirrorSpeed.S256K:
+                throughput += 256
+            elif mirror.speed == MirrorSpeed.S512K:
+                throughput += 512
+            elif mirror.speed == MirrorSpeed.S1M:
+                throughput += 1000
+            elif mirror.speed == MirrorSpeed.S2M:
+                throughput += 2000
+            elif mirror.speed == MirrorSpeed.S10M:
+                throughput += 10000
+            elif mirror.speed == MirrorSpeed.S45M:
+                throughput += 45000
+            elif mirror.speed == MirrorSpeed.S100M:
+                throughput += 100000
+            elif mirror.speed == MirrorSpeed.S1G:
+                throughput += 1000000
+            elif mirror.speed == MirrorSpeed.S2G:
+                throughput += 2000000
+            elif mirror.speed == MirrorSpeed.S4G:
+                throughput += 4000000
+            elif mirror.speed == MirrorSpeed.S10G:
+                throughput += 10000000
+            elif mirror.speed == MirrorSpeed.S20G:
+                throughput += 20000000
+            else:
+                # need to be made aware of new values in
+                # interfaces/distributionmirror.py MirrorSpeed
+                return 'Indeterminate'
+        if throughput < 1000:
+            return str(throughput) + ' Kbps'
+        elif throughput < 1000000:
+            return str(throughput/1000) + ' Mbps'
+        else:
+            return str(throughput/1000000) + ' Gbps'
+
+    @cachedproperty
+    def total_throughput(self):
+        return self._sum_throughput(self.mirrors)
+
+    def getMirrorsGroupedByCountry(self):
         """Given a list of mirrors, create and return list of dictionaries
         containing the country names and the list of mirrors on that country.
 
         This list is ordered by country name.
         """
         mirrors_by_country = {}
-        for mirror in mirrors:
+        for mirror in self.mirrors:
             mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
             mirrors.append(mirror)
-        return [dict(country=country, mirrors=mirrors)
+        return [dict(country=country,
+                     mirrors=mirrors,
+                     number=len(mirrors),
+                     throughput=self._sum_throughput(mirrors))
                 for country, mirrors in sorted(mirrors_by_country.items())]
 
 
@@ -631,8 +721,9 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 
     heading = 'Official Archive Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.archive_mirrors)
+    @cachedproperty
+    def mirrors(self):
+        return self.context.archive_mirrors
 
 
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
@@ -640,8 +731,9 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
     heading = 'Official CD Mirrors'
     show_status = False
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.cdimage_mirrors)
+    @cachedproperty
+    def mirrors(self):
+        return self.context.cdimage_mirrors
 
 
 class DistributionMirrorsRSSBaseView(LaunchpadView):
@@ -662,7 +754,7 @@ class DistributionArchiveMirrorsRSSView(DistributionMirrorsRSSBaseView):
 
     heading = 'Archive Mirrors'
 
-    @property
+    @cachedproperty
     def mirrors(self):
         return self.context.archive_mirrors
 
@@ -672,7 +764,7 @@ class DistributionSeriesMirrorsRSSView(DistributionMirrorsRSSBaseView):
 
     heading = 'CD Mirrors'
 
-    @property
+    @cachedproperty
     def mirrors(self):
         return self.context.cdimage_mirrors
 
@@ -696,16 +788,18 @@ class DistributionUnofficialMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Unofficial Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.unofficial_mirrors)
+    @cachedproperty
+    def mirrors(self):
+        return self.context.unofficial_mirrors
 
 
 class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Disabled Mirrors'
 
-    def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.disabled_mirrors)
+    @cachedproperty
+    def mirrors(self):
+        return self.context.disabled_mirrors
 
 
 class DistributionDynMenu(
@@ -714,7 +808,7 @@ class DistributionDynMenu(
     menus = {
         '': 'mainMenu',
         'meetings': 'meetingsMenu',
-        'series': 'seriesesMenu',
+        'series': 'seriesMenu',
         'milestones': 'milestoneMenu',
         }
 

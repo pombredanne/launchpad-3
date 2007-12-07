@@ -1,4 +1,6 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
+
 """Interfaces pertaining to the launchpad application.
 
 Note that these are not interfaces to application content objects.
@@ -6,7 +8,7 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Int, TextLine
+from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
@@ -52,6 +54,7 @@ __all__ = [
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
+    'ILaunchpadUsage',
     'IMaloneApplication',
     'INotificationRecipientSet',
     'IOpenIdApplication',
@@ -86,7 +89,7 @@ class ILaunchpadCelebrities(Interface):
     Celebrities are SQLBase instances that have a well known name.
     """
     admin = Attribute("The 'admins' team.")
-    bazaar_expert = Attribute("The Bazaar Experts team.")
+    bazaar_experts = Attribute("The Bazaar Experts team.")
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
     debbugs = Attribute("The Debian Bug Tracker")
@@ -96,7 +99,7 @@ class ILaunchpadCelebrities(Interface):
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     launchpad_developers = Attribute("The Launchpad development team.")
     mailing_list_experts = Attribute("The Mailing List Experts team.")
-    rosetta_expert = Attribute("The Rosetta Experts team.")
+    rosetta_experts = Attribute("The Rosetta Experts team.")
     shipit_admin = Attribute("The ShipIt Administrators.")
     sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
     ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
@@ -506,3 +509,18 @@ class INotificationRecipientSet(Interface):
 
         :param recipient_set: An `INotificationRecipientSet`.
         """
+
+class ILaunchpadUsage(Interface):
+    """How the project uses Launchpad."""
+    official_answers = Bool(
+        title=_('People can ask questions in Launchpad Answers'),
+        required=True)
+    official_malone = Bool(
+        title=_('Bugs in this project are tracked in Launchpad'),
+        required=True)
+    official_rosetta = Bool(
+        title=_('Translations for this project are done in Launchpad'),
+        required=True)
+    enable_bug_expiration = Bool(
+        title=_('Expire Incomplete bug reports when they become inactive'),
+        required=True)

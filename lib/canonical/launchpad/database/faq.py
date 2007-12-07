@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """FAQ document models."""
 
@@ -271,3 +272,4 @@ class FAQSet:
         """See `IFAQSet`."""
         return FAQSearch(
             search_text=search_text, owner=owner, sort=sort).getResults()
+

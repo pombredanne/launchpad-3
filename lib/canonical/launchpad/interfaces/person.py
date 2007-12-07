@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Person interfaces."""
 
@@ -11,15 +12,15 @@ __all__ = [
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'IObjectReassignment',
+    'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
     'IPersonSet',
-    'IPerson',
     'IRequestPeopleMerge',
+    'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
-    'ITeam',
     'JoinNotAllowed',
     'PersonCreationRationale',
     'PersonVisibility',
@@ -770,6 +771,15 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             raise Invalid(
                 'You must specify a default renewal period greater than 0.')
 
+    def convertToTeam(team_owner):
+        """Convert this person into a team owned by the given team_owner.
+
+        Also adds the given team owner as an administrator of the team.
+
+        Only Person entries whose account_status is NOACCOUNT and which are
+        not teams can be converted into teams.
+        """
+
     def getActiveMemberships():
         """Return all active TeamMembership objects of this team.
 
@@ -853,6 +863,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
 
+    # XXX BarryWarsaw 29-Nov-2007 I'd prefer for this to be an Object() with a
+    # schema of IMailingList, but setting that up correctly causes a circular
+    # import error with interfaces.mailinglists that is too difficult to
+    # unfunge for this one attribute.
+    mailing_list = Attribute(
+        _("The team's mailing list, if it has one, otherwise None."))
+
     def getProjectsAndCategoriesContributedTo(limit=10):
         """Return a list of dicts with projects and the contributions made
         by this person on that project.
@@ -900,6 +917,16 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
+
+        <team> can be the id of a team, an SQLObject representing the
+        ITeam, or the name of the team.
+        """
+
+    def clearInTeamCache():
+        """Clears the person's inTeam cache.
+
+        To be used when membership changes are enacted. Only meant to be
+        used between TeamMembership and Person objects.
         """
 
     def lastShippedRequest():
@@ -1166,6 +1193,31 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         state, as well as, those not owned by the person but on which the
         person requested for more information or gave an answer and that are
         back in the OPEN state.
+        """
+
+    def isBugContributor(user):
+        """Is the person a contributer to bugs in Launchpad?
+
+        Return True if the user has any bugs assigned to him, either
+        directly or by team participation.
+
+        :user: The user doing the search. Private bugs that this
+        user doesn't have access to won't be included in the
+        count.
+        """
+
+    def isBugContributorInTarget(user, target):
+        """Is the person a contributor to bugs in `target`?
+
+        Return True if the user has any bugs assigned to him in the
+        context of a specific target, either directly or by team
+        participation.
+
+        :user: The user doing the search. Private bugs that this
+        user doesn't have access to won't be included in the
+        count.
+
+        :target: An object providing `IBugTarget` to search within.
         """
 
 

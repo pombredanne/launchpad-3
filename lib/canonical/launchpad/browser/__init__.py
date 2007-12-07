@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0401
 
 """Launchpad Browser-Interface View classes
 
@@ -6,6 +7,7 @@ This is the module to import for Launchpad View Classes. The classes are not
 located in this specific module, but are in turn imported from each of the
 files in this directory."""
 
+from canonical.launchpad.browser.announcement import *
 from canonical.launchpad.browser.archive import *
 from canonical.launchpad.browser.bazaar import *
 from canonical.launchpad.browser.binarypackagerelease import *
@@ -71,15 +73,14 @@ from canonical.launchpad.browser.peoplemerge import *
 from canonical.launchpad.browser.person import *
 from canonical.launchpad.browser.pofile import *
 from canonical.launchpad.browser.poll import *
-from canonical.launchpad.browser.pomsgset import *
 from canonical.launchpad.browser.potemplate import *
-from canonical.launchpad.browser.potemplatename import *
 from canonical.launchpad.browser.product import *
 from canonical.launchpad.browser.productrelease import *
 from canonical.launchpad.browser.productseries import *
 from canonical.launchpad.browser.project import *
 from canonical.launchpad.browser.publishedpackage import *
 from canonical.launchpad.browser.publishing import *
+from canonical.launchpad.browser.root import *
 from canonical.launchpad.browser.shipit import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.sourcepackagerelease import *
@@ -106,3 +107,4 @@ from canonical.launchpad.browser.translationimportqueue import *
 from canonical.launchpad.browser.translator import *
 from canonical.launchpad.browser.widgets import *
 from canonical.launchpad.browser.queue import *
+from canonical.launchpad.browser.translationmessage import *
