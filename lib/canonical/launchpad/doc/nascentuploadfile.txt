@@ -416,7 +416,7 @@ Sub-DSCFiles are DSCUploadedFile objects.
 
   >>> ed_mixed_dsc.files[0]
   <canonical.archiveuploader.dscfile.DSCUploadedFile ...>
-5B
+
 We can also inspect the list of files declared in this DSC:
 
   >>> for dsc_file in ed_mixed_dsc.files:
