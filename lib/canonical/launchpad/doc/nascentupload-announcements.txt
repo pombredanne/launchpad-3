@@ -448,7 +448,7 @@ distroseries.
   >>> bar_src.logger = mock_logger
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
-  x...
+  ...
 
 One email generated:
 
@@ -477,10 +477,11 @@ Two emails generated:
   2
 
   >>> [message['To'] for message in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
+  ['Celso Providelo <celso.providelo@canonical.com>',
+      'hoary-announce@lists.ubuntu.com']
 
   >>> [message['Subject'] for message in msgs]
-  ['Accepted: bar 1.0-5 (source)', 'Accepted: bar 1.0-5 (source)']
+  ['Accepted: bar 1.0-6 (source)', 'Accepted: bar 1.0-6 (source)']
 
 Reset hoary back to released and remove disk files created during processing:
 

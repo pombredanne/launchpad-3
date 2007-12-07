@@ -95,6 +95,7 @@ class ILaunchpadCelebrities(Interface):
     debbugs = Attribute("The Debian Bug Tracker")
     debian = Attribute("The Debian Distribution.")
     janitor = Attribute("The Launchpad Janitor.")
+    katie = Attribute("The Debian Auto-sync user.")
     launchpad = Attribute("The Launchpad project.")
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     launchpad_developers = Attribute("The Launchpad development team.")
