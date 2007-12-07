@@ -141,3 +141,82 @@ Finally, lets also check that translated entries show up as well.
   http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=translated
   >>> "There are no messages that match this filtering." in browser.contents
   True
+
+== Links to filtered pages ==
+
+DistroRelease per-language overview page shows different statistics:
+a count of untranslated messages, messages with new, unreviewed suggestions,
+and a count of messages which had their imported translations changed in
+Launchpad.
+
+We use a helper method to construct complete links from a base URL and
+a relative URL we extract from the page contents.
+
+    >>> from urlparse import urljoin
+    >>> def get_link_for(base, link):
+    ...     return urljoin(base, dict(link.attrs).get('href')).encode('UTF-8')
+
+Looking at the Spanish language overview page, we can see that there are
+15 untranslated, 1 unreviewed and 1 changed in LP Evolution translations
+(all numbers repeated as hidden 'sortkey' values).
+
+    >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/+lang/es')
+    >>> evolution_line = find_tag_by_id(browser.contents, 'evolution-2.2')
+    >>> print extract_text(evolution_line)
+    evolution-2.2
+    ...
+    15 15 1 1 1 1
+    ...
+
+Template title points to the general translate page:
+
+    # We are not using browser.getLink because there is no unique way to
+    # get all of the relevant links, and we don't want to pollute the
+    # page template with too many IDs useful only for testing.
+    >>> all_links = evolution_line.findAll('a')
+    >>> base_href = browser.url
+    >>> unfiltered = all_links[0]
+    >>> print extract_text(unfiltered)
+    evolution-2.2
+    >>> get_link_for(base_href, unfiltered)
+    'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
+
+The number of untranslated entries points to the same page, but filtered only
+by untranslated items. When we follow this link, filtering combo box has the
+right filter preselected.
+
+    >>> untranslated = all_links[1]
+    >>> print extract_text(untranslated)
+    15
+    >>> untranslated_link = get_link_for(base_href, untranslated)
+    >>> browser.open(untranslated_link)
+    >>> browser.url
+    'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated'
+    >>> print browser.getControl(name='show', index=1).value
+    ['untranslated']
+
+Similarly, the number of unreviewed entries points to the translation page
+with the 'with new suggestions' filter loaded.
+
+    >>> unreviewed = all_links[2]
+    >>> print extract_text(unreviewed)
+    1
+    >>> unreviewed_link = get_link_for(base_href, unreviewed)
+    >>> browser.open(unreviewed_link)
+    >>> browser.url
+    'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=new_suggestions'
+    >>> print browser.getControl(name='show', index=1).value
+    ['new_suggestions']
+
+The number of updated entries points to the translation page with the
+'changed in Launchpad' filter loaded.
+
+    >>> updated = all_links[3]
+    >>> print extract_text(updated)
+    1
+    >>> updated_link = get_link_for(base_href, updated)
+    >>> browser.open(updated_link)
+    >>> browser.url
+    'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=changed_in_launchpad'
+    >>> print browser.getControl(name='show', index=1).value
+    ['changed_in_launchpad']

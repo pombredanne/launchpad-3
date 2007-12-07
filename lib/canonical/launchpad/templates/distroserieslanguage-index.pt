@@ -54,7 +54,8 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="entry view/batchnav/currentBatch">
+        <tr tal:repeat="entry view/batchnav/currentBatch"
+            tal:attributes="id string:${entry/potemplate/name}">
           <td>
             <a tal:attributes="href string:${entry/fmt:url}/+translate"
                tal:content="entry/potemplate/name">

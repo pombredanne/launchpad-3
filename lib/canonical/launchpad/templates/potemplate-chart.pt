@@ -18,7 +18,8 @@
   </thead>
 
   <tbody>
-    <tr tal:repeat="pfview view/pofiles">
+    <tr tal:repeat="pfview view/pofiles"
+        tal:attributes="id string:${pfview/context/potemplate/name}_${pfview/context/language/code}">
       <tal:block define="pf pfview/context">
         <td>
           <a tal:attributes="href string:${pf/fmt:url}/+translate"
