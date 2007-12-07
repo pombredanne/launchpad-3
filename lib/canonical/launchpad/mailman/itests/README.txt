@@ -4,56 +4,18 @@ of either application though, so this directory is not a Python package.
 
 Here are the steps to run these integration tests:
 
-- Edit your launchpad.conf file, changing the following values in your
-  <mailman> section:
+- Build and run Launchpad with the following command:
 
-    build yes
-    var_dir /tmp/var/mailman
-    smtp localhost:9025
-    xmlrpc_runner_sleep 2
-    launch yes
+  make LPCONFIG=mailman-itests schema
+  make LPCONFIG=mailman-itests mailman_instance
+  make LPCONFIG=mailman-itests run_all
 
-  You may also need to either change xmlrpc_url or ensure that you have a
-  mapping for xmlrpc-private.launchpad.dev in your /etc/hosts file.
+- In a separate shell, run the LP/MM integration tests:
 
-  We'll make this better when the new config stuff lands.
-  
-- Add the following text to the file override-includes/+mail-configure.zcml
+  export LPCONFIG=mailman-itests
+  lib/canonical/launchpad/mailman/itests/runtests.py
 
------snip snip-----
-<configure
-    xmlns="http://namespaces.zope.org/zope"
-    xmlns:mail="http://namespaces.zope.org/mail"
-    i18n_domain="zope">
-
-    <mail:smtpMailer
-        name="itests"
-        hostname="localhost"
-        port="9025"
-        />
-    <mail:directDelivery
-        permission="zope.SendMail"
-        mailer="itests" />
-
-</configure>
------snip snip-----
-
-  Just be careful to move this file aside when you want to do normal Launchpad
-  development.  This basically tells Launchpad to email the integration test
-  smtp server instead of the normal localhost:25 server.
-
-- make schema
-- make mailman_instance
-- make run_all
-
-At this point you will have a running launchpad.dev and Mailman's qrunners
-should be running as well.  Look at your stdout to see for sure.
-
-From the top of your Launchpad tree run this:
-
-% lib/canonical/launchpad/mailman/itests/runtests.py
-
-This will run all the integration doctests in this directory.
+- Sit back and marvel at Joseph and the Amazing Passing Tests.
 
 NOTES:
 
@@ -68,3 +30,7 @@ NOTES:
 
   If you don't remove lib/mailman, 'make mailman_instance' will not do
   anything.
+
+- You may get some warnings on stderr about 'uncaptured python exception'
+  coming from smtp2mbox.  You can ignore these; they are caused by cruft and
+  bugs in Python's asyncore package and don't affect the tests.
