@@ -333,7 +333,22 @@ class DistributionSourcePackageView(LaunchpadFormView):
         return '<input type="hidden" name="field.packaging" value="%s" />' % (
             vocabulary.getTerm(packaging).token)
 
-    @action(_("Delete Link"), name='delete_packaging')
+    def handleDeletePackagingError(self, action, data, errors):
+        """Handle errors on package link deletion.
+
+        If 'packaging' is not set in the form data, we assume that means the
+        provided Packaging id was not found, which should only happen if the
+        same Packaging object was concurrently deleted. In this case, we want
+        to display a more informative error message than the default 'Invalid
+        value'.
+        """
+        if data.get('packaging') is None:
+            self.setFieldError(
+                'packaging', "This upstream association was deleted already.")
+
+
+    @action(_("Delete Link"), name='delete_packaging',
+            failure=handleDeletePackagingError)
     def delete_packaging_action(self, action, data):
         """Delete a Packaging association."""
         packaging = data['packaging']
@@ -341,7 +356,6 @@ class DistributionSourcePackageView(LaunchpadFormView):
         distroseries = packaging.distroseries
         getUtility(IPackagingUtil).deletePackaging(
             productseries, packaging.sourcepackagename, distroseries)
-        # TODO: form validation
         self.request.response.addNotification(
             _("Removed upstream association between %s %s and %s.")
             % (productseries.product.displayname, productseries.displayname,
