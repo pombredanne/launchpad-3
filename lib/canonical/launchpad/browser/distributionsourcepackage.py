@@ -20,7 +20,6 @@ from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
-from canonical.database.sqlbase import flush_database_updates, flush_database_caches
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IDistributionSourcePackageManageBugcontacts,
@@ -33,7 +32,7 @@ from canonical.launchpad.browser.questiontarget import (
 from canonical.launchpad.webapp import (
     action, StandardLaunchpadFacets, Link, ApplicationMenu,
     GetitemNavigation, canonical_url, redirection, LaunchpadFormView,
-    LaunchpadView, custom_widget)
+    custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
