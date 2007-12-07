@@ -1,3 +1,9 @@
 # Put your TODOs for this branch here, then make sure it is empty before
 # landing. There is a test to ensure it is empty in trunk.
 
+ * Add a config option for displaying imported comments.
+ * Add tests(!).
+ * Find out why we sometimes get LookupErrors when importing.
+ * Find out whether it's okay to add the bugwatch parameter to
+   Bug.linkMessage (hint: does this break its implementation of of
+   IMessageTarget?).

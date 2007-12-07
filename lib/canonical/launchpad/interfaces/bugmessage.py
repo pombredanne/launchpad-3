@@ -26,6 +26,7 @@ class IBugMessage(IHasBug):
 
     bug = Attribute("The bug.")
     message = Attribute("The message.")
+    bugwatch = Attribute("A bugwatch to which the message pertains.")
 
 
 class IBugMessageSet(Interface):

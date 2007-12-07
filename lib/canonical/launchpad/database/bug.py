@@ -528,10 +528,11 @@ class Bug(SQLBase):
 
         return bugmsg.message
 
-    def linkMessage(self, message):
+    def linkMessage(self, message, bugwatch=None):
         """See `IBug`."""
         if message not in self.messages:
-            result = BugMessage(bug=self, message=message)
+            result = BugMessage(bug=self, message=message,
+                bugwatch=bugwatch)
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, message.owner)
             self.findCvesInText(message.text_contents, message.owner)
@@ -745,11 +746,14 @@ class Bug(SQLBase):
 
     def getMessageChunks(self):
         """See `IBug`."""
-        chunks = MessageChunk.select("""
+        query = """
             Message.id = MessageChunk.message AND
             BugMessage.message = Message.id AND
+            BugMessage.bugwatch IS NULL AND
             BugMessage.bug = %s
-            """ % sqlvalues(self),
+            """ % sqlvalues(self)
+
+        chunks = MessageChunk.select(query,
             clauseTables=["BugMessage", "Message"],
             # XXX: kiko 2006-09-16 bug=60745:
             # There is an issue that presents itself

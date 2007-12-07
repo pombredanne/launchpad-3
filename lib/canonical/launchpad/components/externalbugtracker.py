@@ -762,11 +762,11 @@ class DebBugs(ExternalBugTracker):
         """See `ExternalBugTracker`."""
         log.info("Importing comments for remote bug %s (local bug %s) on %s."
             % (bug_watch.remotebug, bug_watch.bug.id, self.baseurl))
-        self.importBugComments(bug_watch.remotebug, bug_watch.bug)
+        self.importBugComments(bug_watch)
 
-    def importBugComments(self, remote_bug, bug_watch):
+    def importBugComments(self, bug_watch):
         """Import the comments from a DebBugs bug."""
-        debian_bug = self._findBug(remote_bug)
+        debian_bug = self._findBug(bug_watch.remotebug)
         self.debbugs_db.load_log(debian_bug)
 
         for comment in debian_bug.comments:
@@ -801,8 +801,7 @@ class DebBugs(ExternalBugTracker):
             message = getUtility(IMessageSet).fromEmail(comment, owner,
                 parsed_message=parsed_comment)
 
-            bug_message = bug_watch.bug.linkMessage(message)
-            bug_message.bugwatch = bug_watch
+            bug_message = bug_watch.bug.linkMessage(message, bug_watch)
             flush_database_updates()
 
 
