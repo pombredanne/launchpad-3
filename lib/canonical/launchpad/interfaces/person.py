@@ -22,6 +22,7 @@ __all__ = [
     'ITeam',
     'JoinNotAllowed',
     'PersonCreationRationale',
+    'PersonVisibility',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamMembershipStatus',
@@ -317,6 +318,16 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
 
         New members can only be added by one of the team's administrators.
         """)
+
+class PersonVisibility(DBEnumeratedType):
+    """TeamMembership Renewal Policy.
+
+    How Team Memberships can be renewed on a given team.
+    """
+
+    PUBLIC = DBItem(1, "Public")
+    PRIVATE_MEMBERSHIP = DBItem(20, "Private Membership")
+    PRIVATE = DBItem(30, "Private")
 
 
 class PersonNameField(BlacklistableContentNameField):
@@ -715,6 +726,11 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         "The Archive owned by this person, his PPA.")
 
     entitlements = Attribute("List of Entitlements for this person or team.")
+
+    visibility = Choice(
+        title=_("Teams may be Public, Private Membership, or Private."),
+        required=True, vocabulary=PersonVisibility,
+        default=PersonVisibility.PUBLIC)
 
     @invariant
     def personCannotHaveIcon(person):

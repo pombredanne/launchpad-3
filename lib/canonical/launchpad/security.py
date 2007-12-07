@@ -23,7 +23,8 @@ from canonical.launchpad.interfaces import (
     ISprint, ISprintSpecification, IStandardShipItRequest,
     IStandardShipItRequestSet, ITeam, ITeamMembership, ITranslationGroup,
     ITranslationGroupSet, ITranslationImportQueue,
-    ITranslationImportQueueEntry, ITranslator, PackageUploadStatus)
+    ITranslationImportQueueEntry, ITranslator, PackageUploadStatus,
+    PersonVisibility)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -391,7 +392,6 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
         admins = getUtility(ILaunchpadCelebrities).admin
         return self.obj.id == user.id or user.inTeam(admins)
 
-
 class EditPersonBySelf(AuthorizationBase):
     permission = 'launchpad.Special'
     usedfor = IPerson
@@ -399,6 +399,19 @@ class EditPersonBySelf(AuthorizationBase):
     def checkAuthenticated(self, user):
         """A user can edit the Person who is herself."""
         return self.obj.id == user.id
+
+class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IPerson
+
+    def checkAuthenticated(self, user):
+        """An admin or a team member can view the Team's membership."""
+        if self.obj.visibility == PersonVisibility.PUBLIC:
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(admins) or user.inTeam(self.obj):
+            return True
+        return False
 
 
 class EditPollByTeamOwnerOrTeamAdminsOrAdmins(

@@ -49,6 +49,7 @@ from canonical.launchpad.interfaces import (
     IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
     IWikiNameSet, JoinNotAllowed, LoginTokenType, PersonCreationRationale,
+    PersonVisibility,
     QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
     ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
@@ -192,6 +193,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     timezone = StringCol(dbName='timezone', default='UTC')
 
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
+    visibility = EnumCol(
+        enum=PersonVisibility,
+        default=PersonVisibility.PUBLIC)
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""

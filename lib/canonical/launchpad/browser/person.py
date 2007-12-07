@@ -98,6 +98,7 @@ from zope.interface import implements
 from zope.component import getUtility
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
@@ -1241,7 +1242,8 @@ def userIsActiveTeamMember(team):
     user = getUtility(ILaunchBag).user
     if user is None:
         return False
-    return user in team.activemembers
+    naked_team = removeSecurityProxy(team)
+    return user in naked_team.activemembers
 
 
 class PersonSpecWorkLoadView(LaunchpadView):
@@ -1843,6 +1845,14 @@ class PersonView(LaunchpadView):
         if self.user is None:
             return False
         return self.user in self.context.proposedmembers
+
+    def userCanViewMembership(self):
+        """Return true if the user can view a team's membership.
+
+        Only launchpad admins and team members can view the private
+        membership. Anyone can view a public team's membership.
+        """
+        return check_permission('launchpad.View', self.context)
 
     def userCanRequestToLeave(self):
         """Return true if the user can request to leave this team.
