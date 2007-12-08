@@ -142,6 +142,8 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         "All disabled and official mirrors of this Distribution.")
     unofficial_mirrors = Attribute(
         "All unofficial mirrors of this Distribution.")
+    pending_review_mirrors = Attribute(
+        "All mirrors of this Distribution that haven't been reviewed yet.")
     serieses = Attribute("DistroSeries'es inside this Distribution")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
