@@ -24,6 +24,7 @@ from sqlobject import ForeignKey, StringCol, BoolCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, DistroSeriesStatus, IBug,
     IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
@@ -749,9 +750,13 @@ class Bug(SQLBase):
         query = """
             Message.id = MessageChunk.message AND
             BugMessage.message = Message.id AND
-            BugMessage.bugwatch IS NULL AND
             BugMessage.bug = %s
             """ % sqlvalues(self)
+
+        # We can exclude comments imported from external bug trackers by
+        # only retrieving those comments without a linked BugWatch.
+        if not config.malone.show_imported_comments:
+            query = query + "AND BugWatch IS NULL"
 
         chunks = MessageChunk.select(query,
             clauseTables=["BugMessage", "Message"],

@@ -584,6 +584,13 @@ k            </description>
             Whether comments should be searched when searching bugs.
           </description>
         </key>
+        <key name="show_imported_comments" datatype="boolean" required="no"
+            default="false">
+          <description>
+            Whether comments that have been imported from remote bug
+            trackers should be displayed in the Launchpad UI.
+          </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="shipit" extends="database_options">
