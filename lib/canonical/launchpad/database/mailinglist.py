@@ -182,11 +182,10 @@ class MailingList(SQLBase):
 
     def isUsable(self):
         """See `IMailingList`"""
-        return (config.mailman.expose_hosted_mailing_lists and
-                self.status in [MailingListStatus.ACTIVE,
-                                MailingListStatus.MODIFIED,
-                                MailingListStatus.UPDATING,
-                                MailingListStatus.MOD_FAILED])
+        return self.status in [MailingListStatus.ACTIVE,
+                               MailingListStatus.MODIFIED,
+                               MailingListStatus.UPDATING,
+                               MailingListStatus.MOD_FAILED]
 
     def _set_welcome_message(self, text):
         if self.status == MailingListStatus.REGISTERED:

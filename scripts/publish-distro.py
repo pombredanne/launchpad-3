@@ -159,6 +159,8 @@ def main():
 
         try_and_commit("publishing", publisher.A_publish,
                        options.careful or options.careful_publishing)
+        # Flag dirty pockets for any outstanding deletions.
+        publisher.A2_markPocketsWithDeletionsDirty()
         try_and_commit("dominating", publisher.B_dominate,
                        options.careful or options.careful_domination)
 
