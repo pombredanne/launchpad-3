@@ -26,7 +26,7 @@ class BugMessage(SQLBase):
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     message = ForeignKey(dbName='message', foreignKey='Message', notNull=True)
     bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
-        notNull=False)
+        notNull=False, default=None)
 
 class BugMessageSet:
     """See canonical.launchpad.interfaces.IBugMessageSet."""

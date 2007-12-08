@@ -27,7 +27,6 @@ from canonical.config import config
 from canonical import encoding
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.database import MessageSet
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTrackerType, BugWatchErrorType, CreateBugParams,

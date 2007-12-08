@@ -73,8 +73,13 @@ Bug 563 resides in the archive. It is also fetchable:
     >>> len(bug_watches)
     4
 
-Log in and kick off the update:
+Log in and kick off the update. We use a test version of the DebBugs
+external bug tracker here that won't attempt to import comments:
 
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestNoCommentsDebBugs)
+    >>> external_debbugs = TestNoCommentsDebBugs(
+    ...     new_bugtracker(BugTrackerType.DEBBUGS))
     >>> external_debbugs.updateBugWatches(bug_watches)
     INFO:...:Updating 4 watches on http://bugs.some.where
 
