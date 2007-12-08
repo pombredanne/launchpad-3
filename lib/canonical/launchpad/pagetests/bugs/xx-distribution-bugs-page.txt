@@ -71,9 +71,9 @@ can expire when the project has enabled bug expiration.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu')
     >>> expirable_bugs_link = anon_browser.getLink(
-    ...     'Incomplete bugs can expire')
+    ...     'incomplete bugs can expire')
     >>> expirable_bugs_link.text
-    '0 Incomplete bugs can expire'
+    '0 incomplete bugs can expire'
 
 The link goes to the expirable bugs page, where the anonymous user can
 see which bugs will expire if they are not confirmed.
@@ -87,7 +87,7 @@ see any link reporting that bugs can expire.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/debian')
     >>> expirable_bugs_link = anon_browser.getLink(
-    ...     'Incomplete bugs can expire')
+    ...     'incomplete bugs can expire')
     Traceback (most recent call last):
     ...
     LinkNotFoundError

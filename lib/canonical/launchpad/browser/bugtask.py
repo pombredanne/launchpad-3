@@ -36,7 +36,6 @@ __all__ = [
 
 from datetime import datetime, timedelta
 import cgi
-import gettext
 import pytz
 import re
 import urllib
@@ -2016,54 +2015,71 @@ class BugTaskSearchListingView(LaunchpadFormView):
         """
         return IDistributionSourcePackage(self.context, None)
 
-    def getBugsFixedElsewhereInfo(self):
+    def _bugOrBugs(self, count):
+        """Return 'bug' if the count is 1, otherwise return 'bugs'.
+
+        zope.i18n does not support for ngettext-like functionality.
+        """
+        if count == 1:
+            return 'bug'
+        else:
+            return 'bugs'
+
+    @property
+    def bugs_fixed_elsewhere_info(self):
         """Return a dict with count and URL of bugs fixed elsewhere.
 
         The available keys are:
-        'count' - The number of bugs.
-        'url' - The URL of the search.
-        'label' - Either 'bug' or 'bugs' depending on the count.
+        * 'count' - The number of bugs.
+        * 'url' - The URL of the search.
+        * 'label' - Either 'bug' or 'bugs' depending on the count.
         """
         params = self._getDefaultSearchParams()
         params.resolved_upstream = True
         fixed_elsewhere = self.context.searchTasks(params)
         count = fixed_elsewhere.count()
-        label = gettext.ngettext('bug', 'bugs', count)
+        label = self._bugOrBugs(count)
         search_url = (
             "%s/+bugs?field.status_upstream=resolved_upstream" %
                 canonical_url(self.context))
         return dict(count=count, url=search_url, label=label)
 
-    def getOpenCVEBugsInfo(self):
+    @property
+    def open_cve_bugs_info(self):
         """Return a dict with count and URL of open bugs linked to CVEs.
 
         The available keys are:
-        'count' - The number of bugs.
-        'url' - The URL of the search.
-        'label' - Either 'bug' or 'bugs' depending on the count.
+        * 'count' - The number of bugs.
+        * 'url' - The URL of the search.
+        * 'label' - Either 'bug' or 'bugs' depending on the count.
         """
         params = self._getDefaultSearchParams()
         params.has_cve = True
         open_cve_bugs = self.context.searchTasks(params)
         count = open_cve_bugs.count()
-        label = gettext.ngettext('bug', 'bugs', count)
+        label = self._bugOrBugs(count)
         search_url = (
             "%s/+bugs?field.has_cve=on" % canonical_url(self.context))
         return dict(count=count, url=search_url, label=label)
 
-    def getPendingBugWatches(self):
+    @property
+    def pending_bugwatches_info(self):
         """Return a dict with count and URL of bugs that need a bugwatch.
 
+        None is returned if the context is not an upstream product.
+
         The available keys are:
-        'count' - The number of bugs.
-        'url' - The URL of the search.
-        'label' - Either 'bug' or 'bugs' depending on the count.
+        * 'count' - The number of bugs.
+        * 'url' - The URL of the search.
+        * 'label' - Either 'bug' or 'bugs' depending on the count.
         """
+        if not self.isUpstreamProduct:
+            return None
         params = self._getDefaultSearchParams()
         params.pending_bugwatch_elsewhere = True
         pending_bugwatch_elsewhere = self.context.searchTasks(params)
         count = pending_bugwatch_elsewhere.count()
-        label = gettext.ngettext('bug', 'bugs', count)
+        label = self._bugOrBugs(count)
         search_url = (
             "%s/+bugs?field.status_upstream=pending_bugwatch" %
             canonical_url(self.context))
@@ -2071,7 +2087,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
     @property
     def expirable_bugs_info(self):
-        """Return a dict with count, and url of bugs that can expire, or None.
+        """Return a dict with count and url of bugs that can expire, or None.
 
         If the bugtarget is not a supported implementation, or its pillar
         does not have enable_bug_expiration set to True, None is returned.
@@ -2089,7 +2105,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
         expirable_bugtasks = bugtaskset.findExpirableBugTasks(
             0, target=self.context)
         count = len(expirable_bugtasks)
-        label = gettext.ngettext('bug', 'bugs', count)
+        label = self._bugOrBugs(count)
         url = "%s/+expirable-bugs" % canonical_url(self.context)
         return dict(count=count, url=url, label=label)
 

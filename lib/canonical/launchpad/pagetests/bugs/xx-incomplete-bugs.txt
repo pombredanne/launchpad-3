@@ -115,13 +115,13 @@ bugs that can expire.
     'Bugs in Jokosher Audio Editor'
 
     >>> expirable_bugs_link = user_browser.getLink(
-    ...     'Incomplete bugs can expire')
+    ...     'incomplete bugs can expire')
     >>> expirable_bugs_link.text
-    '2 Incomplete bugs can expire'
+    '2 incomplete bugs can expire'
 
 The link is to the expirable bugs page. No Privileges Person can see
-the bug he set Incomplete previously. He cannot see the search form or
-the file-a-bug link because this is a specialized search.
+the bug he set to Incomplete previously. He cannot see the search form
+or the file-a-bug link because this is a specialized search.
 
     >>> expirable_bugs_link.click()
     >>> user_browser.title
@@ -157,7 +157,7 @@ pushed to the bottom of the list.
     >>> user_browser.getControl('Comment', index=1).value = "bump"
     >>> user_browser.getControl('Save Changes', index=1).click()
     >>> user_browser.getLink('Bugs').click()
-    >>> user_browser.getLink('Incomplete bugs can expire').click()
+    >>> user_browser.getLink('incomplete bugs can expire').click()
     >>> contents = find_main_content(user_browser.contents)
     >>> buglisting = contents.find('table', id='buglisting')
     >>> print extract_text(buglisting.thead)
@@ -180,9 +180,9 @@ Jokosher's bug page.
 
     >>> user_browser.getLink('Bugs').click()
     >>> expirable_bugs_link = user_browser.getLink(
-    ...     'Incomplete bug can expire')
+    ...     'incomplete bug can expire')
     >>> expirable_bugs_link.text
-    '1 Incomplete bug can expire'
+    '1 incomplete bug can expire'
 
     >>> expirable_bugs_link.click()
     >>> contents = find_main_content(user_browser.contents)

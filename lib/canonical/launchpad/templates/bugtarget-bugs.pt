@@ -87,7 +87,7 @@
             </tbody>
           </table>
           <ul class="cross-reference">
-            <li tal:define="fixed_elsewhere view/getBugsFixedElsewhereInfo">
+            <li tal:define="fixed_elsewhere view/bugs_fixed_elsewhere_info">
               <a tal:attributes="href fixed_elsewhere/url">
                 <strong tal:content="fixed_elsewhere/count">42</strong>
                 <tal:label
@@ -95,15 +95,15 @@
                 fixed elsewhere
               </a>
             </li>
-            <li tal:define="cve_bugs view/getOpenCVEBugsInfo">
+            <li tal:define="cve_bugs view/open_cve_bugs_info">
               <a tal:attributes="href cve_bugs/url">
                 <strong tal:content="cve_bugs/count"></strong>
                 open CVE
                 <tal:label tal:replace="cve_bugs/label">bugs</tal:label>
               </a>
             </li>
-            <li tal:define="pending_bugwatches view/getPendingBugWatches"
-                tal:condition="view/isUpstreamProduct">
+            <li tal:define="pending_bugwatches view/pending_bugwatches_info"
+                tal:condition="pending_bugwatches">
               <a tal:attributes="href pending_bugwatches/url">
                 <strong tal:content="pending_bugwatches/count"></strong>
                 <tal:label
@@ -115,7 +115,7 @@
               tal:condition="expirable_bugs">
               <a tal:attributes="href expirable_bugs/url">
                 <strong tal:content="expirable_bugs/count"></strong>
-                Incomplete
+                incomplete
                 <tal:label
                   tal:replace="expirable_bugs/label">bugs</tal:label>
                 can expire

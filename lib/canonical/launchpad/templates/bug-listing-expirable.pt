@@ -11,22 +11,16 @@
 >
 
   <body>
-
-    <metal:leftportlets fill-slot="portlets_one">
-    </metal:leftportlets>
-
-    <metal:rightportlets fill-slot="portlets_two">
+    <metal:portlets fill-slot="portlets">
       <div tal:replace="structure context/@@+portlet-details" />
-    </metal:rightportlets>
+    </metal:portlets>
 
-    <metal:heading fill-slot="pageheading">
+    <div metal:fill-slot="main">
       <h1>
         Bugs that can expire in
         <tal:target replace="context/displayname" />
       </h1>
-    </metal:heading>
 
-    <div metal:fill-slot="main">
       <p tal:condition="not: view/can_show_expirable_bugs">
         This project has not enabled bug expiration. No bugs can expire.
         Project administrator's may choose to enable bug expiration by
