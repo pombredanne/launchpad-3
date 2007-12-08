@@ -3,6 +3,3 @@
 
  * Add tests(!).
  * Find out why we sometimes get LookupErrors when importing.
- * Find out whether it's okay to add the bugwatch parameter to
-   Bug.linkMessage (hint: does this break its implementation of of
-   IMessageTarget?).
