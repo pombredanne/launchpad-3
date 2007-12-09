@@ -106,6 +106,8 @@ def get_external_bugtracker(bugtracker, version=None):
         return Trac(bugtracker)
     elif bugtrackertype == BugTrackerType.ROUNDUP:
         return Roundup(bugtracker)
+    elif bugtrackertype == BugTrackerType.SOURCEFORGE:
+        return SourceForge(bugtracker)
     else:
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)
@@ -1611,6 +1613,9 @@ class Roundup(ExternalBugTracker):
 class SourceForge(ExternalBugTracker):
     """An ExternalBugTracker for SourceForge bugs."""
 
+    # We only allow ourselves to update one SourceForge bug at a time to
+    # avoid getting clobbered by SourceForge's rate limiting code.
+    batch_size = 1
     export_url = 'support/tracker.php?aid=%s'
 
     def initializeRemoteBugDB(self, bug_ids):
