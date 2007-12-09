@@ -336,7 +336,7 @@ kept in sync.
     u'evolution (Debian)'
 
     >>> debian_task.bugwatch.bugtracker.name
-    u'debbugs-checkwatches-1'
+    u'debbugs-checkwatches-2'
     >>> debian_task.bugwatch.remotebug
     u'322535'
 
@@ -404,6 +404,15 @@ valid e-mail address), he still won't be subscribed to the imported bug.
     >>> [person.name for person in bug.getDirectSubscribers()]
     []
 
+
+== Importing Comments ==
+
+Along with importing debian bug reports, comments on those bug reports
+are also imported. In our TestDebBugs instance we need to enable this
+functionality. In reality it is enabled by default:
+
+    >>> external_debbugs.import_comments = True
+
 === Script for importing Debian bugs, linking them to Ubutu ===
 
 There's a script called `import-debian-bugs.py`, which accepts a list of
@@ -429,6 +438,7 @@ tracker.
     0
     >>> print err
     INFO    Updating 1 watches on http://bugs.debian.org
+    INFO    Importing comments for remote bug 237001...
     INFO    Imported debbugs #237001 as Launchpad bug #...
     INFO    Imported debbugs #322535 as Launchpad bug #...
     INFO    Committing the transaction.

@@ -439,6 +439,7 @@ class TestDebBugs(DebBugs):
     It allows you to pass in bugs to be used, instead of relying on an
     existing debbugs db.
     """
+    import_comments = False
 
     def __init__(self, bugtracker, bugs):
         DebBugs.__init__(self, bugtracker)
@@ -455,7 +456,8 @@ class TestDebBugs(DebBugs):
         This method does nothing so that bug comment imports can be
         tested separately from bug status imports.
         """
-        pass
+        if self.import_comments:
+            super(TestDebBugs, self)._updateBugWatch(bug_watch)
 
 class TestNoCommentsDebBugs(DebBugs):
     """A Test DebBugs subclass that doesn't do comment imports."""
