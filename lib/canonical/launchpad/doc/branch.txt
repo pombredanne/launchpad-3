@@ -105,7 +105,7 @@ If it doesn't exist an exception NotFoundError is raised
     >>> personset = getUtility(IPersonSet)
     >>> ddaa = personset.getByName('ddaa')
 
-    >>> from canonical.launchpad.ftests import time_counter
+    >>> from canonical.launchpad.testing import time_counter
     >>> now = time_counter()
 
 The time_counter is used to create nicely ordered 'fake' date_created

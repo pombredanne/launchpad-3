@@ -51,6 +51,7 @@ class BranchMergeProposal(SQLBase):
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person', notNull=False,
         default=None)
+    reviewed_revision_id = StringCol(default=None)
 
     date_merged = UtcDateTimeCol(default=None)
     merged_revno = IntCol(default=None)
@@ -93,13 +94,13 @@ class BranchMergeProposal(SQLBase):
         # Record the reviewer
         self.reviewer = reviewer
         self.date_reviewed = UTC_NOW
-        # Record the reviewed revision id
-        # XXX: should use revision id on the source branch...
 
-    def approveBranch(self, reviewer):
+    def approveBranch(self, reviewer, revision_id):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
             reviewer, BranchMergeProposalStatus.CODE_APPROVED)
+        # Record the reviewed revision id
+        self.reviewed_revision_id = revision_id
 
     def rejectBranch(self, reviewer):
         """See `IBranchMergeProposal`."""

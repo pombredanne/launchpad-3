@@ -8,12 +8,38 @@ This module should not have any actual tests.
 __metaclass__ = type
 __all__ = [
     'LaunchpadObjectFactory',
+    'time_counter',
     ]
+
+from datetime import datetime, timedelta
+import pytz
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet, IPersonSet, IProductSet, License,
-    PersonCreationRationale, UnknownBranchTypeError)
+    BranchType, IBranchSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
+    IRevisionSet, License, PersonCreationRationale, UnknownBranchTypeError)
+
+
+def time_counter(origin=None, delta=timedelta(seconds=5)):
+    """A generator for yielding datetime values.
+
+    Each time the generator yields a value, the origin is incremented
+    by the delta.
+
+    >>> now = time_counter(datetime(2007, 12, 1), timedelta(days=1))
+    >>> now.next()
+    datetime.datetime(2007, 12, 1, 0, 0)
+    >>> now.next()
+    datetime.datetime(2007, 12, 2, 0, 0)
+    >>> now.next()
+    datetime.datetime(2007, 12, 3, 0, 0)
+    """
+    if origin is None:
+        origin = datetime.now(pytz.UTC)
+    now = origin
+    while True:
+        yield now
+        now += delta
 
 
 # NOTE:
@@ -111,3 +137,43 @@ class LaunchpadObjectFactory:
         return getUtility(IBranchSet).new(
             branch_type, name, owner, owner, product, url,
             **optional_branch_args)
+
+    def makeRevisionsForBranch(self, branch, count=5, author=None,
+                               date_generator=None):
+        """Add `count` revisions to the revision history of `branch`.
+
+        :param branch: The branch to add the revisions to.
+        :param count: The number of revisions to add.
+        :param author: A string for the author name.
+        :param date_generator: A `time_counter` instance, defaults to starting
+                               from 1-Jan-2007 if not set.
+        """
+        if date_generator is None:
+            date_generator = time_counter(datetime(2007,1,1, tzinfo=pytz.UTC),
+                                          delta=timedelta(days=1))
+        sequence = branch.revision_count
+        parent = branch.getTipRevision()
+        if parent is None:
+            parent_ids = []
+        else:
+            parent_ids = [parent.revision_id]
+
+        revision_set = getUtility(IRevisionSet)
+        if author is None:
+            author = self.getUniqueString('author')
+        # All revisions are owned by the admin user.  Don't ask.
+        admin_user = getUtility(ILaunchpadCelebrities).admin
+        for index in xrange(count):
+            revision = revision_set.new(
+                revision_id = self.getUniqueString('revision-id'),
+                log_body=self.getUniqueString('log-body'),
+                revision_date=date_generator.next(),
+                revision_author=author,
+                owner=admin_user,
+                parent_ids=parent_ids,
+                properties={})
+            sequence += 1
+            branch.createBranchRevision(sequence, revision)
+            parent = revision
+            parent_ids = [parent.revision_id]
+        branch.updateScannedDetails(parent.revision_id, sequence)

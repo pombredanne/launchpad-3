@@ -118,6 +118,8 @@ class IBranchMergeProposal(Interface):
 
     reviewer = Attribute(
         _("The person that accepted (or rejected) the code for merging."))
+    reviewed_revision_id = Attribute(
+        _("The revision id that has been approved by the reviewer."))
 
     merged_revno = Int(
         title=_("Merged Revision Number"), required=False,
@@ -146,10 +148,14 @@ class IBranchMergeProposal(Interface):
         Requesting a review sets the date_review_requested.
         """
 
-    def approveBranch(reviewer):
+    def approveBranch(reviewer, revision_id):
         """Mark the proposal as 'Code approved'.
 
         The time that the branch was approved is recoreded in `date_reviewed`.
+
+        :param reviewer: A person authorised to approve branches for merging.
+        :param revision_id: The revision id of the tip of the branch that was
+                            reviewed by the `reviewer`.
 
         :raises: UserNotBranchReviewer if the reviewer is not in the team of
                  the branch reviewer for the target branch.

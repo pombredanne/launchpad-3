@@ -35,7 +35,7 @@ All merge proposals have to be registered by a Person.
     >>> person_set = getUtility(IPersonSet)
     >>> login('test@canonical.com')
     >>> sample_person = person_set.getByEmail('test@canonical.com')
-    >>> from canonical.launchpad.ftests import time_counter
+    >>> from canonical.launchpad.testing import time_counter
     >>> now = time_counter()
 
 In order to register a merge proposal there has to be a source branch
@@ -155,13 +155,37 @@ are not set.
 Since Sample Person is the owner of the target branch they can authorise
 their own code.
 
-    >>> proposal.approveBranch(sample_person)
+When approving code the revision id is recorded as the last approved
+revision.
+
+    >>> # Revisions can only be added by the scanner, so switch dbuser.
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.config import config
+    >>> source_branch_unique_name = source_branch.unique_name
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+    >>> factory.makeRevisionsForBranch(source_branch)
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+    >>> source_branch = branch_set.getByUniqueName(source_branch_unique_name)
+    >>> proposal = source_branch.landing_targets[0]
+    >>> source_branch.revision_count
+    5
+    >>> tip = source_branch.getTipRevision()
+
+    >>> # Reget the sample person as we shouldn't be reusing objects across
+    >>> # transaction boundaries.
+    >>> sample_person = person_set.getByEmail('test@canonical.com')
+    >>> proposal.approveBranch(sample_person, tip.revision_id)
     >>> print proposal.reviewer.displayname
     Sample Person
     >>> proposal.date_reviewed is not None
     True
     >>> print proposal.queue_status.title
     Code approved
+    >>> proposal.reviewed_revision_id == tip.revision_id
+    True
 
 Code that has been accepted can also be set to rejected.
 
@@ -192,6 +216,7 @@ If the target branch has specified a specific reviewer, then only
 a user in the reviewer team can approve or reject the branch.
 
     >>> eric_the_reviewer = factory.makePerson(name="eric-reviewer")
+    >>> target_branch = proposal.target_branch
     >>> target_branch.reviewer = eric_the_reviewer
     >>> proposal.rejectBranch(sample_person)
     Traceback (most recent call last):

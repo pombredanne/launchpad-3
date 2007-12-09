@@ -670,6 +670,12 @@ special = {
             stdout_logging=False,
             layer=LaunchpadFunctionalLayer
             ),
+    'branch-merge-proposals.txt': LayeredDocFileSuite(
+            '../doc/branch-merge-proposals.txt',
+            setUp=zopelessLaunchpadSecuritySetUp,
+            tearDown=zopelessLaunchpadSecurityTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
+            ),
     }
 
 
