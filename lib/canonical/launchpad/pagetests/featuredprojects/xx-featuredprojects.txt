@@ -4,7 +4,8 @@
 We maintain a list of featured projects, which are displayed on the home
 page and managed via a special admin-only page.
 
-   >>> MANAGELINK = "Manage featured project list"
+   >>> MANAGE_LINK = "Manage featured project list"
+
 
 == The home page listing ==
 
@@ -12,49 +13,58 @@ Featured projects are visible to everyone on the home page:
 
     >>> anon_browser.open('http://launchpad.dev/')
     >>> featured = find_tag_by_id(anon_browser.contents, 'featured-projects')
-    >>> 'Featured projects' in extract_text(featured)
-    True
+    >>> print extract_text(featured.h2)
+    Featured projects
 
-Based on some sample data, we show that Ubuntu is a featured project:
+We show the featured projects in our sample data:
 
-    >>> featured = find_tag_by_id(anon_browser.contents, 'featured-projects')
-    >>> anon_browser.getLink('Applets').url
-    'http://launchpad.dev/applets'
+    >>> for link in featured.findAll('a'):
+    ...     print extract_text(link)
+    Gnome Applets
+    Bazaar
+    Mozilla Firefox
+    Gentoo
+    GNOME
+    GNOME Terminal
+    the Mozilla Project
+    Mozilla Thunderbird
+    Ubuntu
+
 
 == Adding a featured project ==
 
-The people who do not have admin cannot see the link to administer featured
-projects:
+Anonymous users cannot see the link to administer featured projects:
 
-    >>> anon_browser.getLink(MANAGELINK)
+    >>> anon_browser.getLink(MANAGE_LINK)
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-People without privileges cannot either:
+A user without privileges cannot see the administration link, either:
 
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> nopriv_browser.open('http://launchpad.dev/')
-    >>> nopriv_browser.getLink(MANAGELINK)
+    >>> nopriv_browser.getLink(MANAGE_LINK)
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-But administrators can:
+But Foo Bar, who is an administrator, can see the management link:
 
     >>> admin_browser.open('http://launchpad.dev/')
-    >>> admin_browser.getLink(MANAGELINK).click()
+    >>> admin_browser.getLink(MANAGE_LINK).click()
     >>> admin_browser.url
     'http://launchpad.dev/+featuredprojects'
 
-People without privileges cannot visit this page:
+No Privilege persons is denied access to this page:
 
     >>> nopriv_browser.open('http://launchpad.dev/+featuredprojects')
     Traceback (most recent call last):
     ...
     Unauthorized: ...
 
-Administrators can add a project:
+Administrators can add a project. Here Foo Bar adds apache as a featured
+project:
 
     >>> admin_browser.getControl('Add project').value = 'apache'
     >>> admin_browser.getControl('Update').click()
@@ -65,9 +75,29 @@ Administrators can add a project:
     True
 
 
+Just to be certain, we will iterate the list as we did before and see
+that Apache has been added:
+
+    >>> anon_browser.open('http://launchpad.dev/')
+    >>> featured = find_tag_by_id(anon_browser.contents, 'featured-projects')
+    >>> for link in featured.findAll('a'):
+    ...     print extract_text(link)
+    Apache
+    Gnome Applets
+    Bazaar
+    Mozilla Firefox
+    Gentoo
+    GNOME
+    GNOME Terminal
+    the Mozilla Project
+    Mozilla Thunderbird
+    Ubuntu
+
+
+
 == Removing a project ==
 
-    >>> admin_browser.getLink(MANAGELINK).click()
+    >>> admin_browser.getLink(MANAGE_LINK).click()
     >>> admin_browser.getControl('Apache').click()
     >>> admin_browser.getControl('Update').click()
     >>> admin_browser.url
@@ -75,4 +105,22 @@ Administrators can add a project:
     >>> featured = find_tag_by_id(admin_browser.contents, 'featured-projects')
     >>> 'Apache' in extract_text(featured)
     False
+
+Just to be certain, we will iterate the list as we did before and see
+that Apache has been removed:
+
+    >>> anon_browser.open('http://launchpad.dev/')
+    >>> featured = find_tag_by_id(anon_browser.contents, 'featured-projects')
+    >>> for link in featured.findAll('a'):
+    ...     print extract_text(link)
+    Gnome Applets
+    Bazaar
+    Mozilla Firefox
+    Gentoo
+    GNOME
+    GNOME Terminal
+    the Mozilla Project
+    Mozilla Thunderbird
+    Ubuntu
+
 

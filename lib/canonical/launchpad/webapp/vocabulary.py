@@ -112,7 +112,7 @@ class CountableIterator:
 
 
 class BatchedCountableIterator(CountableIterator):
-    """A wrapping iterator with a hook to create descriptions for its terms."""
+    """A wrapping iterator with hook to create descriptions for its terms."""
     # XXX kiko 2007-01-18: note that this class doesn't use the item_wrapper
     # at all. I hate compatibility shims. We can't remove it from the __init__
     # because it is always supplied by NamedSQLObjectHugeVocabulary, and
@@ -159,6 +159,7 @@ class SQLObjectVocabularyBase:
     implements(IVocabulary, IVocabularyTokenized)
     _orderBy = None
     _filter = None
+    _clauseTables = None
 
     def __init__(self, context=None):
         self.context = context
@@ -322,7 +323,7 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
         # the NamedSQLObjectHugeVocabulary.
         raise NotImplementedError
 
-    def searchForTerms(self, query):
+    def searchForTerms(self, query=None):
         if not query:
             return self.emptySelectResults()
 

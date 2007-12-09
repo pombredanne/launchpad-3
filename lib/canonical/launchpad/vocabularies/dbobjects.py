@@ -1549,7 +1549,7 @@ class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
 
 class FeaturedProjectVocabulary(DistributionOrProductOrProjectVocabulary):
 
-    _filter = AND(PillarName.q.name == FeaturedProject.q.name,
+    _filter = AND(PillarName.q.id == FeaturedProject.q.pillarname,
                   PillarName.q.active == True)
     _clauseTables = ['FeaturedProject']
 

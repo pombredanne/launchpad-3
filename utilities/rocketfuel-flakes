@@ -3,3 +3,5 @@
 cd `bzr root`
 
 bzr diff -rbranch:../trunk | lsdiff| grep "\.py$" | xargs pyflakes | grep -v "__init__"
+cd -
+

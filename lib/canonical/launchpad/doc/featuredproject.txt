@@ -1,10 +1,11 @@
 
 = Featured Projects =
 
-We show a few key projects on the Launchpad home page. These are projects
-that are either topical, or high profile, or making very good use of
-Launchpad, so we want to draw attention to them. The list of projects is
-stored in the FeaturedProject table, and managed through the PillarNameSet.
+We show a few key projects on the Launchpad home page. These are
+projects that are either topical, or high profile, or making very good
+use of Launchpad, so we want to draw attention to them. The list of
+projects is stored in the FeaturedProject table, and managed through the
+PillarNameSet.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPillarNameSet, IProductSet, IProjectSet
@@ -39,7 +40,8 @@ We'll make sure our isFeatured() test is working:
     False
 
 
-We can add a project, product or distro to the list of featured projects:
+We can add a project, product or distro to the list of featured
+projects:
 
     >>> guadalinex = getUtility(IDistributionSet).getByName('guadalinex')
     >>> isFeatured(guadalinex)
@@ -63,4 +65,14 @@ We can add a project, product or distro to the list of featured projects:
     True
 
 And we can remove them, too:
+
+    >>> pillar_set.remove_featured_project(apache)
+    >>> isFeatured(apache)
+    False
+    >>> pillar_set.remove_featured_project(evolution)
+    >>> isFeatured(evolution)
+    False
+    >>> pillar_set.remove_featured_project(guadalinex)
+    >>> isFeatured(guadalinex)
+    False
 

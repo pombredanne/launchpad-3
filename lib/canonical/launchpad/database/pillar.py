@@ -208,13 +208,24 @@ class PillarNameSet:
 
     def add_featured_project(self, project):
         """See `IPillarSet`."""
-        existing = FeaturedProject.selectOneBy(name=project.name)
+        query = """
+            PillarName.name = %s
+            AND PillarName.id = FeaturedProject.pillarname
+            """ % sqlvalues(project.name)
+        existing = FeaturedProject.selectOne(
+            query, clauseTables=['PillarName'])
         if existing is None:
-            return FeaturedProject(name=project.name)
+            pillarname = PillarName.selectOneBy(name=project.name)
+            return FeaturedProject(pillarname=pillarname.id)
 
     def remove_featured_project(self, project):
         """See `IPillarSet`."""
-        existing = FeaturedProject.selectOneBy(name=project.name)
+        query = """
+            PillarName.name = %s
+            AND PillarName.id = FeaturedProject.pillarname
+            """ % sqlvalues(project.name)
+        existing = FeaturedProject.selectOne(
+            query, clauseTables=['PillarName'])
         if existing is not None:
             existing.destroySelf()
 
@@ -222,7 +233,7 @@ class PillarNameSet:
     def featured_projects(self):
         """See `IPillarSet`."""
 
-        query = "PillarName.name = FeaturedProject.name"
+        query = "PillarName.id = FeaturedProject.pillarname"
         return [pillarname.pillar for pillarname in PillarName.select(
                     query, clauseTables=['FeaturedProject'])]
 
@@ -233,10 +244,14 @@ class PillarName(SQLBase):
     _table = 'PillarName'
     _defaultOrder = 'name'
 
-    name = StringCol(dbName='name', notNull=True, unique=True, alternateID=True)
-    product = ForeignKey(foreignKey='Product', dbName='product')
-    project = ForeignKey(foreignKey='Project', dbName='project')
-    distribution = ForeignKey(foreignKey='Distribution', dbName='distribution')
+    name = StringCol(
+        dbName='name', notNull=True, unique=True, alternateID=True)
+    product = ForeignKey(
+        foreignKey='Product', dbName='product')
+    project = ForeignKey(
+        foreignKey='Project', dbName='project')
+    distribution = ForeignKey(
+        foreignKey='Distribution', dbName='distribution')
     active = BoolCol(dbName='active', notNull=True, default=True)
 
     @property

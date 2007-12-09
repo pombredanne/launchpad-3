@@ -1990,15 +1990,15 @@ ALTER TABLE faq ENABLE TRIGGER ALL;
 
 ALTER TABLE featuredproject DISABLE TRIGGER ALL;
 
-INSERT INTO featuredproject (id, name) VALUES (1, 'ubuntu');
-INSERT INTO featuredproject (id, name) VALUES (2, 'gentoo');
-INSERT INTO featuredproject (id, name) VALUES (3, 'firefox');
-INSERT INTO featuredproject (id, name) VALUES (4, 'mozilla');
-INSERT INTO featuredproject (id, name) VALUES (5, 'thunderbird');
-INSERT INTO featuredproject (id, name) VALUES (6, 'gnome');
-INSERT INTO featuredproject (id, name) VALUES (7, 'gnome-terminal');
-INSERT INTO featuredproject (id, name) VALUES (8, 'applets');
-INSERT INTO featuredproject (id, name) VALUES (9, 'bazaar');
+INSERT INTO featuredproject (id, pillarname) VALUES (1, 1); -- ubuntu
+INSERT INTO featuredproject (id, pillarname) VALUES (2, 4); -- gentoo
+INSERT INTO featuredproject (id, pillarname) VALUES (3, 11); -- firefox
+INSERT INTO featuredproject (id, pillarname) VALUES (4, 27); -- mozilla
+INSERT INTO featuredproject (id, pillarname) VALUES (5, 15); -- thunderbird
+INSERT INTO featuredproject (id, pillarname) VALUES (6, 28); -- gnome
+INSERT INTO featuredproject (id, pillarname) VALUES (7, 13); -- gnome-terminal
+INSERT INTO featuredproject (id, pillarname) VALUES (8, 16); -- applets
+INSERT INTO featuredproject (id, pillarname) VALUES (9, 21); -- bazaar
 
 ALTER TABLE featuredproject ENABLE TRIGGER ALL;
 

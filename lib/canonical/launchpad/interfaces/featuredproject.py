@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211
 
 """Featured project interfaces."""
 
@@ -14,8 +15,8 @@ from zope.interface import Attribute, Interface
 class IFeaturedProject(Interface):
     """A featured project name."""
 
-    id = Attribute("The unique ID of this featured project")
-    name = Attribute("The name of the featured project")
+    id = Attribute("The unique ID of this featured project.")
+    pillarname = Attribute("The pillarname of the featured project.")
 
     def destroySelf():
         """Remove this project from the featured project list."""

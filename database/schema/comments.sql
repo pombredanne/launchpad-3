@@ -338,6 +338,11 @@ COMMENT ON COLUMN EmailAddress.email IS 'An email address used by a Person. The 
 COMMENT ON INDEX emailaddress_person_key IS 'Ensures that a person only has one preferred email address';
 
 
+-- FeaturedProject
+
+COMMENT ON TABLE FeaturedProject IS 'A list of featured projects. This table is really just a list of pillarname IDs, if a project\'s pillar name is in this list then it is a featured project and will be listed on the Launchpad home page.';
+COMMENT ON COLUMN FeaturedProject.pillarname IS 'A reference to PillarName.id';
+
 -- KarmaCategory
 
 COMMENT ON TABLE KarmaCategory IS 'A category of karma. This allows us to

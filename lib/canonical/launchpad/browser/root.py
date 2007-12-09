@@ -8,13 +8,11 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-
-from canonical.launchpad.interfaces import IPillarNameSet
-
-from canonical.launchpad.webapp import LaunchpadView
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
+from canonical.launchpad.interfaces import IPillarNameSet
+from canonical.launchpad.webapp import LaunchpadView
 
 
 class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):

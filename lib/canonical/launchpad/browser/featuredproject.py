@@ -12,15 +12,12 @@ from zope.interface import Interface
 from zope.component import getUtility
 from zope.schema import Choice, Set
 
-from canonical.launchpad.interfaces import IPillarNameSet
-
 from canonical.launchpad import _
-
+from canonical.launchpad.interfaces import IPillarNameSet
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView, 
+    action, canonical_url, custom_widget, LaunchpadFormView,
     )
-
-from canonical.widgets import FeaturedProjectsWidget
+from canonical.widgets import LabeledMultiCheckBoxWidget
 
 
 class FeaturedProjectForm(Interface):
@@ -35,7 +32,7 @@ class FeaturedProjectForm(Interface):
     remove = Set(
         title=u'Remove projects',
         description=_(
-            'Select projects that you would like to remove from the list'),
+            'Select projects that you would like to remove from the list.'),
         required=False,
         value_type=Choice(vocabulary="FeaturedProject"))
 
@@ -44,7 +41,7 @@ class FeaturedProjectsView(LaunchpadFormView):
     """A view for adding and removing featured projects."""
 
     schema = FeaturedProjectForm
-    custom_widget('remove', FeaturedProjectsWidget)
+    custom_widget('remove', LabeledMultiCheckBoxWidget)
 
     @action(_('Update featured project list'), name='update')
     def update_action(self, action, data):

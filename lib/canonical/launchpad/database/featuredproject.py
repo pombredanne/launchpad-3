@@ -7,21 +7,24 @@ __all__ = [
     'FeaturedProject',
     ]
 
-from sqlobject import StringCol
+from sqlobject import IntCol
+
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import IFeaturedProject
-
 from canonical.database.sqlbase import SQLBase
 
 
 class FeaturedProject(SQLBase):
-    """A featured project name. This is only the name of a project, product
-    or distribution.
+    """A featured project reference.
+
+    This is a reference to the name of a project, product or distribution
+    that is currently being "featured" by being listed on the Launchpad home
+    page.
     """
     implements(IFeaturedProject)
 
-    _defaultOrder = ['name']
+    _defaultOrder = ['id']
 
-    name = StringCol(notNull=True)
+    pillarname = IntCol(notNull=True)
 
