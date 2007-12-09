@@ -31,7 +31,7 @@ COMMENT ON COLUMN Branch.last_mirrored_id IS 'The revision ID of the branch when
 COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scanned.';
 COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
 COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
-COMMENT ON COLUMN Branch.mirror_request_time IS 'The time when a user requested that we mirror this branch (NULL if not requested). This will be set automatically by pushing to a hosted branch. Once mirrored, it will be set back to NULL.';
+COMMENT ON COLUMN Branch.next_mirror_time IS 'The time when we will next mirror this branch (NULL means never). This will be set automatically by pushing to a hosted branch, which, once mirrored, will be set back to NULL.';
 COMMENT ON COLUMN Branch.private IS 'If the branch is private, then only the owner and subscribers of the branch can see it.';
 COMMENT ON COLUMN Branch.date_last_modified IS 'A branch is modified any time a user updates something using a view, a new revision for the branch is scanned, or the branch is linked to a bug, blueprint or merge proposal.';
 COMMENT ON COLUMN Branch.reviewer IS 'The reviewer (person or) team are able to transition merge proposals targetted at the branch throught the CODE_APPROVED state.';
@@ -1540,26 +1540,29 @@ COMMENT ON COLUMN DistributionMirror.rsync_base_url IS 'The Rsync URL used to ac
 COMMENT ON COLUMN DistributionMirror.displayname IS 'The displayname of the mirror.';
 COMMENT ON COLUMN DistributionMirror.description IS 'A description of the mirror.';
 COMMENT ON COLUMN DistributionMirror.owner IS 'The owner of the mirror.';
+COMMENT ON COLUMN DistributionMirror.reviewer IS 'The person who reviewed the mirror.';
 COMMENT ON COLUMN DistributionMirror.speed IS 'The speed of the mirror\'s Internet link.';
 COMMENT ON COLUMN DistributionMirror.country IS 'The country where the mirror is located.';
 COMMENT ON COLUMN DistributionMirror.content IS 'The content that is mirrored.';
 COMMENT ON COLUMN DistributionMirror.official_candidate IS 'Is the mirror a candidate for becoming an official mirror?';
-COMMENT ON COLUMN DistributionMirror.official_approved IS 'Is the mirror approved as one of the official ones?';
 COMMENT ON COLUMN DistributionMirror.enabled IS 'Is this mirror enabled?';
+COMMENT ON COLUMN DistributionMirror.status IS 'This mirror\'s status.';
 COMMENT ON COLUMN DistributionMirror.whiteboard IS 'Notes on the current status of the mirror';
+COMMENT ON COLUMN DistributionMirror.date_created IS 'The date and time the mirror was created.';
+COMMENT ON COLUMN DistributionMirror.date_reviewed IS 'The date and time the mirror was reviewed.';
 
 -- MirrorDistroArchSeries
 COMMENT ON TABLE MirrorDistroArchSeries IS 'The mirror of the packages of a given Distro Arch Release.';
 COMMENT ON COLUMN MirrorDistroArchSeries.distribution_mirror IS 'The distribution mirror.';
 COMMENT ON COLUMN MirrorDistroArchSeries.distroarchseries IS 'The distro arch series.';
-COMMENT ON COLUMN MirrorDistroArchSeries.status IS 'The status of the mirror, that is, how up-to-date it is.';
+COMMENT ON COLUMN MirrorDistroArchSeries.freshness IS 'The freshness of the mirror, that is, how up-to-date it is.';
 COMMENT ON COLUMN MirrorDistroArchSeries.pocket IS 'The PackagePublishingPocket.';
 
 -- MirrorDistroSeriesSource
 COMMENT ON TABLE MirrorDistroSeriesSource IS 'The mirror of a given Distro Release';
 COMMENT ON COLUMN MirrorDistroSeriesSource.distribution_mirror IS 'The distribution mirror.';
 COMMENT ON COLUMN MirrorDistroSeriesSource.distroseries IS 'The Distribution Release.';
-COMMENT ON COLUMN MirrorDistroSeriesSource.status IS 'The status of the mirror, that is, how up-to-date it is.';
+COMMENT ON COLUMN MirrorDistroSeriesSource.freshness IS 'The freshness of the mirror, that is, how up-to-date it is.';
 
 -- MirrorCDImageDistroSeries
 COMMENT ON TABLE MirrorCDImageDistroSeries IS 'The mirror of a given CD/DVD image.';

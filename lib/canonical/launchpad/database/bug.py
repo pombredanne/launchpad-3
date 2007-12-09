@@ -20,7 +20,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 
-from sqlobject import ForeignKey, StringCol, BoolCol
+from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
@@ -199,6 +199,7 @@ class Bug(SQLBase):
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
+    number_of_duplicates = IntCol(notNull=True, default=0)
 
     @property
     def displayname(self):

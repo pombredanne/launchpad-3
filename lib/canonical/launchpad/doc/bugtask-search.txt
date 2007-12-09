@@ -540,3 +540,51 @@ We can file a bug against it and see that show up in a search:
     >>> cdrkit_bugs.count()
     1
 
+
+== Ordering search results ==
+
+The result returned by bugtask searches can come sorted by a specified order
+
+
+=== Ordering by number of duplicates ===
+
+It is possible to sort the results by the number of duplicates each bag has.
+
+Here is the list of bugs for Ubuntu.
+
+    >>> params = BugTaskSearchParams(
+    ...     orderby='-number_of_duplicates', user=None)
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in ubuntu_tasks:
+    ...     print bugTaskInfo(bugtask)
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    26 2 Ubuntu Blackhole Trash folder
+    38 18 cdrkit (Ubuntu) Bug to be fixed in trunk
+
+None of these bugs have any duplicates.
+
+    >>> [bugtask.bug.id for bugtask in ubuntu_tasks
+    ...  if bugtask.bug.duplicateof is not None]
+    []
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+
+We mark bug #10 as a duplicate of bug #9.
+
+    >>> bug_nine = getUtility(IBugSet).get(9)
+    >>> bug_ten = getUtility(IBugSet).get(10)
+    >>> bug_ten.duplicateof = bug_nine
+    >>> flush_database_updates()
+
+Searching again reveals bug #9 at the top of the list, since it now has a duplicate.
+
+    >>> ubuntu_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in ubuntu_tasks:
+    ...     print bugTaskInfo(bugtask)
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    26 2 Ubuntu Blackhole Trash folder
+    38 18 cdrkit (Ubuntu) Bug to be fixed in trunk

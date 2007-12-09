@@ -40,6 +40,11 @@ Launchpad assigns a persistent identifier to each user:
     Local ID: http://openid.launchpad.dev/+id/sabdfl_oid
     Server URL: http://openid.launchpad.dev/+openid
     Supports:
+      http://specs.openid.net/auth/2.0/signon
+    ----
+    Local ID: http://openid.launchpad.dev/+id/sabdfl_oid
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
       http://openid.net/signon/1.1
     ----
     Local ID: http://openid.launchpad.dev/+id/sabdfl_oid
@@ -71,7 +76,17 @@ this means the admins team, which Mark Shuttleworth is a member of:
     Local ID: http://openid.launchpad.dev/+id/sabdfl_oid
     Server URL: http://openid.launchpad.dev/+openid
     Supports:
+      http://specs.openid.net/auth/2.0/signon
+    ----
+    Local ID: http://openid.launchpad.dev/+id/sabdfl_oid
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
       http://openid.net/signon/1.1
+    ----
+    Local ID: http://openid.launchpad.dev/+id/sabdfl_oid
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
+      http://openid.net/signon/1.0
     ----
 
 Discovery fails for users who are not members of the team:
@@ -80,6 +95,64 @@ Discovery fails for users who are not members of the team:
     Claimed ID: http://launchpad.dev/~name12
     ----
     No services discovered
+
+Such users still have a usable persistent identity URL though.  This
+allows the user to log in using the directed identity mode.
+
+    >>> print_endpoints('http://openid.launchpad.dev/+id/name12_oid')
+    Claimed ID: http://openid.launchpad.dev/+id/name12_oid
+    ----
+    Local ID: http://openid.launchpad.dev/+id/name12_oid
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
+      http://specs.openid.net/auth/2.0/signon
+    ...
+
+== OP Identifier Discovery ==
+
+It is also possible to run discovery on the root directory as an OP
+identifier.  This allows any Launchpad user to log in by entering this
+URL.
+
+    >>> print_endpoints('http://openid.launchpad.dev/')
+    Claimed ID: http://openid.launchpad.dev/
+    ----
+    Local ID: None
+    Server URL: http://openid.launchpad.dev/+openid
+    Supports:
+      http://specs.openid.net/auth/2.0/server
+    ----
+
+
+== No OpenID for Teams ==
+
+Launchpad teams do not have OpenID identifiers:
+
+    >>> print_endpoints('http://launchpad.dev/~simple-team')
+    Claimed ID: http://launchpad.dev/~simple-team
+    ----
+    No services discovered
+
+    >>> print_endpoints('http://openid.launchpad.dev/+id/simple-team_oid')
+    Traceback (most recent call last):
+      ...
+    DiscoveryFailure: ...
+
+
+== No OpenID for Invalid Users ==
+
+People who are not valid Launchpad users do not have OpenID
+identifiers:
+
+    >>> print_endpoints('http://launchpad.dev/~spiv')
+    Claimed ID: http://launchpad.dev/~spiv
+    ----
+    No services discovered
+
+    >>> print_endpoints('http://openid.launchpad.dev/+id/spiv_oid')
+    Traceback (most recent call last):
+      ...
+    DiscoveryFailure: ...
 
 
 == Cleanup ==
