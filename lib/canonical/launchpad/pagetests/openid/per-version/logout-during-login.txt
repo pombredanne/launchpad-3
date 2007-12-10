@@ -19,7 +19,6 @@ To test this, we will first authenticate to the Launchpad OpenID
 provider:
 
     >>> from openid.consumer.consumer import Consumer
-    >>> from openid.consumer.discover import OPENID_1_1_TYPE
     >>> from openid.fetchers import setDefaultFetcher
     >>> from openid.store.memstore import MemoryStore
     >>> from canonical.launchpad.ftests.openidhelpers import (
@@ -33,7 +32,7 @@ provider:
     >>> consumer = Consumer(session={}, store=openid_store)
 
     >>> request = consumer.beginWithoutDiscovery(make_endpoint(
-    ...     OPENID_1_1_TYPE, 'http://openid.launchpad.dev/+id/sabdfl_oid'))
+    ...     PROTOCOL_URI, 'http://openid.launchpad.dev/+id/sabdfl_oid'))
     >>> browser.open(request.redirectURL(
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
 
@@ -55,7 +54,7 @@ Now lets begin another OpenID authentication request, which will
 present a different form asking if we want to authenticate:
 
     >>> request = consumer.beginWithoutDiscovery(make_endpoint(
-    ...     OPENID_1_1_TYPE, 'http://openid.launchpad.dev/+id/sabdfl_oid'))
+    ...     PROTOCOL_URI, 'http://openid.launchpad.dev/+id/sabdfl_oid'))
     >>> browser.open(request.redirectURL(
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
     >>> print browser.title
