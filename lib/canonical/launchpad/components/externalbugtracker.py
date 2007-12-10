@@ -228,18 +228,11 @@ class ExternalBugTracker:
         bug_tracker_url = self.baseurl
         bug_watches_by_remote_bug = {}
 
-        # We limit the number of watches we're updating by the
-        # ExternalBugTracker's batch_size.
-        if self.batch_size is not None:
-            bug_watches = bug_watches[:self.batch_size]
-
         # Some tests pass a list of bug watches whilst checkwatches.py
         # will pass a SelectResults instance. We convert bug_watches to a
         # list here to ensure that were're doing sane things with it
         # later on.
         bug_watches = list(bug_watches)
-        log.info("Updating %i watches on %s" %
-            (len(bug_watches), bug_tracker_url))
 
         for bug_watch in bug_watches:
             remote_bug = bug_watch.remotebug
@@ -251,8 +244,20 @@ class ExternalBugTracker:
                 bug_watches_by_remote_bug[remote_bug] = []
             bug_watches_by_remote_bug[remote_bug].append(bug_watch)
 
-        # Do things in a fixed order, mainly to help with testing.
+        # We limit the number of watches we're updating by the
+        # ExternalBugTracker's batch_size. We do this here so that we
+        # have an ordered list of bug ids rather than a list that's in
+        # some arbitrary order.
         bug_ids_to_update = sorted(bug_watches_by_remote_bug)
+        if self.batch_size is not None:
+            bug_ids_to_update = bug_ids_to_update[:self.batch_size]
+
+            for bug_id in bug_watches_by_remote_bug.keys():
+                if bug_id not in bug_ids_to_update:
+                    del[bug_watches_by_remote_bug[bug_id]]
+
+        log.info("Updating %i watches on %s" %
+            (len(bug_ids_to_update), bug_tracker_url))
 
         try:
             self.initializeRemoteBugDB(bug_ids_to_update)
