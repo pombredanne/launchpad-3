@@ -43,6 +43,8 @@ Clicking this button deletes the corresponding packaging association.
     >>> form = user_browser.getForm("delete_warty_alsa-utils_trunk")
     >>> form.getControl("Delete Link").click()
     >>> content = user_browser.contents
+    >>> for tag in find_tags_by_class(content, 'error'):
+    ...     print extract_text(tag)
     >>> for tag in find_tags_by_class(content, 'informational'):
     ...     print extract_text(tag)
     Removed upstream association between alsa-utils trunk and Warty.
@@ -52,17 +54,11 @@ Clicking this button deletes the corresponding packaging association.
     warty   current       release   1.0.9a-4          None defined
                                     1.0.8-1ubuntu1
 
-When packaging deletion succeeds, no error message must be displayed.
-
-    >>> for tag in find_tags_by_class(content, 'error'):
-    ...     print extract_text(tag)
-
-
 The packaging association is persistently deleted. It does not reappear
 if the page is reloaded.
 
 XXX: if the incorrect behaviour does occur, user_browser.reload() does
-not expose it. -- David Allouche 2007-12-02
+not expose it, but user_browse.open() does. -- David Allouche 2007-12-02
 
     >>> user_browser.open(user_browser.url)
     >>> content = user_browser.contents

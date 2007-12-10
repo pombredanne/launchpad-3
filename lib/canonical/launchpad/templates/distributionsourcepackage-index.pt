@@ -76,18 +76,16 @@
                title="Edit upstream association">
               <img src="/@@/edit" />
             </a>
-            <tal:can-delete-package-link
-                condition="row/packaging_field">
-              <form style="display: inline"
-                    class="deleteBox"
-                    action=""
-                    method="POST"
-                    tal:attributes="action request/URL; id row/delete_packaging_form_id">
-                <tal:hidden replace="structure row/packaging_field" />
-	        <tal:action
-	            replace="structure view/renderDeletePackagingAction" />
-              </form>
-            </tal:can-delete-package-link>
+            <form tal:condition="row/packaging_field"
+                  style="display: inline"
+                  class="deleteBox"
+                  action=""
+                  method="POST"
+                  tal:attributes="action request/URL; id row/delete_packaging_form_id">
+              <tal:hidden replace="structure row/packaging_field" />
+              <tal:action
+                  replace="structure view/renderDeletePackagingAction" />
+            </form>
           </tal:distroseries_row>
         </td>
       </tr>
@@ -107,4 +105,3 @@
 </div>
 </body>
 </html>
-

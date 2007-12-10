@@ -1,8 +1,8 @@
 === Concurrent Deletion of Packaging ===
 
 When two browsers are used to concurrently delete the same packaging
-association, only one of them can succeed. The other one must not oops,
-but should display a different informational message.
+association, only one of them can succeed. The other one does not oops
+and displays a meaningful error message.
 
 The No Privilege User may open the same page in two browser tabs.
 
@@ -18,6 +18,8 @@ deletion succeeds and the usual informational message is displayed.
     >>> form = first_browser.getForm("delete_warty_alsa-utils_trunk")
     >>> form.getControl("Delete Link").click()
     >>> content = first_browser.contents
+    >>> for tag in find_tags_by_class(content, 'error'):
+    ...     print extract_text(tag)
     >>> for tag in find_tags_by_class(content, 'informational'):
     ...     print extract_text(tag)
     Removed upstream association between alsa-utils trunk and Warty.
@@ -26,7 +28,8 @@ A few minutes later, the user sees the same packaging association in the
 second tab, and clicks the "Delete Link" button again.
 
 The packaging object has been deleted already, so this action cannot
-succeed. The user intent is respected: the packaging no longer exists.
+succeed. We yield a more useful error message than the mysterious
+"Invalid value" displayed by default.
 
 XXX: We would like to display an informational message and no error
 message, but it would be too much trouble for a corner case like this.

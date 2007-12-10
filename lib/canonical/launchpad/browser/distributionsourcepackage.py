@@ -22,9 +22,8 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackage, IDistributionSourcePackageManageBugcontacts,
-    IPackagingUtil,
-    DuplicateBugContactError)
+    DuplicateBugContactError, IDistributionSourcePackage,
+    IDistributionSourcePackageManageBugcontacts, IPackagingUtil)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import (
@@ -334,6 +333,7 @@ class DistributionSourcePackageView(LaunchpadFormView):
 
     def renderDeletePackagingAction(self):
         """Render a submit input for the delete_packaging_action."""
+        assert self.canDeletePackaging(), 'User cannot delete Packaging.'
         return ('<input type="submit" class="button" value="Delete Link" '
                 'name="field.actions.delete_packaging""/>')
 
@@ -399,5 +399,3 @@ class DistributionSourcePackageView(LaunchpadFormView):
             for row in series_result:
                 result.append(row)
         return result
-
-
