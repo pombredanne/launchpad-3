@@ -8,11 +8,15 @@ __all__ = [
     'BranchMergeProposalContextMenu',
     'BranchMergeProposalEditView',
     'BranchMergeProposalMergedView',
+    'BranchMergeProposalRequestReviewView',
     ]
+
+from zope.component import getUtility
 
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.interfaces import (
-    IBranchMergeProposal, IStructuralObjectPresentation)
+    BranchMergeProposalStatus, IBranchMergeProposal, ILaunchpadCelebrities,
+    IStructuralObjectPresentation)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
@@ -47,6 +51,11 @@ class BranchMergeProposalContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def request_review(self):
         text = 'Request review'
+        # Enable the review option if the proposal is not merged nor already
+        # in the needs review state.
+        enabled = self.context.queue_status not in (
+            BranchMergeProposalStatus.MERGED,
+            BranchMergeProposalStatus.NEEDS_REVIEW)
         return Link('+request-review', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -54,14 +63,43 @@ class BranchMergeProposalContextMenu(ContextMenu):
         text = 'Review proposal'
         # Enable the review option if the proposal is reviewable, and the
         # user is a reviewer.
-        enabled = (self.context.isReviewable() and
-                   self.context.personCanReview(self.user))
+        lp_admins = getUtility(ILaunchpadCelebrities).admin
+        valid_reviewer = (self.context.personCanReview(self.user) or
+                          self.user.inTeam(lp_admins))
+        enabled = self.context.isReviewable() and valid_reviewer
         return Link('+review', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def merge(self):
         text = 'Mark as merged'
         return Link('+merged', text, icon='edit')
+
+
+class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
+    """The view used to request a review of the merge proposal."""
+
+    schema = IBranchMergeProposal
+    field_names = []
+    label = "Request review"
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context.source_branch)
+
+    @action('Request review', name='review')
+    def review_action(self, action, data):
+        """Set the status to 'Needs review'."""
+        self.context.requestReview()
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the source branch."""
+
+    def validate(self, data):
+        """Ensure that the proposal is in an appropriate state."""
+        if self.context.queue_status == BranchMergeProposalStatus.MERGED:
+            self.addError("The merge proposal is not an a valid state to "
+                          "mark as 'Needs review'.")
 
 
 class BranchMergeProposalEditView(LaunchpadEditFormView):

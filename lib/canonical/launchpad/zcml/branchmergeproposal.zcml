@@ -36,6 +36,14 @@
     template="../templates/branchmergeproposal-edit.pt" />
 
   <browser:page
+    name="+request-review"
+    for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    class="canonical.launchpad.browser.BranchMergeProposalRequestReviewView"
+    facet="branches"
+    permission="launchpad.Edit"
+    template="../templates/branchmergeproposal-request-review.pt" />
+
+  <browser:page
     name="+merged"
     for="canonical.launchpad.interfaces.IBranchMergeProposal"
     class="canonical.launchpad.browser.BranchMergeProposalMergedView"
