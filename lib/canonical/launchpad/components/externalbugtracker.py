@@ -613,6 +613,8 @@ class DebBugs(ExternalBugTracker):
     debbugs_pl = os.path.join(
         os.path.dirname(debbugs.__file__), 'debbugs-log.pl')
 
+    import_comments = config.checkwatches.import_comments
+
     def __init__(self, bugtracker, db_location=None):
         super(DebBugs, self).__init__(bugtracker)
         if db_location is None:
@@ -760,7 +762,8 @@ class DebBugs(ExternalBugTracker):
 
     def _updateBugWatch(self, bug_watch):
         """See `ExternalBugTracker`."""
-        self.importBugComments(bug_watch)
+        if self.import_comments:
+            self.importBugComments(bug_watch)
 
     def importBugComments(self, bug_watch):
         """Import the comments from a DebBugs bug."""
