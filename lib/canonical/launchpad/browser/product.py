@@ -1150,7 +1150,7 @@ class ProductBranchesView(BranchListingView):
     extra_columns = ('author',)
     no_sort_by = (BranchListingSort.PRODUCT,)
 
-    @property
+    @cachedproperty
     def development_focus_branch(self):
         return self.context.development_focus.series_branch
 

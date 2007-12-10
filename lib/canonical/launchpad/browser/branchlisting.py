@@ -116,7 +116,11 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         show_bug_badge = branch.id in self.has_bug_branch_links
         show_blueprint_badge = branch.id in self.has_branch_spec_links
         role = self.view.roleForBranch(branch)
-        is_dev_focus = branch == self.view.development_focus_branch
+        # XXX thumper 2007-14-11
+        # Due to the current implementation for sorting the branches, the
+        # normal equality check can't be used here as SQLObject doesn't like
+        # inheritance and can't use outer join columns to sort on.
+        is_dev_focus = (branch.id == self.view.development_focus_branch.id)
         return BranchListingItem(
             branch, last_commit, self._now, role, show_bug_badge,
             show_blueprint_badge, is_dev_focus)
