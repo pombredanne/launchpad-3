@@ -124,8 +124,24 @@ class ICodeImportJobWorkflow(Interface):
     def newJob(code_import):
         """Create a new `CodeImportJob` associated to a reviewed `CodeImport`.
 
+        Call this method from `CodeImport.updateFromData` when the
+        review_status of `code_import` changes to REVIEWED.
+
         :param code_import: `CodeImport` object.
         :precondition: `code_import` has REVIEWED review_status.
         :precondition: `code_import` has no associated `CodeImportJob`.
         :return: A new `CodeImportJob` object associated to `code_import`.
+        """
+
+    def webappDeletesPendingJob(code_import):
+        """Delete a pending `CodeImportJob` associated to a `CodeImport`.
+
+        Call this method from `CodeImport.updateFromData` when the
+        review_status of `code_import` changes from REVIEWED.
+
+        :param code_import: `CodeImport` object.
+        :precondition: `code_import`.review_status != REVIEWED.
+        :precondition: `code_import` is associated to a `CodeImportJob`.
+        :precondition: `code_import`.import_job.state == PENDING.
+        :postcondition: `code_import`.import_job is None.
         """

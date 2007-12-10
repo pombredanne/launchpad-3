@@ -16,8 +16,8 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database import (
     CodeImportMachine, CodeImportResult)
 from canonical.launchpad.interfaces import (
-    CodeImportResultStatus, CodeImportReviewStatus, ICodeImportJobSet,
-    ICodeImportSet, ICodeImportJobWorkflow)
+    CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus,
+    ICodeImportJobSet, ICodeImportSet, ICodeImportJobWorkflow)
 from canonical.launchpad.ftests import login
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -124,7 +124,7 @@ class TestCodeImportJobWorkflowNewJob(unittest.TestCase,
         REVIEWED = CodeImportReviewStatus.REVIEWED
         self.assertEqual(reviewed_import.review_status, REVIEWED)
         self.assertNotEqual(reviewed_import.import_job, None)
-        # Testing newJobFailure.
+        # Testing newJob failure.
         self.assertFailure(
             "Already associated to a CodeImportJob: "
             "~vcs-imports/gnome-terminal/import",
@@ -198,6 +198,68 @@ class TestCodeImportJobWorkflowNewJob(unittest.TestCase,
         # When we create the job, its date due must be set to UTC_NOW.
         job = getUtility(ICodeImportJobWorkflow).newJob(code_import)
         self.assertSqlAttributeEqualsNow(removeSecurityProxy(job), 'date_due')
+
+
+class TestCodeImportJobWorkflowWebappDeletesPendingJob(unittest.TestCase,
+        AssertFailureMixin):
+    """Unit tests for CodeImportJobWorkflow.webappDeletesPendingJob."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login_for_code_imports()
+
+    def test_wrongReviewStatus(self):
+        # CodeImportJobWorkflow.webappDeletesPendingJob fails if the
+        # CodeImport review_status is equal to REVIEWED.
+        reviewed_import = getUtility(ICodeImportSet).get(1)
+        # Checking sampledata expectations.
+        self.assertEqual(reviewed_import.branch.unique_name,
+                         '~vcs-imports/gnome-terminal/import')
+        REVIEWED = CodeImportReviewStatus.REVIEWED
+        self.assertEqual(reviewed_import.review_status, REVIEWED)
+        # Testing webappDeletesPendingJob failure.
+        self.assertFailure(
+            "Review status of ~vcs-imports/gnome-terminal/import "
+            "is REVIEWED",
+            getUtility(ICodeImportJobWorkflow).webappDeletesPendingJob,
+            reviewed_import)
+
+    def test_noJob(self):
+        # CodeImportJobWorkflow.webappDeletesPendingJob fails if the
+        # CodeImport is not associated to a CodeImportJob.
+        new_import = getUtility(ICodeImportSet).get(2)
+        # Checking sampledata expectations.
+        self.assertEqual(new_import.branch.unique_name,
+                         '~vcs-imports/evolution/import')
+        NEW = CodeImportReviewStatus.NEW
+        self.assertEqual(new_import.review_status, NEW)
+        self.assertEqual(new_import.import_job, None)
+        # Testing webappDeletesPendingJob failure.
+        self.assertFailure(
+            "Not associated to a CodeImportJob: "
+            "~vcs-imports/evolution/import",
+            getUtility(ICodeImportJobWorkflow).webappDeletesPendingJob,
+            new_import)
+
+    def test_wrongJobState(self):
+        # CodeImportJobWorkflow.webappDeletesPendingJob fails if the state of
+        # the CodeImportJob is different from PENDING.
+        reviewed_import = getUtility(ICodeImportSet).get(1)
+        # Checking sampledata expectations.
+        self.assertEqual(reviewed_import.branch.unique_name,
+                         '~vcs-imports/gnome-terminal/import')
+        INVALID = CodeImportReviewStatus.INVALID
+        removeSecurityProxy(reviewed_import).review_status = INVALID
+        self.assertNotEqual(reviewed_import.import_job, None)
+        RUNNING = CodeImportJobState.RUNNING
+        removeSecurityProxy(reviewed_import.import_job).state = RUNNING
+        # Testing webappDeletesPendingJob failure.
+        self.assertFailure(
+            "Job associated to ~vcs-imports/gnome-terminal/import is RUNNING",
+            getUtility(ICodeImportJobWorkflow).webappDeletesPendingJob,
+            reviewed_import)
+
 
 
 def test_suite():

@@ -12,6 +12,7 @@ __all__ = [
 from sqlobject import ForeignKey, IntCol, SQLObjectNotFound, StringCol
 
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -102,3 +103,17 @@ class CodeImportJobWorkflow:
             job.sync()
 
         return job
+
+    def webappDeletesPendingJob(self, code_import):
+        """See `ICodeImportJobWorkflow`."""
+        assert code_import.review_status != CodeImportReviewStatus.REVIEWED, (
+            "Review status of %s is %s" % (
+            code_import.branch.unique_name, code_import.review_status.name))
+        assert code_import.import_job is not None, (
+            "Not associated to a CodeImportJob: %s" % (
+            code_import.branch.unique_name,))
+        assert code_import.import_job.state == CodeImportJobState.PENDING, (
+            "Job associated to %s is %s" % (
+            code_import.branch.unique_name,
+            code_import.import_job.state.name))
+        removeSecurityProxy(code_import).import_job.destroySelf()

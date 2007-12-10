@@ -123,3 +123,18 @@ UTC_NOW, so it will be run as soon as possible.
 When the code import is associated to existing CodeImportResult objects,
 the date due may be UTC_NOW or a timestamp in the future. This is
 covered in detail in the test_codeimportjob.py file.
+
+
+== Deleting a pending job ==
+
+In normal use, the only case where a job object is deleted explicitly is when
+the review status of a code import is modified. This case is handled by the
+CodeImport.updateFromData method.
+
+When the review status of an import changes from REVIEWED, and the associated
+job is not running, the job is deleted.
+
+    >>> unproxied_new_import.review_status = CodeImportReviewStatus.INVALID
+    >>> workflow.webappDeletesPendingJob(new_import)
+    >>> print new_import.import_job
+    None
