@@ -140,7 +140,7 @@ class ICodeImport(Interface):
         description=_(
         "The effective time between automatic updates of this import. "
         "If the user did not specify an update interval, this is a default "
-        "value selected by Launchpad adminstrators."))
+        "value selected by Launchpad administrators."))
 
     import_job = Choice(
         title=_("Current job"),
