@@ -645,9 +645,6 @@ INSERT INTO announcement (id, date_created, date_announced, registrant, product,
 ALTER TABLE announcement ENABLE TRIGGER ALL;
 
 
-
-
-
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
