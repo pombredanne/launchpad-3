@@ -116,10 +116,10 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         show_bug_badge = branch.id in self.has_bug_branch_links
         show_blueprint_badge = branch.id in self.has_branch_spec_links
         role = self.view.roleForBranch(branch)
-        # XXX thumper 2007-14-11
-        # Due to the current implementation for sorting the branches, the
-        # normal equality check can't be used here as SQLObject doesn't like
-        # inheritance and can't use outer join columns to sort on.
+        # XXX thumper 2007-11-14
+        # We can't do equality checks here due to BranchWithSortKeys
+        # being constructed from the BranchSet queries, and the development
+        # focus branch being an actual Branch instance.
         if self.view.development_focus_branch is None:
             is_dev_focus = False
         else:
@@ -340,8 +340,7 @@ class RecentlyImportedBranchesView(NoContextBranchListingView):
 
 
 class RecentlyChangedBranchesView(NoContextBranchListingView):
-    """A batched view of non-imported branches ordered by last scanned time.
-    """
+    """Batched view of non-imported branches ordered by last scanned time."""
 
     page_title = 'Recently changed branches'
 
