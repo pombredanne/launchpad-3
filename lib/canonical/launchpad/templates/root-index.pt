@@ -11,7 +11,10 @@
   <body>
     <div metal:fill-slot="main">
 
-  <div class="informational message" tal:condition="view/isBetaUser">
+      <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+            tal:attributes="href view/feed_url" />
+
+  <div class="informational message" tal:condition="view/canRedirect">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
       <p>As a member of the Launchpad Beta Testers team, you would
       normally be redirected to the beta site when viewing Launchpad
@@ -51,8 +54,7 @@
           <p id="application-summary">
             Launchpad is a free software hosting and development
             website. We make it easy to <strong>collaborate
-            across multiple projects</strong>
-            in the free software world.
+            across multiple projects</strong>.
             <br />
             <center>
               <a href="/+about">
@@ -65,29 +67,35 @@
           </p>
         </div>
         <div class="three column middle">
-          <h2 style="margin-bottom: 0">What&#8217;s new in 1.1.11</h2>
+          <h2 style="margin-bottom: 0">What&#8217;s new here?</h2>
           <ul class="news">
+            <li>
+              <a href="https://help.launchpad.net/ProjectAnnouncements">
+                <strong>Project announcements:</strong><br />
+                Publish your news in Launchpad and via Atom / RSS feeds.</a>
+                <a href="http://feeds.launchpad.net/announcements.atom">
+                  <img src="/@@/rss" alt="RSS" />
+                </a>
+            </li>
+            <li>
+              <a
+                href="http://news.launchpad.net/general/zope-2-switches-to-launchpad">
+                <strong>CMF adopts Launchpad:</strong><br />
+                Easy collaboration between Zope and CMF.</a>
+            </li>
            <li>
              <a href="https://help.launchpad.net/PPAQuickStart">
                <strong>Personal Package Archives for everyone!</strong> Build
-               and host Ubuntu packages in your own apt repository, following our
-               successful beta</a>
+               and host Ubuntu packages in your own apt repository.
+             </a>
            </li>
-           <li>
-             <a href="http://news.launchpad.net/?p=32">
-               <strong>Major Translations speed improvements:</strong> faster
-               exports, faster imports and solid reliability</a>
-           </li>
-           <li>
-             <a href="http://news.launchpad.net/?p=31">
-               <strong>Inkscape switches to Launchpad for bug tracking</strong></a>
-           </li>
-           <li>
-             <a href="https://help.launchpad.net/Bazaar092">
-               <strong>Launchpad now running Bazaar 0.92:</strong> take
-               advantage of the latest Bazaar features in your hosted branches</a>
-           </li>
-           <li>
+            <li>
+              <a
+                href="http://news.launchpad.net/general/come-and-learn-more-about-launchpad">
+                <strong>Come learn more:</strong><br />
+                Introductory IRC tutorial sessions about Launchpad.</a>
+            </li>
+           <li tal:condition="not: view/isBetaUser">
              <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters">
                <strong>Launchpad beta:</strong> join our beta team to get
                access to pre-release features</a>
@@ -101,8 +109,14 @@
         <div class="three column right">
           <h2>Featured projects</h2>
           <ul>
+            <li class="product"><a href="/phpwms">PHP Site Management
+              System</a>
+            </li>
+            <li class="product"><a href="/exaile">Exaile Media Player</a></li>
+            <li class="product"><a href="/deluge">Deluge Torrent Client</a></li>
             <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
-            <li class="product"><a href="/bzr">Bazaar</a></li>
+            <li class="product"><a href="/bzr">Bazaar Version Control</a></li>
+            <li class="product"><a href="/democracy">Miro TV Player</a></li>
             <li class="product"><a href="/awn">Avant Window Navigator</a></li>
             <li class="product"><a href="/schooltool">SchoolTool</a></li>
             <li class="product"><a href="/tangocms">TangoCMS</a></li>

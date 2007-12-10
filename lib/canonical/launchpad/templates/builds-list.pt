@@ -111,12 +111,12 @@
   <div id="empty-result" tal:condition="view/no_results">
      No matching builds.
   </div>
-  <div tal:condition="not: view/no_results">
-    <tal:form_submitted condition="not: view/form_submitted">
-     No packages currently building.
-    </tal:form_submitted>
-  </div>
 
+  <tal:block tal:condition="not: view/no_results">
+    <div id="no-default-result" tal:condition="not: view/complete_builds">
+       No packages currently building.
+    </div>
+  </tal:block>
 
   </tal:batch>
 </div>

@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'IExternalBugtracker',
+    'IExternalBugTracker',
     'UNKNOWN_REMOTE_STATUS',
     ]
 
@@ -20,7 +20,7 @@ from zope.interface import Interface
 UNKNOWN_REMOTE_STATUS = 'UNKNOWN'
 
 
-class IExternalBugtracker(Interface):
+class IExternalBugTracker(Interface):
     """A class used to talk with an external bug tracker."""
 
     def updateBugWatches(bug_watches):
@@ -28,3 +28,4 @@ class IExternalBugtracker(Interface):
 
     def convertRemoteStatus(remote_status):
         """Converts the remote status string to a BugTaskStatus item."""
+

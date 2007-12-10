@@ -15,10 +15,19 @@ requests a mailing list for that team, which a mailing list expert approves.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
+
+XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
+program in order to apply for mailing lists.  When mailing lists go public,
+this stanza can be removed.
+
+    >>> itest_helper.beta_program_enable('itest-one')
+
+    >>> browser.reload()
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
     >>> list_one = itest_helper.review_list('itest-one')
+    >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']

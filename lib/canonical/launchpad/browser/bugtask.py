@@ -14,6 +14,7 @@ __all__ = [
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
     'BugTaskEditView',
+    'BugTaskExpirableListingView',
     'BugTaskListingView',
     'BugTaskNavigation',
     'BugTaskPortletView',
@@ -35,7 +36,6 @@ __all__ = [
 
 from datetime import datetime, timedelta
 import cgi
-import gettext
 import pytz
 import re
 import urllib
@@ -71,14 +71,14 @@ from canonical.launchpad.interfaces import (
     BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay, IBug,
     IBugAttachmentSet, IBugBranchSet, IBugNominationSet, IBugSet, IBugTask,
     IBugTaskSearch, IBugTaskSet, ICreateQuestionFromBugTaskForm, ICveSet,
-    IDistribution, IDistributionSourcePackage, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, IFrontPageBugTaskSearch,
-    ILaunchBag, INominationsReviewTableBatchNavigator, INullBugTask,
-    IPerson, IPersonBugTaskSearch, IProduct, IProductSeries,
-    IProductSeriesBugTask, IProject, IRemoveQuestionFromBugTaskForm,
-    ISourcePackage, IUpstreamBugTask, IUpstreamProductBugTaskSearch,
-    NotFoundError, RESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
-    UNRESOLVED_BUGTASK_STATUSES, valid_upstreamtask, validate_distrotask)
+    IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
+    IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
+    INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
+    IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
+    IProject, IRemoveQuestionFromBugTaskForm, ISourcePackage,
+    IUpstreamBugTask, IUpstreamProductBugTaskSearch, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
+    UnexpectedFormData, valid_upstreamtask, validate_distrotask)
 
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -232,6 +232,23 @@ def rewrite_old_bugtask_status_query_string(query_string):
         return query_string
     else:
         return urllib.urlencode(query_elements_mapped, doseq=True)
+
+
+def target_has_expirable_bugs_listing(target):
+    """Return True or False if the target has the expirable-bugs listing.
+
+    The target must be a Distribution, DistroSeries, Product, or
+    ProductSeries, and the pillar must have enabled bug expiration.
+    """
+    if IDistribution.providedBy(target) or IProduct.providedBy(target):
+        return target.enable_bug_expiration
+    elif IProductSeries.providedBy(target):
+        return target.product.enable_bug_expiration
+    elif IDistroSeries.providedBy(target):
+        return target.distribution.enable_bug_expiration
+    else:
+        # This context is not a supported bugtarget.
+        return False
 
 
 class BugTargetTraversalMixin:
@@ -716,7 +733,6 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
         remaining_time = expiration_date - datetime.now(pytz.timezone('UTC'))
         return remaining_time.days
 
-
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""
 
@@ -1066,19 +1082,41 @@ class BugTaskEditView(LaunchpadEditFormView):
 
         # Set the "changed" flag properly, just in case status and/or assignee
         # happen to be the only values that changed. We explicitly verify that
-        # we got a new status and/or assignee, because our test suite doesn't
-        # always pass all form values.
-        new_status = new_values.pop("status", False)
-        new_assignee = new_values.pop("assignee", False)
-        if ((new_status is not False) and
-            (bugtask.status != new_status)):
+        # we got a new status and/or assignee, because the form is not always
+        # guaranteed to pass all the values. For example: bugtasks linked to a
+        # bug watch don't allow editting the form, and the value is missing
+        # from the form.
+        missing = object()
+        new_status = new_values.pop("status", missing)
+        new_assignee = new_values.pop("assignee", missing)
+        if new_status is not missing and bugtask.status != new_status:
             changed = True
             bugtask.transitionToStatus(new_status, self.user)
 
-        if ((new_assignee is not False) and
-            (bugtask.assignee != new_assignee)):
+        if new_assignee is not missing and bugtask.assignee != new_assignee:
             changed = True
             bugtask.transitionToAssignee(new_assignee)
+
+            if new_assignee is not None and new_assignee != self.user:
+                is_contributor = new_assignee.isBugContributorInTarget(
+                    user=self.user, target=bugtask.pillar)
+                if not is_contributor:
+                    # If we have a new assignee who isn't a bug
+                    # contributor in this pillar, we display a warning
+                    # to the user, in case they made a mistake.
+                    self.request.response.addWarningNotification(
+                        """<a href="%s">%s</a>
+                        did not previously have any assigned bugs in
+                        <a href="%s">%s</a>.
+                        <br /><br />
+                        If this bug was assigned by mistake,
+                        you may <a href="%s/+editstatus"
+                        >change the assignment</a>.""" % (
+                        canonical_url(new_assignee),
+                        new_assignee.displayname,
+                        canonical_url(bugtask.pillar),
+                        bugtask.pillar.title,
+                        canonical_url(bugtask)))
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
             if bugtask.bugwatch is None:
@@ -1537,7 +1575,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
         # through a stale bookmark or a hand-hacked URL.
         for field_name in ("status", "importance", "milestone", "component",
                            "status_upstream"):
-            if self.getWidgetError(field_name):
+            if self.getFieldError(field_name):
                 raise UnexpectedFormData(
                     "Unexpected value for field '%s'. Perhaps your bookmarks "
                     "are out of date or you changed the URL by hand?" %
@@ -1909,7 +1947,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
         for name in ('assignee', 'bug_reporter', 'bug_contact',
                      'bug_commenter', 'subscriber'):
-            if self.getWidgetError(name):
+            if self.getFieldError(name):
                 self.setFieldError(
                     name, error_message %
                         cgi.escape(self.request.get('field.%s' % name)))
@@ -1977,58 +2015,99 @@ class BugTaskSearchListingView(LaunchpadFormView):
         """
         return IDistributionSourcePackage(self.context, None)
 
-    def getBugsFixedElsewhereInfo(self):
+    def _bugOrBugs(self, count):
+        """Return 'bug' if the count is 1, otherwise return 'bugs'.
+
+        zope.i18n does not support for ngettext-like functionality.
+        """
+        if count == 1:
+            return 'bug'
+        else:
+            return 'bugs'
+
+    @property
+    def bugs_fixed_elsewhere_info(self):
         """Return a dict with count and URL of bugs fixed elsewhere.
 
         The available keys are:
-        'count' - The number of bugs.
-        'url' - The URL of the search.
-        'label' - Either 'bug' or 'bugs' depending on the count.
+        * 'count' - The number of bugs.
+        * 'url' - The URL of the search.
+        * 'label' - Either 'bug' or 'bugs' depending on the count.
         """
         params = self._getDefaultSearchParams()
         params.resolved_upstream = True
         fixed_elsewhere = self.context.searchTasks(params)
         count = fixed_elsewhere.count()
-        label = gettext.ngettext('bug', 'bugs', count)
+        label = self._bugOrBugs(count)
         search_url = (
             "%s/+bugs?field.status_upstream=resolved_upstream" %
                 canonical_url(self.context))
         return dict(count=count, url=search_url, label=label)
 
-    def getOpenCVEBugsInfo(self):
+    @property
+    def open_cve_bugs_info(self):
         """Return a dict with count and URL of open bugs linked to CVEs.
 
         The available keys are:
-        'count' - The number of bugs.
-        'url' - The URL of the search.
-        'label' - Either 'bug' or 'bugs' depending on the count.
+        * 'count' - The number of bugs.
+        * 'url' - The URL of the search.
+        * 'label' - Either 'bug' or 'bugs' depending on the count.
         """
         params = self._getDefaultSearchParams()
         params.has_cve = True
         open_cve_bugs = self.context.searchTasks(params)
         count = open_cve_bugs.count()
-        label = gettext.ngettext('bug', 'bugs', count)
+        label = self._bugOrBugs(count)
         search_url = (
             "%s/+bugs?field.has_cve=on" % canonical_url(self.context))
         return dict(count=count, url=search_url, label=label)
 
-    def getPendingBugWatches(self):
+    @property
+    def pending_bugwatches_info(self):
         """Return a dict with count and URL of bugs that need a bugwatch.
 
+        None is returned if the context is not an upstream product.
+
         The available keys are:
-        'count' - The number of bugs.
-        'url' - The URL of the search.
-        'label' - Either 'bug' or 'bugs' depending on the count.
+        * 'count' - The number of bugs.
+        * 'url' - The URL of the search.
+        * 'label' - Either 'bug' or 'bugs' depending on the count.
         """
+        if not self.isUpstreamProduct:
+            return None
         params = self._getDefaultSearchParams()
         params.pending_bugwatch_elsewhere = True
         pending_bugwatch_elsewhere = self.context.searchTasks(params)
         count = pending_bugwatch_elsewhere.count()
-        label = gettext.ngettext('bug', 'bugs', count)
+        label = self._bugOrBugs(count)
         search_url = (
             "%s/+bugs?field.status_upstream=pending_bugwatch" %
             canonical_url(self.context))
         return dict(count=count, url=search_url, label=label)
+
+    @property
+    def expirable_bugs_info(self):
+        """Return a dict with count and url of bugs that can expire, or None.
+
+        If the bugtarget is not a supported implementation, or its pillar
+        does not have enable_bug_expiration set to True, None is returned.
+        The bugtarget may be an `IDistribution`, `IDistroSeries`, `IProduct`,
+        or `IProductSeries`.
+
+        The available keys are:
+        * 'count' - The number of bugs.
+        * 'url' - The URL of the search, or None.
+        * 'label' - Either 'bug' or 'bugs' depending on the count.
+        """
+        if not target_has_expirable_bugs_listing(self.context):
+            return None
+        bugtaskset = getUtility(IBugTaskSet)
+        expirable_bugtasks = bugtaskset.findExpirableBugTasks(
+            0, target=self.context)
+        count = len(expirable_bugtasks)
+        label = self._bugOrBugs(count)
+        url = "%s/+expirable-bugs" % canonical_url(self.context)
+        return dict(count=count, url=url, label=label)
 
 
 class BugNominationsView(BugTaskSearchListingView):
@@ -2454,3 +2533,34 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
                 owner=getUtility(ILaunchBag).user,
                 subject=self.context.bug.followup_subject(),
                 content=comment)
+
+
+class BugTaskExpirableListingView(LaunchpadView):
+    """View for listing Incomplete bugs that can expire."""
+    @property
+    def can_show_expirable_bugs(self):
+        """Return True or False if expirable bug listing can be shown."""
+        return target_has_expirable_bugs_listing(self.context)
+
+    @property
+    def inactive_expiration_age(self):
+        """Return the number of days an bug must be inactive to expire."""
+        return config.malone.days_before_expiration
+
+    @property
+    def columns_to_show(self):
+        """Show the columns that summarise expirable bugs."""
+        if (IDistribution.providedBy(self.context)
+            or IDistroSeries.providedBy(self.context)):
+            return ['id', 'summary', 'packagename', 'date_last_updated']
+        else:
+            return ['id', 'summary', 'date_last_updated']
+
+    @property
+    def search(self):
+        """Return an `ITableBatchNavigator` for the expirable bugtasks."""
+        bugtaskset = getUtility(IBugTaskSet)
+        bugtasks = bugtaskset.findExpirableBugTasks(0, target=self.context)
+        return BugListingBatchNavigator(
+            bugtasks, self.request, columns_to_show=self.columns_to_show,
+            size=config.malone.buglist_batch_size)

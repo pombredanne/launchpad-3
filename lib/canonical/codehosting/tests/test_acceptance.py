@@ -407,8 +407,8 @@ class AcceptanceTests(SSHTestCase):
             'testuser', None, 'totally-new-branch')
         # Confirm that the branch hasn't had a mirror requested yet. Not core
         # to the test, but helpful for checking internal state.
-        self.assertNotEqual(None, branch.mirror_request_time)
-        branch.mirror_request_time = None
+        self.assertNotEqual(None, branch.next_mirror_time)
+        branch.next_mirror_time = None
         LaunchpadZopelessTestSetup().txn.commit()
 
         # Add a single revision to the local branch.
@@ -422,7 +422,7 @@ class AcceptanceTests(SSHTestCase):
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getDatabaseBranch(
             'testuser', None, 'totally-new-branch')
-        self.assertNotEqual(None, branch.mirror_request_time)
+        self.assertNotEqual(None, branch.next_mirror_time)
         LaunchpadZopelessTestSetup().txn.abort()
 
     @deferToThread

@@ -4,7 +4,12 @@
 
 __metaclass__ = type
 
+import codecs
+import logging
 import os
+from StringIO import StringIO
+import shutil
+import sys
 import tempfile
 import unittest
 
@@ -13,16 +18,13 @@ from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.tests import TestCase
 
-from twisted.web.xmlrpc import Fault
-
 from canonical.authserver.interfaces import (
     NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
     LaunchpadServer, makedirs, set_up_logging)
 from canonical.config import config
-
-from canonical.testing import BaseLayer
+from canonical.testing import BaseLayer, reset_logging
 
 
 class TestLaunchpadServer(TestCase):
@@ -43,17 +45,18 @@ class TestLaunchpadServer(TestCase):
             self.mirror_transport)
 
     def test_construct(self):
-        self.assertEqual(self.backing_transport, self.server.backing_transport)
+        self.assertEqual(
+            self.backing_transport, self.server.backing_transport)
         self.assertEqual(self.user_id, self.server.user_id)
         self.assertEqual('testuser', self.server.user_name)
         self.assertEqual(self.authserver, self.server.authserver)
 
     def test_base_path_translation(self):
-        # Branches are stored on the filesystem by branch ID. This allows users
-        # to rename and re-assign branches without causing unnecessary disk
-        # churn. The ID is converted to four-byte hexadecimal and split into
-        # four path segments, to make sure that the directory tree doesn't get
-        # too wide and cause ext3 to have conniptions.
+        # Branches are stored on the filesystem by branch ID. This allows
+        # users to rename and re-assign branches without causing unnecessary
+        # disk churn. The ID is converted to four-byte hexadecimal and split
+        # into four path segments, to make sure that the directory tree
+        # doesn't get too wide and cause ext3 to have conniptions.
         #
         # However, branches are _accessed_ using their
         # ~person/product/branch-name. The server knows how to map this unique
@@ -92,7 +95,8 @@ class TestLaunchpadServer(TestCase):
             self.server.translate_virtual_path('/~testuser/firefox/baz/.bzr'))
         self.assertEqual(
             ('00/00/00/05/.bzr', READ_ONLY),
-            self.server.translate_virtual_path('/~name12/+junk/junk.dev/.bzr'))
+            self.server.translate_virtual_path(
+                '/~name12/+junk/junk.dev/.bzr'))
 
     def test_setUp(self):
         # Setting up the server registers its schema with the protocol
@@ -106,7 +110,8 @@ class TestLaunchpadServer(TestCase):
         # protocol handlers.
         self.server.setUp()
         self.server.tearDown()
-        self.assertFalse(self.server.scheme in _get_protocol_handlers().keys())
+        self.assertFalse(
+            self.server.scheme in _get_protocol_handlers().keys())
 
     def test_noMirrorsRequestedIfNoBranchesChanged(self):
         # Starting up and shutting down the server will send no mirror
@@ -162,8 +167,8 @@ class TestLaunchpadTransport(TestCase):
             transport.get_bytes('~testuser/firefox/baz/.bzr/hello.txt'))
 
     def test_put_mapped_file(self):
-        # Putting a file from a public branch URL stores the file in the mapped
-        # URL on the base transport.
+        # Putting a file from a public branch URL stores the file in the
+        # mapped URL on the base transport.
         transport = get_transport(self.server.get_url())
         transport.put_bytes(
             '~testuser/firefox/baz/.bzr/goodbye.txt', "Goodbye")
@@ -173,8 +178,8 @@ class TestLaunchpadTransport(TestCase):
 
     def test_cloning_updates_base(self):
         # A transport can be constructed using a path relative to another
-        # transport by using 'clone'. When this happens, it's necessary for the
-        # newly constructed transport to preserve the non-relative path
+        # transport by using 'clone'. When this happens, it's necessary for
+        # the newly constructed transport to preserve the non-relative path
         # information from the transport being cloned. It's necessary because
         # the transport needs to have the '~user/product/branch-name' in order
         # to translate paths.
@@ -219,8 +224,8 @@ class TestLaunchpadTransport(TestCase):
 
     def test_complete_non_existent_path_not_found(self):
         # Bazaar looks for files inside a branch directory before it looks for
-        # the branch itself. If the branch doesn't exist, any files it asks for
-        # are not found. i.e. we raise NoSuchFile
+        # the branch itself. If the branch doesn't exist, any files it asks
+        # for are not found. i.e. we raise NoSuchFile
         transport = get_transport(self.server.get_url())
         self.assertRaises(
             errors.NoSuchFile,
@@ -251,12 +256,13 @@ class TestLaunchpadTransport(TestCase):
         files = list(
             transport.clone('~testuser/firefox/baz').iter_files_recursive())
         backing_transport = self.backing_transport.clone('00/00/00/01')
-        self.assertEqual(list(backing_transport.iter_files_recursive()), files)
+        self.assertEqual(
+            list(backing_transport.iter_files_recursive()), files)
 
     def test_make_two_directories(self):
         # Bazaar doesn't have a makedirs() facility for transports, so we need
-        # to make sure that we can make a directory on the backing transport if
-        # its parents exist and if they don't exist.
+        # to make sure that we can make a directory on the backing transport
+        # if its parents exist and if they don't exist.
         transport = get_transport(self.server.get_url())
         transport.mkdir('~testuser/thunderbird/banana')
         transport.mkdir('~testuser/thunderbird/orange')
@@ -401,21 +407,105 @@ class TestLoggingSetup(TestCase):
 
     def setUp(self):
         TestCase.setUp(self)
+
+        # Configure the debug logfile
         self._real_debug_logfile = config.codehosting.debug_logfile
+        file_handle, filename = tempfile.mkstemp()
+        config.codehosting.debug_logfile = filename
+
+        # Trap stderr.
+        self._real_stderr = sys.stderr
+        sys.stderr = codecs.getwriter('utf8')(StringIO())
+
+        # We want to use Bazaar's default logging -- not its test logging --
+        # so here we disable the testing logging system (which restores
+        # default logging).
+        self._finishLogFile()
 
     def tearDown(self):
+        sys.stderr = self._real_stderr
         config.codehosting.debug_logfile = self._real_debug_logfile
         TestCase.tearDown(self)
+        # We don't use BaseLayer because we want to keep the amount of
+        # pre-configured logging systems to an absolute minimum, in order to
+        # make it easier to test this particular logging system.
+        reset_logging()
 
     def test_loggingSetUpAssertionFailsIfParentDirectoryIsNotADirectory(self):
         # set_up_logging fails with an AssertionError if it cannot create the
         # directory that the log file will go in.
         file_handle, filename = tempfile.mkstemp()
-        config.codehosting.debug_logfile = os.path.join(filename, 'debug.log')
-        try:
-            self.assertRaises(AssertionError, set_up_logging)
-        finally:
+        def remove_file():
             os.unlink(filename)
+        self.addCleanup(remove_file)
+
+        config.codehosting.debug_logfile = os.path.join(filename, 'debug.log')
+        self.assertRaises(AssertionError, set_up_logging)
+
+    def test_makesLogDirectory(self):
+        # If the specified logfile is in a directory that doesn't exist, then
+        # set_up_logging makes that directory.
+        directory = tempfile.mkdtemp()
+        def remove_directory():
+            shutil.rmtree(directory)
+        self.addCleanup(remove_directory)
+
+        config.codehosting.debug_logfile = os.path.join(
+            directory, 'subdir', 'debug.log')
+        set_up_logging()
+        self.failUnless(os.path.isdir(os.path.join(directory, 'subdir')))
+
+    def test_returnsCodehostingLogger(self):
+        # set_up_logging returns the 'codehosting' logger.
+        self.assertIs(set_up_logging(), logging.getLogger('codehosting'))
+
+    def test_codehostingLogGoesToDebugLogfile(self):
+        # Once set_up_logging is called, messages logged to the codehosting
+        # logger are stored in config.codehosting.debug_logfile.
+
+        set_up_logging()
+
+        # Make sure that a logged message goes to the debug logfile
+        logging.getLogger('codehosting').debug('Hello hello')
+        self.failUnless(
+            open(config.codehosting.debug_logfile).read().endswith(
+                'Hello hello\n'))
+
+    def test_codehostingLogDoesntGoToStderr(self):
+        # Once set_up_logging is called, any messages logged to the
+        # codehosting logger should *not* be logged to stderr. If they are,
+        # they will appear on the user's terminal.
+
+        set_up_logging()
+
+        # Make sure that a logged message does not go to stderr.
+        logging.getLogger('codehosting').info('Hello hello')
+        self.assertEqual(sys.stderr.getvalue(), '')
+
+    def test_codehostingLogDoesntGoToStderrEvenWhenNoLogfile(self):
+        # Once set_up_logging is called, any messages logged to the
+        # codehosting logger should *not* be logged to stderr, even if there's
+        # no debug_logfile set.
+
+        config.codehosting.debug_logfile = None
+        set_up_logging()
+
+        # Make sure that a logged message does not go to stderr.
+        logging.getLogger('codehosting').info('Hello hello')
+        self.assertEqual(sys.stderr.getvalue(), '')
+
+    def test_bzrLogGoesToStderr(self):
+        # Once set_up_logging is called, any info messages logged to the bzr
+        # logger should be logged to stderr so they will appear on the user's
+        # terminal.
+
+        # This test is somewhat artificial. Really, we want to test that the
+        # bzr log handling is untouched by set_up_logging.
+        set_up_logging()
+
+        # Make sure that a logged message does not go to stderr.
+        logging.getLogger('bzr').info('Hello hello')
+        self.assertEqual(sys.stderr.getvalue(), 'Hello hello\n')
 
 
 def test_suite():

@@ -80,25 +80,25 @@ class BugWatchUpdater(object):
                 self.txn.abort()
         self._logout()
 
+    def _getExternalBugTracker(self, bug_tracker):
+        """Return an `ExternalBugTracker` instance for `bug_tracker`."""
+        return externalbugtracker.get_external_bugtracker(bug_tracker)
+
     def updateBugTracker(self, bug_tracker):
         """Updates the given bug trackers's bug watches."""
         # We want 1 day, but we'll use 23 hours because we can't count
         # on the cron job hitting exactly the same time every day
-        bug_watches_to_update = bug_tracker.getBugWatchesNeedingUpdate(23)
+        bug_watches_to_update = (
+            bug_tracker.getBugWatchesNeedingUpdate(23))
 
         try:
-            remotesystem = externalbugtracker.get_external_bugtracker(
-                bug_tracker)
+            remotesystem = self._getExternalBugTracker(bug_tracker)
         except externalbugtracker.UnknownBugTrackerTypeError, error:
             self.log.info(
                 "ExternalBugtracker for BugTrackerType '%s' is not "
                 "known." % (error.bugtrackertypename))
         else:
-            number_of_watches = bug_watches_to_update.count()
-            if number_of_watches > 0:
-                self.log.info(
-                    "Updating %i watches on %s" % (
-                        number_of_watches, bug_tracker.baseurl))
+            if bug_watches_to_update.count() > 0:
                 try:
                     remotesystem.updateBugWatches(bug_watches_to_update)
                 except externalbugtracker.BugWatchUpdateError, error:
