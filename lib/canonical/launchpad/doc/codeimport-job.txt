@@ -83,10 +83,11 @@ value.
     >>> def print_date_due(job):
     ...     found_job = CodeImportJob.selectOne(
     ...         'id=%s AND date_due=%s' % sqlvalues(job.id, UTC_NOW))
-    ...     if found_job == job:
-    ...         print 'UTC_NOW'
-    ...     else:
+    ...     if found_job is None:
     ...         print job.date_due
+    ...     else:
+    ...         print 'UTC_NOW'
+
 
 
 == Creating a new job ==
