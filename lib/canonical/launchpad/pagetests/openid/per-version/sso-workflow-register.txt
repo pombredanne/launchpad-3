@@ -7,7 +7,6 @@ First we will set up the helper view that lets us test the final
 portion of the authentication process:
 
     >>> from openid.consumer.consumer import Consumer
-    >>> from openid.consumer.discover import OPENID_1_1_TYPE
     >>> from openid.fetchers import setDefaultFetcher
     >>> from openid.store.memstore import MemoryStore
     >>> from canonical.launchpad.ftests.openidhelpers import (
@@ -24,7 +23,7 @@ checkid_setup request, sending the user to Launchpad:
     >>> consumer = Consumer(session={}, store=openid_store)
 
     >>> request = consumer.beginWithoutDiscovery(
-    ...     make_identifier_select_endpoint(OPENID_1_1_TYPE))
+    ...     make_identifier_select_endpoint(PROTOCOL_URI))
     >>> browser.open(request.redirectURL(
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
 

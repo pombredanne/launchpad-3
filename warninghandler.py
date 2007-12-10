@@ -71,6 +71,9 @@ from zope.tal.talinterpreter import TALInterpreter
 
 from zope.app.pagetemplate.simpleviewclass import simple
 
+# openid.sreg has been moved to openid.extensions.sreg
+import openid.sreg
+
 def find_important_info():
     stack = inspect.stack()
     try:

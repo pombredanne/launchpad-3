@@ -3,7 +3,10 @@
 """Classes related to OpenID discovery."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'OpenIDPersistentIdentity',
+    'XRDSContentNegotiationMixin',
+    ]
 
 from openid.yadis.accept import getAcceptable
 from openid.yadis.constants import YADIS_CONTENT_TYPE, YADIS_HEADER_NAME
@@ -43,7 +46,7 @@ class OpenIdApplicationNavigation(Navigation):
     def traverse_id(self, name):
         """Traverse to persistent OpenID identity URLs."""
         person = getUtility(IPersonSet).getByOpenIdIdentifier(name)
-        if person is not None and person.is_openid_enabled:
+        if person is not None:
             return OpenIDPersistentIdentity(person)
         else:
             return None
@@ -80,6 +83,8 @@ class OpenIDPersistentIdentity:
 class XRDSContentNegotiationMixin:
     """A mixin that does content negotiation to support XRDS discovery."""
 
+    enable_xrds_discovery = True
+
     def xrds(self):
         """Render the XRDS document for this content object."""
         self.request.response.setHeader('Content-Type', YADIS_CONTENT_TYPE)
@@ -106,27 +111,28 @@ class XRDSContentNegotiationMixin:
             self.request.response.redirect(expected_url)
             return ''
 
-        # Tell the user agent that we do different things depending on
-        # the value of the "Accept" header.
-        self.request.response.setHeader('Vary', 'Accept')
+        if self.enable_xrds_discovery:
+            # Tell the user agent that we do different things depending on
+            # the value of the "Accept" header.
+            self.request.response.setHeader('Vary', 'Accept')
 
-        accept_content = self.request.get('HTTP_ACCEPT', '')
-        acceptable = getAcceptable(accept_content,
-                                   ['text/html', YADIS_CONTENT_TYPE])
-        # Show the XRDS if it is preferred to text/html
-        for mtype in acceptable:
-            if mtype == 'text/html':
-                break
-            elif mtype == YADIS_CONTENT_TYPE:
-                return self.xrds()
-            else:
-                raise AssertionError(
-                    'Unexpected acceptable content type: %s' % mtype)
+            accept_content = self.request.get('HTTP_ACCEPT', '')
+            acceptable = getAcceptable(accept_content,
+                                       ['text/html', YADIS_CONTENT_TYPE])
+            # Return the XRDS document if it is preferred to text/html.
+            for mtype in acceptable:
+                if mtype == 'text/html':
+                    break
+                elif mtype == YADIS_CONTENT_TYPE:
+                    return self.xrds()
+                else:
+                    raise AssertionError(
+                        'Unexpected acceptable content type: %s' % mtype)
 
-        # Add a header pointing to the location of the XRDS document
-        # and chain to the default render() method.
-        self.request.response.setHeader(
-            YADIS_HEADER_NAME, '%s/+xrds' % canonical_url(self.context))
+            # Add a header pointing to the location of the XRDS document
+            # and chain to the default render() method.
+            self.request.response.setHeader(
+                YADIS_HEADER_NAME, '%s/+xrds' % canonical_url(self.context))
         return super(XRDSContentNegotiationMixin, self).render()
 
     @cachedproperty
@@ -138,8 +144,7 @@ class XRDSContentNegotiationMixin:
 class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
     """Render the OpenID identity page."""
 
-    xrds_template = ViewPageTemplateFile(
-        "../templates/openidpersistentidentity-xrds.pt")
+    xrds_template = ViewPageTemplateFile("../templates/person-xrds.pt")
 
     @cachedproperty
     def person_url(self):
@@ -150,3 +155,10 @@ class PersistentIdentityView(XRDSContentNegotiationMixin, LaunchpadView):
     def openid_identity_url(self):
         """The person's persistent OpenID identity URL."""
         return canonical_url(self.context)
+
+
+class OpenIdApplicationIndexView(XRDSContentNegotiationMixin, LaunchpadView):
+    """Render the OpenID index page."""
+
+    xrds_template = ViewPageTemplateFile(
+        "../templates/openidapplication-xrds.pt")
