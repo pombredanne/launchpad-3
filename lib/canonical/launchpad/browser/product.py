@@ -557,12 +557,12 @@ class SortSeriesMixin:
         return series_list
 
 
-class ProductView(HasAnnouncementsView, LaunchpadView, SortSeriesMixin):
+class ProductView(HasAnnouncementsView, SortSeriesMixin):
 
     __used_for__ = IProduct
 
     def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
+        HasAnnouncementsView.__init__(self, context, request)
         self.form = request.form_ng
 
     def initialize(self):

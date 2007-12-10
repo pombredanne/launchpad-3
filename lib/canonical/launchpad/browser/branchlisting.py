@@ -340,7 +340,8 @@ class RecentlyImportedBranchesView(NoContextBranchListingView):
 
 
 class RecentlyChangedBranchesView(NoContextBranchListingView):
-    """A batched view of non-imported branches ordered by last scanned time."""
+    """A batched view of non-imported branches ordered by last scanned time.
+    """
 
     page_title = 'Recently changed branches'
 
