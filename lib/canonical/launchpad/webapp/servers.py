@@ -22,12 +22,14 @@ from zope.publisher.browser import (
 from zope.publisher.interfaces import NotFound
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
 from zope.security.proxy import isinstance as zope_isinstance
+from zope.security.proxy import removeSecurityProxy
 from zope.server.http.commonaccesslogger import CommonAccessLogger
 from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
+from canonical.lazr.interfaces import IFeed
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication,
@@ -43,7 +45,8 @@ from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
-from canonical.launchpad.webapp.publisher import get_current_browser_request
+from canonical.launchpad.webapp.publisher import (
+    get_current_browser_request, RedirectionView)
 from canonical.launchpad.webapp.opstats import OpStats
 
 
@@ -796,6 +799,17 @@ class FeedsPublication(LaunchpadBrowserPublication):
     """The publication used for Launchpad feed requests."""
 
     root_object_interface = IFeedsApplication
+    def traverseName(self, request, ob, name):
+        result = super(FeedsPublication, self).traverseName(request, ob, name)
+        if len(request.stepstogo) == 0:
+            naked_result = removeSecurityProxy(result)
+            if (IFeed.providedBy(result)
+                or isinstance(naked_result, RedirectionView)):
+                return result
+            else:
+                return None
+        else:
+            return result
 
 
 class FeedsBrowserRequest(LaunchpadBrowserRequest):

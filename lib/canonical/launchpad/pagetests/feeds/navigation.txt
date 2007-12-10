@@ -3,16 +3,16 @@
 Feeds are served over HTTP, and are heavily cached. Pages which are not
 registered on the Feeds layer should not be served from the feeds.lp.n
 subdomain. 
-XXX: statik bug=150941: When this bug is fixed (in 1.1.11) this test
-should be changed to show that trying to view a page which is not
-registered on the Feeds layer returns a 404.
 
 
 == Index of a product ==
 
+Trying to view a page which is not registered on the Feeds layer 
+returns a 404.
+
     >>> browser.open('http://feeds.launchpad.dev/jokosher')
-    >>> browser.url
-    'http://feeds.launchpad.dev/jokosher'
+    Traceback...
+    NotFound:...
 
 
 == Redirection ==
@@ -22,10 +22,14 @@ a predictable pattern. If someone enters a feed URL and it has
 uppercase letters in it, we redirect to the canonical form of the URL
 before serving the page.
 
-   >>> browser.open('http://feeds.launchpad.dev/jOkOshEr')
+   >>> browser.open('http://feeds.launchpad.dev/jOkOshEr/latest-bugs.html')
    >>> browser.url
-   'http://feeds.launchpad.dev/jokosher'
+   'http://feeds.launchpad.dev/jokosher/latest-bugs.html'
 
+The +index view should redirect to help.launchpad.net:
+
+   >>> browser.open('http://feeds.launchpad.dev/')
+   >>> browser.url
 
 == Query String Normalization ==
 
