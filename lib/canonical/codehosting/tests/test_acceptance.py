@@ -90,8 +90,8 @@ class SSHTestCase(ServerTestCase, TestCaseWithTransport):
     def branch(self, remote_url, local_directory):
         """Branch from the given URL to a local directory.
 
-        This method is used to test then end-to-end behaviour of pushing
-        Bazaar branches to the SSH server.
+        This method is used to test the end-to-end behaviour of pushing Bazaar
+        branches to the SSH server.
 
         Do NOT run this method in the main thread! It does a blocking read
         from the SSH server, which is running in the Twisted reactor in the
@@ -108,12 +108,12 @@ class SSHTestCase(ServerTestCase, TestCaseWithTransport):
     def push(self, local_directory, remote_url):
         """Push the local branch to the given URL.
 
-        This method is used to test then end-to-end behaviour of pushing Bazaar
+        This method is used to test the end-to-end behaviour of pushing Bazaar
         branches to the SFTP server.
 
-        Do NOT run this method in the main thread! It does a blocking read from
-        the SFTP server, which is running in the Twisted reactor in the main
-        thread.
+        Do NOT run this method in the main thread! It does a blocking read
+        from the SFTP server, which is running in the Twisted reactor in the
+        main thread.
         """
         self.assertNotInMainThread('push')
         output = StringIO()
@@ -127,9 +127,9 @@ class SSHTestCase(ServerTestCase, TestCaseWithTransport):
     def getLastRevision(self, remote_url):
         """Get the last revision at the given URL.
 
-        Do NOT run this method in the main thread! It does a blocking read from
-        the SFTP server, which is running in the Twisted reactor in the main
-        thread.
+        Do NOT run this method in the main thread! It does a blocking read
+        from the SFTP server, which is running in the Twisted reactor in the
+        main thread.
         """
         self.assertNotInMainThread('getLastRevision')
         return self.server.runAndWaitForDisconnect(
@@ -207,11 +207,7 @@ class SmokeTest(SSHTestCase):
         self.assertBranchesMatch(self.first_tree, remote_url)
 
         # Commit to it.
-        file = open(os.path.join(self.first_tree, 'foo'), 'w')
-        file.write('Content!\n')
-        file.close()
-        tree.add('foo')
-        tree.commit('new revision')
+        tree.commit('new revision', allow_pointless=True)
 
         # Push it up again.
         self.push(self.first_tree, remote_url)
@@ -261,12 +257,12 @@ class AcceptanceTests(SSHTestCase):
                            branch_type=BranchType.HOSTED, private=False):
         """Create a new branch in the database."""
         owner = database.Person.selectOneBy(name=owner_name)
-        if product_name is '+junk':
+        if product_name == '+junk':
             product = None
         else:
             product = database.Product.selectOneBy(name=product_name)
         if branch_type == BranchType.MIRRORED:
-            url = 'http://google.com'
+            url = 'http://example.com'
         else:
             url = None
         return database.Branch(
