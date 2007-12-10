@@ -89,7 +89,6 @@ value.
     ...         print 'UTC_NOW'
 
 
-
 == Creating a new job ==
 
 CodeImportJob objects are created using the CodeImportJobWorkflow.newJob
@@ -114,7 +113,7 @@ Jobs are always created in PENDING state.
 
     >>> print new_job.state.name
     PENDING
-    
+
 If the associated code import has never been run, its date due is set to
 UTC_NOW, so it will be run as soon as possible.
 
