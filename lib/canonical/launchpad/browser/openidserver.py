@@ -22,7 +22,7 @@ from zope.security.proxy import isinstance as zisinstance
 from openid.message import registerNamespaceAlias
 from openid.server.server import CheckIDRequest, ENCODE_URL, Server
 from openid.server.trustroot import TrustRoot
-from openid.sreg import (
+from openid.extensions.sreg import (
     SRegRequest, SRegResponse, data_fields as sreg_data_fields)
 from openid import oidutil
 
