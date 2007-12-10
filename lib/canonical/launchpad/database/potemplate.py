@@ -33,11 +33,11 @@ from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
-    ITranslationExporter, ITranslationFileData, ITranslationImporter,
-    IVPOTExportSet, LanguageNotFound, NotFoundError, RosettaImportStatus,
-    TranslationFileFormat, TranslationFormatInvalidInputError,
-    TranslationFormatSyntaxError)
+    ILaunchpadCelebrities, IPOFileSet, IPOTemplate, IPOTemplateSet,
+    IPOTemplateSubset, ITranslationExporter, ITranslationFileData,
+    ITranslationImporter, IVPOTExportSet, LanguageNotFound, NotFoundError,
+    RosettaImportStatus, TranslationFileFormat,
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat import TranslationMessageData
 
 
@@ -487,6 +487,39 @@ class POTemplate(SQLBase, RosettaStats):
         self._cached_language_code = language_code
         return self._cached_language
 
+    def isPOFilePathAvailable(self, path):
+        """Can we assign given path to a new `POFile` without clashes?
+
+        Tests for uniqueness within the context of all templates for either
+        self's product release series, or the combination of self's distro
+        release series and source package (whichever applies).
+        """
+        pofileset = getUtility(IPOFileSet)
+        existing_pofiles = pofileset.getPOFileByPathAndOrigin(
+            path, self.productseries, self.distroseries,
+            self.sourcepackagename)
+        # Convert query to Boolean to turn it into an existence check.
+        return not bool(existing_pofiles)
+
+    def _composePOFilePath(self, language_code, variant=None):
+        """Make up a good name for a new `POFile` for given language.
+
+        The name should be unique in this `ProductSeries` or this combination
+        of `DistroSeries` and source package.  It is not guaranteed that the
+        returned name will be unique, however, to avoid hiding obvious
+        naming mistakes.
+        """
+        if variant is None:
+            path_variant = ''
+        else:
+            path_variant = '@%s' % variant
+
+        potemplate_dir = os.path.dirname(self.path)
+        path = '%s/%s-%s%s.po' % (potemplate_dir,
+            self.translation_domain, language_code, path_variant)
+        return path
+
+
     def newPOFile(self, language_code, variant=None, requester=None):
         """See `IPOTemplate`."""
         # Make sure we don't already have a PO file for this language.
@@ -523,16 +556,7 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             owner = getUtility(ILaunchpadCelebrities).rosetta_experts
 
-        if variant is None:
-            path_variant = ''
-        else:
-            path_variant = '@%s' % variant
-
-        # By default, we set as the path directory the same as the POTemplate
-        # one and set as the file name the translation domain + language.
-        potemplate_dir = os.path.dirname(self.path)
-        path = '%s/%s-%s%s.po' % (potemplate_dir,
-            self.translation_domain, language.code, path_variant)
+        path = self._composePOFilePath(language_code, variant)
 
         pofile = POFile(
             potemplate=self,

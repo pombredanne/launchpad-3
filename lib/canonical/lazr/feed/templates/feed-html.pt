@@ -26,6 +26,14 @@
                        tal:attributes="href author/uri">Author</a>
                 </td>
             </tr>
+            <tr tal:condition="item/date_published"><th>Published:</th>
+                <td tal:content="item/date_published">
+                </td>
+            </tr>
+            <tr tal:condition="item/date_updated"><th>Updated:</th>
+                <td tal:content="item/date_updated">
+                </td>
+            </tr>
         </table>
         <tal:comment condition="nothing">
             FeedEntry.content is a FeedTypedData object

@@ -19,11 +19,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct, IProject,
-    IProjectSet, ISearchableByQuestionOwner, ImportStatus, NotFoundError,
-    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
-    SprintSpecificationStatus, TranslationPermission)
+    IFAQCollection, IHasIcon, IHasLogo, IHasMugshot,
+    IProduct, IProject, IProjectSet, ISearchableByQuestionOwner,
+    ImportStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+    SpecificationFilter, SpecificationImplementationStatus,
+    SpecificationSort, SprintSpecificationStatus, TranslationPermission)
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -36,6 +36,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import ProjectMilestone
+from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
@@ -46,7 +47,7 @@ from canonical.launchpad.helpers import shortlist
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              HasSprintsMixin, KarmaContextMixin,
+              MakesAnnouncements, HasSprintsMixin, KarmaContextMixin,
               BranchVisibilityPolicyMixin):
     """A Project"""
 
@@ -113,8 +114,15 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return None
 
     @property
+    def drivers(self):
+        """See `IHasDrivers`."""
+        if self.driver is not None:
+            return [self.driver]
+        return []
+
+    @property
     def mentoring_offers(self):
-        """See `IProject`"""
+        """See `IProject`."""
         via_specs = MentoringOffer.select("""
             Product.project = %s AND
             Specification.product = Product.id AND
