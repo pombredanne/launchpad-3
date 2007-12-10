@@ -42,7 +42,21 @@ class BranchMergeProposalContextMenu(ContextMenu):
     """Context menu for branches."""
 
     usedfor = IBranchMergeProposal
-    links = ['merge']
+    links = ['request_review', 'review', 'merge']
+
+    @enabled_with_permission('launchpad.Edit')
+    def request_review(self):
+        text = 'Request review'
+        return Link('+request-review', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def review(self):
+        text = 'Review proposal'
+        # Enable the review option if the proposal is reviewable, and the
+        # user is a reviewer.
+        enabled = (self.context.isReviewable() and
+                   self.context.personCanReview(self.user))
+        return Link('+review', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def merge(self):

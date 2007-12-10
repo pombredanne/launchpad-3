@@ -71,13 +71,25 @@ class BranchMergeProposal(SQLBase):
         self.queue_status = BranchMergeProposalStatus.NEEDS_REVIEW
         self.date_review_requested = UTC_NOW
 
-    def _reviewProposal(self, reviewer, next_state):
-        """Set the proposal to one of the two review statuses."""
-        # Check the reviewer can review the code for the target branch.
+    def personCanReview(self, reviewer):
+        """See `IBranchMergeProposal`."""
         target_review_team = self.target_branch.reviewer
         if target_review_team is None:
             target_review_team = self.target_branch.owner
-        if not reviewer.inTeam(target_review_team):
+        return reviewer.inTeam(target_review_team)
+
+    def isReviewable(self):
+        """See `IBranchMergeProposal`."""
+        return self.queue_status in [
+            BranchMergeProposalStatus.WORK_IN_PROGRESS,
+            BranchMergeProposalStatus.NEEDS_REVIEW ,
+            BranchMergeProposalStatus.CODE_APPROVED,
+            BranchMergeProposalStatus.REJECTED]
+
+    def _reviewProposal(self, reviewer, next_state):
+        """Set the proposal to one of the two review statuses."""
+        # Check the reviewer can review the code for the target branch.
+        if not self.personCanReview(reviewer):
             raise UserNotBranchReviewer
         # Check the current state of the proposal.
         if self.queue_status in [

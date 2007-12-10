@@ -196,3 +196,24 @@ class IBranchMergeProposal(Interface):
         :param merge_reporter: The user that is marking the branch as merged.
         :type merge_reporter: ``Person``
         """
+
+    def personCanReview(reviewer):
+        """Return true if the `reviewer` is able to review the proposal.
+
+        There is an attribute on branches called `reviewer` which allows
+        a specific person or team to be set for a branch as an authorised
+        person to approve merges for a branch.  If a reviewer is not set
+        on the target branch, then the owner of the target branch is used
+        as the authorised user.
+        """
+
+    def isReviewable(self):
+        """Is the proposal is in a state condusive to being reviewed?
+
+        If the proposal is in one of the following states, then it can
+        be reviewed:
+          * Work in progress
+          * Review requested
+          * Approved
+          * Rejected
+        """

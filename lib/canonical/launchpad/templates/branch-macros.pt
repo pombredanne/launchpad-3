@@ -59,6 +59,9 @@
           <tal:dependent replace="structure dependent_branch/fmt:link" />
         </div>
       </tal:show-dependent>
+      <div>
+        <tal:proposal-status replace="mergeproposal/queue_status/title"/>
+      </div>
       <div tal:condition="mergeproposal/date_merged" class="branchstatusMERGED">
         Merged
         <tal:merged replace="mergeproposal/date_merged/fmt:approximatedate">

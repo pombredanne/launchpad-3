@@ -1132,12 +1132,14 @@ class BranchMergeProposalEdit(AuthorizationBase):
           * the registrant of the merge proposal
           * the owner of the source_branch
           * the owner of the target_branch
+          * the reviewer for the target_branch
           * an administrator
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.registrant) or
                 user.inTeam(self.obj.source_branch.owner) or
                 user.inTeam(self.obj.target_branch.owner) or
+                user.inTeam(self.obj.target_branch.reviewer) or
                 user.inTeam(admins))
 
 
