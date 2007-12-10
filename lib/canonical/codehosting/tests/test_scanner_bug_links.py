@@ -6,7 +6,6 @@ __metaclass__ = type
 
 import unittest
 
-import transaction
 from zope.component import getUtility
 
 from canonical.codehosting.scanner.bzrsync import set_bug_branch_status
