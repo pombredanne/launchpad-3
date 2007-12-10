@@ -797,8 +797,8 @@ class DebBugs(ExternalBugTracker):
             display_name, email_addr = parseaddr(owner_email)
             owner = getUtility(IPersonSet).ensurePerson(email_addr.lower(),
                 display_name, PersonCreationRationale.BUGWATCH,
-                "when a remote bug which this person submitted or commented "
-                "on was imported into Launchpad.",
+                "when the comments for debbugs #%s were imported into "
+                "Launchpad." % bug_watch.remotebug,
                 getUtility(ILaunchpadCelebrities).bug_watch_updater)
 
             message = getUtility(IMessageSet).fromEmail(comment, owner,

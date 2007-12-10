@@ -448,8 +448,8 @@ them if they didn't exist already:
     >>> message.owner.displayname
     u'Teun Vink'
 
-    >>> message.owner.creation_comment
-    u'Created automatically during Debian bug import.'
+    >>> print message.owner.creation_comment
+    when the comments for debbugs #1234 were imported into Launchpad.
 
 
 === Script for importing Debian bugs, linking them to Ubutu ===
