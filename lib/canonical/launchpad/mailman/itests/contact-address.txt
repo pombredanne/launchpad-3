@@ -6,13 +6,8 @@ Launchpad to the team will be sent to the mailing list's address, in fact.
 
     # This test requires us to start an SMTP server that accepts messages
     # sent by Mailman's outgoing qrunner and stores these in a Unix mbox.
-    >>> import os
-    >>> import tempfile
-    >>> descriptor, mbox_filename = tempfile.mkstemp()
-    >>> os.close(descriptor)
-
     >>> import itest_helper
-    >>> smtpd = itest_helper.SMTPServer(mbox_filename)
+    >>> smtpd = itest_helper.SMTPServer()
     >>> smtpd.start()
 
 We'll now register and approve the mailing list we'll be using as the
@@ -90,7 +85,7 @@ new questions will email the mailing list.
     >>> browser.getControl('Add').click()
 
     >>> smtp_watcher.wait_for_growth()
-    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
+    >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
 
@@ -113,19 +108,16 @@ new questions will email the mailing list.
 Similarly, if we subscribe our new team to a blueprint, a notification will be
 sent to its mailing list.
 
-    # Start a new smtp server with a fresh mbox.
-    >>> smtpd.stop()
-    >>> descriptor, mbox_filename = tempfile.mkstemp()
-    >>> os.close(descriptor)
-    >>> smtpd = itest_helper.SMTPServer(mbox_filename)
-    >>> smtpd.start()
+    # Reset the smtp server with a fresh mbox.
+    >>> smtpd.reset()
 
-    >>> browser.open('http://launchpad.dev/firefox/+spec/canvas/+addsubscriber')
+    >>> browser.open(
+    ...     'http://launchpad.dev/firefox/+spec/canvas/+addsubscriber')
     >>> browser.getControl('Subscriber').value = 'itest-one'
     >>> browser.getControl('Continue').click()
 
     >>> smtp_watcher.wait_for_growth()
-    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
+    >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
 
@@ -153,12 +145,8 @@ mailing list.
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0Each member individually']
 
-    # Start a new smtp server with a fresh mbox.
-    >>> smtpd.stop()
-    >>> descriptor, mbox_filename = tempfile.mkstemp()
-    >>> os.close(descriptor)
-    >>> smtpd = itest_helper.SMTPServer(mbox_filename)
-    >>> smtpd.start()
+    # Reset the smtp server with a fresh mbox.
+    >>> smtpd.reset()
 
     >>> browser.open('http://answers.launchpad.dev/firefox/+addquestion')
     >>> browser.getControl('Summary').value = 'Another question'
@@ -168,7 +156,7 @@ mailing list.
 
     >>> smtp_watcher.wait_for_growth()
     'Timed out'
-    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
+    >>> messages = smtpd.getMessages()
     >>> len(messages)
     0
 
@@ -186,7 +174,7 @@ used as the team's contact address.
     ... Hi, I am a member of Launchpad.
     ... """ % anne.preferredemail.email)
     >>> smtp_watcher.wait_for_growth()
-    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
+    >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
     >>> message = messages[0]

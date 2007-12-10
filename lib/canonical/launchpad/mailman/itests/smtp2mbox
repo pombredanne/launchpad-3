@@ -12,8 +12,10 @@ just write messages to the file.
 
 import os
 import sys
+import errno
 import smtpd
 import signal
+import socket
 import smtplib
 import asyncore
 
@@ -28,10 +30,45 @@ from Mailman.Post import inject
 from Mailman.Utils import list_names
 
 
+class ResettingChannel(smtpd.SMTPChannel):
+    """A channel that can reset the temporary file."""
+
+    def __init__(self, server, conn, addr):
+        smtpd.SMTPChannel.__init__(self, server, conn, addr)
+        # Stash this here since the subclass uses private attributes. :(
+        self._server = server
+
+    def smtp_RSET(self, arg):
+        """Reset the mbox file on the server instance."""
+        self._server.resetMailboxFile()
+        smtpd.SMTPChannel.smtp_RSET(self, arg)
+
+    def send(self, data):
+        """Silence the bloody asynchat/asyncore broken pipe errors!"""
+        try:
+            return smtpd.SMTPChannel.send(self, data)
+        except socket.error:
+            # Nothing here can affect the outcome, and these messages are just
+            # plain annoying!  So ignore them.
+            pass
+
+
 class Server(smtpd.SMTPServer):
+    """An SMTP server subclass that stores to an mbox file."""
     def __init__(self):
         smtpd.SMTPServer.__init__(self, config.mailman.smtp, None)
-        self._mbox = open(sys.argv[1], 'w')
+        self._mbox_file = sys.argv[1]
+        self._mbox = open(self._mbox_file, 'w')
+
+    def handle_accept(self):
+        """Open a resetting channel."""
+        conn, addr = self.accept()
+        channel = ResettingChannel(self, conn, addr)
+        # Do not dispatch to base class!
+
+    def resetMailboxFile(self):
+        """Re-open the mailbox file."""
+        self._mbox = open(self._mbox_file, 'w')
 
     def process_message(self, peer, mailfrom, rcpttos, data):
         """Deliver a message.
@@ -67,7 +104,7 @@ class Server(smtpd.SMTPServer):
         # As a last resort, send it off to the upstream SMTPd.
         else:
             self._deliver_to_smtpd(message)
-                
+
     def _deliver_to_mailman(self, listname, message):
         """Deliver the message to Mailman's incoming queue."""
         #print 'DELIVER TO MAILMAN:', listname
