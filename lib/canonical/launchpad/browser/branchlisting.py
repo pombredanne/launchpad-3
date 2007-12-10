@@ -120,7 +120,11 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         # Due to the current implementation for sorting the branches, the
         # normal equality check can't be used here as SQLObject doesn't like
         # inheritance and can't use outer join columns to sort on.
-        is_dev_focus = (branch.id == self.view.development_focus_branch.id)
+        if self.view.development_focus_branch is None:
+            is_dev_focus = False
+        else:
+            is_dev_focus = (
+                branch.id == self.view.development_focus_branch.id)
         return BranchListingItem(
             branch, last_commit, self._now, role, show_bug_badge,
             show_blueprint_badge, is_dev_focus)
