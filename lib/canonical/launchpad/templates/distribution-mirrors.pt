@@ -21,17 +21,22 @@
 
   <div tal:condition="not: mirrors_by_country">
     <p tal:condition="not: mirrors_by_country">
-      We don't know about any <span tal:replace="view/heading">Archive
-      Mirrors</span> of this distribution. If you know any, please
+      We don't know of any <span tal:replace="view/heading">Archive
+      Mirrors</span> for this distribution. If you know of one, please
       <a tal:attributes="href string:${context/fmt:url}/+newmirror">register
       it</a>.
     </p>
   </div>
 
   <div tal:condition="mirrors_by_country"
-       tal:define="show_status view/show_status">
+       tal:define="show_freshness view/show_freshness">
     <metal:mirror-list
       use-macro="context/@@+distributionmirror-macros/mirrors-table" />
+    <p>
+      <tal:total_number replace="view/mirror_count" />
+      mirror(s) registered with a total throughput of
+      <tal:total_throughput replace="view/total_throughput" />.
+    </p>
   </div>
 
   </tal:block>

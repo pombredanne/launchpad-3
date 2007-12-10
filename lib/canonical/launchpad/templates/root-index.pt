@@ -1,8 +1,20 @@
-<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform"
+  i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
 
-  <div class="informational message" tal:condition="view/isBetaUser">
+      <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+            tal:attributes="href view/feed_url" />
+
+  <div class="informational message" tal:condition="view/canRedirect">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
       <p>As a member of the Launchpad Beta Testers team, you would
       normally be redirected to the beta site when viewing Launchpad
@@ -42,8 +54,7 @@
           <p id="application-summary">
             Launchpad is a free software hosting and development
             website. We make it easy to <strong>collaborate
-            across multiple projects</strong>
-            in the free software world.
+            across multiple projects</strong>.
             <br />
             <center>
               <a href="/+about">
@@ -56,48 +67,56 @@
           </p>
         </div>
         <div class="three column middle">
-          <h2 style="margin-bottom: 0">What&#8217;s new in 1.1.10</h2>
+          <h2 style="margin-bottom: 0">What&#8217;s new here?</h2>
           <ul class="news">
             <li>
-              <a href="https://help.launchpad.net/FasterTranslationsImports">
-                <strong>Faster translations imports.</strong>
+              <a href="https://help.launchpad.net/ProjectAnnouncements">
+                <strong>Project announcements:</strong><br />
+                Publish your news in Launchpad and via Atom / RSS feeds.</a>
+                <a href="http://feeds.launchpad.net/announcements.atom">
+                  <img src="/@@/rss" alt="RSS" />
+                </a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/TurningABugIntoAQuestion"
-                ><strong>Create questions from bugs:</strong> convert a bug
-                that is really a support request into an Answer Tracker
-                question.</a>
+              <a
+                href="http://news.launchpad.net/general/zope-2-switches-to-launchpad">
+                <strong>CMF adopts Launchpad:</strong><br />
+                Easy collaboration between Zope and CMF.</a>
             </li>
+           <li>
+             <a href="https://help.launchpad.net/PPAQuickStart">
+               <strong>Personal Package Archives for everyone!</strong> Build
+               and host Ubuntu packages in your own apt repository.
+             </a>
+           </li>
             <li>
-              <a href="https://help.launchpad.net/AnswerTrackerFAQs">
-                <strong>Improved FAQs:</strong> now create a FAQ from any
-                question.</a>
+              <a
+                href="http://news.launchpad.net/general/come-and-learn-more-about-launchpad">
+                <strong>Come learn more:</strong><br />
+                Introductory IRC tutorial sessions about Launchpad.</a>
             </li>
-            <li>
-              <a href="https://help.launchpad.net/MergingTeams">
-                <strong>Team mergers:</strong> request the merger of two teams.</a>
-            </li>
-            <li>
-              <a href="https://help.launchpad.net/PPAQuickStart">
-                <strong>Personal Package Archives:</strong> ongoing beta of
-                Launchpad's package build and repository hosting service.</a>
-            </li>
-            <li>
-              <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters">
-                <strong>Launchpad Beta:</strong> participate in our beta program
-                and get access to pre-release features.</a>
-            </li>
+           <li tal:condition="not: view/isBetaUser">
+             <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters">
+               <strong>Launchpad beta:</strong> join our beta team to get
+               access to pre-release features</a>
+           </li>
           </ul>
           <div class="discreet" style="text-align: right">
-            Updated 2007-10-24.
+            Updated 2007-11-22.
             <a href="http://news.launchpad.net">More...</a>
           </div>
         </div>
         <div class="three column right">
           <h2>Featured projects</h2>
           <ul>
+            <li class="product"><a href="/phpwms">PHP Site Management
+              System</a>
+            </li>
+            <li class="product"><a href="/exaile">Exaile Media Player</a></li>
+            <li class="product"><a href="/deluge">Deluge Torrent Client</a></li>
             <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
-            <li class="product"><a href="/bzr">Bazaar</a></li>
+            <li class="product"><a href="/bzr">Bazaar Version Control</a></li>
+            <li class="product"><a href="/democracy">Miro TV Player</a></li>
             <li class="product"><a href="/awn">Avant Window Navigator</a></li>
             <li class="product"><a href="/schooltool">SchoolTool</a></li>
             <li class="product"><a href="/tangocms">TangoCMS</a></li>

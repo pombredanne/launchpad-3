@@ -15,7 +15,7 @@ version we can't parse, UnparseableBugTrackerVersion is raised:
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> invalid_version_bugzilla = new_bugtracker(BugTrackerType.BUGZILLA)
     >>> external_bugzilla = Bugzilla(invalid_version_bugzilla, version='A.B4')
     Traceback (most recent call last):
@@ -99,17 +99,57 @@ update:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     3224:
     >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    INFO:...:Updating 1 watches on http://bugzilla.gnome.org/bugs
+
     >>> for bug_watch in gnome_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     3224: RESOLVED FIXED
 
-Let's add a few more watches:
+Let's add a handful of watches:
 
     >>> from canonical.launchpad.interfaces import (
     ...     IBugSet, IBugWatchSet, IPersonSet)
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_watch_set = getUtility(IBugWatchSet)
+
+    >>> expected_remote_statuses = dict(
+    ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
+    ...      for bug_watch in gnome_bugzilla.watches])
+    >>> for remote_bug_id in range(50,55):
+    ...     bug_watch = bug_watch_set.createBugWatch(
+    ...         bug=bug_one, owner=sample_person, bugtracker=gnome_bugzilla,
+    ...         remotebug=str(remote_bug_id))
+    ...     external_bugzilla.bugzilla_bugs[remote_bug_id] = (
+    ...         'RESOLVED', 'FIXED')
+    ...     expected_remote_statuses[remote_bug_id] = 'RESOLVED FIXED'
+
+Set the batch threshold higher than the number of bug watches.
+
+    >>> external_bugzilla.batch_query_threshold = 10
+
+Then updateBugWatches() will make one request per bug watch:
+
+    >>> external_bugzilla.trace_calls = True
+    >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    INFO:...:Updating 6 watches on http://bugzilla.gnome.org/bugs
+    CALLED _postPage()
+    CALLED _postPage()
+    CALLED _postPage()
+    CALLED _postPage()
+    CALLED _postPage()
+    CALLED _postPage()
+
+    >>> remote_statuses = dict(
+    ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
+    ...      for bug_watch in gnome_bugzilla.watches])
+    >>> remote_statuses == expected_remote_statuses
+    True
+
+    >>> external_bugzilla.trace_calls = False
+
+Let's add a few more watches:
+
     >>> expected_remote_statuses = dict(
     ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
     ...      for bug_watch in gnome_bugzilla.watches])
@@ -121,11 +161,16 @@ Let's add a few more watches:
     ...         'ASSIGNED', '')
     ...     expected_remote_statuses[remote_bug_id] = 'ASSIGNED'
 
+Set the batch threshold very low:
+
+    >>> external_bugzilla.batch_query_threshold = 0
+
 Instead of issuing one request per bug watch, like was done before,
 updateBugWatches() issues only one request to update all watches:
 
     >>> external_bugzilla.trace_calls = True
     >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    INFO:...:Updating 206 watches on http://bugzilla.gnome.org/bugs
     CALLED _postPage()
 
     >>> remote_statuses = dict(
@@ -154,6 +199,7 @@ updated:
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged
     >>> external_bugzilla.updateBugWatches([bug_watch])
+    INFO:...:Updating 1 watches on http://bugzilla.gnome.org/bugs
     >>> bug_watch.lastchanged == old_last_changed
     True
 
@@ -170,7 +216,7 @@ from a bug task.
 We don't yet support updating the importance for Bugzilla bugs, so let's set it
 to some bogus value, to see that it gets set to UNKNOWN.
 
-    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.interfaces import BugTaskImportance
     >>> thunderbird_task.importance = BugTaskImportance.HIGH
 
 We need to create a new ExternalBugtracker for the Mozilla tracker:
@@ -184,6 +230,8 @@ Let's update the bug watch, and see that the linked bug watch got
 synced:
 
     >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
+    INFO:...:Updating 1 watches on https://bugzilla.mozilla.org
+
     >>> print thunderbird_task.status.title
     In Progress
     >>> print thunderbird_task.importance.title
@@ -200,6 +248,8 @@ status mapping.
     ...     BugTaskStatus.CONFIRMED,
     ...     getUtility(IPersonSet).getByName('no-priv'))
     >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
+    INFO:...:Updating 1 watches on https://bugzilla.mozilla.org
+
     >>> print thunderbird_task.status.title
     In Progress
     >>> print thunderbird_task.bugwatch.remotestatus
@@ -217,6 +267,8 @@ same remote bug, both will of course be updated.
     ...     bug=bug_two, owner=sample_person, bugtracker=mozilla_bugzilla,
     ...     remotebug='42')
     >>> external_bugzilla.updateBugWatches([bug_watch1, bug_watch2])
+    INFO:...:Updating 2 watches on https://bugzilla.mozilla.org
+
     >>> print bug_watch1.remotestatus
     RESOLVED FIXED
     >>> print bug_watch2.remotestatus

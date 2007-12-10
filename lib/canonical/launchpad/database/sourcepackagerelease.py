@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['SourcePackageRelease']
@@ -27,14 +28,17 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTaskSearchParams, BuildStatus, ILaunchpadCelebrities,
-    ISourcePackageRelease, ITranslationImportQueue, PackagePublishingStatus,
+    ArchivePurpose, BugTaskSearchParams, BuildStatus, IArchiveSet,
+    ILaunchpadCelebrities, ISourcePackageRelease, ITranslationImportQueue,
+    PackagePublishingStatus, PackageUploadStatus, NotFoundError,
     SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency,
-    UNRESOLVED_BUGTASK_STATUSES, NotFoundError)
+    UNRESOLVED_BUGTASK_STATUSES)
+
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
+from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.scripts.queue import QueueActionError
 
 
@@ -63,15 +67,15 @@ class SourcePackageRelease(SQLBase):
     architecturehintlist = StringCol(dbName='architecturehintlist')
     format = EnumCol(dbName='format', schema=SourcePackageFormat,
         default=SourcePackageFormat.DPKG, notNull=True)
-    uploaddistroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='uploaddistrorelease')
+    upload_distroseries = ForeignKey(foreignKey='DistroSeries',
+        dbName='upload_distroseries')
     upload_archive = ForeignKey(
         foreignKey='Archive', dbName='upload_archive', notNull=True)
 
     # XXX cprov 2006-09-26: Those fields are set as notNull and required in
     # ISourcePackageRelease, however they can't be not NULL in DB since old
     # records doesn't satisfy this condition. We will sort it before using
-    # landing 'NoMoreAptFtparchive' implementation for main archive. For
+    # landing 'NoMoreAptFtparchive' implementation for PRIMARY archive. For
     # PPA (primary target) we don't need populate old records.
     dsc_maintainer_rfc822 = StringCol(dbName='dsc_maintainer_rfc822')
     dsc_standards_version = StringCol(dbName='dsc_standards_version')
@@ -141,7 +145,7 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         # By supplying the sourcepackagename instead of its string name,
         # we avoid doing an extra query doing getSourcepackage
-        series = self.uploaddistroseries
+        series = self.upload_distroseries
         return series.getSourcePackage(self.sourcepackagename)
 
     @property
@@ -149,7 +153,7 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         # By supplying the sourcepackagename instead of its string name,
         # we avoid doing an extra query doing getSourcepackage
-        distribution = self.uploaddistroseries.distribution
+        distribution = self.upload_distroseries.distribution
         return distribution.getSourcePackage(self.sourcepackagename)
 
     @property
@@ -206,7 +210,7 @@ class SourcePackageRelease(SQLBase):
 
     def countOpenBugsInUploadedDistro(self, user):
         """See ISourcePackageRelease."""
-        upload_distro = self.uploaddistroseries.distribution
+        upload_distro = self.upload_distroseries.distribution
         params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
             user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
         # XXX: kiko 2006-03-07:
@@ -233,9 +237,9 @@ class SourcePackageRelease(SQLBase):
         # XXX cprov 2006-08-23: Will distinct=True help us here?
         archSerieses = sets.Set(DistroArchSeries.select(
             """
-            BinaryPackagePublishingHistory.distroarchrelease =
-               DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = %d AND
+            BinaryPackagePublishingHistory.distroarchseries =
+               DistroArchSeries.id AND
+            DistroArchSeries.distroseries = %d AND
             BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                BinaryPackageRelease.id AND
@@ -295,7 +299,7 @@ class SourcePackageRelease(SQLBase):
         candidate = distroarchseries.distroseries
         while candidate is not None:
             parent_series.append(candidate)
-            candidate = candidate.parentseries
+            candidate = candidate.parent_series
 
         queries = ["Build.sourcepackagerelease = %s" % sqlvalues(self)]
 
@@ -314,14 +318,20 @@ class SourcePackageRelease(SQLBase):
         architectures = [
             architecture.id for architecture in parent_architectures]
         queries.append(
-            "Build.distroarchrelease IN %s" % sqlvalues(architectures))
+            "Build.distroarchseries IN %s" % sqlvalues(architectures))
 
-        # Follow archive inheritance across PRIMARY archives, for example:
-        # guadalinex/foobar was initialised from ubuntu/dapper
+        # Follow archive inheritance across distribution officla archives,
+        # for example:
+        # guadalinex/foobar/PRIMARY was initialised from ubuntu/dapper/PRIMARY
+        # guadalinex/foobar/PARTNER was initialised from ubuntu/dapper/PARTNER
+        # and so on
         if archive.purpose != ArchivePurpose.PPA:
             parent_archives = set()
+            archive_set = getUtility(IArchiveSet)
             for series in parent_series:
-                parent_archives.add(series.main_archive)
+                target_archive = archive_set.getByDistroPurpose(
+                    series.distribution, archive.purpose)
+                parent_archives.add(target_archive)
             archives = [archive.id for archive in parent_archives]
         else:
             archives = [archive.id, ]
@@ -349,7 +359,7 @@ class SourcePackageRelease(SQLBase):
         if component is not None:
             self.component = component
             # See if the new component requires a new archive:
-            distribution = self.uploaddistroseries.distribution
+            distribution = self.upload_distroseries.distribution
             new_archive = distribution.getArchiveByComponent(component.name)
             if new_archive is not None:
                 self.upload_archive = new_archive
@@ -360,6 +370,28 @@ class SourcePackageRelease(SQLBase):
             self.section = section
         if urgency is not None:
             self.urgency = urgency
+
+    @property
+    def upload_changesfile(self):
+        """See ISourcePackageRelease."""
+        clauseTables = [
+            'PackageUpload',
+            'PackageUploadSource',
+            ]
+        query = """
+        PackageUpload.id = PackageUploadSource.packageupload AND
+        PackageUpload.distroseries = %s AND
+        PackageUploadSource.sourcepackagerelease = %s AND
+        PackageUpload.status = %s
+        """ % sqlvalues(self.upload_distroseries, self,
+                        PackageUploadStatus.DONE)
+        queue_record = PackageUpload.selectOne(
+            query, clauseTables=clauseTables)
+
+        if not queue_record:
+            return None
+
+        return queue_record.changesfile
 
     @property
     def change_summary(self):
@@ -395,7 +427,7 @@ class SourcePackageRelease(SQLBase):
                      ]
 
         if importer is None:
-            importer = getUtility(ILaunchpadCelebrities).rosetta_expert
+            importer = getUtility(ILaunchpadCelebrities).rosetta_experts
 
         translation_import_queue_set = getUtility(ITranslationImportQueue)
 
@@ -416,5 +448,5 @@ class SourcePackageRelease(SQLBase):
             translation_import_queue_set.addOrUpdateEntry(
                 filename, content, is_published, importer,
                 sourcepackagename=self.sourcepackagename,
-                distroseries=self.uploaddistroseries)
+                distroseries=self.upload_distroseries)
 

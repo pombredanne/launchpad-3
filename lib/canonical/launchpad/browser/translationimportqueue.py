@@ -49,8 +49,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         if self.context.sourcepackagename is not None:
             field_values['sourcepackagename'] = self.context.sourcepackagename
         if self.context.potemplate is not None:
-            field_values['potemplatename'] = (
-                self.context.potemplate.potemplatename.name)
+            field_values['name'] = (
+                self.context.potemplate.name)
+            field_values['translation_domain'] = (
+                self.context.potemplate.translation_domain)
         if self.context.pofile is not None:
             field_values['language'] = self.context.pofile.language
             field_values['variant'] = self.context.pofile.variant
@@ -61,7 +63,8 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             filename = os.path.basename(self.context.path)
             guessed_language, file_ext = filename.split(u'.', 1)
             (language, variant) = (
-                language_set.getLanguageAndVariantFromString(guessed_language))
+                language_set.getLanguageAndVariantFromString(
+                    guessed_language))
             if language is not None:
                 field_values['language'] = language
                 # Need to warn the user that we guessed the language
@@ -82,8 +85,9 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
     def initialize(self):
         """Remove some fields based on the entry handled."""
-        self.field_names = ['sourcepackagename', 'potemplatename', 'path',
-                            'language', 'variant']
+        self.field_names = ['sourcepackagename', 'name',
+                            'translation_domain', 'path', 'language',
+                            'variant']
 
         if self.context.productseries is not None:
             # We are handling an entry for a productseries, this field is not
@@ -118,7 +122,8 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
     @action("Attach")
     def change_action(self, action, data):
         """Process the form we got from the submission."""
-        potemplatename = data.get('potemplatename')
+        name = data.get('name')
+        translation_domain = data.get('translation_domain')
         path = data.get('path')
         sourcepackagename = data.get('sourcepackagename')
         language = data.get('language')
@@ -141,10 +146,11 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             potemplate_subset = potemplate_set.getSubset(
                 productseries=self.context.productseries)
         try:
-            potemplate = potemplate_subset[potemplatename.name]
+            potemplate = potemplate_subset[name]
         except NotFoundError:
             potemplate = potemplate_subset.new(
-                potemplatename,
+                name,
+                translation_domain,
                 self.context.path,
                 self.context.importer)
 
@@ -181,15 +187,17 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
             if path is not None:
                 # We got a path to store as the new one for the POFile.
-                pofile.path = path
-            elif (self.context.is_published and
-                  pofile.path != self.context.path):
+                pofile.setPathIfUnique(path)
+            elif self.context.is_published:
                 # This entry comes from upstream, which means that the path we
                 # got is exactly the right one. If it's different from what
                 # pofile has, that would mean that either the entry changed
                 # its path since previous upload or that we had to guess it
                 # and now that we got the right path, we should fix it.
-                pofile.path = self.context.path
+                pofile.setPathIfUnique(self.context.path)
+            else:
+                # Leave path unchanged.
+                pass
 
         self.context.status = RosettaImportStatus.APPROVED
         self.context.date_status_changed = UTC_NOW

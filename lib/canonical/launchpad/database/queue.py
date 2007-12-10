@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -34,13 +35,13 @@ from canonical.launchpad.database.publishing import (
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IPackageUpload, IPackageUploadBuild, IPackageUploadSource,
-    IPackageUploadCustom, IPackageUploadQueue, IPackageUploadSet, IPersonSet,
-    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus, PackageUploadCustomFormat, pocketsuffix,
-    QueueBuildAcceptError, QueueInconsistentStateError,
-    QueueStateWriteProtectedError, QueueSourceAcceptError,
-    SourcePackageFileType)
+    ArchivePurpose, ILaunchpadCelebrities, IPackageUpload,
+    IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
+    IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
+    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
+    PackageUploadCustomFormat, pocketsuffix, QueueBuildAcceptError,
+    QueueInconsistentStateError, QueueStateWriteProtectedError,
+    QueueSourceAcceptError, SourcePackageFileType)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
@@ -75,7 +76,7 @@ class PackageUpload(SQLBase):
                      default=PackageUploadStatus.NEW,
                      schema=PackageUploadStatus)
 
-    distroseries = ForeignKey(dbName="distrorelease",
+    distroseries = ForeignKey(dbName="distroseries",
                                foreignKey='DistroSeries')
 
     pocket = EnumCol(dbName='pocket', unique=False, notNull=True,
@@ -187,6 +188,19 @@ class PackageUpload(SQLBase):
                 'Queue item already rejected')
         self._SO_set_status(PackageUploadStatus.REJECTED)
 
+    def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
+        """See `IPackageUpload`."""
+        self.setAccepted()
+        self.notify(announce_list=announce_list, logger=logger,
+                    dry_run=dry_run)
+        self.syncUpdate()
+
+    def rejectFromQueue(self, logger=None, dry_run=False):
+        """See `IPackageUpload`."""
+        self.setRejected()
+        self.notify(logger=logger, dry_run=dry_run)
+        self.syncUpdate()
+
     # XXX cprov 2006-03-14: Following properties should be redesigned to
     # reduce the duplicated code.
     @cachedproperty
@@ -198,6 +212,20 @@ class PackageUpload(SQLBase):
     def contains_build(self):
         """See `IPackageUpload`."""
         return self.builds
+
+    def _is_auto_sync_upload(self, changed_by_email):
+        """Return True if this is a (Debian) auto sync upload.
+
+        Sync uploads are source-only, unsigned and not targeted to
+        the security pocket.  The Changed-By field is also the Katie
+        user (archive@ubuntu.com).
+        """
+        katie = getUtility(ILaunchpadCelebrities).katie
+        changed_by = self._emailToPerson(changed_by_email)
+        return (not self.signing_key
+                and self.contains_source and not self.contains_build
+                and changed_by == katie
+                and self.pocket != PackagePublishingPocket.SECURITY)
 
     @cachedproperty
     def _customFormats(self):
@@ -357,7 +385,8 @@ class PackageUpload(SQLBase):
         if self.contains_source:
             [source] = self.sources
             spr = source.sourcepackagerelease
-            # Bail out early if this is an upload for the translations section.
+            # Bail out early if this is an upload for the translations
+            # section.
             if spr.section.name == 'translations':
                 debug(self.logger,
                     "Skipping acceptance and announcement, it is a "
@@ -513,10 +542,11 @@ class PackageUpload(SQLBase):
             do_sendmail(AcceptedMessage)
             return
 
-        # Auto-approved binary uploads to security skips the announcement,
-        # they are usually processed with the security policy.
+        # Auto-approved binary-only uploads to security skip the
+        # announcement, they are usually processed with the security policy.
         if (self.pocket == PackagePublishingPocket.SECURITY
-            and self.contains_build):
+            and not self.contains_source):
+            # We only send announcements if there is any source in the upload.
             debug(self.logger,
                 "Skipping announcement, it is a binary upload to SECURITY.")
             do_sendmail(AcceptedMessage)
@@ -525,6 +555,10 @@ class PackageUpload(SQLBase):
         # Fallback, all the rest coming from insecure, secure and sync
         # policies should send an acceptance and an announcement message.
         do_sendmail(AcceptedMessage)
+
+        # Don't send announcements for Debian auto sync uploads.
+        if self._is_auto_sync_upload(changed_by_email=changes['changed-by']):
+            return
 
         if announce_list:
             if not self.signing_key:
@@ -536,7 +570,8 @@ class PackageUpload(SQLBase):
                 AnnouncementMessage,
                 recipients=[str(announce_list)],
                 from_addr=from_addr,
-                bcc="%s_derivatives@packages.qa.debian.org" % self.displayname)
+                bcc="%s_derivatives@packages.qa.debian.org" %
+                    self.displayname)
 
     def notify(self, announce_list=None, summary_text=None,
                changes_file_object=None, logger=None, dry_run=False):
@@ -654,7 +689,7 @@ class PackageUpload(SQLBase):
         return person
 
     def _isPersonUploader(self, person):
-        """Return True if the person is an uploader to the package's distro."""
+        """Return True if person is an uploader to the package's distro."""
         debug(self.logger, "Attempting to decide if %s is an uploader." % (
             person.displayname))
         uploader = person.isUploader(self.distroseries.distribution)
@@ -749,8 +784,9 @@ class PackageUploadBuild(SQLBase):
                     % (binary.component.name, distroseries.name))
             if binary.section not in distroseries.sections:
                 raise QueueBuildAcceptError(
-                    'Section "%s" is not allowed in %s' % (binary.section.name,
-                                                           distroseries.name))
+                    'Section "%s" is not allowed in %s' %
+                        (binary.section.name,
+                         distroseries.name))
 
     def publish(self, logger=None):
         """See `IPackageUploadBuild`."""
@@ -851,8 +887,8 @@ class PackageUploadSource(SQLBase):
                 if proposed_sha1 == published_sha1:
                     continue
                 raise QueueInconsistentStateError(
-                    '%s is already published in archive for %s with a different '
-                    'SHA1 hash (%s != %s)' % (
+                    '%s is already published in archive for %s with a '
+                    'different SHA1 hash (%s != %s)' % (
                     filename, self.packageupload.distroseries.name,
                     proposed_sha1, published_sha1))
 
@@ -943,7 +979,8 @@ class PackageUploadCustom(SQLBase):
     def temp_filename(self):
         """See `IPackageUploadCustom`."""
         temp_dir = tempfile.mkdtemp()
-        temp_file_name = os.path.join(temp_dir, self.libraryfilealias.filename)
+        temp_file_name = os.path.join(
+            temp_dir, self.libraryfilealias.filename)
         temp_file = file(temp_file_name, "wb")
         self.libraryfilealias.open()
         copy_and_close(self.libraryfilealias, temp_file)
@@ -1064,7 +1101,7 @@ class PackageUploadSet:
             clauses.append("status=%s" % sqlvalues(status))
 
         if distroseries:
-            clauses.append("distrorelease=%s" % sqlvalues(distroseries))
+            clauses.append("distroseries=%s" % sqlvalues(distroseries))
 
         if pocket:
             clauses.append("pocket=%s" % sqlvalues(pocket))

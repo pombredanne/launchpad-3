@@ -13,7 +13,7 @@
 
     <metal:heading fill-slot="pageheading">
       <h2 style="margin-top: 0">URL: <a tal:attributes="href context/archive_url"
-       tal:content="context/archive_url" /></h2>
+       tal:content="context/archive_url">url</a></h2>
     </metal:heading>
 
     <metal:leftportlets fill-slot="portlets_one">
@@ -35,20 +35,15 @@
             replace="structure context/description/fmt:text-to-html" />
       </div>
 
-      <h2>sources.list entries</h2>
-
-      <pre style="border: 1px solid gray; padding: 0.3em">
-deb <a tal:attributes="href context/archive_url"
-       tal:content="context/archive_url" /> ubuntu main
-deb-src <a tal:attributes="href context/archive_url"
-       tal:content="context/archive_url" /> ubuntu main</pre>
-
+      <tal:entries replace="structure view/sources_list_entries" />
 
       <h2>Packages</h2>
 
       <p tal:condition="not:context/number_of_sources">
         This PPA does not contain any packages yet.
       </p>
+
+      <h2>apt sources.list entries</h2>
 
       <tal:active_ppa condition="context/number_of_sources">
 
@@ -60,7 +55,7 @@ deb-src <a tal:attributes="href context/archive_url"
           <li id="binary_counter">
              <span tal:replace="view/binary_count_text" />
              (<span tal:replace="context/binaries_size/fmt:bytes" />)</li>
-	      <li id="total_size">
+          <li id="total_size">
              Estimated archive size:
              <span tal:replace="context/estimated_size/fmt:bytes" /></li>
         </ul>
@@ -69,9 +64,10 @@ deb-src <a tal:attributes="href context/archive_url"
       <div>
         <form name="package_search" action="" method="GET">
            <label for="name">Package name contains:</label>
-           <input id="name" title="Package Name" size="20"
-                  type="text" name="name_filter"
+           <input id="field.name_filter" title="Package Name" size="20"
+                  type="text" name="field.name_filter"
                   tal:attributes="value view/name_filter"/>
+           <span tal:replace="structure view/plain_status_filter_widget" />
            <input type="submit" value="Search" />
         </form>
       </div>
@@ -82,16 +78,15 @@ deb-src <a tal:attributes="href context/archive_url"
            condition="python: view.name_filter is not None"
            replace="structure view/batchnav/@@+navigation-links-upper" />
 
-      <table class="listing sortable" id="packages_list" tal:condition="batch">
+      <table class="listing" id="packages_list" tal:condition="batch">
         <thead>
           <tr>
-            <th>Source</th>
+            <th colspan="2">Source</th>
             <th tal:condition="context/owner/isTeam">Uploader</th>
             <th>Published</th>
             <th>Status</th>
             <th>Series</th>
             <th>Section</th>
-            <th>Files</th>
           </tr>
         </thead>
         <tbody>

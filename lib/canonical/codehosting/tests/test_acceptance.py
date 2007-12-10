@@ -14,7 +14,14 @@ import xmlrpclib
 import bzrlib.branch
 from bzrlib.builtins import cmd_push
 from bzrlib.errors import (
-    BzrCommandError, NotBranchError, ReadOnlyError, TransportNotPossible)
+    BzrCommandError, NotBranchError, TransportNotPossible)
+
+# bzr 0.91 uses ReadOnlyError, bzr 0.92 uses LockFailed
+try:
+    from bzrlib.errors import LockFailed as ReadOnlyFailureException
+except ImportError:
+    from bzrlib.errors import ReadOnlyError as ReadOnlyFailureException
+
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
@@ -295,8 +302,8 @@ class AcceptanceTests(SSHTestCase):
         branch = self.getDatabaseBranch('testuser', None, 'totally-new-branch')
         # Confirm that the branch hasn't had a mirror requested yet. Not core
         # to the test, but helpful for checking internal state.
-        self.assertNotEqual(None, branch.mirror_request_time)
-        branch.mirror_request_time = None
+        self.assertNotEqual(None, branch.next_mirror_time)
+        branch.next_mirror_time = None
         LaunchpadZopelessTestSetup().txn.commit()
 
         # Add a single revision to the local branch.
@@ -309,7 +316,7 @@ class AcceptanceTests(SSHTestCase):
         # Retrieve the branch from the database.
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getDatabaseBranch('testuser', None, 'totally-new-branch')
-        self.assertNotEqual(None, branch.mirror_request_time)
+        self.assertNotEqual(None, branch.next_mirror_time)
         LaunchpadZopelessTestSetup().txn.abort()
 
     @deferToThread
@@ -470,7 +477,7 @@ class SmartserverTests(SSHTestCase):
 
         # Push the local branch to the remote url
         remote_url = self.getTransportURL('~sabdfl/+junk/ro-branch')
-        self.assertRaises(ReadOnlyError, self.push, remote_url)
+        self.assertRaises(ReadOnlyFailureException, self.push, remote_url)
 
     @deferToThread
     def test_can_read_mirrored_branch(self):
@@ -492,6 +499,16 @@ class SmartserverTests(SSHTestCase):
             self.getTransportURL('~sabdfl/firefox/mirror'))
         self.assertEqual(revision, remote_revision)
 
+    @deferToThread
+    def test_authserver_error_propagation(self):
+        # Errors raised by createBranch on the authserver should be displayed
+        # sensibly by the client.  We test this by pushing to a product that
+        # does not exist (the other error message possibilities are covered by
+        # unit tests).
+        remote_url = self.getTransportURL('~sabdfl/no-such-product/branch')
+        error = self.assertTransportRaises(
+            TransportNotPossible, self.push, remote_url)
+        self.assertIn("Project 'no-such-product' does not exist.", str(error))
 
 def make_server_tests(base_suite, servers):
     from canonical.codehosting.tests.helpers import (

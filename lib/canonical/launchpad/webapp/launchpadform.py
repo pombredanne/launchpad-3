@@ -25,12 +25,11 @@ from zope.app.form.browser import (
     CheckBoxWidget, DropdownWidget, RadioWidget, TextAreaWidget)
 
 from canonical.launchpad.webapp.interfaces import (
-    ISingleLineWidgetLayout, IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
+    IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
     IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.event import (
-    SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.event import SQLObjectModifiedEvent
 
 
 classImplements(CheckBoxWidget, ICheckBoxWidgetLayout)
@@ -73,7 +72,7 @@ class LaunchpadFormView(LaunchpadView):
     # The for_input is passed through to create the fields.  If this value
     # is set to true in derived classes, then fields that are marked
     # read only will have editable widgets created for them.
-    for_input=None
+    for_input = None
 
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
@@ -133,7 +132,8 @@ class LaunchpadFormView(LaunchpadView):
         transaction.abort()
 
     def setUpFields(self):
-        assert self.schema is not None, "Schema must be set for LaunchpadFormView"
+        assert self.schema is not None, (
+            "Schema must be set for LaunchpadFormView")
         self.form_fields = form.Fields(self.schema, for_input=self.for_input,
                                        render_context=self.render_context)
         if self.field_names is not None:
@@ -185,8 +185,20 @@ class LaunchpadFormView(LaunchpadView):
         self.form_wide_errors.append(message)
         self.errors.append(message)
 
+    def getFieldError(self, field_name):
+        """Get the error associated with a particular field.
+
+        If an error message is available in widget_errors, it is
+        returned.  As a fallback, the corresponding widget's error()
+        method is called.
+        """
+        if field_name in self.widget_errors:
+            return self.widget_errors[field_name]
+        else:
+            return self.widgets[field_name].error()
+
     def setFieldError(self, field_name, message):
-        """Set the error associated with a particular field
+        """Set the error associated with a particular field.
 
         If the validator for the field also flagged an error, the
         message passed to this method will be used in preference.
@@ -194,7 +206,12 @@ class LaunchpadFormView(LaunchpadView):
         self.widget_errors[field_name] = message
         self.errors.append(message)
 
-    def _validate(self, action, data):
+    def validate_widgets(self, data, names=None):
+        """Validate the named form widgets.
+
+        :param names: Names of widgets to validate. If None, all widgets
+        will be validated.
+        """
         # XXX jamesh 2006-09-26:
         # If a form field is disabled, then no data will be sent back.
         # getWidgetsData() raises an exception when this occurs, even
@@ -205,20 +222,27 @@ class LaunchpadFormView(LaunchpadView):
         #     http://www.zope.org/Collectors/Zope3-dev/717
         widgets = []
         for input, widget in self.widgets.__iter_input_and_widget__():
-            if (input and IInputWidget.providedBy(widget) and
-                not widget.hasInput()):
-                if widget.context.required:
-                    self.setFieldError(widget.context.__name__,
-                                       'Required field is missing')
-            else:
-                widgets.append((input, widget))
+            if names is None or widget.context.__name__ in names:
+                if (input and IInputWidget.providedBy(widget) and
+                    not widget.hasInput()):
+                    if widget.context.required:
+                        self.setFieldError(widget.context.__name__,
+                                           'Required field is missing')
+                else:
+                    widgets.append((input, widget))
         widgets = form.Widgets(widgets, len(self.prefix)+1)
         for error in form.getWidgetsData(widgets, self.prefix, data):
             self.errors.append(error)
         for error in form.checkInvariants(self.form_fields, data):
             self.addError(error)
+        return self.errors
 
-        # perform custom validation
+    def _validate(self, action, data):
+        """Check all widgets and perform any custom validation."""
+        # Check the widgets.
+        self.validate_widgets(data)
+
+        # Perform custom validation.
         self.validate(data)
         return self.errors
 
@@ -232,7 +256,7 @@ class LaunchpadFormView(LaunchpadView):
             else:
                 widget = self.widgets.get(field.__name__)
                 if widget and widget.error():
-                    count +=1
+                    count += 1
 
         if count == 0:
             return ''
@@ -240,18 +264,6 @@ class LaunchpadFormView(LaunchpadView):
             return 'There is 1 error.'
         else:
             return 'There are %d errors.' % count
-
-    def getWidgetError(self, field_name):
-        """Get the error associated with a particular widget.
-
-        If an error message is available in widget_errors, it is
-        returned.  As a fallback, the corresponding widget's error()
-        method is called.
-        """
-        if field_name in self.widget_errors:
-            return self.widget_errors[field_name]
-        else:
-            return self.widgets[field_name].error()
 
     def validate(self, data):
         """Validate the form.
@@ -261,6 +273,14 @@ class LaunchpadFormView(LaunchpadView):
         """
         pass
 
+    def validate_cancel(self, action, data):
+        """Noop validation in case we cancel.
+
+        You can use this in your Form views by simply setting 
+        validator='validate_cancel' in the @action line of your cancel
+        button."""
+        return []
+
     def focusedElementScript(self):
         """Helper function to construct the script element content."""
         # Work out which widget needs to be focused.  First we check
@@ -269,7 +289,7 @@ class LaunchpadFormView(LaunchpadView):
         for widget in self.widgets:
             if first_widget is None:
                 first_widget = widget
-            if self.getWidgetError(widget.context.__name__):
+            if self.getFieldError(widget.context.__name__):
                 break
         else:
             # otherwise we use the widget named by self.initial_focus_widget
@@ -302,7 +322,14 @@ class LaunchpadFormView(LaunchpadView):
                 not IMultiLineWidgetLayout.providedBy(widget))
 
     def showOptionalMarker(self, field_name):
+        """Should the (Optional) marker be shown?"""
         widget = self.widgets[field_name]
+        # Do not show the (Optional) marker for display (i.e. read-only)
+        # widgets.
+        if not IInputWidget.providedBy(widget):
+            return False
+        # Do not show the marker for required widgets or always submitted
+        # widgets.  Everything else gets the marker.
         return not (widget.required or
                     IAlwaysSubmittedWidget.providedBy(widget))
 
@@ -327,8 +354,6 @@ class LaunchpadEditFormView(LaunchpadFormView):
             context = self.context
         context_before_modification = Snapshot(
             context, providing=providedBy(context))
-
-        notify(SQLObjectToBeModifiedEvent(context, data))
 
         was_changed = form.applyChanges(context, self.form_fields,
                                         data, self.adapters)

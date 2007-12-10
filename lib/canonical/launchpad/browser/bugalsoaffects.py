@@ -2,10 +2,10 @@
 
 __metaclass__ = type
 
-__all__ = ['BugAlsoAffectsProductMetaView', 'BugAlsoAffectsDistroMetaView']
+__all__ = ['BugAlsoAffectsProductMetaView', 'BugAlsoAffectsDistroMetaView',
+           'BugAlsoAffectsProductWithProductCreationView']
 
 import cgi
-import urllib
 from textwrap import dedent
 
 from zope.app.form.browser import DropdownWidget, TextWidget
@@ -13,21 +13,25 @@ from zope.app.form.interfaces import WidgetsError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib import form
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IAddBugTaskForm, IBug, IBugTaskSet, IBugTrackerSet,
-    IBugWatchSet, IDistributionSourcePackage, ILaunchBag, ILaunchpadCelebrities,
-    IProductSet, NoBugTrackerFound, validate_new_distrotask,
-    valid_upstreamtask)
+    BugTaskImportance, BugTaskStatus, IAddBugTaskForm,
+    IAddBugTaskWithProductCreationForm, IBug, IBugTaskSet, IBugTrackerSet,
+    IBugWatchSet, IDistributionSourcePackage, ILaunchBag,
+    ILaunchpadCelebrities, IProductSet, NoBugTrackerFound,
+    UnrecognizedBugTrackerURL, validate_new_distrotask, valid_upstreamtask)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, LaunchpadFormView, LaunchpadView)
 
-from canonical.lp.dbschema import BugTaskImportance
-from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
+from canonical.widgets import SearchForUpstreamPopupWidget, StrippedTextWidget
 
 
 class BugAlsoAffectsProductMetaView(LaunchpadView):
@@ -109,7 +113,7 @@ class AlsoAffectsStep(LaunchpadFormView):
         if not self.shouldProcess(data):
             return
 
-        return self.main_action(action, data)
+        return self.main_action(data)
 
     def validate(self, data):
         """Call self.validateStep() if the form should be processed.
@@ -167,6 +171,7 @@ class ChooseProductStep(AlsoAffectsStep):
     template = ViewPageTemplateFile(
         '../templates/bugtask-choose-affected-product.pt')
 
+    custom_widget('product', SearchForUpstreamPopupWidget)
     _field_names = ['product']
     label = u"Record as affecting another project"
     step_name = "choose_product"
@@ -227,8 +232,7 @@ class ChooseProductStep(AlsoAffectsStep):
                 # We can infer the upstream and there's no bugtask for it,
                 # so we can go straight to the page asking for the remote
                 # bug URL.
-                self.request.form['field.product'] = urllib.quote(
-                    upstream.name)
+                self.request.form['field.product'] = upstream.name
                 self.next_view = ProductBugTaskCreationStep
             return
 
@@ -258,24 +262,23 @@ class ChooseProductStep(AlsoAffectsStep):
             return
 
         # The user has entered a product name but we couldn't find it.
-        # Show a meaningful error message instead of "Invalid value".
-        new_product_url = "%s/+new" % (
-            canonical_url(getUtility(IProductSet)))
+        # Tell the user to search for it using the popup widget as it'll allow
+        # the user to register a new product if the one he is looking for is
+        # not yet registered.
         search_url = self.widgets['product'].popupHref()
         self.setFieldError(
             'product',
-            'There is no project in Launchpad named "%s". You may'
-            ' want to <a href="%s">search for it</a>, or'
-            ' <a href="%s">register it</a> if you can\'t find it.' % (
+            'There is no project in Launchpad named "%s". Please '
+            '<a href="%s">search for it</a> as it may be registered with '
+            'a different name.' % (
                 cgi.escape(entered_product),
-                cgi.escape(search_url, quote=True),
-                cgi.escape(new_product_url, quote=True)))
+                cgi.escape(search_url, quote=True)))
 
-    def main_action(self, action, data):
+    def main_action(self, data):
         """Inject the selected product into the form and set the next_view to
         be used by our meta view.
         """
-        self.request.form['field.product'] = urllib.quote(data['product'].name)
+        self.request.form['field.product'] = data['product'].name
         self.next_view = ProductBugTaskCreationStep
 
 
@@ -291,10 +294,14 @@ class BugTaskCreationStep(AlsoAffectsStep):
     registered.
     """
 
-    custom_widget('bug_url', StrippedTextWidget, displayWidth=50)
+    custom_widget('bug_url', StrippedTextWidget, displayWidth=62)
 
     step_name = 'specify_remote_bug_url'
     target_field_names = ()
+
+    # This is necessary so that other views which dispatch work to this one
+    # have access to the newly created task.
+    task_added = None
 
     def __init__(self, context, request):
         super(BugTaskCreationStep, self).__init__(context, request)
@@ -318,14 +325,14 @@ class BugTaskCreationStep(AlsoAffectsStep):
         """
         raise NotImplementedError()
 
-    def main_action(self, action, data):
+    def main_action(self, data):
         """Create the new bug task.
 
         If a remote bug URL is given and there's no bug watch registered with
         that URL we create a bug watch and link it to the newly created bug
         task.
         """
-        bug_url = self.request.form.get('field.bug_url', '')
+        bug_url = data.get('bug_url', '')
         target = self.getTarget(data)
         if (not self.request.get('ignore_missing_remote_bug') and 
             not target.official_malone and not bug_url):
@@ -368,9 +375,10 @@ class BugTaskCreationStep(AlsoAffectsStep):
         product = data.get('product')
         distribution = data.get('distribution')
         sourcepackagename = data.get('sourcepackagename')
-        task_added = getUtility(IBugTaskSet).createTask(
+        self.task_added = getUtility(IBugTaskSet).createTask(
             self.context.bug, getUtility(ILaunchBag).user, product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
+        task_added = self.task_added
 
         if extracted_bug:
             assert extracted_bugtracker is not None, (
@@ -503,12 +511,12 @@ class BugTrackerCreationStep(AlsoAffectsStep):
     BugTaskCreationStep's subclasses.
     """
 
-    custom_widget('bug_url', StrippedTextWidget, displayWidth=50)
+    custom_widget('bug_url', StrippedTextWidget, displayWidth=62)
     step_name = "bugtracker_creation"
     main_action_label = u'Register Bug Tracker and Add to Bug Report'
     _next_view = None
 
-    def main_action(self, action, data):
+    def main_action(self, data):
         assert self._next_view is not None, (
             "_next_view must be specified in subclasses.")
         bug_url = data.get('bug_url').strip()
@@ -539,4 +547,154 @@ class UpstreamBugTrackerCreationStep(BugTrackerCreationStep):
     label = "Confirm project"
     template = ViewPageTemplateFile(
         '../templates/bugtask-confirm-bugtracker-creation.pt')
+
+
+class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
+    """Register a product and indicate this bug affects it.
+
+    If there's no bugtracker with the given URL registered in Launchpad, then
+    a new bugtracker is created as well.
+    """
+
+    label = "Register project affected by this bug"
+    schema = IAddBugTaskWithProductCreationForm
+    custom_widget('bug_url', StrippedTextWidget, displayWidth=62)
+    custom_widget('existing_product', LaunchpadRadioWidget)
+    field_names = ['bug_url', 'displayname', 'name', 'summary']
+    existing_products = None
+    MAX_PRODUCTS_TO_DISPLAY = 10
+
+    def _loadProductsUsingBugTracker(self):
+        """Find products using the bugtracker wich runs on the given URL.
+
+        These products are stored in self.existing_products.
+
+        If there are too many products using that bugtracker then we'll store
+        only the first ones that somehow match the name given.
+        """
+        bug_url = self.request.form.get('field.bug_url')
+        if not bug_url:
+            return
+
+        bugwatch_set = getUtility(IBugWatchSet)
+        try:
+            bugtracker, bug = bugwatch_set.extractBugTrackerAndBug(bug_url)
+        except (NoBugTrackerFound, UnrecognizedBugTrackerURL):
+            # There's no bugtracker registered with the given URL, so we
+            # don't need to worry about finding products using it.
+            return
+
+        count = bugtracker.products.count()
+        if count > 0 and count <= self.MAX_PRODUCTS_TO_DISPLAY:
+            self.existing_products = list(bugtracker.products)
+        elif count > self.MAX_PRODUCTS_TO_DISPLAY:
+            # Use a local import as we don't want removeSecurityProxy used
+            # anywhere else.
+            from zope.security.proxy import removeSecurityProxy
+            name_matches = getUtility(IProductSet).search(
+                self.request.form.get('field.name'))
+            products = bugtracker.products.intersect(
+                removeSecurityProxy(name_matches))
+            self.existing_products = list(
+                products[:self.MAX_PRODUCTS_TO_DISPLAY])
+        else:
+            # The bugtracker is registered in Launchpad but there are no
+            # products using it at the moment.
+            pass
+
+    def setUpFields(self):
+        """Setup an extra field with all products using the given bugtracker.
+
+        This extra field is setup only if there is one or more products using
+        that bugtracker.
+        """
+        super(
+            BugAlsoAffectsProductWithProductCreationView, self).setUpFields()
+        self._loadProductsUsingBugTracker()
+        if self.existing_products is None or len(self.existing_products) < 1:
+            # No need to setup any extra fields.
+            return
+
+        terms = []
+        for product in self.existing_products:
+            terms.append(SimpleTerm(product, product.name, product.title))
+        existing_product = form.FormField(
+            Choice(__name__='existing_product',
+                   title=_("Existing project"), required=True,
+                   vocabulary=SimpleVocabulary(terms)),
+            custom_widget=self.custom_widgets['existing_product'])
+        self.form_fields += form.Fields(existing_product)
+        if 'field.existing_product' not in self.request.form:
+            # This is the first time the form is being submitted, so the
+            # request doesn't contain a value for the existing_product
+            # widget and thus we'll end up rendering an error message around
+            # said widget unless we sneak a value for it in our request.
+            self.request.form['field.existing_product'] = terms[0].token
+
+    def validate_existing_product(self, action, data):
+        """Check if the chosen project is not already affected by this bug."""
+        self._validate(action, data)
+        project = data.get('existing_product')
+        try:
+            valid_upstreamtask(self.context.bug, project)
+        except WidgetsError, errors:
+            for error in errors:
+                self.setFieldError('existing_product', error.snippet())
+
+    @action('Use Existing Project', name='use_existing_product',
+            validator=validate_existing_product)
+    def use_existing_product_action(self, action, data):
+        """Record the chosen project as being affected by this bug.
+
+        Also creates a bugwatch for the given remote bug.
+        """
+        data['product'] = data['existing_product']
+        self._createBugTaskAndWatch(data)
+
+    @action('Continue', name='continue')
+    def continue_action(self, action, data):
+        """Create a new product and a bugtask for this bug on that product.
+
+        If the URL of the remote bug given is of a bugtracker used by any
+        other products registered in Launchpad, then we show these products to
+        the user and ask if he doesn't want to create the task in one of them.
+        """
+        if self.existing_products and not self.request.form.get('create_new'):
+            # Present the projects using that bugtracker to the user as
+            # possible options to report the bug on. If there are too many
+            # projects using that bugtracker then show only the ones that
+            # match the text entered as the project's name
+            return
+
+        product = getUtility(IProductSet).createProduct(
+            self.user, data['name'], data['displayname'], data['displayname'],
+            data['summary'])
+        data['product'] = product
+        self._createBugTaskAndWatch(data, set_bugtracker=True)
+
+    def _createBugTaskAndWatch(self, data, set_bugtracker=False):
+        """Create a bugtask and bugwatch on the chosen product.
+
+        If set_bugtracker is True then the bugtracker of the newly created
+        watch is set as the product's bugtracker.
+
+        This is done by manually calling the main_action() method of
+        UpstreamBugTrackerCreationStep and ProductBugTaskCreationStep.
+
+        This method also sets self.next_url to the URL of the newly added
+        bugtask.
+        """
+        # XXX: This relies on the fact that these actions work using only the
+        # form data and the context. (They don't require any side-effects done
+        # during initialize().)  They should probably be extracted outside of
+        # the view to make that explicit. -- Guilherme Salgado, 2007-11-20
+        view = UpstreamBugTrackerCreationStep(self.context, self.request)
+        view.main_action(data)
+
+        view = ProductBugTaskCreationStep(self.context, self.request)
+        view.main_action(data)
+
+        if set_bugtracker:
+            data['product'].bugtracker = view.task_added.bugwatch.bugtracker
+        self.next_url = canonical_url(view.task_added)
 

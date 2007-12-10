@@ -25,6 +25,7 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 # XXX - bac - 2007-09-20, modules in canonical.lazr should not import from
 # canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.  Bug 153795.
@@ -33,9 +34,8 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
     IFeed, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
 
-MINUTES = 60
-MAX_AGE = 60 * MINUTES
 SUPPORTED_FEEDS = ('.atom', '.html')
+MINUTES = 60 # seconds in a minute
 
 
 class FeedBase(LaunchpadFormView):
@@ -43,9 +43,8 @@ class FeedBase(LaunchpadFormView):
 
     implements(IFeed)
 
-    # XXX - bac 2-Oct-2007 - Bug 153785 - these values should be
-    # in a config file.
-    max_age = MAX_AGE
+    # convert to seconds
+    max_age = config.launchpad.max_feed_cache_minutes * MINUTES
     quantity = 25
     items = None
     template_files = {'atom': 'templates/feed-atom.pt',
@@ -115,11 +114,11 @@ class FeedBase(LaunchpadFormView):
     def date_updated(self):
         """See `IFeed`."""
         sorted_items = sorted(self.getItems(),
-                              key=operator.attrgetter('date_updated'),
+                              key=operator.attrgetter('last_modified'),
                               reverse=True)
         if len(sorted_items) == 0:
             return None
-        return sorted_items[0].date_updated
+        return sorted_items[0].last_modified
 
     def render(self):
         """See `IFeed`."""
@@ -169,8 +168,8 @@ class FeedEntry:
         self.title = title
         self.link_alternate = link_alternate
         self.content = content
-        self.date_published = date_published
         self.date_updated = date_updated
+        self.date_published = date_published
         if authors is None:
             authors = []
         self.authors = authors
@@ -178,6 +177,12 @@ class FeedEntry:
             contribuors = []
         self.contributors = contributors
         self.id = id_
+
+    @property
+    def last_modified(self):
+        if self.date_published is not None and self.date_updated is not None:
+            return max(self.date_published, self.date_updated)
+        return self.date_published or self.date_updated
 
 
 class FeedTypedData:

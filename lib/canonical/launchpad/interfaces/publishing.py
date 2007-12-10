@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Publishing interfaces."""
 
@@ -112,7 +113,7 @@ class IPublishing(Interface):
         """
 
     def getIndexStanza():
-        """Return respective archive index stanza contents
+        """Return archive index stanza contents
 
         It's based on the locally provided buildIndexStanzaTemplate method,
         which differs for binary and source instances.
@@ -123,6 +124,41 @@ class IPublishing(Interface):
 
         The fields and values ae mapped into a dictionary, where the key is
         the field name and value is the value string.
+        """
+
+    def supersede():
+        """Supersede this publication.
+
+        :return: The superseded publishing records, either a
+            `ISourcePackagePublishingHistory` or
+            `IBinaryPackagePublishingHistory`.
+        """
+
+    def requestDeletion(removed_by, removal_comment=None):
+        """Delete this publication.
+
+        :param removed_by: `IPerson` responsible for the removal.
+        :param removal_comment: optional text describing the removal reason.
+
+        :return: The deleted publishing record, either:
+            `ISourcePackagePublishingHistory` or
+            `IBinaryPackagePublishingHistory`.
+        """
+
+    def requestObsolescence():
+        """Make this publication obsolete.
+
+        :return: The obsoleted publishing record, either:
+            `ISourcePackagePublishingHistory` or
+            `IBinaryPackagePublishingHistory`.
+        """
+
+    def copyTo(distroseries, pocket, archive):
+        """Copy this publication to another location.
+
+        :return: The publishing in the targeted location, either:
+            `ISourcePackagePublishingHistory` or
+            `IBinaryPackagePublishingHistory`.
         """
 
 
@@ -139,10 +175,12 @@ class IFilePublishing(Interface):
             title=_('Component name'), required=True, readonly=True,
             )
     publishingstatus = Int(
-            title=_('Package publishing status'), required=True, readonly=True,
+            title=_('Package publishing status'), required=True,
+            readonly=True,
             )
     pocket = Int(
-            title=_('Package publishing pocket'), required=True, readonly=True,
+            title=_('Package publishing pocket'), required=True,
+            readonly=True,
             )
     archive = Int(
             title=_('Archive ID'), required=True, readonly=True,
@@ -157,7 +195,7 @@ class IFilePublishing(Interface):
     archive_url = Attribute('The on-archive URL for the published file.')
 
     publishing_record = Attribute(
-        "Return the respective Source or Binary publishing record "
+        "Return the Source or Binary publishing record "
         "(in the form of I{Source,Binary}PackagePublishingHistory).")
 
     def publish(diskpool, log):
@@ -215,7 +253,8 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
             required=False, readonly=False,
             )
     scheduleddeletiondate = Datetime(
-            title=_('The date on which this record is scheduled for deletion'),
+            title=_('The date on which this record is scheduled for '
+                    'deletion'),
             required=False, readonly=False,
             )
     pocket = Int(
@@ -238,7 +277,8 @@ class ISecureSourcePackagePublishingHistory(IPublishing):
             required=True, readonly=False,
             )
     datemadepending = Datetime(
-            title=_('The date on which this record was set as pending removal'),
+            title=_('The date on which this record was set as pending '
+                    'removal'),
             required=False, readonly=False,
             )
     dateremoved = Datetime(
@@ -281,14 +321,22 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "correspondent to the sourcepackagerelease attribute inside "
         "a specific distroseries")
 
-    def publishedBinaries():
+    def getPublishedBinaries():
         """Return all resulted IBinaryPackagePublishingHistory.
 
         Follow the build record and return every PUBLISHED binary publishing
-        record for DistroArchSeriess in this DistroSeries, ordered by
+        record for DistroArchSeries in this DistroSeries, ordered by
         architecturetag.
         """
 
+    def changeOverride(new_component=None, new_section=None):
+        """Change the component and/or section of this publication
+
+        It is changed only if the argument is not None.
+
+        Return the overridden publishing record, either a
+        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        """
 
 #
 # Binary package publishing
@@ -342,7 +390,8 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
             required=False, readonly=False,
             )
     scheduleddeletiondate = Datetime(
-            title=_('The date on which this record is scheduled for deletion'),
+            title=_('The date on which this record is scheduled for '
+                    'deletion'),
             required=False, readonly=False,
             )
     status = Int(
@@ -366,7 +415,8 @@ class ISecureBinaryPackagePublishingHistory(IPublishing):
             required=False, readonly=False,
             )
     datemadepending = Datetime(
-            title=_('The date on which this record was set as pending removal'),
+            title=_('The date on which this record was set as pending '
+                    'removal'),
             required=False, readonly=False,
             )
     dateremoved = Datetime(
@@ -401,6 +451,16 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 
     distroarchseriesbinarypackagerelease = Attribute("The object that "
         "represents this binarypacakgerelease in this distroarchseries.")
+
+    def changeOverride(new_component=None, new_section=None,
+                       new_priority=None):
+        """Change the component, section and/or priority of this publication.
+
+        It is changed only if the argument is not None.
+
+        Return the overridden publishing record, either a
+        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        """
 
 
 class PackagePublishingStatus(DBEnumeratedType):
@@ -444,6 +504,15 @@ class PackagePublishingStatus(DBEnumeratedType):
         Records in this state contain a reference to the Launchpad user
         responsible for the deletion and a text comment with the removal
         reason.
+        """)
+
+    OBSOLETE = DBItem(5, """
+        Obsolete
+
+        When a distroseries becomes obsolete, its published packages
+        are no longer required in the archive.  The publications for
+        those packages are marked as "obsolete" and are subsequently
+        removed during domination and death row processing.
         """)
 
 

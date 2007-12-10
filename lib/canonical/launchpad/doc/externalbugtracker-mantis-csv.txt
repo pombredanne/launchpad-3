@@ -18,7 +18,7 @@ export from.
     >>> from canonical.launchpad.components.externalbugtracker import Mantis
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> alsa_mantis = Mantis(
     ...     new_bugtracker(BugTrackerType.MANTIS))
 
@@ -85,6 +85,8 @@ Collect the Example.com watches:
 And have our special Mantis instance process them:
 
     >>> example_ext_bug_tracker.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 1 watches on http://bugs.some.where
+
     >>> for bug_watch in example_bug_tracker.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     3224: assigned: open
@@ -124,6 +126,7 @@ updateBugWatches() issues only one request to update all watches:
     >>> example_ext_bug_tracker.trace_calls = True
     >>> example_ext_bug_tracker.cleanCache()
     >>> example_ext_bug_tracker.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 6 watches on http://bugs.some.where
     CALLED _postPage('view_all_set.php?f=3', ...)
     CALLED _getPage('csv_export.php')
 
@@ -177,5 +180,7 @@ updated:
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged
     >>> example_ext_bug_tracker.updateBugWatches([bug_watch])
+    INFO:...:Updating 1 watches on http://bugs.some.where
+
     >>> bug_watch.lastchanged == old_last_changed
     True

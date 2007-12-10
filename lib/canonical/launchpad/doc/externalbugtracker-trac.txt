@@ -13,12 +13,11 @@ IExternalBugTracker.
     >>> from canonical.launchpad.components.externalbugtracker import Trac
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces.externalbugtracker import (
-    ...     IExternalBugtracker)
-    >>> from canonical.lp.dbschema import BugTrackerType
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IExternalBugTracker)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> trac = Trac(new_bugtracker(BugTrackerType.TRAC))
-    >>> verifyObject(IExternalBugtracker, trac)
+    >>> verifyObject(IExternalBugTracker, trac)
     True
 
 
@@ -130,7 +129,7 @@ invalid bug:
     >>> invalid_bug = {'id': 1, 'description': 'This bug has no status'}
     >>> trac.bugs = {invalid_bug['id']: invalid_bug}
     >>> trac.getRemoteStatus(invalid_bug['id'])
-    WARNING:root:Trac ticket 1 defines no status.
+    WARNING:...:Trac ticket 1 defines no status.
     'UNKNOWN'
 
 
@@ -159,6 +158,8 @@ And have a Trac instance process them:
 
     >>> trac = TestTrac(example_bug_tracker)
     >>> trac.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 1 watches on http://bugs.some.where
+
     >>> for bug_watch in example_bug_tracker.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     1: fixed
@@ -199,6 +200,7 @@ We'll add some more watches now.
 
     >>> trac.trace_calls = True
     >>> trac.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 12 watches on http://bugs.some.where
     CALLED urlopen(u'http://.../query?id=...
 
     >>> for remote_bug_id in sorted(bug_watches.keys()):
@@ -237,5 +239,6 @@ watch hasn't altered:
     >>> old_last_changed = bug_watch.lastchanged
     >>> trac.trace_calls = False
     >>> trac.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 12 watches on http://bugs.some.where
     >>> bug_watch.lastchanged == old_last_changed
     True

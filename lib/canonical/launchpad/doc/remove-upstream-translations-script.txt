@@ -41,13 +41,12 @@ We can remove all translations from a concrete potemplate.
     DEBUG   Processing Spanish (es) translation of disabled-template in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-    DEBUG   Removed 12 submissions
-    DEBUG   After some removals, latest reviewer changed from Foo Bar to Rosetta Administrators
+    DEBUG   Removed 10 submissions
     DEBUG   Processing Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
     DEBUG   Processing Xhosa (xh) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
-    DEBUG   Removed 12 submissions in total.
+    DEBUG   Removed 10 submissions in total.
     <BLANKLINE>
 
 We need to force a DB reset because the changes are done from an external
@@ -75,9 +74,8 @@ Or with a concrete language.
     DEBUG   Processing Spanish (es) translation of disabled-template in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-    DEBUG   Removed 12 submissions
-    DEBUG   After some removals, latest reviewer changed from Foo Bar to Rosetta Administrators
-    DEBUG   Removed 12 submissions in total.
+    DEBUG   Removed 10 submissions
+    DEBUG   Removed 10 submissions in total.
     <BLANKLINE>
 
 We need to force a DB reset because the changes are done from an external
@@ -86,7 +84,7 @@ script and the test system is not able to detect the database changes.
     >>> LaunchpadTestSetup().force_dirty_database()
     >>> LaunchpadTestSetup().tearDown()
 
-Or even with a concrete IPOTemplateName.
+Or even with a concrete template name.
 
     >>> LaunchpadTestSetup(dbuser='rosettaadmin').setUp()
 
@@ -101,13 +99,12 @@ Or even with a concrete IPOTemplateName.
     >>> (output, empty) = process.communicate()
     >>> print output
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-    DEBUG   Removed 12 submissions
-    DEBUG   After some removals, latest reviewer changed from Foo Bar to Rosetta Administrators
+    DEBUG   Removed 10 submissions
     DEBUG   Processing Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
     DEBUG   Processing Xhosa (xh) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
-    DEBUG   Removed 12 submissions in total.
+    DEBUG   Removed 10 submissions in total.
     <BLANKLINE>
 
 We need to force a DB reset because the changes are done from an external
@@ -132,11 +129,9 @@ And it also works for products!
     >>> print output
     DEBUG   Processing Portuguese (Brazil) (pt_BR) translation of evolution-2.2-test in Evolution trunk...
     DEBUG   Removed 6 submissions
-    DEBUG   After some removals, latest reviewer changed from Diogo Matsubara to Rosetta Administrators 
     DEBUG   Processing Spanish (es) translation of evolution-2.2 in Evolution trunk...
-    DEBUG   Removed 12 submissions
-    DEBUG   After some removals, latest reviewer changed from Carlos Perelló Marín to Rosetta Administrators 
-    DEBUG   Removed 18 submissions in total.
+    DEBUG   Removed 10 submissions
+    DEBUG   Removed 16 submissions in total.
     <BLANKLINE>
 
 We need to force a DB reset because the changes are done from an external

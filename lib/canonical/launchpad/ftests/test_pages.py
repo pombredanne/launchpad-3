@@ -109,12 +109,13 @@ def find_main_content(content):
     return find_tag_by_id(content, 'maincontent')
 
 
-def get_feedback_messages(browser):
+def get_feedback_messages(content):
     """Find and return the feedback messages of the page."""
     message_classes = [
         'message', 'informational message', 'error message', 'warning message']
-    strainer = SoupStrainer(['div', 'p'], {'class': message_classes})
-    soup = BeautifulSoup(browser.contents, parseOnlyThese=strainer)
+    soup = BeautifulSoup(
+        content,
+        parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
     return [extract_text(tag) for tag in soup]
 
 
@@ -316,7 +317,7 @@ class PageStoryTestCase(unittest.TestCase):
 # but does follow the convention of the other doctest related *Suite()
 # functions.
 
-def PageTestSuite(storydir, package=None):
+def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     """Create a suite of page tests for files found in storydir.
 
     :param storydir: the directory containing the page tests.
@@ -350,14 +351,14 @@ def PageTestSuite(storydir, package=None):
     checker = SpecialOutputChecker()
     suite = PageTestDocFileSuite(
         package=package, checker=checker,
-        layer=PageTestLayer, setUp=setUpGlobs,
+        layer=PageTestLayer, setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in unnumberedfilenames])
 
     # Add numbered tests to the suite as a single story.
     storysuite = PageTestDocFileSuite(
         package=package, checker=checker,
-        layer=PageTestLayer, setUp=setUpGlobs,
+        layer=PageTestLayer, setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in numberedfilenames])
     suite.addTest(PageStoryTestCase(abs_storydir, storysuite))
@@ -383,6 +384,3 @@ def test_suite():
     for storydir in stories:
         suite.addTest(PageTestSuite(storydir))
     return suite
-
-if __name__ == '__main__':
-    r = unittest.TextTestRunner().run(test_suite())

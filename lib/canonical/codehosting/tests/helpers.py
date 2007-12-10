@@ -18,20 +18,20 @@ import unittest
 import transaction
 
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import FileExists
+from bzrlib.errors import FileExists, TransportNotPossible
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.errors import SmartProtocolError
 
 from zope.component import getUtility
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
-from zope.security.simplepolicies import PermissiveSecurityPolicy
 
+from canonical.authserver.interfaces import PERMISSION_DENIED_FAULT_CODE
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet, IPersonSet, IProductSet, License,
-    PersonCreationRationale, UnknownBranchTypeError)
+    BranchType, IBranchSet)
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.tests.test_twisted import TwistedTestCase
@@ -39,6 +39,7 @@ from canonical.tests.test_twisted import TwistedTestCase
 from twisted.internet import defer, threads
 from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
+from twisted.web.xmlrpc import Fault
 
 
 class AvatarTestCase(TwistedTestCase):
@@ -72,7 +73,8 @@ class AvatarTestCase(TwistedTestCase):
         shutil.rmtree(self.tmpdir)
 
         # Remove test droppings in the current working directory from using
-        # twisted.trial.unittest.TestCase.mktemp outside the trial test runner.
+        # twisted.trial.unittest.TestCase.mktemp outside the trial test
+        # runner.
         tmpdir_root = self.tmpdir.split(os.sep, 1)[0]
         shutil.rmtree(tmpdir_root)
 
@@ -83,6 +85,10 @@ def exception_names(exceptions):
         names = []
         for exc in exceptions:
             names.extend(exception_names(exc))
+    elif exceptions is TransportNotPossible:
+        # Unfortunately, not all exceptions render themselves as their name.
+        # More cases like this may need to be added
+        names = ["Transport operation not possible"]
     else:
         names = [exceptions.__name__]
     return names
@@ -160,12 +166,13 @@ class BranchTestCase(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        self._integer = 0
+        self._factory = LaunchpadObjectFactory()
         self.cursor = cursor()
         self.branch_set = getUtility(IBranchSet)
 
     def createTemporaryBazaarBranchAndTree(self, base_directory='.'):
-        """Create a local branch with one revision, return the working tree."""
+        """Create a local branch with one revision, return the working tree.
+        """
         tree = self.make_branch_and_tree(base_directory)
         self.local_branch = tree.branch
         self.build_tree([os.path.join(base_directory, 'foo')])
@@ -175,13 +182,13 @@ class BranchTestCase(TestCaseWithTransport):
 
     def emptyPullQueues(self):
         transaction.begin()
-        self.cursor.execute("UPDATE Branch SET mirror_request_time = NULL")
+        self.cursor.execute("UPDATE Branch SET next_mirror_time = NULL")
         transaction.commit()
 
     def getUniqueInteger(self):
         """Return an integer unique to this run of the test case."""
-        self._integer += 1
-        return self._integer
+        # Delegate to the factory.
+        return self._factory.getUniqueInteger()
 
     def getUniqueString(self, prefix=None):
         """Return a string to this run of the test case.
@@ -194,67 +201,34 @@ class BranchTestCase(TestCaseWithTransport):
         """
         if prefix is None:
             prefix = self.id().split('.')[-1]
-        string = "%s%s" % (prefix, self.getUniqueInteger())
-        return string.replace('_', '-').lower()
+        # Delegate to the factory.
+        return self._factory.getUniqueString(prefix)
 
     def getUniqueURL(self):
         """Return a URL unique to this run of the test case."""
-        return 'http://%s.example.com/%s' % (
-            self.getUniqueString(), self.getUniqueString())
+        # Delegate to the factory.
+        return self._factory.getUniqueURL()
 
     def makePerson(self, email=None, name=None):
         """Create and return a new, arbitrary Person."""
-        if email is None:
-            email = self.getUniqueString('email')
-        if name is None:
-            name = self.getUniqueString('person-name')
-        return getUtility(IPersonSet).createPersonAndEmail(
-            email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
+        # Delegate to the factory.
+        return self._factory.makePerson(email, name)
 
     def makeProduct(self):
         """Create and return a new, arbitrary Product."""
-        owner = self.makePerson()
-        return getUtility(IProductSet).createProduct(
-            owner, self.getUniqueString('product-name'),
-            self.getUniqueString('displayname'),
-            self.getUniqueString('title'),
-            self.getUniqueString('summary'),
-            self.getUniqueString('description'),
-            licenses=[License.GPL])
+        # Delegate to the factory.
+        return self._factory.makeProduct()
 
-    def makeBranch(self, branch_type=None, owner=None, name=None, product=None,
-                   url=None, **optional_branch_args):
+    def makeBranch(self, branch_type=None, owner=None, name=None,
+                   product=None, url=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
         default ones.
         """
-        if branch_type is None:
-            branch_type = BranchType.HOSTED
-        if owner is None:
-            owner = self.makePerson()
-        if name is None:
-            name = self.getUniqueString('branch')
-        if product is None:
-            product = self.makeProduct()
-
-        if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
-            url = None
-        elif (branch_type in (BranchType.MIRRORED, BranchType.REMOTE)
-              and url is None):
-            url = self.getUniqueURL()
-        else:
-            raise UnknownBranchTypeError(
-                'Unrecognized branch type: %r' % (branch_type,))
-        return self.branch_set.new(
-            branch_type, name, owner, owner, product, url,
-            **optional_branch_args)
-
-    def relaxSecurityPolicy(self):
-        """Switch to using 'PermissiveSecurityPolicy'."""
-        old_policy = getSecurityPolicy()
-        setSecurityPolicy(PermissiveSecurityPolicy)
-        self.addCleanup(lambda: setSecurityPolicy(old_policy))
+        # Delegate to the factory.
+        return self._factory.makeBranch(
+            branch_type, owner, name, product, url, **optional_branch_args)
 
     def restrictSecurityPolicy(self):
         """Switch to using 'LaunchpadSecurityPolicy'."""
@@ -279,7 +253,17 @@ def deferToThread(f):
 
 
 class FakeLaunchpad:
-    """Stub RPC interface to Launchpad."""
+    """Stub RPC interface to Launchpad.
+
+    If the 'failing_branch_name' attribute is set and createBranch() is called
+    with its value for the branch_name parameter, a Fault will be raised with
+    code and message taken from the 'failing_branch_code' and
+    'failing_branch_string' attributes respectively.
+    """
+
+    failing_branch_name = None
+    failing_branch_code = None
+    failing_branch_string = None
 
     def __init__(self):
         self._person_set = {
@@ -314,15 +298,26 @@ class FakeLaunchpad:
         return new_id
 
     def createBranch(self, login_id, user, product, branch_name):
-        """See IHostedBranchStorage.createBranch."""
-        for user_id, user_info in self._person_set.iteritems():
+        """See `IHostedBranchStorage.createBranch`.
+
+        Also see the description of 'failing_branch_name' in the class
+        docstring.
+        """
+        if self.failing_branch_name == branch_name:
+            raise Fault(self.failing_branch_code, self.failing_branch_string)
+        user_id = None
+        for id, user_info in self._person_set.iteritems():
             if user_info['name'] == user:
-                break
-        else:
+                user_id = id
+        if user_id is None:
             return ''
         product_id = self.fetchProductID(product)
         if product_id is None:
             return ''
+        user = self.getUser(user_id)
+        if product_id == '' and 'team' in user['name']:
+            raise Fault(PERMISSION_DENIED_FAULT_CODE,
+                        'Cannot create team-owned +junk branches.')
         new_branch = dict(
             name=branch_name, user_id=user_id, product_id=product_id)
         for branch in self._branch_set.values():

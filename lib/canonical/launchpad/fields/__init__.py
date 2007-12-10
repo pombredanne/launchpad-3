@@ -1,18 +1,20 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,W0401
 
 from StringIO import StringIO
 from textwrap import dedent
 
 from zope.component import getUtility
 from zope.schema import (
-    Bool, Bytes, Choice, Field, Int, Text, TextLine, Password, Tuple)
+    Bool, Bytes, Choice, Datetime, Field, Int, Text, TextLine, Password,
+    Tuple)
 from zope.schema.interfaces import (
-    IBytes, IField, IInt, IPassword, IText, ITextLine)
+    IBytes, IDatetime, IField, IInt, IPassword, IText, ITextLine)
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
-from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
@@ -48,6 +50,15 @@ class IBugField(IField):
 class IPasswordField(IPassword):
     """A field that ensures we only use http basic authentication safe
     ascii characters."""
+
+class IAnnouncementDate(IDatetime):
+    """Marker interface for AnnouncementDate fields.
+
+    This is used in cases where we either want to publish something
+    immediately, or come back in future to publish it, or set a date for
+    publication in advance. Essentially this amounts to a Datetime that can
+    be None.
+    """
 
 class IShipItRecipientDisplayname(ITextLine):
     """A field used for the recipientdisplayname attribute on shipit forms.
@@ -180,6 +191,10 @@ class Description(Text):
 # A field capture a Launchpad object whiteboard
 class Whiteboard(Text):
     implements(IWhiteboard)
+
+
+class AnnouncementDate(Datetime):
+    implements(IDatetime)
 
 
 # TimeInterval
@@ -553,4 +568,22 @@ class MugshotImageUpload(BaseImageUpload):
     max_size = 100*1024
     default_image_resource = '/@@/nyet-mugshot'
 
+
+class PillarNameField(BlacklistableContentNameField):
+    """Base field used for names of distros/projects/products."""
+
+    errormessage = _("%s is already used by another project")
+
+    def _getByName(self, name):
+        return getUtility(IPillarNameSet).getByName(name)
+
+
+class ProductNameField(PillarNameField):
+    """Field used by IProduct.name."""
+
+    @property
+    def _content_iface(self):
+        # Local import to avoid circular dependencies.
+        from canonical.launchpad.interfaces.product import IProduct
+        return IProduct
 

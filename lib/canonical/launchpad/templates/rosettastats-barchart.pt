@@ -1,11 +1,13 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <span class="sortkey" tal:content="view/sortable_untranslated" />
 <img
   tal:condition="not: context/messageCount"
-  src="/@@/red-bar"
-  height="10"
-  width="100"
-  style="height: 1em;"
-  >
+  src="/@@/red-bar" height="10" width="100" style="height: 1em;" />
 <img
   tal:condition="context/nonUpdatesCount"
   tal:attributes="
@@ -13,9 +15,7 @@
     title string:Unchanged: ${context/nonUpdatesPercentage} %;
     width context/nonUpdatesPercentage;
   "
-  height="10"
-  src="/@@/green-bar"
-  style="height: 1em;"
+  height="10" src="/@@/green-bar" style="height: 1em;"
 /><img
   tal:condition="context/updatesCount"
   tal:attributes="
@@ -23,9 +23,7 @@
     width context/updatesPercentage;
     title string: Changed: ${context/updatesPercentage} %
   "
-  height="10"
-  src="/@@/blue-bar"
-  style="height: 1em;"
+  height="10" src="/@@/blue-bar" style="height: 1em;"
 /><img
   tal:condition="context/rosettaCount"
   tal:attributes="
@@ -33,9 +31,7 @@
     width context/rosettaPercentage;
     title string: New: ${context/rosettaPercentage} %
   "
-  height="10"
-  src="/@@/purple-bar"
-  style="height: 1em;"
+  height="10" src="/@@/purple-bar" style="height: 1em;"
 /><img
   tal:condition="context/untranslatedCount"
   tal:attributes="
@@ -43,7 +39,6 @@
     width context/untranslatedPercentage;
     title string: Untranslated: ${context/untranslatedPercentage} %
   "
-  height="10"
-  src="/@@/red-bar"
-  style="height: 1em;"
+  height="10" src="/@@/red-bar" style="height: 1em;"
 />
+</tal:root>

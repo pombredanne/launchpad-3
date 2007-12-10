@@ -8,15 +8,15 @@ __all__ = [
     'ArchiveOverriderError',
     'ArchiveCruftChecker',
     'ArchiveCruftCheckerError',
-    'PubSourceChecker',
     'ChrootManager',
     'ChrootManagerError',
+    'LpQueryDistro',
+    'ObsoleteDistroseries',
+    'PackageCopier',
+    'PackageRemover',
+    'PubSourceChecker',
     'SyncSource',
     'SyncSourceError',
-    'PackageCopyError',
-    'PackageCopier',
-    'LpQueryDistro',
-    'PackageRemover',
     ]
 
 import apt_pkg
@@ -32,18 +32,18 @@ from zope.component import getUtility
 from canonical.archiveuploader.utils import re_extract_src_version
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, IBinaryPackageNameSet, IDistributionSet,
-    IBinaryPackageReleaseSet, ILaunchpadCelebrities, NotFoundError,
-    ILibraryFileAliasSet, IPersonSet, PackagePublishingPocket,
+    ArchivePurpose, DistroSeriesStatus, IBinaryPackageNameSet,
+    IDistributionSet, IBinaryPackageReleaseSet, ILaunchpadCelebrities,
+    NotFoundError, ILibraryFileAliasSet, IPersonSet, PackagePublishingPocket,
     PackagePublishingPriority)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
-from canonical.lp import READ_COMMITTED_ISOLATION
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.scripts.ftpmasterbase import (
-    PackageLocation, PackageLocationError, SoyuzScript, SoyuzScriptError)
+    build_package_location, PackageLocationError, SoyuzScript,
+    SoyuzScriptError)
 
 
 class ArchiveOverriderError(Exception):
@@ -146,16 +146,25 @@ class ArchiveOverrider:
         """
         sp = self.distroseries.getSourcePackage(package_name)
 
-        if not sp or not sp.currentrelease:
+        if (not sp or not sp.currentrelease or
+            not sp.currentrelease.current_published):
             self.log.error("'%s' source isn't published in %s"
                            % (package_name, self.distroseries.name))
             return
 
-        sp.currentrelease.changeOverride(new_component=self.component,
-                                         new_section=self.section)
-        self.log.info("'%s/%s/%s' source overridden"
-                      % (package_name, sp.currentrelease.component.name,
-                         sp.currentrelease.section.name))
+        override = sp.currentrelease.current_published.changeOverride(
+            new_component=self.component, new_section=self.section)
+
+        if override is None:
+            self.log.info("'%s/%s/%s' remained the same"
+                          % (sp.currentrelease.sourcepackagerelease.title,
+                             sp.currentrelease.component.name,
+                             sp.currentrelease.section.name))
+        else:
+            self.log.info("'%s/%s/%s' source overridden"
+                          % (sp.currentrelease.sourcepackagerelease.title,
+                             sp.currentrelease.component.name,
+                             sp.currentrelease.section.name))
 
     def processBinaryChange(self, package_name):
         """Perform changes in a given binary package name
@@ -195,7 +204,9 @@ class ArchiveOverrider:
             # iterations (on distroarchseries that obviously do not contain
             # any publication).
             if bpr.architecturespecific:
-                considered_archs = [bpr.build.distroarchseries]
+                archtag = bpr.build.distroarchseries.architecturetag
+                architecture = self.distroseries[archtag]
+                considered_archs = [architecture]
             else:
                 considered_archs = self.distroseries.architectures
             # Perform overrides.
@@ -217,16 +228,24 @@ class ArchiveOverrider:
                              distroarchseries.architecturetag))
             return
         dasbpr = dasbp[current.binarypackagerelease.version]
-        dasbpr.changeOverride(
+        override = dasbpr.current_publishing_record.changeOverride(
             new_component=self.component,
             new_priority=self.priority,
             new_section=self.section)
-        self.log.info(
-            "'%s/%s/%s/%s' binary overridden in %s/%s"
-            % (binaryname, current.component.name,
-               current.section.name, current.priority.name,
-               self.distroseries.name,
-               distroarchseries.architecturetag))
+
+        if override is None:
+            self.log.info(
+                "'%s/%s/%s/%s' remained the same"
+                % (current.binarypackagerelease.title,
+                   current.component.name,
+                   current.section.name, current.priority.name))
+        else:
+            self.log.info(
+                "'%s/%s/%s/%s' binary overridden in %s"
+                % (override.binarypackagerelease.title,
+                   current.component.name,
+                   current.section.name, current.priority.name,
+                   override.distroarchseries.displayname))
 
 
 class ArchiveCruftCheckerError(Exception):
@@ -501,11 +520,13 @@ class ArchiveCruftChecker:
 
                 source_version = self.source_versions.get(source, "0")
 
-                if apt_pkg.VersionCompare(latest_version, source_version) == 0:
-                    self.addNBS(
-                        self.dubious_nbs, source, latest_version, package)
+                if apt_pkg.VersionCompare(latest_version,
+                                          source_version) == 0:
+                    self.addNBS(self.dubious_nbs, source, latest_version,
+                                package)
                 else:
-                    self.addNBS(self.real_nbs, source, latest_version, package)
+                    self.addNBS(self.real_nbs, source, latest_version,
+                                package)
 
     def outputNBS(self):
         """Properly display built NBS entries.
@@ -536,7 +557,8 @@ class ArchiveCruftChecker:
                 for pkg in packages:
                     self.nbs_to_remove.append(pkg)
 
-                output += "        o %s: %s\n" % (version, ", ".join(packages))
+                output += "        o %s: %s\n" % (
+                    version, ", ".join(packages))
 
             output += "\n"
 
@@ -600,9 +622,10 @@ class ArchiveCruftChecker:
 
             for distroarchseries in self.distroseries.architectures:
                 binarypackagename = getUtility(IBinaryPackageNameSet)[package]
-                darbp = distroarchseries.getBinaryPackage(binarypackagename)
+                dasbp = distroarchseries.getBinaryPackage(binarypackagename)
+                dasbpr = dasbp.currentrelease
                 try:
-                    sbpph = darbp.supersede()
+                    sbpph = dasbpr.current_publishing_record.supersede()
                     # We're blindly removing for all arches, if it's not there
                     # for some, that's fine ...
                 except NotFoundError:
@@ -1089,19 +1112,13 @@ class SyncSource:
                     % (filename, actual_size, expected_size))
 
 
-class PackageCopyError(Exception):
-    """Raised when a package copy operation failed.  The textual content
-    should explain the error.
-    """
-
-
-class PackageCopier(LaunchpadScript):
-    """LaunchpadScript that copies published packages between distro suites.
+class PackageCopier(SoyuzScript):
+    """SoyuzScript that copies published packages between locations.
 
     Possible exceptions raised are:
     * PackageLocationError: specified package or distro does not exist
     * PackageCopyError: the copy operation itself has failed
-    * LaunchpadScriptError: only raised if entering via main(), ie this
+    * LaunchpadScriptFailure: only raised if entering via main(), ie this
         code is running as a genuine script.  In this case, this is
         also the _only_ exception to be raised.
 
@@ -1114,77 +1131,63 @@ class PackageCopier(LaunchpadScript):
 
     def add_my_options(self):
 
-        self.parser.add_option(
-            '-n', '--dry-run', dest='dryrun', default=False,
-            action='store_true', help='Do not commit changes.')
+        SoyuzScript.add_my_options(self)
 
         self.parser.add_option(
-            '-y', '--confirm-all', dest='confirm_all',
-            default=False, action='store_true',
-            help='Do not prompt the user for confirmation.')
-
-        self.parser.add_option(
-            '-b', '--include-binaries', dest='include_binaries',
-            default=False, action='store_true',
+            "-b", "--include-binaries", dest="include_binaries",
+            default=False, action="store_true",
             help='Whether to copy related binaries or not.')
 
         self.parser.add_option(
-            '-d', '--from-distribution', dest='from_distribution_name',
+            '--to-distribution', dest='to_distribution',
             default='ubuntu', action='store',
-            help='Source distribution.')
-
-        self.parser.add_option(
-            '-s', '--from-suite', dest='from_suite', default=None,
-            action='store', help='Source suite.')
+            help='Destination distribution name.')
 
         self.parser.add_option(
             '--to-suite', dest='to_suite', default=None,
-            action='store', help='Destination suite.')
+            action='store', help='Destination suite name.')
 
         self.parser.add_option(
-            '-e', '--sourceversion', dest='sourceversion', default=None,
-            action='store',
-            help='Optional Source Version, defaults to the current version.')
+            '--to-ppa', dest='to_ppa', default=None,
+            action='store', help='Destination PPA owner name.')
 
-    def main(self):
-        """LaunchpadScript entry point.
+        self.parser.add_option(
+            '--to-partner', dest='to_partner', default=False,
+            action='store_true', help='Destination set to PARTNER archive.')
 
-        Can only raise LaunchpadScriptFailure - other exceptions are
-        absorbed into that.
+    def checkCopyOptions(self):
+        """Check if the locations options are sane.
+
+         * Catch Cross-PARTNER copies, they are not allowed.
+         * Catch simulataneous PPA and PARTNER locations or destinations,
+           results are unpredictable (in fact, the code will ignore PPA and
+           operate only in PARTNER, but that's odd)
         """
+        if ((self.options.partner_archive and not self.options.to_partner)
+            or (self.options.to_partner and not
+                self.options.partner_archive)):
+            raise SoyuzScriptError(
+                "Cross-PARTNER copies are not allowed.")
 
-        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
+        if self.options.archive_owner_name and self.options.partner_archive:
+            raise SoyuzScriptError(
+                "Cannot operate with location PARTNER and PPA "
+                "simultaneously.")
 
-        if len(self.args) != 1:
-            raise LaunchpadScriptFailure(
-                "At least one non-option argument must be given, "
-                "the sourcename.")
+        if self.options.to_ppa and self.options.to_partner:
+            raise SoyuzScriptError(
+                "Cannot operate with destination PARTNER and PPA "
+                "simultaneously.")
+        if ((self.options.archive_owner_name and not self.options.to_ppa)
+            and self.options.include_binaries):
+            raise SoyuzScriptError(
+                "Cannot copy binaries from PPA to PRIMARY archive.")
 
-        try:
-            self.doCopy()
-        except (PackageCopyError, PackageLocationError), err:
-            raise LaunchpadScriptFailure(err)
-
-        if not self.options.dryrun:
-            self.txn.commit()
-            self.logger.info(
-                "Changes committed.  The archive will be updated"
-                " in the next publishing cycle")
-            self.logger.info('Be patient.')
-        else:
-            self.logger.info('Dry run, so nothing to commit.')
-            self.txn.abort()
-
-        self.logger.info('Done.')
-
-    def doCopy(self):
+    def mainTask(self):
         """Execute package copy procedure.
 
-        Build location and target objects.
-        Check whether user feedback is needed or is suppressed by
-        given parameters.
-        Copy source publication and optionally related binary publications
-        according to the given parameters.
+        Copy source publication and optionally also copy its binaries by
+        passing '-b' (include_binary) option.
 
         Modules using this class outside of its normal usage in the
         copy-package.py script can call this method to start the copy.
@@ -1192,177 +1195,77 @@ class PackageCopier(LaunchpadScript):
         In this case the caller can override test_args on __init__
         to set the command line arguments.
 
-        Can raise PackageLocationError or PackageCopyError.
+        Can raise SoyuzScriptError.
         """
+        assert self.location, (
+            "location is not available, call PackageCopier.setupLocation() "
+            "before dealing with mainTask.")
+
+        self.checkCopyOptions()
+
         sourcename = self.args[0]
-        from_source = None
-        from_binaries = []
-        copied_source = None
-        copied_binaries = []
 
-        # This can raise PackageCopyError:
-        from_location, to_location = self._findLocations()
-        from_source = self._findSource(
-            from_location,
-            sourcename,
-            self.options.sourceversion)
+        self.setupDestination()
 
-        self.logger.info("Syncing %r to %r" % (from_source.title,
-                                               str(to_location)))
-        self.logger.info("Include Binaries: %s" % self.options.include_binaries)
+        self.logger.info("FROM: %s" % (self.location))
+        self.logger.info("TO: %s" % (self.destination))
 
-        if not self.options.confirm_all and not self._getUserConfirmation():
-            self.logger.info("Ok, see you later")
-            return
-
-        copied_source = self.copySource(from_source, to_location)
-
+        to_copy = []
+        source_pub = self.findLatestPublishedSource(sourcename)
+        to_copy.append(source_pub)
         if self.options.include_binaries:
-            self.logger.info("Performing binary copy.")
-            from_binaries = self._findBinaries(from_source, from_location)
-            for binary in from_binaries:
-                binary_copied = self.copyBinary(binary, to_location)
-                if binary_copied is not None:
-                    copied_binaries.append(binary_copied)
+            to_copy.extend(source_pub.getPublishedBinaries())
+
+        self.logger.info("Copy candidates:")
+        for candidate in to_copy:
+            self.logger.info('\t%s' % candidate.displayname)
+
+        copies = []
+        for candidate in to_copy:
+            try:
+                copied = candidate.copyTo(
+                    distroseries = self.destination.distroseries,
+                    pocket = self.destination.pocket,
+                    archive = self.destination.archive)
+            except NotFoundError:
+                self.logger.warn('Could not copy %s' % candidate.displayname)
+            else:
+                copies.append(copied)
+
+        if len(copies) == 1:
             self.logger.info(
-                "%d binaries copied." % len(copied_binaries))
+                "%s package successfully copied." % len(copies))
+        elif len(copies) > 1:
+            self.logger.info(
+                "%s packages successfully copied." % len(copies))
+        else:
+            self.logger.info("No package copied (bug ?!?).")
 
         # Information returned mainly for the benefit of the test harness.
-        return (from_location, to_location, from_source, from_binaries,
-                copied_source, copied_binaries)
+        return copies
 
-    def _findLocations(self):
-        """Build PackageLocation for context FROM and TO.
-
-        Returns result as a tuple.
-        """
-        # These can raise PackageLocationError, but we're happy to pass
-        # it upwards.
-        from_location = PackageLocation(
-            self.options.from_distribution_name, self.options.from_suite)
-        # from_distribution_name intentionally used here as we currently
-        # only support moving within the same distro:
-        to_location = PackageLocation(
-            self.options.from_distribution_name, self.options.to_suite)
-
-        if from_location == to_location:
-            raise PackageCopyError(
-                "Can not sync between the same locations: '%s' to '%s'" % (
-                from_location, to_location))
-        return (from_location, to_location)
-
-    def _findSource(self, from_location, sourcename, sourceversion):
-        """Build a DistroSeriesSourcePackageRelease for the given parameters
-
-        Result is returned.
-        """
-        sourcepackage = from_location.distroseries.getSourcePackage(
-            sourcename)
-
-        if sourcepackage is None:
-            raise PackageCopyError(
-                "Could not find any version of '%s' in %s" % (
-                sourcename, from_location))
-
-        if sourceversion is None:
-            target_source = sourcepackage.currentrelease
+    def setupDestination(self):
+        """Build PackageLocation for the destination context."""
+        if self.options.to_partner:
+            self.destination = build_package_location(
+                self.options.to_distribution,
+                self.options.to_suite,
+                ArchivePurpose.PARTNER)
+        elif self.options.to_ppa:
+            self.destination = build_package_location(
+                self.options.to_distribution,
+                self.options.to_suite,
+                ArchivePurpose.PPA,
+                self.options.to_ppa)
         else:
-            target_source = sourcepackage[sourceversion]
+            self.destination = build_package_location(
+                self.options.to_distribution,
+                self.options.to_suite)
 
-        if target_source is None:
-            raise PackageCopyError(
-                "Could not find '%s/%s' in %s" % (
-                sourcename, self.options.sourceversion,
-                from_location))
-        return target_source
-
-    def _findBinaries(self, from_source, from_location):
-        """Build a set of DistroArchSeriesBinaryPackageRelease for the source.
-
-        Returns a list of published DistroArchSeriesBinaryPackageRelease for
-        all architectures for the from_source.
-        """
-        target_binaries = []
-
-        # Get the binary packages in each distroarchseries and store them
-        # in target_binaries for returning.  We are looking for *published*
-        # binarypackagereleases in all arches for the from_source and its
-        # from_location.
-        for binary in from_source.binaries:
-            if binary.architecturespecific:
-                considered_arches = [binary.build.distroarchseries]
-            else:
-                considered_arches = from_location.distroseries.architectures
-
-            for distroarchseries in considered_arches:
-                dasbpr = distroarchseries.getBinaryPackage(
-                    binary.name)[binary.version]
-                # Only include objects with published binaries.
-                if dasbpr is None or dasbpr.current_publishing_record is None:
-                    continue
-                target_binaries.append(dasbpr)
-
-        return target_binaries
-
-    def _getUserConfirmation(self):
-        """Command-line helper.
-
-        It uses raw_input to collect user feedback.
-
-        Return True if the user typed 'yes' or False for 'no'.
-        """
-        answer = None
-        valid_answers = ['yes', 'no']
-        display_answers = '[%s]' % (', '.join(valid_answers))
-        full_question = 'Are you sure? %s ' % display_answers
-        while answer not in valid_answers:
-            answer = raw_input(full_question)
-        return answer == 'yes'
-
-    def copySource(self, from_source, to_location):
-        """Copy context source and store correspondent reference.
-
-        Reference to the destination copy will be returned.
-        """
-        self.logger.info("Performing source copy.")
-
-        source_copy = from_source.copyTo(
-            distroseries=to_location.distroseries,
-            pocket=to_location.pocket)
-
-        # Retrieve and store the IDRSPR for the target location
-        to_distroseries = to_location.distroseries
-        copied_source = to_distroseries.getSourcePackageRelease(
-            source_copy.sourcepackagerelease)
-
-        self.logger.info("Copied: %s" % copied_source.title)
-
-        return copied_source
-
-    def copyBinary(self, binary, to_location):
-        """Copy given binary to target location if possible.
-
-        Return reference to the copied binary.
-        """
-        # copyTo will raise NotFoundError if the architecture in
-        # question is not present in destination or if the binary
-        # is not published it source location. Both situations are
-        # safe, so that's why we swallow this error.
-        try:
-            binary_copy = binary.copyTo(
-                distroseries=to_location.distroseries,
-                pocket=to_location.pocket)
-        except NotFoundError:
-            return None
-
-        # Retrieve and store the IDARBPR for the target location.
-        darbp = binary_copy.distroarchseries.getBinaryPackage(
-            binary_copy.binarypackagerelease.name)
-        bin_version = binary_copy.binarypackagerelease.version
-        binary_copied = darbp[bin_version]
-
-        self.logger.info("Copied: %s" % binary_copied.title)
-        return binary_copied
+        if self.location == self.destination:
+            raise SoyuzScriptError(
+                "Can not sync between the same locations: '%s' to '%s'" % (
+                self.location, self.destination))
 
 
 class LpQueryDistro(LaunchpadScript):
@@ -1374,7 +1277,7 @@ class LpQueryDistro(LaunchpadScript):
         Also initialise the list 'allowed_arguments'.
         """
         self.allowed_actions = [
-            'current', 'development', 'archs', 'official_archs',
+            'current', 'development', 'supported', 'archs', 'official_archs',
             'nominated_arch_indep']
         self.usage = '%%prog <%s>' % ' | '.join(self.allowed_actions)
         LaunchpadScript.__init__(self, *args, **kwargs)
@@ -1385,7 +1288,7 @@ class LpQueryDistro(LaunchpadScript):
             '-d', '--distribution', dest='distribution_name',
             default='ubuntu', help='Context distribution name.')
         self.parser.add_option(
-            '-s', '--suite', dest='suite_name', default=None,
+            '-s', '--suite', dest='suite', default=None,
             help='Context suite name.')
 
     def main(self):
@@ -1404,9 +1307,9 @@ class LpQueryDistro(LaunchpadScript):
         LaunchpadScriptFailure.
         """
         try:
-            self.location = PackageLocation(
+            self.location = build_package_location(
                 distribution_name=self.options.distribution_name,
-                suite_name=self.options.suite_name)
+                suite=self.options.suite)
         except PackageLocationError, err:
             raise LaunchpadScriptFailure(err)
 
@@ -1462,12 +1365,12 @@ class LpQueryDistro(LaunchpadScript):
         i.e, passing an arbitrary 'suite' and asking for the CURRENT suite
         in the context distribution.
         """
-        if self.options.suite_name is not None:
+        if self.options.suite is not None:
             raise LaunchpadScriptFailure(
-                "Action does not accept defined suite_name.")
+                "Action does not accept defined suite.")
 
     # XXX cprov 2007-04-20 bug=113563.: Should be implemented in
-    # IDistribution. raising NotFoundError instead.
+    # IDistribution.
     def getSeriesByStatus(self, status):
         """Query context distribution for a distroseries in a given status.
 
@@ -1479,7 +1382,7 @@ class LpQueryDistro(LaunchpadScript):
         for series in self.location.distribution.serieses:
             if series.status == status:
                 return series
-        raise LaunchpadScriptFailure(
+        raise NotFoundError(
                 "Could not find a %s distroseries in %s"
                 % (status.name, self.location.distribution.name))
 
@@ -1488,13 +1391,16 @@ class LpQueryDistro(LaunchpadScript):
         """Return the name of the CURRENT distroseries.
 
         It is restricted for the context distribution.
-        It may raise LaunchpadScriptFailure if a suite was passed in the
-        command-line.
-        See self.getSeriesByStatus for further information
+
+        It may raise LaunchpadScriptFailure if a suite was passed on the
+        command-line or if not CURRENT distroseries was found.
         """
         self.checkNoSuiteDefined()
-        series = self.getSeriesByStatus(
-            DistroSeriesStatus.CURRENT)
+        try:
+            series = self.getSeriesByStatus(DistroSeriesStatus.CURRENT)
+        except NotFoundError, err:
+            raise LaunchpadScriptFailure(err)
+
         return series.name
 
     @property
@@ -1502,14 +1408,61 @@ class LpQueryDistro(LaunchpadScript):
         """Return the name of the DEVELOPMENT distroseries.
 
         It is restricted for the context distribution.
-        It may raise LaunchpadScriptFailure if a suite was passed in the
+
+        It may raise `LaunchpadScriptFailure` if a suite was passed on the
         command-line.
-        See self.getSeriesByStatus for further information
+
+        Return the first FROZEN distroseries found if there is no
+        DEVELOPMENT one available.
+
+        Raises `NotFoundError` if neither a CURRENT nor a FROZEN
+        candidate could be found.
         """
         self.checkNoSuiteDefined()
-        series = self.getSeriesByStatus(
-            DistroSeriesStatus.DEVELOPMENT)
+        series = None
+        wanted_status = (DistroSeriesStatus.DEVELOPMENT,
+                         DistroSeriesStatus.FROZEN)
+        for status in wanted_status:
+            try:
+                series = self.getSeriesByStatus(status)
+            except NotFoundError:
+                pass
+
+        if series is None:
+            raise LaunchpadScriptFailure(
+                'There is no DEVELOPMENT distroseries for %s' %
+                self.location.distribution.name)
+
         return series.name
+
+    @property
+    def get_supported(self):
+        """Return the names of the distroseries currently supported.
+
+        'supported' means not EXPERIMENTAL or OBSOLETE.
+
+        It is restricted for the context distribution.
+
+        It may raise `LaunchpadScriptFailure` if a suite was passed on the
+        command-line or if there is not supported distroseries for the
+        distribution given.
+
+        Return a space-separated list of distroseries names.
+        """
+        self.checkNoSuiteDefined()
+        supported_series = []
+        unsupported_status = (DistroSeriesStatus.EXPERIMENTAL,
+                              DistroSeriesStatus.OBSOLETE)
+        for distroseries in self.location.distribution:
+            if distroseries.status not in unsupported_status:
+                supported_series.append(distroseries.name)
+
+        if not supported_series:
+            raise LaunchpadScriptFailure(
+                'There is no supported distroseries for %s' %
+                self.location.distribution.name)
+
+        return " ".join(supported_series)
 
     @property
     def get_archs(self):
@@ -1549,7 +1502,12 @@ class PackageRemover(SoyuzScript):
     success_message = (
         "The archive will be updated in the next publishing cycle.")
 
-    def addExtraSoyuzOptions(self):
+    def add_my_options(self):
+        """Adding local options."""
+        # XXX cprov 20071025: we need a hook for loading SoyuzScript default
+        # options automatically. This is ugly.
+        SoyuzScript.add_my_options(self)
+
         # Mode options.
         self.parser.add_option("-b", "--binary", dest="binaryonly",
                                default=False, action="store_true",
@@ -1592,25 +1550,24 @@ class PackageRemover(SoyuzScript):
 
         removables = []
         if self.options.binaryonly:
-            removables = self.findBinaries(packagename)
+            removables.extend(self.findLatestPublishedBinaries(packagename))
         elif self.options.sourceonly:
-            removables.append(self.findSource(packagename))
+            removables.append(self.findLatestPublishedSource(packagename))
         else:
-            source = self.findSource(packagename)
-            binaries = source.published_binaries
-            removables.append(source)
-            removables.extend(binaries)
+            source_pub = self.findLatestPublishedSource(packagename)
+            removables.append(source_pub)
+            removables.extend(source_pub.getPublishedBinaries())
 
         self.logger.info("Removing candidates:")
         for removable in removables:
-            self.logger.info('\t%s' % removable.title)
+            self.logger.info('\t%s' % removable.displayname)
 
         self.logger.info("Removed-by: %s" % removed_by.displayname)
         self.logger.info("Comment: %s" % self.options.removal_comment)
 
         removals = []
         for removable in removables:
-            removed = removable.delete(
+            removed = removable.requestDeletion(
                 removed_by=removed_by,
                 removal_comment=self.options.removal_comment)
             removals.append(removed)
@@ -1626,3 +1583,84 @@ class PackageRemover(SoyuzScript):
 
         # Information returned mainly for the benefit of the test harness.
         return removals
+
+
+class ObsoleteDistroseries(SoyuzScript):
+    """`SoyuzScript` that obsoletes a distroseries."""
+
+    usage = "%prog -d <distribution> -s <suite>"
+    description = ("Make obsolete (schedule for removal) packages in an "
+                  "obsolete distroseries.")
+
+    def add_my_options(self):
+        """Add -d, -s, dry-run and confirmation options."""
+        SoyuzScript.add_distro_options(self)
+        SoyuzScript.add_transaction_options(self)
+
+    def mainTask(self):
+        """Execute package obsolescence procedure.
+
+        Modules using this class outside of its normal usage in the
+        main script can call this method to start the copy.
+
+        In this case the caller can override test_args on __init__
+        to set the command line arguments.
+
+        :raise SoyuzScriptError: If the distroseries is not provided or
+            it is already obsolete.
+        """
+        assert self.location, (
+            "location is not available, call SoyuzScript.setupLocation() "
+            "before calling mainTask().")
+
+        # Shortcut variable name to reduce long lines.
+        distroseries = self.location.distroseries
+
+        self._checkParameters(distroseries)
+
+        self.logger.info("Obsoleting all packages for distroseries %s in "
+                         "the %s distribution." % (
+                            distroseries.name,
+                            distroseries.distribution.name))
+
+        sources = distroseries.getAllPublishedSources()
+        binaries = distroseries.getAllPublishedBinaries()
+        num_sources = sources.count()
+        num_binaries = binaries.count()
+        self.logger.info("There are %d sources and %d binaries." % (
+            num_sources, num_binaries))
+
+        if num_sources == 0 and num_binaries == 0:
+            raise SoyuzScriptError("Nothing to do, no published packages.")
+
+        self.logger.info("Obsoleting sources...")
+        for package in sources:
+            self.logger.debug("Obsoleting %s" % package.displayname)
+            package.requestObsolescence()
+
+        self.logger.info("Obsoleting binaries...")
+        for package in binaries:
+            self.logger.debug("Obsoleting %s" % package.displayname)
+            package.requestObsolescence()
+
+        # The obsoleted packages will be caught by death row processing
+        # the next time it runs.  We skip the domination phase in the
+        # publisher because it won't consider stable distroseries.
+
+    def _checkParameters(self, distroseries):
+        """Sanity check the supplied script parameters."""
+        # Did the user provide a suite name? (distribution defaults
+        # to 'ubuntu' which is fine.)
+        if distroseries == distroseries.distribution.currentseries:
+            # SoyuzScript defaults to the latest series.  Since this
+            # will never get obsoleted it's safe to assume that the
+            # user let this option default, so complain and exit.
+            raise SoyuzScriptError(
+                "Please specify a valid distroseries name with -s/--suite "
+                "and which is not the most recent distroseries.")
+
+        # Is the distroseries in an obsolete state?  Bail out now if not.
+        if distroseries.status != DistroSeriesStatus.OBSOLETE:
+            raise SoyuzScriptError(
+                "%s is not at status OBSOLETE." % distroseries.name)
+

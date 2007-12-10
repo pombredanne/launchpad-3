@@ -21,7 +21,10 @@ from bzrlib.transport import (
     unregister_transport,
     )
 
-from canonical.authserver.interfaces import READ_ONLY
+from twisted.web.xmlrpc import Fault
+
+from canonical.authserver.interfaces import (
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY)
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bazaarfs import (
@@ -43,8 +46,8 @@ def split_with_padding(a_string, splitter, num_fields, padding=None):
 # XXX: JonathanLange 2007-06-13 bugs=120135:
 # This should probably be part of bzrlib.
 def makedirs(base_transport, path, mode=None):
-    """Create 'path' on 'base_transport', even if parents of 'path' don't exist
-    yet.
+    """Create 'path' on 'base_transport', even if parents of 'path' don't
+    exist yet.
     """
     need_to_create = []
     transport = base_transport.clone(path)
@@ -70,21 +73,46 @@ def get_path_segments(path):
     return path.strip('/').split('/')
 
 
+class _NotFilter(logging.Filter):
+    """A Filter that only allows records that do *not* match.
+
+    A _NotFilter initialized with "A.B" will allow "C", "A.BB" but not allow
+    "A.B", "A.B.C" etc.
+    """
+
+    def filter(self, record):
+        return not logging.Filter.filter(self, record)
+
+
 def set_up_logging():
-    trace.disable_default_logging()
+    """Set up logging for the smart server.
+
+    This sets up a debugging handler on the 'codehosting' logger, makes sure
+    that things logged there won't go to stderr (necessary because of
+    bzrlib.trace shenanigans) and then returns the 'codehosting' logger.
+    """
     log = logging.getLogger('codehosting')
+
     if config.codehosting.debug_logfile is not None:
+        # Create the directory that contains the debug logfile.
         parent_dir = os.path.dirname(config.codehosting.debug_logfile)
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
         assert os.path.isdir(parent_dir), (
             "%r should be a directory" % parent_dir)
+
+        # Messages logged to 'codehosting' are stored in the debug_logfile.
         handler = logging.FileHandler(config.codehosting.debug_logfile)
         handler.setFormatter(
             logging.Formatter(
                 '%(asctime)s %(levelname)-8s %(name)s\t%(message)s'))
         handler.setLevel(logging.DEBUG)
         log.addHandler(handler)
+
+    # Don't log 'codehosting' messages to stderr.
+    if trace._stderr_handler is not None:
+        trace._stderr_handler.addFilter(_NotFilter('codehosting'))
+
     log.setLevel(logging.DEBUG)
     return log
 
@@ -114,6 +142,9 @@ class LaunchpadServer(Server):
         :param mirror_transport: A Transport pointing to the root of where
             branches are mirrored to.
         """
+        # bzrlib's Server class does not have a constructor, so we cannot
+        # safely upcall it.
+        # pylint: disable-msg=W0231
         self.authserver = authserver
         self.user_dict = self.authserver.getUser(user_id)
         self.user_id = self.user_dict['id']
@@ -143,7 +174,8 @@ class LaunchpadServer(Server):
         path_segments = get_path_segments(virtual_path)
         if len(path_segments) != 3:
             raise PermissionDenied(
-                'This method is only for creating branches: %s' % (virtual_path,))
+                'This method is only for creating branches: %s'
+                % (virtual_path,))
         branch_id = self._make_branch(*path_segments)
         if branch_id == '':
             raise PermissionDenied(
@@ -167,27 +199,33 @@ class LaunchpadServer(Server):
             raise PermissionDenied(
                 'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
-        if product == '+junk':
-            user_dict = self.authserver.getUser(user)
-            if not user_dict:
-                raise PermissionDenied("%s doesn't exist" % (user,))
-            user_id = user_dict['id']
-            if user_id != self.user_id:
-                raise PermissionDenied(
-                    "+junk is only allowed under user directories, not team "
-                    "directories.")
         branch_id, permissions = self.authserver.getBranchInformation(
             self.user_id, user, product, branch)
         if branch_id != '':
             self.logger.debug('Branch (%r, %r, %r) already exists ')
             return branch_id
         else:
-            return self.authserver.createBranch(
-                self.user_id, user, product, branch)
+            try:
+                return self.authserver.createBranch(
+                    self.user_id, user, product, branch)
+            except Fault, f:
+                if f.faultCode == NOT_FOUND_FAULT_CODE:
+                    # One might think that it would make sense to raise
+                    # NoSuchFile here, but that makes the client do "clever"
+                    # things like say "Parent directory of
+                    # bzr+ssh://bazaar.launchpad.dev/~noone/firefox/branch
+                    # does not exist.  You may supply --create-prefix to
+                    # create all leading parent directories."  Which is just
+                    # misleading.
+                    raise TransportNotPossible(f.faultString)
+                elif f.faultCode == PERMISSION_DENIED_FAULT_CODE:
+                    raise PermissionDenied(f.faultString)
+                else:
+                    raise
 
     def _translate_path(self, virtual_path):
-        """Translate a virtual path into an internal branch id, permissions and
-        relative path.
+        """Translate a virtual path into an internal branch id, permissions
+        and relative path.
 
         'virtual_path' is a path that points to a branch or a path within a
         branch. This method returns the id of the branch, the permissions that
@@ -195,8 +233,8 @@ class LaunchpadServer(Server):
         to that branch. In short, everything you need to be able to access a
         file in a branch.
         """
-        # We can safely pad with '' because we can guarantee that no product or
-        # branch name is the empty string. (Mapping '' to '+junk' happens
+        # We can safely pad with '' because we can guarantee that no product
+        # or branch name is the empty string. (Mapping '' to '+junk' happens
         # in _iter_branches). 'user' is checked later.
         user_dir, product, branch, path = split_with_padding(
             virtual_path.lstrip('/'), '/', 4, padding='')
@@ -210,8 +248,8 @@ class LaunchpadServer(Server):
         return branch_id, permissions, path
 
     def translate_virtual_path(self, virtual_path):
-        """Translate an absolute virtual path into the real path on the backing
-        transport.
+        """Translate an absolute virtual path into the real path on the
+        backing transport.
 
         :raise UntranslatablePath: If path is untranslatable. This could be
             because the path is too short (doesn't include user, product and
@@ -236,7 +274,8 @@ class LaunchpadServer(Server):
         if '.bzr' in segments:
             segments = segments[:segments.index('.bzr')]
         if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
-            raise PermissionDenied(FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
+            raise PermissionDenied(
+                FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
 
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
@@ -350,10 +389,13 @@ class LaunchpadTransport(Transport):
     def append_file(self, relpath, f, mode=None):
         return self._call('append_file', relpath, f, mode)
 
-    def clone(self, relpath):
+    def clone(self, relpath=None):
         self.server.logger.debug('clone(%s)', relpath)
-        return LaunchpadTransport(
-            self.server, urlutils.join(self.base, relpath))
+        if relpath is None:
+            return LaunchpadTransport(self.server, self.base)
+        else:
+            return LaunchpadTransport(
+                self.server, urlutils.join(self.base, relpath))
 
     def delete(self, relpath):
         return self._call('delete', relpath)

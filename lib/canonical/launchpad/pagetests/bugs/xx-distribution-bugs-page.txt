@@ -17,6 +17,7 @@ The page has a link to see all open bugs.
     >>> find_tag_by_id(anon_browser.contents, 'buglisting') is not None
     True
 
+
 == Bugs Fixed Elsewhere ==
 
 The Bugs frontpage for a distribution includes the number of bugs that are
@@ -37,6 +38,7 @@ The link takes you to the list of the bugs fixed elsewhere.
     <...
     <p>There are currently no open bugs.</p>
     ...
+
 
 == CVE Bugs ==
 
@@ -61,12 +63,42 @@ The link takes you to the list of bugs with CVEs linked to them.
       &mdash;
       Medium New
 
+
+== Expirable Bugs ==
+
+The bugs page displays the number of Incomplete, unattended bugs that
+can expire when the project has enabled bug expiration.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu')
+    >>> expirable_bugs_link = anon_browser.getLink(
+    ...     'incomplete bugs can expire')
+    >>> expirable_bugs_link.text
+    '0 incomplete bugs can expire'
+
+The link goes to the expirable bugs page, where the anonymous user can
+see which bugs will expire if they are not confirmed.
+
+    >>> expirable_bugs_link.click()
+    >>> anon_browser.title
+    'Bugs that can expire in Ubuntu Linux'
+
+Debian does not use Launchpad to track bugs; the anonymous user cannot
+see any link reporting that bugs can expire.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/debian')
+    >>> expirable_bugs_link = anon_browser.getLink(
+    ...     'incomplete bugs can expire')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+
 == Open Bugs Statistics ==
 
 There's also some statistics about the open bugs for the distribution.
 This is displayed as a chart, which is generated using Javascript, but
-for those browsers not supporting Javascript, the statistics are displayed
-as normal text:
+for those browsers not supporting Javascript, the statistics are
+displayed as normal text:
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu')
     >>> stats_div = find_tag_by_id(anon_browser.contents, 'bugs-chart')

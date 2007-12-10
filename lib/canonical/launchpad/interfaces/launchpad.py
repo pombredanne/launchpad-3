@@ -1,4 +1,6 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
+
 """Interfaces pertaining to the launchpad application.
 
 Note that these are not interfaces to application content objects.
@@ -6,7 +8,7 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Int, TextLine
+from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
@@ -29,6 +31,7 @@ __all__ = [
     'IAging',
     'IAppFrontPageSearchForm',
     'IAuthApplication',
+    'IAuthServerApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
     'IBeforeTraverseEvent',
@@ -51,6 +54,7 @@ __all__ = [
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
+    'ILaunchpadUsage',
     'IMaloneApplication',
     'INotificationRecipientSet',
     'IOpenIdApplication',
@@ -76,7 +80,7 @@ __all__ = [
 
 
 class NameNotAvailable(KeyError):
-    """You're trying to set a name, but the name you chose is not available."""
+    """You're trying to set a name, but the name you chose isn't available."""
 
 
 class ILaunchpadCelebrities(Interface):
@@ -85,17 +89,18 @@ class ILaunchpadCelebrities(Interface):
     Celebrities are SQLBase instances that have a well known name.
     """
     admin = Attribute("The 'admins' team.")
-    bazaar_expert = Attribute("The Bazaar Experts team.")
+    bazaar_experts = Attribute("The Bazaar Experts team.")
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
     debbugs = Attribute("The Debian Bug Tracker")
     debian = Attribute("The Debian Distribution.")
     janitor = Attribute("The Launchpad Janitor.")
+    katie = Attribute("The Debian Auto-sync user.")
     launchpad = Attribute("The Launchpad project.")
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     launchpad_developers = Attribute("The Launchpad development team.")
     mailing_list_experts = Attribute("The Mailing List Experts team.")
-    rosetta_expert = Attribute("The Rosetta Experts team.")
+    rosetta_experts = Attribute("The Rosetta Experts team.")
     shipit_admin = Attribute("The ShipIt Administrators.")
     sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
     ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
@@ -108,7 +113,7 @@ class ILaunchpadCelebrities(Interface):
 class ICrowd(Interface):
 
     def __contains__(person_or_team_or_anything):
-        """Return True if the given person_or_team_or_anything is in the crowd.
+        """Return True if person_or_team_or_anything is in the crowd.
 
         Note that a particular crowd can choose to answer 'True' to this
         question, if that is what it is supposed to do.  So, crowds that
@@ -195,11 +200,13 @@ class IOpenIdApplication(ILaunchpadApplication):
 class IPrivateApplication(ILaunchpadApplication):
     """Launchpad private XML-RPC application root."""
 
+    authserver = Attribute("""Old Authserver API end point.""")
+
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
 
-class IFeedsApplication(ILaunchpadApplication):
-    """Launchpad Feeds application root."""
+class IAuthServerApplication(ILaunchpadApplication):
+    """Launchpad legacy AuthServer application root."""
 
 
 class IAuthApplication(Interface):
@@ -222,6 +229,11 @@ class IAuthApplication(Interface):
 
         Returns the long url segment.
         """
+
+
+class IFeedsApplication(ILaunchpadApplication):
+    """Launchpad Feeds application root."""
+
 
 class IHWDBApplication(ILaunchpadApplication):
     """Hardware database application application root."""
@@ -398,7 +410,7 @@ class IStructuralHeaderPresentation(Interface):
 
 
 class IStructuralObjectPresentation(IStructuralHeaderPresentation):
-    """Adapter for less common aspects of a structural object's presentation."""
+    """Adapter for less common parts of a structural object's presentation."""
 
     def listChildren(num):
         """List up to num children.  Return empty string for none of these"""
@@ -407,10 +419,16 @@ class IStructuralObjectPresentation(IStructuralHeaderPresentation):
         """Return the total number of children."""
 
     def listAltChildren(num):
-        """List up to num alternative children.  Return None if alt children are not supported"""
+        """List up to num alternative children.
+
+        Return None if alt children are not supported.
+        """
 
     def countAltChildren():
-        """Return the total number of alt children.  Will be called only if listAltChildren returns something."""
+        """Return the total number of alt children.
+
+        Will be called only if listAltChildren returns something.
+        """
 
 
 class IAppFrontPageSearchForm(Interface):
@@ -457,7 +475,10 @@ class INotificationRecipientSet(Interface):
         """Return an iterator of the recipients."""
 
     def __contains__(person_or_email):
-        """Return true if person or email is in the notification recipients list."""
+        """Is person_or_email in the notification recipients list?
+
+        Return true if person or email is in the notification recipients list.
+        """
 
     def __nonzero__():
         """Return False when the set is empty, True when it's not."""
@@ -498,3 +519,18 @@ class INotificationRecipientSet(Interface):
 
         :param recipient_set: An `INotificationRecipientSet`.
         """
+
+class ILaunchpadUsage(Interface):
+    """How the project uses Launchpad."""
+    official_answers = Bool(
+        title=_('People can ask questions in Launchpad Answers'),
+        required=True)
+    official_malone = Bool(
+        title=_('Bugs in this project are tracked in Launchpad'),
+        required=True)
+    official_rosetta = Bool(
+        title=_('Translations for this project are done in Launchpad'),
+        required=True)
+    enable_bug_expiration = Bool(
+        title=_('Expire Incomplete bug reports when they become inactive'),
+        required=True)

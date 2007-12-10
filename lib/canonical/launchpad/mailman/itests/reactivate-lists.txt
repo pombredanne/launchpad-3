@@ -1,0 +1,112 @@
+= Re-activating mailing lists =
+
+A team administrator may re-activate a previously deactivated mailing list
+without the need for approval from a Launchpad administrator.  When the
+mailing list is re-activated, all previous settings and subscriptions are
+restored.
+
+First, No Privileges Person will create a new team and its mailing list.
+
+    >>> import itest_helper
+    >>> browser = itest_helper.make_browser()
+    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.getControl(name='field.name').value = 'itest-one'
+    >>> browser.getControl('Display Name').value = 'ITest One'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+
+XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
+program in order to apply for mailing lists.  When mailing lists go public,
+this stanza can be removed.
+
+    >>> itest_helper.beta_program_enable('itest-one')
+
+    >>> browser.reload()
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+
+    >>> list_one = itest_helper.review_list('itest-one')
+    >>> from Mailman.Utils import list_names
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    ['itest-one']
+
+Give the mailing list a welcome message.
+
+    >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist')
+    >>> browser.getControl('Welcome message text').value = (
+    ...     'Greetings team one members!')
+    >>> browser.getControl('Save').click()
+    >>> itest_helper.wait_for_mailman()
+
+    >>> from Mailman.MailList import MailList
+    >>> mlist = MailList('itest-one', lock=False)
+    >>> mlist.welcome_msg
+    'Greetings team one members!'
+
+Subscribe Anne to the mailing list so that she can post to after
+re-activation.
+
+    # For convenience, don't do this through the web.
+    >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> anne = new_person('Anne')
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from zope.component import getUtility
+    >>> team_one = getUtility(IPersonSet).getByName('itest-one')
+    >>> anne.join(team_one)
+    >>> from canonical.launchpad.ftests import sync
+    >>> sync(list_one)
+    >>> list_one.subscribe(anne)
+    >>> from canonical.database.sqlbase import commit
+    >>> logout()
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
+    >>> mlist.Load()
+    >>> sorted(mlist.getMembers())
+    ['anne.person@example.com']
+
+Now the team owner deactivates the list.
+
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Deactivate this Mailing List').click()
+    >>> itest_helper.wait_for_mailman()
+
+As far as Mailman is concerned, the mailing list no longer exists.
+
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    []
+
+Now the team owner reactivates the list.
+
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Reactivate this Mailing List').click()
+    >>> itest_helper.wait_for_mailman()
+
+Mailman reports that the mailing list exists again.
+
+    >>> itest_helper.wait_for_mailman()
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    ['itest-one']
+
+The archive file has been removed.
+
+    >>> from Mailman import mm_cfg
+    >>> import os
+    >>> backup_file = os.path.join(mm_cfg.VAR_PREFIX,
+    ...                            'backups', 'itest-one.tgz')
+    >>> os.path.exists(backup_file)
+    False
+
+On the Mailman side, the mailing list has the expected welcome message.
+
+    >>> mlist.Load()
+    >>> mlist.welcome_msg
+    'Greetings team one members!'
+
+Anne is a member of the re-activated mailing list, just as she was before the
+list was deactivated.
+
+    >>> sorted(mlist.getMembers())
+    ['anne.person@example.com']

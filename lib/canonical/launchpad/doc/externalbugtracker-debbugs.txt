@@ -19,7 +19,7 @@ You can specify the db_location explicitly:
     ...     DebBugs)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> debbugs = new_bugtracker(BugTrackerType.DEBBUGS)
     >>> external_debbugs = DebBugs(debbugs, db_location=test_db_location)
     >>> external_debbugs.db_location == test_db_location
@@ -76,6 +76,8 @@ Bug 563 resides in the archive. It is also fetchable:
 Log in and kick off the update:
 
     >>> external_debbugs.updateBugWatches(bug_watches)
+    INFO:...:Updating 4 watches on http://bugs.some.where
+
     >>> for bug_watch in bug_watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     280883: done grave woody security
@@ -274,6 +276,8 @@ summary, and the description as the description.
     ...
 
     >>> bug = external_debbugs.importBug(debian, '322535')
+    INFO:...:Updating 1 watches on http://bugs.some.where
+
     >>> print bug.title
     evolution: Multiple format string vulnerabilities in Evolution
     >>> print bug.description
@@ -347,7 +351,8 @@ gets notified about it.
     >>> print debian.getSourcePackage('no-such-package')
     None
     >>> bug = external_debbugs.importBug(debian, '1234')
-    WARNING:root:Unknown Debian package (debbugs #1234): no-such-package
+    WARNING:...:Unknown Debian package (debbugs #1234): no-such-package
+    INFO:...:Updating 1 watches on http://bugs.debian.org
 
     >>> [debian_task] = bug.bugtasks
     >>> debian_task.distribution.name
@@ -368,6 +373,8 @@ synced immediately.
     >>> expected_status.name
     'FIXRELEASED'
     >>> bug = external_debbugs.importBug(debian, '1234')
+    INFO:...:Updating 1 watches on http://bugs.debian.org
+
     >>> [debian_task] = bug.bugtasks
     >>> debian_task.status.name
     'FIXRELEASED'
@@ -385,6 +392,8 @@ valid e-mail address), he still won't be subscribed to the imported bug.
     ...     reporter_email=no_priv.preferredemail.email)
     >>> external_debbugs = TestDebBugs(debbugs, {'1234': no_priv_bug})
     >>> bug = external_debbugs.importBug(debian, '1234')
+    INFO:...:Updating 1 watches on http://bugs.debian.org
+
     >>> bug.owner.name
     u'no-priv'
     >>> [person.name for person in bug.getDirectSubscribers()]
@@ -414,6 +423,7 @@ tracker.
     >>> process.returncode
     0
     >>> print err
+    INFO    Updating 1 watches on http://bugs.debian.org
     INFO    Imported debbugs #237001 as Launchpad bug #...
     INFO    Imported debbugs #322535 as Launchpad bug #...
     INFO    Committing the transaction.
@@ -448,8 +458,8 @@ the script gets notified about it.
     >>> [bug.id for bug in debbugs.getBugsWatching('304014')]
     [1]
     >>> import_debian_bugs(['304014'])
-    WARNING:root:Not importing debbugs #304014, since it's already
-                 linked from LP bug(s) #1.
+    WARNING:...:Not importing debbugs #304014, since it's already
+                linked from LP bug(s) #1.
     >>> [bug.id for bug in debbugs.getBugsWatching('304014')]
     [1]
 

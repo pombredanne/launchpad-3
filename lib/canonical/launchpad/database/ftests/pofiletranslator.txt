@@ -12,7 +12,7 @@ as a superuser so we can poke at it directly.
     >>> cur = cursor()
     >>> def pofiletranslator(person_id, pofile_id):
     ...     cur.execute("""
-    ...         SELECT latest_posubmission, date_last_touched
+    ...         SELECT latest_message, date_last_touched
     ...         FROM POFileTranslator
     ...         WHERE person = %(person_id)s AND pofile = %(pofile_id)s
     ...         """, vars())
@@ -26,11 +26,15 @@ as a superuser so we can poke at it directly.
     >>> pomsgset_id = 1
 
 
-Note that pomsgset #1 references pofile #1
+Note that our oldest TranslationMessage references pofile #1
 
-    >>> cur.execute("""SELECT pofile=1 FROM POMsgSet WHERE id=1""")
-    >>> bool(cur.fetchone()[0])
-    True
+    >>> cur.execute("""
+    ...     SELECT pofile
+    ...     FROM TranslationMessage
+    ...     ORDER BY date_created
+    ...     LIMIT 1""")
+    >>> cur.fetchone()[0]
+    1
 
 
 Stub has so far not translated anything in this pofile
@@ -39,12 +43,12 @@ Stub has so far not translated anything in this pofile
     True
 
 
-If we add a submission, the cache is updated
+If we add a message, the cache is updated
 
     >>> cur.execute("""
-    ...     INSERT INTO POSubmission(
-    ...         pomsgset, pluralform, potranslation, origin, person
-    ...         ) VALUES (%(pomsgset_id)s, 1, 1, 1, %(stub_id)s)
+    ...     INSERT INTO TranslationMessage(
+    ...         pofile, potmsgset, msgstr1, origin, submitter
+    ...         ) VALUES (1, 1, 1, 1, %(stub_id)s)
     ...     """, vars())
     >>> posubmission_id, date_touched = pofiletranslator(stub_id, pofile_id)
 
@@ -64,9 +68,9 @@ If we add a new submission to that pofile, the cache is updated including
 the last touched timestamp.
 
     >>> cur.execute("""
-    ...     INSERT INTO POSubmission (
-    ...         pomsgset, pluralform, potranslation, origin, person
-    ...         ) VALUES (%(pomsgset_id)s, 1, 2, 1, %(stub_id)s)
+    ...     INSERT INTO TranslationMessage (
+    ...         pofile, potmsgset, msgstr1, origin, submitter
+    ...         ) VALUES (1, 1, 2, 1, %(stub_id)s)
     ...     """, vars())
     >>> new_posubmission_id, new_date_touched = pofiletranslator(
     ...     stub_id, pofile_id)
@@ -87,7 +91,7 @@ If we update the submissin, the cache is updated
 
     >>> sabdfl_id = 1
     >>> cur.execute("""
-    ...     UPDATE POSubmission SET person=%(sabdfl_id)s
+    ...     UPDATE TranslationMessage SET submitter=%(sabdfl_id)s
     ...     WHERE id = %(new_posubmission_id)s
     ...     """, vars())
     >>> sabdfl_posubmission_id, date_touched = pofiletranslator(
@@ -101,19 +105,4 @@ The trigger was smart enough to locate the previous submission from stub
 
     >>> stub_posubmission_id == posubmission_id
     True
-
-
-The POFileTranslator cache relies on the POMsgSet.pofile not being
-updated. To ensure that this does not happen, a trigger has been added to
-ensure that it cannot.
-
-    >>> import psycopg
-    >>> try:
-    ...     cur.execute("""
-    ...         UPDATE POMsgSet SET pofile=2 WHERE id=%(pomsgset_id)s
-    ...         """, vars())
-    ... except psycopg.ProgrammingError, x:
-    ...     print str(x)
-    ERROR:  Changing POMsgSet.pofile not supported by the POFileTranslator materialized view
-    ...
 

@@ -13,7 +13,7 @@ export from.
     >>> from canonical.launchpad.components.externalbugtracker import Mantis
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> alsa_mantis = Mantis(new_bugtracker(BugTrackerType.MANTIS))
 
 As with all ExternalBugTrackers, Mantis contains a function for converting one
@@ -79,6 +79,8 @@ Collect the Example.com watches:
 And have our special Mantis instance process them:
 
     >>> example_ext_bug_tracker.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 1 watches on http://bugs.some.where
+
     >>> for bug_watch in example_bug_tracker.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     1550: assigned: open
@@ -110,7 +112,7 @@ Let's add a few more watches:
     ...         bugtracker=example_bug_tracker,
     ...         remotebug=str(remote_bug_id))
     ...     if remote_bug is None:
-    ...         expected_remote_statuses[remote_bug_id] = 'UNKNOWN'
+    ...         expected_remote_statuses[remote_bug_id] = None
     ...     else:
     ...         expected_remote_statuses[remote_bug_id] = (
     ...             "%s: %s" % (remote_bug['status'],
@@ -125,13 +127,14 @@ updateBugWatches() issues only one request to update all watches:
     >>> example_ext_bug_tracker.trace_calls = True
     >>> example_ext_bug_tracker.updateBugWatches(
     ...     sorted(example_bug_tracker.watches, key=getid))
+    INFO:...:Updating 7 watches on http://bugs.some.where
     CALLED _getPage(u'view.php?id=1550')
     CALLED _getPage(u'view.php?id=1679')
     CALLED _getPage(u'view.php?id=1730')
     CALLED _getPage(u'view.php?id=1738')
     CALLED _getPage(u'view.php?id=1748')
     CALLED _getPage(u'view.php?id=1798')
-    WARNING:root:Didn't find bug u'1798' on http://bugs.some.where
+    WARNING:...:Didn't find bug u'1798' on http://bugs.some.where
     (local bugs: 10).
 
     >>> remote_statuses = dict(
@@ -161,8 +164,8 @@ updateBugWatches() issues only one request to update all watches:
      * Expected << resolved: fixed >>
      *      Got << resolved: fixed >>
     Remote bug 1798
-     * Expected << UNKNOWN >>
-     *      Got << UNKNOWN >>
+     * Expected << None >>
+     *      Got << None >>
 
     >>> example_ext_bug_tracker.trace_calls = False
 
@@ -184,5 +187,7 @@ updated:
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged
     >>> example_ext_bug_tracker.updateBugWatches([bug_watch])
+    INFO:...:Updating 1 watches on http://bugs.some.where
+
     >>> bug_watch.lastchanged == old_last_changed
     True

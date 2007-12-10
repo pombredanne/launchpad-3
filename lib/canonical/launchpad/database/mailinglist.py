@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
@@ -8,10 +9,13 @@ __all__ = [
     'MailingListSubscription',
     ]
 
+from string import Template
+
 from sqlobject import ForeignKey, StringCol
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -41,7 +45,8 @@ class MailingList(SQLBase):
 
     date_registered = UtcDateTimeCol(notNull=True, default=None)
 
-    reviewer = ForeignKey(dbName='reviewer', foreignKey='Person', default=None)
+    reviewer = ForeignKey(dbName='reviewer', foreignKey='Person',
+                          default=None)
 
     date_reviewed = UtcDateTimeCol(notNull=True, default=None)
 
@@ -56,6 +61,23 @@ class MailingList(SQLBase):
     def address(self):
         """See `IMailingList`."""
         return '%s@%s' % (self.team.name, MAILING_LISTS_DOMAIN)
+
+    @property
+    def archive_url(self):
+        """See `IMailingList`."""
+        # These represent states that can occur at or after a mailing list has
+        # been activated.  Once it's been activated, a mailing list could have
+        # an archive.
+        if self.status not in [MailingListStatus.ACTIVE,
+                               MailingListStatus.INACTIVE,
+                               MailingListStatus.MODIFIED,
+                               MailingListStatus.UPDATING,
+                               MailingListStatus.DEACTIVATING,
+                               MailingListStatus.MOD_FAILED]:
+            return None
+        # There could be an archive, return its url.
+        template = Template(config.mailman.archive_url_template)
+        return template.safe_substitute(team_name=self.team.name)
 
     def __repr__(self):
         return '<MailingList for team "%s"; status=%s at %#x>' % (
@@ -99,17 +121,16 @@ class MailingList(SQLBase):
             assert target_state in (MailingListStatus.ACTIVE,
                                     MailingListStatus.FAILED), (
                 'target_state result must be active or failed')
-        # State: From UPDATING to either ACTIVE or FAILED
+        # State: From UPDATING to either ACTIVE or MOD_FAILED
         elif self.status == MailingListStatus.UPDATING:
             assert target_state in (MailingListStatus.ACTIVE,
-                                    MailingListStatus.FAILED), (
-                'target_state result must be active or failed')
-        # State: From DEACTIVATING to INACTIVE or FAILED
+                                    MailingListStatus.MOD_FAILED), (
+                'target_state result must be active or mod_failed')
+        # State: From DEACTIVATING to INACTIVE or MOD_FAILED
         elif self.status == MailingListStatus.DEACTIVATING:
             assert target_state in (MailingListStatus.INACTIVE,
-                                    MailingListStatus.FAILED), (
-                'target_state result must be inactive or failed')
-            self._clearSubscriptions()
+                                    MailingListStatus.MOD_FAILED), (
+                'target_state result must be inactive or mod_failed')
         else:
             raise AssertionError(
                 'Not a valid state transition: %s -> %s'
@@ -120,7 +141,16 @@ class MailingList(SQLBase):
             email = email_set.getByEmail(self.address)
             if email is None:
                 email = email_set.new(self.address, self.team)
-            email.status = EmailAddressStatus.VALIDATED
+            if email.status in [EmailAddressStatus.NEW,
+                                EmailAddressStatus.OLD]:
+                # Without this conditional, if the mailing list is the
+                # contact method
+                # (email.status==EmailAddressStatus.PREFERRED), and a
+                # user changes the mailing list configuration, then
+                # when the list status goes back to ACTIVE the email
+                # will go from PREFERRED to VALIDATED and the list
+                # will stop being the contact method.
+                email.status = EmailAddressStatus.VALIDATED
             assert email.person == self.team, (
                 "Email already associated with another team.")
 
@@ -150,6 +180,13 @@ class MailingList(SQLBase):
     def _get_welcome_message(self):
         return self.welcome_message_text
 
+    def isUsable(self):
+        """See `IMailingList`"""
+        return self.status in [MailingListStatus.ACTIVE,
+                               MailingListStatus.MODIFIED,
+                               MailingListStatus.UPDATING,
+                               MailingListStatus.MOD_FAILED]
+
     def _set_welcome_message(self, text):
         if self.status == MailingListStatus.REGISTERED:
             # Do nothing because the status does not change.  When setting the
@@ -158,17 +195,22 @@ class MailingList(SQLBase):
             # at list construction time.  It is enough to just set the
             # database attribute to properly notify Mailman what to do.
             pass
-        elif self.status == MailingListStatus.ACTIVE:
+        elif self.isUsable():
             # Transition the status to MODIFIED so that the XMLRPC layer knows
             # that it has to inform Mailman that a mailing list attribute has
             # been changed on an active list.
             self.status = MailingListStatus.MODIFIED
         else:
             raise AssertionError(
-                'Only registered or active mailing lists may be modified')
+                'Only registered or usable mailing lists may be modified')
         self.welcome_message_text = text
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)
+
+    def getSubscription(self, person):
+        """See `IMailingList`."""
+        return MailingListSubscription.selectOneBy(person=person,
+                                                   mailing_list=self)
 
     def subscribe(self, person, address=None):
         """See `IMailingList`."""
@@ -184,8 +226,7 @@ class MailingList(SQLBase):
         if address is not None and address.person != person:
             raise CannotSubscribe('%s does not own the email address: %s' %
                                   (person.displayname, address.email))
-        subscription = MailingListSubscription.selectOneBy(
-            person=person, mailing_list=self)
+        subscription = self.getSubscription(person)
         if subscription is not None:
             raise CannotSubscribe('%s is already subscribed to list %s' %
                                   (person.displayname, self.team.displayname))
@@ -197,8 +238,7 @@ class MailingList(SQLBase):
 
     def unsubscribe(self, person):
         """See `IMailingList`."""
-        subscription = MailingListSubscription.selectOneBy(
-            person=person, mailing_list=self)
+        subscription = self.getSubscription(person)
         if subscription is None:
             raise CannotUnsubscribe(
                 '%s is not a member of the mailing list: %s' %
@@ -207,8 +247,7 @@ class MailingList(SQLBase):
 
     def changeAddress(self, person, address):
         """See `IMailingList`."""
-        subscription = MailingListSubscription.selectOneBy(
-            person=person, mailing_list=self)
+        subscription = self.getSubscription(person)
         if subscription is None:
             raise CannotChangeSubscription(
                 '%s is not a member of the mailing list: %s' %
@@ -219,19 +258,16 @@ class MailingList(SQLBase):
                 (person.displayname, address.email))
         subscription.email_address = address
 
-    def _clearSubscriptions(self):
-        subscriptions = MailingListSubscription.selectBy(mailing_list=self)
-        for subscription in subscriptions:
-            subscription.destroySelf()
-
     def getAddresses(self):
         """See `IMailingList`."""
         subscriptions = MailingListSubscription.select(
             """mailing_list = %s AND
-               team = %s AND
+               TeamParticipation.team = %s AND
+               MailingList.status <> %s AND
+               MailingList.id = MailingListSubscription.mailing_list AND
                TeamParticipation.person = MailingListSubscription.person
-            """ % sqlvalues(self, self.team),
-            distinct=True, clauseTables=['TeamParticipation'])
+            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
+            distinct=True, clauseTables=['TeamParticipation', 'MailingList'])
         for subscription in subscriptions:
             yield subscription.subscribed_address.email
 

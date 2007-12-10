@@ -9,6 +9,7 @@ __all__ = [
     'ProductReleaseRdfView',
     'ProductReleaseAddDownloadFileView',
     'ProductReleaseNavigation',
+    'ProductReleaseView',
     ]
 
 from StringIO import StringIO
@@ -27,10 +28,10 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, ILibraryFileAliasSet, IProductReleaseFileAddForm)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
-
+from canonical.launchpad.browser.product import ProductDownloadFileMixin
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Navigation, LaunchpadFormView, Link,
-    enabled_with_permission, custom_widget, action, stepthrough)
+    ContextMenu, LaunchpadFormView, LaunchpadView, Link, Navigation, action,
+    canonical_url, custom_widget, enabled_with_permission, stepthrough)
 
 
 class ProductReleaseNavigation(Navigation):
@@ -113,11 +114,12 @@ class ProductReleaseRdfView(object):
         As a side-effect, HTTP headers are set for the mime type
         and filename for download."""
         self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader('Content-Disposition',
-                                        'attachment; filename=%s-%s-%s.rdf' % (
-                                            self.context.product.name,
-                                            self.context.productseries.name,
-                                            self.context.version))
+        self.request.response.setHeader(
+            'Content-Disposition',
+            'attachment; filename=%s-%s-%s.rdf' % (
+                self.context.product.name,
+                self.context.productseries.name,
+                self.context.version))
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
@@ -147,3 +149,16 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
             self.request.response.addNotification(
                 "Your file '%s' has been uploaded." % filename)
         self.next_url = canonical_url(self.context)
+
+
+class ProductReleaseView(LaunchpadView, ProductDownloadFileMixin):
+    """View for ProductRelease overview."""
+    __used_for__ = IProductRelease
+
+    def initialize(self):
+        self.form = self.request.form
+        self.processDeleteFiles()
+
+    def getReleases(self):
+        """See `ProductDownloadFileMixin`."""
+        return set([self.context])

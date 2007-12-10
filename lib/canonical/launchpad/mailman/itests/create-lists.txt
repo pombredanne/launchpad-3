@@ -1,0 +1,77 @@
+= Creating mailing lists =
+
+When a Launchpad user creates a mailing list for a team, and that mailing list
+is approved by a special 'mailing list expert', Mailman will eventually notice
+this and create the mailing list itself.
+
+First, No Privileges Person will create a new team, called 'Team One' through
+the web.
+
+    >>> import itest_helper
+    >>> browser = itest_helper.make_browser()
+    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.getControl(name='field.name').value = 'itest-one'
+    >>> browser.getControl('Display Name').value = 'ITest One'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+    >>> browser.title
+    'ITest One in Launchpad'
+
+XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
+program in order to apply for mailing lists.  When mailing lists go public,
+this stanza can be removed.
+
+    >>> itest_helper.beta_program_enable('itest-one')
+
+To request a mailing list, No Privileges Person navigates to the 'Configure
+mailing list' page and registers their application for a mailing list.
+
+    >>> browser.reload()
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+
+At this point, Mailman has still not created the mailing list.
+
+    >>> itest_helper.wait_for_mailman()
+    >>> from Mailman.Utils import list_names
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    []
+
+
+== Approved requests ==
+
+In order for Mailman to create the mailing list, a Launchpad 'mailing list
+expert' must approve the application.  This cannot currently be done through
+the web, so we'll go behind the scenes to do this.
+
+    >>> list_one = itest_helper.review_list('itest-one')
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    ['itest-one']
+
+
+== Declined requests ==
+
+Now, No Privileges Person creates another team, and requests a mailing list
+for this new team.
+
+    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.getControl(name='field.name').value = 'itest-two'
+    >>> browser.getControl('Display Name').value = 'ITest Two'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+    >>> itest_helper.beta_program_enable('itest-two')
+
+    >>> browser.reload()
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+
+This time, however, the mailing list expert declines the application for a new
+mailing list.
+
+    >>> from canonical.launchpad.interfaces import MailingListStatus
+    >>> list_two = itest_helper.review_list(
+    ...     'itest-two', MailingListStatus.DECLINED)
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    ['itest-one']

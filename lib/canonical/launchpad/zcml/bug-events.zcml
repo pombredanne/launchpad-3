@@ -19,11 +19,6 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
-        canonical.launchpad.event.interfaces.ISQLObjectToBeModifiedEvent"
-   handler="canonical.launchpad.subscribers.bugprivacy.make_subscriptions_explicit_on_private_bug" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBug
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
    handler="canonical.launchpad.mailnotification.notify_bug_modified" />
 
@@ -86,6 +81,11 @@
    for="canonical.launchpad.interfaces.IBugCve
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.karma.cve_added" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBugBecameQuestionEvent"
+   handler="canonical.launchpad.mailnotification.notify_bug_became_question"
+   />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugMessage

@@ -23,6 +23,7 @@ __all__ = [
     'ProjectAnswersMenu',
     'ProjectTranslationsMenu',
     'ProjectSetContextMenu',
+    'ProjectView',
     'ProjectEditView',
     'ProjectAddProductView',
     'ProjectSetView',
@@ -41,6 +42,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBranchSet, IProductSet, IProject, IProjectSet, NotFoundError)
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -69,6 +71,10 @@ class ProjectNavigation(Navigation):
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
+
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
 
 
 class ProjectDynMenu(DynMenu):
@@ -215,7 +221,8 @@ class ProjectOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'administer', 'branch_visibility', 'rdf']
+        'mentorship', 'announce', 'announcements', 'administer',
+        'branch_visibility', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -250,6 +257,19 @@ class ProjectOverviewMenu(ApplicationMenu):
         # circumstances.
         return Link('+mentoring', text, icon='info',
                     enabled=self.context.hasProducts())
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        enabled = self.isBetaUser
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, enabled=enabled, icon='add')
+
+    def announcements(self):
+        text = 'Show announcements'
+        enabled = bool(self.context.announcements().count()
+                       and self.isBetaUser)
+        return Link('+announcements', text, enabled=enabled)
 
     def rdf(self):
         text = structured(
@@ -311,6 +331,7 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         summary = 'Register a new blueprint for %s' % self.context.title
         return Link('+addspec', text, summary, icon='add')
 
+
 class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
     """Menu for the answers facet of projects."""
 
@@ -332,6 +353,10 @@ class ProjectTranslationsMenu(ApplicationMenu):
     def changetranslators(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
+
+
+class ProjectView(HasAnnouncementsView):
+    pass
 
 
 class ProjectEditView(LaunchpadEditFormView):
@@ -563,16 +588,16 @@ class ProjectBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForProject(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by)
 
     @property
     def no_branch_message(self):
-        if self.selected_lifecycle_status is not None:
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
             message = (
-                'There may be branches registered for %s '
+                'There are branches registered for %s '
                 'but none of them match the current filter criteria '
                 'for this page. Try filtering on "Any Status".')
         else:

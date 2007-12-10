@@ -62,12 +62,12 @@ Since we didn't specify product, title or description, they are None:
 Also, Launchpad is scheduled to mirror this branch on its next mirror run:
 
     >>> removeSecurityProxy(new_branch).sync()
-    >>> print new_branch.mirror_request_time is not None
+    >>> print new_branch.next_mirror_time is not None
     True
-    >>> print new_branch.mirror_request_time < datetime.now(pytz.timezone('UTC'))
+    >>> print new_branch.next_mirror_time < datetime.now(pytz.timezone('UTC'))
     True
 
-(We remove the security proxy in order to ensure that mirror_request_time has a
+(We remove the security proxy in order to ensure that next_mirror_time has a
 real object in it, rather than an expression builder.)
 
 Let's register a branch specifying the name, description and product as
@@ -299,7 +299,6 @@ accessed:
     >>> for url in results['urls']:
     ...     print url
     bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
-    sftp://bazaar.launchpad.dev/~vcs-imports/evolution/main
     http://bazaar.launchpad.dev/~vcs-imports/evolution/main
 
 The URLs that are likely to be faster or provide write access appear
@@ -316,7 +315,6 @@ associated with the project's development focus series.
     >>> for url in results['urls']:
     ...     print url
     bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
-    sftp://bazaar.launchpad.dev/~vcs-imports/evolution/main
     http://bazaar.launchpad.dev/~vcs-imports/evolution/main
 
 
@@ -346,7 +344,6 @@ reference to a particular series on a project.
     >>> for url in results['urls']:
     ...     print url
     bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
-    sftp://bazaar.launchpad.dev/~vcs-imports/evolution/main
     http://bazaar.launchpad.dev/~vcs-imports/evolution/main
 
 
@@ -375,7 +372,6 @@ followed by an arbitrary path:
     >>> for url in results['urls']:
     ...     print url
     bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
-    sftp://bazaar.launchpad.dev/~vcs-imports/evolution/main
     http://bazaar.launchpad.dev/~vcs-imports/evolution/main
 
 
@@ -385,7 +381,6 @@ Launchpad will still resolve the branch even if it doesn't exist:
     >>> for url in results['urls']:
     ...     print url
     bzr+ssh://bazaar.launchpad.dev/~sabdfl/+junk/doesntexist
-    sftp://bazaar.launchpad.dev/~sabdfl/+junk/doesntexist
     http://bazaar.launchpad.dev/~sabdfl/+junk/doesntexist
 
 

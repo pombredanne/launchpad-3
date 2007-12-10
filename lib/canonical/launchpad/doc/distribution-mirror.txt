@@ -8,7 +8,7 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet, ICountrySet, IDistroSeriesSet,
     ...     IDistroArchSeriesSet, IDistributionMirrorSet,
-    ...     ILibraryFileAliasSet, MirrorSpeed, MirrorContent, MirrorStatus,
+    ...     ILibraryFileAliasSet, MirrorSpeed, MirrorContent, MirrorFreshness,
     ...     PackagePublishingPocket, PackagePublishingStatus)
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> distroset = getUtility(IDistributionSet)
@@ -32,6 +32,8 @@ distribution's mirror admin has reviewed (and approved) it.
 
     >>> new_mirror.isOfficial()
     False
+    >>> new_mirror.status
+    <DBItem MirrorStatus.PENDING_REVIEW...
 
 You cannot create a new mirror on a distribution that does not have the full
 functionality of Launchpad enabled:
@@ -105,27 +107,32 @@ From every distribution, you can easily get a list with its official ARCHIVE
 or RELEASE mirrors. This is available through the archive_mirrors and 
 cdimage_mirrors properties of IDistribution.
 
-    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.status.name) 
     ...  for mirror in ubuntu.archive_mirrors]
-    [(u'canonical-archive', '100 Mbps', u'United Kingdom'),
-     (u'archive-404-mirror', '512 Kbps', u'France'),
-     (u'archive-mirror', '128 Kbps', u'France'),
-     (u'archive-mirror2', '128 Kbps', u'Antarctica')]
+    [(u'canonical-archive', '100 Mbps', 'OFFICIAL'),
+     (u'archive-404-mirror', '512 Kbps', 'OFFICIAL'),
+     (u'archive-mirror', '128 Kbps', 'OFFICIAL'),
+     (u'archive-mirror2', '128 Kbps', 'OFFICIAL')]
 
-    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.status.name) 
     ...  for mirror in ubuntu.cdimage_mirrors]
-    [(u'canonical-releases', '100 Mbps', u'United Kingdom'),
-     (u'releases-mirror', '2 Mbps', u'France'),
-     (u'releases-mirror2', '2 Mbps', u'Germany'),
-     (u'unreachable-mirror', '512 Kbps', u'France')]
+    [(u'canonical-releases', '100 Mbps', 'OFFICIAL'),
+     (u'releases-mirror', '2 Mbps', 'OFFICIAL'),
+     (u'releases-mirror2', '2 Mbps', 'OFFICIAL'),
+     (u'unreachable-mirror', '512 Kbps', 'OFFICIAL')]
 
-The list of unofficial mirrors can easily be obtained, so that the
-distribution owner can see them and mark the ones that should be official.
+The list of pending review mirrors can easily be obtained, so that the
+distribution owner can see all the ones that need to be reviewed.
 
-    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.status.name) 
+    ...  for mirror in ubuntu.pending_review_mirrors]
+    [(u'random-releases-mirror', '100 Mbps', 'PENDING_REVIEW')]
+
+We also have a property which returns all unofficial mirrors.
+
+    >>> [(mirror.name, mirror.speed.title, mirror.status.name) 
     ...  for mirror in ubuntu.unofficial_mirrors]
-    [(u'foo.bar.com-archive', '2 Mbps', u'Brazil'),
-     (u'invalid-mirror', '2 Mbps', u'France')]
+    [(u'invalid-mirror', '2 Mbps', 'UNOFFICIAL')]
 
 It's possible to retrieve a mirror by its name:
 
@@ -323,7 +330,7 @@ anyway.
     archive-404-mirror NEVER
     archive-mirror2 2006-05-24...
 
-    
+
 If when we finish probing a mirror, that mirror doesn't have any
 MirrorDistroSeriesSource or MirrorDistroArchSeries, that mirror is marked as
 disabled and a notification is sent to its owner and to the distribution's
@@ -456,11 +463,11 @@ when that mirror last synced its contents.
 
 To do that we use the getURLsToCheckUpdateness() of either
 MirrorDistroSeriesSource or MirrorDistroArchSeries. This method returns a
-dictionary mapping MirrorStatuses to URLs on that mirror. 
+dictionary mapping MirrorFreshnesses to URLs on that mirror. 
 
 The prober will then check, between all reachable URLs, which one has the
-status which corresponds to the most recent sync, and then set that as the
-mirror's status.
+freshness which corresponds to the most recent sync, and then set that as the
+mirror's freshness.
 
 On the warty release, component 'main' and pocket RELEASE , we had two uploads
 between 2005-09-15 and 2005-09-17, so at that time we could've checked if 
@@ -468,7 +475,7 @@ that mirror's last sync was in the last one or two days.
 
     >>> when = datetime(2005, 9, 17, tzinfo=utc)
     >>> urls = warty_mirror.getURLsToCheckUpdateness(when=when)
-    >>> [(status.name, url) for (status, url) in urls.items()]
+    >>> [(freshness.name, url) for (freshness, url) in urls.items()]
     [('UP',
       u'http://foo.bar.com/pub/pool/main/a/alsa-utils/alsa-utils_1.0.9a-4.dsc'),
      ('TWODAYSBEHIND',
@@ -479,7 +486,7 @@ upload was mirrored and then mark the mirror as up-to-date. This is because
 there were no recent uploads there.
 
     >>> urls = warty_mirror.getURLsToCheckUpdateness()
-    >>> [(status.name, url) for (status, url) in urls.items()]
+    >>> [(freshness.name, url) for (freshness, url) in urls.items()]
     [('UP', u'http://foo.bar.com/pub/pool/main/c/cdrkit/foobar-1.0.dsc')]
 
 If the mirror has no HTTP base url, we'll use the FTP one.
@@ -489,7 +496,7 @@ If the mirror has no HTTP base url, we'll use the FTP one.
     >>> naked_mirror.distribution_mirror.http_base_url = None
     >>> naked_mirror.distribution_mirror.ftp_base_url = 'ftp://foo.bar.com/pub'
     >>> urls = warty_mirror.getURLsToCheckUpdateness()
-    >>> [(status.name, url) for (status, url) in urls.items()]
+    >>> [(freshness.name, url) for (freshness, url) in urls.items()]
     [('UP', u'ftp://foo.bar.com/pub/pool/main/c/cdrkit/foobar-1.0.dsc')]
     >>> naked_mirror.distribution_mirror.http_base_url = http_url
 
@@ -504,7 +511,7 @@ skip that upload.
     ...     BinaryPackageFile, SecureBinaryPackagePublishingHistory)
 
     >>> warty_i386_mirror = removeSecurityProxy(warty_i386_mirror)
-    >>> recent_status, threshold = warty_i386_mirror.status_times[0]
+    >>> recent_freshness, threshold = warty_i386_mirror.freshness_times[0]
     >>> start = datetime(2005, 06, 20, tzinfo=utc)
     >>> end = datetime(2005, 06, 20, tzinfo=utc) + timedelta(hours=0.5)
     >>> time_interval = (start, end)
@@ -518,7 +525,7 @@ skip that upload.
 
     >>> when = datetime(2005, 6, 22, tzinfo=utc)
     >>> urls = warty_i386_mirror.getURLsToCheckUpdateness(when=when)
-    >>> [(status.name, url) for (status, url) in urls.items()]
+    >>> [(freshness.name, url) for (freshness, url) in urls.items()]
     [('UP',
       u'http://foo.bar.com/pub/pool/main/p/pmount/pmount_1.9-1_all.deb'),
      ('ONEWEEKBEHIND',
@@ -526,7 +533,7 @@ skip that upload.
 
     >>> when = datetime(2005, 6, 20, 0, 1, tzinfo=utc)
     >>> urls = warty_i386_mirror.getURLsToCheckUpdateness(when=when)
-    >>> [(status.name, url) for (status, url) in urls.items()]
+    >>> [(freshness.name, url) for (freshness, url) in urls.items()]
     [('UP', 
       u'http://foo.bar.com/pub/pool/main/p/pmount/pmount_1.9-1_all.deb'),
      ('TWODAYSBEHIND',
@@ -539,7 +546,7 @@ If the mirror has no HTTP base url, we'll use the FTP one.
     >>> naked_mirror.distribution_mirror.http_base_url = None
     >>> naked_mirror.distribution_mirror.ftp_base_url = 'ftp://foo.bar.com/pub'
     >>> urls = warty_i386_mirror.getURLsToCheckUpdateness()
-    >>> [(status.name, url) for (status, url) in urls.items()]
+    >>> [(freshness.name, url) for (freshness, url) in urls.items()]
     [('UP', u'ftp://foo.bar.com/pub/pool/main/c/cdrkit/foobar_1.0_all.deb')]
     >>> naked_mirror.distribution_mirror.http_base_url = http_url
 
@@ -670,26 +677,26 @@ First, let's check the source and arch series of one archive mirror.
     ...     archive_mirror.getSummarizedMirroredArchSerieses())
 
     (We only have a few publishing records, so most of the cdimage mirrors
-     will have Unknown as their statuses)
+     will have Unknown as their freshness)
     >>> for mirror_arch_series in mirror_arch_serieses:
     ...     print (mirror_arch_series.distro_arch_series.displayname,
-    ...            mirror_arch_series.status.title)
+    ...            mirror_arch_series.freshness.title)
     (u'warty i386', 'Up to date')
 
     >>> mirror_source_serieses = (
     ...     archive_mirror.getSummarizedMirroredSourceSerieses())
     >>> for mirror_source_series in mirror_source_serieses:
     ...     print (mirror_source_series.distroseries.displayname,
-    ...            mirror_source_series.status.title)
+    ...            mirror_source_series.freshness.title)
     (u'Warty', 'Up to date')
     (u'Hoary', 'Up to date')
     (u'Breezy Badger Autotest', 'Up to date')
 
 Because all MirrorDistroArchSeriess and MirrorDistroSeriesSources of this
-mirror have 'Up to date' as status, this mirror's overall status will also be
-'Up to date'.
+mirror have 'Up to date' as freshness, this mirror's overall freshness will
+also be 'Up to date'.
 
-    >>> archive_mirror.getOverallStatus().title
+    >>> archive_mirror.getOverallFreshness().title
     'Up to date'
 
 
@@ -709,11 +716,50 @@ Now we check the MirrorCDImageDistroSeriess of a cdimage mirror.
 
 In the case of cdimage mirrors, they're said to be up-to-date if they
 mirror all ISO images contained in http://releases.ubuntu.com, which is
-the case here.  Otherwise, their status is unknown.
+the case here.  Otherwise, their freshness is unknown.
 
-    >>> cdimage_mirror.getOverallStatus().title
+    >>> cdimage_mirror.getOverallFreshness().title
     'Up to date'
 
+
+== Mirror counts and bandwidth aggregates ==
+
+We include a count of the number of mirrors per country, and the total
+bandwidth (approximate) that they output. Here we test the aggregation
+functions that achieve that.
+
+First we import the classes required to test the view:
+
+  >>> from zope.component import getView
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistribution)
+  >>> from canonical.launchpad.browser.distribution import (
+  ...     DistributionMirrorsView)
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+Create a view to test:
+
+  >>> request = LaunchpadTestRequest()
+  >>> view = getView(ubuntu, '+archivemirrors', request)
+
+Verify that the view is a DistributionMirrorsView:
+
+  >>> isinstance(view, DistributionMirrorsView)
+  True
+
+We want to make sure that the view._sum_throughput method knows about all
+the possible mirror speeds.
+
+  >>> from canonical.launchpad.interfaces import MirrorSpeed
+  >>> class MockMirror:
+  ...     speed = None
+  >>> mirrors = []
+  >>> for speed in MirrorSpeed.items:
+  ...     a = MockMirror()
+  ...     a.speed = speed
+  ...     mirrors.append(a)
+  >>> print view._sum_throughput(mirrors)
+  37 Gbps
 
 == Deleting mirrors ==
 

@@ -11,33 +11,13 @@
     />
 
   <vocabulary
-    name="BugAttachmentType"
-    factory="canonical.launchpad.vocabularies.BugAttachmentTypeVocabulary"
-    />
-
-  <vocabulary
     name="BugNominatableSerieses"
     factory="canonical.launchpad.vocabularies.BugNominatableSeriesesVocabulary"
     />
 
   <vocabulary
-    name="BugNominationStatus"
-    factory="canonical.launchpad.vocabularies.BugNominationStatusVocabulary"
-    />
-
-  <vocabulary
-    name="BugTaskImportance"
-    factory="canonical.launchpad.vocabularies.BugTaskImportanceVocabulary"
-    />
-
-  <vocabulary
     name="BugTracker"
     factory="canonical.launchpad.vocabularies.BugTrackerVocabulary"
-    />
-
-  <vocabulary
-    name="BugTrackerType"
-    factory="canonical.launchpad.vocabularies.BugTrackerTypeVocabulary"
     />
 
   <vocabulary
@@ -54,11 +34,6 @@
       name="CountryName"
       factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
       />
-
-  <vocabulary
-    name="CveStatus"
-    factory="canonical.launchpad.vocabularies.CveStatusVocabulary"
-    />
 
   <vocabulary
     name="Distribution"
@@ -116,11 +91,6 @@
     />
 
   <vocabulary
-    name="InfestationStatus"
-    factory="canonical.launchpad.vocabularies.InfestationStatusVocabulary"
-    />
-
-  <vocabulary
     name="KarmaCategory"
     factory="canonical.launchpad.vocabularies.KarmaCategoryVocabulary"
     />
@@ -166,11 +136,6 @@
     />
 
   <vocabulary
-    name="POTemplateName"
-    factory="canonical.launchpad.vocabularies.POTemplateNameVocabulary"
-    />
-
-  <vocabulary
     name="Product"
     factory="canonical.launchpad.vocabularies.ProductVocabulary"
     />
@@ -206,11 +171,6 @@
     />
 
   <vocabulary
-    name="RemoteBugTaskImportance"
-    factory="canonical.launchpad.vocabularies.RemoteBugTaskImportanceVocabulary"
-    />
-
-  <vocabulary
     name="SpecificationDependencies"
     factory="canonical.launchpad.vocabularies.SpecificationDependenciesVocabulary"
     />
@@ -231,19 +191,14 @@
     />
 
   <vocabulary
-    name="TranslationFileFormat"
-    factory="canonical.launchpad.vocabularies.TranslationFileFormatVocabulary"
-    />
-
-  <vocabulary
     name="TranslationGroup"
     factory="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
     />
 
   <vocabulary
-   name="TranslationPermission"
-   factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
-   />
+    name="TranslationMessage"
+    factory="canonical.launchpad.vocabularies.TranslationMessageVocabulary"
+    />
 
   <vocabulary
     name="UserTeamsParticipation"
