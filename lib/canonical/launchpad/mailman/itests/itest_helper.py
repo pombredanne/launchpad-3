@@ -223,7 +223,7 @@ def review_list(list_name, status=None):
     login('foo.bar@canonical.com')
     mailinglists_helper.review_list(list_name, status)
     commit()
-    # Wait until Mailman has actually creating the mailing list.
+    # Wait until Mailman has actually created the mailing list.
     wait_for_mailman()
     # Return an updated mailing list object.
     mailing_list = getUtility(IMailingListSet).get(list_name)

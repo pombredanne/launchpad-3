@@ -14,14 +14,18 @@ import os
 import sys
 import smtpd
 import signal
+import smtplib
 import asyncore
 
 import itest_helper
 from email import message_from_string
 
 sys.path.insert(0, itest_helper.TOP)
+sys.path.insert(1, os.path.join(itest_helper.TOP, 'mailman'))
 
 from canonical.config import config
+from Mailman.Post import inject
+from Mailman.Utils import list_names
 
 
 class Server(smtpd.SMTPServer):
@@ -30,9 +34,59 @@ class Server(smtpd.SMTPServer):
         self._mbox = open(sys.argv[1], 'w')
 
     def process_message(self, peer, mailfrom, rcpttos, data):
-        """Shove the message into the mbox file."""
-        msg = message_from_string(data)
-        print >> self._mbox, msg
+        """Deliver a message.
+
+        The message is either delivered to the mbox file specified on the
+        command line, the local host's real SMTPd, or it is dropped into
+        Mailman's incoming queue.
+        """
+        #print 'PROCESS MESSAGE'
+        message = message_from_string(data)
+        message['Received'] = 'by smtp2mbox'
+        #print message.as_string()
+        # Get the localpart of the recipient.  If this localpart corresponds
+        # to an existing mailing list, drop the message into Mailman's
+        # incoming queue.
+        try:
+            local, hostname = message['to'].split('@', 1)
+        except ValueError:
+            # There was no '@' sign in the email message, so let the upstream
+            # SMTPd handle the message.
+            self._deliver_to_smtpd(message)
+            return
+        # If the message came from Mailman, drop it in the mbox (this must be
+        # tested first).  If the local part indicates that the message is
+        # destined for a Mailman mailing list, deliver it to Mailman's
+        # incoming queue.  Otherwise, deliver it to the upstream SMTPd.
+        if 'x-beenthere' in message:
+            # It came from Mailman and goes to the mbox.
+            self._deliver_to_mbox(message)
+        elif local in list_names():
+            # It's destined for a mailing list.
+            self._deliver_to_mailman(local, message)
+        # As a last resort, send it off to the upstream SMTPd.
+        else:
+            self._deliver_to_smtpd(message)
+                
+    def _deliver_to_mailman(self, listname, message):
+        """Deliver the message to Mailman's incoming queue."""
+        #print 'DELIVER TO MAILMAN:', listname
+        inject(listname, message)
+
+    def _deliver_to_smtpd(self, message):
+        """Send the message on to the real SMTPd."""
+        #print 'DELIVER TO SMTP'
+        recipients = message.get_all('to', [])
+        recipients.extend(message.get_all('cc', []))
+        server = smtplib.SMTP()
+        server.connect(config.zopeless.smtp_host, config.zopeless.smtp_port)
+        server.sendmail(message['from'], recipients, message.as_string())
+        server.quit()
+
+    def _deliver_to_mbox(self, message):
+        """Store the message in the mbox."""
+        #print 'DELIVER TO MBOX:', self._mbox.name
+        print >> self._mbox, message
         print >> self._mbox
         self._mbox.flush()
 

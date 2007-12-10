@@ -1,0 +1,203 @@
+= Using a mailing list as a team's contact address =
+
+Mailing lists hosted by Launchpad can be used as the contact address of any
+team in Launchpad.  When this feature is used, all notifications sent by
+Launchpad to the team will be sent to the mailing list's address, in fact.
+
+    # This test requires us to start an SMTP server that accepts messages
+    # sent by Mailman's outgoing qrunner and stores these in a Unix mbox.
+    >>> import os
+    >>> import tempfile
+    >>> descriptor, mbox_filename = tempfile.mkstemp()
+    >>> os.close(descriptor)
+
+    >>> import itest_helper
+    >>> smtpd = itest_helper.SMTPServer(mbox_filename)
+    >>> smtpd.start()
+
+We'll now register and approve the mailing list we'll be using as the
+contact address of our new team.
+
+    # Create a mailing list for this test.
+    >>> browser = itest_helper.make_browser()
+    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.getControl(name='field.name').value = 'itest-one'
+    >>> browser.getControl('Display Name').value = 'ITest One'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+
+    >>> browser.getLink('Configure mailing list')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> itest_helper.beta_program_enable('itest-one')
+    >>> browser.reload()
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+
+    >>> list_one = itest_helper.review_list('itest-one')
+    >>> itest_helper.wait_for_mailman()
+    >>> from Mailman.Utils import list_names
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    ['itest-one']
+
+Subscribe someone to the team and mailing list so that these messages can get
+delivered.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from zope.component import getUtility
+    >>> login('foo.bar@canonical.com')
+    >>> person_set = getUtility(IPersonSet)
+    >>> team_one = person_set.getByName('itest-one')
+
+    # Subscribe Anne with her preferred address.
+    >>> anne = new_person('Anne')
+    >>> anne.join(team_one)
+    >>> from canonical.launchpad.ftests import sync
+    >>> sync(list_one)
+    >>> list_one.subscribe(anne)
+    >>> from canonical.database.sqlbase import commit
+    >>> logout()
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
+
+It's possible to set the team as a project's answer contact.  Then creating
+new questions will email the mailing list.
+
+    >>> browser.open('http://launchpad.dev/~itest-one/+contactaddress')
+    >>> browser.getControl('The Launchpad mailing list').selected = True
+    >>> browser.getControl('Change').click()
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0The Launchpad mailing list for this team...]
+
+    >>> browser.open('http://answers.launchpad.dev/firefox/+answer-contact')
+    >>> browser.getControl(name='field.answer_contact_teams').displayValue = [
+    ...     'ITest One']
+    >>> browser.getControl('Continue').click()
+    
+    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
+
+    >>> browser.open('http://answers.launchpad.dev/firefox/+addquestion')
+    >>> browser.getControl('Summary').value = 'A new question'
+    >>> browser.getControl('Continue').click()
+    >>> browser.getControl('Description').value = 'More detail.'
+    >>> browser.getControl('Add').click()
+
+    >>> smtp_watcher.wait_for_growth()
+    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
+    >>> len(messages)
+    1
+
+    >>> print messages[0].as_string()
+    MIME-Version: 1.0
+    ...
+    To: itest-one@lists.launchpad.net
+    From: No Privileges Person <question...@answers.launchpad.net>
+    Message-Id: ...
+    ...
+    Subject: [Itest-one] [Question #...]: A new question
+    ...
+    <BLANKLINE>
+    New question #... on Mozilla Firefox:
+    http://answers.launchpad.dev/firefox/+question/...
+    <BLANKLINE>
+    More detail.
+    ...
+
+Similarly, if we subscribe our new team to a blueprint, a notification will be
+sent to its mailing list.
+
+    # Start a new smtp server with a fresh mbox.
+    >>> smtpd.stop()
+    >>> descriptor, mbox_filename = tempfile.mkstemp()
+    >>> os.close(descriptor)
+    >>> smtpd = itest_helper.SMTPServer(mbox_filename)
+    >>> smtpd.start()
+
+    >>> browser.open('http://launchpad.dev/firefox/+spec/canvas/+addsubscriber')
+    >>> browser.getControl('Subscriber').value = 'itest-one'
+    >>> browser.getControl('Continue').click()
+
+    >>> smtp_watcher.wait_for_growth()
+    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
+    >>> len(messages)
+    1
+
+    >>> print messages[0].as_string()
+    MIME-Version: 1.0
+    To: itest-one@lists.launchpad.net
+    From: No Privileges Person <no-priv@canonical.com>
+    ...
+    <BLANKLINE>
+    You are now subscribed to the blueprint canvas - Support <canvas>
+    Objects.
+    <BLANKLINE>
+    ...
+
+
+If we change the team's contact address to something other than the
+launchpad-hosted mailing list, though, the notifications won't be sent to the
+mailing list.
+
+    >>> browser.open('http://launchpad.dev/~itest-one/+contactaddress')
+    >>> browser.getControl('Each member individually').selected = True
+    >>> browser.getControl('Change').click()
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0Each member individually']
+
+    # Start a new smtp server with a fresh mbox.
+    >>> smtpd.stop()
+    >>> descriptor, mbox_filename = tempfile.mkstemp()
+    >>> os.close(descriptor)
+    >>> smtpd = itest_helper.SMTPServer(mbox_filename)
+    >>> smtpd.start()
+
+    >>> browser.open('http://answers.launchpad.dev/firefox/+addquestion')
+    >>> browser.getControl('Summary').value = 'Another question'
+    >>> browser.getControl('Continue').click()
+    >>> browser.getControl('Description').value = 'More detail.'
+    >>> browser.getControl('Add').click()
+
+    >>> smtp_watcher.wait_for_growth()
+    'Timed out'
+    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
+    >>> len(messages)
+    0
+
+When emails are sent directly to the mailing list address they're still
+delivered, though, as the mailing list is still active -- it is just not being
+used as the team's contact address.
+
+    >>> from Mailman.Post import inject
+    >>> inject('itest-one', """\
+    ... From: %s
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A member post
+    ... Message-ID: <first-injection>
+    ...
+    ... Hi, I am a member of Launchpad.
+    ... """ % anne.preferredemail.email)
+    >>> smtp_watcher.wait_for_growth()
+    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
+    >>> len(messages)
+    1
+    >>> message = messages[0]
+    >>> print message.as_string()
+    From: anne.person@example.com
+    To: itest-one@lists.launchpad.dev
+    Message-ID: <first-injection>
+    Subject: [Itest-one] A member post
+    ...
+    <BLANKLINE>
+    Hi, I am a member of Launchpad.
+    ...
+
+    >>> smtpd.stop()
