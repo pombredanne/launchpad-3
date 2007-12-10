@@ -187,4 +187,13 @@ def complete_from_browser(consumer, browser, expected_claimed_id=None):
     if expected_claimed_id is not None:
         maybe_fixup_identifier_select_request(
             consumer, expected_claimed_id)
-    return consumer.complete(query)
+        # The return_to URL verification for OpenID 1.x requests fails
+        # for our non-standard identifier select mode, so disable it.
+        consumer.consumer._verifyDiscoveryResultsOpenID1 = (
+            lambda msg, endpoint: endpoint)
+
+    response = consumer.complete(query, browser.url)
+
+    if expected_claimed_id is not None:
+        del consumer.consumer._verifyDiscoveryResultsOpenID1
+    return response
