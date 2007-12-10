@@ -786,8 +786,6 @@ class DebBugs(ExternalBugTracker):
             # header.
             if parsed_comment.has_key('from'):
                 owner_email = parsed_comment['from']
-            elif parsed_comment.has_key('reply-to'):
-                owner_email = parsed_comment['email']
             else:
                 # If we can't find an owner for the comment we can't
                 # carry on.
