@@ -167,8 +167,8 @@ tracker with a variety of statuses.
     ...         remotebug=str(remote_bug_id))
 
 By default, SourceForge ExternalBugTrackers will only import one bug at
-once so as to avoid tripping SourceForge's rate limiting filters, so
-even if we pass it 10 bug watches to update, only one will actually be
+a time so as to avoid tripping SourceForge's rate limiting filters. So
+even if we pass it 10 bug watches to update only one will actually be
 updated:
 
     >>> sourceforge.trace_calls = True

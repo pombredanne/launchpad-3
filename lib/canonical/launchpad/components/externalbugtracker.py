@@ -622,22 +622,17 @@ class DebBugs(ExternalBugTracker):
             log.error("There's no debbugs db at %s." % self.db_location)
             self.debbugs_db = None
 
-            # XXX gmb 2007-11-02 (bug 153532):
-            #     We really shouldn't be returning in an __init__(), and
-            #     make lint will complain about this. This is one of the
-            #     the things that can be fixed when we refactor
-            #     ExternalBugTrackers.
-            return
-
-        # The debbugs database is split in two parts: a current
-        # database, which is kept under the 'db-h' directory, and the
-        # archived database, which is kept under 'archive'. The archived
-        # database is used as a fallback, as you can see in getRemoteStatus
-        self.debbugs_db = debbugs.Database(self.db_location, self.debbugs_pl)
-        if os.path.exists(os.path.join(self.db_location, 'archive')):
-            self.debbugs_db_archive = debbugs.Database(self.db_location,
-                                                       self.debbugs_pl,
-                                                       subdir="archive")
+        else:
+            # The debbugs database is split in two parts: a current
+            # database, which is kept under the 'db-h' directory, and
+            # the archived database, which is kept under 'archive'. The
+            # archived database is used as a fallback, as you can see in
+            # getRemoteStatus
+            self.debbugs_db = debbugs.Database(self.db_location,
+                self.debbugs_pl)
+            if os.path.exists(os.path.join(self.db_location, 'archive')):
+                self.debbugs_db_archive = debbugs.Database(
+                    self.db_location, self.debbugs_pl, subdir="archive")
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
