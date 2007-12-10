@@ -191,9 +191,9 @@ class SQLObjectVocabularyBase:
     def __iter__(self):
         """Return an iterator which provides the terms from the vocabulary."""
         params = {}
-        if self._orderBy:
+        if self._orderBy is not None:
             params['orderBy'] = self._orderBy
-        if self._clauseTables:
+        if self._clauseTables is not None:
             params['clauseTables'] = self._clauseTables
         for obj in self._table.select(self._filter, **params):
             yield self.toTerm(obj)

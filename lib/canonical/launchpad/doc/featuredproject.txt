@@ -1,4 +1,3 @@
-
 = Featured Projects =
 
 We show a few key projects on the Launchpad home page. These are
@@ -38,7 +37,6 @@ We'll make sure our isFeatured() test is working:
     True
     >>> isFeatured(getUtility(IDistributionSet).getByName('kubuntu'))
     False
-
 
 We can add a project, product or distro to the list of featured
 projects:

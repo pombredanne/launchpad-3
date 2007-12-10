@@ -42,9 +42,8 @@ Anonymous users cannot see the link to administer featured projects:
 
 A user without privileges cannot see the administration link, either:
 
-    >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
-    >>> nopriv_browser.open('http://launchpad.dev/')
-    >>> nopriv_browser.getLink(MANAGE_LINK)
+    >>> user_browser.open('http://launchpad.dev/')
+    >>> user_browser.getLink(MANAGE_LINK)
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -58,7 +57,7 @@ But Foo Bar, who is an administrator, can see the management link:
 
 No Privilege persons is denied access to this page:
 
-    >>> nopriv_browser.open('http://launchpad.dev/+featuredprojects')
+    >>> user_browser.open('http://launchpad.dev/+featuredprojects')
     Traceback (most recent call last):
     ...
     Unauthorized: ...
@@ -73,7 +72,6 @@ project:
     >>> featured = find_tag_by_id(admin_browser.contents, 'featured-projects')
     >>> 'Apache' in extract_text(featured)
     True
-
 
 Just to be certain, we will iterate the list as we did before and see
 that Apache has been added:
@@ -92,7 +90,6 @@ that Apache has been added:
     the Mozilla Project
     Mozilla Thunderbird
     Ubuntu
-
 
 
 == Removing a project ==
