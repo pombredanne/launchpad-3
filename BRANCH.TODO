@@ -1,5 +1,3 @@
 # Put your TODOs for this branch here, then make sure it is empty before
 # landing. There is a test to ensure it is empty in trunk.
 
- * Add tests(!).
- * Find out why we sometimes get LookupErrors when importing.

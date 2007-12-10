@@ -760,12 +760,13 @@ class DebBugs(ExternalBugTracker):
 
     def _updateBugWatch(self, bug_watch):
         """See `ExternalBugTracker`."""
-        log.info("Importing comments for remote bug %s (local bug %s) on %s."
-            % (bug_watch.remotebug, bug_watch.bug.id, self.baseurl))
         self.importBugComments(bug_watch)
 
     def importBugComments(self, bug_watch):
         """Import the comments from a DebBugs bug."""
+        log.info("Importing comments for remote bug %s (local bug %s) on %s."
+            % (bug_watch.remotebug, bug_watch.bug.id, self.baseurl))
+
         debian_bug = self._findBug(bug_watch.remotebug)
         self.debbugs_db.load_log(debian_bug)
 

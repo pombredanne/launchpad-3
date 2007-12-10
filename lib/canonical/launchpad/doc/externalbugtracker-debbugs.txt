@@ -408,10 +408,49 @@ valid e-mail address), he still won't be subscribed to the imported bug.
 == Importing Comments ==
 
 Along with importing debian bug reports, comments on those bug reports
-are also imported. In our TestDebBugs instance we need to enable this
-functionality. In reality it is enabled by default:
+are also imported. This activity is usually carried out as part of a
+status update (though this is disabled in our Test DebBugs
+implementation), so we need to pass a bug watch to the function.
 
-    >>> external_debbugs.import_comments = True
+    >>> bug_watch = bug.addWatch(debbugs, '1234', no_priv)
+    >>> external_debbugs.importBugComments(bug_watch)
+    INFO:...:Importing comments for remote bug 1234...
+
+These comments will have been added to the bug, but by default won't be
+displayed. Initially, we only see the message chunk that was added when
+the bug was created.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> chunks = removeSecurityProxy(bug.getMessageChunks())
+    >>> for chunk in chunks:
+    ...     print chunk.content
+    Test description.
+
+There is a config setting, malone.show_imported_comments, which controls
+whether or not we display imported comments. This option is False by
+default. If we set it to True we'll see the message chunks in which the
+imported comments are stored.
+
+    >>> from canonical.config import config
+    >>> config.malone.show_imported_comments = True
+    >>> chunks = removeSecurityProxy(bug.getMessageChunks())
+    >>> for chunk in sorted(chunks):
+    ...     print chunk.content
+    Things happen.
+    Test description.
+
+    >>> config.malone.show_imported_comments = False
+
+The author of the comment will have had a Launchpad Person created for
+them if they didn't exist already:
+
+    >>> message = chunks[0].message
+    >>> message.owner.displayname
+    u'Teun Vink'
+
+    >>> message.owner.creation_comment
+    u'Created automatically during Debian bug import.'
+
 
 === Script for importing Debian bugs, linking them to Ubutu ===
 
