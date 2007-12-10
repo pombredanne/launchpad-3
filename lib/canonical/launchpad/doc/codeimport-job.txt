@@ -16,13 +16,15 @@ interface.
     >>> verifyObject(ICodeImportJobSet, job_set)
     True
 
-The CodeImportJobSet.getById method retrieves jobs by database id. It is
-useful for code-import-worker scripts, which are attached to specific
-job objects.
+The code-import-worker scripts are attached to specific job objects and
+retrieve jobs by database id using the CodeImportJobSet.getById method.
 
     >>> from canonical.launchpad.interfaces import ICodeImportJob
     >>> verifyObject(ICodeImportJob, job_set.getById(1))
     True
+
+The webapp gets the current job for display using the
+CodeImport.import_job property.
 
 CodeImportJob objects can also be retrieved using the import_job
 property of a CodeImport object. It is useful for the webapp to display
