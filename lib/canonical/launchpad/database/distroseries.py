@@ -69,10 +69,10 @@ from canonical.launchpad.interfaces import (
     IBuildSet, IDistroSeries, IDistroSeriesSet, IHasBuildRecords,
     IHasTranslationTemplates, IHasQueueItems, ILibraryFileAliasSet,
     IPublishedPackageSet, ICanPublishPackages, ISourcePackage,
-    ISourcePackageName,ISourcePackageNameSet, LanguagePackType, NotFoundError,
-    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
-    SpecificationFilter, SpecificationGoalStatus, SpecificationSort,
-    SpecificationImplementationStatus)
+    ISourcePackageName, ISourcePackageNameSet, LanguagePackType,
+    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
+    PackageUploadStatus, SpecificationFilter, SpecificationGoalStatus,
+    SpecificationSort, SpecificationImplementationStatus)
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -690,6 +690,36 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             DistroSeriesStatus.EXPERIMENTAL,
         ]
 
+    def getAllPublishedSources(self):
+        """See `IDistroSeries`."""
+        # Consider main archives only, and return all sources in
+        # the PUBLISHED state.
+        archives = self.distribution.getArchiveIDList()
+        return SourcePackagePublishingHistory.select("""
+            distroseries = %s AND
+            status = %s AND
+            archive in %s
+            """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED,
+                            archives),
+            orderBy="id")
+
+    def getAllPublishedBinaries(self):
+        """See `IDistroSeries`."""
+        # Consider main archives only, and return all binaries in
+        # the PUBLISHED state.
+        archives = self.distribution.getArchiveIDList()
+        return BinaryPackagePublishingHistory.select("""
+            BinaryPackagePublishingHistory.distroarchseries =
+                DistroArchSeries.id AND
+            DistroArchSeries.distroseries = DistroSeries.id AND
+            DistroSeries.id = %s AND
+            BinaryPackagePublishingHistory.status = %s AND
+            BinaryPackagePublishingHistory.archive in %s
+            """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED,
+                            archives),
+            clauseTables=["DistroArchSeries", "DistroSeries"],
+            orderBy="BinaryPackagePublishingHistory.id")
+
     def getSourcesPublishedForAllArchives(self):
         """See IDistroSeries."""
         # Both, PENDING and PUBLISHED sources will be considered for
@@ -842,11 +872,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             builddepends=builddepends, builddependsindep=builddependsindep,
             architecturehintlist=architecturehintlist, component=component,
             creator=creator, urgency=urgency, changelog=changelog, dsc=dsc,
-            copyright=copyright, upload_archive=archive, section=section,
-            dscsigningkey=dscsigningkey,
-            dsc_binaries=dsc_binaries, dsc_format=dsc_format,
+            dscsigningkey=dscsigningkey, section=section,
+            copyright=copyright, upload_archive=archive,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
-            dsc_standards_version=dsc_standards_version)
+            dsc_standards_version=dsc_standards_version,
+            dsc_format=dsc_format, dsc_binaries=dsc_binaries)
 
     def getComponentByName(self, name):
         """See IDistroSeries."""

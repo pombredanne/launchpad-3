@@ -254,6 +254,8 @@ def buglisting_embedded_advanced_search(context, view):
     """Return the view's page heading."""
     return view.getSearchPageHeading()
 
+bug_listing_expirable = ContextTitle("Bugs that can expire in %s")
+
 def bugnomination_edit(context, view):
     """Return the title for the page to manage bug nominations."""
     return 'Manage nomination for bug #%d in %s' % (
@@ -412,9 +414,9 @@ distributionmirror_edit = ContextTitle('Edit mirror %s')
 
 distributionmirror_index = ContextTitle('Mirror %s')
 
-distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
-
 distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
+
+distributionmirror_review = ContextTitle('Review mirror %s')
 
 distribution_add = 'Register a new distribution'
 
