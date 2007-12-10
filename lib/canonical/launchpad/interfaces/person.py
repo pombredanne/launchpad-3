@@ -202,6 +202,13 @@ class PersonCreationRationale(DBEnumeratedType):
         hardware database.
         """)
 
+    BUGWATCH = DBItem(15, """
+        Created by the updating of a bug watch.
+
+        A watch was made against a remote bug that the user submitted or
+        commented on.
+        """)
+
 class TeamMembershipRenewalPolicy(DBEnumeratedType):
     """TeamMembership Renewal Policy.
 
