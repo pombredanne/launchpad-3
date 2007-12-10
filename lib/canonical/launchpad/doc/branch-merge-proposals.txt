@@ -188,14 +188,17 @@ revision.
     True
 
 Code that has been accepted can also be set to rejected.
+Rejected branches have the reviewed_revision_id reset to nothing.
 
     >>> proposal.rejectBranch(sample_person)
     >>> print proposal.queue_status.title
     Rejected
+    >>> print proposal.reviewed_revision_id
+    None
 
 Resubmit proposals can also be updated to be approved.
 
-    >>> proposal.approveBranch(sample_person)
+    >>> proposal.approveBranch(sample_person, tip.revision_id)
     >>> print proposal.queue_status.title
     Code approved
 
@@ -222,12 +225,12 @@ a user in the reviewer team can approve or reject the branch.
     Traceback (most recent call last):
     ...
     UserNotBranchReviewer
-    >>> proposal.approveBranch(sample_person)
+    >>> proposal.approveBranch(sample_person, tip.revision_id)
     Traceback (most recent call last):
     ...
     UserNotBranchReviewer
 
-    >>> proposal.approveBranch(eric_the_reviewer)
+    >>> proposal.approveBranch(eric_the_reviewer, tip.revision_id)
     >>> print proposal.queue_status.title
     Code approved
 

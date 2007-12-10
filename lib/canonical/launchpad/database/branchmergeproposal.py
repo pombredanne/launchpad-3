@@ -106,6 +106,8 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
             reviewer, BranchMergeProposalStatus.REJECTED)
+        # Reset the reviewed revision id.
+        self.reviewed_revision_id = None
 
     def mergeFailed(self, merger):
         """See `IBranchMergeProposal`."""
