@@ -66,6 +66,38 @@ Get the set of POTMsgSets that are untranslated.
     13
 
 
+== path ==
+
+A PO file has a storage path that determines where the file is to be
+stored in a filesystem tree (such as an export tarball).  The path
+ends with the actual file name and should include a language code.
+
+    >>> pofile_xh = potemplate.getPOFileByLang('xh')
+    >>> pofile_xh.path
+    u'xh.po'
+
+To change this path, use setPathIfUnique().
+
+    >>> pofile_xh.setPathIfUnique('xh2.po')
+    >>> pofile_xh.path
+    u'xh2.po'
+
+The path must be unique within its distribution series package or
+product release series, so that a single file system tree can contain
+all translations found there.
+
+If the given path is not locally unique, setPathIfUnique() simply does
+nothing.  There can be no naming conflict in that case because the PO
+file's existing path is already supposed to be unique.
+
+Here we try to copy the path of another translation of the same template
+but the PO file correctly retains its original path.
+
+    >>> pofile_xh.setPathIfUnique(pofile.path)
+    >>> pofile_xh.path
+    u'xh2.po'
+
+
 == updateHeader() ==
 
 This method is used to update the header of the POFile to a newer version.
@@ -383,7 +415,6 @@ handling suggestions because it allows anyone to add suggestions.
 
     Leave the permission back to OPEN.
     >>> product.translationpermission = TranslationPermission.OPEN
-    >>> transaction.commit()
 
 == plural_forms ==
 
@@ -1141,7 +1172,7 @@ And when we submit another translation that is fuzzy...
     %d foo     1     None       True      True
 
 
-== Translations credits ==
+== Translation credits ==
 
 Translation credits are handled automatically, and cannot be
 translated in any other way except through a published upload.
@@ -1182,6 +1213,8 @@ If we submit non-published translation, it's refused.
     ...     alsa_translation, alsa_translation.owner,
     ...     {0: u'Unhappy translator'}, is_fuzzy=False, is_imported=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> print no_credits
+    None
     >>> flush_database_updates()
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     alsa_translation.language)

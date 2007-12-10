@@ -1117,6 +1117,38 @@ parameter for result restriction:
     ...     component=component_main, archive=debian_archive).count()
     0
 
+getAllPublishedSources will return all publications with status PUBLISHED
+and in the main archives for this distroseries:
+
+    >>> sources = warty.getAllPublishedSources()
+    >>> for source in sources:
+    ...     print(
+    ...         source.sourcepackagerelease.sourcepackagename.name,
+    ...         source.sourcepackagerelease.version)
+    (u'mozilla-firefox', u'0.9')
+    (u'netapplet', u'0.99.6-1')
+    (u'alsa-utils', u'1.0.8-1ubuntu1')
+    (u'alsa-utils', u'1.0.9a-4')
+    (u'cdrkit', u'1.0')
+    (u'iceweasel', u'1.0')
+
+Similarly for binary publications:
+
+    >>> binaries = warty.getAllPublishedBinaries()
+    >>> for binary in binaries:
+    ...     print(
+    ...         binary.binarypackagerelease.binarypackagename.name,
+    ...         binary.binarypackagerelease.version)
+    (u'mozilla-firefox', u'0.9')
+    (u'pmount', u'0.1-1')
+    (u'linux-2.6.12', u'2.6.12.20')
+    (u'pmount', u'2:1.9-1')
+    (u'at', u'3.14156')
+    (u'cdrkit', u'1.0')
+    (u'mozilla-firefox', u'1.0')
+    (u'mozilla-firefox', u'0.9')
+    (u'mozilla-firefox-data', u'0.9')
+    (u'mozilla-firefox-data', u'0.9')
 
 
 = Specification Listings =

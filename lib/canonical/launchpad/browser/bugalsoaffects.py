@@ -608,7 +608,8 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         This extra field is setup only if there is one or more products using
         that bugtracker.
         """
-        super(BugAlsoAffectsProductWithProductCreationView, self).setUpFields()
+        super(
+            BugAlsoAffectsProductWithProductCreationView, self).setUpFields()
         self._loadProductsUsingBugTracker()
         if self.existing_products is None or len(self.existing_products) < 1:
             # No need to setup any extra fields.
@@ -669,10 +670,13 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
             self.user, data['name'], data['displayname'], data['displayname'],
             data['summary'])
         data['product'] = product
-        self._createBugTaskAndWatch(data)
+        self._createBugTaskAndWatch(data, set_bugtracker=True)
 
-    def _createBugTaskAndWatch(self, data):
+    def _createBugTaskAndWatch(self, data, set_bugtracker=False):
         """Create a bugtask and bugwatch on the chosen product.
+
+        If set_bugtracker is True then the bugtracker of the newly created
+        watch is set as the product's bugtracker.
 
         This is done by manually calling the main_action() method of
         UpstreamBugTrackerCreationStep and ProductBugTaskCreationStep.
@@ -690,6 +694,7 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
         view = ProductBugTaskCreationStep(self.context, self.request)
         view.main_action(data)
 
-        data['product'].bugtracker = view.task_added.bugwatch.bugtracker
+        if set_bugtracker:
+            data['product'].bugtracker = view.task_added.bugwatch.bugtracker
         self.next_url = canonical_url(view.task_added)
 

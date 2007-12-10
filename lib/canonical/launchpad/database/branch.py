@@ -85,7 +85,7 @@ class Branch(SQLBase):
     last_mirror_attempt = UtcDateTimeCol(default=None)
     mirror_failures = IntCol(default=0, notNull=True)
     pull_disabled = BoolCol(default=False, notNull=True)
-    mirror_request_time = UtcDateTimeCol(default=None)
+    next_mirror_time = UtcDateTimeCol(default=None)
 
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
@@ -185,7 +185,7 @@ class Branch(SQLBase):
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created)
 
-    mirror_request_time = UtcDateTimeCol(default=None)
+    next_mirror_time = UtcDateTimeCol(default=None)
 
     @property
     def code_is_browseable(self):
@@ -428,9 +428,9 @@ class Branch(SQLBase):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
             raise BranchTypeError(self.unique_name)
-        self.mirror_request_time = UTC_NOW
+        self.next_mirror_time = UTC_NOW
         self.syncUpdate()
-        return self.mirror_request_time
+        return self.next_mirror_time
 
     def startMirroring(self):
         """See `IBranch`."""
@@ -448,15 +448,15 @@ class Branch(SQLBase):
         self.last_mirrored = self.last_mirror_attempt
         self.mirror_failures = 0
         self.mirror_status_message = None
-        if (self.mirror_request_time != None
-            and self.last_mirror_attempt > self.mirror_request_time):
+        if (self.next_mirror_time != None
+            and self.last_mirror_attempt > self.next_mirror_time):
             # No mirror was requested since we started mirroring.
             if self.branch_type == BranchType.MIRRORED:
-                self.mirror_request_time = (
+                self.next_mirror_time = (
                     datetime.now(pytz.timezone('UTC')) +
                     MIRROR_TIME_INCREMENT)
             else:
-                self.mirror_request_time = None
+                self.next_mirror_time = None
         self.last_mirrored_id = last_revision_id
         self.syncUpdate()
 
@@ -468,11 +468,11 @@ class Branch(SQLBase):
         self.mirror_status_message = reason
         if (self.branch_type == BranchType.MIRRORED
             and self.mirror_failures < MAXIMUM_MIRROR_FAILURES):
-            self.mirror_request_time = (
+            self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC'))
                 + MIRROR_TIME_INCREMENT * 2 ** (self.mirror_failures - 1))
         else:
-            self.mirror_request_time = None
+            self.next_mirror_time = None
         self.syncUpdate()
 
 
@@ -1110,8 +1110,8 @@ class BranchSet:
         """See `IBranchSet`."""
         return Branch.select(
             AND(Branch.q.branch_type == branch_type,
-                Branch.q.mirror_request_time < UTC_NOW),
-            prejoins=['owner', 'product'], orderBy='mirror_request_time')
+                Branch.q.next_mirror_time < UTC_NOW),
+            prejoins=['owner', 'product'], orderBy='next_mirror_time')
 
     def getTargetBranchesForUsersMergeProposals(self, user, product):
         """See `IBranchSet`."""

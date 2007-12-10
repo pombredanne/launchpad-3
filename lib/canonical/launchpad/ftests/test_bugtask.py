@@ -9,10 +9,11 @@ import unittest
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.ftests.bug import create_old_bug, sync_bugtasks
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IBugSet, IDistributionSet, IUpstreamBugTask, IBugTaskSet,
-    ILaunchBag, IBugWatchSet, IProductSet)
+    BugTaskStatus, IBugSet, IBugTaskSet, IBugWatchSet, IDistributionSet,
+    ILaunchBag, IProductSet, IProjectSet, IUpstreamBugTask)
 
 
 class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
@@ -220,10 +221,82 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
                 bugtask.id, bugtask.target.displayname))
 
 
+class BugTaskSetFindExpirableBugTasksTest(LaunchpadFunctionalTestCase):
+    """Test `BugTaskSet.findExpirableBugTasks()` behaviour."""
+
+    def setUp(self):
+        """Setup the zope interaction and create expirable bugtasks."""
+        LaunchpadFunctionalTestCase.setUp(self)
+        self.login('test@canonical.com')
+        user = getUtility(ILaunchBag).user
+        self.distribution = getUtility(IDistributionSet).getByName('ubuntu')
+        self.distroseries = self.distribution.getSeries('hoary')
+        self.product = getUtility(IProductSet).getByName('jokosher')
+        self.productseries = self.product.getSeries('trunk')
+        self.bugtaskset = getUtility(IBugTaskSet)
+        bugtasks = []
+        bugtasks.append(
+            create_old_bug("90 days old", 90, self.distribution))
+        bugtasks.append(
+            self.bugtaskset.createTask(
+                bug=bugtasks[-1].bug, owner=user,
+                distroseries=self.distroseries))
+        bugtasks.append(
+            create_old_bug("90 days old", 90, self.product))
+        bugtasks.append(
+            self.bugtaskset.createTask(
+                bug=bugtasks[-1].bug, owner=user,
+                productseries=self.productseries))
+        sync_bugtasks(bugtasks)
+
+    def testSupportedTargetParam(self):
+        """The target param supports a limited set of BugTargets.
+
+        Four BugTarget types may passed as the target argument:
+        Distribution, DistroSeries, Product, ProductSeries.
+        """
+        supported_targets = [self.distribution, self.distroseries,
+                             self.product, self.productseries]
+        for target in supported_targets:
+            expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
+                0, target=target)
+            self.assertEqual(len(expirable_bugtasks), 1,
+                 "%s has %d expirable bugtasks." %
+                 (self.distroseries, len(expirable_bugtasks)))
+
+    def testUnsupportedBugTargetParam(self):
+        """Test that unsupported targets raise errors.
+
+        Three BugTarget types are not supported because the UI does not
+        provide bug-index to link to the 'bugs that can expire' page.
+        Project, SourcePackage, and DistributionSourcePackage will
+        raise an NotImplementedError.
+
+        Passing an unknown bugtarget type will raise an AssertionError.
+        """
+        project = getUtility(IProjectSet).getByName('mozilla')
+        distributionsourcepackage = self.distribution.getSourcePackage(
+            'mozilla-firefox')
+        sourcepackage = self.distroseries.getSourcePackage(
+            'mozilla-firefox')
+        unsupported_targets = [project, distributionsourcepackage,
+                               sourcepackage]
+        for target in unsupported_targets:
+            self.assertRaises(
+                NotImplementedError, self.bugtaskset.findExpirableBugTasks,
+                0, target=target)
+
+        # Objects that are not a known BugTarget type raise an AssertionError.
+        self.assertRaises(
+            AssertionError, self.bugtaskset.findExpirableBugTasks,
+            0, target=[])
+
+
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(BugTaskSearchBugsElsewhereTest))
+    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
+
 
 if __name__ == '__main__':
     unittest.main()
