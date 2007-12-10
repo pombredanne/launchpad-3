@@ -144,7 +144,9 @@ class BzrSync:
 
         # Don't allow Launchpad URLs that aren't /bugs/<integer>.
         try:
-            bug_segment, bug_id = filter(None, path.split('/'))
+            # Remove empty path segments.
+            bug_segment, bug_id = [
+                segment for segment in path.split('/') if len(segment) > 0]
             if bug_segment != 'bugs':
                 raise ValueError('Bad path segment')
             bug = int(path.split('/')[-1])
@@ -160,8 +162,6 @@ class BzrSync:
 
     def extractBugInfo(self, bug_property):
         """Parse bug information out of the given revision property.
-
-        Any errors that occur during parsing will generate OOPS reports.
 
         :param bug_status_prop: A string containing lines of
             '<bug_url> <status>'.
@@ -180,10 +180,10 @@ class BzrSync:
         return bug_statuses
 
     def syncBranchAndClose(self):
-        """Synchronize the database with a Bazaar branch and release resources.
+        """Synchronize the database with a Bazaar branch and close resources.
 
-        Convenience method that implements the proper idiom for the common case
-        of calling `syncBranch` and `close`.
+        Convenience method that implements the proper idiom for the common
+        case of calling `syncBranch` and `close`.
         """
         try:
             self.syncBranch()
@@ -206,7 +206,7 @@ class BzrSync:
         * Branch: the branch-scanner status information must be updated when
           the sync is complete.
         """
-        self.logger.info("Scanning branch: %s",self.db_branch.unique_name)
+        self.logger.info("Scanning branch: %s", self.db_branch.unique_name)
         self.logger.info("    from %s", self.bzr_branch.base)
         # Get the history and ancestry from the branch first, to fail early
         # if something is wrong with the branch.
@@ -231,8 +231,8 @@ class BzrSync:
         # timeouts in the webapp. This opens a small race window where the
         # revision data is updated in the database, but the Branch table has
         # not been updated. Since this has no ill-effect, and can only err on
-        # the pessimistic side (tell the user the data has not yet been updated
-        # although it has), the race is acceptable.
+        # the pessimistic side (tell the user the data has not yet been
+        # updated although it has), the race is acceptable.
         self.trans_manager.begin()
         self.updateBranchStatus()
         self.trans_manager.commit()
@@ -322,8 +322,8 @@ class BzrSync:
             db_branch_revision_map[revid]
             for revid in removed_merged.union(removed_history))
 
-        # We must insert BranchRevision rows for all revisions which were added
-        # to the ancestry or whose sequence value has changed.
+        # We must insert BranchRevision rows for all revisions which were
+        # added to the ancestry or whose sequence value has changed.
         branchrevisions_to_insert = list(
             self.getRevisions(added_merged.union(added_history)))
 
@@ -342,7 +342,8 @@ class BzrSync:
         for revision_id in revisions_to_insert_or_check:
             # If the revision is a ghost, it won't appear in the repository.
             try:
-                revision = self.bzr_branch.repository.get_revision(revision_id)
+                revision = self.bzr_branch.repository.get_revision(
+                    revision_id)
             except NoSuchRevision:
                 self.logger.debug("%d of %d: %s is a ghost",
                                   self.curr, self.last, revision_id)
@@ -379,7 +380,8 @@ class BzrSync:
                         'parent %s was added since last scan' % parent_id)
                 elif len(matching_parents) > 1:
                     raise RevisionModifiedError(
-                        'parent %s is listed multiple times in db' % parent_id)
+                        'parent %s is listed multiple times in db'
+                        % parent_id)
                 if matching_parents[0].sequence != sequence:
                     raise RevisionModifiedError(
                         'parent %s reordered (old index %d, new index %d)'

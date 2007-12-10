@@ -1,13 +1,2 @@
 # Put your TODOs for this branch here, then make sure it is empty before
 # landing. There is a test to ensure it is empty in trunk.
-
-- Update the BugBranch on new, mainline revisions
-
-- Check that non-mainline revisions with properties don't change a thing.
-
-- Check that bad data is ignored
-
-- Figure out whether to raise an exception in set_bug_branch_status
-
-- Docstring for set_bug_branch_status
-

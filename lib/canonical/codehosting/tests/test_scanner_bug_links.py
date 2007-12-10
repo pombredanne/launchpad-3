@@ -9,14 +9,12 @@ import unittest
 import transaction
 from zope.component import getUtility
 
-from canonical.codehosting.scanner.bzrsync import (
-    BzrSync, set_bug_branch_status)
+from canonical.codehosting.scanner.bzrsync import set_bug_branch_status
 from canonical.codehosting.tests.test_scanner_bzrsync import BzrSyncTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BugBranchStatus, IBugBranchSet, IBugSet, NotFoundError)
 from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.launchpad.webapp import errorlog
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -199,7 +197,6 @@ class TestMakeBugBranch(unittest.TestCase):
         set_bug_branch_status(
             self.bug, self.branch, BugBranchStatus.BESTFIX)
         # Try to update the status.
-        # XXX: JonathanLange 2007-12-06: Should this raise an exception?
         set_bug_branch_status(
             self.bug, self.branch, BugBranchStatus.FIXAVAILABLE)
         self.assertStatusEqual(
@@ -221,7 +218,11 @@ class TestBugLinking(BzrSyncTestCase):
         BzrSyncTestCase.setUp(self)
 
     def getBugURL(self, bug):
-        """Get the canonical URL for 'bug'."""
+        """Get the canonical URL for 'bug'.
+
+        We don't use canonical_url because we don't want to have to make
+        Bazaar know about launchpad.dev.
+        """
         return 'https://launchpad.net/bugs/%s' % bug.id
 
     def assertStatusEqual(self, bug, branch, status):
