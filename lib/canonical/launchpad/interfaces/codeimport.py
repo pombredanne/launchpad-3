@@ -101,11 +101,13 @@ class ICodeImport(Interface):
 
     rcs_type = Choice(title=_("Type of RCS"),
         required=True, vocabulary=RevisionControlSystems,
-        description=_("The revision control system used by the import source. "
-        "Can be CVS or Subversion."))
+        description=_(
+            "The version control system to import from. "
+            "Can be CVS or Subversion."))
 
     svn_branch_url = URIField(title=_("Branch"), required=False,
-        description=_("The URL of a Subversion branch, starting with svn:// or"
+        description=_(
+            "The URL of a Subversion branch, starting with svn:// or"
             " http(s)://. Only trunk branches are imported."),
         allowed_schemes=["http", "https", "svn"],
         allow_userinfo=False, # Only anonymous access is supported.
@@ -124,7 +126,8 @@ class ICodeImport(Interface):
         description=_("The path to import within the repository."
             " Usually, it is the name of the project."))
 
-    date_last_successful = Datetime(title=_("Last successful"), required=False)
+    date_last_successful = Datetime(
+        title=_("Last successful"), required=False)
 
     update_interval = Timedelta(
         title=_("Update interval"), required=False, description=_(

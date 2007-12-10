@@ -18,7 +18,8 @@ from zope.schema import Choice, Datetime, Int, Object, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.codeimport import ICodeImport
-from canonical.launchpad.interfaces.codeimportmachine import ICodeImportMachine
+from canonical.launchpad.interfaces.codeimportmachine import (
+    ICodeImportMachine)
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.lazr import (
     DBEnumeratedType, DBItem)
