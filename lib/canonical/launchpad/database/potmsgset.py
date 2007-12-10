@@ -147,6 +147,7 @@ class POTMsgSet(SQLBase):
         otherwise.
         """
         # Return empty list (no suggestions) for translation credit strings
+        # because they are automatically translated.
         if self.is_translation_credit:
             return []
         # Watch out when changing this condition: make sure it's done in

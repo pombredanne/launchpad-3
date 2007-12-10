@@ -26,6 +26,7 @@ We also need some time and date functions to do translation updates.
     >>> UTC = pytz.timezone('UTC')
     >>> from canonical.database.sqlbase import flush_database_caches
 
+
 == POTMsgSet.normalizeWhitespaces ==
 
 This function copies the leading and trailing whitespaces from
@@ -153,6 +154,7 @@ And finally, check to be sure that the broken options are detected.
     ...
     BrokenTextError: ...
 
+
 == POTMsgSet.applySanityFixes ==
 
 This function applies all checks we know to fix broken input
@@ -169,6 +171,7 @@ use '\r\n' like when we get a form submission.
     >>> text = u'\r\nTranslation\r\nto test\r\n'
     >>> potmsgset.applySanityFixes(text)
     u'\nTranslation\nto test\n'
+
 
 == POTMsgSet.updateTranslation ==
 
@@ -681,6 +684,7 @@ Let's restore the flags for next section.
     >>> evolution.official_rosetta = True
     >>> flush_database_updates()
 
+
 == POTMsgSet.getExternallySuggestedTranslationMessages ==
 
 This method returns a set of submissions that have suggested translations
@@ -786,6 +790,7 @@ Launchpad for translations.
     >>> len(wiki_submissions)
     0
 
+
 == POTMsgSet.getCurrentDummyTranslationMessage ==
 
 Sometimes, there are POTMsgSet objects with no translations to a language,
@@ -803,6 +808,7 @@ and we request a dummy one, that's broken and we detect it.
     Traceback (most recent call last):
     ...
     AssertionError: There is already a translation message ...
+
 
 == Variant translation ==
 
@@ -905,12 +911,13 @@ from getCurrentTranslationMessage().
     >>> print current_non_existing
     None
 
+
 == Suggestions for translator credits ==
 
 Messages with translator credits are translated automatically by
 Launchpad, so we should not get any suggestions for them.
 
-To put 'external' suggestions in database, let's translate
+To put 'external' suggestions in database, let's translate the
 'translation-credits' message in alsa-utils template to Spanish.
 
     >>> alsa = getUtility(IProductSet).getByName('alsa-utils')
