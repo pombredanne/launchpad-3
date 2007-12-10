@@ -47,6 +47,7 @@ class UnknownBugTrackerTypeError(BugWatchUpdateError):
     """Exception class to catch systems we don't have a class for yet."""
 
     def __init__(self, bugtrackertypename, bugtrackername):
+        BugWatchUpdateError.__init__(self)
         self.bugtrackertypename = bugtrackertypename
         self.bugtrackername = bugtrackername
 
@@ -70,6 +71,7 @@ class BugTrackerConnectError(BugWatchUpdateError):
     """Exception class to catch misc errors contacting a bugtracker."""
 
     def __init__(self, url, error):
+        BugWatchUpdateError.__init__(self)
         self.url = url
         self.error = str(error)
 
