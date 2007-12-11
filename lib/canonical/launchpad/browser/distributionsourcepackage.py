@@ -349,7 +349,8 @@ class DistributionSourcePackageView(LaunchpadFormView):
         """
         if data.get('packaging') is None:
             self.setFieldError(
-                'packaging', "This upstream association was deleted already.")
+                'packaging',
+                _("This upstream association was deleted already."))
 
     @action(_("Delete Link"), name='delete_packaging',
             failure=handleDeletePackagingError)
@@ -361,9 +362,11 @@ class DistributionSourcePackageView(LaunchpadFormView):
         getUtility(IPackagingUtil).deletePackaging(
             productseries, packaging.sourcepackagename, distroseries)
         self.request.response.addNotification(
-            _("Removed upstream association between %s %s and %s.")
-            % (productseries.product.displayname, productseries.displayname,
-               distroseries.displayname))
+            _("Removed upstream association between %{product} "
+              "%{productseries} and %{distroseries}.", mapping=dict(
+              product=productseries.product.displayname,
+              productseries=productseries.displayname,
+              distroseries=distroseries.displayname)))
 
     def version_listing(self):
         result = []
