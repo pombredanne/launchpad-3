@@ -30,18 +30,38 @@ from canonical.buildmaster.buildergroup import BuilderGroup
 
 def determineArchitecturesToBuild(pubrec, legal_archserieses,
                                   distroseries, pas_verify=None):
-    """Return a list of DistroArchSeries for which this publication
-    should build.
+    """Return the `DistroArchSeries` for which this publication should build.
 
     This function answers the question: given a publication, what
     architectures should we build it for? It takes a set of legal
     distroarchserieses and the distribution series for which we are
-    buiilding, and optionally a BuildDaemonPackagesArchSpecific
-    instance.
+    building, and optionally a BuildDaemonPackagesArchSpecific (
+    informally known as 'P-a-s') instance.
+
+    The P-a-s component contains a list of forbidden architectures for
+    each source, which should respected regardless of which architectures
+    have been requested in the source package metadata, for instance:
+
+      * 'aboot' should only build on powerpc
+      * 'mozilla-firefox' should not build for sparc
+
+    This black/white list is an optimization to suppress temporarily
+    known-failures build attempts and thus saving build-farm time.
+
+    For PPA publications we only consider architectures supported by PPA
+    subsystem (`DistroArchSeries`.ppa_supported flag) and P-a-s is turned
+    off to give the users the chance to test their fixes for upstream
+    problems.
     """
     hint_string = pubrec.sourcepackagerelease.architecturehintlist
 
     assert hint_string, 'Missing arch_hint_list'
+
+    # Exclude non-PPA architectures and ignore P-a-s for PPA candidates.
+    if pubrec.archive.purpose == ArchivePurpose.PPA:
+        legal_archserieses = [
+            das for das in legal_archserieses if das.ppa_supported]
+        pas_verify = None
 
     legal_arch_tags = set(arch.architecturetag
                           for arch in legal_archserieses)
@@ -196,15 +216,8 @@ class BuilddMaster:
             "Found %d source(s) published." % sources_published.count())
 
         for pubrec in sources_published:
-            if pubrec.archive.purpose == ArchivePurpose.PPA:
-                local_archs = [
-                    distro_arch_series for distro_arch_series in legal_archs
-                    if distro_arch_series.ppa_supported]
-            else:
-                local_archs = legal_archs
-
             build_archs = determineArchitecturesToBuild(
-                pubrec, local_archs, distroseries, pas_verify)
+                pubrec, legal_archs, distroseries, pas_verify)
 
             self._createMissingBuildsForPublication(pubrec, build_archs)
 
