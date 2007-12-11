@@ -355,6 +355,11 @@ class Branch(SQLBase):
                "Only use this to fetch revisions from mainline history."
         return BranchRevision.selectOneBy(branch=self, sequence=sequence)
 
+    def getBranchRevisionByRevisionId(self, revision_id):
+        """See `IBranch`."""
+        revision = Revision.selectOneBy(revision_id=revision_id)
+        return BranchRevision.selectOneBy(branch=self, revision=revision)
+
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""
         return BranchRevision(

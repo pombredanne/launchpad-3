@@ -9,19 +9,26 @@ __all__ = [
     'BranchMergeProposalEditView',
     'BranchMergeProposalMergedView',
     'BranchMergeProposalRequestReviewView',
+    'ReviewBranchMergeProposalView',
     ]
 
 from zope.component import getUtility
+from zope.interface import Attribute, Interface
+from zope.schema import Choice, Int
 
+from canonical.cachedproperty import cachedproperty
+from canonical.config import config
+
+from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.interfaces import (
-    BranchMergeProposalStatus, IBranchMergeProposal, ILaunchpadCelebrities,
-    IStructuralObjectPresentation)
+    BranchMergeProposalStatus, BranchType, IBranchMergeProposal,
+    ILaunchpadCelebrities, IStructuralObjectPresentation)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action, custom_widget)
-
+from canonical.widgets.link import LinkWidget
 
 class BranchMergeProposalSOP(StructuralObjectPresentation):
     """Provides the structural heading for `IBranchMergeProposal`.
@@ -102,10 +109,133 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
                           "mark as 'Needs review'.")
 
 
-class BranchMergeProposalEditView(LaunchpadEditFormView):
+class ReviewForm(Interface):
+    """A simple interface to define the revision number field."""
+
+    revision_number = Int(
+        title=_("Reviewed Revision"), required=True,
+        description=_("The revision number on the target branch which "
+                      "has been reviewed."))
+
+class MergeProposalEditView(LaunchpadEditFormView):
+    """A base class for merge proposal edit views."""
+
+    @cachedproperty
+    def reviewed_revision_number(self):
+        """Return the number of the last reviewed revision.
+
+        If there was no last reviewed revision, None is returned.
+
+        If the reviewed revision is no longer in the revision history of
+        the source branch, then a message is returned.
+        """
+        # If the source branch is REMOTE, then there won't be any ids.
+        source_branch = self.context.source_branch
+        if source_branch.branch_type == BranchType.REMOTE:
+            return self.context.reviewed_revision_id
+        else:
+            branch_revision = source_branch.getBranchRevisionByRevisionId(
+                self.context.reviewed_revision_id)
+            if branch_revision is None:
+                return "no longer in the source branch."
+            elif branch_revision.sequence is None:
+                return (
+                    "no longer in the revision history of the source branch.")
+            else:
+                return branch_revision.sequence
+
+
+class ReviewBranchMergeProposalView(MergeProposalEditView):
+    """The view to approve or reject a merge proposal."""
+
+    schema = ReviewForm
+    label = "Review proposal to merge"
+
+    @property
+    def initial_values(self):
+        # Default to reviewing the tip of the source branch.
+        return {'revision_number': self.context.source_branch.revision_count}
+
+    @cachedproperty
+    def unlanded_revisions(self):
+        """Return the unlanded revisions from the source branch."""
+        return self.context.getUnlandedSourceBranchRevisions()
+
+    @property
+    def adapters(self):
+        return {ReviewForm: self.context}
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context.source_branch)
+
+    def _getRevisionId(self, data):
+        """Translate the revision number that was entered into a revision id.
+
+        If the branch is REMOTE we won't have any scanned revisions to compare
+        against, so store the raw integer revision number as the revision id.
+        """
+        source_branch = self.context.source_branch
+        if source_branch.branch_type == BranchType.REMOTE:
+            return data['revision_number']
+        else:
+            branch_revision = source_branch.getBranchRevision(
+                data['revision_number'])
+            return branch_revision.revision.revision_id
+
+    @action('Approve', name='approve')
+    def approve_action(self, action, data):
+        """Set the status to approved."""
+        self.context.approveBranch(self.user, self._getRevisionId(data))
+
+    @action('Reject', name='reject')
+    def reject_action(self, action, data):
+        """Set the status to rejected."""
+        self.context.rejectBranch(self.user, self._getRevisionId(data))
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the source branch."""
+
+    def validate(self, data):
+        """Ensure that the proposal is in an appropriate state."""
+        if self.context.queue_status == BranchMergeProposalStatus.MERGED:
+            self.addError("The merge proposal is not an a valid state to "
+                          "review.")
+        # Check to make sure that the revision number entered is valid.
+        rev_no = data.get('revision_number')
+        if rev_no is not None:
+            try:
+                rev_no = int(rev_no)
+            except ValueError:
+                self.setFieldError(
+                    'revision_number',
+                    'The reviewed revision must be a positive number.')
+            else:
+                if rev_no < 1:
+                    self.setFieldError(
+                        'revision_number',
+                        'The reviewed revision must be a positive number.')
+                # Accept any positive integer for a REMOTE branch.
+                source_branch = self.context.source_branch
+                if (source_branch.branch_type != BranchType.REMOTE and
+                    rev_no > source_branch.revision_count):
+                    self.setFieldError(
+                        'revision_number',
+                        'The reviewed revision cannot be larger than the '
+                        'tip revision of the source branch.')
+
+    @property
+    def codebrowse_url(self):
+        """Return the link to codebrowse for this branch."""
+        return (config.codehosting.codebrowse_root +
+                self.context.source_branch.unique_name)
+
+
+class BranchMergeProposalEditView(MergeProposalEditView):
     """The view to control the editing and deletion of merge proposals."""
     schema = IBranchMergeProposal
-
+    label = "Edit branch merge proposal"
     field_names = ["whiteboard"]
 
     def initialize(self):
@@ -137,7 +267,7 @@ class BranchMergeProposalEditView(LaunchpadEditFormView):
 class BranchMergeProposalMergedView(LaunchpadEditFormView):
     """The view to mark a merge proposal as merged."""
     schema = IBranchMergeProposal
-
+    label = "Edit branch merge proposal"
     field_names = ["merged_revno"]
 
     @action('Mark as Merged', name='mark_merged')

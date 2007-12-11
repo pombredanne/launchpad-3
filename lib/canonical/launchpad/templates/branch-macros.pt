@@ -150,4 +150,59 @@
   </tal:bug-tasks>
 
 </metal:branch-bug-links>
+
+<metal:branch-revisions define-macro="branch-revisions">
+
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      branch - the branch that has the bug branch links
+      revisions - the revisions to list
+  </tal:comment>
+
+  <dl class="revision">
+    <tal:revision repeat="rev_no revisions"
+                  attributes="id string:rev${rev_no/sequence}">
+
+      <tal:comment condition="nothing">
+        The end of the anchor and the start of the next tal expression
+        has no whitespace between the elements as we do not want any
+        space between the number and the fullstop.
+      </tal:comment>
+      <dt>
+        <a tal:attributes="href string:${view/codebrowse_url}/revision/${rev_no/sequence}"
+           tal:content="rev_no/sequence"
+           tal:condition="branch/code_is_browseable">
+          1
+        </a><tal:revno condition="not: branch/code_is_browseable"
+                       replace="rev_no/sequence">1</tal:revno>.
+        By
+        <strong>
+          <tal:not-anonymous condition="view/user">
+            <span tal:replace="rev_no/revision/revision_author/name">
+              John Doe &lt;john.doe@example.com&gt;
+            </span>
+          </tal:not-anonymous>
+          <tal:anonymous condition="not:view/user">
+            <span
+               tal:replace="rev_no/revision/revision_author/name_without_email">
+              John Doe
+            </span>
+            &lt;email address hidden&gt;
+          </tal:anonymous>
+        </strong>
+        <span
+            tal:attributes="title rev_no/revision/revision_date/fmt:datetime"
+            tal:content="rev_no/revision/revision_date/fmt:displaydate"
+            >2005-10-05 14:34:22 WST</span>
+      </dt>
+      <dd>
+        <p tal:replace="structure rev_no/revision/log_body/fmt:text-to-html">
+          The revision commit message.
+        </p>
+      </dd>
+    </tal:revision>
+  </dl>
+
+</metal:branch-revisions>
+
 </tal:root>

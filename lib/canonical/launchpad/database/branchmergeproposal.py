@@ -15,7 +15,7 @@ from sqlobject import ForeignKey, IntCol, StringCol
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.interfaces import (
@@ -80,46 +80,36 @@ class BranchMergeProposal(SQLBase):
 
     def isReviewable(self):
         """See `IBranchMergeProposal`."""
-        return self.queue_status in [
-            BranchMergeProposalStatus.WORK_IN_PROGRESS,
-            BranchMergeProposalStatus.NEEDS_REVIEW ,
-            BranchMergeProposalStatus.CODE_APPROVED,
-            BranchMergeProposalStatus.REJECTED]
+        # As long as the source branch has not been merged, it is valid
+        # to review it.
+        return self.queue_status != BranchMergeProposalStatus.MERGED
 
-    def _reviewProposal(self, reviewer, next_state):
+    def _reviewProposal(self, reviewer, next_state, revision_id):
         """Set the proposal to one of the two review statuses."""
         # Check the reviewer can review the code for the target branch.
         if not self.personCanReview(reviewer):
             raise UserNotBranchReviewer
         # Check the current state of the proposal.
-        if self.queue_status in [
-            BranchMergeProposalStatus.WORK_IN_PROGRESS,
-            BranchMergeProposalStatus.NEEDS_REVIEW ,
-            BranchMergeProposalStatus.CODE_APPROVED,
-            BranchMergeProposalStatus.REJECTED]:
-            # These are valid state transitions
-            self.queue_status = next_state
-        else:
+        if not self.isReviewable():
             raise AssertionError(
                 'Invalid state transition for merge proposal: %s -> %s'
                 % (self.queue_state.title, next_state.title))
+        self.queue_status = next_state
         # Record the reviewer
         self.reviewer = reviewer
         self.date_reviewed = UTC_NOW
+        # Record the reviewed revision id
+        self.reviewed_revision_id = revision_id
 
     def approveBranch(self, reviewer, revision_id):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
-            reviewer, BranchMergeProposalStatus.CODE_APPROVED)
-        # Record the reviewed revision id
-        self.reviewed_revision_id = revision_id
+            reviewer, BranchMergeProposalStatus.CODE_APPROVED, revision_id)
 
-    def rejectBranch(self, reviewer):
+    def rejectBranch(self, reviewer, revision_id):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
-            reviewer, BranchMergeProposalStatus.REJECTED)
-        # Reset the reviewed revision id.
-        self.reviewed_revision_id = None
+            reviewer, BranchMergeProposalStatus.REJECTED, revision_id)
 
     def mergeFailed(self, merger):
         """See `IBranchMergeProposal`."""
@@ -142,3 +132,14 @@ class BranchMergeProposal(SQLBase):
         if date_merged is None:
             date_merged = UTC_NOW
         self.date_merged = date_merged
+
+    def getUnlandedSourceBranchRevisions(self):
+        """See `IBranchMergeProposal`."""
+        return BranchRevision.select('''
+            BranchRevision.branch = %s AND
+            BranchRevision.sequence IS NOT NULL AND
+            BranchRevision.revision NOT IN (
+              SELECT revision FROM BranchRevision
+              WHERE branch = %s)
+            ''' % sqlvalues(self.source_branch, self.target_branch),
+            prejoins=['revision'], orderBy='-sequence')

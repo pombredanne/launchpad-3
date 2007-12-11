@@ -567,6 +567,12 @@ class IBranch(IHasOwner):
         If no such BranchRevision exists, None is returned.
         """
 
+    def getBranchRevisionByRevisionId(revision_id):
+        """Gets the BranchRevision for the given revision id.
+
+        If no such BranchRevision exists, None is returned.
+        """
+
     def createBranchRevision(sequence, revision):
         """Create a new BranchRevision for this branch."""
 

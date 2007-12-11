@@ -11,7 +11,7 @@ __all__ = [
     'UserNotBranchReviewer',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int
 
 from canonical.launchpad import _
@@ -153,18 +153,22 @@ class IBranchMergeProposal(Interface):
 
         The time that the branch was approved is recoreded in `date_reviewed`.
 
-        :param reviewer: A person authorised to approve branches for merging.
-        :param revision_id: The revision id of the tip of the branch that was
+        :param reviewer: A person authorised to review branches for merging.
+        :param revision_id: The revision id of the branch that was
                             reviewed by the `reviewer`.
 
         :raises: UserNotBranchReviewer if the reviewer is not in the team of
                  the branch reviewer for the target branch.
         """
 
-    def rejectBranch(reviewer):
+    def rejectBranch(reviewer, revision_id):
         """Mark the proposal as 'Rejected'.
 
         The time that the branch was rejected is recoreded in `date_reviewed`.
+
+        :param reviewer: A person authorised to review branches for merging.
+        :param revision_id: The revision id of the branch that was
+                            reviewed by the `reviewer`.
 
         :raises: UserNotBranchReviewer if the reviewer is not in the team of
                  the branch reviewer for the target branch.
@@ -210,10 +214,15 @@ class IBranchMergeProposal(Interface):
     def isReviewable(self):
         """Is the proposal is in a state condusive to being reviewed?
 
-        If the proposal is in one of the following states, then it can
-        be reviewed:
-          * Work in progress
-          * Review requested
-          * Approved
-          * Rejected
+        As long as the source branch hasn't been merged into the target
+        the proposal is able to be reviewed.
+        """
+
+    def getUnlandedSourceBranchRevisions(self):
+        """Returns a sequence of `BranchRevision` objects.
+
+        Returns those revisions that are in the revision history for the
+        source branch that are not in the revision history of the target
+        branch.  These are the revisions that have been committed to the
+        source branch since it branched off the target branch.
         """
