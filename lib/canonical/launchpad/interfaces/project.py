@@ -7,8 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IProject',
-    'IProjectSeriesSpecifications',
-    'IProjectSeriesSpecificationsSet',
+    'IProjectSeries',
     'IProjectSet',
     ]
 
@@ -210,25 +209,9 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         otherwise.
         """
 
-    def filter_specifications(sort=None, quantity=None, filter=None,
-                              series=None):
-        """Specifications for this target.
+    def getSeries(series_name):
+        """Return a ProjectSeries object with name `series_name`."""
 
-        The sort is a dbschema which indicates the preferred sort order. The
-        filter is an indicator of the kinds of specs to be returned, and
-        appropriate filters depend on the kind of object this method is on.
-        If there is a quantity, then limit the result to that number.
-
-        In the case where the filter is [] or None, the content class will
-        decide what its own appropriate "default" filter is. In some cases,
-        it will show all specs, in others, all approved specs, and in
-        others, all incomplete specs.
-
-        If series is None, all specifications related to this project are
-        returned else those related to the given project series name.
-        NOTE: This method does not check, if any series of the given name
-        exists.
-        """
 
 # Interfaces for set
 
@@ -282,29 +265,17 @@ class IProjectSet(Interface):
         """Return a list of projects that have productseries ready to
         import which need review."""
 
-class IProjectSeriesSpecifications(IHasSpecifications, IHasIcon, IHasLogo,
-                                   IHasMugshot):
+class IProjectSeries(IHasSpecifications):
     """Interface for ProjectSeries.
 
     This class provides the specifications related to a "virtual project
     series", i.e., to those speicifactions that are assigned to a series
     of a product which is part of this project.
     """
+    name = Attribute('The name of this series')
+
     displayname = Attribute('Display Name')
 
     title = Attribute('The full name of the project group.')
 
-    icon = Attribute('The icon of the project.')
-
-    logo = Attribute('The logo of the project.')
-
-    mugshot = Attribute('The mugshot of the project.')
-
-class IProjectSeriesSpecificationsSet(Interface):
-    """The collection of IProjectSeries."""
-
-    def getProjectSeriesSpecifications(project, series_name):
-        """Return a ProjectSeries object for the given project and series.
-
-        If no such series exists, return None.
-        """
+    project = Attribute('The project this series belongs to')

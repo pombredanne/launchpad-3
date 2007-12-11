@@ -5,15 +5,14 @@
 __metaclass__ = type
 __all__ = [
     'Project',
-    'ProjectSeriesSpecifications',
-    'ProjectSeriesSpecificationsSet',
+    'ProjectSeries',
     'ProjectSet',
     ]
 
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
+    AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
 
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -22,8 +21,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, ImportStatus, IProduct,
-    IProject, IProjectSet, IProjectSeriesSpecifications,
-    IProjectSeriesSpecificationsSet,  ISearchableByQuestionOwner,
+    IProject, IProjectSet, IProjectSeries, ISearchableByQuestionOwner,
     NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
     SprintSpecificationStatus, TranslationPermission)
@@ -40,6 +38,7 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import ProjectMilestone
 from canonical.launchpad.database.product import Product
+from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -172,8 +171,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def valid_specifications(self):
         return self.specifications(filter=[SpecificationFilter.VALID])
 
-    def filter_specifications(self, sort=None, quantity=None, filter=None,
-                              series=None):
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       series=None):
         """See `IProject`."""
 
         # Make a new list of the filter, so that we do not mutate what we
@@ -239,10 +238,6 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         results = Specification.select(query, orderBy=order, limit=quantity,
             clauseTables=clause_tables)
         return results.prejoin(['assignee', 'approver', 'drafter'])
-
-    def specifications(self, sort=None, quantity=None, filter=None):
-        """See `IHasSpecifications`."""
-        return self.filter_specifications(sort, quantity, filter, None)
 
     # XXX: Bjorn Tillenius 2006-08-17:
     #      A Project shouldn't provide IBugTarget, since it's not really
@@ -393,6 +388,19 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 return milestone
         return None
 
+    def getSeries(self, series_name):
+        """See `IProject.`"""
+        has_series = ProductSeries.select(
+            AND(ProductSeries.q.productID == Product.q.id,
+                ProductSeries.q.name == series_name,
+                Product.q.projectID == self.id), limit=1)
+
+        if has_series.count() == 0:
+            return None
+
+        return ProjectSeries(self, series_name)
+
+
 class ProjectSet:
     implements(IProjectSet)
 
@@ -519,23 +527,18 @@ class ProjectSet:
         query = " AND ".join(queries)
         return Project.select(query, distinct=True, clauseTables=clauseTables)
 
-class ProjectSeriesSpecifications(HasSpecificationsMixin):
+class ProjectSeries(HasSpecificationsMixin):
     """See `IprojectSeries`."""
 
-    implements(IProjectSeriesSpecifications, IHasIcon, IHasLogo, IHasMugshot)
-    
-    _table = "Project"
+    implements(IProjectSeries)
 
-    def __init__(self, project, series_name):
+    def __init__(self, project, name):
         self.project = project
-        self.series_name = series_name
-        self.icon = project.icon
-        self.logo = project.logo
-        self.mugshot = project.mugshot
+        self.name = name
 
     def specifications(self, sort=None, quantity=None, filter=None):
-        return self.project.filter_specifications(
-            sort, quantity, filter, self.series_name)
+        return self.project.specifications(
+            sort, quantity, filter, self.name)
 
     @property
     def has_any_specifications(self):
@@ -552,27 +555,8 @@ class ProjectSeriesSpecifications(HasSpecificationsMixin):
 
     @property
     def title(self):
-        return "%s Series %s" % (self.project.title, self.series_name)
+        return "%s Series %s" % (self.project.title, self.name)
 
     @property
     def displayname(self):
         return self.project.displayname
-
-
-class ProjectSeriesSpecificationsSet:
-    """See `IProjectSeriesSet`."""
-
-    implements(IProjectSeriesSpecificationsSet)
-
-    def getProjectSeriesSpecifications(self, project, series_name):
-        """See `IProjectSeriesSet.`"""
-        query = ('ProductSeries.name = %s'
-                 ' AND ProductSeries.product = product.id'
-                 ' AND Product.project = %s'
-                 % sqlvalues(series_name, project.id))
-        has_series = Project.select(query, clauseTables=['Product',
-                                                         'ProductSeries'])
-        if has_series.count() == 0:
-            return None
-
-        return ProjectSeriesSpecifications(project, series_name)

@@ -38,8 +38,9 @@
     <browser:menus
         module="canonical.launchpad.browser.project"
         classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu
-                 ProjectSpecificationsMenu ProjectSetContextMenu
-                 ProjectAnswersMenu ProjectTranslationsMenu"
+                 ProjectSeriesSpecificationsMenu ProjectSpecificationsMenu
+                 ProjectSetContextMenu ProjectAnswersMenu
+                 ProjectTranslationsMenu"
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
@@ -377,33 +378,25 @@
             />
     </browser:pages>
 
-    <!-- ProjectSeriesSpecifications -->
-    <content class="canonical.launchpad.database.ProjectSeriesSpecifications">
-        <allow interface="canonical.launchpad.interfaces.IProjectSeriesSpecifications" />
+    <!-- ProjectSeries -->
+    <content class="canonical.launchpad.database.ProjectSeries">
+        <allow interface="canonical.launchpad.interfaces.IProjectSeries" />
         <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IProjectSeriesSpecifications"
+            set_schema="canonical.launchpad.interfaces.IProjectSeries"
         />
     </content>
 
-    <browser:page
-        for="canonical.launchpad.interfaces.IProjectSeriesSpecifications"
-        class="canonical.launchpad.browser.HasSpecificationsView"
-        facet="specifications"
-        permission="zope.Public"
-        name="index.html"
-        template="../templates/hasspecifications-specs.pt" />
+    <browser:url
+         for="canonical.launchpad.interfaces.IProjectSeries"
+         path_expression="string:+series/${name}"
+         attribute_to_parent="project"
+         />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProjectSeries"
+        name="+specs"
+        layer="canonical.launchpad.layers.BlueprintLayer"
         />
-
-    <!-- ProjectSeriesSet-->
-    <content class="canonical.launchpad.database.ProjectSeriesSpecificationsSet">
-        <allow interface="canonical.launchpad.interfaces.IProjectSeriesSpecificationsSet" />
-    </content>
-
-    <securedutility
-        class="canonical.launchpad.database.ProjectSeriesSpecificationsSet"
-        provides="canonical.launchpad.interfaces.IProjectSeriesSpecificationsSet">
-        <allow interface="canonical.launchpad.interfaces.IProjectSeriesSpecificationsSet" />
-    </securedutility>
 
 </configure>

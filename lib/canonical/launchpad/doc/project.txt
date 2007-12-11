@@ -19,7 +19,7 @@ While some of them (homepageurl, icon, logo and mugshot) are optional, others
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> test_project = projectset.new(
-    ...     name='project-test', displayname='Test Project', 
+    ...     name='project-test', displayname='Test Project',
     ...     title='Just a test project', homepageurl=None,
     ...     summary='Mandatory summary', description='blah',
     ...     owner=no_priv)
@@ -179,33 +179,26 @@ and all valid specifications via the valid_specifications property:
 
 == Specification Listings for a Project Series ==
 
-ProjectSeriesSpecifications.specifications allows to retrieve specifications 
-related to a Project's series. An IProjectSeriesSpecifications object can be 
-retrieved by IProjectSeriesSpecificationsSet.getProjectSeriesSpecifictations.
+An IProjectSeries object can be retrieved by IProject.getSeries.
 
- >>> from canonical.launchpad.interfaces import IProjectSeriesSpecificationsSet
- >>> project_series_set = getUtility(IProjectSeriesSpecificationsSet)
- >>> mozilla_series_1_0 = project_series_set.getProjectSeriesSpecifications(
- ...     mozilla, '1.0')
+ >>> mozilla_series_1_0 = mozilla.getSeries('1.0')
  >>> mozilla_series_1_0
- <canonical.launchpad.database.project.ProjectSeriesSpecifications object at...
+ <canonical.launchpad.database.project.ProjectSeries object at...
 
-If no series with the given name exists, 
-IProjectSeriesSpecificationsSet.getProjectSeriesSpecifications returns None.
+If no series with the given name exists, IProject.getSeries returns None.
 
- >>> print project_series_set.getProjectSeriesSpecifications(
- ...     mozilla, 'nonsense')
+ >>> print mozilla.getSeries('nonsense')
  None
 
-IProjectSeriesSpecificationsSet.all_specifications lists all specifications
-assigned to a series. Currently, no specifications are assigned to the 
+IProjectSeries.all_specifications lists all specifications
+assigned to a series. Currently, no specifications are assigned to the
 Mozilla series 1.0.
 
  >>> specs = mozilla_series_1_0.all_specifications
  >>> specs.count()
  0
 
-If a specification is assigned to series 1.0, it appears in 
+If a specification is assigned to series 1.0, it appears in
 mozilla_1_0_series.all_specifications.
 
  >>> from canonical.launchpad.ftests import syncUpdate
@@ -220,8 +213,7 @@ mozilla_1_0_series.all_specifications.
 
 This specification is not listed for other serieses.
 
- >>> mozilla_trunk = project_series_set.getProjectSeriesSpecifications(
- ...     mozilla, 'trunk')
+ >>> mozilla_trunk = mozilla.getSeries('trunk')
  >>> print mozilla_trunk.all_specifications.count()
  0
 

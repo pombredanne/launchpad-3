@@ -18,6 +18,7 @@ __all__ = [
     'ProjectSOP',
     'ProjectFacets',
     'ProjectOverviewMenu',
+    'ProjectSeriesSpecificationsMenu',
     'ProjectSpecificationsMenu',
     'ProjectBountiesMenu',
     'ProjectAnswersMenu',
@@ -40,8 +41,8 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IBranchSet, IProductSet, IProject, IProjectSeriesSpecifications,
-    IProjectSeriesSpecificationsSet, IProjectSet, NotFoundError)
+    IBranchSet, IProductSet, IProject, IProjectSeries, IProjectSet,
+    NotFoundError)
 from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -73,12 +74,7 @@ class ProjectNavigation(Navigation):
 
     @stepthrough('+series')
     def traverse_series(self, series_name):
-        specifications_set = getUtility(IProjectSeriesSpecificationsSet)
-        result = specifications_set.getProjectSeriesSpecifications(
-            self.context, series_name)
-        if result is None:
-            raise NotFoundError(series_name)
-        return result
+        return self.context.getSeries(series_name)
 
 
 class ProjectDynMenu(DynMenu):
@@ -299,37 +295,28 @@ class ProjectSpecificationsMenu(ApplicationMenu):
     facet = 'specifications'
     links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
 
-    def _selectTarget(self):
-        if IProjectSeriesSpecifications.providedBy(self.context):
-            return '+series/%s/' % self.context.series
-        else:
-            return ''
-
     def listall(self):
-        link_target = self._selectTarget() + '+specs?show=all'
         text = 'List all blueprints'
-        return Link(link_target, text, icon='info')
+        return Link('+specs?show=all', text, icon='info')
 
     def doc(self):
-        link_target = self._selectTarget() + '+documentation'
         text = 'List documentation'
         summary = 'Show all completed informational specifications'
-        return Link(link_target, text, summary, icon="info")
+        return Link('+documentation', text, summary, icon="info")
 
     def roadmap(self):
-        link_target = self._selectTarget() + '+roadmap'
         text = 'Roadmap'
-        return Link(link_target, text, icon='info')
+        return Link('+roadmap', text, icon='info')
 
     def assignments(self):
-        link_target = self._selectTarget() + '+assignments'
         text = 'Assignments'
-        return Link(link_target, text, icon='info')
+        return Link('+assignments', text, icon='info')
 
     def new(self):
         text = 'Register a blueprint'
         summary = 'Register a new blueprint for %s' % self.context.title
         return Link('+addspec', text, summary, icon='add')
+
 
 class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
     """Menu for the answers facet of projects."""
@@ -604,3 +591,14 @@ class ProjectBranchesView(BranchListingView):
                 'revision control system to improve community participation '
                 'in this project group.')
         return message % self.context.displayname
+
+
+class ProjectSeriesSpecificationsMenu(ApplicationMenu):
+
+    usedfor = IProjectSeries
+    facet = 'specifications'
+    links = ['listall']
+
+    def listall(self):
+        text = 'List all blueprints'
+        return Link('+specs?show=all', text, icon='info')

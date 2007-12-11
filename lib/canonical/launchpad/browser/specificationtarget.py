@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
     IProduct,
     IProductSeries,
     IProject,
-    IProjectSeriesSpecifications,
+    IProjectSeries,
     ISprint,
     ISpecificationTarget,
     SpecificationFilter,
@@ -83,10 +83,12 @@ class HasSpecificationsView(LaunchpadView):
             self.is_target = True
             self.is_pillar = True
             self.show_series = True
-        elif (IProject.providedBy(self.context) or
-              IProjectSeriesSpecifications.providedBy(self.context)):
+        elif IProject.providedBy(self.context):
             self.is_project = True
             self.is_pillar = True
+            self.show_target = True
+            self.show_series = True
+        elif IProjectSeries.providedBy(self.context):
             self.show_target = True
             self.show_series = True
         elif (IProductSeries.providedBy(self.context) or
