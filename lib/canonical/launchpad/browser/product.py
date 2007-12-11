@@ -557,12 +557,12 @@ class SortSeriesMixin:
         return series_list
 
 
-class ProductView(HasAnnouncementsView, LaunchpadView, SortSeriesMixin):
+class ProductView(HasAnnouncementsView, SortSeriesMixin):
 
     __used_for__ = IProduct
 
     def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
+        HasAnnouncementsView.__init__(self, context, request)
         self.form = request.form_ng
 
     def initialize(self):
@@ -1248,6 +1248,10 @@ class ProductBranchesView(BranchListingView):
 
     extra_columns = ('author',)
     no_sort_by = (BranchListingSort.PRODUCT,)
+
+    @cachedproperty
+    def development_focus_branch(self):
+        return self.context.development_focus.series_branch
 
     def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForProduct(
