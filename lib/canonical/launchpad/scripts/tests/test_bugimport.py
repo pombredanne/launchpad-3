@@ -17,8 +17,9 @@ from canonical.launchpad.components.externalbugtracker import (
     ExternalBugTracker)
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugTaskImportance, BugTaskStatus, IBugSet,
-    IEmailAddressSet, IPersonSet, IProductSet, PersonCreationRationale)
+    BugAttachmentType, BugTaskImportance, BugTaskStatus, CreateBugParams,
+    IBugSet, IEmailAddressSet, IPersonSet, IProductSet,
+    PersonCreationRationale)
 from canonical.launchpad.scripts import bugimport
 from canonical.launchpad.scripts.bugimport import ET
 from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
@@ -698,11 +699,11 @@ class TestBugWatch:
 
     This bug watch is guaranteed to trigger a DB failure when `updaateStatus`
     is called if its `failing` attribute is True."""
-    def __init__(self, id, failing):
+    def __init__(self, id, bug, failing):
         """Initialize the object."""
         self.id = id
         self.remotebug = str(self.id)
-        self.bug = getUtility(IBugSet).get(self.id)
+        self.bug = bug
         self.failing = failing
 
     def updateStatus(self, new_remote_status, new_malone_status):
@@ -740,12 +741,16 @@ class TestBugTracker:
     It exposes two bug watches, one of them is guaranteed to trigger an error.
     """
     baseurl = 'http://example.com/'
+
+    def __init__(self, test_bug_one, test_bug_two):
+        self.test_bug_one = test_bug_one
+        self.test_bug_two = test_bug_two
     
     def getBugWatchesNeedingUpdate(self, hours):
         """Returns a sequence of teo bug watches for testing."""
         return TestResultSequence([
-            TestBugWatch(1, failing=True),
-            TestBugWatch(2, failing=False)])
+            TestBugWatch(1, self.test_bug_one, failing=True),
+            TestBugWatch(2, self.test_bug_two, failing=False)])
 
 
 class TestExternalBugTracker(ExternalBugTracker):
@@ -804,32 +809,30 @@ class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def test_checkbugwatches_error_recovery(self):
-        # First, we verify that both bugs we'll try to change
-        # have a status other than `FIXRELEASED`.
-        bug_1 = getUtility(IBugSet).get(1)
-        for bugtask in bug_1.bugtasks:
-            if bugtask.conjoined_master is not None:
-                continue
-            removeSecurityProxy(bugtask).status = BugTaskStatus.NEW
-        bug_2 = getUtility(IBugSet).get(2)
-        for bugtask in bug_2.bugtasks:
-            if bugtask.conjoined_master is not None:
-                continue
-            removeSecurityProxy(bugtask).status = BugTaskStatus.NEW
+
+        firefox = getUtility(IProductSet).get(4)
+        foobar = getUtility(IPersonSet).get(16)
+        params = CreateBugParams(
+            title="test bug one", comment="test bug one", owner=foobar)
+        params.setBugTarget(product=firefox)
+        test_bug_one = getUtility(IBugSet).createBug(params)
+        params = CreateBugParams(
+            title="test bug two", comment="test bug two", owner=foobar)
+        params.setBugTarget(product=firefox)
+        test_bug_two = getUtility(IBugSet).createBug(params)
         self.layer.txn.commit()
+        
         # We use a test bug tracker, which is guaranteed to
         # try and update two bug watches - the first will
         # trigger a DB error, the second updates successfully.
-        bug_tracker = TestBugTracker()
+        bug_tracker = TestBugTracker(test_bug_one, test_bug_two)
         bug_watch_updater = TestBugWatchUpdater(self.layer.txn)
         bug_watch_updater.updateBugTracker(bug_tracker)
         # We verify that the first bug watch didn't update the status,
         # and the second did.
-        bug_1 = getUtility(IBugSet).get(1)
-        for bugtask in bug_1.bugtasks:
+        for bugtask in test_bug_one.bugtasks:
             self.assertNotEqual(bugtask.status, BugTaskStatus.FIXRELEASED)
-        bug_2 = getUtility(IBugSet).get(2)
-        for bugtask in bug_2.bugtasks:
+        for bugtask in test_bug_two.bugtasks:
             self.assertEqual(bugtask.status, BugTaskStatus.FIXRELEASED)
 
 
