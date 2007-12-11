@@ -66,6 +66,7 @@ from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
+from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.objectreassignment import (
@@ -557,7 +558,8 @@ class SortSeriesMixin:
         return series_list
 
 
-class ProductView(HasAnnouncementsView, LaunchpadView, SortSeriesMixin):
+class ProductView(HasAnnouncementsView, LaunchpadView, SortSeriesMixin,
+    FeedsMixin):
 
     __used_for__ = IProduct
 

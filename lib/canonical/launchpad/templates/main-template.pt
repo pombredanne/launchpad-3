@@ -25,22 +25,12 @@
 >
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
-    <tal:atomfeeds 
-        tal:define="layers modules/canonical.launchpad.layers;
-                    interfaces modules/canonical.launchpad.interfaces;
-                    feeds_rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/feeds/rooturl">
-      <tal:bugfeed tal:condition="python:layers.BugsLayer.providedBy(request)">
-        <link tal:condition="python:interfaces.IBugTarget.providedBy(context)"
-          rel="alternate" type="application/atom+xml" title="Atom Feed" 
-          tal:attributes="href string:${feeds_rooturl}${context/name}/latest-bugs.atom" />
-        <link tal:condition="python:interfaces.IPerson.providedBy(context)"
-          rel="alternate" type="application/atom+xml" title="Atom Feed" 
-          tal:attributes="href string:${feeds_rooturl}~${context/name}/latest-bugs.atom" />
-        <link tal:condition="python:interfaces.IBugTask.providedBy(context)"
-          rel="alternate" type="application/atom+xml" title="Atom Feed" 
-          tal:attributes="href string:${feeds_rooturl}bugs/${context/bug/id}/bug.atom" />
-      </tal:bugfeed>
+    <tal:atomfeeds condition="view/feed_links | nothing">
+      <tal:loop repeat="link view/feed_links">
+        <tal:feed content="structure link/render"/>
+      </tal:loop>
     </tal:atomfeeds>
+
     <!-- Launchpad style sheet -->
     <style
       type="text/css"

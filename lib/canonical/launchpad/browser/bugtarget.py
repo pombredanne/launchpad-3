@@ -33,6 +33,7 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBug, IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IProduct,
@@ -948,7 +949,7 @@ class BugCountDataItem:
             self.color = 'MochiKit.Color.Color["%sColor"]()' % color
 
 
-class BugTargetBugsView(BugTaskSearchListingView):
+class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
     """View for the Bugs front page."""
 
     # XXX: Bjorn Tillenius 2007-02-13:
