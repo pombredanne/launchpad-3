@@ -149,8 +149,9 @@ class LaunchpadObjectFactory:
                                from 1-Jan-2007 if not set.
         """
         if date_generator is None:
-            date_generator = time_counter(datetime(2007,1,1, tzinfo=pytz.UTC),
-                                          delta=timedelta(days=1))
+            date_generator = time_counter(
+                datetime(2007, 1, 1, tzinfo=pytz.UTC),
+                delta=timedelta(days=1))
         sequence = branch.revision_count
         parent = branch.getTipRevision()
         if parent is None:
@@ -163,7 +164,7 @@ class LaunchpadObjectFactory:
             author = self.getUniqueString('author')
         # All revisions are owned by the admin user.  Don't ask.
         admin_user = getUtility(ILaunchpadCelebrities).admin
-        for index in xrange(count):
+        for index in range(count):
             revision = revision_set.new(
                 revision_id = self.getUniqueString('revision-id'),
                 log_body=self.getUniqueString('log-body'),

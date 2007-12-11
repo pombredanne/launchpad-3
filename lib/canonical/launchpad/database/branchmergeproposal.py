@@ -19,7 +19,8 @@ from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.interfaces import (
-    BranchMergeProposalStatus, IBranchMergeProposal, UserNotBranchReviewer)
+    BadStateTransition, BranchMergeProposalStatus, IBranchMergeProposal,
+    UserNotBranchReviewer)
 
 
 class BranchMergeProposal(SQLBase):
@@ -64,50 +65,59 @@ class BranchMergeProposal(SQLBase):
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
 
+    def setAsWorkInProgress():
+        """See `IBranchMergeProposal`."""
+        if self.queue_status == BranchMergeProposalStatus.MERGED:
+            raise BadStateTransition('Merged proposals cannot change state.')
+        self.queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
+        self.date_review_requested = None
+
     def requestReview(self):
         """See `IBranchMergeProposal`."""
         if self.queue_status == BranchMergeProposalStatus.MERGED:
-            raise AssertionError('Merged proposals cannot change state.')
+            raise BadStateTransition('Merged proposals cannot change state.')
         self.queue_status = BranchMergeProposalStatus.NEEDS_REVIEW
         self.date_review_requested = UTC_NOW
 
-    def _reviewProposal(self, reviewer, next_state):
-        """Set the proposal to one of the two review statuses."""
-        # Check the reviewer can review the code for the target branch.
+    def isPersonValidReviewer(self, reviewer):
+        """See `IBranchMergeProposal`."""
         target_review_team = self.target_branch.reviewer
         if target_review_team is None:
             target_review_team = self.target_branch.owner
-        if not reviewer.inTeam(target_review_team):
+        return reviewer.inTeam(target_review_team)
+
+    def isReviewable(self):
+        """See `IBranchMergeProposal`."""
+        # As long as the source branch has not been merged, it is valid
+        # to review it.
+        return self.queue_status != BranchMergeProposalStatus.MERGED
+
+    def _reviewProposal(self, reviewer, next_state, revision_id):
+        """Set the proposal to one of the two review statuses."""
+        # Check the reviewer can review the code for the target branch.
+        if not self.isPersonValidReviewer(reviewer):
             raise UserNotBranchReviewer
         # Check the current state of the proposal.
-        if self.queue_status in [
-            BranchMergeProposalStatus.WORK_IN_PROGRESS,
-            BranchMergeProposalStatus.NEEDS_REVIEW ,
-            BranchMergeProposalStatus.CODE_APPROVED,
-            BranchMergeProposalStatus.REJECTED]:
-            # These are valid state transitions
-            self.queue_status = next_state
-        else:
-            raise AssertionError(
+        if not self.isReviewable():
+            raise BadStateTransition(
                 'Invalid state transition for merge proposal: %s -> %s'
                 % (self.queue_state.title, next_state.title))
+        self.queue_status = next_state
         # Record the reviewer
         self.reviewer = reviewer
         self.date_reviewed = UTC_NOW
+        # Record the reviewed revision id
+        self.reviewed_revision_id = revision_id
 
     def approveBranch(self, reviewer, revision_id):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
-            reviewer, BranchMergeProposalStatus.CODE_APPROVED)
-        # Record the reviewed revision id
-        self.reviewed_revision_id = revision_id
+            reviewer, BranchMergeProposalStatus.CODE_APPROVED, revision_id)
 
-    def rejectBranch(self, reviewer):
+    def rejectBranch(self, reviewer, revision_id):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
-            reviewer, BranchMergeProposalStatus.REJECTED)
-        # Reset the reviewed revision id.
-        self.reviewed_revision_id = None
+            reviewer, BranchMergeProposalStatus.REJECTED, revision_id)
 
     def mergeFailed(self, merger):
         """See `IBranchMergeProposal`."""

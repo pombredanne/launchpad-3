@@ -5,13 +5,14 @@
 
 __metaclass__ = type
 __all__ = [
+    'BadStateTransition',
     'BranchMergeProposalStatus',
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'UserNotBranchReviewer',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int
 
 from canonical.launchpad import _
@@ -33,6 +34,10 @@ class UserNotBranchReviewer(Exception):
     isn't set then any user in the team of the owner of the branch is
     considered a reviewer.
     """
+
+
+class BadStateTransition(Exception):
+    """The user requested a state transition that is not possible."""
 
 
 class BranchMergeProposalStatus(DBEnumeratedType):
@@ -101,7 +106,8 @@ class IBranchMergeProposal(Interface):
     target_branch = Choice(
         title=_('Target Branch'),
         vocabulary='Branch', required=True, readonly=True,
-        description=_("The branch that the source branch will be merged into."))
+        description=_(
+            "The branch that the source branch will be merged into."))
 
     dependent_branch = Choice(
         title=_('Dependent Branch'),
@@ -141,6 +147,13 @@ class IBranchMergeProposal(Interface):
     date_reviewed = Datetime(
         title=_('Date Reviewed'), required=False, readonly=True)
 
+    def setAsWorkInProgress():
+        """Set the state of the merge proposal to 'Work in progress'.
+
+        This is often useful if the proposal was rejected and is being worked
+        on again, or if the code failed to merge and requires rework.
+        """
+
     def requestReview():
         """Set the state of merge proposal to 'Needs review'.
 
@@ -153,18 +166,22 @@ class IBranchMergeProposal(Interface):
 
         The time that the branch was approved is recoreded in `date_reviewed`.
 
-        :param reviewer: A person authorised to approve branches for merging.
-        :param revision_id: The revision id of the tip of the branch that was
+        :param reviewer: A person authorised to review branches for merging.
+        :param revision_id: The revision id of the branch that was
                             reviewed by the `reviewer`.
 
         :raises: UserNotBranchReviewer if the reviewer is not in the team of
                  the branch reviewer for the target branch.
         """
 
-    def rejectBranch(reviewer):
+    def rejectBranch(reviewer, revision_id):
         """Mark the proposal as 'Rejected'.
 
         The time that the branch was rejected is recoreded in `date_reviewed`.
+
+        :param reviewer: A person authorised to review branches for merging.
+        :param revision_id: The revision id of the branch that was
+                            reviewed by the `reviewer`.
 
         :raises: UserNotBranchReviewer if the reviewer is not in the team of
                  the branch reviewer for the target branch.
@@ -173,18 +190,19 @@ class IBranchMergeProposal(Interface):
     def mergeFailed(merger):
         """Mark the proposal as 'Code failed to merge'."""
 
-    def markAsMerged(merged_revno=None, date_merged=None, merge_reporter=None):
+    def markAsMerged(merged_revno=None, date_merged=None,
+                     merge_reporter=None):
         """Mark the branch merge proposal as merged.
 
-        If the `merged_revno` is supplied, then the `BranchRevision` is checked
-        to see that revision is available in the target branch.  If it is
-        then the date from that revision is used as the `date_merged`.  If it
-        is not available, then the `date_merged` is set as if the merged_revno
-        was not supplied.
+        If the `merged_revno` is supplied, then the `BranchRevision` is
+        checked to see that revision is available in the target branch.  If it
+        is then the date from that revision is used as the `date_merged`.  If
+        it is not available, then the `date_merged` is set as if the
+        merged_revno was not supplied.
 
-        If no `merged_revno` is supplied, the `date_merged` is set to the value
-        of date_merged, or if the parameter date_merged is None, then UTC_NOW
-        is used.
+        If no `merged_revno` is supplied, the `date_merged` is set to the
+        value of date_merged, or if the parameter date_merged is None, then
+        UTC_NOW is used.
 
         :param merged_revno: The revision number in the target branch that
                              contains the merge of the source branch.
@@ -195,4 +213,21 @@ class IBranchMergeProposal(Interface):
 
         :param merge_reporter: The user that is marking the branch as merged.
         :type merge_reporter: ``Person``
+        """
+
+    def isPersonValidReviewer(reviewer):
+        """Return true if the `reviewer` is able to review the proposal.
+
+        There is an attribute on branches called `reviewer` which allows
+        a specific person or team to be set for a branch as an authorised
+        person to approve merges for a branch.  If a reviewer is not set
+        on the target branch, then the owner of the target branch is used
+        as the authorised user.
+        """
+
+    def isReviewable(self):
+        """Is the proposal is in a state condusive to being reviewed?
+
+        As long as the source branch hasn't been merged into the target
+        the proposal is able to be reviewed.
         """
