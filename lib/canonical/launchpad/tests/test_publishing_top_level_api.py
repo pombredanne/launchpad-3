@@ -25,9 +25,9 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
     def _createDefaulSourcePublications(self):
         """Create and return default source publications.
 
-        See TestNativePublishingBase.getPubSource for more information.
+        See `TestNativePublishingBase.getPubSource` for more information.
 
-        It creates the following publications in brezzy-autotest context:
+        It creates the following publications in breezy-autotest context:
 
          * a PENDING publication for RELEASE pocket;
          * a PUBLISHED publication for RELEASE pocket;
@@ -56,9 +56,9 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
     def _createDefaulBinaryPublications(self):
         """Create and return default binary publications.
 
-        See TestNativePublishingBase.getPubBinaries for more information.
+        See `TestNativePublishingBase.getPubBinaries` for more information.
 
-        It creates the following publications in brezzy-autotest context:
+        It creates the following publications in breezy-autotest context:
 
          * a PENDING publication for RELEASE pocket;
          * a PUBLISHED publication for RELEASE pocket;
@@ -349,7 +349,7 @@ class TestICanPublishPackagesAPI(TestNativePublishingBase):
         properly for a DistroArchSeries when it is not in development
         anymore, i.e., 'released'.
 
-        Released DistroArchseries can't be modified, so we expect empty
+        Released DistroArchSeries can't be modified, so we expect empty
         results in the lookups, even if there are pending publishing
         records available.
         """

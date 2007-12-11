@@ -6,13 +6,10 @@ __metaclass__ = type
 
 import gzip
 import os
-import pytz
 import shutil
 import stat
 import tempfile
 import unittest
-
-from datetime import datetime, timedelta
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -22,8 +19,6 @@ from canonical.archivepublisher.publishing import (
     getPublisher, Publisher)
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
@@ -487,22 +482,9 @@ class TestPublisher(TestNativePublishingBase):
         # Check if apt_handler.release_files_needed has the right requests.
         # 'source' & 'binary-i386' Release files should be regenerated
         # for all breezy-autotest components.
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'main', 'source')
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'main', 'binary-i386')
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'restricted', 'source')
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'restricted', 'binary-i386')
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'universe', 'source')
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'universe', 'binary-i386')
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'multiverse', 'source')
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'multiverse', 'binary-i386')
+
+        # We always regenerate all Releases file for a given suite.
+        self.checkAllRequestedReleaseFiles(archive_publisher)
 
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
@@ -571,168 +553,13 @@ class TestPublisher(TestNativePublishingBase):
             source_pocket, PackagePublishingPocket.BACKPORTS,
             "Expected backports pocket, got %s" % source_pocket)
 
-    def testCarefulDominationOnDevelopmentSeries(self):
-        """Test the careful domination procedure.
-
-        Check if it works on a development series.
-        A SUPERSEDED, DELETED or OBSOLETE published source should
-        have its scheduleddeletiondate set.
-        """
-        publisher = Publisher(
-            self.logger, self.config, self.disk_pool,
-            self.ubuntutest.main_archive)
-
-        superseded_source = self.getPubSource(
-            status=PackagePublishingStatus.SUPERSEDED)
-        self.assertTrue(superseded_source.scheduleddeletiondate is None)
-        deleted_source = self.getPubSource(
-            status=PackagePublishingStatus.DELETED)
-        self.assertTrue(deleted_source.scheduleddeletiondate is None)
-        obsoleted_source = self.getPubSource(
-            status=PackagePublishingStatus.OBSOLETE)
-        self.assertTrue(obsoleted_source.scheduleddeletiondate is None)
-
-        # Ensure the stay of execution is 5 days.  This is so that we
-        # can do a sensible check later (see comment below).
-        publisher._config.stayofexecution = 5
-
-        publisher.B_dominate(True)
-        self.layer.txn.commit()
-
-        # Retrieve the publishing record again since the transaction was
-        # committed.
-        superseded_source = SourcePackagePublishingHistory.get(
-            superseded_source.id)
-        deleted_source = SourcePackagePublishingHistory.get(
-            deleted_source.id)
-        obsoleted_source = SourcePackagePublishingHistory.get(
-            obsoleted_source.id)
-
-        # The publishing records will be scheduled for removal.
-        # DELETED publications are set to be deleted immediately, whereas
-        # SUPERSEDED ones get a stay of execution according to the
-        # configuration.
-        #
-        # Hopefully I crafted this check well enough so not to cause a time
-        # bomb for the test harness.
-        UTC = pytz.timezone("UTC")
-        self.assertEqual(
-            superseded_source.status, PackagePublishingStatus.SUPERSEDED)
-        expected_date = datetime.now(UTC) + timedelta(
-            days=publisher._config.stayofexecution)
-        date_diff = expected_date - superseded_source.scheduleddeletiondate
-        self.assertTrue(
-            date_diff < timedelta(seconds=60),
-            "SUPERSEDED scheduleddeletiondate is %s, expected %s within "
-            "a 60 seconds tolerance" % (
-                superseded_source.scheduleddeletiondate,
-                expected_date))
-
-        self.assertEqual(
-            deleted_source.status, PackagePublishingStatus.DELETED)
-        expected_date = datetime.now(UTC)
-        date_diff = (
-            expected_date - deleted_source.scheduleddeletiondate)
-        self.assertTrue(
-            date_diff < timedelta(seconds=60),
-            "DELETED scheduleddeletiondate is %s, expected %s within "
-            "a 60 seconds tolerance" % (
-                deleted_source.scheduleddeletiondate,
-                expected_date))
-
-        # OBSOLETE does not go through domination so I don't care too much
-        # what its scheduleddeletiondate is, as long as it's set.
-        self.assertEqual(
-            obsoleted_source.status, PackagePublishingStatus.OBSOLETE)
-        self.assertTrue(obsoleted_source.scheduleddeletiondate is not None)
-
-    def testCarefulDominationOnObsoleteSeries(self):
-        """Test the careful domination procedure.
-
-        Check if it works on a obsolete series.
-        A SUPERSEDED published source should be have its scheduleddeletiondate
-        set.
-        """
-        publisher = Publisher(
-            self.logger, self.config, self.disk_pool,
-            self.ubuntutest.main_archive)
-
-        self.ubuntutest['breezy-autotest'].status = (
-            DistroSeriesStatus.OBSOLETE)
-
-        pub_source = self.getPubSource(
-            status=PackagePublishingStatus.SUPERSEDED)
-        self.assertTrue(pub_source.scheduleddeletiondate is None)
-
-        publisher.B_dominate(True)
-        self.layer.txn.commit()
-
-        # See comment above.
-        pub_source = SourcePackagePublishingHistory.get(pub_source.id)
-
-        # Publishing record got scheduled for removal.
-        self.assertEqual(
-            pub_source.status, PackagePublishingStatus.SUPERSEDED)
-        self.assertTrue(pub_source.scheduleddeletiondate is not None)
-
-    def checkPublications(self, source, binaries, status):
-        """Assert source and binary publications as in the given status."""
-        source = SourcePackagePublishingHistory.get(source.id)
-        self.assertEqual(
-            source.status, status, "%s is not %s (%s)" % (
-            source.displayname, status.name, source.status.name))
-        for bin in binaries:
-            bin = BinaryPackagePublishingHistory.get(bin.id)
-            self.assertEqual(
-                bin.status, status, "%s is not %s (%s)" % (
-                bin.displayname, status.name, bin.status.name))
-
-    def testDominationOfOldArchIndepBinaries(self):
-        """Check domination of architecture independent binaries.
-
-        When a architecture independent binary is dominated it should also
-        'carry' the same publications in other architectures independently
-        of whether or not the new binary was successfully built to a specific
-        architecture.
-
-        See bug #48760 for further information about this aspect.
-        """
-        publisher = Publisher(
-            self.logger, self.config, self.disk_pool,
-            self.ubuntutest.main_archive)
-
-        # Create published archindep context.
-        pub_source_archindep = self.getPubSource(
-            version='1.0', status=PackagePublishingStatus.PUBLISHED,
-            architecturehintlist='all')
-        pub_binaries_archindep = self.getPubBinaries(
-            pub_source=pub_source_archindep,
-            status=PackagePublishingStatus.PUBLISHED)
-
-        # Emulated new publication of a archdep binary only on i386.
-        pub_source_archdep = self.getPubSource(
-            version='1.1', architecturehintlist='i386')
-        pub_binaries_archdep = self.getPubBinaries(
-            pub_source=pub_source_archdep)
-
-        publisher.A_publish(False)
-        publisher.B_dominate(False)
-
-        # The latest architecture specific source and binary pair is
-        # PUBLISHED.
-        self.checkPublications(
-            pub_source_archdep, pub_binaries_archdep,
-            PackagePublishingStatus.PUBLISHED)
-
-        # The oldest architecture independent source & binaries should
-        # be SUPERSEDED, i.e., the fact that source didn't build in hppa
-        # should hold the condemned architecture independent binary.
-        self.checkPublications(
-            pub_source_archindep, pub_binaries_archindep,
-            PackagePublishingStatus.SUPERSEDED)
-
     def assertReleaseFileRequested(self, publisher, suite_name,
                                    component_name, arch_name):
+        """Assert the given context will have it's Release file regenerated.
+
+        Check if a request for the given context is correctly stored in:
+           publisher.apt_handler.release_files_needed
+        """
         suite = publisher.apt_handler.release_files_needed.get(suite_name)
         self.assertTrue(
             suite is not None, 'Suite %s not requested' % suite_name)
@@ -743,6 +570,31 @@ class TestPublisher(TestNativePublishingBase):
             arch_name in suite[component_name],
             'Arch %s/%s/%s not requested' % (
             suite_name, component_name, arch_name))
+
+    def checkAllRequestedReleaseFiles(self, publisher):
+        """Check if all expected Release files are going to be regenerated.
+
+        'source', 'binary-i386' and 'binary-hppa' Release Files should be
+        requested for regeneration in all breezy-autotest components.
+        """
+        available_components = sorted([
+            c.name for c in self.breezy_autotest.components])
+        self.assertEqual(available_components,
+                         ['main', 'multiverse', 'restricted', 'universe'])
+
+        available_archs = ['binary-%s' % a.architecturetag
+                           for a in self.breezy_autotest.architectures]
+        self.assertEqual(available_archs, ['binary-hppa', 'binary-i386'])
+
+        # XXX cprov 20071210: Include the artificial component 'source' as a
+        # location to check for generated indexes. Ideally we should
+        # encapsulate this task in publishing.py and this common method
+        # in tests as well.
+        dists = ['source'] + available_archs
+        for component in available_components:
+            for dist in dists:
+                self.assertReleaseFileRequested(
+                    publisher, 'breezy-autotest', component, dist)
 
     def testReleaseFile(self):
         """Test release file writing.
@@ -759,24 +611,8 @@ class TestPublisher(TestNativePublishingBase):
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
 
-        # Check if apt_handler.release_files_needed has the right requests.
-        # 'source', 'binary-i386' and 'binary-hppa' Release files should
-        # be regenerated for all breezy-autotest components.
         # We always regenerate all Releases file for a given suite.
-        available_components = sorted([
-            c.name for c in self.breezy_autotest.components])
-        self.assertEqual(available_components,
-                         ['main', 'multiverse', 'restricted', 'universe'])
-
-        available_archs = ['binary-%s' % a.architecturetag
-                           for a in self.breezy_autotest.architectures]
-        dists = ['source'] + available_archs
-        self.assertEqual(dists, ['source', 'binary-hppa', 'binary-i386'])
-
-        for component in available_components:
-            for dist in dists:
-                self.assertReleaseFileRequested(
-                    publisher, 'breezy-autotest', component, dist)
+        self.checkAllRequestedReleaseFiles(publisher)
 
         publisher.D_writeReleaseFiles(False)
 

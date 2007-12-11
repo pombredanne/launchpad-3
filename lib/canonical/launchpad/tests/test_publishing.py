@@ -1,12 +1,14 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 """Test native publication workflow for Soyuz. """
 
-from unittest import TestLoader
+import datetime
 import operator
 import os
+import pytz
+from unittest import TestLoader
 import shutil
-import tempfile
 from StringIO import StringIO
+import tempfile
 
 from zope.component import getUtility
 from canonical.archivepublisher.config import Config
@@ -31,7 +33,7 @@ from canonical.librarian.client import LibrarianClient
 
 
 class SoyuzTestPublisher:
-    """Helper class able to publish coherent source and binaires in Soyuz."""
+    """Helper class able to publish coherent source and binaries in Soyuz."""
 
     def prepareBreezyAutotest(self):
         """Prepare ubuntutest/breezy-autotest for publications.
@@ -101,8 +103,7 @@ class SoyuzTestPublisher:
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
             dsc_binaries=dsc_binaries,
-            archive=archive,
-            )
+            archive=archive)
 
         if filename is None:
             filename = "%s.dsc" % sourcename
@@ -120,8 +121,7 @@ class SoyuzTestPublisher:
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
             embargo=False,
-            archive=archive
-            )
+            archive=archive)
 
         # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
         # of SSPPH and other useful attributes.
@@ -197,8 +197,7 @@ class SoyuzTestPublisher:
             installedsize=100,
             architecturespecific=architecturespecific,
             binpackageformat=BinaryPackageFormat.DEB,
-            priority=PackagePublishingPriority.STANDARD
-            )
+            priority=PackagePublishingPriority.STANDARD)
 
         # Create the corresponding DEB file.
         if architecturespecific:
@@ -229,8 +228,7 @@ class SoyuzTestPublisher:
                 datecreated=UTC_NOW,
                 pocket=pocket,
                 embargo=False,
-                archive=archive
-                )
+                archive=archive)
             secure_pub_binaries.append(pub)
 
         return [BinaryPackagePublishingHistory.get(pub.id)
@@ -242,10 +240,7 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase,
     dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
-        """Setup creates a pool dir and setup librarian.
-
-        Also instantiate DiskPool component.
-        """
+        """Setup a pool dir, the librarian, and instantiate the DiskPool."""
         LaunchpadZopelessTestCase.setUp(self)
         self.prepareBreezyAutotest()
         self.config = Config(self.ubuntutest)
@@ -262,6 +257,69 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase,
         """Tear down blows the pool dir away."""
         shutil.rmtree(self.config.distroroot)
         LaunchpadZopelessTestCase.tearDown(self)
+
+    def checkSourcePublication(self, source, status):
+        """Assert the source publications has the given status.
+
+        Retrieve an up-to-date record corresponding to the given publication,
+        check and return it.
+        """
+        fresh_source = SourcePackagePublishingHistory.get(source.id)
+        self.assertEqual(
+            fresh_source.status, status, "%s is not %s (%s)" % (
+            fresh_source.displayname, status.name, source.status.name))
+        return fresh_source
+
+    def checkBinaryPublication(self, binary, status):
+        """Assert the binary publication has the given status.
+
+        Retrieve an up-to-date record corresponding to the given publication,
+        check and return it.
+        """
+        fresh_binary = BinaryPackagePublishingHistory.get(binary.id)
+        self.assertEqual(
+            fresh_binary.status, status, "%s is not %s (%s)" % (
+            fresh_binary.displayname, status.name, fresh_binary.status.name))
+        return fresh_binary
+
+    def checkBinaryPublications(self, binaries, status):
+        """Assert the binary publications have the given status.
+
+        See `checkBinaryPublication`.
+        """
+        fresh_binaries = []
+        for bin in binaries:
+            bin = self.checkBinaryPublication(bin, status)
+            fresh_binaries.append(bin)
+        return fresh_binaries
+
+    def checkPublications(self, source, binaries, status):
+        """Assert source and binary publications have in the given status.
+
+        See `checkSourcePublication` and `checkBinaryPublications`.
+        """
+        self.checkSourcePublication(source, status)
+        self.checkBinaryPublications(binaries, status)
+
+    def getSecureSource(self, source):
+        """Return the corresponding SecureSourcePackagePublishingHistory."""
+        return SecureSourcePackagePublishingHistory.get(source.id)
+
+    def getSecureBinary(self, binary):
+        """Return the corresponding SecureBinaryPackagePublishingHistory."""
+        return SecureBinaryPackagePublishingHistory.get(binary.id)
+
+    def checkPastDate(self, date, lag=None):
+        """Assert given date is older than 'now'.
+
+        Optionally the user can pass a 'lag' which will be added to 'now'
+        before comparing.
+        """
+        UTC = pytz.timezone("UTC")
+        limit = datetime.datetime.now(UTC)
+        if lag is not None:
+            limit = limit + lag
+        self.assertTrue(date < limit, "%s >= %s" % (date, limit))
 
 
 class TestNativePublishing(TestNativePublishingBase):

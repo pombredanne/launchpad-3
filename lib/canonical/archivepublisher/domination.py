@@ -131,19 +131,18 @@ class Dominator:
         """
         Perform dominations for source.
         """
-
         self.debug("Dominating sources...")
-
-        for source in sourceinput:
+        for sourcename in sourceinput.keys():
             # source is a list of versions ordered most-recent-first
             # basically skip the first entry because that is
             # never dominated by us, then just set subsequent entries
             # to SUPERSEDED unless they're already there or pending
             # removal
-            assert sourceinput[source] is not None
-            super_release = sourceinput[source][0].sourcepackagerelease
+            assert sourceinput[sourcename], (
+                "Empty list of publications for %s" % sourcename)
+            super_release = sourceinput[sourcename][0].sourcepackagerelease
             super_release_name = super_release.sourcepackagename.name
-            for pubrec in sourceinput[source][1:]:
+            for pubrec in sourceinput[sourcename][1:]:
                 if pubrec.status == PUBLISHED or pubrec.status == PENDING:
                     this_release = pubrec.sourcepackagerelease
 
@@ -157,15 +156,8 @@ class Dominator:
                     pubrec.datesuperseded = UTC_NOW
                     pubrec.supersededby = super_release
 
-    def _getOtherArchIndep(self, dominated):
+    def _getOtherBinaryPublications(self, dominated):
         """Return remaining publications of the same binarypackagerelease."""
-        # This assertion is just to check the the callsite is working as
-        # expected. There shouldn't be any problem if we run it for with
-        # architecturespecific binaires, since the result will be always
-        # empty.
-        assert dominated.binarypackagerelease.architecturespecific is False, (
-            "Only use this methos with architecture independent binaries.")
-
         dominated_series = dominated.distroarchseries.distroseries
         available_architectures = [
             das.id for das in dominated_series.architectures]
@@ -180,11 +172,21 @@ class Dominator:
 
     def _dominateBinary(self, dominated, dominant):
         """Dominate the given binarypackagerelease publication."""
+        # At this point only PUBLISHED (ancient versions) or PENDING (
+        # multiple overrides/copies) publications should be given. We
+        # tolerate SUPERSEDED architecture-independent binaries, because
+        # they are dominated atomically once the first publication is
+        # processed.
         if dominated.status not in [PUBLISHED, PENDING]:
-            self.debug(
-                '%s is not published or pending, cannot be dominated.' %(
-                dominated.binarypackagerelease.title))
+            arch_independent = (
+                dominated.binarypackagerelease.architecturespecific == False)
+            assert arch_independent, (
+                "Should not dominate unpublished architecture specific "
+                "binary %s (%s)" % (
+                dominated.binarypackagerelease.title,
+                dominated.distroarchseries.architecturetag))
             return
+
         dominant_build = dominant.binarypackagerelease.build
         distroarchseries = dominant_build.distroarchseries
         self.debug(
@@ -192,7 +194,7 @@ class Dominator:
             "of %s.  Arch-specific == %s" % (
             distroarchseries.architecturetag,
             dominated.binarypackagerelease.title,
-            dominant.binarypackagerelease.title,
+            dominant.binarypackagerelease.build.sourcepackagerelease.title,
             dominated.binarypackagerelease.architecturespecific))
         dominated.status = SUPERSEDED
         dominated.datesuperseded = UTC_NOW
@@ -204,31 +206,33 @@ class Dominator:
         dominated.supersededby = dominant_build
 
     def _dominateBinaries(self, binaryinput):
-        """
-        Perform dominations for binaries.
-        """
+        """Perform dominations for binaries."""
         self.debug("Dominating binaries...")
-        for binary in binaryinput:
+        for binaryname in binaryinput.keys():
             # binary is a list of versions ordered most-recent-first
             # basically skip the first entry because that is
             # never dominated by us, then just set subsequent entries
             # to SUPERSEDED unless they're already there or pending
             # removal
-
+            assert binaryinput[binaryname], (
+                "Empty list of publications for %s" % binaryname)
             # At some future point, this code might automatically locate
             # binaries which are no longer built from source (NBS).
             # Currently this is done in archive cruft check.
-            dominant = binaryinput[binary][0]
-            for dominated in binaryinput[binary][1:]:
-                self._dominateBinary(dominated, dominant)
-                # Also dominate all publications of architecture
-                # independent binaries in this distroseries and pocket.
+            dominant = binaryinput[binaryname][0]
+            for dominated in binaryinput[binaryname][1:]:
+                # Dominate all publications of architecture independent
+                # binaries altogether in this distroseries and pocket.
                 if not dominated.binarypackagerelease.architecturespecific:
-                    other_publications = self._getOtherArchIndep(dominated)
+                    other_publications = self._getOtherBinaryPublications(
+                        dominated)
                     for dominated in other_publications:
                         self._dominateBinary(dominated, dominant)
+                else:
+                    self._dominateBinary(dominated, dominant)
 
-    def _sortPackages(self, pkglist, isSource = True):
+
+    def _sortPackages(self, pkglist, isSource=True):
         # pkglist is a list of packages with the following
         #  * sourcepackagename or packagename as appropriate
         #  * version
