@@ -1,7 +1,9 @@
 #!/usr/bin/python2.4
 #
-# Remove all translations from upstream. This script is useful to recover from
-# breakages after importing bad .po files like the one reported at #32610
+# Fix plural forms in existing imported PO files.
+# Useful with cases like different order of plural forms in
+# previously imported PO files and our default plural expression
+# for a language.
 #
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 #

@@ -34,10 +34,20 @@ class BadPluralExpression(Exception):
 
 def make_plural_function(expression):
     """Create a lambda function for C-like plural expression."""
+    # Largest expressions we could find in practice were 113 characters
+    # long.  500 is a reasonable value which is still 4 times more than
+    # that, yet not incredibly long.
+    if expression is None or len(expression) > 500:
+        raise BadPluralExpression
 
     # Guard against '**' usage: it's not useful in evaluating
     # plural forms, yet can be used to introduce a DoS.
-    if expression is None or expression.find('**') != -1:
+    if expression.find('**') != -1:
+        raise BadPluralExpression
+
+    # We allow digits, whitespace [ \t], parentheses, "n", and operators
+    # as allowed by GNU gettext implementation as well.
+    if not re.match('^[0-9 \t()n|&?:!=<>+%*/-]*$', expression):
         raise BadPluralExpression
 
     try:
