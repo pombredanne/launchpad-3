@@ -234,6 +234,23 @@ class ExternalBugTracker:
         # later on.
         bug_watches = list(bug_watches)
 
+        # We limit the number of watches we're updating by the
+        # ExternalBugTracker's batch_size. In an ideal world we'd just
+        # slice the bug_watches list but for the sake of testing we need
+        # to ensure that the list of bug watches is ordered by remote
+        # bug id before we do so.
+        remote_ids = sorted(
+            [bug_watch.remotebug for bug_watch in bug_watches])
+        if self.batch_size is not None:
+            remote_ids = remote_ids[:self.batch_size]
+
+            for bug_watch in list(bug_watches):
+                if bug_watch.remotebug not in remote_ids:
+                    bug_watches.remove(bug_watch)
+
+        log.info("Updating %i watches on %s" %
+            (len(bug_watches), bug_tracker_url))
+
         for bug_watch in bug_watches:
             remote_bug = bug_watch.remotebug
             # There can be multiple bug watches pointing to the same
@@ -244,20 +261,8 @@ class ExternalBugTracker:
                 bug_watches_by_remote_bug[remote_bug] = []
             bug_watches_by_remote_bug[remote_bug].append(bug_watch)
 
-        # We limit the number of watches we're updating by the
-        # ExternalBugTracker's batch_size. We do this here so that we
-        # have an ordered list of bug ids rather than a list that's in
-        # some arbitrary order.
+        # Do things in a fixed order, mainly to help with testing.
         bug_ids_to_update = sorted(bug_watches_by_remote_bug)
-        if self.batch_size is not None:
-            bug_ids_to_update = bug_ids_to_update[:self.batch_size]
-
-            for bug_id in bug_watches_by_remote_bug.keys():
-                if bug_id not in bug_ids_to_update:
-                    del[bug_watches_by_remote_bug[bug_id]]
-
-        log.info("Updating %i watches on %s" %
-            (len(bug_ids_to_update), bug_tracker_url))
 
         try:
             self.initializeRemoteBugDB(bug_ids_to_update)
