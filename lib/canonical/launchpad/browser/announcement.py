@@ -124,6 +124,14 @@ class AnnouncementEditView(LaunchpadFormView):
     field_names = ['title', 'summary', 'url', ]
     label = _('Modify this announcement')
 
+    @property
+    def initial_values(self):
+        return {
+            'title': self.context.title,
+            'summary': self.context.summary,
+            'url': self.context.url,
+            }
+
     @action(_('Modify'), name='modify')
     def modify_action(self, action, data):
         self.context.modify(title=data.get('title'),
