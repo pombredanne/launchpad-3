@@ -255,31 +255,36 @@ A helper function, simulate_upload does that with all the checking.
   ...         return
   ...
   ...     assert len(os.listdir(failed_dir)) == 0, (
-  ...         "Failed should be empty: %s" % os.listdir(failed_dir))
+  ...         "Failed upload(s): %s" % os.listdir(failed_dir))
   ...     if is_new:
   ...         process_new(distro=distro, series=series)
   ...     process_accepted(distro=distro)
   ...     assert simple_publish(distro=distro), (
   ...             "Should publish at least one item")
   ...     if loglevel is None or loglevel <= logging.INFO:
-  ...         print "done"
+  ...         print "Upload complete."
 
   >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
   >>> def read_email():
-  ...     """Pop an email from the test mailbox, and summarize it."""
-  ...     sender, recipients, text = stub.test_emails.pop()
-  ...     print "To:"
-  ...     for address in recipients:
-  ...         print address
-  ...     past_header = False
-  ...     for line in text.splitlines():
-  ...         if line.startswith('Subject:') or past_header:
-  ...             print line
-  ...         elif line == '':
-  ...             past_header = True
-  ...         else:
-  ...             # Header line.  Ignore.
-  ...             pass
+  ...     """Pop all emails from the test mailbox, and summarize them.
+  ...
+  ...     For each message, prints "To:" followed by recipients; "Subject:"
+  ...     followed by subject line; and message body followed by a blank line.
+  ...     """
+  ...     for message in pop_notifications(commit=False):
+  ...         print "To:", message['to']
+  ...         print "Subject:", message['subject']
+  ...         raw_message = message.as_string()
+  ...         # Print message bodies (but skip headers).
+  ...         in_header = True
+  ...         for line in raw_message.splitlines():
+  ...             if line == '':
+  ...                 in_header = False
+  ...             elif in_header:
+  ...                 # Don't print header lines.
+  ...                 pass
+  ...             else:
+  ...                 print line
 
 The 'bar' package' is an arch-all package. We have four stages to the
 bar test. Each stage should be simple enough. First we have a new
@@ -287,7 +292,10 @@ source, then a new binary, then an overridable source and then an
 overridable binary. This tests the simple overriding of both sources
 and arch-independent binaries.
 
-  >>> simulate_upload('bar_1.0-1', is_new=True)
+  >>> simulate_upload('bar_1.0-1', is_new=True, loglevel=logging.INFO)
+  log> Processing upload
+  ...
+  log> Upload complete.
 
   >>> simulate_upload('bar_1.0-1_binary', is_new=True)
 
@@ -311,13 +319,14 @@ complaints.
 Check the rejection of a malicious version of bar package which refers
 to a different 'bar_1.0.orig.tar.gz'.
 
+  >>> stub.test_emails = []
   >>> simulate_upload('bar_1.0-3', loglevel=logging.ERROR)
   Rejected uploads: ['bar_1.0-3']
 
   >>> read_email()
   To:
-    Foo Bar <foo.bar@canonical.com>
-    Daniel Silverstone <daniel.silverstone@canonical.com>
+      Foo Bar <foo.bar@canonical.com>,
+      Daniel Silverstone <daniel.silverstone@canonical.com>
   Subject: bar_1.0-3_source.changes rejected
   ...
 
@@ -351,7 +360,7 @@ Check the email recipient for displayname containing special chars,
   >>> uninteresting_email = stub.test_emails.pop()
   >>> read_email()
   To:
-    "Foo B. Bar" <foo.bar@canonical.com>
+    "Foo B. Bar" <foo.bar@canonical.com>,
     Celso Providelo <celso.providelo@canonical.com>
   Subject: Accepted: bar 1.0-4 (source)
   ...
@@ -444,7 +453,7 @@ ubututest/breezy-RELEASE:
   ...
   log> Distribution: breezy
   ...
-  done
+  Upload complete.
 
 And its binary:
 
@@ -454,7 +463,7 @@ And its binary:
   log> ...
   log> foo: (binary) NEW
   ...
-  done
+  Upload complete.
 
 Set ubuntutest/breezy as the "current series" to activate post-release
 pockets.
@@ -480,7 +489,7 @@ Upload a newer version of source package "foo" to breezy-backports:
   ...
   log> Distribution: breezy-backports
   ...
-  done
+  Upload complete.
 
 
 In order to verify if the binary ancestry lookup algorithm works we
@@ -505,7 +514,7 @@ found in i386/RELEASE, because it's the only one available.
   log> Checking for foo/2.9-1/powerpc binary ancestry
   log> foo-1.0-1 (binary) exists in i386/RELEASE
   ...
-  done
+  Upload complete.
 
 
 Due the constraints relaxation requested by bug #83976, even having
@@ -523,7 +532,7 @@ live with this inconsistency.
   ...
   log> Distribution: breezy-updates
   ...
-  done
+  Upload complete.
 
 Same behaviour is expected for a version in SECURITY lower than that
 in PROPOSED:
@@ -537,7 +546,7 @@ in PROPOSED:
   ...
   log> Distribution: breezy-proposed
   ...
-  done
+  Upload complete.
 
   >>> simulate_upload(
   ...     'foo_2.9-3', upload_policy='sync', loglevel=logging.DEBUG)
@@ -548,7 +557,7 @@ in PROPOSED:
   ...
   log> Distribution: breezy-security
   ...
-  done
+  Upload complete.
 
 However, the source upload of a smaller version than the one already
 published inside the target pocket should be rejected:
