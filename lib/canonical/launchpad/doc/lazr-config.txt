@@ -1,0 +1,222 @@
+= LAZR config =
+
+The LAZR config system is used to manage process configuration.
+Process configuration is for saying how things change when we run
+Launchpad on different machines, or under different circumstances.
+
+This system uses ini-like file format of section, keys, and values.
+The config file supports inheritance to minimize duplication of
+information across files. The format supports schema validation from
+default and example values in the base config.
+
+
+== ConfigSchema and ConfigSchemaParser ==
+
+A schema is loaded by instantiating the ConfigSchemaParser class with
+the path to a configuration file. The schema is implicitly derived from
+the information in the configuration file.
+
+    >>> from os import path
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.lazr.config import ConfigSchemaParser
+    >>> from canonical.lazr.interfaces import IConfigSchema
+
+    >>> base_conf = path.normpath(path.join(
+    ...     path.dirname(__file__), '..', 'ftests', 'testfiles', 'base.conf'))
+
+The config file contains sections defined in the square bracket ([]).
+The section name may be divided into major and minor categories using
+a dot (.). Multiple sections with the same major category may be listed
+together to define a common set of keys used by all the minor processes.
+Beneath each section is a list of key-value pairs, separated by a colon
+(:). Lines that start with a hash (:), are comments.
+
+    >>> schema_file = open(base_conf, 'r')
+    >>> raw_schema = schema_file.read()
+    >>> schema_file.close()
+    >>> print raw_schema
+    # This section defines required keys and default values.
+    [section-1.default]
+    key1: foo
+    key2: bar and baz
+    key3: Launchpad&nbsp;rocks
+    key4: F&#028c;k yeah!
+    key5:
+    # This section defines required keys; the values must be provided in
+    # the overlayed config file.
+    [section-2.example]
+    key1: 1
+    key2: 0
+    key3: True
+    key4: FALSE
+    Key5: yes
+    key6: nO
+    # These sections define a common set of required keys and default values.
+    [section-3.app-a.default]
+    [section-3.app-b.default]
+    Key1: 17
+    Key2: 3.1415
+
+/me thinks this is a __call__(), not an init.
+
+    >>> schema = ConfigSchemaParser(base_conf)
+    >>> verifyObject(IConfigSchema, schema)
+    True
+
+    >>> schema.name
+    'base.conf'
+    >>> schema.filename
+    '...ftests/testfiles/base.conf'
+
+A schema is made up of multiple SchemaSections. They can be iterated
+over in a loop as needed. You can check if the schema contains a section
+name, and that can be used to access the SchemaSection as a subscript. A
+SectionNotFound error is raised if the name does not match any of the
+SectionSchemas.
+
+    >>> for schema_section in schema:
+    ...     print schema_section.name
+    'section-1'
+    'section-2'
+    'section-3.app-a'
+    'section-3.app-b'
+
+    >>> 'section-1' in schema
+    True
+    >>> 'section-4' in schema
+    False
+
+    >>> schema_section_2 = schema['section-2']
+    >>> schema['section-4']
+    Traceback (most recent call last):
+      ...
+    SectionNotFound: ...
+
+Processes often require resources like databases or vhosts that have a
+common category of keys. The list of SchemaSections that share common
+category can be retrieved using getByCategory(). An empty list is
+returned when the category name does not match any SectionsSchemas in
+the schema.
+
+    >>> for schema_section in schema.getByCategory('section-3'):
+    ...     print section.name
+    'section-3.app-a'
+    'section-3.app-b'
+
+/me wonders if None or an error should be raised.
+
+    >>> schema.getByCategory('non-section')
+    []
+
+
+== SchemaSection ==
+
+A SchemaSection behaves similar to a dictionary. It has keys and
+values. Each SchemaSection has a name.
+
+    >>> from canonical.lazr.interfaces import ISchemaSection
+    >>> schema_section_1 = schema['section-1']
+    >>> verifyObject(ISchemaSection, schema_section_1)
+    True
+
+    >>> schema_section_1.name
+    'section-1'
+
+    >>> 'key1' in schema_section_1
+    True
+    >>> 'nonkey' in schema_section_1
+    False
+
+A key can be accessed directly using as a subscript of the SchemaSection.
+The value is always a string or None.
+
+    >>> schema_section_1['key3']
+    'Launchpad&nbsp;rocks'
+    >>> print schema_section_2['key3']
+    None
+
+In the conf file, '[section-1.default]' is a default section that
+defines keys and values. The values are the default values to return in
+the section instance does not redefine the key. In the case of key5,
+the key had no explicit value, so the value is an empty string.
+
+    >>> for key in schema_section_1:
+    ...     print key, ':', schema_section_1[key]
+    key1 : 'foo'
+    key2 : 'bar and baz'
+    key3 : 'Launchpad&nbsp;rocks'
+    key4 : 'F&#028c;k yeah!'
+    key5 : ''
+
+In the conf file, '[section-2.example]' is an example section that only
+defines the required keys. A Section instance must define the key and
+value.
+
+    >>> for key in schema_section_2:
+    ...     print key, ':', schema_section_1[key]
+    key1 : None
+    key2 : None
+    key3 : None
+    key4 : None
+    key5 : None
+    key6 : None
+
+In the conf file '[section-3.app-a]' and '[section-3.app-b]' define
+a common set of keys and default values.
+
+    >>> for schema_section in schema.getByCategory('section-3'):
+    ...     print schema_section.name
+    ...     for key in schema_section:
+    ...         print key, ':', schema_section[key]
+    section-3.app-a
+    Key1: 17
+    Key2: 3.1415
+    section-3.app-b
+    Key1: 17
+    Key2: 3.1415
+
+
+== ConfigSchemaParser is self-validating ==
+
+The schema parser is self-validating. The file must be ASCII encoded.
+Orphaned keys are not allowed. Sections cannot be defined more than
+once. Keys withing a section cannot be defined more than once. Text that
+is not a comment is not allowed.
+
+The listValidationErrors() method returns a list of errors. Each error
+is tuple of filename, line, and message.
+
+    >>> bad_conf = path.normpath(path.join(
+    ...     path.dirname(__file__), '..', 'ftests', 'testfiles', 'bad.conf'))
+    >>> bad_schema = ConfigSchemaParser(bad_conf)
+    >>> for (filename, line, message) in bad_schema.listValidationErrors():
+    ...     print line, ':',  message
+    1 : Unclassified text.
+    2 : Orphaned key and value
+    4 : Non ascii character.
+    6 : Key redefined.
+    8 : Section  redefined.
+
+The validate() method Raises an exception if invalid schema is invalid.
+
+/ me wonders if several exception types should be defined.
+
+    >>> ConfigSchemaParser(bad_conf)
+    Traceback (most recent call last):
+      ...
+    FormatError: ...
+
+
+== ConfigParser ==
+
+raise NotImplementedError
+
+
+== Config ==
+
+raise NotImplementedError
+
+
+== Section ==
+
+raise NotImplementedError
