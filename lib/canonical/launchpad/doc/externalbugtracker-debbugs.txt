@@ -451,6 +451,16 @@ them if they didn't exist already:
     >>> print message.owner.creation_comment
     when the comments for debbugs #1234 were imported into Launchpad.
 
+No notifications will be generated for the imported comments:
+
+    >>> from canonical.launchpad.interfaces import IBugNotificationSet
+    >>> from canonical.launchpad.scripts.bugnotification import (
+    ...     get_email_notifications)
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(pending_notifications)
+    0
+
 
 === Script for importing Debian bugs, linking them to Ubutu ===
 
