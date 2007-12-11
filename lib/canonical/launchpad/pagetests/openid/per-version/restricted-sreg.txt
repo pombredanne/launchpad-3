@@ -18,9 +18,8 @@ We will perform an OpenID authentication request asking for a few user
 details:
 
     >>> from openid.consumer.consumer import Consumer
-    >>> from openid.consumer.discover import OPENID_1_1_TYPE
     >>> from openid.fetchers import setDefaultFetcher
-    >>> from openid.sreg import SRegRequest, SRegResponse
+    >>> from openid.extensions.sreg import SRegRequest, SRegResponse
     >>> from openid.store.memstore import MemoryStore
     >>> from canonical.launchpad.ftests.openidhelpers import (
     ...     complete_from_browser, install_consumer, make_endpoint,
@@ -32,7 +31,7 @@ details:
     >>> consumer = Consumer(session={}, store=openid_store)
 
     >>> endpoint = make_endpoint(
-    ...     OPENID_1_1_TYPE, 'http://openid.launchpad.dev/+id/sabdfl_oid')
+    ...     PROTOCOL_URI, 'http://openid.launchpad.dev/+id/sabdfl_oid')
 
     >>> request = consumer.beginWithoutDiscovery(endpoint)
     >>> request.addExtension(SRegRequest(

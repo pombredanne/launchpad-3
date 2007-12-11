@@ -17,7 +17,6 @@ __all__ = [
     ]
 
 import cgi
-import urlparse
 
 from zope.interface import Interface
 
@@ -41,8 +40,8 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.browser.launchpad import (
     StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
-
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.url import urlappend
 
 from canonical.widgets import AnnouncementDateWidget
 
@@ -123,6 +122,14 @@ class AnnouncementEditView(LaunchpadFormView):
     schema = AddAnnouncementForm
     field_names = ['title', 'summary', 'url', ]
     label = _('Modify this announcement')
+
+    @property
+    def initial_values(self):
+        return {
+            'title': self.context.title,
+            'summary': self.context.summary,
+            'url': self.context.url,
+            }
 
     @action(_('Modify'), name='modify')
     def modify_action(self, action, data):
@@ -239,13 +246,12 @@ class HasAnnouncementsView(LaunchpadView):
     def feed_url(self):
         base_url = allvhosts.configs['feeds'].rooturl
         if IAnnouncementSet.providedBy(self.context):
-            return urlparse.urljoin(base_url, 'announcements.atom')
+            return urlappend(base_url, 'announcements.atom')
         elif ILaunchpadRoot.providedBy(self.context):
-            return urlparse.urljoin(base_url, 'announcements.atom')
+            return urlappend(base_url, 'announcements.atom')
         elif IHasAnnouncements.providedBy(self.context):
-            pillar_path = urlparse.urlparse(canonical_url(self.context))[2]
-            return urlparse.urljoin(
-                base_url, pillar_path + '/announcements.atom')
+            return urlappend(canonical_url(self.context, rootsite='feeds'),
+                             'announcements.atom')
         else:
             raise AssertionError, 'Unknown feed source'
 
