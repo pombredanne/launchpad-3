@@ -1,0 +1,42 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:portlets fill-slot="portlets">
+  <div tal:replace="structure context/source_branch/@@+portlet-details" />
+</metal:portlets>
+
+<div metal:fill-slot="main">
+
+  <tal:summary replace="structure context/@@+pagelet-summary" />
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+
+    <div metal:fill-slot="extra_info" class="documentDescription">
+      <p>
+        MAKE ME WIP
+
+      Requesting a review will indicate that the changes in the source
+      branch (<tal:source-branch replace="structure context/source_branch/fmt:link"/>)
+      are ready to be merged and should be reviewed by someone
+      with the authority to accept changes into the target branch
+      (<tal:source-branch replace="structure context/target_branch/fmt:link"/>).
+      </p>
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>
