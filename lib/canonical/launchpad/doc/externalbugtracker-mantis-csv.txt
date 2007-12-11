@@ -19,8 +19,8 @@ export from.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.interfaces import BugTrackerType
-    >>> import transaction
-    >>> txn = transaction.get()
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
     >>> alsa_mantis = Mantis(
     ...     txn, new_bugtracker(BugTrackerType.MANTIS))
 

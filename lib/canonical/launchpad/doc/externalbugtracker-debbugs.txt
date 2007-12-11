@@ -20,8 +20,8 @@ You can specify the db_location explicitly:
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.interfaces import BugTrackerType
-    >>> import transaction
-    >>> txn = transaction.get()
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
     >>> debbugs = new_bugtracker(BugTrackerType.DEBBUGS)
     >>> external_debbugs = DebBugs(txn, debbugs, db_location=test_db_location)
     >>> external_debbugs.db_location == test_db_location

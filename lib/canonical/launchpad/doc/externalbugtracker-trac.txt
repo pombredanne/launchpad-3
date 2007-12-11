@@ -16,8 +16,8 @@ IExternalBugTracker.
     >>> from canonical.launchpad.interfaces import (
     ...     BugTrackerType, IExternalBugTracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> import transaction
-    >>> txn = transaction.get()
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
     >>> trac = Trac(txn, new_bugtracker(BugTrackerType.TRAC))
     >>> verifyObject(IExternalBugTracker, trac)
     True

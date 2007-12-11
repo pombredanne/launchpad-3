@@ -16,8 +16,8 @@ implements IExternalBugTracker.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> import transaction
-    >>> txn = transaction.get()
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
     >>> verifyObject(
     ...     IExternalBugTracker,
     ...     Roundup(txn, new_bugtracker(BugTrackerType.ROUNDUP)))

@@ -33,8 +33,8 @@ get_external_bugtracker supports four external bug tracker types:
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> import transaction
-    >>> txn = transaction.get()
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
     >>> for bugtracker_type in bugtracker_types:
     ...     bugtracker = new_bugtracker(bugtracker_type)
     ...     try:

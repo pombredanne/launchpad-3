@@ -89,25 +89,6 @@ class InvalidBugId(Exception):
 class BugNotFound(Exception):
     """The bug was not found in the external bug tracker."""
 
-#
-# Helper function
-#
-def get_external_bugtracker(txn, bugtracker, version=None):
-    """Return an `ExternalBugTracker` for bugtracker."""
-    bugtrackertype = bugtracker.bugtrackertype
-    if bugtrackertype == BugTrackerType.BUGZILLA:
-        return Bugzilla(txn, bugtracker, version)
-    elif bugtrackertype == BugTrackerType.DEBBUGS:
-        return DebBugs(txn, bugtracker)
-    elif bugtrackertype == BugTrackerType.MANTIS:
-        return Mantis(txn, bugtracker)
-    elif bugtrackertype == BugTrackerType.TRAC:
-        return Trac(txn, bugtracker)
-    elif bugtrackertype == BugTrackerType.ROUNDUP:
-        return Roundup(txn, bugtracker)
-    else:
-        raise UnknownBugTrackerTypeError(bugtrackertype.name,
-            bugtracker.name)
 
 _exception_to_bugwatcherrortype = [
    (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
@@ -237,7 +218,7 @@ class ExternalBugTracker:
             # status of each one of them.
             if remote_bug not in bug_watches_by_remote_bug:
                 bug_watches_by_remote_bug[remote_bug] = []
-            bug_watches_by_remote_bug[remote_bug].append(bug_watch)        
+            bug_watches_by_remote_bug[remote_bug].append(bug_watch)
         return bug_watches_by_remote_bug
 
     def updateBugWatches(self, bug_watches):
@@ -260,7 +241,8 @@ class ExternalBugTracker:
             (len(bug_watches), bug_tracker_url))
 
         bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
-        bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(bug_watch_ids)
+        bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
+            bug_watch_ids)
 
         # Do things in a fixed order, mainly to help with testing.
         bug_ids_to_update = sorted(bug_watches_by_remote_bug)
@@ -280,7 +262,7 @@ class ExternalBugTracker:
         # Again, fixed order here to help with testing.
         bug_ids = sorted(bug_watches_by_remote_bug.keys())
         for bug_id in bug_ids:
-            bug_watches = bug_watches_by_remote_bug[bug_id];
+            bug_watches = bug_watches_by_remote_bug[bug_id]
             local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
             try:
                 new_remote_status = None
@@ -1777,3 +1759,21 @@ class SourceForge(ExternalBugTracker):
         else:
             return local_status
 
+
+BUG_TRACKER_CLASSES = {
+    BugTrackerType.BUGZILLA: Bugzilla,
+    BugTrackerType.DEBBUGS: DebBugs,
+    BugTrackerType.MANTIS: Mantis,
+    BugTrackerType.TRAC: Trac,
+    BugTrackerType.ROUNDUP: Roundup
+    }
+
+
+def get_external_bugtracker(txn, bugtracker):
+    """Return an `ExternalBugTracker` for bugtracker."""
+    bugtrackertype = bugtracker.bugtrackertype
+    if bugtrackertype in BUG_TRACKER_CLASSES:
+        return BUG_TRACKER_CLASSES[bugtrackertype](txn, bugtracker)
+    else:
+        raise UnknownBugTrackerTypeError(bugtrackertype.name,
+            bugtracker.name)

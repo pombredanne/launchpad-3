@@ -10,8 +10,8 @@ The ExternalBugTracker descendant class which implements methods for
 updating bug watches on SourceForge bug trackers is
 externalbugtracker.SourceForge, which implements IExternalBugTracker.
 
-    >>> import transaction
-    >>> txn = transaction.get()
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     SourceForge)

@@ -5,6 +5,8 @@
 __metaclass__ = type
 
 from zope.component import getUtility
+
+from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.launchpad.interfaces import IBugTaskSet, ILaunchpadCelebrities
 
 from canonical.launchpad.scripts.logger import log
@@ -15,7 +17,7 @@ from canonical.launchpad.components.externalbugtracker import (
 def import_debian_bugs(bugs_to_import):
     """Import the specified Debian bugs into Launchpad."""
     debbugs = getUtility(ILaunchpadCelebrities).debbugs
-    txn = None # TODO
+    txn = ZopelessTransactionManager._installed
     external_debbugs = get_external_bugtracker(txn, debbugs)
     debian = getUtility(ILaunchpadCelebrities).debian
     for debian_bug in bugs_to_import:

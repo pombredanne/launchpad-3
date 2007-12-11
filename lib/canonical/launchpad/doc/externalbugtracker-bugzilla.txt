@@ -16,8 +16,8 @@ version we can't parse, UnparseableBugTrackerVersion is raised:
     ...     new_bugtracker)
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
     >>> from canonical.launchpad.interfaces import BugTrackerType
-    >>> import transaction
-    >>> txn = transaction.get()
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
     >>> invalid_version_bugzilla = new_bugtracker(BugTrackerType.BUGZILLA)
     >>> external_bugzilla = Bugzilla(
     ...     txn, invalid_version_bugzilla, version='A.B4')

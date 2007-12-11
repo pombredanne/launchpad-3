@@ -18,8 +18,7 @@ from canonical.launchpad.components.externalbugtracker import (
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskImportance, BugTaskStatus, IBugSet,
-    IEmailAddressSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
-    PersonCreationRationale)
+    IEmailAddressSet, IPersonSet, IProductSet, PersonCreationRationale)
 from canonical.launchpad.scripts import bugimport
 from canonical.launchpad.scripts.bugimport import ET
 from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
@@ -695,9 +694,10 @@ class BugImportScriptTestCase(unittest.TestCase):
 
 
 class TestBugWatch:
-    """A mock bug watch object.
+    """A mock bug watch object for testing `ExternalBugTracker.updateWatches`.
 
-    Guaranteed to trigger a DB failure if its `failing` attribute is True."""
+    This bug watch is guaranteed to trigger a DB failure when `updaateStatus`
+    is called if its `failing` attribute is True."""
     def __init__(self, id, failing):
         """Initialize the object."""
         self.id = id
@@ -709,29 +709,24 @@ class TestBugWatch:
         """See `IBugWatch`."""
         for bugtask in self.bug.bugtasks:
             if bugtask.conjoined_master is not None:
-                bugtask = bugtask.conjoined_master
-            else:
-                bugtask = bugtask
+                continue
             bugtask = removeSecurityProxy(bugtask)
             bugtask.status = new_malone_status
-            if self.failing:
-                cur = cursor()
-                cur.execute("""
-                UPDATE BugTask
-                SET assignee = -1
-                WHERE id = %s
-                """ % bugtask.id)
-                cur.close()
+        if self.failing:
+            cur = cursor()
+            cur.execute("""
+            UPDATE BugTask
+            SET assignee = -1
+            WHERE id = %s
+            """ % self.bug.bugtasks[0].id)
+            cur.close()
 
 
 class TestResultSequence(list):
     """A mock `SelectResults` object.
 
-    Returns a list with two bug watch objects, with a `count` method."""
-    def __init__(self):
-        super(TestResultSequence, self).__init__()
-        self.append(TestBugWatch(1, True))
-        self.append(TestBugWatch(2, False))
+    Returns a list with a `count` method.
+    """
 
     def count(self):
         """See `SelectResults`."""
@@ -739,33 +734,60 @@ class TestResultSequence(list):
 
 
 class TestBugTracker:
-    """A mock `BugTracker` object."""
+    """A mock `BugTracker` object.
+
+    This bug tracker is used for testing `ExternalBugTracker.updateWatches`.
+    It exposes two bug watches, one of them is guaranteed to trigger an error.
+    """
     baseurl = 'http://example.com/'
     
     def getBugWatchesNeedingUpdate(self, hours):
-        """See `IBugTracker`."""
-        return TestResultSequence()
+        """Returns a sequence of teo bug watches for testing."""
+        return TestResultSequence([
+            TestBugWatch(1, failing=True),
+            TestBugWatch(2, failing=False)])
 
 
 class TestExternalBugTracker(ExternalBugTracker):
-    """A mock `ExternalBugTracker` object."""
+    """A mock `ExternalBugTracker` object.
+
+    This external bug tracker is used for testing
+    `ExternalBugTracker.updateWatches`. It overrides several methods
+    in order to simulate the syncing of two bug watches, one of which
+    is guaranteed to trigger a database error.
+    """
     def getRemoteBug(self, bug_id):
+        """Return the bug_id and an empty dictionary for data.
+
+        The result will be ignored, since we force a specific status
+        in `getRemoteStatus` and `convertRemoteStatus`.
+        """
         return bug_id, {}
     
     def getRemoteStatus(self, bug_id):
-        """See `ExternalBugTracker`."""
+        """Returns a remote status as a string.
+
+        The result will be ignored, since we force a specific malone
+        status in `convertRemoteStatus`.
+        """
         return 'TEST_STATUS'
 
     def convertRemoteStatus(self, remote_status):
-        """See `ExternalBugTracker`."""
+        """Returns a hard-coded malone status - `FIXRELEASED`.
+
+        We rely on the result for comparison in
+        `test_checkbugwatches_error_recovery`.
+        """
         return BugTaskStatus.FIXRELEASED
 
     def _getBugWatch(self, bug_watch_id):
-        """See `ExternalBugTracker`."""
-        if bug_watch_id == 1:
-            return TestBugWatch(1, True)
-        else:
-            return TestBugWatch(2, False)
+        """Returns a mock bug watch object.
+
+        We override this method to force one of our two bug watches
+        to be returned. The first is guaranteed to trigger a db error,
+        the second should update successfuly.
+        """
+        return self.bugtracker.getBugWatchesNeedingUpdate(0)[bug_watch_id - 1]
 
 class TestBugWatchUpdater(BugWatchUpdater):
     """A mock `BugWatchUpdater` object."""
@@ -784,10 +806,17 @@ class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
     def test_checkbugwatches_error_recovery(self):
         # First, we verify that both bugs we'll try to change
         # have a status other than `FIXRELEASED`.
-        self.assertNotEqual(getUtility(IBugSet).get(1).bugtasks[0].status,
-                            BugTaskStatus.FIXRELEASED)
-        self.assertNotEqual(getUtility(IBugSet).get(2).bugtasks[0].status,
-                            BugTaskStatus.FIXRELEASED)
+        bug_1 = getUtility(IBugSet).get(1)
+        for bugtask in bug_1.bugtasks:
+            if bugtask.conjoined_master is not None:
+                continue
+            removeSecurityProxy(bugtask).status = BugTaskStatus.NEW
+        bug_2 = getUtility(IBugSet).get(2)
+        for bugtask in bug_2.bugtasks:
+            if bugtask.conjoined_master is not None:
+                continue
+            removeSecurityProxy(bugtask).status = BugTaskStatus.NEW
+        self.layer.txn.commit()
         # We use a test bug tracker, which is guaranteed to
         # try and update two bug watches - the first will
         # trigger a DB error, the second updates successfully.
@@ -796,10 +825,12 @@ class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
         bug_watch_updater.updateBugTracker(bug_tracker)
         # We verify that the first bug watch didn't update the status,
         # and the second did.
-        self.assertNotEqual(getUtility(IBugSet).get(1).bugtasks[0].status,
-                            BugTaskStatus.FIXRELEASED)
-        self.assertEqual(getUtility(IBugSet).get(2).bugtasks[0].status,
-                         BugTaskStatus.FIXRELEASED)
+        bug_1 = getUtility(IBugSet).get(1)
+        for bugtask in bug_1.bugtasks:
+            self.assertNotEqual(bugtask.status, BugTaskStatus.FIXRELEASED)
+        bug_2 = getUtility(IBugSet).get(2)
+        for bugtask in bug_2.bugtasks:
+            self.assertEqual(bugtask.status, BugTaskStatus.FIXRELEASED)
 
 
 def test_suite():

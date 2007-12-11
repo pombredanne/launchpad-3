@@ -16,8 +16,8 @@ instance here:
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestIssuezilla
-    >>> import transaction
-    >>> txn = transaction.get()
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName('mozilla.org')
     >>> issuezilla = TestIssuezilla(txn, mozilla_bugzilla)
     >>> issuezilla._probe_version()
