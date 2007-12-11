@@ -78,7 +78,6 @@
             </a>
             <form tal:condition="row/packaging_field"
                   style="display: inline"
-                  class="deleteBox"
                   action=""
                   method="POST"
                   tal:attributes="action request/URL; id row/delete_packaging_form_id">
