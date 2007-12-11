@@ -4,7 +4,6 @@
 
 
 import socket
-import datetime
 import xmlrpclib
 
 from Mailman import Errors
