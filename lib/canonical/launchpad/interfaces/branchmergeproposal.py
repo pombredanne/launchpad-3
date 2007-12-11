@@ -177,18 +177,19 @@ class IBranchMergeProposal(Interface):
     def mergeFailed(merger):
         """Mark the proposal as 'Code failed to merge'."""
 
-    def markAsMerged(merged_revno=None, date_merged=None, merge_reporter=None):
+    def markAsMerged(merged_revno=None, date_merged=None,
+                     merge_reporter=None):
         """Mark the branch merge proposal as merged.
 
-        If the `merged_revno` is supplied, then the `BranchRevision` is checked
-        to see that revision is available in the target branch.  If it is
-        then the date from that revision is used as the `date_merged`.  If it
-        is not available, then the `date_merged` is set as if the merged_revno
-        was not supplied.
+        If the `merged_revno` is supplied, then the `BranchRevision` is
+        checked to see that revision is available in the target branch.  If it
+        is then the date from that revision is used as the `date_merged`.  If
+        it is not available, then the `date_merged` is set as if the
+        merged_revno was not supplied.
 
-        If no `merged_revno` is supplied, the `date_merged` is set to the value
-        of date_merged, or if the parameter date_merged is None, then UTC_NOW
-        is used.
+        If no `merged_revno` is supplied, the `date_merged` is set to the
+        value of date_merged, or if the parameter date_merged is None, then
+        UTC_NOW is used.
 
         :param merged_revno: The revision number in the target branch that
                              contains the merge of the source branch.

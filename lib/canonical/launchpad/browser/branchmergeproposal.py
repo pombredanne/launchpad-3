@@ -13,8 +13,8 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Int
+from zope.interface import Interface
+from zope.schema import Int
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -26,9 +26,8 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IStructuralObjectPresentation)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
-    LaunchpadEditFormView, action, custom_widget)
-from canonical.widgets.link import LinkWidget
+    LaunchpadEditFormView, action)
+
 
 class BranchMergeProposalSOP(StructuralObjectPresentation):
     """Provides the structural heading for `IBranchMergeProposal`.
