@@ -78,6 +78,9 @@ And lets define a nice printout function for PO files.
 
 We need to print out stats for the pofile as well.
 
+    >>> # We are indenting those counts which are contained in the parent
+    >>> # one.  Thus, 'translated' count is the sum of 'imported' and 'new'.
+    >>> # 'imported' also includes the 'changed' entries.
     >>> def print_pofile_stats(pofile):
     ...     pofile.updateStatistics()
     ...     print "total:", pofile.messageCount()
