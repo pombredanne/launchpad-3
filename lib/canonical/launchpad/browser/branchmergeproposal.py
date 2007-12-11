@@ -9,6 +9,8 @@ __all__ = [
     'BranchMergeProposalEditView',
     'BranchMergeProposalMergedView',
     'BranchMergeProposalRequestReviewView',
+    'BranchMergeProposalView',
+    'BranchMergeProposalWorkInProgressView',
     'ReviewBranchMergeProposalView',
     ]
 
@@ -26,7 +28,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IStructuralObjectPresentation)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadEditFormView, action)
+    LaunchpadEditFormView, LaunchpadView, action)
 
 
 class BranchMergeProposalSOP(StructuralObjectPresentation):
@@ -52,7 +54,17 @@ class BranchMergeProposalContextMenu(ContextMenu):
     """Context menu for branches."""
 
     usedfor = IBranchMergeProposal
-    links = ['request_review', 'review', 'merge']
+    links = ['set_work_in_progress', 'request_review', 'review', 'merge']
+
+    @enabled_with_permission('launchpad.Edit')
+    def set_work_in_progress(self):
+        text = 'Work in progress'
+        # Enable the review option if the proposal is not merged nor already
+        # in the needs review state.
+        enabled = self.context.queue_status not in (
+            BranchMergeProposalStatus.MERGED,
+            BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        return Link('+work-in-progress', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def request_review(self):
@@ -62,7 +74,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
         enabled = self.context.queue_status not in (
             BranchMergeProposalStatus.MERGED,
             BranchMergeProposalStatus.NEEDS_REVIEW)
-        return Link('+request-review', text, icon='edit')
+        return Link('+request-review', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def review(self):
@@ -70,7 +82,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
         # Enable the review option if the proposal is reviewable, and the
         # user is a reviewer.
         lp_admins = getUtility(ILaunchpadCelebrities).admin
-        valid_reviewer = (self.context.personCanReview(self.user) or
+        valid_reviewer = (self.context.isPersonValidReviewer(self.user) or
                           self.user.inTeam(lp_admins))
         enabled = self.context.isReviewable() and valid_reviewer
         return Link('+review', text, icon='edit', enabled=enabled)
@@ -79,6 +91,55 @@ class BranchMergeProposalContextMenu(ContextMenu):
     def merge(self):
         text = 'Mark as merged'
         return Link('+merged', text, icon='edit')
+
+
+class UnmergedRevisionsMixin:
+    """Provides the methods needed to show unmerged revisions."""
+
+    @cachedproperty
+    def unlanded_revisions(self):
+        """Return the unlanded revisions from the source branch."""
+        return self.context.getUnlandedSourceBranchRevisions()
+
+    @property
+    def codebrowse_url(self):
+        """Return the link to codebrowse for this branch."""
+        return (config.codehosting.codebrowse_root +
+                self.context.source_branch.unique_name)
+
+
+class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin):
+    """A basic view used for the index page."""
+
+    label = "Proposal to merge branches"
+    __used_for__ = IBranchMergeProposal
+
+
+class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
+    """The view used to set a proposal back to 'work in progress'."""
+
+    schema = IBranchMergeProposal
+    field_names = []
+    label = "Set proposal as work in progress"
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context.source_branch)
+
+    @action('Set as work in progress', name='wip')
+    def wip_action(self, action, data):
+        """Set the status to 'Needs review'."""
+        self.context.setAsWorkInProgress()
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the source branch."""
+
+    def validate(self, data):
+        """Ensure that the proposal is in an appropriate state."""
+        if self.context.queue_status == BranchMergeProposalStatus.MERGED:
+            self.addError("The merge proposal is not an a valid state to "
+                          "mark as 'Work in progress'.")
 
 
 class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
@@ -116,6 +177,7 @@ class ReviewForm(Interface):
         description=_("The revision number on the target branch which "
                       "has been reviewed."))
 
+
 class MergeProposalEditView(LaunchpadEditFormView):
     """A base class for merge proposal edit views."""
 
@@ -144,7 +206,8 @@ class MergeProposalEditView(LaunchpadEditFormView):
                 return branch_revision.sequence
 
 
-class ReviewBranchMergeProposalView(MergeProposalEditView):
+class ReviewBranchMergeProposalView(MergeProposalEditView,
+                                    UnmergedRevisionsMixin):
     """The view to approve or reject a merge proposal."""
 
     schema = ReviewForm
@@ -154,11 +217,6 @@ class ReviewBranchMergeProposalView(MergeProposalEditView):
     def initial_values(self):
         # Default to reviewing the tip of the source branch.
         return {'revision_number': self.context.source_branch.revision_count}
-
-    @cachedproperty
-    def unlanded_revisions(self):
-        """Return the unlanded revisions from the source branch."""
-        return self.context.getUnlandedSourceBranchRevisions()
 
     @property
     def adapters(self):
@@ -223,12 +281,6 @@ class ReviewBranchMergeProposalView(MergeProposalEditView):
                         'revision_number',
                         'The reviewed revision cannot be larger than the '
                         'tip revision of the source branch.')
-
-    @property
-    def codebrowse_url(self):
-        """Return the link to codebrowse for this branch."""
-        return (config.codehosting.codebrowse_root +
-                self.context.source_branch.unique_name)
 
 
 class BranchMergeProposalEditView(MergeProposalEditView):

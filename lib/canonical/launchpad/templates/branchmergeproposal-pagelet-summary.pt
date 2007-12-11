@@ -6,6 +6,14 @@
 
   <tbody>
     <tr>
+      <th>Source branch:</th>
+      <td tal:content="structure context/source_branch/fmt:link">~foo/bar/bzr</td>
+    </tr>
+    <tr>
+      <th>Target branch:</th>
+      <td tal:content="structure context/target_branch/fmt:link">~foo/bar/baz</td>
+    </tr>
+    <tr>
       <th>Status:</th>
       <td tal:content="context/queue_status/title">High</td>
     </tr>

@@ -173,9 +173,13 @@ branch_landing_candidates = ContextDisplayName(smartquote(
 
 branchmergeproposal_edit = 'Edit branch merge proposal'
 
+branchmergeproposal_index = 'Proposal to merge branches'
+
 branchmergeproposal_request_review = ViewLabel()
 
 branchmergeproposal_review = ViewLabel()
+
+branchmergeproposal_work_in_progress = ViewLabel()
 
 branch_register_merge_proposal = 'Propose branch for merging'
 

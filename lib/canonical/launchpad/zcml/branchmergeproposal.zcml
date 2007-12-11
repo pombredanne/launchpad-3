@@ -27,6 +27,14 @@
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       name="+edit" />
 
+  <browser:page
+    name="+index"
+    for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    class="canonical.launchpad.browser.BranchMergeProposalView"
+    facet="branches"
+    permission="launchpad.View"
+    template="../templates/branchmergeproposal-index.pt" />
+
   <browser:pages
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       class="canonical.launchpad.browser.BranchMergeProposalEditView"
@@ -41,6 +49,14 @@
         template="../templates/branchmergeproposal-pagelet-summary.pt"
         />
   </browser:pages>
+
+  <browser:page
+    name="+work-in-progress"
+    for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    class="canonical.launchpad.browser.BranchMergeProposalWorkInProgressView"
+    facet="branches"
+    permission="launchpad.Edit"
+    template="../templates/branchmergeproposal-work-in-progress.pt" />
 
   <browser:page
     name="+request-review"
