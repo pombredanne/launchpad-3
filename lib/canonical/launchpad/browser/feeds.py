@@ -14,6 +14,7 @@ __all__ = [
     'PersonLatestBugsFeedLink',
     ]
 
+import urlparse
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -165,7 +166,9 @@ class BugFeedLink(FeedLinkBase):
 
     @property
     def href(self):
-        return self.rooturl + 'bugs/' + str(self.context.bug.id) + '/bug.atom'
+        return urlparse.urljoin(
+            self.rooturl,
+            'bugs/' + str(self.context.bug.id) + '/bug.atom')
 
 
 class BugTargetLatestBugsFeedLink(FeedLinkBase):
@@ -173,12 +176,14 @@ class BugTargetLatestBugsFeedLink(FeedLinkBase):
 
     @property
     def title(self):
-        return 'Latest Bugs for %s' % self.context.name
+        return 'Latest Bugs for %s' % self.context.displayname
 
     @property
     def href(self):
         if IBugTarget.providedBy(self.context):
-            return self.rooturl + self.context.name + '/latest-bugs.atom'
+            return urlparse.urljoin(
+                self.rooturl,
+                self.context.name + '/latest-bugs.atom')
         else:
             raise AssertionError("Invalid context=%r for LatestBugsFeedLink"
                                  % self.context)
@@ -189,13 +194,14 @@ class PersonLatestBugsFeedLink(FeedLinkBase):
 
     @property
     def title(self):
-        return 'Latest Bugs for %s' % self.context.name
+        return 'Latest Bugs for %s' % self.context.displayname
 
     @property
     def href(self):
         if IPerson.providedBy(self.context):
-            return (self.rooturl + '~' + self.context.name 
-                    + '/latest-bugs.atom')
+            return urlparse.urljoin(
+                self.rooturl,
+                '~' + self.context.name + '/latest-bugs.atom')
         else:
             raise AssertionError("Invalid context=%r for LatestBugsFeedLink"
                                  % self.context)

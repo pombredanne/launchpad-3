@@ -55,16 +55,16 @@ show a link to the atom feed for that product's latest bugs.
 On the project page on launchpad.net and bugs.launchpad.net, we should
 show a link to the atom feed for that project's latest bugs.
 
-    >>> browser.open('http://launchpad.dev/mozilla')
+    >>> browser.open('http://launchpad.dev/gnome')
     >>> soup = BSS(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
-    [...<...href="http://feeds.launchpad.dev/mozilla/latest-bugs.atom" />...
+    [...<...href="http://feeds.launchpad.dev/gnome/latest-bugs.atom" />...
 
 
-    >>> browser.open('http://bugs.launchpad.dev/mozilla')
+    >>> browser.open('http://bugs.launchpad.dev/gnome')
     >>> soup = BSS(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
-    [...<...href="http://feeds.launchpad.dev/mozilla/latest-bugs.atom" />...
+    [...<...href="http://feeds.launchpad.dev/gnome/latest-bugs.atom" />...
 
 The default view for a project on bugs.launchpad.dev is +bugs. The 
 default bug listing matches the latest-bugs atom feed, but any search 
@@ -72,7 +72,7 @@ parameters to this view class may cause them to differ. Since the
 project uses the same view class for both tasks, we should check 
 that the code does not display the atom feed link here inappropriately.
 
-    >>> browser.open('http://bugs.launchpad.dev/mozilla/+bugs?'
+    >>> browser.open('http://bugs.launchpad.dev/gnome/+bugs?'
     ...     'search=Search&field.status=New&field.status=Incomplete'
     ...     '&field.status=Confirmed&field.status=Triaged'
     ...     '&field.status=In+Progress&field.status=Fix+Committed')
