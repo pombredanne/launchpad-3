@@ -313,7 +313,8 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
         that this branch be mirrored.
         """
         if is_lock_directory(self.getAbsolutePath()):
-            self.avatar._launchpad.requestMirror(self.getBranchID())
+            self.avatar._launchpad.requestMirror(
+                self.avatar.lpid, self.getBranchID())
         self.logger.info('Renaming %r to %r', self, newName)
         osfs.OSDirectory.rename(self, newName)
 

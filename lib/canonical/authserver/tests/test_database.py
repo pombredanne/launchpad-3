@@ -634,7 +634,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         [current_db_time] = cur.fetchone()
 
         storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(hosted_branch_id)
+        storage._requestMirrorInteraction(1, hosted_branch_id)
 
         self.assertTrue(
             current_db_time < self.getNextMirrorTime(hosted_branch_id),
@@ -661,7 +661,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         [current_db_time] = cur.fetchone()
 
         storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(branch_id)
+        storage._requestMirrorInteraction(salgado.id, branch_id)
 
         self.assertTrue(
             current_db_time < self.getNextMirrorTime(branch_id),
@@ -675,7 +675,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         # Request that 25 (a hosted branch) be mirrored. This sets
         # next_mirror_time.
         storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(25)
+        storage._requestMirrorInteraction(1, 25)
 
         # Simulate successfully mirroring branch 25
         storage = DatabaseBranchDetailsStorage(None)

@@ -45,8 +45,8 @@ class FakeLaunchpad:
         self.test.assertEqual('new-branch', branchName)
         return defer.succeed(0xabcdef12)
 
-    def requestMirror(self, branch_id):
-        self._request_mirror_log.append(branch_id)
+    def requestMirror(self, loginID, branch_id):
+        self._request_mirror_log.append(loginID, branch_id)
 
 
 class TestTopLevelDir(AvatarTestCase):

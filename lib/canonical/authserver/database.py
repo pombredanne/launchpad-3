@@ -379,12 +379,13 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         else:
             return branch.id
 
-    def requestMirror(self, branchID):
+    def requestMirror(self, requester, branchID):
         """See `IHostedBranchStorage`."""
-        return deferToThread(self._requestMirrorInteraction, branchID)
+        return deferToThread(self._requestMirrorInteraction, requester, branchID)
 
     @writing_transaction
-    def _requestMirrorInteraction(self, branchID):
+    @run_as_requester
+    def _requestMirrorInteraction(self, requester, branchID):
         """The synchronous implementation of `requestMirror`.
 
         See `IHostedBranchStorage`.
