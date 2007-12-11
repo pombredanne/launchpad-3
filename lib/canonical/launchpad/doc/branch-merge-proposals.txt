@@ -95,7 +95,7 @@ A branch merge proposal can be in one of several states:
     >>> for state in BranchMergeProposalStatus:
     ...     print state.title
     Work in progress
-    Review requested
+    Needs review
     Code approved
     Rejected
     Merged
@@ -173,9 +173,9 @@ author have not been approved.
     ...     factory.makeRevisionsForBranch(branch)
     ...     commit()
     ...     LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
-    ...     return branch_set.getByUniqueName(source_branch_unique_name)
+    ...     return branch_set.getByUniqueName(branch_unique_name)
     >>> source_branch = add_some_revisions_to_branch(
-    ...     branch, factory, branch_set)
+    ...     source_branch, factory, branch_set)
     >>> proposal = source_branch.landing_targets[0]
     >>> source_branch.revision_count
     5
@@ -215,7 +215,7 @@ review.
     >>> proposal.requestReview()
     >>> print proposal.queue_status.title
     Needs review
-    >>> proposal.rejectBranch(sample_person)
+    >>> proposal.rejectBranch(sample_person, tip.revision_id)
     >>> print proposal.queue_status.title
     Rejected
     >>> proposal.requestReview()
@@ -235,7 +235,7 @@ a user in the reviewer team can approve or reject the branch.
     >>> eric_the_reviewer = factory.makePerson(name="eric-reviewer")
     >>> target_branch = proposal.target_branch
     >>> target_branch.reviewer = eric_the_reviewer
-    >>> proposal.rejectBranch(sample_person)
+    >>> proposal.rejectBranch(sample_person, tip.revision_id)
     Traceback (most recent call last):
     ...
     UserNotBranchReviewer

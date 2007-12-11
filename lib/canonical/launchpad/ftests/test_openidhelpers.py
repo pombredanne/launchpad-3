@@ -156,9 +156,11 @@ class CompleteFromBrowserTests(unittest.TestCase):
         consumer.beginWithoutDiscovery(make_endpoint(
                 OPENID_1_1_TYPE, 'http://example.com/identifier'))
         class FakeBrowser:
+            url = 'http://example.com/relying-party'
             contents = ('Consumer received GET\n'
                         'openid.mode:error\n'
-                        'openid.error:foo:error\n')
+                        'openid.error:foo:error\n'
+                        'openid.return_to:http://example.com/relying-party')
         info = complete_from_browser(consumer, FakeBrowser)
         self.assertEqual(info.status, 'failure')
         self.assertEqual(info.message, 'foo:error')
