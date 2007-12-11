@@ -80,7 +80,8 @@
                   style="display: inline"
                   action=""
                   method="POST"
-                  tal:attributes="action request/URL; id row/delete_packaging_form_id">
+                  tal:attributes="action request/URL;
+                                  id row/delete_packaging_form_id">
               <tal:hidden replace="structure row/packaging_field" />
               <tal:action
                   replace="structure view/renderDeletePackagingAction" />
