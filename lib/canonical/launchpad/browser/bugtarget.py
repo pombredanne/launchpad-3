@@ -215,7 +215,8 @@ class FileBugViewBase(LaunchpadFormView):
         # subscribe to an existing bug.
         elif self.this_is_my_bug_action.submitted():
             if not data.get('bug_already_reported_as'):
-                self.setFieldError('bug_already_reported_as', "Please choose a bug.")
+                self.setFieldError('bug_already_reported_as',
+                                   "Please choose a bug.")
         else:
             # We only care about those two actions.
             pass
@@ -250,7 +251,8 @@ class FileBugViewBase(LaunchpadFormView):
                                 packagename, distribution.displayname))
                         self.setFieldError("packagename", packagename_error)
             else:
-                self.setFieldError("packagename", "Please enter a package name")
+                self.setFieldError("packagename", 
+                                   "Please enter a package name")
 
         # If we've been called from the frontpage filebug forms we must check
         # that whatever product or distro is having a bug filed against it
@@ -258,9 +260,10 @@ class FileBugViewBase(LaunchpadFormView):
         product_or_distro = self.getProductOrDistroFromContext()
         if (product_or_distro is not None and
             not product_or_distro.official_malone):
-            self.setFieldError('bugtarget',
-                               "%s does not use Launchpad as its bug tracker " %
-                               product_or_distro.displayname)
+            self.setFieldError(
+                'bugtarget',
+                "%s does not use Launchpad as its bug tracker " %
+                product_or_distro.displayname)
 
     def setUpWidgets(self):
         """Customize the onKeyPress event of the package name chooser."""
@@ -871,7 +874,8 @@ class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
             return bugtarget
 
 
-class FrontPageFileBugAdvancedView(FrontPageFileBugMixin, FileBugAdvancedView):
+class FrontPageFileBugAdvancedView(
+    FrontPageFileBugMixin, FileBugAdvancedView):
     """Browser view class for the top-level +filebug-advanced page."""
     schema = IFrontPageBugAddForm
     custom_widget('bugtarget', LaunchpadTargetWidget)
@@ -895,9 +899,10 @@ class FrontPageFileBugAdvancedView(FrontPageFileBugMixin, FileBugAdvancedView):
         # If we have a context that we can test for Malone use, we do so.
         if (product_or_distro is not None and
             not product_or_distro.official_malone):
-            self.setFieldError('bugtarget',
-                               "%s does not use Launchpad as its bug tracker" %
-                               product_or_distro.displayname)
+            self.setFieldError(
+                'bugtarget',
+                "%s does not use Launchpad as its bug tracker" %
+                product_or_distro.displayname)
         else:
             return super(FrontPageFileBugAdvancedView, self).validate(data)
 

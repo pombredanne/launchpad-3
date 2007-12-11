@@ -1480,7 +1480,7 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
         return bugtask_listing_item
 
 
-class BugTaskSearchListingView(LaunchpadFormView):
+class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
     """View that renders a list of bugs for a given set of search criteria."""
 
     # These widgets are customised so as to keep the presentation of this view
@@ -1500,6 +1500,19 @@ class BugTaskSearchListingView(LaunchpadFormView):
             return IUpstreamProductBugTaskSearch
         else:
             return IBugTaskSearch
+
+    @property
+    def feed_links(self):
+        """Prevent conflicts between the page and the atom feed.
+
+        The latest-bugs atom feed matches the default output of this
+        view, but it does not match this view's bug listing when
+        any search parameters are passed in.
+        """
+        if self.request.get('QUERY_STRING') != '':
+            return []
+        else:
+            return super(BugTaskSearchListingView, self).feed_links
 
     def initialize(self):
         """Initialize the view with the request.

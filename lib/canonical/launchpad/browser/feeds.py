@@ -194,7 +194,8 @@ class PersonLatestBugsFeedLink(FeedLinkBase):
     @property
     def href(self):
         if IPerson.providedBy(self.context):
-            return self.rooturl + '~' + self.context.name + '/latest-bugs.atom'
+            return (self.rooturl + '~' + self.context.name 
+                    + '/latest-bugs.atom')
         else:
             raise AssertionError("Invalid context=%r for LatestBugsFeedLink"
                                  % self.context)

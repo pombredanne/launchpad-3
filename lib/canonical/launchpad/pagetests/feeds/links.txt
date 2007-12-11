@@ -1,0 +1,97 @@
+= Link Tags for Atom Feeds =
+
+The little orange icon that appears in browsers to indicate the presence
+of an RSS or Atom feed is controlled by adding a <link> tag to the <head>
+of the document. We want appropriate pages in launchpad.net to provide
+links to corresponding Atom feeds.
+
+
+== Single Bug Feed ==
+
+On the page which displays a single bug, there should be a link to the
+atom feed for that one bug.
+
+    >>> from BeautifulSoup import BeautifulSoup as BSS
+    >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+    >>> soup = BSS(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [...<...href="http://feeds.launchpad.dev/bugs/1/bug.atom" />...
+
+
+== Latest Bugs for a Person ==
+
+On the person page on launchpad.net and bugs.launchpad.net, we should
+show a link to the atom feed for that person's latest bugs.
+
+    >>> browser.open('http://launchpad.dev/~stevea')
+    >>> soup = BSS(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [...<...href="http://feeds.launchpad.dev/~stevea/latest-bugs.atom" />...
+
+
+    >>> browser.open('http://bugs.launchpad.dev/~stevea')
+    >>> soup = BSS(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [...<...href="http://feeds.launchpad.dev/~stevea/latest-bugs.atom" />...
+
+== Latest Bugs for a Product ==
+
+On the product page on launchpad.net and bugs.launchpad.net, we should
+show a link to the atom feed for that product's latest bugs.
+
+    >>> browser.open('http://launchpad.dev/jokosher')
+    >>> soup = BSS(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [...<...href="http://feeds.launchpad.dev/jokosher/latest-bugs.atom" />...
+
+
+    >>> browser.open('http://bugs.launchpad.dev/jokosher')
+    >>> soup = BSS(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [...<...href="http://feeds.launchpad.dev/jokosher/latest-bugs.atom" />...
+
+== Latest Bugs for a Project ==
+
+On the project page on launchpad.net and bugs.launchpad.net, we should
+show a link to the atom feed for that project's latest bugs.
+
+    >>> browser.open('http://launchpad.dev/mozilla')
+    >>> soup = BSS(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [...<...href="http://feeds.launchpad.dev/mozilla/latest-bugs.atom" />...
+
+
+    >>> browser.open('http://bugs.launchpad.dev/mozilla')
+    >>> soup = BSS(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [...<...href="http://feeds.launchpad.dev/mozilla/latest-bugs.atom" />...
+
+The default view for a project on bugs.launchpad.dev is +bugs. The 
+default bug listing matches the latest-bugs atom feed, but any search 
+parameters to this view class may cause them to differ. Since the 
+project uses the same view class for both tasks, we should check 
+that the code does not display the atom feed link here inappropriately.
+
+    >>> browser.open('http://bugs.launchpad.dev/mozilla/+bugs?'
+    ...     'search=Search&field.status=New&field.status=Incomplete'
+    ...     '&field.status=Confirmed&field.status=Triaged'
+    ...     '&field.status=In+Progress&field.status=Fix+Committed')
+    >>> soup = BSS(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    []
+
+== Latest Bugs for a Distro ==
+
+On the distro page on launchpad.net and bugs.launchpad.net, we should
+show a link to the atom feed for that distro's latest bugs.
+
+    >>> browser.open('http://launchpad.dev/ubuntu')
+    >>> soup = BSS(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [...<...href="http://feeds.launchpad.dev/ubuntu/latest-bugs.atom" />...
+
+
+    >>> browser.open('http://bugs.launchpad.dev/ubuntu')
+    >>> soup = BSS(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [...<...href="http://feeds.launchpad.dev/ubuntu/latest-bugs.atom" />...

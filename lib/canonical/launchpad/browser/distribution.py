@@ -51,6 +51,7 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
+from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.request_country import request_country
 from canonical.launchpad.browser.questiontarget import (
@@ -398,7 +399,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+select-language-pack-admin', text, icon='edit')
 
 
-class DistributionView(HasAnnouncementsView, BuildRecordsView):
+class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
     """Default Distribution view class."""
 
     def initialize(self):
