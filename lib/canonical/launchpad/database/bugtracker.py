@@ -131,7 +131,10 @@ class BugTracker(SQLBase):
     def _get_aliases(self):
         return [alias.base_url for alias in self._bugtracker_aliases]
 
-    def _set_aliases(self, alias_urls):
+    def _set_aliases(self, alias_urls=None):
+        if alias_urls is None:
+            alias_urls = []
+
         current_aliases_by_url = dict(
             (alias.base_url, alias) for alias in self._bugtracker_aliases)
 
@@ -147,11 +150,7 @@ class BugTracker(SQLBase):
             alias = current_aliases_by_url[url]
             alias.destroySelf()
 
-    def _del_aliases(self):
-        for alias in self._bugtracker_aliases:
-            alias.destroySelf()
-
-    aliases = property(_get_aliases, _set_aliases, _del_aliases)
+    aliases = property(_get_aliases, _set_aliases, _set_aliases)
 
 
 class BugTrackerSet:
