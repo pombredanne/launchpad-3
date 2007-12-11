@@ -303,7 +303,8 @@ class DistributionSourcePackageView(LaunchpadFormView):
         # method.
         self.form_fields = self._createPackagingField()
 
-    def canDeletePackaging(self):
+    @property
+    def can_delete_packaging(self):
         """Whether the user can delete existing packaging links."""
         return self.user is not None
 
@@ -325,7 +326,7 @@ class DistributionSourcePackageView(LaunchpadFormView):
 
     def _renderHiddenPackagingField(self, packaging):
         """Render a hidden input that fills in the packaging field."""
-        if not self.canDeletePackaging():
+        if not self.can_delete_packaging:
             return None
         vocabulary = self.form_fields['packaging'].field.vocabulary
         return '<input type="hidden" name="field.packaging" value="%s" />' % (
@@ -333,7 +334,7 @@ class DistributionSourcePackageView(LaunchpadFormView):
 
     def renderDeletePackagingAction(self):
         """Render a submit input for the delete_packaging_action."""
-        assert self.canDeletePackaging(), 'User cannot delete Packaging.'
+        assert self.can_delete_packaging, 'User cannot delete Packaging.'
         return ('<input type="submit" class="button" value="Delete Link" '
                 'name="field.actions.delete_packaging""/>')
 
