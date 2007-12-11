@@ -11,6 +11,7 @@ import datetime
 import pytz
 import rfc822
 import logging
+import types
 import urllib
 
 from zope.interface import implements
@@ -379,8 +380,11 @@ class ErrorReportingUtility:
             # The logging module doesn't provide a way to pass in
             # exception info, so we temporarily raise the exception so
             # it can be logged.
+            traceback = info[2]
+            if not isinstance(traceback, types.TracebackType):
+                traceback = None
             try:
-                raise info[0], info[1], info[2]
+                raise info[0], info[1], traceback
             except:
                 logging.getLogger('SiteError').exception(
                     '%s (%s)' % (url, oopsid))

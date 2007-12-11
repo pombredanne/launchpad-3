@@ -10,6 +10,7 @@ import unittest
 import shutil
 import StringIO
 from textwrap import dedent
+import traceback
 
 from zope.publisher.browser import TestRequest
 from zope.security.interfaces import Unauthorized
@@ -465,6 +466,51 @@ class TestErrorReportingUtility(unittest.TestCase):
 
         errorfile = os.path.join(utility.errordir(now), '01800.T1')
         self.assertFalse(os.path.exists(errorfile))
+
+    def test_raising_with_string_as_traceback(self):
+        """ErrorReportingUtility.raising() can be called with a string in the
+        place of a traceback. This is useful when the original traceback
+        object is unavailable.
+        """
+        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+        utility = ErrorReportingUtility()
+        utility.copy_to_zlog = True
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+
+        try:
+            raise RuntimeError('hello')
+        except RuntimeError:
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            exc_tb = traceback.format_exc()
+
+        utility.raising((exc_type, exc_value, exc_tb), now=now)
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+
+        self.assertTrue(os.path.exists(errorfile))
+        lines = open(errorfile, 'r').readlines()
+
+        # the header
+        self.assertEqual(lines[0], 'Oops-Id: OOPS-91T1\n')
+        self.assertEqual(lines[1], 'Exception-Type: RuntimeError\n')
+        self.assertEqual(lines[2], 'Exception-Value: hello\n')
+        self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
+        self.assertEqual(lines[4], 'Page-Id: \n')
+        self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
+        self.assertEqual(lines[6], 'Revision: %s\n'% versioninfo.revno)
+        self.assertEqual(lines[7], 'User: None\n')
+        self.assertEqual(lines[8], 'URL: None\n')
+        self.assertEqual(lines[9], 'Duration: -1\n')
+        self.assertEqual(lines[10], '\n')
+
+        # no request vars
+        self.assertEqual(lines[11], '\n')
+
+        # no database statements
+        self.assertEqual(lines[12], '\n')
+
+        # traceback
+        self.assertEqual(''.join(lines[13:17]), exc_tb)
+
 
 
 def test_suite():
