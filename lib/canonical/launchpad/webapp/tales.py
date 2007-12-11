@@ -167,7 +167,7 @@ class CountAPI:
 
 
 class EnumValueAPI:
-    """Namespace to test whether an EnumeratedType Item has a particular value.
+    """Namespace to test the value of an EnumeratedType Item.
 
     The value is given in the next path step.
 
@@ -184,7 +184,8 @@ class EnumValueAPI:
         if self.item.name == name:
             return True
         else:
-            # Check whether this was an allowed value for this enumerated type.
+            # Check whether this was an allowed value for this
+            # enumerated type.
             enum = self.item.enum
             try:
                 enum.getTermByToken(name)
@@ -526,6 +527,10 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     icon_template = (
         '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
 
+    linked_icon_template = (
+        '<a href="%s"><img height="14" width="14"'
+        ' alt="%s" title="%s" src="%s" /></a>')
+
     def traverse(self, name, furtherPath):
         """Special-case traversal for icons with an optional rootsite."""
         if name == 'icon':
@@ -563,24 +568,33 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def badges(self):
 
-        badges = ''
+        badges = []
         if self._context.bug.private:
-            badges += self.icon_template % (
-                "private", "Private","/@@/private")
+            badges.append(self.icon_template % (
+                "private", "Private","/@@/private"))
 
         if self._context.bug.mentoring_offers.count() > 0:
-            badges += self.icon_template % (
-                "mentoring", "Mentoring offered", "/@@/mentoring")
+            badges.append(self.icon_template % (
+                "mentoring", "Mentoring offered", "/@@/mentoring"))
 
         if self._context.bug.bug_branches.count() > 0:
-            badges += self.icon_template % (
-                "branch", "Branch exists", "/@@/branch")
+            badges.append(self.icon_template % (
+                "branch", "Branch exists", "/@@/branch"))
 
         if self._context.bug.specifications.count() > 0:
-            badges += self.icon_template % (
-                "blueprint", "Related to a blueprint", "/@@/blueprint")
+            badges.append(self.icon_template % (
+                "blueprint", "Related to a blueprint", "/@@/blueprint"))
 
-        return badges
+        if self._context.milestone:
+            milestone_text = "milestone %s" % self._context.milestone.name
+            badges.append(self.linked_icon_template % (
+                canonical_url(self._context.milestone),
+                milestone_text , "Linked to %s" % milestone_text,
+                "/@@/milestone"))
+
+        # Join with spaces to avoid the icons smashing into each other
+        # when multiple ones are presented.
+        return " ".join(badges)
 
 
 class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
@@ -783,7 +797,8 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
         if extra_path:
             url = '%s/%s' % (url, extra_path)
         return ('<a href="%s" title="%s"><img src="/@@/branch" alt=""/>'
-                '&nbsp;%s</a>' % (url, branch.displayname, branch.unique_name))
+                '&nbsp;%s</a>' % (
+                    url, branch.displayname, branch.unique_name))
 
 
 class BugFormatterAPI(ObjectFormatterExtendedAPI):
@@ -1625,7 +1640,8 @@ class FormattersAPI:
                 # This line is a paragraph with a signature or PGP inclusion.
                 # Start a foldable paragraph.
                 in_fold = True
-                line = '<p>%s%s' % (start_fold_markup, strip_leading_p_tag(line))
+                line = '<p>%s%s' % (start_fold_markup,
+                                    strip_leading_p_tag(line))
             elif (not in_fold and line.startswith('<p>')
                 and is_quoted(strip_leading_p_tag(line))):
                 # The paragraph starts with quoted marks.

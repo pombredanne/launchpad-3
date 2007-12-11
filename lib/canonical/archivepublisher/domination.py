@@ -237,6 +237,18 @@ class Dominator:
 
         return outpkgs
 
+    def _setScheduledDeletionDate(self, pub_record, conf):
+        """Set the scheduleddeletiondate on a publishing record.
+
+        If the status is DELETED we set the date to UTC_NOW, otherwise
+        it gets the configured stay of execution period.
+        """
+        if pub_record.status == PackagePublishingStatus.DELETED:
+            pub_record.scheduleddeletiondate = UTC_NOW
+        else:
+            pub_record.scheduleddeletiondate = (
+                UTC_NOW + timedelta(days=conf.stayofexecution))
+
     def _judgeSuperseded(self, source_records, binary_records, conf):
         """Determine whether the superseded packages supplied should
         be moved to death row or not.
@@ -283,8 +295,7 @@ class Dominator:
                        (binpkg_release.binarypackagename.name,
                         binpkg_release.version,
                         pub_record.distroarchseries.architecturetag))
-            pub_record.scheduleddeletiondate = (
-                UTC_NOW + timedelta(days=conf.stayofexecution))
+            self._setScheduledDeletionDate(pub_record, conf)
             # XXX cprov 20070820: 'datemadepending' is useless, since it's
             # always equals to "scheduleddeletiondate - quarantine".
             pub_record.datemadepending = UTC_NOW
@@ -330,8 +341,7 @@ class Dominator:
                 "%s/%s (%s) source has been judged eligible for removal" %
                 (srcpkg_release.sourcepackagename.name,
                  srcpkg_release.version, pub_record.id))
-            pub_record.scheduleddeletiondate = (
-                UTC_NOW + timedelta(days=conf.stayofexecution))
+            self._setScheduledDeletionDate(pub_record, conf)
             # XXX cprov 20070820: 'datemadepending' is pointless, since it's
             # always equals to "scheduleddeletiondate - quarantine".
             pub_record.datemadepending = UTC_NOW
