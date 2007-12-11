@@ -29,9 +29,11 @@ class TestCheckwatches(LaunchpadZopelessTestCase):
         bug_with_question = getUtility(IBugSet).get(10)
         question = getUtility(IQuestionSet).get(1)
 
-        # To link the bug to a question we need to login(). This is
-        # because making this link grants karma to the Person who does
-        # it.
+        # XXX gmb 2007-12-11 bug 175545:
+        #     We shouldn't have to login() here, but since
+        #     database.buglinktarget.BugLinkTargetMixin.linkBug()
+        #     doesn't accept a user parameter, instead depending on the
+        #     currently logged in user, we get an exception if we don't.
         login('test@canonical.com')
         question.linkBug(bug_with_question)
         commit()
