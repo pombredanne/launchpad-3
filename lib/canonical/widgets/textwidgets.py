@@ -150,24 +150,67 @@ class URIWidget(TextWidget):
         return TextWidget._toFieldValue(self, input)
 
 
-class WhitespaceDelimitedListWidget(TextAreaWidget):
+class DelimitedListWidget(TextAreaWidget):
     """A widget that represents a list as whitespace-delimited text."""
 
     def __init__(self, field, value_type, request):
         # We don't use value_type.
-        super(WhitespaceDelimitedListWidget, self).__init__(field, request)
+        super(DelimitedListWidget, self).__init__(field, request)
+
+    # The default splitting function.
+    split = staticmethod(unicode.split)
+
+    # The default joining function.
+    join = staticmethod(u'\n'.join)
 
     def _toFormValue(self, value):
-        """Convert the list of URIs to a newline separated string."""
-        if value:
-            value = '\n'.join(value)
-        return super(WhitespaceDelimitedListWidget, self)._toFormValue(value)
+        """Converts a list to a newline separated string.
+
+          >>> from zope.publisher.browser import TestRequest
+          >>> from zope.schema import Field
+          >>> field = Field(__name__='foo', title=u'Foo')
+          >>> widget = DelimitedListWidget(field, None, TestRequest())
+
+        The 'missing' value is converted to an empty string:
+
+          >>> widget._toFormValue(field.missing_value)
+          u''
+
+        By default, lists are displayed one item on a line:
+
+          >>> names = ['fred', 'bob', 'harry']
+          >>> widget._toFormValue(names)
+          u'fred\\r\\nbob\\r\\nharry'
+        """
+        if value == self.context.missing_value:
+            value = u''
+        elif value is None:
+            value = u''
+        else:
+            value = self.join(value)
+        return super(DelimitedListWidget, self)._toFormValue(value)
 
     def _toFieldValue(self, value):
-        """Convert the input string into a list."""
+        """Convert the input string into a list.
+
+          >>> from zope.publisher.browser import TestRequest
+          >>> from zope.schema import Field
+          >>> field = Field(__name__='foo', title=u'Foo')
+          >>> widget = DelimitedListWidget(field, None, TestRequest())
+
+        The widget converts an empty string to the missing value:
+
+          >>> widget._toFieldValue('') == field.missing_value
+          True
+
+        By default, lists are split by whitespace:
+
+          >>> print widget._toFieldValue(u'fred\\nbob harry')
+          [u'fred', u'bob', u'harry']
+        """
         value = super(
-            WhitespaceDelimitedListWidget, self)._toFieldValue(value)
+            DelimitedListWidget, self)._toFieldValue(value)
         if value:
-            return value.split()
+            return self.split(value)
         else:
-            return []
+            return self.context.missing_value

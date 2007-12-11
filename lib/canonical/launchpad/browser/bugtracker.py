@@ -33,7 +33,7 @@ from canonical.launchpad.webapp import (
     redirection)
 from canonical.launchpad.webapp.batching import BatchNavigator
 
-from canonical.widgets import WhitespaceDelimitedListWidget
+from canonical.widgets import DelimitedListWidget
 
 
 class BugTrackerSetNavigation(GetitemNavigation):
@@ -153,7 +153,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
                    'summary', 'baseurl', 'aliases', 'contactdetails']
 
     custom_widget('summary', TextAreaWidget, width=30, height=5)
-    custom_widget('aliases', WhitespaceDelimitedListWidget, height=3)
+    custom_widget('aliases', DelimitedListWidget, height=3)
 
     @action('Change', name='change')
     def change_action(self, action, data):

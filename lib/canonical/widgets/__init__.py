@@ -16,5 +16,5 @@ from context import IContextWidget, ContextWidget
 from itemswidgets import *
 from password import PasswordChangeWidget
 from textwidgets import (
-    LocalDateTimeWidget, LowerCaseTextWidget, StrippedTextWidget, URIWidget,
-    WhitespaceDelimitedListWidget)
+    DelimitedListWidget, LocalDateTimeWidget, LowerCaseTextWidget,
+    StrippedTextWidget, URIWidget)
