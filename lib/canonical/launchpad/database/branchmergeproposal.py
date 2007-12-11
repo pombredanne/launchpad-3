@@ -65,7 +65,7 @@ class BranchMergeProposal(SQLBase):
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
 
-    def setAsWorkInProgress():
+    def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""
         if self.queue_status == BranchMergeProposalStatus.MERGED:
             raise BadStateTransition('Merged proposals cannot change state.')

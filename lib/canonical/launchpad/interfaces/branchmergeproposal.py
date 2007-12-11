@@ -225,7 +225,7 @@ class IBranchMergeProposal(Interface):
         as the authorised user.
         """
 
-    def isReviewable(self):
+    def isReviewable():
         """Is the proposal is in a state condusive to being reviewed?
 
         As long as the source branch hasn't been merged into the target
