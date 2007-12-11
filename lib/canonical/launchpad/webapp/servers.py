@@ -45,8 +45,7 @@ from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
-from canonical.launchpad.webapp.publisher import (
-    get_current_browser_request, RedirectionView)
+from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.opstats import OpStats
 
 
@@ -416,7 +415,8 @@ class BrowserFormNG:
     implements(IBrowserFormNG)
 
     def __init__(self, form):
-        """Create a new BrowserFormNG that wraps a dict containing form data."""
+        """Create a new BrowserFormNG that wraps a dict containing form data.
+        """
         self.form = form
 
     def __contains__(self, name):
@@ -521,7 +521,8 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
         """
         if temporary_if_possible:
             assert status is None, (
-                "Do not set 'status' if also setting 'temporary_if_possible'.")
+                "Do not set 'status' if also setting "
+                "'temporary_if_possible'.")
             method = self._request.method
             if method == 'GET' or method == 'HEAD':
                 status = 307
@@ -799,16 +800,25 @@ class FeedsPublication(LaunchpadBrowserPublication):
     """The publication used for Launchpad feed requests."""
 
     root_object_interface = IFeedsApplication
+
     def traverseName(self, request, ob, name):
+        """Override traverseName to restrict urls on feeds.launchpad.net.
+
+        Feeds.lp.net should only serve classes that implement the IFeed
+        interface or redirect to some other url.
+        """
         result = super(FeedsPublication, self).traverseName(request, ob, name)
         if len(request.stepstogo) == 0:
+            # The url has been fully traversed. Now we can check that
+            # the result is a feed or a redirection.
             naked_result = removeSecurityProxy(result)
-            if (IFeed.providedBy(result)
-                or isinstance(naked_result, RedirectionView)):
+            if (IFeed.providedBy(result) or
+                getattr(naked_result, 'status', None) == 301):
                 return result
             else:
                 return None
         else:
+            # There are still url segments to traverse.
             return result
 
 
@@ -924,6 +934,7 @@ class ProtocolErrorPublication(LaunchpadBrowserPublication):
         :param status: The HTTP status to send
         :param headers: Any HTTP headers that should be sent.
         """
+        super(ProtocolErrorPublication, self).__init__()
         self.status = status
         self.headers = headers
 
@@ -936,16 +947,18 @@ class ProtocolErrorPublication(LaunchpadBrowserPublication):
 
 
 class ProtocolErrorException(Exception):
-    implements(ILaunchpadProtocolError)
     """An exception for requests that turn out to be protocol errors."""
+    implements(ILaunchpadProtocolError)
 
     def __init__(self, status, headers):
         """Store status and headers for rendering in the HTTP response."""
+        Exception.__init__(self)
         self.status = status
         self.headers = headers
 
     def __str__(self):
-        """A protocol error can be well-represented by its HTTP status code."""
+        """A protocol error can be well-represented by its HTTP status code.
+        """
         return "Protocol error: %s" % self.status
 
 # ---- End publication classes.

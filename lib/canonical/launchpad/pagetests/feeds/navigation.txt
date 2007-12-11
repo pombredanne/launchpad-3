@@ -11,8 +11,9 @@ Trying to view a page which is not registered on the Feeds layer
 returns a 404.
 
     >>> browser.open('http://feeds.launchpad.dev/jokosher')
-    Traceback...
-    NotFound:...
+    Traceback (most recent call last):
+    ...
+    NotFound: ...
 
 
 == Redirection ==
@@ -26,10 +27,20 @@ before serving the page.
    >>> browser.url
    'http://feeds.launchpad.dev/jokosher/latest-bugs.html'
 
-The +index view should redirect to help.launchpad.net:
+The +index view should redirect to https://help.launchpad.net/Feeds
 
-   >>> browser.open('http://feeds.launchpad.dev/')
-   >>> browser.url
+XXX Edwin Grubbs 2007-12-10 bug=98482: zope.testbrowser does not handle 
+redirects to remote sites, but http() can be used instead.
+
+   >>> response = http(r"""
+   ... GET / HTTP/1.0
+   ... Host: feeds.launchpad.dev
+   ... """)
+   >>> print response.getOutput()
+   HTTP/1.0 301 Moved Permanently
+   ...
+   Location: https://help.launchpad.net/Feeds
+
 
 == Query String Normalization ==
 
