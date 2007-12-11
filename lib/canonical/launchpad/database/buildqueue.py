@@ -271,10 +271,9 @@ class BuildQueueSet(object):
 
     def calculateCandidates(self, archseries):
         """See `IBuildQueueSet`."""
-        assert archseries, "Given 'archseries' cannot be None/empty."
+        if not archseries:
+            raise AssertionError("Given 'archseries' cannot be None/empty.")
 
-        if not isinstance(archseries, list):
-            archseries = [archseries]
         arch_ids = [d.id for d in archseries]
 
         query = """

@@ -173,7 +173,7 @@ class IBuildQueueSet(Interface):
         Returns a selectRelease of BuildQueue items sorted by descending
         'lastscore' within the given archseries.
 
-        'archseries' argument can be a list of DistroArchSeries but it is
+        'archseries' argument should be a list of DistroArchSeries and it is
         asserted to not be None/empty.
         """
 
