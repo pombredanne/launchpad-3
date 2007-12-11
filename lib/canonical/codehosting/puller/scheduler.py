@@ -302,7 +302,7 @@ class PullerMaster:
         command = [
             sys.executable, path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), self.unique_name,
-            self.branch_type.name]
+            self.branch_type.name, config.launchpad.errorreports.oops_prefix]
         # Passing env=None means that the subprocess will inherit our
         # environment, and thus our configuration settings. This is necessary
         # to ensure that branches are mirrored to the right place, that

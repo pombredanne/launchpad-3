@@ -46,11 +46,11 @@ if __name__ == '__main__':
     parser = OptionParser()
     (options, arguments) = parser.parse_args()
     (source_url, destination_url, branch_id, unique_name,
-     branch_type_name) = arguments
+     branch_type_name, oops_prefix) = arguments
 
     branch_type = BranchType.items[branch_type_name]
 
-    configure_oops_reporting(branch_type)
+    configure_oops_reporting(branch_type, oops_prefix)
     shut_up_deprecation_warning()
     force_bzr_to_use_urllib()
 
