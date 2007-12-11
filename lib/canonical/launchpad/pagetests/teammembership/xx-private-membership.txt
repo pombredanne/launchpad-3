@@ -1,0 +1,91 @@
+= Teams with Private Membership =
+
+If a team's visibility attribute is set to Private Membership, only
+launchpad admins and members of that team can see the membership.
+
+Create a test team with private membership and a test member. Even
+though no-priv is a proposed member by requesting to join this moderated
+team, he still does not get access to the membership list.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> from BeautifulSoup import BeautifulSoup as Soup
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, PersonCreationRationale, PersonVisibility)
+    >>> person_set = getUtility(IPersonSet)
+    >>> member, email = person_set.createPersonAndEmail(
+    ...     'member@canonical.com', PersonCreationRationale.UNKNOWN,
+    ...     name='member', displayname="Gold Member", password='test')
+    >>> member.setPreferredEmail(email)
+    >>> team_owner = person_set.getByName('name16')
+    >>> nopriv = person_set.getByName('no-priv')
+    >>> team = person_set.newTeam(team_owner, 'myteam', 'My Team')
+    >>> team.addMember(member, team_owner)
+    >>> member in team.activemembers
+    True
+    >>> nopriv.join(team)
+    >>> nopriv in team.proposedmembers
+    True
+    >>> team.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> logout()
+
+
+    >>> def print_members(contents, type):
+    ...     table = find_tag_by_id(contents, type)
+    ...     for link in table.findAll('a'):
+    ...         if link.renderContents() != 'Edit' and not link.find('img'):
+    ...             print link.renderContents()
+
+
+== Membership Page ==
+
+This +members page will raise an exception for unauthorized users.
+
+    >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> nopriv_browser.open('http://launchpad.dev/~myteam/+members')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+The +members page is visible for someone on the team.
+
+    >>> browser = setupBrowser(auth='Basic member@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~myteam/+members')
+    >>> print_members(browser.contents, 'activemembers')
+    Foo Bar
+    Gold Member
+    >>> print_members(browser.contents, 'proposedmembers')
+    No Privileges Person
+
+== Team Page ==
+
+An unauthorized user cannot see the recently approved members, 
+recently applied members, or the membership summary on the ~myteam page.
+
+    >>> nopriv_browser.open('http://launchpad.dev/~myteam')
+    >>> soup = Soup(nopriv_browser.contents)
+    >>> soup.find('div', id='recently-approved')
+    >>> soup.find('div', id='recently-applied')
+    >>> soup.find('table', id='membership-summary')
+    <...You are not allowed to view this team's membership...
+
+A team member will be able to see these parts of the team page.
+
+    >>> browser.open('http://launchpad.dev/~myteam')
+    >>> soup = Soup(browser.contents)
+    >>> soup.find('div', id='recently-approved')
+    <div class="portlet" id="recently-approved">
+    ...
+    <a href="/~member">Gold Member (member)</a>...
+
+
+    >>> soup.find('div', id='recently-applied')
+    <div class="portlet" id="recently-applied">
+    ... 
+    <a href="/~no-priv">No Privileges Person (no-priv)</a>...
+
+    >>> soup.find('table', id='membership-summary')
+    <...2 active members...1 proposed members...
