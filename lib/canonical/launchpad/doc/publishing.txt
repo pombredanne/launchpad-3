@@ -106,6 +106,46 @@ Files published are accessible via the files property:
  [(u'alsa-utils_1.0.8-1ubuntu1.dsc', 'dsc',
    u'http://launchpad.dev/ubuntu/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
 
+
+== Deletion and obsolescence ==
+
+ArchivePublisherBase, which is common to SourcePackagePublishingHistory
+and BinaryPackagePublishingHistory, contains the methods requestDeletion
+and requestObsolescence.  These will change the publishing record to
+the states DELETED and OBSOLETE respectively.
+
+requestDeletion requires a removed_by (IPerson) and optionally a
+removal_comment argument.
+
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+  >>> modified_spph = spph.requestDeletion(sabdfl, "testing deletion")
+
+Inspecting the modified record shows it's ready for domination:
+
+  >>> modified_spph.status
+  <DBItem PackagePublishingStatus.DELETED, (4) Deleted>
+  >>> modified_spph.datesuperseded
+  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+  >>> modified_spph.removed_by.name
+  u'sabdfl'
+  >>> modified_spph.removal_comment
+  u'testing deletion'
+
+requstObsolescence takes no additional arguments:
+
+  >>> modified_spph = spph.requestObsolescence()
+
+Inspecting the modified record shows it's ready for death row (obsoleted
+publications skip domination because domination only works in post-release
+pockets for stable distroseries):
+
+  >>> modified_spph.status
+  <DBItem PackagePublishingStatus.OBSOLETE, (5) Obsolete>
+  >>> modified_spph.scheduleddeletiondate
+  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+
+
 == Secure Source Publishing ==
 
 'secure_record' returns a ISecureSourcePackagePublishing instance
@@ -120,9 +160,10 @@ IArchiveSafePublisher.
  >>> sspph.embargo
  False
 
+
 == Binary and Binary File Publishing ===
 
-Symetric behaviour is offered for BinaryPackagePublishing,
+Symmetric behaviour is offered for BinaryPackagePublishing,
 BinaryPackageFile and ISecureBinaryPackagePublishingHistory
 
  >>> from canonical.launchpad.database import BinaryPackagePublishingHistory

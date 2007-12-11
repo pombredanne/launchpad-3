@@ -11,7 +11,7 @@ import re
 import socket
 import urllib
 import urllib2
-import urlparse
+from urlparse import urlunparse
 import ClientCookie
 import xml.parsers.expat
 from email.Utils import parseaddr
@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTrackerType, BugWatchErrorType, CreateBugParams,
     IBugWatchSet, IDistribution, IExternalBugTracker, ILaunchpadCelebrities,
     IPersonSet, PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+from canonical.launchpad.webapp.url import urlparse
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
@@ -776,8 +777,7 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
         # urllib2 (and does subclass it), so this is probably a
         # bug. -- Gavin Panella, 2007-08-27
 
-        scheme, host, path, params, query, fragment = (
-            urlparse.urlparse(newurl))
+        scheme, host, path, params, query, fragment = urlparse(newurl)
 
         # If we can, skip the login page and submit credentials
         # directly. The query should contain a 'return' parameter
@@ -793,7 +793,7 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
                 log.warn("Mantis redirected us to the login page "
                     "but did not set a return path.")
             query = urllib.urlencode(query, True)
-            newurl = urlparse.urlunparse(
+            newurl = urlunparse(
                 (scheme, host, path, params, query, fragment))
 
         # XXX: Previous versions of the Mantis external bug tracker
@@ -1341,6 +1341,7 @@ class Trac(ExternalBugTracker):
             #      We should follow dupes if possible.
             'duplicate': BugTaskStatus.CONFIRMED,
             'fixed': BugTaskStatus.FIXRELEASED,
+            'closed': BugTaskStatus.FIXRELEASED,
             'invalid': BugTaskStatus.INVALID,
             'new': BugTaskStatus.NEW,
             'open': BugTaskStatus.NEW,

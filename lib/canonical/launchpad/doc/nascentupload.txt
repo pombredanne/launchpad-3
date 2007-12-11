@@ -397,6 +397,8 @@ processing log messages, then it can be further checked in Soyuz
 production mailbox.
 
   >>> print nocopyright_src.warning_message
+  <BLANKLINE>
+  Upload Warnings:
   No copyright file found.
 
 Nothing is stored in the SPR.copyright field.
