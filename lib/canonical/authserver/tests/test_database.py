@@ -640,6 +640,34 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
             current_db_time < self.getNextMirrorTime(hosted_branch_id),
             "Branch next_mirror_time not updated.")
 
+    def test_requestMirror_private(self):
+        # requestMirror can be used to request the mirror of a private branch.
+        store = DatabaseUserDetailsStorageV2(None)
+
+        # salgado is a member of landscape-developers.
+        person_set = getUtility(IPersonSet)
+        salgado = person_set.getByName('salgado')
+        landscape_dev = person_set.getByName('landscape-developers')
+        self.assertTrue(
+            salgado.inTeam(landscape_dev),
+            "salgado should be in landscape-developers team, but isn't.")
+
+        branch_id = store._createBranchInteraction(
+            'salgado', 'landscape-developers', 'landscape',
+            'some-branch')
+
+        cur = cursor()
+        cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
+        [current_db_time] = cur.fetchone()
+
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(branch_id)
+
+        self.assertTrue(
+            current_db_time < self.getNextMirrorTime(branch_id),
+            "Branch next_mirror_time not updated.")
+
+
     def test_mirrorComplete_resets_mirror_request(self):
         # After successfully mirroring a branch, next_mirror_time should be
         # set to NULL.
