@@ -256,9 +256,9 @@ imported fuzzy is still on).
      5. fifth              e-from-LP               None                    *
      6. sixth              None                    None                    *
 
-We can notice that we have 4 translations, with "second" imported one
-now considered 'changed in LP', and two new translations through Launchpad
-("d-from-LP" and "e-from-LP"):
+We can notice that we have 4 translations (fuzzy messages are not considered
+translated), with "second" imported one now considered 'changed in LP', and
+two new translations through Launchpad ("d-from-LP" and "e-from-LP"):
 
     >>> print_pofile_stats(firefox_serbian)
     total: 6
@@ -266,7 +266,6 @@ now considered 'changed in LP', and two new translations through Launchpad
       imported: 2
         changed: 1
       new: 2
-
 
 Common next step is having a new package upload which provides us with
 updated translations upstream.  The "second" message translation is changed,
@@ -326,9 +325,9 @@ preference to translations done inside Launchpad over imported ones.
      5. fifth              e-from-LP               e                       *
      6. sixth              f                       f                       *
 
-With this latest import, we've got five non-fuzzy messages, but since we
-are preferring Launchpad-done translations, we now have 5 translations,
-but 3 of them are marked as 'changed in LP':
+With this latest import, we've got five non-fuzzy messages, which are all
+considered 'translated'. Since we are preferring Launchpad-done translations,
+three of them are marked as 'changed in LP':
 
     >>> print_pofile_stats(firefox_serbian)
     total: 6
@@ -336,7 +335,6 @@ but 3 of them are marked as 'changed in LP':
       imported: 5
         changed: 3
       new: 0
-
 
 A new translation for "second" message through Launchpad is added.  We also
 do another translator (i.e. not from a package) update, where we remove the
