@@ -8,22 +8,14 @@ __all__ = [
     'fix_plurals_in_all_pofiles',
     ]
 
-import datetime
-import os
-import sys
-import tempfile
-
-from zope.component import getUtility
-
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.translationmessage import TranslationMessage
 from canonical.database.sqlbase import sqlvalues, cursor
-from canonical.launchpad.interfaces import (
-    IDistributionSet, ILanguagePackSet, IVPOExportSet, LanguagePackType)
 from canonical.launchpad.translationformat.gettext_po_parser import (
     POHeader, plural_form_mapper)
+
 
 def get_mapping_for_pofile_plurals(pofile):
     """Check if POFile plural forms need fixing.
@@ -45,10 +37,11 @@ def get_mapping_for_pofile_plurals(pofile):
 
         return None
 
+
 def fix_pofile_plurals(pofile, logger, ztm):
     """Fix plural translations for PO files with mismatching headers."""
-    plural_forms_mapping = get_mapping_for_pofile_plurals(pofile)
     logger.debug("Checking if PO file %d needs fixing" % pofile.id)
+    plural_forms_mapping = get_mapping_for_pofile_plurals(pofile)
     if plural_forms_mapping is not None:
         logger.info("Fixing PO file %s" % pofile.title)
         pluralmessages = TranslationMessage.select("""
@@ -73,6 +66,7 @@ def fix_pofile_plurals(pofile, logger, ztm):
         header.has_plural_forms = True
         pofile.header = header.getRawContent()
         ztm.commit()
+
 
 def fix_plurals_in_all_pofiles(ztm, logger):
     """Go through all PO files and fix plural forms if needed."""

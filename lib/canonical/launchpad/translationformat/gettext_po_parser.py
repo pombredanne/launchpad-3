@@ -29,62 +29,64 @@ from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFileData, TranslationMessageData)
 from canonical.launchpad.versioninfo import revno
 
-def plural_form_mapper(first_formula, second_formula):
+class BadPluralExpression(Exception):
+    pass
+
+def make_plural_function(expression):
+    """Create a lambda function for C-like plural expression."""
+
+    # Guard against '**' usage: it's not useful in evaluating
+    # plural forms, yet can be used to introduce a DoS.
+    if expression is None or expression.find('**') != -1:
+        raise BadPluralExpression
+
+    try:
+        function = gettext.c2py(expression)
+    except ValueError, SyntaxError:
+        raise BadPluralExpression
+
+    return function
+
+def plural_form_mapper(first_expression, second_expression):
     """Maps plural forms from one plural formula to the other.
 
     Returns a dict indexed by indices in the `first_formula`
     pointing to corresponding indices in the `second_formula`.
     """
-
-    def evaluate_formula_for_range(formula, range):
-        """Evaluate a plural `formula` for a list of numbers.
-
-        Return a dict indexed by plural form indices and containing
-        all numbers from the `range` that correspond to it.
-        """
-        # gettext.c2py parses a plural form expression as can be found in
-        # PO files, and returns a lambda function with number as the
-        # parameter.  We are using it as 'gettext.c2py' to avoid warnings
-        # from importfascist about it not being in gettext.__all__.
-        plural_function = gettext.c2py(formula)
-        cache = {}
-        for number in range:
-            pluralform = plural_function(number)
-            if cache.has_key(pluralform):
-                cache[pluralform].add(number)
-            else:
-                cache[pluralform] = set([number])
-        return cache
-
-    # We can have a maximum of 4 plural forms.
-    no_change_map = {0:0, 1:1, 2:2, 3:3}
-
-    if first_formula is None or second_formula is None:
-        return no_change_map
+    identity_map = {0:0, 1:1, 2:2, 3:3}
     try:
-        first_cache = evaluate_formula_for_range(first_formula, range(0,1000))
-        first_count = len(first_cache.keys())
-        second_cache = evaluate_formula_for_range(second_formula, range(0,1000))
-        second_count = len(second_cache.keys())
-    except ValueError:
-        return no_change_map
+        first_func = make_plural_function(first_expression)
+        second_func = make_plural_function(second_expression)
+    except BadPluralExpression:
+        return identity_map
 
-    if first_count != second_count:
-        return no_change_map
+    # Can we create a mapping from one expression to the other?
+    mapping = {}
+    for n in range(1000):
+        try:
+            first_form = first_func(n)
+            second_form = second_func(n)
+        except (ArithmeticError, TypeError):
+            return identity_map
 
-    # Let's compare and match these plural forms.
-    match_count = 0
-    result = no_change_map
-    for pluralform in first_cache:
-        for compare_to in second_cache:
-            if first_cache[pluralform]==second_cache[compare_to]:
-                result[pluralform] = compare_to
-                match_count += 1
+        # Is either result out of range?
+        if first_form not in [0,1,2,3] or second_form not in [0,1,2,3]:
+            return identity_map
 
-    if match_count == first_count:
-        return result
-    else:
-        return no_change_map
+        if first_form in mapping:
+            if mapping[first_form] != second_form:
+                return identity_map
+        else:
+            mapping[first_form] = second_form
+
+    # The mapping must be an isomorphism.
+    if sorted(mapping.keys()) != sorted(mapping.values()):
+        return identity_map
+
+    # Fill in the remaining inputs from the identity map:
+    result = identity_map.copy()
+    result.update(mapping)
+    return result
 
 class POSyntaxWarning(Warning):
     """ Syntax warning in a po file """

@@ -433,6 +433,27 @@ we'll get a return matrix which indicates no change (so we import them as-is):
     >>> plural_form_mapper('n>1', 'n!=1')
     {0: 0, 1: 1, 2: 2, 3: 3}
 
+Or, if we get the same number of plural forms, yet they are not being
+mapped to each other:
+
+    >>> plural_form_mapper('(n!=1)? 1: 2', 'n!=1')
+    {0: 0, 1: 1, 2: 2, 3: 3}
+
+We also get the identity mapping if we try to use a dangerous '**' operator
+in any of the plural forms:
+
+    >>> plural_form_mapper('n**n**n', 'n!=1')
+    {0: 0, 1: 1, 2: 2, 3: 3}
+
+Using floats should also be disallowed, and we should get an identity
+mapping as well:
+
+    >>> plural_form_mapper('(1.0 & n) == 1', 'n!=1')
+    {0: 0, 1: 1, 2: 2, 3: 3}
+    >>> plural_form_mapper('(1E-1 & n) == 1', 'n!=1')
+    {0: 0, 1: 1, 2: 2, 3: 3}
+
+
 Let's parse a Spanish PO file with an inverted plural formula.
 
     >>> spanish_pluralformula = 'n!=1'
