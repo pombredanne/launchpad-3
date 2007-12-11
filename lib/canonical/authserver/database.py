@@ -392,7 +392,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         """
         branch = getUtility(IBranchSet).get(branchID)
         # We don't really care who requests a mirror of a branch.
-        removeSecurityProxy(branch).requestMirror()
+        branch.requestMirror()
         return True
 
     def getBranchInformation(self, loginID, userName, productName, branchName):
