@@ -77,10 +77,8 @@ class Server(smtpd.SMTPServer):
         command line, the local host's real SMTPd, or it is dropped into
         Mailman's incoming queue.
         """
-        #print 'PROCESS MESSAGE'
         message = message_from_string(data)
         message['Received'] = 'by smtp2mbox'
-        #print message.as_string()
         # Get the localpart of the recipient.  If this localpart corresponds
         # to an existing mailing list, drop the message into Mailman's
         # incoming queue.
@@ -107,12 +105,10 @@ class Server(smtpd.SMTPServer):
 
     def _deliver_to_mailman(self, listname, message):
         """Deliver the message to Mailman's incoming queue."""
-        #print 'DELIVER TO MAILMAN:', listname
         inject(listname, message)
 
     def _deliver_to_smtpd(self, message):
         """Send the message on to the real SMTPd."""
-        #print 'DELIVER TO SMTP'
         recipients = message.get_all('to', [])
         recipients.extend(message.get_all('cc', []))
         server = smtplib.SMTP()
@@ -122,7 +118,6 @@ class Server(smtpd.SMTPServer):
 
     def _deliver_to_mbox(self, message):
         """Store the message in the mbox."""
-        #print 'DELIVER TO MBOX:', self._mbox.name
         print >> self._mbox, message
         print >> self._mbox
         self._mbox.flush()

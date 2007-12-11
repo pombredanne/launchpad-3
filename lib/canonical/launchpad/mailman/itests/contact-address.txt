@@ -132,7 +132,6 @@ sent to its mailing list.
     <BLANKLINE>
     ...
 
-
 If we change the team's contact address to something other than the
 launchpad-hosted mailing list, though, the notifications won't be sent to the
 mailing list.
