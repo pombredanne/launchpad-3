@@ -64,7 +64,9 @@ class Server(smtpd.SMTPServer):
         """Open a resetting channel."""
         conn, addr = self.accept()
         channel = ResettingChannel(self, conn, addr)
-        # Do not dispatch to base class!
+        # Do not dispatch to the base class, since that would create a second
+        # channel that we don't want, and wouldn't support the extended RSET
+        # command anyway.
 
     def resetMailboxFile(self):
         """Re-open the mailbox file."""
@@ -99,22 +101,14 @@ class Server(smtpd.SMTPServer):
         elif local in list_names():
             # It's destined for a mailing list.
             self._deliver_to_mailman(local, message)
-        # As a last resort, send it off to the upstream SMTPd.
+        # Otherwise, it's destined for a 'normal' user.  Store this in the
+        # mbox so the doctests can check it.
         else:
-            self._deliver_to_smtpd(message)
+            self._deliver_to_mbox(message)
 
     def _deliver_to_mailman(self, listname, message):
         """Deliver the message to Mailman's incoming queue."""
         inject(listname, message)
-
-    def _deliver_to_smtpd(self, message):
-        """Send the message on to the real SMTPd."""
-        recipients = message.get_all('to', [])
-        recipients.extend(message.get_all('cc', []))
-        server = smtplib.SMTP()
-        server.connect(config.zopeless.smtp_host, config.zopeless.smtp_port)
-        server.sendmail(message['from'], recipients, message.as_string())
-        server.quit()
 
     def _deliver_to_mbox(self, message):
         """Store the message in the mbox."""

@@ -123,6 +123,8 @@ class SMTPServer:
 
     def _command(self, command):
         """Send a command to the child process."""
+        # Import this here since sys.path won't be set up properly when this
+        # module is imported.
         from canonical.config import config
         s = socket.socket()
         s.connect(config.mailman.smtp)
@@ -143,8 +145,6 @@ class SMTPServer:
         # Parent -- wait until the child is listening.
         until = datetime.datetime.now() + datetime.timedelta(seconds=10)
         s = socket.socket()
-        # Import this here since sys.path won't be set up properly when this
-        # module is imported.
         while datetime.datetime.now() < until:
             try:
                 self._command('QUIT')
