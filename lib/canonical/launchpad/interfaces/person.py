@@ -901,13 +901,17 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
+
+        <team> can be the id of a team, an SQLObject representing the
+        ITeam, or the name of the team.
         """
 
     def clearInTeamCache():
         """Clears the person's inTeam cache.
 
         To be used when membership changes are enacted. Only meant to be
-        used between TeamMembership and Person objects."""
+        used between TeamMembership and Person objects.
+        """
 
     def lastShippedRequest():
         """Return this person's last shipped request, or None."""

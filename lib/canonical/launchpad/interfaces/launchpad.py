@@ -80,7 +80,7 @@ __all__ = [
 
 
 class NameNotAvailable(KeyError):
-    """You're trying to set a name, but the name you chose is not available."""
+    """You're trying to set a name, but the name you chose isn't available."""
 
 
 class ILaunchpadCelebrities(Interface):
@@ -95,6 +95,7 @@ class ILaunchpadCelebrities(Interface):
     debbugs = Attribute("The Debian Bug Tracker")
     debian = Attribute("The Debian Distribution.")
     janitor = Attribute("The Launchpad Janitor.")
+    katie = Attribute("The Debian Auto-sync user.")
     launchpad = Attribute("The Launchpad project.")
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     launchpad_developers = Attribute("The Launchpad development team.")
@@ -112,7 +113,7 @@ class ILaunchpadCelebrities(Interface):
 class ICrowd(Interface):
 
     def __contains__(person_or_team_or_anything):
-        """Return True if the given person_or_team_or_anything is in the crowd.
+        """Return True if person_or_team_or_anything is in the crowd.
 
         Note that a particular crowd can choose to answer 'True' to this
         question, if that is what it is supposed to do.  So, crowds that
@@ -409,7 +410,7 @@ class IStructuralHeaderPresentation(Interface):
 
 
 class IStructuralObjectPresentation(IStructuralHeaderPresentation):
-    """Adapter for less common aspects of a structural object's presentation."""
+    """Adapter for less common parts of a structural object's presentation."""
 
     def listChildren(num):
         """List up to num children.  Return empty string for none of these"""
@@ -418,10 +419,16 @@ class IStructuralObjectPresentation(IStructuralHeaderPresentation):
         """Return the total number of children."""
 
     def listAltChildren(num):
-        """List up to num alternative children.  Return None if alt children are not supported"""
+        """List up to num alternative children.
+
+        Return None if alt children are not supported.
+        """
 
     def countAltChildren():
-        """Return the total number of alt children.  Will be called only if listAltChildren returns something."""
+        """Return the total number of alt children.
+
+        Will be called only if listAltChildren returns something.
+        """
 
 
 class IAppFrontPageSearchForm(Interface):
@@ -468,7 +475,10 @@ class INotificationRecipientSet(Interface):
         """Return an iterator of the recipients."""
 
     def __contains__(person_or_email):
-        """Return true if person or email is in the notification recipients list."""
+        """Is person_or_email in the notification recipients list?
+
+        Return true if person or email is in the notification recipients list.
+        """
 
     def __nonzero__():
         """Return False when the set is empty, True when it's not."""
