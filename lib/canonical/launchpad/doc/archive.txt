@@ -139,6 +139,17 @@ Using 'distroseries' filter:
   ...      distroseries=breezy_autotest).count()
   1
 
+Using 'pocket' filter:
+
+  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+  >>> cprov_archive.getPublishedSources(
+  ...      distroseries=warty, pocket=PackagePublishingPocket.RELEASE).count()
+  2
+
+  >>> cprov_archive.getPublishedSources(
+  ...      distroseries=warty, pocket=PackagePublishingPocket.UPDATES).count()
+  0
+
 Combining 'name' and 'distroseries' filters:
 
   >>> cprov_archive.getPublishedSources(
@@ -303,6 +314,26 @@ Using 'distroarchseries' filter:
   >>> cprov_archive.getPublishedOnDiskBinaries(
   ...      distroarchseries=[warty_i386, warty_hppa]).count()
   3
+
+Using 'pocket' filter:
+
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      distroarchseries=warty_i386,
+  ...      pocket=PackagePublishingPocket.RELEASE).count()
+  2
+  >>> cprov_archive.getPublishedOnDiskBinaries(
+  ...      distroarchseries=warty_i386,
+  ...      pocket=PackagePublishingPocket.RELEASE).count()
+  2
+
+  >>> cprov_archive.getAllPublishedBinaries(
+  ...      distroarchseries=warty_i386,
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  0
+  >>> cprov_archive.getPublishedOnDiskBinaries(
+  ...      distroarchseries=warty_i386,
+  ...      pocket=PackagePublishingPocket.UPDATES).count()
+  0
 
 Associating 'name' and 'status' filters:
 
@@ -482,7 +513,6 @@ Or return build records in a specific status:
 
 And finally build records target to a given pocket:
 
-  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
   >>> cprov_archive.getBuildRecords(
   ...     pocket=PackagePublishingPocket.RELEASE).count()
   4
