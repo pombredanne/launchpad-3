@@ -1,0 +1,99 @@
+= Handling Logouts During the Login Process =
+
+If the user is logged in when the OpenID authentication request
+begins, they are presented with a form that asks them if they want to
+agree to log in to the remote site, without entering their password a
+second time.
+
+Now if the user manages to log out before posting this form, we can
+not authenticate them to the remote site.  If this occurs, the user
+should instead be prompted to log in.
+
+There are a number of ways that this situation could occur:
+
+ 1. The user logs out in another browser window or tab.
+ 2. The user clicks the "I'm someone else" button, uses the browser's
+    back button, then resubmits the form.
+
+To test this, we will first authenticate to the Launchpad OpenID
+provider:
+
+    >>> from openid.consumer.consumer import Consumer
+    >>> from openid.fetchers import setDefaultFetcher
+    >>> from openid.store.memstore import MemoryStore
+    >>> from canonical.launchpad.ftests.openidhelpers import (
+    ...     complete_from_browser, install_consumer,
+    ...     make_endpoint, uninstall_consumer, PublisherFetcher)
+    >>> install_consumer()
+    >>> setDefaultFetcher(PublisherFetcher())
+
+
+    >>> openid_store = MemoryStore()
+    >>> consumer = Consumer(session={}, store=openid_store)
+
+    >>> request = consumer.beginWithoutDiscovery(make_endpoint(
+    ...     PROTOCOL_URI, 'http://openid.launchpad.dev/+id/sabdfl_oid'))
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+
+    >>> print browser.title
+    Launchpad Login Service
+    >>> browser.getControl(name='field.email').value = 'mark@hbd.com'
+    >>> browser.getControl(name='field.password').value = 'test'
+    >>> browser.getControl('Continue').click()
+
+    >>> print browser.url
+    http://launchpad.dev/+openid-consumer?...
+    >>> info = complete_from_browser(consumer, browser)
+    >>> print info.status
+    success
+    >>> print info.endpoint.claimed_id
+    http://openid.launchpad.dev/+id/sabdfl_oid
+
+Now lets begin another OpenID authentication request, which will
+present a different form asking if we want to authenticate:
+
+    >>> request = consumer.beginWithoutDiscovery(make_endpoint(
+    ...     PROTOCOL_URI, 'http://openid.launchpad.dev/+id/sabdfl_oid'))
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+    >>> print browser.title
+    Authenticate to http://launchpad.dev/
+
+We will now log out using the "I'm someone else" button, which will
+present us with the login form.  We will then go back to the first
+page:
+
+    >>> browser.getControl("I'm Someone Else").click()
+    >>> print browser.title
+    Launchpad Login Service
+    >>> browser.goBack()
+    >>> print browser.title
+    Authenticate to http://launchpad.dev/
+
+Now when we try to sign in, we should be directed to the login page:
+
+    >>> browser.getControl('Sign In').click()
+    >>> print browser.title
+    Launchpad Login Service
+
+From this point, we can log in as usual:
+
+    >>> browser.getControl(name='field.email').value = 'mark@hbd.com'
+    >>> browser.getControl(name='field.password').value = 'test'
+    >>> browser.getControl('Continue').click()
+
+    >>> print browser.url
+    http://launchpad.dev/+openid-consumer?...
+    >>> info = complete_from_browser(consumer, browser)
+    >>> print info.status
+    success
+    >>> print info.endpoint.claimed_id
+    http://openid.launchpad.dev/+id/sabdfl_oid
+
+
+== Cleanup ==
+
+    >>> setDefaultFetcher(None)
+    >>> uninstall_consumer()
+

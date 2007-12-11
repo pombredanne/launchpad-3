@@ -52,14 +52,17 @@ from canonical.launchpad.interfaces import (
     IBugTask,
     IBugTaskDelta,
     IBugTaskSet,
+    IDistribution,
     IDistributionSourcePackage,
     IDistroBugTask,
     IDistroSeries,
     IDistroSeriesBugTask,
     ILaunchpadCelebrities,
     INullBugTask,
+    IProduct,
     IProductSeries,
     IProductSeriesBugTask,
+    IProject,
     IProjectMilestone,
     ISourcePackage,
     IUpstreamBugTask,
@@ -969,7 +972,8 @@ class BugTaskSet:
         "dateassigned": "BugTask.dateassigned",
         "datecreated": "BugTask.datecreated",
         "date_last_updated": "Bug.date_last_updated",
-        "date_closed": "BugTask.date_closed"}
+        "date_closed": "BugTask.date_closed",
+        "number_of_duplicates": "Bug.number_of_duplicates"}
 
     _open_resolved_upstream = """
                 EXISTS (
@@ -1545,7 +1549,7 @@ class BugTaskSet:
 
         return bugtask
 
-    def findExpirableBugTasks(self, min_days_old, bug=None):
+    def findExpirableBugTasks(self, min_days_old, bug=None, target=None):
         """See `IBugTaskSet`.
 
         The list of Incomplete bugtasks is selected from products and
@@ -1557,7 +1561,8 @@ class BugTaskSet:
         2. The bug is not a duplicate.
         3. The bug has at least one message (a request for more information).
         4. The bug does not have any other valid bugtasks.
-        5. The bugtask belongs to a project with official_malone is True.
+        5. The bugtask belongs to a project with enable_bug_expiration set
+           to True.
         6. The bugtask has the status Incomplete.
         7. The bugtask is not assigned to anyone.
         8. The bugtask does not have a milestone.
@@ -1575,32 +1580,18 @@ class BugTaskSet:
             bug_clause = ''
         else:
             bug_clause = 'AND Bug.id = %s' % sqlvalues(bug)
+
+        (target_join, target_clause) = self._getTargetJoinAndClause(target)
         all_bugtasks = BugTask.select("""
-            BugTask.id IN (
+            BugTask.bug = Bug.id
+            AND BugTask.id IN (
                 SELECT BugTask.id
                 FROM BugTask
                 INNER JOIN Bug
                     ON BugTask.bug = Bug.id
-                LEFT OUTER JOIN Distribution
-                    ON distribution = Distribution.id
-                    AND Distribution.official_malone IS TRUE
-                LEFT OUTER JOIN DistroSeries
-                    ON distroseries = DistroSeries.id
-                    AND DistroSeries.distribution IN (
-                        SELECT id FROM Distribution
-                        WHERE official_malone IS TRUE)
-                LEFT OUTER JOIN Product
-                    ON product = Product.id
-                    AND Product.official_malone IS TRUE
-                LEFT OUTER JOIN ProductSeries
-                    ON productseries = ProductSeries.id
-                    AND ProductSeries.product IN (
-                        SELECT id FROM Product WHERE official_malone IS TRUE)
+                """ + target_join + """
                 WHERE
-                    (Distribution.id IS NOT NULL
-                     OR DistroSeries.id IS NOT NULL
-                     OR Product.id IS NOT NULL
-                     OR ProductSeries.id IS NOT NULL)
+                """ + target_clause + """
                 """ + bug_clause + """
                     AND BugTask.status = %s
                     AND BugTask.assignee IS NULL
@@ -1609,7 +1600,9 @@ class BugTaskSet:
                     AND Bug.duplicateof IS NULL
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
-            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old))
+            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old),
+            clauseTables=['Bug'],
+            orderBy='Bug.date_last_updated')
         bugtasks = []
         for bugtask in all_bugtasks:
             # Only add bugtasks that are not product or distribution
@@ -1617,7 +1610,93 @@ class BugTaskSet:
             if (bugtask.bug.permits_expiration
                 and bugtask.conjoined_master is None):
                 bugtasks.append(bugtask)
-        return bugtasks
+
+        def date_last_updated_key(bugtask):
+            """Return the date the bugtask was last updated."""
+            return bugtask.bug.date_last_updated
+
+        return sorted(bugtasks, key=date_last_updated_key)
+
+    def _getTargetJoinAndClause(self, target):
+        """Return a SQL join clause to a `BugTarget`.
+
+        :param target: A supported BugTarget or None. The target param must
+            be either a Distribution, DistroSeries, Product, or ProductSeries.
+            If target is None, the clause joins BugTask to all the supported
+            BugTarget tables.
+        :raises NotImplementedError: If the target is an IProject,
+            ISourcePackage, or an IDistributionSourcePackage.
+        :raises AssertionError: If the target is not a known implementer of
+            `IBugTarget`
+        """
+        bugtarget_joins = dict(
+            distribution="""
+                LEFT OUTER JOIN Distribution
+                    ON BugTask.distribution = Distribution.id
+                    AND Distribution.enable_bug_expiration IS TRUE""",
+            distroseries="""
+                LEFT OUTER JOIN DistroSeries
+                    ON BugTask.distroseries = DistroSeries.id
+                    AND DistroSeries.distribution IN (
+                        SELECT id FROM Distribution
+                        WHERE enable_bug_expiration IS TRUE)""",
+            product="""
+                LEFT OUTER JOIN Product
+                    ON BugTask.product = Product.id
+                    AND Product.enable_bug_expiration IS TRUE""",
+            productseries="""
+                LEFT OUTER JOIN ProductSeries
+                    ON BugTask.productseries = ProductSeries.id
+                    AND ProductSeries.product IN (
+                        SELECT id FROM Product
+                        WHERE enable_bug_expiration IS TRUE)""")
+        if target is None:
+            target_join = """
+                %(distribution)s %(distroseries)s
+                %(product)s %(productseries)s""" % bugtarget_joins
+            target_clause = """
+                (Distribution.id IS NOT NULL
+                 OR DistroSeries.id IS NOT NULL
+                 OR Product.id IS NOT NULL
+                 OR ProductSeries.id IS NOT NULL)"""
+        elif IDistribution.providedBy(target):
+            target_join = """
+                %(distribution)s %(distroseries)s""" % bugtarget_joins
+            target_clause = """
+                (BugTask.distribution = %s
+                 OR DistroSeries.distribution = %s)""" % sqlvalues(
+                        target, target)
+        elif IDistroSeries.providedBy(target):
+            target_join = """
+                INNER JOIN DistroSeries
+                    ON BugTask.distroseries = DistroSeries.id
+                    AND DistroSeries.distribution IN (
+                        SELECT id FROM Distribution
+                        WHERE enable_bug_expiration IS TRUE)"""
+            target_clause = "DistroSeries.id = %s" % sqlvalues(target)
+        elif IProduct.providedBy(target):
+            target_join = """
+                 %(product)s %(productseries)s""" % bugtarget_joins
+            target_clause = """
+                (BugTask.product = %s
+                 OR ProductSeries.product = %s)""" % sqlvalues(target, target)
+        elif IProductSeries.providedBy(target):
+            target_join = """
+                INNER JOIN ProductSeries
+                    ON BugTask.productseries = ProductSeries.id
+                    AND ProductSeries.product IN (
+                        SELECT id FROM Product
+                        WHERE enable_bug_expiration IS TRUE)"""
+            target_clause = "ProductSeries.id = %s" % sqlvalues(target)
+        elif (IProject.providedBy(target)
+              or ISourcePackage.providedBy(target)
+              or IDistributionSourcePackage.providedBy(target)):
+            raise NotImplementedError(
+                "BugTarget %s is not supported by ." % target)
+        else:
+            raise AssertionError("Unknown BugTarget type.")
+
+        return (target_join, target_clause)
 
     def maintainedBugTasks(self, person, minimportance=None,
                            showclosed=False, orderBy=None, user=None):

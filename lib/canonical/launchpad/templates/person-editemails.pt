@@ -11,13 +11,13 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Your e-mail addresses</h1>
+      <h1>Change e-mail settings</h1>
     </metal:heading>
 
 <div metal:fill-slot="main">
-
   <div metal:use-macro="context/@@launchpad_form/form">
     <metal:extra-info fill-slot="extra_info">
+      <h2>Your e-mail addresses</h2>
       <tal:block condition="context/preferredemail">
         <p>Your preferred contact address for all Launchpad e-mail is:</p>
         <ul id="preferred-email">
@@ -74,8 +74,39 @@
       </table>
     </metal:widgets>
     <metal:widgets fill-slot="buttons" />
-
   </div>
+
+
+  <form action=""
+        method="post" enctype="multipart/form-data"
+        accept-charset="UTF-8" tal:condition="view/mailing_list_widgets">
+
+    <h2>Mailing list subscriptions</h2>
+
+    <p>You're a member of one or more teams with active mailing
+      lists. You can subscribe to a team's mailing list using any of
+      your verified email addresses.</p>
+
+    <table class="form">
+      <thead>
+        <th>For this mailing list...</th>
+        <td><strong>Subscribe with this address</strong></td>
+      </thead>
+      <tbody>
+        <metal:block tal:repeat="widget view/mailing_list_widgets">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </metal:block>
+          <tr>
+            <td></td>
+            <td>
+              <input tal:replace="structure
+                     view/action_update_subscriptions/render" />
+            </td>
+          </tr>
+      </tbody>
+    </table>
+  </form>
+
 </div>
 
 <div metal:fill-slot="help">
@@ -97,6 +128,16 @@
     preferred email address. Email from Launchpad will be sent to
     this address.
   </p>
+
+  <p id="mailing-list-help" tal:condition="view/mailing_list_widgets">
+    This page also displays mailing lists for all of your
+    teams that have them. You can subscribe to a list using any of
+    your verified email addresses, or you can choose to have messages
+    delivered to your preferred address. That way, if you change your
+    preferred address, you won't have to change all your subscriptions
+    to use the new address.
+  </p>
+
 </div>
 
 </body>

@@ -363,7 +363,6 @@ contents:
   >>> ed_mixed_dsc.binary
   'ed'
 
-
 The DSC is GPG-signed most of the time, so we can guarantee who was
 the author. The DSCFile class implements the same address parsing
 methods found in ChangesFile:
@@ -434,6 +433,9 @@ The DSCUploadedFile also inherit the ability to verify file sanity:
   >>> errors = ed_broken_dsc_file.verify()
   >>> [str(err) for err in errors]
   ['File ed_0.2-20.diff.gz mentioned in the changes has a checksum mismatch. f9e1e5f13725f581919e9bfd62272a05 != f9e1e5f13725f581919e9bfd6227ffff']
+
+
+=== Sub-DSC file lookup ===
 
 
 == SourceUploadFile ==
