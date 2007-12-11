@@ -1,0 +1,23 @@
+<table
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="summary" id="proposal-summary">
+
+  <tbody>
+    <tr>
+      <th>Status:</th>
+      <td tal:content="context/queue_status/title">High</td>
+    </tr>
+    <tal:reviewed condition="context/reviewer">
+      <tr>
+        <th>Reviewed by:</th>
+        <td tal:content="structure context/reviewer/fmt:link">Some User</td>
+      </tr>
+      <tr>
+        <th>Reviewed revision:</th>
+        <td tal:content="view/reviewed_revision_number">1234</td>
+      </tr>
+    </tal:reviewed>
+  </tbody>
+</table>
