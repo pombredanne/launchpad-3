@@ -153,7 +153,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
                    'summary', 'baseurl', 'aliases', 'contactdetails']
 
     custom_widget('summary', TextAreaWidget, width=30, height=5)
-    custom_widget('aliases', WhitespaceDelimitedListWidget)
+    custom_widget('aliases', WhitespaceDelimitedListWidget, height=3)
 
     @action('Change', name='change')
     def change_action(self, action, data):

@@ -134,6 +134,11 @@ class IBugTracker(Interface):
         description=_(
             'The top-level URL for the bug tracker. This must be accurate '
             'so that Launchpad can link to external bug reports.'))
+    aliases = List(
+        title=_('Base URL aliases'),
+        description=_(
+            'A list of URLs that all lead to the same bug tracker.'),
+        value_type=URIField(), required=False)
     owner = Int(title=_('Owner'))
     contactdetails = Text(
         title=_('Contact details'),
@@ -142,9 +147,6 @@ class IBugTracker(Interface):
             'example, its administrators can be contacted about a security '
             'breach).'),
         required=False)
-    aliases = List(
-        title=_('Other aliases to this bug tracker.'),
-        value_type=URIField(), required=False)
     watches = Attribute('The remote watches on this bug tracker.')
     projects = Attribute('The projects that use this bug tracker.')
     products = Attribute('The products that use this bug tracker.')
