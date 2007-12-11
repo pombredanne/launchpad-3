@@ -175,7 +175,7 @@ class Dominator:
         # At this point only PUBLISHED (ancient versions) or PENDING (
         # multiple overrides/copies) publications should be given. We
         # tolerate SUPERSEDED architecture-independent binaries, because
-        # they are dominated atomically once the first publication is
+        # they are dominated automatically once the first publication is
         # processed.
         if dominated.status not in [PUBLISHED, PENDING]:
             arch_independent = (

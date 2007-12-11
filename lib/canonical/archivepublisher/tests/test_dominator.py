@@ -27,8 +27,12 @@ class TestDominator(TestNativePublishingBase):
          * Dominated: foo_1.0 & foo-bin_1.0_i386
          * Dominant: foo_1.1 & foo-bin_1.1_i386
 
-        Return the corresponding 'secure' records for: dominant_source,
-        dominant_binaries, dominated_source, dominated_binaries.
+        Return the corresponding 'secure' records as a 4-tuple:
+
+         (dominant_source, dominant_binary, dominated_source,
+          dominated_binary)
+
+        Note that as an optimization the binaries list is already unpacked.
         """
         foo_10_source = self.getPubSource(
             version='1.0', architecturehintlist='i386',
@@ -52,31 +56,32 @@ class TestDominator(TestNativePublishingBase):
         dominated_binaries = [self.getSecureBinary(pub)
                               for pub in foo_10_binaries]
 
-        return (dominant_source, dominant_binaries,
-                dominated_source, dominated_binaries)
+        return (dominant_source, dominant_binaries[0],
+                dominated_source, dominated_binaries[0])
 
     def testSourceDomination(self):
         """Test source domination procedure."""
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
 
-        [dominant_source, dominant_binaries, dominated_source,
-         dominated_binaries] = self.createSimpleDominationContext()
+        [dominant_source, dominant_binary, dominated_source,
+         dominated_binary] = self.createSimpleDominationContext()
 
-        # The source domination procedure relies in the right order of
-        # the input list and in the awkward dictionary form where the key
-        # is the source package name.
+        # The _dominate* test methods require a dictionary where the source
+        # package name is the key. The key's value is a list of
+        # source or binary packages representing dominant, the first element
+        # and dominated, the subsequents.
         source_input = {'foo': [dominant_source, dominated_source]}
 
         dominator._dominateSource(source_input)
         flush_database_updates()
 
-        # Dominant version remains correctly published.
+        # The dominant version remains correctly published.
         dominant  = self.checkSourcePublication(
             dominant_source, PackagePublishingStatus.PUBLISHED)
         self.assertTrue(dominant.supersededby is None)
         self.assertTrue(dominant.datesuperseded is None)
 
-        # Dominated version is correctly dominated.
+        # The dominated version is correctly dominated.
         dominated  = self.checkSourcePublication(
             dominated_source, PackagePublishingStatus.SUPERSEDED)
         self.assertEqual(
@@ -94,10 +99,8 @@ class TestDominator(TestNativePublishingBase):
         """Test overall binary domination procedure."""
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
 
-        [dominant_source, dominant_binaries, dominated_source,
-         dominated_binaries] = self.createSimpleDominationContext()
-        [dominated] = dominated_binaries
-        [dominant] = dominant_binaries
+        [dominant_source, dominant, dominated_source,
+         dominated] = self.createSimpleDominationContext()
 
         # See comment about domination input format and ordering above.
         binary_input = {'foo-bin': [dominant, dominated]}
@@ -129,10 +132,8 @@ class TestDominator(TestNativePublishingBase):
         """Test binary domination unit procedure."""
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
 
-        [dominant_source, dominant_binaries, dominated_source,
-         dominated_binaries] = self.createSimpleDominationContext()
-        [dominated] = dominated_binaries
-        [dominant] = dominant_binaries
+        [dominant_source, dominant, dominated_source,
+         dominated] = self.createSimpleDominationContext()
 
         dominator._dominateBinary(dominated, dominant)
         flush_database_updates()
@@ -157,10 +158,8 @@ class TestDominator(TestNativePublishingBase):
         """
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
 
-        [dominant_source, dominant_binaries, dominated_source,
-         dominated_binaries] = self.createSimpleDominationContext()
-        [dominated] = dominated_binaries
-        [dominant] = dominant_binaries
+        [dominant_source, dominant, dominated_source,
+         dominated] = self.createSimpleDominationContext()
 
         # Let's modify the domination candidate, so it will look wrong to
         # _dominateBinary which will raise because it's a architecture
