@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BadStateTransition',
     'BranchMergeProposalStatus',
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
@@ -33,6 +34,10 @@ class UserNotBranchReviewer(Exception):
     isn't set then any user in the team of the owner of the branch is
     considered a reviewer.
     """
+
+
+class BadStateTransition(Exception):
+    """The user requested a state transition that is not possible."""
 
 
 class BranchMergeProposalStatus(DBEnumeratedType):
@@ -101,7 +106,8 @@ class IBranchMergeProposal(Interface):
     target_branch = Choice(
         title=_('Target Branch'),
         vocabulary='Branch', required=True, readonly=True,
-        description=_("The branch that the source branch will be merged into."))
+        description=_(
+            "The branch that the source branch will be merged into."))
 
     dependent_branch = Choice(
         title=_('Dependent Branch'),
@@ -140,6 +146,13 @@ class IBranchMergeProposal(Interface):
         title=_('Date Review Requested'), required=False, readonly=True)
     date_reviewed = Datetime(
         title=_('Date Reviewed'), required=False, readonly=True)
+
+    def setAsWorkInProgress():
+        """Set the state of the merge proposal to 'Work in progress'.
+
+        This is often useful if the proposal was rejected and is being worked
+        on again, or if the code failed to merge and requires rework.
+        """
 
     def requestReview():
         """Set the state of merge proposal to 'Needs review'.
@@ -202,7 +215,7 @@ class IBranchMergeProposal(Interface):
         :type merge_reporter: ``Person``
         """
 
-    def personCanReview(reviewer):
+    def isPersonValidReviewer(reviewer):
         """Return true if the `reviewer` is able to review the proposal.
 
         There is an attribute on branches called `reviewer` which allows

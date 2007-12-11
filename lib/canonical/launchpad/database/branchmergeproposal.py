@@ -19,7 +19,8 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.interfaces import (
-    BranchMergeProposalStatus, IBranchMergeProposal, UserNotBranchReviewer)
+    BadStateTransition, BranchMergeProposalStatus, IBranchMergeProposal,
+    UserNotBranchReviewer)
 
 
 class BranchMergeProposal(SQLBase):
@@ -64,14 +65,21 @@ class BranchMergeProposal(SQLBase):
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
 
+    def setAsWorkInProgress():
+        """See `IBranchMergeProposal`."""
+        if self.queue_status == BranchMergeProposalStatus.MERGED:
+            raise BadStateTransition('Merged proposals cannot change state.')
+        self.queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
+        self.date_review_requested = None
+
     def requestReview(self):
         """See `IBranchMergeProposal`."""
         if self.queue_status == BranchMergeProposalStatus.MERGED:
-            raise AssertionError('Merged proposals cannot change state.')
+            raise BadStateTransition('Merged proposals cannot change state.')
         self.queue_status = BranchMergeProposalStatus.NEEDS_REVIEW
         self.date_review_requested = UTC_NOW
 
-    def personCanReview(self, reviewer):
+    def isPersonValidReviewer(self, reviewer):
         """See `IBranchMergeProposal`."""
         target_review_team = self.target_branch.reviewer
         if target_review_team is None:
@@ -87,11 +95,11 @@ class BranchMergeProposal(SQLBase):
     def _reviewProposal(self, reviewer, next_state, revision_id):
         """Set the proposal to one of the two review statuses."""
         # Check the reviewer can review the code for the target branch.
-        if not self.personCanReview(reviewer):
+        if not self.isPersonValidReviewer(reviewer):
             raise UserNotBranchReviewer
         # Check the current state of the proposal.
         if not self.isReviewable():
-            raise AssertionError(
+            raise BadStateTransition(
                 'Invalid state transition for merge proposal: %s -> %s'
                 % (self.queue_state.title, next_state.title))
         self.queue_status = next_state

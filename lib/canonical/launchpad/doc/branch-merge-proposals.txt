@@ -90,15 +90,19 @@ first.
 == Merge proposal states ==
 
 A branch merge proposal can be in one of several states:
- * Work in progress
- * Review requested
- * Code approved
- * Rejected
- * Merged
- * Code failed to merge
+
+    >>> from canonical.launchpad.interfaces import BranchMergeProposalStatus
+    >>> for state in BranchMergeProposalStatus:
+    ...     print state.title
+    Work in progress
+    Review requested
+    Code approved
+    Rejected
+    Merged
+    Code failed to merge
 
 When a merge proposal is initially created, it is in the "Work in
-progress" state.
+progress" state.  The only state that is a final state is "Merged".
 
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
@@ -110,14 +114,6 @@ progress" state.
     ...     sample_person, target_branch, date_created=now.next())
     >>> print proposal.queue_status.title
     Work in progress
-
-Directly setting the queue_status is not possible.
-
-    >>> from canonical.launchpad.interfaces import BranchMergeProposalStatus
-    >>> proposal.queue_status = BranchMergeProposalStatus.CODE_APPROVED
-    Traceback (most recent call last):
-    ...
-    ForbiddenAttribute: ('queue_status', <BranchMergeProposal at ...>)
 
 Adjusting the state is done through methods on the merge proposal.
 
@@ -132,17 +128,23 @@ When requesting a review, a timestamp is also recorded.
     >>> proposal.date_review_requested is not None
     True
 
+Directly setting the queue_status is not possible.
+
+    >>> proposal.queue_status = BranchMergeProposalStatus.CODE_APPROVED
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ('queue_status', <BranchMergeProposal at ...>)
+
 
 === Approving or rejecting code ===
 
 Once code has been reviewed the result of the code review can be
-recoreded either as approved or not approved.
+recorded either as approved or not approved.
 
-There is a limited number of people that are able to make code
-as approved or not.  By default it is anyone that is in the team
-of the owner of the target branch.  If the target branch has specified
-a specific review team, then that review team is used instead to control
-who can sign-off code.
+There is a limited number of people that are able to make code as
+approved or not.  By default the owner of the target branch can sign-off
+code. If the target branch has specified a review team, then we use that
+to control who can sign-off code.
 
 Initially both the reviewer and date_reviewed for a merge proposal
 are not set.
@@ -156,27 +158,32 @@ Since Sample Person is the owner of the target branch they can authorise
 their own code.
 
 When approving code the revision id is recorded as the last approved
-revision.
+revision.  This is to record that the reviewer has approved up to a
+particular revision, and that subsequent revsions added by the branch
+author have not been approved.
 
-    >>> # Revisions can only be added by the scanner, so switch dbuser.
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> from canonical.config import config
-    >>> source_branch_unique_name = source_branch.unique_name
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-    >>> factory.makeRevisionsForBranch(source_branch)
-    >>> commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
-    >>> source_branch = branch_set.getByUniqueName(source_branch_unique_name)
+    >>> def add_some_revisions_to_branch(branch, factory, branch_set):
+    ...     # Revisions can only be added by the scanner, so switch dbuser.
+    ...     from canonical.database.sqlbase import commit
+    ...     from canonical.testing import LaunchpadZopelessLayer
+    ...     from canonical.config import config
+    ...     branch_unique_name = branch.unique_name
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+    ...     factory.makeRevisionsForBranch(branch)
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+    ...     return branch_set.getByUniqueName(source_branch_unique_name)
+    >>> source_branch = add_some_revisions_to_branch(
+    ...     branch, factory, branch_set)
     >>> proposal = source_branch.landing_targets[0]
     >>> source_branch.revision_count
     5
-    >>> tip = source_branch.getTipRevision()
 
     >>> # Reget the sample person as we shouldn't be reusing objects across
     >>> # transaction boundaries.
     >>> sample_person = person_set.getByEmail('test@canonical.com')
+    >>> tip = source_branch.getTipRevision()
     >>> proposal.approveBranch(sample_person, tip.revision_id)
     >>> print proposal.reviewer.displayname
     Sample Person
@@ -187,16 +194,16 @@ revision.
     >>> proposal.reviewed_revision_id == tip.revision_id
     True
 
-Code that has been accepted can also be set to rejected.
-Rejected branches have the reviewed_revision_id reset to nothing.
+Code that has been accepted can also be set to rejected.  Rejected
+branches also record the revision that was rejected.
 
-    >>> proposal.rejectBranch(sample_person)
+    >>> proposal.rejectBranch(sample_person, tip.revision_id)
     >>> print proposal.queue_status.title
     Rejected
-    >>> print proposal.reviewed_revision_id
-    None
+    >>> proposal.reviewed_revision_id == tip.revision_id
+    True
 
-Resubmit proposals can also be updated to be approved.
+Rejected proposals can also be updated to be approved.
 
     >>> proposal.approveBranch(sample_person, tip.revision_id)
     >>> print proposal.queue_status.title
@@ -214,6 +221,13 @@ review.
     >>> proposal.requestReview()
     >>> print proposal.queue_status.title
     Needs review
+
+Branches that had been rejected or approved that have subsequently been
+set back into the needs review state still retain their old reviewed
+revision id.
+
+    >>> proposal.reviewed_revision_id == tip.revision_id
+    True
 
 If the target branch has specified a specific reviewer, then only
 a user in the reviewer team can approve or reject the branch.
@@ -243,6 +257,13 @@ merge failed.
     >>> proposal.mergeFailed(merger=sample_person)
     >>> print proposal.queue_status.title
     Code failed to merge
+
+Proposals that are in the "Code failed to merge" state can be set back
+to any other state.
+
+    >>> proposal.setAsWorkInProgress()
+    >>> print proposal.queue_status.title
+    Work in progress
 
 
 == Getting a list of previous merge targets ==
