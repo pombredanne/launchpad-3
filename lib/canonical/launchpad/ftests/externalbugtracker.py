@@ -197,8 +197,8 @@ class TestBugzilla(Bugzilla):
     buglist_page = 'buglist.cgi'
     bug_id_form_element = 'bug_id'
 
-    def __init__(self, baseurl, version=None):
-        Bugzilla.__init__(self, baseurl, version=version)
+    def __init__(self, txn, baseurl, version=None):
+        Bugzilla.__init__(self, txn, baseurl, version=version)
         self.bugzilla_bugs = self._getBugsToTest()
 
     def _getBugsToTest(self):
@@ -440,8 +440,8 @@ class TestDebBugs(DebBugs):
     existing debbugs db.
     """
 
-    def __init__(self, bugtracker, bugs):
-        DebBugs.__init__(self, bugtracker)
+    def __init__(self, txn, bugtracker, bugs):
+        DebBugs.__init__(self, txn, bugtracker)
         self.bugs = bugs
 
     def _findBug(self, bug_id):

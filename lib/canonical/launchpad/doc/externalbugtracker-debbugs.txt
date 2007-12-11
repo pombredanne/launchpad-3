@@ -20,15 +20,17 @@ You can specify the db_location explicitly:
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> import transaction
+    >>> txn = transaction.get()
     >>> debbugs = new_bugtracker(BugTrackerType.DEBBUGS)
-    >>> external_debbugs = DebBugs(debbugs, db_location=test_db_location)
+    >>> external_debbugs = DebBugs(txn, debbugs, db_location=test_db_location)
     >>> external_debbugs.db_location == test_db_location
     True
 
 Or, if we create a DebBugs instance without specifying a db location, it
 will use the config value:
 
-    >>> external_debbugs = DebBugs(debbugs)
+    >>> external_debbugs = DebBugs(txn, debbugs)
     >>> external_debbugs.db_location == config.malone.debbugs_db_location
     True
 
@@ -347,7 +349,7 @@ gets notified about it.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestDebBugs, TestDebianBug)
     >>> external_debbugs = TestDebBugs(
-    ...     debbugs, {'1234': TestDebianBug(package='no-such-package')})
+    ...     txn, debbugs, {'1234': TestDebianBug(package='no-such-package')})
     >>> print debian.getSourcePackage('no-such-package')
     None
     >>> bug = external_debbugs.importBug(debian, '1234')
@@ -367,7 +369,7 @@ After the bug watch has been created for the imported bug, the status is
 synced immediately.
 
     >>> external_debbugs = TestDebBugs(
-    ...     debbugs, {'1234': TestDebianBug(status='done')})
+    ...     txn, debbugs, {'1234': TestDebianBug(status='done')})
     >>> expected_status = external_debbugs.convertRemoteStatus(
     ...     external_debbugs.getRemoteStatus('1234'))
     >>> expected_status.name
@@ -390,7 +392,7 @@ valid e-mail address), he still won't be subscribed to the imported bug.
     True
     >>> no_priv_bug = TestDebianBug(
     ...     reporter_email=no_priv.preferredemail.email)
-    >>> external_debbugs = TestDebBugs(debbugs, {'1234': no_priv_bug})
+    >>> external_debbugs = TestDebBugs(txn, debbugs, {'1234': no_priv_bug})
     >>> bug = external_debbugs.importBug(debian, '1234')
     INFO:...:Updating 1 watches on http://bugs.debian.org
 

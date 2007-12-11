@@ -9,14 +9,20 @@ import tempfile
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.sqlbase import cursor
+from canonical.launchpad.components.externalbugtracker import (
+    ExternalBugTracker)
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskImportance, BugTaskStatus, IBugSet,
-    IEmailAddressSet, IPersonSet, IProductSet, PersonCreationRationale)
+    IEmailAddressSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
+    PersonCreationRationale)
 from canonical.launchpad.scripts import bugimport
 from canonical.launchpad.scripts.bugimport import ET
+from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
 
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests import login, logout
@@ -686,6 +692,114 @@ class BugImportScriptTestCase(unittest.TestCase):
         bug = getUtility(IBugSet).get(bug_id)
         self.assertEqual(bug.title, 'A test bug')
         self.assertEqual(bug.bugtasks[0].product.name, 'netapplet')
+
+
+class TestBugWatch:
+    """A mock bug watch object.
+
+    Guaranteed to trigger a DB failure if its `failing` attribute is True."""
+    def __init__(self, id, failing):
+        """Initialize the object."""
+        self.id = id
+        self.remotebug = str(self.id)
+        self.bug = getUtility(IBugSet).get(self.id)
+        self.failing = failing
+
+    def updateStatus(self, new_remote_status, new_malone_status):
+        """See `IBugWatch`."""
+        for bugtask in self.bug.bugtasks:
+            if bugtask.conjoined_master is not None:
+                bugtask = bugtask.conjoined_master
+            else:
+                bugtask = bugtask
+            bugtask = removeSecurityProxy(bugtask)
+            bugtask.status = new_malone_status
+            if self.failing:
+                cur = cursor()
+                cur.execute("""
+                UPDATE BugTask
+                SET assignee = -1
+                WHERE id = %s
+                """ % bugtask.id)
+                cur.close()
+
+
+class TestResultSequence(list):
+    """A mock `SelectResults` object.
+
+    Returns a list with two bug watch objects, with a `count` method."""
+    def __init__(self):
+        super(TestResultSequence, self).__init__()
+        self.append(TestBugWatch(1, True))
+        self.append(TestBugWatch(2, False))
+
+    def count(self):
+        """See `SelectResults`."""
+        return len(self)
+
+
+class TestBugTracker:
+    """A mock `BugTracker` object."""
+    baseurl = 'http://example.com/'
+    
+    def getBugWatchesNeedingUpdate(self, hours):
+        """See `IBugTracker`."""
+        return TestResultSequence()
+
+
+class TestExternalBugTracker(ExternalBugTracker):
+    """A mock `ExternalBugTracker` object."""
+    def getRemoteBug(self, bug_id):
+        return bug_id, {}
+    
+    def getRemoteStatus(self, bug_id):
+        """See `ExternalBugTracker`."""
+        return 'TEST_STATUS'
+
+    def convertRemoteStatus(self, remote_status):
+        """See `ExternalBugTracker`."""
+        return BugTaskStatus.FIXRELEASED
+
+    def _getBugWatch(self, bug_watch_id):
+        """See `ExternalBugTracker`."""
+        if bug_watch_id == 1:
+            return TestBugWatch(1, True)
+        else:
+            return TestBugWatch(2, False)
+
+class TestBugWatchUpdater(BugWatchUpdater):
+    """A mock `BugWatchUpdater` object."""
+    
+    def _getExternalBugTracker(self, bug_tracker):
+        """See `BugWatchUpdater`."""
+        return TestExternalBugTracker(self.txn, bug_tracker)
+
+
+class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
+    """Test that errors in the bugwatch import process don't
+    invalidate the entire run.
+    """
+    layer = LaunchpadZopelessLayer
+
+    def test_checkbugwatches_error_recovery(self):
+        # First, we verify that both bugs we'll try to change
+        # have a status other than `FIXRELEASED`.
+        self.assertNotEqual(getUtility(IBugSet).get(1).bugtasks[0].status,
+                            BugTaskStatus.FIXRELEASED)
+        self.assertNotEqual(getUtility(IBugSet).get(2).bugtasks[0].status,
+                            BugTaskStatus.FIXRELEASED)
+        # We use a test bug tracker, which is guaranteed to
+        # try and update two bug watches - the first will
+        # trigger a DB error, the second updates successfully.
+        bug_tracker = TestBugTracker()
+        bug_watch_updater = TestBugWatchUpdater(self.layer.txn)
+        bug_watch_updater.updateBugTracker(bug_tracker)
+        # We verify that the first bug watch didn't update the status,
+        # and the second did.
+        self.assertNotEqual(getUtility(IBugSet).get(1).bugtasks[0].status,
+                            BugTaskStatus.FIXRELEASED)
+        self.assertEqual(getUtility(IBugSet).get(2).bugtasks[0].status,
+                         BugTaskStatus.FIXRELEASED)
 
 
 def test_suite():

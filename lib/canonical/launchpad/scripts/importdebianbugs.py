@@ -15,7 +15,8 @@ from canonical.launchpad.components.externalbugtracker import (
 def import_debian_bugs(bugs_to_import):
     """Import the specified Debian bugs into Launchpad."""
     debbugs = getUtility(ILaunchpadCelebrities).debbugs
-    external_debbugs = get_external_bugtracker(debbugs)
+    txn = None # TODO
+    external_debbugs = get_external_bugtracker(txn, debbugs)
     debian = getUtility(ILaunchpadCelebrities).debian
     for debian_bug in bugs_to_import:
         existing_bug_ids = [

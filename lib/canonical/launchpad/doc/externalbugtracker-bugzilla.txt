@@ -16,8 +16,11 @@ version we can't parse, UnparseableBugTrackerVersion is raised:
     ...     new_bugtracker)
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
     >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> import transaction
+    >>> txn = transaction.get()
     >>> invalid_version_bugzilla = new_bugtracker(BugTrackerType.BUGZILLA)
-    >>> external_bugzilla = Bugzilla(invalid_version_bugzilla, version='A.B4')
+    >>> external_bugzilla = Bugzilla(
+    ...     txn, invalid_version_bugzilla, version='A.B4')
     Traceback (most recent call last):
       ...
     UnparseableBugTrackerVersion:
@@ -31,7 +34,7 @@ slightly modified implementation.
     ...     get_external_bugtracker)
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
-    >>> external_bugzilla = TestBugzilla(gnome_bugzilla)
+    >>> external_bugzilla = TestBugzilla(txn, gnome_bugzilla)
     >>> version = external_bugzilla._probe_version()
     >>> version
     (2, 20)
@@ -223,7 +226,7 @@ We need to create a new ExternalBugtracker for the Mozilla tracker:
 
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName(
     ...     'mozilla.org')
-    >>> external_bugzilla = TestBugzilla(mozilla_bugzilla, '2.20')
+    >>> external_bugzilla = TestBugzilla(txn, mozilla_bugzilla, '2.20')
     >>> external_bugzilla.bugzilla_bugs = {1234: ('ASSIGNED', '')}
 
 Let's update the bug watch, and see that the linked bug watch got

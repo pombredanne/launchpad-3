@@ -16,7 +16,9 @@ IExternalBugTracker.
     >>> from canonical.launchpad.interfaces import (
     ...     BugTrackerType, IExternalBugTracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> trac = Trac(new_bugtracker(BugTrackerType.TRAC))
+    >>> import transaction
+    >>> txn = transaction.get()
+    >>> trac = Trac(txn, new_bugtracker(BugTrackerType.TRAC))
     >>> verifyObject(IExternalBugTracker, trac)
     True
 
@@ -73,6 +75,7 @@ working network connection.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestTrac
     >>> trac = TestTrac(
+    ...     txn,
     ...     new_bugtracker(BugTrackerType.TRAC, base_url='http://test.trac/'))
     >>> trac.initializeRemoteBugDB([1])
     >>> sorted(trac.bugs.keys())
@@ -156,7 +159,7 @@ Collect the Example.com watches:
 
 And have a Trac instance process them:
 
-    >>> trac = TestTrac(example_bug_tracker)
+    >>> trac = TestTrac(txn, example_bug_tracker)
     >>> trac.updateBugWatches(example_bug_tracker.watches)
     INFO:...:Updating 1 watches on http://bugs.some.where
 
