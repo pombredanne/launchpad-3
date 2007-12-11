@@ -9,8 +9,8 @@ This page includes a table that lists all the releases of this source
 package in this distribution, and the packaging associations for this
 source package in each series of this distribution.
 
-When there are multiple releases for a package in a given distribution
-series, most columns are not duplicated.
+If there are multiple releases in a distroseries, the values that are
+identical are not repeated.
  
     >>> content = anon_browser.contents
     >>> print extract_text(find_tag_by_id(content, 'packaging'))
