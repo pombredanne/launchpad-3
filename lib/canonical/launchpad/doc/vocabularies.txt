@@ -1574,6 +1574,39 @@ Inactive projects and project groups are not available.
     Tomcat (Product) - class Product
 
 
+== FeaturedProjectVocabulary ==
+
+The featured project vocabulary contains all the projects that are
+featured on Launchpad. It is a subset of the
+DistributionOrProductOrProjectVocabulary (defined using the
+_clauseTables).
+
+    >>> featured_project_vocabulary = vocabulary_registry.get(
+    ...     None, 'FeaturedProject')
+    >>> len(featured_project_vocabulary)
+    9
+
+    >>> for term in featured_project_vocabulary:
+    ...     print term.token, term.value.displayname, term.title
+    applets         Gnome Applets        The Gnome Panel Applets (Product)
+    bazaar          Bazaar               Bazaar (Product)
+    firefox         Mozilla Firefox      Mozilla Firefox (Product)
+    gentoo          Gentoo               The Gentoo Linux (Distribution)
+    gnome           GNOME                The GNOME Project (Project)
+    gnome-terminal  GNOME Terminal       The GNOME Terminal Emulator (Product)
+    mozilla the     Mozilla Project      The Mozilla Project (Project)
+    thunderbird     Mozilla Thunderbird  Mozilla Thunderbird (Product)
+    ubuntu          Ubuntu               Ubuntu Linux (Distribution)
+
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> ubuntu in featured_project_vocabulary
+    True
+
+    >>> debian = getUtility(ILaunchpadCelebrities).debian
+    >>> debian in featured_project_vocabulary
+    False
+
+
 === FAQ ===
 
 The FAQ vocabulary contains all the FAQs available in a particular
