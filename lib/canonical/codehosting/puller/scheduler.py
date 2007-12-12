@@ -311,7 +311,11 @@ class PullerMaster:
         return deferred
 
     def run(self, available_oops_prefixes):
-        oops_prefix = available_oops_prefixes.pop()
+        try:
+            oops_prefix = available_oops_prefixes.pop()
+        except KeyError:
+            self.unexpectedError(failure.Failure())
+            raise
         def restore_oops_prefix(pass_through):
             available_oops_prefixes.add(oops_prefix)
             return pass_through

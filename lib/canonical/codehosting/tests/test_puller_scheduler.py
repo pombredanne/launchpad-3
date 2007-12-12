@@ -28,7 +28,7 @@ from canonical.testing import LaunchpadScriptLayer, reset_logging
 from canonical.launchpad.webapp import errorlog
 
 
-def _getLastOOPSFilename(time):
+def _get_last_oops_filename(time):
     """Find the filename for the OOPS logged at 'time'."""
     utility = errorlog.globalErrorUtility
     error_dir = utility.errordir(time)
@@ -39,9 +39,9 @@ def _getLastOOPSFilename(time):
         error_dir, '%05d.%s%s' % (second_in_day, oops_prefix, oops_id))
 
 
-def getLastOOPS(time):
+def get_last_oops(time):
     """Return the OOPS report logged at the given time."""
-    oops_filename = _getLastOOPSFilename(time)
+    oops_filename = _get_last_oops_filename(time)
     oops_report = open(oops_filename, 'r')
     try:
         return errorlog.ErrorReport.read(oops_report)
@@ -412,7 +412,7 @@ class TestPullerMaster(TrialTestCase):
         now = datetime.now(pytz.timezone('UTC'))
         fail = makeFailure(RuntimeError, 'error message')
         self.eventHandler.unexpectedError(fail, now)
-        oops = getLastOOPS(now)
+        oops = get_last_oops(now)
         self.assertEqual(fail.getTraceback(), oops.tb_text)
         self.assertEqual('error message', oops.value)
         self.assertEqual('RuntimeError', oops.type)
@@ -518,6 +518,18 @@ class TestPullerMasterSpawning(TrialTestCase):
         def check_available_prefixes(ignored):
             self.assertEqual(available_oops_prefixes, set(['foo']))
         return deferred.addErrback(check_available_prefixes)
+
+    def test_logOopsWhenNoAvailablePrefix(self):
+        # If there are no available prefixes then we log an OOPS and re-raise
+        # the error, aborting the rest of the run.
+        available_oops_prefixes = set()
+        unexpected_errors = []
+        def unexpectedError(failure, now=None):
+            unexpected_errors.append(failure)
+        self.eventHandler.unexpectedError = unexpectedError
+        self.assertRaises(
+            KeyError, self.eventHandler.run, available_oops_prefixes)
+        self.assertEqual(unexpected_errors[0].type, KeyError)
 
 
 class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
