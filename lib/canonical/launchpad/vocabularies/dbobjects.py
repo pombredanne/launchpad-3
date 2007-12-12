@@ -86,7 +86,7 @@ from canonical.launchpad.interfaces import (
     IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget, ILanguage,
     ILaunchBag, IMailingListSet, IMilestoneSet, IPerson, IPersonSet,
     IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
-    IUpstreamBugTask, LanguagePackType, MailingListStatus)
+    IUpstreamBugTask, LanguagePackType, MailingListStatus, PersonVisibility)
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
@@ -600,38 +600,59 @@ class ValidPersonOrTeamVocabulary(
             extra_clause = ""
 
         if not text:
-            query = 'Person.id = ValidPersonOrTeamCache.id' + extra_clause
+            # XXX Edwin Grubbs 2007-12-11 bug=175758
+            # Checking if visibility is None is only 
+            # necessary until next cycle.
+            query = """
+                Person.id = ValidPersonOrTeamCache.id
+                AND (Person.visibility IS NULL OR Person.visibility = %s)
+                """ % quote(PersonVisibility.PUBLIC)
+            query += extra_clause
             return Person.select(
                 query, clauseTables=['ValidPersonOrTeamCache'])
 
+        # XXX Edwin Grubbs 2007-12-11 bug=175758
+        # Checking if visibility is None is only 
+        # necessary until next cycle.
         name_match_query = """
             Person.id = ValidPersonOrTeamCache.id
             AND Person.fti @@ ftq(%s)
-            """ % quote(text)
+            AND (Person.visibility IS NULL OR Person.visibility = %s)
+            """ % (quote(text), quote(PersonVisibility.PRIVATE_MEMBERSHIP))
         name_match_query += extra_clause
         name_matches = Person.select(
             name_match_query, clauseTables=['ValidPersonOrTeamCache'])
 
         # Note that we must use lower(email) LIKE rather than ILIKE
         # as ILIKE no longer appears to be hitting the index under PG8.0
+
+        # XXX Edwin Grubbs 2007-12-11 bug=175758
+        # Checking if visibility is None is only 
+        # necessary until next cycle.
         email_match_query = """
             EmailAddress.person = Person.id
             AND EmailAddress.person = ValidPersonOrTeamCache.id
             AND EmailAddress.status IN %s
             AND lower(email) LIKE %s || '%%'
+            AND (Person.visibility IS NULL OR Person.visibility = %s)
             """ % (sqlvalues(EmailAddressStatus.VALIDATED,
                              EmailAddressStatus.PREFERRED),
-                   quote_like(text))
+                   quote_like(text),
+                   quote(PersonVisibility.PRIVATE_MEMBERSHIP))
         email_match_query += extra_clause
         email_matches = Person.select(
             email_match_query,
             clauseTables=['ValidPersonOrTeamCache', 'EmailAddress'])
 
+        # XXX Edwin Grubbs 2007-12-11 bug=175758
+        # Checking if visibility is None is only 
+        # necessary until next cycle.
         ircid_match_query = """
             IRCId.person = Person.id
             AND IRCId.person = ValidPersonOrTeamCache.id
             AND lower(IRCId.nickname) = %s
-            """ % quote(text)
+            AND (Person.visibility IS NULL OR Person.visibility = %s)
+            """ % (quote(text), quote(PersonVisibility.PRIVATE_MEMBERSHIP))
         ircid_match_query += extra_clause
         ircid_matches = Person.select(
             ircid_match_query,

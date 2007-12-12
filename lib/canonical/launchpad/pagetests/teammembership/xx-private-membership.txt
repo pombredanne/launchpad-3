@@ -18,10 +18,16 @@ team, he still does not get access to the membership list.
     ...     'member@canonical.com', PersonCreationRationale.UNKNOWN,
     ...     name='member', displayname="Gold Member", password='test')
     >>> member.setPreferredEmail(email)
-    >>> team_owner = person_set.getByName('name16')
+    >>> team_owner, email = person_set.createPersonAndEmail(
+    ...     'owner@canonical.com', PersonCreationRationale.UNKNOWN,
+    ...     name='owner', displayname="Owner", password='test')
+    >>> team_owner.setPreferredEmail(email)
+    >>> team_owner = person_set.getByName('owner')
     >>> nopriv = person_set.getByName('no-priv')
     >>> team = person_set.newTeam(team_owner, 'myteam', 'My Team')
     >>> team.addMember(member, team_owner)
+    >>> other_team = person_set.newTeam(team_owner, 'otherteam', 'Other Team')
+    >>> other_team.addMember(team_owner, team_owner)
     >>> member in team.activemembers
     True
     >>> nopriv.join(team)
@@ -55,8 +61,8 @@ The +members page is visible for someone on the team.
     >>> browser = setupBrowser(auth='Basic member@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~myteam/+members')
     >>> print_members(browser.contents, 'activemembers')
-    Foo Bar
     Gold Member
+    Owner
     >>> print_members(browser.contents, 'proposedmembers')
     No Privileges Person
 
@@ -93,29 +99,24 @@ would be time consuming to gather the entire team membership, we don't want
 to leak this information, so MyTeam which has a private membership won't
 show up below.
 
-    >>> nopriv_browser.open('http://launchpad.dev/~name16')
+    >>> nopriv_browser.open('http://launchpad.dev/~owner')
     >>> soup = Soup(nopriv_browser.contents)
     >>> a_tags = soup.find('table', id='participation').findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
-    [u'GuadaMen']
-    [u'Launchpad Administrators']
-    [u'Launchpad Buildd Admins']
-    [u'Launchpad Developers']
+    [u'Other Team']
 
 Another member of MyTeam can see that name16 (Foo Bar) participates in
 MyTeam.
 
-    >>> browser.open('http://launchpad.dev/~name16')
+    >>> browser.open('http://launchpad.dev/~owner')
     >>> soup = Soup(browser.contents)
     >>> a_tags = soup.find('table', id='participation').findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
-    [u'GuadaMen']
-    [u'Launchpad Administrators']
-    [u'Launchpad Buildd Admins']
-    [u'Launchpad Developers']
     [u'My Team']
+    [u'Other Team']
+
 
 == Teams with Icons ==
 
@@ -131,24 +132,138 @@ First, we will add a custom icon to two teams.
     >>> set_branding(admin_browser)
     >>> admin_browser.getControl('Change Branding').click()
 
-    >>> admin_browser.open('http://launchpad.dev/~guadamen/+branding')
+    >>> admin_browser.open('http://launchpad.dev/~otherteam/+branding')
     >>> set_branding(admin_browser)
     >>> admin_browser.getControl('Change Branding').click()
 
-The user which is not on myteam will only see guadamen listed.
+The user which is not on myteam will only see otherteam listed.
 
-    >>> nopriv_browser.open('http://launchpad.dev/~name16')
+    >>> nopriv_browser.open('http://launchpad.dev/~owner')
     >>> soup = Soup(nopriv_browser.contents)
     >>> for a_tag in soup.find('div', id='teams_with_icons').findAll('a'):
     ...     print a_tag['href']
-    /~guadamen
+    /~otherteam
 
 
-Another team member will see both the icons for guadamen and myteam.
+Another team member will see both the icons for otherteam and myteam.
 
-    >>> browser.open('http://launchpad.dev/~name16')
+    >>> browser.open('http://launchpad.dev/~owner')
     >>> soup = Soup(browser.contents)
     >>> for a_tag in soup.find('div', id='teams_with_icons').findAll('a'):
     ...     print a_tag['href']
-    /~guadamen
     /~myteam
+    /~otherteam
+
+
+== Restrict Answer Contact ==
+
+To prevent leaking information about a team's private membership, do not
+let that team be added as an answer contact for a project.
+
+Even the owner of the team with private membership should not see
+MyTeam as an option in the form.
+
+    >>> owner_browser = setupBrowser(auth='Basic owner@canonical.com:test')
+    >>> owner_browser.open(
+    ...     'http://answers.launchpad.dev/ubuntu/+answer-contact')
+    >>> soup = Soup(owner_browser.contents)
+    >>> team_div = soup.find('div', id='answer-contact-teams')
+    >>> for label in team_div.findAll('label'):
+    ...     print label.contents[1]
+    &nbsp;Other Team
+
+
+== Restrict Private Membership Team as SubTeam ==
+
+To prevent leaking information about a team's private membership, do not
+let that team be added as a member of a public team.
+
+    >>> admin_browser.open('http://launchpad.dev/~simple-team/+addmember')
+    >>> admin_browser.getControl('New member').value = 'myteam'
+    >>> admin_browser.getControl('Add Member').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/%7Esimple-team/+addmember'
+    >>> admin_browser.contents
+    '...Constraint not satisfied...'
+
+== Restrict Subscribing to Bugs ==
+
+To prevent leaking information about a team's private membership, do not
+let that team be subscribed to a bug.
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
+    >>> admin_browser.getControl('Person').value = 'myteam'
+    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber'
+    >>> admin_browser.contents
+    '...Constraint not satisfied...'
+
+== Restrict Subscribing to Blueprints ==
+
+To prevent leaking information about a team's private membership, do not
+let that team be subscribed to a blueprint.
+
+    >>> admin_browser.open('http://blueprints.launchpad.dev'
+    ...                    '/firefox/+spec/canvas/+addsubscriber')
+    >>> admin_browser.getControl('Subscriber').value = 'myteam'
+    >>> admin_browser.getControl('Continue').click()
+    >>> admin_browser.url
+    'http://blueprints.launchpad.dev/firefox/+spec/canvas/+addsubscriber'
+    >>> admin_browser.contents
+    '...Constraint not satisfied...'
+
+== Restrict Appointing a Translator ==
+
+To prevent leaking information about a team's private membership, do not
+let that team become a translator.
+
+    >>> admin_browser.open('http://translations.launchpad.dev'
+    ...                    '/+groups/testing-translation-team/+appoint')
+    >>> admin_browser.getControl('Language').value = ['de']
+    >>> admin_browser.getControl('Translator').value = 'myteam'
+    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.url
+    'http://translations.launchpad.dev/+groups/testing-translation-team/+appoint'
+    >>> admin_browser.contents
+    '...Constraint not satisfied...'
+
+== Restrict Project Owner ==
+
+To prevent leaking information about a team's private membership, do not
+let that team be the owner of a project.
+
+    >>> admin_browser.open('http://launchpad.dev/mozilla/+reassign')
+    >>> admin_browser.getControl(name='field.owner').value = 'myteam'
+    >>> admin_browser.getControl('Change Registrant').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/mozilla/+reassign'
+    >>> admin_browser.contents
+    '...The person/team named \'myteam\' is not a valid owner for...'
+
+== Restrict Product Maintainer ==
+
+To prevent leaking information about a team's private membership, do not
+let that team be the maintainer of a product.
+
+    >>> admin_browser.open('http://launchpad.dev/jokosher/+reassign')
+    >>> admin_browser.getControl(name='field.owner').value = 'myteam'
+    >>> admin_browser.getControl('Change Registrant').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/jokosher/+reassign'
+    >>> admin_browser.contents
+    '...The person/team named \'myteam\' is not a valid owner for...'
+
+== Restrict Distro Registrant ==
+
+To prevent leaking information about a team's private membership, do not
+let that team be the registrant of a distribution.
+
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/+reassign')
+    >>> admin_browser.getControl(name='field.owner').value = 'myteam'
+    >>> admin_browser.getControl('Change Registrant').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/ubuntu/+reassign'
+    >>> admin_browser.contents
+    '...The person/team named \'myteam\' is not a valid owner for...'

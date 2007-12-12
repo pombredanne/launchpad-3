@@ -39,7 +39,7 @@ from canonical.launchpad.interfaces import (
     IDistribution, IFAQCollection, ILanguageSet, IProject,
     IQuestionCollection, IQuestionSet, IQuestionTarget,
     ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError,
-    QuestionStatus)
+    PersonVisibility, QuestionStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, Link,
     safe_action, stepto, stepthrough, urlappend)
@@ -620,7 +620,9 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
     @cachedproperty
     def administrated_teams(self):
         """Return the list of teams for which the user is an administrator."""
-        return self.user.getAdministratedTeams()
+        return [team for team in self.user.getAdministratedTeams()
+                if team.visibility is None
+                or team.visibility == PersonVisibility.PUBLIC]
 
     @property
     def initial_values(self):
