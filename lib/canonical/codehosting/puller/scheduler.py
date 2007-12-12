@@ -292,7 +292,7 @@ class PullerMaster:
         self.logger = logger
         self.branch_status_client = client
 
-    def mirror(self):
+    def mirror(self, oops_prefix):
         path_to_script = os.path.join(
             os.path.dirname(
                 os.path.dirname(os.path.dirname(canonical.__file__))),
@@ -302,7 +302,7 @@ class PullerMaster:
         command = [
             sys.executable, path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), self.unique_name,
-            self.branch_type.name, config.launchpad.errorreports.oops_prefix]
+            self.branch_type.name, oops_prefix]
         # Passing env=None means that the subprocess will inherit our
         # environment, and thus our configuration settings. This is necessary
         # to ensure that branches are mirrored to the right place, that
@@ -310,9 +310,14 @@ class PullerMaster:
         reactor.spawnProcess(protocol, sys.executable, command, env=None)
         return deferred
 
-    def run(self):
-        deferred = self.mirror()
+    def run(self, available_oops_prefixes):
+        oops_prefix = available_oops_prefixes.pop()
+        def restore_oops_prefix(pass_through):
+            available_oops_prefixes.add(oops_prefix)
+            return pass_through
+        deferred = self.mirror(oops_prefix)
         deferred.addErrback(self.unexpectedError)
+        deferred.addBoth(restore_oops_prefix)
         return deferred
 
     def startMirroring(self):
@@ -366,8 +371,11 @@ class JobScheduler:
             "config.supermirror.maximum_workers is not defined.")
         semaphore = defer.DeferredSemaphore(
             config.supermirror.maximum_workers)
+        oops_prefixes = set(
+            [config.launchpad.errorreports.oops_prefix + str(i)
+             for i in range(config.supermirror.maximum_workers)])
         deferreds = [
-            semaphore.run(puller_master.run)
+            semaphore.run(puller_master.run, oops_prefixes)
             for puller_master in puller_masters]
         deferred = defer.gatherResults(deferreds)
         deferred.addCallback(self._finishedRunning)

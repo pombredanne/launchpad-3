@@ -463,6 +463,61 @@ class TestPullerMaster(TrialTestCase):
         return deferred.addCallback(checkMirrorFailed)
 
 
+class TestPullerMasterSpawning(TrialTestCase):
+
+    def setUp(self):
+        from twisted.internet import reactor
+        self.status_client = FakeBranchStatusClient()
+        self.arbitrary_branch_id = 1
+        self.eventHandler = scheduler.PullerMaster(
+            self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
+            BranchType.HOSTED, logging.getLogger(), self.status_client)
+        self._realSpawnProcess = reactor.spawnProcess
+        reactor.spawnProcess = self.spawnProcess
+        self.oops_prefixes = []
+
+    def tearDown(self):
+        from twisted.internet import reactor
+        reactor.spawnProcess = self._realSpawnProcess
+
+    def spawnProcess(self, protocol, executable, arguments, env):
+        self.oops_prefixes.append(arguments[-1])
+
+    def test_getsOopsPrefixFromSet(self):
+        # Different workers should have different OOPS prefixes. They get
+        # those prefixes from a limited set of possible prefixes.
+        available_oops_prefixes = set(['foo'])
+        self.eventHandler.run(available_oops_prefixes)
+        self.assertEqual(available_oops_prefixes, set())
+        self.assertEqual(self.oops_prefixes, ['foo'])
+
+    def test_restoresOopsPrefixToSetOnSuccess(self):
+        # When a worker finishes running, they restore the OOPS prefix to the
+        # set of available prefixes.
+        available_oops_prefixes = set(['foo'])
+        deferred = self.eventHandler.run(available_oops_prefixes)
+        # Fake a successful run.
+        deferred.callback(None)
+        def check_available_prefixes(ignored):
+            self.assertEqual(available_oops_prefixes, set(['foo']))
+        return deferred.addCallback(check_available_prefixes)
+
+    def test_restoresOopsPrefixToSetOnFailure(self):
+        # When a worker finishes running, they restore the OOPS prefix to the
+        # set of available prefixes, even if the worker failed.
+        available_oops_prefixes = set(['foo'])
+        deferred = self.eventHandler.run(available_oops_prefixes)
+        # Fake a successful run.
+        try:
+            raise RuntimeError("Spurious error")
+        except RuntimeError:
+            fail = failure.Failure()
+        deferred.errback(fail)
+        def check_available_prefixes(ignored):
+            self.assertEqual(available_oops_prefixes, set(['foo']))
+        return deferred.addErrback(check_available_prefixes)
+
+
 class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
     """Tests for the puller master that launch sub-processes."""
 
@@ -498,7 +553,9 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
             self.db_branch.unique_name, self.db_branch.branch_type,
             logging.getLogger(), self.client)
         puller_master.destination_url = os.path.abspath('dest-branch')
-        deferred = puller_master.mirror().addErrback(self._dumpError)
+        deferred = puller_master.mirror(
+            config.launchpad.errorreports.oops_prefix)
+        deferred.addErrback(self._dumpError)
 
         def check_authserver_called(ignored):
             self.assertEqual(
