@@ -17,13 +17,13 @@ the information in the configuration file.
 
     >>> from os import path
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.lazr.config import ConfigSchemaParser
+    >>> from canonical.lazr.config import ConfigSchema
     >>> from canonical.lazr.interfaces import IConfigSchema
 
     >>> base_conf = path.normpath(path.join(
     ...     path.dirname(__file__), '..', 'ftests', 'testfiles', 'base.conf'))
 
-The config file contains sections defined in the square bracket ([]).
+The config file contains sections defined by square bracket ([]).
 The section name may be divided into major and minor categories using a
 dot (.). Beneath each section is a list of key-value pairs, separated
 by a colon (:). Multiple sections with the same major category may have
@@ -87,7 +87,7 @@ SectionSchemas.
     >>> schema['section-4']
     Traceback (most recent call last):
       ...
-    SectionNotFound: ...
+    NoSectionError: ...
 
 Processes often require resources like databases or vhosts that have a
 common category of keys. The list of SchemaSections that share common
@@ -168,7 +168,7 @@ default values for '[section-3.app-a]' and '[section-3.app-b]'.
 
     >>> for schema_section in schema.getByCategory('section-3'):
     ...     print schema_section.name
-    ...     for key in schema_section:
+    ...     for key in schema_section:NoSectionError
     ...         print key, ':', schema_section[key]
     section-3.app-a
     Key1: 17
