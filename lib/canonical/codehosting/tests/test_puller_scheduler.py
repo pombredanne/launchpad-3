@@ -28,6 +28,27 @@ from canonical.testing import LaunchpadScriptLayer, reset_logging
 from canonical.launchpad.webapp import errorlog
 
 
+def _getLastOOPSFilename(time):
+    """Find the filename for the OOPS logged at 'time'."""
+    utility = errorlog.globalErrorUtility
+    error_dir = utility.errordir(time)
+    oops_id = utility._findLastOopsId(error_dir)
+    second_in_day = time.hour * 3600 + time.minute * 60 + time.second
+    oops_prefix = config.launchpad.errorreports.oops_prefix
+    return os.path.join(
+        error_dir, '%05d.%s%s' % (second_in_day, oops_prefix, oops_id))
+
+
+def getLastOOPS(time):
+    """Return the OOPS report logged at the given time."""
+    oops_filename = _getLastOOPSFilename(time)
+    oops_report = open(oops_filename, 'r')
+    try:
+        return errorlog.ErrorReport.read(oops_report)
+    finally:
+        oops_report.close()
+
+
 class FakeBranchStatusClient:
 
     def __init__(self, branch_queues=None):
@@ -384,25 +405,6 @@ class TestPullerMaster(TrialTestCase):
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
             BranchType.HOSTED, logging.getLogger(), self.status_client)
 
-    def _getLastOOPSFilename(self, time):
-        """Find the filename for the OOPS logged at 'time'."""
-        utility = errorlog.globalErrorUtility
-        error_dir = utility.errordir(time)
-        oops_id = utility._findLastOopsId(error_dir)
-        second_in_day = time.hour * 3600 + time.minute * 60 + time.second
-        oops_prefix = config.launchpad.errorreports.oops_prefix
-        return os.path.join(
-            error_dir, '%05d.%s%s' % (second_in_day, oops_prefix, oops_id))
-
-    def getLastOOPS(self, time):
-        """Return the OOPS report logged at the given time."""
-        oops_filename = self._getLastOOPSFilename(time)
-        oops_report = open(oops_filename, 'r')
-        try:
-            return errorlog.ErrorReport.read(oops_report)
-        finally:
-            oops_report.close()
-
     def test_unexpectedError(self):
         """The puller master logs an OOPS when it receives an unexpected
         error.
@@ -410,7 +412,7 @@ class TestPullerMaster(TrialTestCase):
         now = datetime.now(pytz.timezone('UTC'))
         fail = makeFailure(RuntimeError, 'error message')
         self.eventHandler.unexpectedError(fail, now)
-        oops = self.getLastOOPS(now)
+        oops = getLastOOPS(now)
         self.assertEqual(fail.getTraceback(), oops.tb_text)
         self.assertEqual('error message', oops.value)
         self.assertEqual('RuntimeError', oops.type)
