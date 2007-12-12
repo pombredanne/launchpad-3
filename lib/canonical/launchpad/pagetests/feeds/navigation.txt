@@ -2,7 +2,7 @@
 
 Feeds are served over HTTP, and are heavily cached. Pages which are not
 registered on the Feeds layer should not be served from the feeds.lp.n
-subdomain. 
+subdomain.
 XXX: statik bug=150941: When this bug is fixed (in 1.1.11) this test
 should be changed to show that trying to view a page which is not
 registered on the Feeds layer returns a 404.

@@ -19,6 +19,7 @@ __all__ = [
 import operator
 import os
 import time
+from datetime import datetime
 
 from zope.app.datetimeutils import rfc1123_date
 from zope.app.pagetemplate import ViewPageTemplateFile
@@ -117,8 +118,11 @@ class FeedBase(LaunchpadFormView):
                               key=operator.attrgetter('last_modified'),
                               reverse=True)
         if len(sorted_items) == 0:
+            return datetime.utcnow()
+        last_modified = sorted_items[0].last_modified
+        if last_modified is None:
             raise AssertionError, 'All feed entries require a date updated.'
-        return sorted_items[0].last_modified
+        return last_modified
 
     def render(self):
         """See `IFeed`."""
@@ -170,6 +174,8 @@ class FeedEntry:
         self.content = content
         self.date_updated = date_updated
         self.date_published = date_published
+        if date_updated is None:
+            raise AssertionError, 'date_updated is required by RFC 4287'
         if authors is None:
             authors = []
         self.authors = authors
