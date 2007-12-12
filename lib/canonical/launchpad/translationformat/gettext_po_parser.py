@@ -52,7 +52,7 @@ def make_plural_function(expression):
 
     try:
         function = gettext.c2py(expression)
-    except ValueError, SyntaxError:
+    except (ValueError, SyntaxError):
         raise BadPluralExpression
 
     return function

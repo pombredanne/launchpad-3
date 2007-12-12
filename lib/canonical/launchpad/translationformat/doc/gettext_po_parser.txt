@@ -453,11 +453,14 @@ mapping as well:
     >>> plural_form_mapper('(1E-1 & n) == 1', 'n!=1')
     {0: 0, 1: 1, 2: 2, 3: 3}
 
-Similar happens with division by zero and too big a plural form:
+Similar happens with division by zero and too big a plural form, or a
+syntax error:
 
     >>> plural_form_mapper('1/n', 'n!=1')
     {0: 0, 1: 1, 2: 2, 3: 3}
     >>> plural_form_mapper('(n!=1) ? 4 : 1', 'n!=1')
+    {0: 0, 1: 1, 2: 2, 3: 3}
+    >>> plural_form_mapper('n==1? 0', 'n!=1')
     {0: 0, 1: 1, 2: 2, 3: 3}
 
 Symbol like '~' is disallowed:
@@ -469,7 +472,6 @@ While whitespace (including spaces and tabs) is ok:
 
     >>> plural_form_mapper('n\t==  1', '  n != 1')
     {0: 1, 1: 0, 2: 2, 3: 3}
-
 
 
 Let's parse a Spanish PO file with an inverted plural formula.
