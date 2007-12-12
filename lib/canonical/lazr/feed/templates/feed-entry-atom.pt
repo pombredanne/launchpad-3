@@ -5,7 +5,8 @@
     xmlns:metal="http://xml.zope.org/namespaces/metal">
     <title tal:content="entry/title/content"
            tal:attributes="type entry/title/content_type" />
-    <link rel="alternate" tal:attributes="href entry/link_alternate" />
+    <link rel="alternate" tal:condition="entry/link_alternate"
+          tal:attributes="href entry/link_alternate" />
     <published
         tal:condition="entry/date_published"
         tal:content="entry/date_published" />
