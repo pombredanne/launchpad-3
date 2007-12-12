@@ -735,8 +735,11 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         uncommit_email_body = uncommit_email[2]
         expected = '1 revision was removed from the branch.'
         self.assertTextIn(expected, uncommit_email_body)
+        subject = 'Subject: [Branch ~sabdfl/+junk/test] Test branch'
+        self.assertTextIn(expected, uncommit_email_body)
         recommit_email_body = recommit_email[2]
         body_bits = [
+            'Subject: [Branch ~sabdfl/+junk/test] Rev 1: second',
             'revno: 1',
             'committer: Revision Author <author@example.com>',
             'branch nick: bzr_branch',

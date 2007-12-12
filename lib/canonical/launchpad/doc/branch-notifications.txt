@@ -1,8 +1,11 @@
 = Email Notifications for Branches =
 
-Only subscribers get email notifications.  If the owner/author
-of the branch want to receive emails, then they need to subscribe
-to the branch.
+Only subscribers get email notifications.  If the owner/author of the
+branch want to receive emails, then they need to subscribe to the
+branch.  There is one specific case where the owner of the branch
+receives emails without being subscribed, and that is if some of the
+branch details were changed by someone who is not a member of the owner
+team.
 
 There are two situations where emails are sent out for branches:
  - when a user modifies the state of the branch object using the UI
@@ -15,14 +18,13 @@ All branch notification emails use a standard email template.
 The functions that handle the emailing of the branch email messages are
 in the mailnotification module.
 
-The email_branch_modified_notifications function loads the email template
-(branch-modified.txt), and sets the subject based on the branch
-details.  The function also adds the header X-Launchpad-Branch,
-and populates the footer of the email with the branch details,
-the reason why the user is getting the email, and a link that
-they can click on to unsubscribe or edit their email notification
-settings.  The function also sends the email to the list of
-recipients.
+The email_branch_modified_notifications function loads the email
+template (branch-modified.txt), and sets the subject based on the branch
+details.  The function also adds the header X-Launchpad-Branch, and
+populates the footer of the email with the branch details, the reason
+why the user is getting the email, and a link that they can click on to
+unsubscribe or edit their email notification settings.  The function
+also sends the email to the list of recipients.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
@@ -32,7 +34,8 @@ recipients.
     >>> from canonical.launchpad.mailnotification import (
     ...     email_branch_modified_notifications)
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
-    >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
+    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    ...     '~name12/firefox/main')
     >>> subscription = branch.subscribe(
     ...     branch.owner,
     ...     BranchSubscriptionNotificationLevel.FULL,
@@ -203,7 +206,7 @@ We need to create some sufficiently large diffs to compare against.
 Send the revision notifications.
 
     >>> send_branch_revision_notifications(
-    ...     branch, 'no-reply@canonical.com', message, diff)
+    ...     branch, 'no-reply@canonical.com', message, diff, None)
     >>> notifications = pop_notifications()
     >>> len(notifications)
     6
@@ -229,16 +232,15 @@ Send the revision notifications.
     00 lines...
 
 Foo Bar is getting the email due to his membership in the Launchpad
-developers team, and as such the unsubscription link is to the team
-subscription.
+developers team.  Since the email is due to a team, there is no
+unsubscribe link.
 
     >>> print_to_and_body(notifications.pop(0))
     To: foo.bar@canonical.com
     Test message.
     <BLANKLINE>
     0 1 ... 5999...
-    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
-    efox/main/+subscription/launchpad.
+    You are receiving this branch notification because you are subscribed to it.
 
     >>> print_to_and_body(notifications.pop(0))
     To: jeff.waugh@ubuntulinux.com
@@ -261,7 +263,7 @@ And just to be sure, lets create one with 800 lines.
 
     >>> diff = '\n'.join([str(value) for value in xrange(800)])
     >>> send_branch_revision_notifications(
-    ...     branch, 'no-reply@canonical.com', message, diff)
+    ...     branch, 'no-reply@canonical.com', message, diff, None)
     >>> notifications = pop_notifications()
     >>> len(notifications)
     6
@@ -580,3 +582,52 @@ We don't want to show None in the email, so we show (not set) instead.
     You are receiving this branch notification because you are subscribed to it.
     To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
     efox/foo/+edit-subscription.
+
+
+== Modifications by users other than the branch owner ==
+
+If another user modified some branch attributes, then an email is sent
+to the branch owner.
+
+    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    ...     '~name12/gnome-terminal/main')
+
+There are no subscribers to this branch.
+
+    >>> len(list(branch.subscribers))
+    0
+
+Login as an admin user so we can alter the branch.
+
+    >>> login('foo.bar@canonical.com')
+    >>> before_modification = Snapshot(branch, providing=IBranch)
+
+    >>> branch.summary = 'Removed profanity'
+    >>> branch.whiteboard = (
+    ...     'Please refrain from bad language in a public arena.')
+    >>> updated_fields = ['summary', 'whiteboard']
+    >>> notify(SQLObjectModifiedEvent(
+    ...     branch, before_modification, updated_fields))
+
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    1
+    >>> print_email_details(notifications.pop())
+    To: test@canonical.com
+    From: Foo Bar <foo.bar@canonical.com>
+    Subject: [Branch ~name12/gnome-terminal/main] GNOME Terminal Mainline
+    <BLANKLINE>
+    Summary changed to:
+    <BLANKLINE>
+    Removed profanity
+    <BLANKLINE>
+    Whiteboard changed to:
+    <BLANKLINE>
+    Please refrain from bad language in a public arena.
+    <BLANKLINE>
+    --
+    GNOME Terminal Mainline
+    http://code.launchpad.dev/~name12/gnome-terminal/main
+    <BLANKLINE>
+    You are getting this email as you are the owner of the branch and someone h=
+    as edited the details.
