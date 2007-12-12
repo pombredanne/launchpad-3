@@ -79,6 +79,8 @@ Collect the Example.com watches:
 And have our special Mantis instance process them:
 
     >>> example_ext_bug_tracker.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 1 watches on http://bugs.some.where
+
     >>> for bug_watch in example_bug_tracker.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     1550: assigned: open
@@ -125,13 +127,14 @@ updateBugWatches() issues only one request to update all watches:
     >>> example_ext_bug_tracker.trace_calls = True
     >>> example_ext_bug_tracker.updateBugWatches(
     ...     sorted(example_bug_tracker.watches, key=getid))
+    INFO:...:Updating 7 watches on http://bugs.some.where
     CALLED _getPage(u'view.php?id=1550')
     CALLED _getPage(u'view.php?id=1679')
     CALLED _getPage(u'view.php?id=1730')
     CALLED _getPage(u'view.php?id=1738')
     CALLED _getPage(u'view.php?id=1748')
     CALLED _getPage(u'view.php?id=1798')
-    WARNING:root:Didn't find bug u'1798' on http://bugs.some.where
+    WARNING:...:Didn't find bug u'1798' on http://bugs.some.where
     (local bugs: 10).
 
     >>> remote_statuses = dict(
@@ -184,5 +187,7 @@ updated:
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged
     >>> example_ext_bug_tracker.updateBugWatches([bug_watch])
+    INFO:...:Updating 1 watches on http://bugs.some.where
+
     >>> bug_watch.lastchanged == old_last_changed
     True

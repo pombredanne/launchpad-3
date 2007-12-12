@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -22,9 +28,26 @@
         <th class="amount" width="15%">Unassigned</th>
         <th class="amount" width="15%">In&nbsp;Progress</th>
       </tr>
+      <tr tal:define="total_counts view/total_bug_counts">
+        <td>
+          Totals
+        </td>
+        <td class="amount">
+          <tal:open_bugs replace="total_counts/open_bugs_count" />
+        </td>
+        <td class="amount">
+          <tal:critical_bugs replace="total_counts/critical_bugs_count" />
+        </td>
+        <td class="amount">
+          <tal:unassigned_bugs replace="total_counts/unassigned_bugs_count" />
+        </td>
+        <td class="amount">
+          <tal:inprogress_bugs replace="total_counts/inprogress_bugs_count" />
+        </td>
+      </tr>
       </thead>
       <tbody>
-      <tr tal:repeat="package_bug_counts view/getPackageBugCounts">
+      <tr tal:repeat="package_bug_counts view/package_bug_counts">
         <td>
           <a href="#"
              tal:content="package_bug_counts/package_name"

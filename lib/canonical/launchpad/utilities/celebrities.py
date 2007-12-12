@@ -85,8 +85,8 @@ class LaunchpadCelebrities:
     admin = CelebrityDescriptor(IPersonSet, 'admins')
     ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
     debian = CelebrityDescriptor(IDistributionSet, 'debian')
-    rosetta_expert = CelebrityDescriptor(IPersonSet, 'rosetta-admins')
-    bazaar_expert = CelebrityDescriptor(IPersonSet, 'vcs-imports')
+    rosetta_experts = CelebrityDescriptor(IPersonSet, 'rosetta-admins')
+    bazaar_experts = CelebrityDescriptor(IPersonSet, 'vcs-imports')
     vcs_imports = CelebrityDescriptor(IPersonSet, 'vcs-imports')
     debbugs = CelebrityDescriptor(IBugTrackerSet, 'debbugs')
     sourceforge_tracker = CelebrityDescriptor(IBugTrackerSet, 'sf')
@@ -94,7 +94,7 @@ class LaunchpadCelebrities:
     buildd_admin = CelebrityDescriptor(IPersonSet, 'launchpad-buildd-admins')
     launchpad_developers = CelebrityDescriptor(IPersonSet, 'launchpad')
     ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
-    registry = CelebrityDescriptor(IPersonSet, 'registry')
+    registry_experts = CelebrityDescriptor(IPersonSet, 'registry')
     bug_watch_updater = CelebrityDescriptor(IPersonSet, 'bug-watch-updater')
     bug_importer = CelebrityDescriptor(IPersonSet, 'bug-importer')
     launchpad = CelebrityDescriptor(IProductSet, 'launchpad')
@@ -103,6 +103,7 @@ class LaunchpadCelebrities:
     janitor = CelebrityDescriptor(IPersonSet, 'janitor')
     mailing_list_experts = CelebrityDescriptor(
         IPersonSet, 'mailing-list-experts')
+    katie = CelebrityDescriptor(IPersonSet, 'katie')
 
     @property
     def ubuntu_archive_mirror(self):

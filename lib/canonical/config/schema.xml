@@ -203,6 +203,26 @@ k            </description>
         </key>
         <key name="browser_notification_level" required="no"
             datatype="canonical.config.loglevel" default="info" />
+        <key name="max_feed_cache_minutes" required="no"
+            datatype="integer" default="60">
+            <description>
+            The maximum number of minutes that feeds should be cached for.
+            This is used to set the Expires and Cache-Control headers.
+            </description>
+        </key>
+        <key name="max_bug_feed_cache_minutes" required="no"
+            datatype="integer" default="30">
+            <description>
+            The maximum number of minutes that Bug feeds should be cached for.
+            </description>
+        </key>
+        <key name="is_bug_search_feed_active" required="no"
+            datatype="boolean" default="false">
+            <description>
+            The bug search feed isn't ready to be active in production
+            because of performance concerns.
+            </description>
+        </key>
         <key name="bzr_imports_root_url" datatype="canonical.config.urlbase"
             default="http://escudero.ubuntu.com:680/">
             <description>
@@ -303,23 +323,23 @@ k            </description>
                 create distributions.
             </description>
         </key>
-        <key name="distrorelease" datatype="string" required="yes">
+        <key name="distroseries" datatype="string" required="yes">
             <description>
-                The distrorelease name (e.g. hoary) from where the packages
+                The distroseries name (e.g. hoary) from where the packages
                 will be taken and to where they will be imported (published)
-                into launchpad. A distrorelease with name DISTRORELEASE inside
-                the distrobution DISTRO must be created on launchpad before
-                been used because gina is not able to create distroreleases.
+                into launchpad. A distroseries with name DISTROSERIES inside
+                the distribution DISTRO must be created on launchpad before
+                been used because gina is not able to create distroseries.
             </description>
         </key>
         <key name="architectures" datatype="string"
             default="i386,powerpc,amd64">
             <description>
                 A comma separated list with the architectures that should
-                be imported into Launchpad. DistroArchRelease entries for
+                be imported into Launchpad. DistroArchSeries entries for
                 this architectures having the architecturetag equal to each
                 element in ARCHS should be created previously for the given
-                DISTRORELEASE.
+                DISTROSERIES.
             </description>
             <example>i386,powerpc,amd64</example>
         </key>
@@ -328,7 +348,7 @@ k            </description>
             <description>
                 A comma separated list with the component names
                 that should be imported into launchpad. As well as in
-                distribution and distrorelease the components must already
+                distribution and distroseries the components must already
                 exists inside launchpad. Currently the componentselection
                 table is not checked but ideally it too should be populated.
             </description>
@@ -356,7 +376,7 @@ k            </description>
         <key name="pocket" datatype="string" default="release">
             <description>
                 The pocket where this import should go. A "pocket" is a
-                sub-archive for a distribution release. The default pocket
+                sub-archive for a distribution series. The default pocket
                 is called "release", others are "security", "updates" and
                 "proposed". There may be more. Packages can be published in
                 a specific pocket after the release is made, before that
@@ -371,9 +391,9 @@ k            </description>
 
         <key name="pocketrelease" datatype="string" required="yes">
             <description>
-                The distrorelease name to where packages should be published
+                The distroseries name to where packages should be published
                 when working with pockets. Thats because on debian model
-                hoary-updates can be seen as another distrorelease but it
+                hoary-updates can be seen as another distroseries but it
                 does not happens on launchpad.
             </description>
         </key>
@@ -527,7 +547,7 @@ k            </description>
                 notifications.
             </description>
         </key>
-        <key name="bugnotification_interval" datatye="integer"
+        <key name="bugnotification_interval" datatype="integer"
             required="no" default="5">
           <description>
               The number of minutes that at most should pass between
@@ -611,6 +631,18 @@ k            </description>
             Configuration for cronscripts/rosetta-package-po-attach
         </description>
         <key name="dbuser" datatype="string" default="poattach" />
+    </sectiontype>
+
+    <sectiontype name="processmail" extends="database_options">
+        <description>
+            Configuration for cronscripts/process-mail.py
+        </description>
+        <key name="dbuser" datatype="string" default="processmail">
+            <description>
+                The database user which will be used to process incoming 
+                emails.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="rosetta">
@@ -906,6 +938,12 @@ k            </description>
         <key name="masterlock" datatype="string"
         default="/var/tmp/sm-ng/masterlock" />
         <key name="maximum_workers" datatype="integer" default="4"/>
+        <key name="worker_timeout" datatype="integer" default="900">
+          <description>
+            The longest period of time, in seconds, that the scheduler will
+            wait for the worker to produce meaningful output.
+          </description>
+        </key>
         <key name="authserver_url" datatype="canonical.config.urlbase"
              default="http://localhost:8999/branch/">
             <description>
@@ -1072,14 +1110,15 @@ k            </description>
         <key name="launch" datatype="boolean"       default="false" />
         <key name="smtp"   datatype="inet-address"  default="localhost:25" />
         <key name="xmlrpc_url" datatype="string"
-             default="http://xmlrpc.launchpad.dev:8087/mailinglists" />
+             default="http://xmlrpc-private.launchpad.dev:8087/mailinglists" />
         <key name="xmlrpc_runner_sleep" datatype="integer" default="10" />
-        <!-- XXX: A temporary key to control whether or not the functionality
-        related to hosted mailing lists is exposed in the UI.
-        https://launchpad.net/launchpad/+spec/team-mailing-list-beta-program
-        - Guilherme Salgado 2007-09-14 -->
-        <key name="expose_hosted_mailing_lists" datatype="boolean"
-             default="false" />
+        <!-- XXX BarryWarsaw 30-Nov-2007 This is a temporary key to control
+             beta testing of the mailing list feature.  It goes away when
+             mailing lists go public. -->
+        <key name="beta_testers_team" datatype="string"
+             default="mailing-list-beta-testers" />
+        <key name="archive_url_template" datatype="string"
+             default="http://lists.launchpad.dev/archives/$team_name" />
     </sectiontype>
 
     <sectiontype name="checkwatches">
@@ -1110,6 +1149,7 @@ k            </description>
         <section name="*" type="gpghandler" attribute="gpghandler" />
         <section name="*" type="zeca" attribute="zeca" />
         <section name="*" type="statistician" attribute="statistician" />
+        <section name="*" type="processmail" attribute="processmail" />
         <section name="*" type="productreleasefinder"
                  attribute="productreleasefinder" />
         <section name="*" type="gina" attribute="gina" />

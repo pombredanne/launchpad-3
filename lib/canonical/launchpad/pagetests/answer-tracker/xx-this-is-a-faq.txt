@@ -155,7 +155,7 @@ with an error message.
 
     >>> print user_browser.url
     http://answers.launchpad.dev/firefox/+question/2/+linkfaq
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
     You didn't modify the linked FAQ.
@@ -378,3 +378,25 @@ discussion.
     ...     'ascii', 'backslashreplace')
     The FAQ mentions this:
     FAQ #6: ...How can I play MP3/Divx/DVDs/Quicktime/Realmedia files...
+
+
+== FAQs are links ==
+
+You can respond to a question by pointing people to a FAQ. FAQs are
+linkified as you would expect! You can use the "this is a FAQ" menu
+item, as above:
+
+    >>> user_browser.getLink('FAQ #6').url
+    'http://answers.launchpad.dev/ubuntu/+faq/6'
+
+Or you can just refer to FAQs in comments:
+
+    >>> user_browser.getControl('Message').value = 'No, this is FAQ #2'
+    >>> user_browser.getControl('Add Comment').click()
+    >>> user_browser.getLink("FAQ #2").url
+    'http://answers.launchpad.dev/ubuntu/+faq/2'
+
+The linkification also happens, incidentally, in bug comments and
+anywhere else the email-to-html formatter is used. See
+doc/displaying-paragraphs-of-text.txt for more details on this.
+

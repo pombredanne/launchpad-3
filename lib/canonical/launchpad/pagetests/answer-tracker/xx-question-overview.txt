@@ -42,8 +42,7 @@ available from the 'Answers' facet.
     >>> browser.open('http://launchpad.dev/firefox')
     >>> browser.getLink('Answers').click()
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> print soup.first('h1').renderContents()
     Questions for Mozilla Firefox
     >>> browser.getLink('Firefox loses focus and gets stuck').url
@@ -69,7 +68,7 @@ question page.
     >>> browser.getLink('Problem showing the SVG demo on W3C site').click()
     >>> browser.title
     'Mozilla Firefox question #2:...'
-    >>> print BeautifulSoup(browser.contents).first('h1').renderContents()
+    >>> print find_main_content(browser.contents).first('h1').renderContents()
     Problem showing the SVG demo on W3C site
 
 == Distributions ==
@@ -227,7 +226,7 @@ involving that person.
     >>> browser.getLink('Answers').click()
     >>> browser.title
     'Questions involving Foo Bar'
-    >>> print BeautifulSoup(browser.contents).first('h1').renderContents()
+    >>> print find_main_content(browser.contents).first('h1').renderContents()
     Questions involving Foo Bar
     >>> browser.getLink('Slow system').url
     '.../ubuntu/+question/7'

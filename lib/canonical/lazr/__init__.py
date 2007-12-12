@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0401
 
 """The canonical.lazr module is a holding area for proposed LAZR features.
 

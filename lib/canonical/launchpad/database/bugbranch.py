@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Database classes for linking bugtasks and branches."""
 
@@ -34,6 +35,9 @@ class BugBranch(SQLBase):
         default=BugBranchStatus.INPROGRESS)
     whiteboard = StringCol(notNull=False, default=None)
 
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person', notNull=True)
+
     @property
     def bug_task(self):
         """See `IBugBranch`."""
@@ -47,6 +51,15 @@ class BugBranch(SQLBase):
 class BugBranchSet:
 
     implements(IBugBranchSet)
+
+    def new(self, bug, branch, status, registrant):
+        "See `IBugBranchSet`."
+        return BugBranch(
+            bug=bug, branch=branch, status=status, registrant=registrant)
+
+    def getBugBranch(self, bug, branch):
+        "See `IBugBranchSet`."
+        return BugBranch.selectOneBy(bugID=bug.id, branchID=branch.id)
 
     def getBugBranchesForBranches(self, branches, user):
         "See IBugBranchSet."

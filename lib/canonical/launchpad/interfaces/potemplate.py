@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 from zope.interface import Attribute, Interface
 from zope.schema import (
@@ -107,19 +108,21 @@ class IPOTemplate(IRosettaStats):
         title=u"The translation template id.",
         required=True, readonly=True)
 
-    potemplatename = Choice(
-        title=_("Template Name"),
+    name = TextLine(
+        title=_("Template name"),
         description=_("The name of this PO template, for example "
             "'evolution-2.2'. Each translation template has a "
             "unique name in its package. It's important to get this "
             "correct, because Launchpad will recommend alternative "
             "translations based on the name."),
-        required=True,
-        vocabulary="POTemplateName")
+        required=True)
 
-    name = TextLine(
-        title=_("Template name"),
-        readonly=True)
+    translation_domain = Text(
+        title=_("Translation domain"),
+        description=_("The translation domain for a translation template. "
+            "Used with PO file format when generating MO files for inclusion "
+            "in language pack or MO tarball exports."),
+        required=True)
 
     description = Text(
         title=_("Description"),
@@ -198,7 +201,8 @@ class IPOTemplate(IRosettaStats):
         default=False)
 
     path = TextLine(
-        title=_("Path of the template in the source tree, including filename."),
+        title=_(
+            "Path of the template in the source tree, including filename."),
         required=False)
 
     source_file = Object(
@@ -248,10 +252,7 @@ class IPOTemplate(IRosettaStats):
         _('All `IPOFile` that exist for this template.'))
 
     relatives_by_name = Attribute(
-        _('''
-            All `IPOTemplate` objects that have the same template name as
-            this one.
-            '''))
+        _('All `IPOTemplate` objects that have the same name asa this one.'))
 
     relatives_by_source = Attribute(
         _('''All `IPOTemplate` objects that have the same source.
@@ -295,7 +296,7 @@ class IPOTemplate(IRosettaStats):
         """Return an iterator over current `IPOTMsgSet` in this template."""
 
     def getHeader():
-        """Return an `ITranslationHeader` representing its header."""
+        """Return an `ITranslationHeaderData` representing its header."""
 
     def getPOTMsgSetByMsgIDText(msgidtext, only_current=False, context=None):
         """Return the `IPOTMesgSet` indexed by msgidtext from this template.
@@ -368,10 +369,6 @@ class IPOTemplate(IRosettaStats):
         Return None if there is no such POFile.
         """
 
-    def hasMessageID(msgid, context=None):
-        """Check whether a message set with the given message ID exists within
-        this template with given context."""
-
     def hasPluralMessage():
         """Test whether this template has any message sets which are plural
         message sets."""
@@ -415,33 +412,39 @@ class IPOTemplate(IRosettaStats):
         variant.
         """
 
-    def createMessageSetFromMessageID(msgid, context=None):
-        """Creates in the database a new message set.
+    def createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural=None,
+                                  context=None):
+        """Creates a new template message in the database.
 
-        As a side-effect, creates a message ID sighting in the database for the
-        new set's prime message ID.
-
-        Returns the newly created message set.
+        :param msgid_singular: A reference to a singular msgid.
+        :param msgid_plural: A reference to a plural msgid.  Can be None
+        if the message is not a plural message.
+        :param context: A context for the template message differentiating
+        it from other template messages with exactly the same `msgid`.
+        :return: The newly created message set.
         """
 
-    def createMessageSetFromText(text, context=None):
-        """Creates in the database a new message set.
+    def createMessageSetFromText(singular_text, plural_text, context=None):
+        """Creates a new template message in the database using strings.
 
-        Similar to createMessageSetFromMessageID, but takes a text object
+        Similar to createMessageSetFromMessageID, but takes text objects
         (unicode or string) along with textual context, rather than a
-        message ID.
+        message IDs.
+
+        For non-plural messages, plural_text should be None.
 
         Returns the newly created message set.
         """
 
-    def getNextToImport():
-        """Return the next entry on the import queue to be imported."""
+    def importFromQueue(entry_to_import, logger=None):
+        """Import given queue entry.
 
-    def importFromQueue(logger=None):
-        """Execute the import of the next entry on the queue, if needed.
+        :param entry_to_import: `TranslationImportQueueEntry` specifying an
+            approved import for this `POTemplate`
+        :param logger: optional logger to report problems to.
 
-        If a logger argument is given, any problem found with the
-        import will be logged there.
+        :return: a tuple of the subject line and body for a notification email
+            to be sent to the uploader.
         """
 
 
@@ -475,7 +478,7 @@ class IPOTemplateSubset(Interface):
     def __getitem__(name):
         """Get a POTemplate by its name."""
 
-    def new(potemplatename, title, contents, owner):
+    def new(name, translation_domain, title, contents, owner):
         """Create a new template for the context of this Subset."""
 
     def getPOTemplateByName(name):
@@ -503,7 +506,7 @@ class IPOTemplateSubset(Interface):
         """
 
     def getClosestPOTemplate(path):
-        """Return a `IPOTemplate` with a path closer to the given path or None.
+        """Return a `IPOTemplate` with a path closer to given path, or None.
 
         If there is no `IPOTemplate` with a common path with the given argument,
         or if there are more than one `IPOTemplate` with the same common path,
@@ -546,7 +549,8 @@ class IPOTemplateSet(Interface):
 
 
 class IPOTemplateWithContent(IPOTemplate):
-    """Interface for an `IPOTemplate` used to create the new POTemplate form."""
+    """Interface for an `IPOTemplate` used to create the new POTemplate form.
+    """
 
     content = Bytes(
         title=_("PO Template File to Import"),

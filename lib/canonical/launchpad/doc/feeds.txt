@@ -100,5 +100,32 @@ found, indicated by the absence of a ComponentLookupError.
     a feed view on an IThing
     a feed view on an IThing
 
+== Feeds Configuration Options ==
 
+The max_feed_cache_minutes and the max_bug_feed_cache_minutes
+configurations are provided to allow overriding the Expires
+and Cache-Control headers so that the feeds will be cached longer
+by browsers and the reverse-proxy in front of the feeds servers.
 
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.feed.bug import BugsFeedBase
+    >>> from canonical.lazr.feed.feed import FeedBase
+    >>> config.launchpad.max_feed_cache_minutes
+    60
+    >>> config.launchpad.max_bug_feed_cache_minutes
+    30
+    >>> FeedBase.max_age
+    3600
+    >>> BugsFeedBase.max_age
+    1800
+    >>> config.launchpad.max_feed_cache_minutes * 60 == FeedBase.max_age
+    True
+    >>> (config.launchpad.max_bug_feed_cache_minutes * 60
+    ...  == BugsFeedBase.max_age)
+    True
+
+The is_bug_search_feed_active is false by default since it is useful for
+testing, but it is still a performance concern for production.
+
+    >>> config.launchpad.is_bug_search_feed_active
+    False

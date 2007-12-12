@@ -28,8 +28,8 @@ from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     IBranch, IBugTask, IEmailAddressSet, INotificationRecipientSet, IPerson,
-    ISpecification, ITeamMembershipSet, IUpstreamBugTask, QuestionAction,
-    TeamMembershipStatus, UnknownRecipientError)
+    IPersonSet, ISpecification, ITeamMembershipSet, IUpstreamBugTask,
+    QuestionAction, TeamMembershipStatus, UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -336,6 +336,11 @@ class BugNotificationRecipients(NotificationRecipientSet):
         self._addReason(person, text, reason)
 
 
+def format_rfc2822_date(date):
+    """Formats a date according to RFC2822's desires."""
+    return formatdate(rfc822.mktime_tz(date.utctimetuple() + (0,)))
+
+
 def construct_bug_notification(bug, from_address, address, body, subject,
         email_date, rationale_header=None, references=None, msgid=None):
     """Constructs a MIMEText message based on a bug and a set of headers."""
@@ -346,8 +351,7 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     if references is not None:
         msg['References'] = ' '.join(references)
     msg['Sender'] = config.bounce_address
-    msg['Date'] = formatdate(
-        rfc822.mktime_tz(email_date.utctimetuple() + (0,)))
+    msg['Date'] = format_rfc2822_date(email_date)
     if msgid is not None:
         msg['Message-Id'] = msgid
     subject_prefix = "[Bug %d]" % bug.id
@@ -994,6 +998,20 @@ def notify_bug_cve_deleted(bugcve, event):
     add_bug_change_notifications(bug_delta)
 
 
+def notify_bug_became_question(event):
+    """Notify CC'd list that a bug was made into a question.
+
+    The event must contain the bug that became a question, and the question
+    that the bug became.
+    """
+    bug = event.bug
+    question = event.question
+    change_info = '\n'.join([
+        '** bug changed to question:\n'
+        '   %s' %  canonical_url(question)])
+    bug.addChangeNotification(change_info, person=event.user)
+
+
 def notify_bug_attachment_added(bugattachment, event):
     """Notify CC'd list that a new attachment has been added.
 
@@ -1040,19 +1058,21 @@ def notify_invitation_to_join_team(event):
 
     reviewer = membership.reviewer
     admin_addrs = member.getTeamAdminsEmailAddresses()
-    from_addr = format_address('Launchpad', config.noreply_from_address)
-    subject = (
-        'Launchpad: %s was invited to join %s' % (member.name, team.name))
+    from_addr = format_address(team.displayname, config.noreply_from_address)
+    subject = 'Invitation for %s to join' % member.name
     templatename = 'membership-invitation.txt'
     template = get_email_template(templatename)
-    msg = template % {
+    replacements = {
         'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
         'member': '%s (%s)' % (member.browsername, member.name),
         'team': '%s (%s)' % (team.browsername, team.name),
         'membership_invitations_url':
             "%s/+invitation/%s" % (canonical_url(member), team.name)}
-    msg = MailWrapper().format(msg)
-    simple_sendmail(from_addr, admin_addrs, subject, msg)
+    for address in admin_addrs:
+        recipient = getUtility(IPersonSet).getByEmail(address)
+        replacements['recipient_name'] = recipient.displayname
+        msg = MailWrapper().format(template % replacements)
+        simple_sendmail(from_addr, address, subject, msg)
 
 
 def notify_team_join(event):
@@ -1073,26 +1093,28 @@ def notify_team_join(event):
         TeamMembershipStatus.PROPOSED]
     admin_addrs = team.getTeamAdminsEmailAddresses()
 
-    from_addr = format_address('Launchpad', config.noreply_from_address)
+    from_addr = format_address(team.displayname, config.noreply_from_address)
 
     if reviewer != person and membership.status in [approved, admin]:
         # Somebody added this person as a member, we better send a
         # notification to the person too.
         member_addrs = contactEmailAddresses(person)
 
-        subject = (
-            'Launchpad: %s is now a member of %s' % (person.name, team.name))
+        subject = '%s joined' % person.name
         templatename = 'new-member-notification.txt'
         if person.isTeam():
             templatename = 'new-member-notification-for-teams.txt'
 
         template = get_email_template(templatename)
-        msg = template % {
+        replacements = {
             'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
             'member': '%s (%s)' % (person.browsername, person.name),
             'team': '%s (%s)' % (team.browsername, team.name)}
-        msg = MailWrapper().format(msg)
-        simple_sendmail(from_addr, member_addrs, subject, msg)
+        for address in member_addrs:
+            recipient = getUtility(IPersonSet).getByEmail(address)
+            replacements['recipient_name'] = recipient.displayname
+            msg = MailWrapper().format(template % replacements)
+            simple_sendmail(from_addr, address, subject, msg)
 
         # The member's email address may be in admin_addrs too; let's remove
         # it so the member don't get two notifications.
@@ -1112,19 +1134,20 @@ def notify_team_join(event):
     if membership.status in [approved, admin]:
         template = get_email_template(
             'new-member-notification-for-admins.txt')
-        subject = (
-            'Launchpad: %s is now a member of %s' % (person.name, team.name))
+        subject = '%s joined' % person.name
     elif membership.status == proposed:
         template = get_email_template('pending-membership-approval.txt')
-        subject = (
-            "Launchpad: %s wants to join team %s" % (person.name, team.name))
+        subject = "%s wants to join" % person.name
         headers = {"Reply-To": person.preferredemail.email}
     else:
         raise AssertionError(
             "Unexpected membership status: %s" % membership.status)
 
-    msg = MailWrapper().format(template % replacements)
-    simple_sendmail(from_addr, admin_addrs, subject, msg, headers=headers)
+    for address in admin_addrs:
+        recipient = getUtility(IPersonSet).getByEmail(address)
+        replacements['recipient_name'] = recipient.displayname
+        msg = MailWrapper().format(template % replacements)
+        simple_sendmail(from_addr, address, subject, msg, headers=headers)
 
 
 def dispatch_linked_question_notifications(bugtask, event):
@@ -1395,7 +1418,12 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
             # The first message cannot contain a References
             # because we don't create a Message instance for the
             # question description, so we don't have a Message-ID.
-            index = list(self.question.messages).index(self.new_message)
+
+            # XXX sinzui 2007-11-27 bug=164435:
+            # SQLObject can refetch the question, so we are using the ids.
+            message_ids = list([message.id
+                                for message in self.question.messages])
+            index = message_ids.index(self.new_message.id)
             if index > 0:
                 headers['References'] = (
                     self.question.messages[index-1].rfc822msgid)

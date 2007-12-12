@@ -17,8 +17,10 @@ __all__ = [
     'IHostedBranchStorage',
     'IUserDetailsStorage',
     'IUserDetailsStorageV2',
+    'NOT_FOUND_FAULT_CODE',
+    'PERMISSION_DENIED_FAULT_CODE',
     'READ_ONLY',
-    'WRITABLE'
+    'WRITABLE',
     ]
 
 
@@ -27,6 +29,18 @@ from zope.interface import Interface
 
 READ_ONLY = 'r'
 WRITABLE = 'w'
+
+
+# Values for the faultCode of Faults raised by the authserver.
+#
+# We borrow the numbers from HTTP for familiarity, there's nothing deep in it.
+#
+# Currently, Faults are only raised by createBranch().  If more methods get
+# converted to raise Faults, they should use these values if appropriate or
+# define more codes here if not.
+
+PERMISSION_DENIED_FAULT_CODE = 403
+NOT_FOUND_FAULT_CODE = 404
 
 
 class IUserDetailsStorage(Interface):
@@ -167,12 +181,21 @@ class IHostedBranchStorage(Interface):
         new branch to it.  See also
         https://launchpad.canonical.com/SupermirrorFilesystemHierarchy.
 
+        Note that this function raises instances of exactly
+        twisted.web.xmlrpc.Fault; while raising subclasses would perhaps be
+        clearer, the client side would only see a Fault, so we do that on the
+        server side too for consistency.
+
         :param loginID: the person ID of the user creating the branch.
         :param personName: the unique name of the owner of the branch.
         :param productName: the unique name of the product that the branch
             belongs to.
         :param branchName: the name for this branch, to be used in URLs.
         :returns: the ID for the new branch.
+        :raises twisted.web.xmlrpc.Fault: If the branch cannot be created.
+            The faultCode will be PERMISSION_DENIED_FAULT_CODE or
+            NOT_FOUND_FAULT_CODE and the faultString will be a description
+            suitable to display to the user.
         """
 
     def requestMirror(branchID):
@@ -215,7 +238,7 @@ class IBranchDetailsStorage(Interface):
 
         In the Launchpad database, the last_mirrored field will be updated to
         match the last_mirror_attempt value, the mirror_failures counter will
-        be reset to zero and the mirror_request_time will be set to NULL.
+        be reset to zero and the next_mirror_time will be set to NULL.
 
         :param branchID: The database ID of the given branch.
         :param lastRevisionID: The last revision ID mirrored.
@@ -226,7 +249,7 @@ class IBranchDetailsStorage(Interface):
         """Notify Launchpad that the branch could not be mirrored.
 
         The mirror_failures counter for the given branch record will be
-        incremented and the mirror_request_time will be set to NULL.
+        incremented and the next_mirror_time will be set to NULL.
 
         :param branchID: The database ID of the given branch.
         :param reason: A string giving the reason for the failure.

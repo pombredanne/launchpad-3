@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
@@ -72,7 +73,8 @@ class FilePublishingBase(SQLBase):
     def archive_url(self):
         """See IFilePublishing."""
         return (self.archive.archive_url + "/" +
-                makePoolPath(self.sourcepackagename, self.componentname) + "/" +
+                makePoolPath(self.sourcepackagename, self.componentname) +
+                "/" +
                 self.libraryfilealiasfilename)
 
 
@@ -96,7 +98,8 @@ class SourcePackageFilePublishing(FilePublishingBase):
          foreignKey='SecureSourcePackagePublishingHistory')
 
     libraryfilealias = ForeignKey(
-        dbName='libraryfilealias', foreignKey='LibraryFileAlias', notNull=True)
+        dbName='libraryfilealias', foreignKey='LibraryFileAlias',
+        notNull=True)
 
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
                                          unique=False, notNull=True)
@@ -107,7 +110,7 @@ class SourcePackageFilePublishing(FilePublishingBase):
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
                                   notNull=True)
 
-    distroseriesname = StringCol(dbName='distroreleasename', unique=False,
+    distroseriesname = StringCol(dbName='distroseriesname', unique=False,
                                   notNull=True)
 
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
@@ -158,7 +161,8 @@ class BinaryPackageFilePublishing(FilePublishingBase):
         foreignKey='SecureBinaryPackagePublishingHistory', immutable=True)
 
     libraryfilealias = ForeignKey(
-        dbName='libraryfilealias', foreignKey='LibraryFileAlias', notNull=True)
+        dbName='libraryfilealias', foreignKey='LibraryFileAlias',
+        notNull=True)
 
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
                                          unique=False, notNull=True,
@@ -170,7 +174,7 @@ class BinaryPackageFilePublishing(FilePublishingBase):
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
                                   notNull=True, immutable=True)
 
-    distroseriesname = StringCol(dbName='distroreleasename', unique=False,
+    distroseriesname = StringCol(dbName='distroseriesname', unique=False,
                                   notNull=True, immutable=True)
 
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
@@ -215,7 +219,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
                                       dbName='sourcepackagerelease')
     distroseries = ForeignKey(foreignKey='DistroSeries',
-                               dbName='distrorelease')
+                               dbName='distroseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     status = EnumCol(schema=PackagePublishingStatus)
@@ -263,7 +267,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
     distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
-                                   dbName='distroarchrelease')
+                                   dbName='distroarchseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
@@ -336,6 +340,19 @@ class ArchivePublisherBase:
         current.removal_comment = removal_comment
         return current
 
+    def requestObsolescence(self):
+        """See `IArchivePublisher`."""
+        # The tactic here is to bypass the domination step when publishing,
+        # and let it go straight to death row processing.  This is because
+        # domination ignores stable distroseries, and that is exactly what
+        # we're most likely to be obsoleting.
+        #
+        # Setting scheduleddeletiondate achieves that aim.
+        current = self.secure_record
+        current.status = PackagePublishingStatus.OBSOLETE
+        current.scheduleddeletiondate = UTC_NOW
+        return current
+
 
 class IndexStanzaFields:
     """Store and format ordered Index Stanza fields."""
@@ -379,7 +396,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
     distroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='distrorelease')
+        dbName='distroseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     status = EnumCol(schema=PackagePublishingStatus)
@@ -404,13 +421,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         clause = """
             BinaryPackagePublishingHistory.binarypackagerelease=
                 BinaryPackageRelease.id AND
-            BinaryPackagePublishingHistory.distroarchrelease=
-                DistroArchRelease.id AND
+            BinaryPackagePublishingHistory.distroarchseries=
+                DistroArchSeries.id AND
             BinaryPackageRelease.build=Build.id AND
             BinaryPackageRelease.binarypackagename=
                 BinaryPackageName.id AND
             Build.sourcepackagerelease=%s AND
-            DistroArchRelease.distrorelease=%s AND
+            DistroArchSeries.distroseries=%s AND
             BinaryPackagePublishingHistory.archive=%s AND
             BinaryPackagePublishingHistory.status=%s
             """ % sqlvalues(
@@ -420,10 +437,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                     PackagePublishingStatus.PUBLISHED)
 
         orderBy = ['BinaryPackageName.name',
-                   'DistroArchRelease.architecturetag']
+                   'DistroArchSeries.architecturetag']
 
         clauseTables = ['Build', 'BinaryPackageRelease', 'BinaryPackageName',
-                        'DistroArchRelease']
+                        'DistroArchSeries']
 
         return BinaryPackagePublishingHistory.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)
@@ -545,20 +562,19 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             section=new_section,
             archive=current.archive)
 
-    def copyTo(self, distroseries, pocket):
+    def copyTo(self, distroseries, pocket, archive):
         """See `ISourcePackagePublishingHistory`."""
         current = self.secure_record
         return SecureSourcePackagePublishingHistory(
             distroseries=distroseries,
             pocket=pocket,
-            archive=current.archive,
+            archive=archive,
             sourcepackagerelease=current.sourcepackagerelease,
             component=current.component,
             section=current.section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             embargo=False)
-
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
@@ -569,7 +585,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
     distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
-                                   dbName='distroarchrelease')
+                                   dbName='distroarchseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
@@ -593,9 +609,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def distroarchseriesbinarypackagerelease(self):
         """See `IBinaryPackagePublishingHistory`."""
-        # import here to avoid circular import
-        from canonical.launchpad.database.distroarchseriesbinarypackagerelease \
-            import DistroArchSeriesBinaryPackageRelease
+        # Import here to avoid circular import.
+        from canonical.launchpad.database import (
+            DistroArchSeriesBinaryPackageRelease)
 
         return DistroArchSeriesBinaryPackageRelease(
             self.distroarchseries,
@@ -641,8 +657,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         #  <DESCRIPTION L1>
         #  ...
         #  <DESCRIPTION LN>
+        descr_lines = [line.lstrip() for line in bpr.description.splitlines()]
         bin_description = (
-            '%s\n %s'% (bpr.summary, '\n '.join(bpr.description.splitlines())))
+            '%s\n %s'% (bpr.summary, '\n '.join(descr_lines)))
 
         # Dealing with architecturespecific field.
         # Present 'all' in every archive index for architecture
@@ -724,7 +741,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             priority=new_priority,
             archive=current.archive)
 
-    def copyTo(self, distroseries, pocket):
+    def copyTo(self, distroseries, pocket, archive):
         """See `BinaryPackagePublishingHistory`."""
         # Both lookups may raise NotFoundError; it should be handled in
         # the caller.
@@ -732,7 +749,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         target_das = distroseries[current.distroarchseries.architecturetag]
 
         return SecureBinaryPackagePublishingHistory(
-            archive=current.archive,
+            archive=archive,
             binarypackagerelease=self.binarypackagerelease,
             distroarchseries=target_das,
             component=current.component,

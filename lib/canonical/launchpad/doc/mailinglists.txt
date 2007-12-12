@@ -63,6 +63,14 @@ created right away.
     >>> list_one
     <MailingList for team "team-one"; status=REGISTERED at 0x...>
 
+You can always access the mailing list through its team, if the team has a
+mailing list.
+
+    >>> team_one.mailing_list
+    <MailingList for team "team-one"; status=REGISTERED at 0x...>
+    >>> print team_two.mailing_list
+    None
+
 You may not register a mailing list for a person.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
@@ -83,13 +91,9 @@ neither and thus may not create a list for team_two.
 However, if we make Anne a team administrator, she can then register the
 mailing list.
 
-    >>> # XXX BarryWarsaw bug 125505: Use .join() and .setMembershipData()
-    >>> # instead of the more direct team.addMember() because the latter
-    >>> # doesn't invalidate the person's _inTeam_cache.
-    >>> anne.join(team_two)
-    >>> bart = new_person('Bart')
     >>> from canonical.launchpad.interfaces import TeamMembershipStatus
-    >>> team_two.setMembershipData(anne, TeamMembershipStatus.ADMIN, bart)
+    >>> bart = new_person('Bart')
+    >>> team_two.addMember(anne, bart, status=TeamMembershipStatus.ADMIN)
     >>> flush_database_updates()
     >>> list_two = list_set.new(team_two, anne)
     >>> list_two
@@ -412,6 +416,12 @@ any other state can't though.
     AssertionError: Only mailing lists in the REGISTERED state...
 
 
+== Mailing list permissions ===
+
+Permissions on a team's mailing list are not tracked separately from
+permissions on the team.
+
+
 == Welcome messages ==
 
 Mailing lists have a welcome message text which is sent to new members when
@@ -419,8 +429,10 @@ they subscribe to a list.  The welcome message can contain any text.
 
     >>> print list_one.welcome_message
     None
+    >>> login('foo.bar@canonical.com')
     >>> list_one.welcome_message = """\
     ... Welcome to the Team One mailing list."""
+    >>> login(ANONYMOUS)
     >>> flush_database_updates()
     >>> list_one.welcome_message
     u'Welcome to the Team One mailing list.'
@@ -460,7 +472,9 @@ a particular welcome message.
 
     >>> team_five = new_team('team-five')
     >>> list_five = list_set.new(team_five)
+    >>> login('foo.bar@canonical.com')
     >>> list_five.welcome_message = u'Welcome to Team Five'
+    >>> login(ANONYMOUS)
     >>> flush_database_updates()
     >>> list_five.status.name
     'REGISTERED'
@@ -468,14 +482,59 @@ a particular welcome message.
 You cannot change the welcome message text for a mailing list in anything but
 ACTIVE or REGISTERED status.
 
+    >>> login('foo.bar@canonical.com')
     >>> list_two.welcome_message = """\
     ... This list has been declined."""
     Traceback (most recent call last):
     ...
-    AssertionError: Only registered or active mailing lists may be modified
+    AssertionError: Only registered or usable mailing lists may be modified
 
     >>> list_four.welcome_message = """\
     ... This list has been deactivated."""
     Traceback (most recent call last):
     ...
-    AssertionError: Only registered or active mailing lists may be modified
+    AssertionError: Only registered or usable mailing lists may be modified
+
+
+== Renaming teams with mailing lists ==
+
+A team that has a mailing list may not be renamed.
+
+    >>> login('no-priv@canonical.com')
+    >>> team_one.name = 'team-canonical'
+    Traceback (most recent call last):
+    ...
+    AssertionError: Cannot rename teams with mailing lists
+
+But a team with no mailing list (yet) can still be renamed.
+
+    >>> team_six = new_team('team-six')
+    >>> team_six.name = 'team-canonical'
+    >>> team_six.name
+    u'team-canonical'
+
+
+== Team archive links ==
+
+Mailing lists have archives, accessible through a list-specific url.  However,
+if a mailing list has never be activated, it won't have an archive url.
+
+    >>> print list_two.archive_url
+    None
+
+An active mailing list has an archive url.
+
+    >>> list_one.status.name
+    'ACTIVE'
+    >>> list_one.archive_url
+    u'http://lists.launchpad.dev/archives/team-one'
+
+Inactive mailing lists also have an archive url, because once activated, a
+mailing list could have an archive and archives are never deleted.
+
+    >>> list_one.deactivate()
+    >>> list_one.transitionToStatus(MailingListStatus.INACTIVE)
+    >>> list_one.status.name
+    'INACTIVE'
+    >>> list_one.archive_url
+    u'http://lists.launchpad.dev/archives/team-one'

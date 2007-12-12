@@ -1,19 +1,31 @@
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702,W0222
+
+__metaclass__ = type
+
+from datetime import datetime
 import logging
 import os
 import unittest
 
+import pytz
+
 from bzrlib.branch import Branch
 from bzrlib.urlutils import local_path_to_url
 
-from twisted.internet import defer, error
+from twisted.internet import defer, error, task
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting.puller import scheduler
+from canonical.codehosting.puller.worker import (
+    get_canonical_url_for_branch_name)
 from canonical.codehosting.tests.helpers import BranchTestCase
+from canonical.config import config
 from canonical.launchpad.interfaces import BranchType
 from canonical.testing import LaunchpadScriptLayer, reset_logging
+from canonical.launchpad.webapp import errorlog
 
 
 class FakeBranchStatusClient:
@@ -36,6 +48,17 @@ class FakeBranchStatusClient:
     def mirrorFailed(self, branch_id, revision_id):
         self.calls.append(('mirrorFailed', branch_id, revision_id))
         return defer.succeed(None)
+
+
+def makeFailure(exception_factory, *args, **kwargs):
+    """Make a Failure object from the given exception factory.
+
+    Any other arguments are passed straight on to the factory.
+    """
+    try:
+        raise exception_factory(*args, **kwargs)
+    except:
+        return failure.Failure()
 
 
 class TestJobScheduler(unittest.TestCase):
@@ -119,7 +142,11 @@ class TestPullerMasterProtocol(TrialTestCase):
         transport.
         """
 
-        def __init__(self):
+        only_sigkill_kills = False
+
+        def __init__(self, protocol, clock):
+            self.protocol = protocol
+            self.clock = clock
             self.calls = []
 
         def loseConnection(self):
@@ -127,15 +154,25 @@ class TestPullerMasterProtocol(TrialTestCase):
 
         def signalProcess(self, signal_name):
             self.calls.append(('signalProcess', signal_name))
+            if not self.only_sigkill_kills or signal_name == 'KILL':
+                reason = failure.Failure(error.ProcessTerminated())
+                self.clock.callLater(0, self.protocol.processEnded, reason)
 
 
     def setUp(self):
         self.arbitrary_branch_id = 1
         self.listener = self.StubPullerListener()
         self.termination_deferred = defer.Deferred()
+        self.clock = task.Clock()
         self.protocol = scheduler.PullerMasterProtocol(
-            self.termination_deferred, self.listener)
-        self.protocol.transport = self.StubTransport()
+            self.termination_deferred, self.listener, self.clock)
+        self.protocol.transport = self.StubTransport(
+            self.protocol, self.clock)
+        self.protocol.connectionMade()
+
+    def assertProtocolSuccess(self):
+        """Assert that the protocol saw no unexpected errors."""
+        self.assertEqual(None, self.protocol._termination_failure)
 
     def convertToNetstring(self, string):
         return '%d:%s,' % (len(string), string)
@@ -148,6 +185,7 @@ class TestPullerMasterProtocol(TrialTestCase):
         """Receiving a startMirroring message notifies the listener."""
         self.sendToProtocol('startMirroring', 0)
         self.assertEqual(['startMirroring'], self.listener.calls)
+        self.assertProtocolSuccess()
 
     def test_mirrorSucceeded(self):
         """Receiving a mirrorSucceeded message notifies the listener."""
@@ -155,6 +193,7 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.listener.calls = []
         self.sendToProtocol('mirrorSucceeded', 1, 1234)
         self.assertEqual([('mirrorSucceeded', '1234')], self.listener.calls)
+        self.assertProtocolSuccess()
 
     def test_mirrorFailed(self):
         """Receiving a mirrorFailed message notifies the listener."""
@@ -163,14 +202,72 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.sendToProtocol('mirrorFailed', 2, 'Error Message', 'OOPS')
         self.assertEqual(
             [('mirrorFailed', 'Error Message', 'OOPS')], self.listener.calls)
+        self.assertProtocolSuccess()
+
+    def test_timeoutWithoutProgress(self):
+        """If we don't receive any messages after the configured timeout
+        period, then we kill the child process.
+        """
+        self.protocol.connectionMade()
+        self.clock.advance(config.supermirror.worker_timeout + 1)
+        return self.assertFailure(
+            self.termination_deferred, scheduler.TimeoutError)
+
+    def assertMessageResetsTimeout(self, *message):
+        """Assert that sending the message resets the protocol timeout."""
+        self.assertTrue(2 < config.supermirror.worker_timeout)
+        self.clock.advance(config.supermirror.worker_timeout - 1)
+        self.sendToProtocol(*message)
+        self.clock.advance(2)
+        self.assertProtocolSuccess()
+
+    def test_progressMadeResetsTimeout(self):
+        """Receiving 'progressMade' resets the timeout."""
+        self.assertMessageResetsTimeout('progressMade', 0)
+
+    def test_startMirroringResetsTimeout(self):
+        """Receiving 'startMirroring' resets the timeout."""
+        self.assertMessageResetsTimeout('startMirroring', 0)
+
+    def test_mirrorSucceededDoesNotResetTimeout(self):
+        """Receiving 'mirrorSucceeded' doesn't reset the timeout.
+
+        It's possible that in pathological cases, the worker process might
+        hang around even after it has said that it's finished. When that
+        happens, we want to kill it quickly so that we can continue mirroring
+        other branches.
+        """
+        self.sendToProtocol('startMirroring', 0)
+        self.clock.advance(config.supermirror.worker_timeout - 1)
+        self.sendToProtocol('mirrorSucceeded', 1, 'rev1')
+        self.clock.advance(2)
+        return self.assertFailure(
+            self.termination_deferred, scheduler.TimeoutError)
+
+    def test_mirrorFailedDoesNotResetTimeout(self):
+        """Receiving 'mirrorFailed' doesn't reset the timeout.
+
+        mirrorFailed doesn't reset the timeout for the same reasons as
+        mirrorSucceeded.
+        """
+        self.sendToProtocol('startMirroring', 0)
+        self.clock.advance(config.supermirror.worker_timeout - 1)
+        self.sendToProtocol('mirrorFailed', 2, 'error message', 'OOPS')
+        self.clock.advance(2)
+        return self.assertFailure(
+            self.termination_deferred, scheduler.TimeoutError)
 
     def test_processTermination(self):
         """The protocol fires a Deferred when it is terminated."""
         self.protocol.processEnded(failure.Failure(error.ProcessDone(None)))
         return self.termination_deferred
 
-    def test_deferredWaitsForListener(self):
-        """If the process terminates while we are waiting """
+    def test_processTerminationCancelsTimeout(self):
+        """When the process ends (for any reason) cancel the timeout."""
+        self.protocol._processTerminated(
+            failure.Failure(error.ConnectionDone()))
+        self.clock.advance(config.supermirror.worker_timeout * 2)
+        self.assertProtocolSuccess()
 
     def test_terminatesWithError(self):
         """When the child process terminates with an unexpected error, raise
@@ -214,9 +311,12 @@ class TestPullerMasterProtocol(TrialTestCase):
         """
         self.protocol.outReceived(self.convertToNetstring('foo'))
 
+        # Give the process time to die.
+        self.clock.advance(1)
+
         def check_failure(exception):
             self.assertEqual(
-                [('signalProcess', 'KILL')], self.protocol.transport.calls)
+                [('signalProcess', 'INT')], self.protocol.transport.calls)
             self.assertTrue('foo' in str(exception))
 
         deferred = self.assertFailure(
@@ -230,14 +330,47 @@ class TestPullerMasterProtocol(TrialTestCase):
         """
         self.protocol.outReceived('foo')
 
+        # Give the process time to die.
+        self.clock.advance(1)
+
         def check_failure(exception):
             self.assertEqual(
-                ['loseConnection', ('signalProcess', 'KILL')],
+                ['loseConnection', ('signalProcess', 'INT')],
                 self.protocol.transport.calls)
             self.assertTrue('foo' in str(exception))
 
         deferred = self.assertFailure(
             self.termination_deferred, NetstringParseError)
+
+        return deferred.addCallback(check_failure)
+
+    def test_interruptThenKill(self):
+        """If SIGINT doesn't kill the process, we SIGKILL after 5 seconds."""
+        fail = makeFailure(RuntimeError, 'error message')
+        self.protocol.transport.only_sigkill_kills = True
+
+        # When the error happens, we SIGINT the process.
+        self.protocol.unexpectedError(fail)
+        self.assertEqual(
+            [('signalProcess', 'INT')],
+            self.protocol.transport.calls)
+
+        # After 5 seconds, we send SIGKILL.
+        self.clock.advance(6)
+        self.assertEqual(
+            [('signalProcess', 'INT'), ('signalProcess', 'KILL')],
+            self.protocol.transport.calls)
+
+        # SIGKILL is assumed to kill the process.  We check that the
+        # failure passed to the termination_deferred is the failure we
+        # created above, not the ProcessTerminated that results from
+        # the process dying.
+
+        def check_failure(exception):
+            self.assertEqual('error message', str(exception))
+
+        deferred = self.assertFailure(
+            self.termination_deferred, RuntimeError)
 
         return deferred.addCallback(check_failure)
 
@@ -250,6 +383,40 @@ class TestPullerMaster(TrialTestCase):
         self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
             BranchType.HOSTED, logging.getLogger(), self.status_client)
+
+    def _getLastOOPSFilename(self, time):
+        """Find the filename for the OOPS logged at 'time'."""
+        utility = errorlog.globalErrorUtility
+        error_dir = utility.errordir(time)
+        oops_id = utility._findLastOopsId(error_dir)
+        second_in_day = time.hour * 3600 + time.minute * 60 + time.second
+        oops_prefix = config.launchpad.errorreports.oops_prefix
+        return os.path.join(
+            error_dir, '%05d.%s%s' % (second_in_day, oops_prefix, oops_id))
+
+    def getLastOOPS(self, time):
+        """Return the OOPS report logged at the given time."""
+        oops_filename = self._getLastOOPSFilename(time)
+        oops_report = open(oops_filename, 'r')
+        try:
+            return errorlog.ErrorReport.read(oops_report)
+        finally:
+            oops_report.close()
+
+    def test_unexpectedError(self):
+        """The puller master logs an OOPS when it receives an unexpected
+        error.
+        """
+        now = datetime.now(pytz.timezone('UTC'))
+        fail = makeFailure(RuntimeError, 'error message')
+        self.eventHandler.unexpectedError(fail, now)
+        oops = self.getLastOOPS(now)
+        self.assertEqual(fail.getTraceback(), oops.tb_text)
+        self.assertEqual('error message', oops.value)
+        self.assertEqual('RuntimeError', oops.type)
+        self.assertEqual(
+            get_canonical_url_for_branch_name(
+                self.eventHandler.unique_name), oops.url)
 
     def test_startMirroring(self):
         deferred = self.eventHandler.startMirroring()

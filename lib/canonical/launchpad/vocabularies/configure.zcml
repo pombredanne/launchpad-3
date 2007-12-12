@@ -146,11 +146,6 @@
     />
 
   <vocabulary
-    name="POTemplateName"
-    factory="canonical.launchpad.vocabularies.POTemplateNameVocabulary"
-    />
-
-  <vocabulary
     name="Product"
     factory="canonical.launchpad.vocabularies.ProductVocabulary"
     />
@@ -203,6 +198,11 @@
   <vocabulary
     name="TranslationGroup"
     factory="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
+    />
+
+  <vocabulary
+    name="TranslationMessage"
+    factory="canonical.launchpad.vocabularies.TranslationMessageVocabulary"
     />
 
   <vocabulary

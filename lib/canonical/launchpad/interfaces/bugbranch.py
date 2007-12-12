@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces for linking BugTasks and Branches."""
 
@@ -18,6 +19,7 @@ from canonical.launchpad.fields import BugField
 from canonical.launchpad.interfaces import (
     IHasBug, IHasDateCreated, non_duplicate_branch)
 from canonical.launchpad.interfaces.bugtask import IBugTask
+from canonical.launchpad.interfaces.person import IPerson
 
 from canonical.lazr import DBEnumeratedType, DBItem
 
@@ -81,8 +83,18 @@ class IBugBranch(IHasDateCreated, IHasBug):
             "against the branch's product)."),
         readonly=True)
 
+    registrant = Object(
+        schema=IPerson, readonly=True, required=True,
+        title=_("The person who linked the bug to the branch"))
+
 
 class IBugBranchSet(Interface):
+
+    def getBugBranch(bug, branch):
+        """Return the BugBranch for the given bug and branch.
+
+        Return None if there is no such link.
+        """
 
     def getBugBranchesForBranches(branches, user):
         """Return a sequence of IBugBranch instances associated with
@@ -94,3 +106,6 @@ class IBugBranchSet(Interface):
     def getBugBranchesForBugTasks(tasks):
         """Return a sequence of IBugBranch instances associated with
         the bugs for the given tasks."""
+
+    def new(bug, branch, status, registrant):
+        """Create and return a new BugBranch."""

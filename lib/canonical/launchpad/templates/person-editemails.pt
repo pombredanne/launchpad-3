@@ -1,88 +1,144 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Your e-mail addresses</h1>
+      <h1>Change e-mail settings</h1>
     </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <metal:extra-info fill-slot="extra_info">
+      <h2>Your e-mail addresses</h2>
+      <tal:block condition="context/preferredemail">
+        <p>Your preferred contact address for all Launchpad e-mail is:</p>
+        <ul id="preferred-email">
+          <li class="mail"><b tal:content="context/preferredemail/email" /></li>
+        </ul>
+      </tal:block>
 
-  <p
-    tal:define="submitted view/emailFormSubmitted"
-    tal:condition="submitted"
-    tal:content="structure view/message"
-    class="informational message"
-  />
-  
-  <form name="email" action="" method="POST">
+      <tal:block tal:condition="not: context/preferredemail">
+        <p>Currently you don't have a contact address in
+        Launchpad. Please choose one from the list of confirmed
+        addresses.</p>
+      </tal:block>
+    </metal:extra-info>
 
-  <tal:block condition="context/preferredemail">
-    <p>Your preferred contact address for all Launchpad e-mail is:</p>
-    <ul id="preferred-email">
-      <li class="mail"><b tal:content="context/preferredemail/email" /></li>
-    </ul>
-  </tal:block>
+    <metal:widgets fill-slot="widgets">
 
-  <tal:block tal:condition="not: context/preferredemail">
-  <p>Currently you don't have a contact address in Launchpad. Please choose
-  one from the list of confirmed addresses.</p>
-  </tal:block>
+      <table class="form">
+        <tal:widget define="widget nocall:view/widgets/VALIDATED_SELECTED">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+        <tr>
+          <td></td>
+          <td>
+            <input tal:replace="structure view/action_set_preferred/render" />
+            <input tal:replace="structure
+                                view/action_remove_validated/render" />
+          </td>
+        </tr>
 
-  <tal:block tal:condition="context/validatedemails">
-  <p>These other addresses are confirmed as being yours:</p>
 
-  <div style="padding: 0.7em 0em" id="confirmed-emails">
-    <div tal:repeat="email context/validatedemails" >
-      <label tal:attributes="for email/email">
-        <input type="radio" tal:attributes="value email/email; id email/email"
-               name="VALIDATED_SELECTED" /> 
-        <b tal:content="email/email" />
-      </label>
-    </div>
+        <tal:block tal:condition="view/unvalidated_addresses">
+          <tal:widget define="widget nocall:view/widgets/UNVALIDATED_SELECTED">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+          <tr>
+            <td></td>
+            <td>
+              <input tal:replace="structure view/action_confirm/render" />
+              <input tal:replace="structure
+                                  view/action_remove_unvalidated/render" />
+            </td>
+          </tr>
+        </tal:block>
+
+        <tal:widget define="widget nocall:view/widgets/newemail">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          <tr>
+            <td></td>
+            <td>
+              <input tal:replace="structure view/action_add_email/render" />
+            </td>
+          </tr>
+        </tal:widget>
+      </table>
+    </metal:widgets>
+    <metal:widgets fill-slot="buttons" />
   </div>
-  <input type="submit" value="Remove" name="REMOVE_VALIDATED" />
-  <input type="submit" value="Set as Contact Address" name="SET_PREFERRED" />
-  <br /><br /><br />
-  </tal:block>
 
-  <tal:block tal:condition="view/unvalidatedAndGuessedEmails">
-  <p>These addresses may also be yours:</p>
 
-  <div style="padding: 0.7em 0em" id="unconfirmed-emails">
-    <div tal:repeat="email view/unvalidatedAndGuessedEmails">
-      <label tal:attributes="for string:${email}_unvalidated">
-        <input type="radio" name="UNVALIDATED_SELECTED"
-               tal:attributes="value email; id string:${email}_unvalidated" />
-        <b tal:content="email" />
-      </label>
-    </div>
-  </div>
-  <input type="submit" value="Remove" name="REMOVE_UNVALIDATED" />
-  <input type="submit" value="Confirm" name="VALIDATE" />
-  <br /><br /><br />
-  </tal:block>
+  <form action=""
+        method="post" enctype="multipart/form-data"
+        accept-charset="UTF-8" tal:condition="view/mailing_list_widgets">
 
+    <h2>Mailing list subscriptions</h2>
+
+    <p>You're a member of one or more teams with active mailing
+      lists. You can subscribe to a team's mailing list using any of
+      your verified email addresses.</p>
+
+    <table class="form">
+      <thead>
+        <th>For this mailing list...</th>
+        <td><strong>Subscribe with this address</strong></td>
+      </thead>
+      <tbody>
+        <metal:block tal:repeat="widget view/mailing_list_widgets">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </metal:block>
+          <tr>
+            <td></td>
+            <td>
+              <input tal:replace="structure
+                     view/action_update_subscriptions/render" />
+            </td>
+          </tr>
+      </tbody>
+    </table>
   </form>
 
-  <form name="newemail" action="" method="POST">
+</div>
 
+<div metal:fill-slot="help">
   <p>
-    Add a new address:
-    <input type="text" tal:attributes="value view/notWellFormedEmail|nothing"
-           name="newemail" size="23"/>
-    <input type="submit" value="Add" name="ADD_EMAIL" />
+    This page displays all the email addresses associated with your
+    Launchpad account. Some of these addresses are verified (known to
+    be associated with you), but some may need confirmation before you
+    can use them in Launchpad.
   </p>
 
-  </form>
+  <p>
+    When you confirm that an address is yours, Launchpad will send a
+    verification email to that address. To complete the verification
+    process, simply visit the URL contained in the email.
+  </p>
+
+  <p>
+    You may choose one of your verified addresses to be your
+    preferred email address. Email from Launchpad will be sent to
+    this address.
+  </p>
+
+  <p id="mailing-list-help" tal:condition="view/mailing_list_widgets">
+    This page also displays mailing lists for all of your
+    teams that have them. You can subscribe to a list using any of
+    your verified email addresses, or you can choose to have messages
+    delivered to your preferred address. That way, if you change your
+    preferred address, you won't have to change all your subscriptions
+    to use the new address.
+  </p>
+
 </div>
+
 </body>
 </html>

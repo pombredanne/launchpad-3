@@ -58,10 +58,10 @@ class CustomUpload:
     targetdir = None
     version = None
 
-    def __init__(self, archive_root, tarfile_path, distrorelease):
+    def __init__(self, archive_root, tarfile_path, distroseries):
         self.archive_root = archive_root
         self.tarfile_path = tarfile_path
-        self.distrorelease = distrorelease
+        self.distroseries = distroseries
 
         self.tmpdir = None
 

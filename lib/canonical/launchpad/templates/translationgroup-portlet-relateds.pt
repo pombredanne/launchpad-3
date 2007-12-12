@@ -1,40 +1,49 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <div class="portlet" id="portlet-related">
-    <h2>This group translates for</h2>
+  <h2>This group translates for</h2>
 
-    <div class="portletBody">
-        <div class="portletContent">
+  <div class="portletBody">
+    <div class="portletContent">
 
-            <h5 tal:condition="context/distributions">Distributions:</h5>
-            <ul>
-                <li tal:repeat="distribution context/distributions">
-                  <a href="#"
-                     tal:content="distribution/displayname"
-                     tal:attributes="href
-                       string:/${distribution/name}">Ubuntu</a>
-                </li>
-            </ul>
+      <tal:distributions condition="context/distributions">
+        <h3>Distributions:</h3>
+        <ul>
+          <li tal:repeat="distribution context/distributions">
+            <a href="#"
+               tal:content="distribution/displayname"
+               tal:attributes="href distribution/fmt:url">Ubuntu</a>
+          </li>
+        </ul>
+      </tal:distributions>
 
-            <h5 tal:condition="context/products">Projects:</h5>
-            <ul>
-                <li tal:repeat="product context/products">
-                  <a href="#"
-                     tal:content="product/displayname"
-                     tal:attributes="href
-                     string:/${product/name}">Mozilla Firefox</a>
-                </li>
-            </ul>
+     <tal:products condition="context/products">
+       <h3>Projects:</h3>
+       <ul>
+         <li tal:repeat="product context/products">
+           <a href="#"
+              tal:content="product/displayname"
+              tal:attributes="href product/fmt:url">Mozilla Firefox</a>
+         </li>
+       </ul>
+     </tal:products>
 
-            <h5 tal:condition="context/projects">Project Groups:</h5>
-            <ul>
-                <li tal:repeat="project context/projects">
-                  <a href="#"
-                     tal:content="project/displayname"
-                     tal:attributes="href
-                     string:/${project/name}">Gnome</a>
-                </li>
-            </ul>
+     <tal:projects condition="context/projects">
+       <h3>Project Groups:</h3>
+       <ul>
+         <li tal:repeat="project context/projects">
+           <a href="#"
+              tal:content="project/displayname"
+              tal:attributes="href project/fmt:url">Gnome</a>
+         </li>
+       </ul>
+     </tal:projects>
 
-        </div>
-
-    </div>
+   </div>
+  </div>
 </div>
+</tal:root>

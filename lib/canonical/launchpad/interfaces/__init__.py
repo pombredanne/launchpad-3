@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0401
 
 __metaclass__ = type
 
@@ -14,6 +15,7 @@ from canonical.launchpad.interfaces.specificationtarget import *
 from canonical.launchpad.interfaces.messagetarget import *
 from canonical.launchpad.interfaces.pillar import *
 
+from canonical.launchpad.interfaces.announcement import *
 from canonical.launchpad.interfaces.answercontact import *
 from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
@@ -103,16 +105,13 @@ from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.poll import *
 from canonical.launchpad.interfaces.pomsgid import *
-from canonical.launchpad.interfaces.pomsgidsighting import *
-from canonical.launchpad.interfaces.pomsgset import *
 from canonical.launchpad.interfaces.potemplate import *
-from canonical.launchpad.interfaces.potemplatename import *
 from canonical.launchpad.interfaces.potmsgset import *
 from canonical.launchpad.interfaces.potranslation import *
-from canonical.launchpad.interfaces.posubmission import *
 from canonical.launchpad.interfaces.processor import *
 from canonical.launchpad.interfaces.product import *
 from canonical.launchpad.interfaces.productbounty import *
+from canonical.launchpad.interfaces.productlicense import *
 from canonical.launchpad.interfaces.productrelease import *
 from canonical.launchpad.interfaces.productseries import *
 from canonical.launchpad.interfaces.project import *
@@ -146,6 +145,7 @@ from canonical.launchpad.interfaces.translationcommonformat import *
 from canonical.launchpad.interfaces.translationexporter import *
 from canonical.launchpad.interfaces.translationfileformat import *
 from canonical.launchpad.interfaces.translationimporter import *
+from canonical.launchpad.interfaces.translationmessage import *
 from canonical.launchpad.interfaces.translations import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *

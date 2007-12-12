@@ -17,10 +17,12 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
-    BranchType, BranchLifecycleStatus, BranchCreationForbidden,
-    BranchCreatorNotMemberOfOwnerTeam, BranchVisibilityRule,
-    IBranchSet, IPersonSet, IProductSet, MAXIMUM_MIRROR_FAILURES,
-    MIRROR_TIME_INCREMENT, PersonCreationRationale, TeamSubscriptionPolicy)
+    BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
+    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
+    BranchLifecycleStatus, BranchType, BranchVisibilityRule, IBranchSet,
+    IPersonSet, IProductSet, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
+    PersonCreationRationale, TeamSubscriptionPolicy)
+from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -100,6 +102,53 @@ class TestBranchSet(TestCase):
             logout()
 
 
+class TestBranchSetNewNameValidation(TestCase):
+    """Test of the validation of the branch name done by BranchSet.new()."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCase.setUp(self)
+        login(ANONYMOUS)
+        # This person should be considered to be wholly arbitrary.
+        self.person = getUtility(IPersonSet).getByName('name12')
+        assert self.person is not None, "Sample Person not found."
+        self.branch_set = getUtility(IBranchSet)
+
+    def tearDown(self):
+        logout()
+        TestCase.tearDown(self)
+
+    def makeNewBranchWithName(self, name):
+        """Attempt to create a new branch with name 'name'.
+
+        It will a +junk branch owned and authored by Sample Person, but this
+        shouldn't be important.
+        """
+        return self.branch_set.new(
+            BranchType.HOSTED, name, self.person, self.person, None, None)
+
+    def testPermittedFirstCharacter(self):
+        # The first character of a branch name must be a letter or a number.
+        for c in [chr(i) for i in range(128)]:
+            if c.isalnum():
+                self.makeNewBranchWithName(c)
+            else:
+                self.assertRaises(
+                    LaunchpadValidationError, self.makeNewBranchWithName, c)
+
+    def testPermittedSubsequentCharacter(self):
+        # After the first character, letters, numbers and certain punctuation
+        # is permitted.
+        for c in [chr(i) for i in range(128)]:
+            if c.isalnum() or c in '+-_@.':
+                self.makeNewBranchWithName('a' + c)
+            else:
+                self.assertRaises(
+                    LaunchpadValidationError,
+                    self.makeNewBranchWithName, 'a' + c)
+
+
 class TestMirroringForHostedBranches(BranchTestCase):
     """Tests for mirroring methods of a branch."""
 
@@ -144,7 +193,7 @@ class TestMirroringForHostedBranches(BranchTestCase):
         """requestMirror sets the mirror request time to 'now'."""
         branch = self.makeBranch()
         branch.requestMirror()
-        self.assertEqual(UTC_NOW, branch.mirror_request_time)
+        self.assertEqual(UTC_NOW, branch.next_mirror_time)
 
     def test_requestMirrorDuringPull(self):
         """Branches can have mirrors requested while they are being mirrored.
@@ -159,10 +208,10 @@ class TestMirroringForHostedBranches(BranchTestCase):
         branch.requestMirror()
         removeSecurityProxy(branch).sync()
         self.assertNotEqual(
-            branch.last_mirror_attempt, branch.mirror_request_time)
-        mirror_request_time = branch.mirror_request_time
+            branch.last_mirror_attempt, branch.next_mirror_time)
+        next_mirror_time = branch.next_mirror_time
         branch.mirrorComplete('rev1')
-        self.assertEqual(mirror_request_time, branch.mirror_request_time)
+        self.assertEqual(next_mirror_time, branch.next_mirror_time)
 
     def test_mirrorCompleteRemovesFromPullQueue(self):
         """Completing the mirror removes the branch from the pull queue."""
@@ -179,7 +228,7 @@ class TestMirroringForHostedBranches(BranchTestCase):
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
-        self.assertEqual(None, branch.mirror_request_time)
+        self.assertEqual(None, branch.next_mirror_time)
 
     def test_mirrorFailureResetsMirrorRequest(self):
         """If a branch fails to mirror then update failures but don't mirror
@@ -190,15 +239,15 @@ class TestMirroringForHostedBranches(BranchTestCase):
         branch.startMirroring()
         branch.mirrorFailed('No particular reason')
         self.assertEqual(1, branch.mirror_failures)
-        self.assertEqual(None, branch.mirror_request_time)
+        self.assertEqual(None, branch.next_mirror_time)
 
     def test_pullQueueEmpty(self):
-        """Branches with no mirror_request_time are not in the pull queue."""
+        """Branches with no next_mirror_time are not in the pull queue."""
         self.assertEqual(
             [], list(self.branch_set.getPullQueue(self.branch_type)))
 
-    def test_pastMirrorRequestTimeInQueue(self):
-        """Branches with mirror_request_time in the past are mirrored."""
+    def test_pastNextMirrorTimeInQueue(self):
+        """Branches with next_mirror_time in the past are mirrored."""
         transaction.begin()
         branch = self.makeBranch()
         branch.requestMirror()
@@ -209,12 +258,12 @@ class TestMirroringForHostedBranches(BranchTestCase):
             [branch.id
              for branch in self.branch_set.getPullQueue(branch.branch_type)])
 
-    def test_futureMirrorRequestTimeInQueue(self):
-        """Branches with mirror_request_time in the future are not mirrored."""
+    def test_futureNextMirrorTimeInQueue(self):
+        """Branches with next_mirror_time in the future are not mirrored."""
         transaction.begin()
         branch = removeSecurityProxy(self.makeBranch())
         tomorrow = self.getNow() + timedelta(1)
-        branch.mirror_request_time = tomorrow
+        branch.next_mirror_time = tomorrow
         branch.syncUpdate()
         transaction.commit()
         self.assertEqual(
@@ -225,7 +274,7 @@ class TestMirroringForHostedBranches(BranchTestCase):
         branches = []
         for i in range(3):
             branch = removeSecurityProxy(self.makeBranch())
-            branch.mirror_request_time = self.getNow() - timedelta(hours=i+1)
+            branch.next_mirror_time = self.getNow() - timedelta(hours=i+1)
             branch.sync()
             branches.append(branch)
         self.assertEqual(
@@ -243,7 +292,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         branch.requestMirror()
         branch.mirrorFailed('No particular reason')
         self.assertEqual(1, branch.mirror_failures)
-        self.assertInFuture(branch.mirror_request_time, MIRROR_TIME_INCREMENT)
+        self.assertInFuture(branch.next_mirror_time, MIRROR_TIME_INCREMENT)
 
     def test_mirrorFailureBacksOffExponentially(self):
         """If a branch repeatedly fails to mirror then back off exponentially.
@@ -255,7 +304,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
             branch.mirrorFailed('No particular reason')
         self.assertEqual(num_failures, branch.mirror_failures)
         self.assertInFuture(
-            branch.mirror_request_time,
+            branch.next_mirror_time,
             (MIRROR_TIME_INCREMENT * 2 ** (num_failures - 1)))
 
     def test_repeatedMirrorFailuresDisablesMirroring(self):
@@ -266,7 +315,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
             branch.requestMirror()
             branch.mirrorFailed('No particular reason')
         self.assertEqual(MAXIMUM_MIRROR_FAILURES, branch.mirror_failures)
-        self.assertEqual(None, branch.mirror_request_time)
+        self.assertEqual(None, branch.next_mirror_time)
 
     def test_mirroringResetsMirrorRequest(self):
         """Mirroring 'mirrored' branches sets their mirror request time to six
@@ -277,7 +326,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         branch.startMirroring()
         branch.mirrorComplete('rev1')
         self.assertInFuture(
-            branch.mirror_request_time, MIRROR_TIME_INCREMENT)
+            branch.next_mirror_time, MIRROR_TIME_INCREMENT)
         self.assertEqual(0, branch.mirror_failures)
 
 
@@ -467,8 +516,12 @@ class NoPolicies(BranchVisibilityPolicyTestCase):
         """If the creator isn't a member of the owner an exception is raised."""
         self.assertPolicyCheckRaises(
             BranchCreatorNotMemberOfOwnerTeam, self.doug, self.xray)
+
+    def test_creation_under_different_user(self):
+        """If the owner is a user other than the creator an exception is raised.
+        """
         self.assertPolicyCheckRaises(
-            BranchCreatorNotMemberOfOwnerTeam, self.albert, self.bob)
+            BranchCreatorNotOwner, self.albert, self.bob)
 
     def test_public_branch_creation(self):
         """Branches where the creator is a memeber of owner will be public."""
@@ -893,19 +946,21 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
         # Override the product that is used in the check tests.
         self.firefox = None
 
-    def test_junk_brances_public(self):
+    def test_junk_branches_public(self):
         """Branches created by anyone that has no product defined are created
         as public branches.
         """
         self.assertPublic(self.albert, self.albert)
-        # XXX: thumper 2007-06-22 bug=120501
-        # Bug 120501 is about whether or not users are able to create junk
-        # branches in the team namespace.
-        self.assertPublic(self.albert, self.xray)
-        self.assertPublic(self.albert, self.yankee)
-        self.assertPublic(self.albert, self.zulu)
 
-        self.assertPublic(self.doug, self.doug)
+    def test_no_team_junk_branches(self):
+        """We forbid the creation of team-owned +junk branches."""
+        self.assertPolicyCheckRaises(
+            BranchCreationNoTeamOwnedJunkBranches, self.albert, self.xray)
+
+    def test_no_create_junk_branch_for_other_user(self):
+        """One user can't create +junk branches owned by another."""
+        self.assertPolicyCheckRaises(
+            BranchCreatorNotOwner, self.albert, self.doug)
 
 
 def test_suite():

@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Mailing list interfaces."""
 
@@ -12,11 +13,12 @@ __all__ = [
     'IMailingListApplication',
     'IMailingListSet',
     'IMailingListSubscription',
+    'MAILING_LISTS_DOMAIN',
     'MailingListAutoSubscribePolicy',
     'MailingListStatus',
-    'MAILING_LISTS_DOMAIN',
     'PersonalStanding',
     'PostedMessageStatus',
+    'is_participant_in_beta_program'
     ]
 
 
@@ -118,6 +120,12 @@ class MailingListStatus(DBEnumeratedType):
         The mailing list has been flagged for deactivation by the team owner.
         Mailman will be informed of this and will take the necessary actions
         to deactive the list.
+        """)
+
+    MOD_FAILED = DBItem(11, """
+        Modification failed
+
+        Mailman was unsuccessful in modifying the mailing list.
         """)
 
 
@@ -272,18 +280,34 @@ class IMailingList(Interface):
 
     welcome_message = Text(
         title=_('Welcome message text'),
-        description=_('When a new member joins the mailing list, they are '
-                      'sent this welcome message text.  It may contain '
-                      'any instructions or additional links that a new '
-                      'subscriber might want to know about.  The welcome '
-                      'message may only be changed for active mailing lists '
-                      'and doing so changes the status of the list to '
-                      'MODIFIED.')
+        description=_('Any instructions or links that should be sent to new '
+                      'subscribers to this mailing list.'),
+        required=False,
         )
 
     address = TextLine(
-        title=_("This list's email address."), required=True, readonly=True,
-        description=_("The text representation of this team's email address."))
+        title=_("This list's email address."),
+        description=_(
+            "The text representation of this team's email address."),
+        required=True,
+        readonly=True)
+
+    archive_url = TextLine(
+        title=_("The url to the list's archives"),
+        description=_(
+            'This is the url to the archive if the mailing list has ever '
+            'activated.  Such a list, even if now inactive, may still have '
+            'an archive.  If the list has never been activated, this will '
+            'be None.'),
+        readonly=True)
+
+    def isUsable():
+        """Is this mailing list in a state to accept messages?
+
+        This doesn't neccessarily mean that the list is in perfect
+        shape: its status might be `MailingListStatus.MOD_FAILED`. But
+        it should be able to handle messages.
+        """
 
     def review(reviewer, status):
         """Review the mailing list's registration.
@@ -353,6 +377,15 @@ class IMailingList(Interface):
         """Delete this mailing list from the database.
 
         Only mailing lists in the REGISTERED state can be deleted.
+        """
+
+    def getSubscription(person):
+        """Get a person's subscription details for the mailing list.
+
+        :param person: The person whose subscription details to get.
+
+        :return: If the person is subscribed to this mailing list, an
+                 IMailingListSubscription. Otherwise, None.
         """
 
     def subscribe(person, address=None):
@@ -462,8 +495,8 @@ class IMailingListSet(Interface):
 
     deactivated_lists = Set(
         title=_('Deactivated lists'),
-        description=_(
-            'All mailing lists with status `MailingListStatus.DEACTIVATING`.'),
+        description=_('All mailing lists with status '
+                      '`MailingListStatus.DEACTIVATING`.'),
         value_type=Object(schema=IMailingList),
         readonly=True)
 
@@ -598,3 +631,22 @@ class CannotChangeSubscription(Exception):
     a member of the team linked to this mailing list, when `person` is a team,
     or when `person` does not own the given email address.
     """
+
+
+def is_participant_in_beta_program(team):
+    """The given team is a participant in the mailing list beta program.
+
+    Participation in the mailing list beta program is determined by membership
+    by the team in the config.mailman.beta_testers_team.
+    """
+    # This is all temporary stuff, so do the imports here so that this entire
+    # check is easier to remove when the mailing list feature goes public.
+    from zope.component import getUtility
+    from canonical.config import config
+    from canonical.launchpad.interfaces import IPersonSet
+    beta_testers_team = getUtility(IPersonSet).getByName(
+        config.mailman.beta_testers_team)
+    # If there are no beta testers then obviously this team cannot
+    # participate in the beta program.
+    return (beta_testers_team is not None and
+            team.hasParticipationEntryFor(beta_testers_team))

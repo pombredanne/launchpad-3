@@ -1,5 +1,20 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <tal:do-this-first tal:content="view/processForm" />
-<html metal:use-macro="view/macro:page/pillarindex" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/pillarindex"
+  i18n:domain="launchpad"
+>
   <body>
     <h1 metal:fill-slot="heading">People and teams</h1>
     <div metal:fill-slot="main">
@@ -25,7 +40,7 @@
       <table>
         <tr tal:repeat="email view/dupeemails">
           <td>
-            <input type="checkbox" name="selected" checked
+            <input type="checkbox" name="selected" checked="checked"
                    tal:attributes="value email/email" />
           </td>
           <td tal:content="email/email">
@@ -58,4 +73,4 @@
 
 </body>
 </html>
-
+</tal:root>
