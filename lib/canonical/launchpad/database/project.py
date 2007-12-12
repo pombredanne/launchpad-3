@@ -91,6 +91,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     bugtracker = ForeignKey(
         foreignKey="BugTracker", dbName="bugtracker", notNull=False,
         default=None)
+    bug_reporting_guidelines = StringCol(default=None)
 
     # convenient joins
 
@@ -189,8 +190,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = (
-                ['-priority', 'Specification.definition_status', 'Specification.name'])
+            order = ['-priority', 'Specification.definition_status',
+                     'Specification.name']
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -298,11 +299,6 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Question.product = Product.id AND
             Product.project = %s""" % sqlvalues(self.id),
             clauseTables=['Question', 'Product'], distinct=True))
-
-    @property
-    def bugtargetdisplayname(self):
-        """See IBugTarget."""
-        return self.displayname
 
     @property
     def bugtargetname(self):

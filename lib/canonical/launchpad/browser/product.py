@@ -795,11 +795,12 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     schema = IProduct
     label = "Change project details"
     field_names = [
-        "displayname", "title", "summary", "description", "project",
-        "bugtracker", 'enable_bug_expiration', "official_rosetta",
-        "official_answers", "homepageurl", "sourceforgeproject",
-        "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
-        "programminglang", "development_focus", "licenses", "license_info"]
+        "displayname", "title", "summary", "description",
+        "bug_reporting_guidelines", "project", "bugtracker",
+        "enable_bug_expiration", "official_rosetta", "official_answers",
+        "homepageurl", "sourceforgeproject", "freshmeatproject", "wikiurl",
+        "screenshotsurl", "downloadurl", "programminglang",
+        "development_focus", "licenses", "license_info"]
     custom_widget(
         'licenses', LicenseWidget, column_count=3, orientation='vertical')
     custom_widget('bugtracker', ProductBugTrackerWidget)
