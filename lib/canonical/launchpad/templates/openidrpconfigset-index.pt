@@ -1,5 +1,5 @@
 <html xml:lang="en" lang="en"
-    xmlns="http://www.w3.org/1999/xhtml" 
+    xmlns="http://www.w3.org/1999/xhtml"
     xmlns:tal="http://xml.zope.org/namespaces/tal"
     xmlns:metal="http://xml.zope.org/namespaces/metal"
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
@@ -10,7 +10,7 @@
     <div metal:fill-slot="main">
       <h1>OpenID Relying Party Configurations</h1>
 
-      <table class="listing">
+      <table class="listing" tal:condition="context/getAll">
         <thead>
           <tr>
             <th>Relying Party</th>
