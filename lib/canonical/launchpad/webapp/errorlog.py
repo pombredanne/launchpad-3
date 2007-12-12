@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
+
 """Error logging facilities."""
 
 __metaclass__ = type
@@ -60,6 +62,7 @@ def _safestr(obj):
     # A call to str(obj) could raise anything at all.
     # We'll ignore these errors, and print something
     # useful instead, but also log the error.
+    # We disable the pylint warning for the blank except.
     try:
         value = str(obj)
     except:
@@ -317,11 +320,11 @@ class ErrorReportingUtility:
                     else:
                         login = 'unauthenticated'
                     username = _safestr(
-                        ', '.join(map(unicode, (login,
-                                                request.principal.id,
-                                                request.principal.title,
-                                                request.principal.description
-                                                ))))
+                        ', '.join([
+                                unicode(login),
+                                unicode(request.principal.id),
+                                unicode(request.principal.title),
+                                unicode(request.principal.description)]))
                 # XXX jamesh 2005-11-22:
                 # When there's an unauthorized access, request.principal is
                 # not set, so we get an AttributeError.
@@ -377,12 +380,15 @@ class ErrorReportingUtility:
                             now - _rate_restrict_burst*_rate_restrict_period)
             next_when += _rate_restrict_period
             _rate_restrict_pool[strtype] = next_when
-            # The logging module doesn't provide a way to pass in
-            # exception info, so we temporarily raise the exception so
-            # it can be logged.
+            # Sometimes traceback information can be passed in as a string. In
+            # those cases, we don't (can't!) log the traceback. The traceback
+            # information is still preserved in the actual OOPS report.
             traceback = info[2]
             if not isinstance(traceback, types.TracebackType):
                 traceback = None
+            # The logging module doesn't provide a way to pass in exception
+            # info, so we temporarily raise the exception so it can be logged.
+            # We disable the pylint warning for the blank except.
             try:
                 raise info[0], info[1], traceback
             except:
