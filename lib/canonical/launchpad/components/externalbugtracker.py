@@ -134,9 +134,10 @@ def get_bugwatcherrortype_for_error(error):
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
 
+    implements(IExternalBugTracker)
+
     batch_query_threshold = config.checkwatches.batch_query_threshold
     batch_size = None
-    implements(IExternalBugTracker)
     import_comments = config.checkwatches.import_comments
 
     def __init__(self, bugtracker):
