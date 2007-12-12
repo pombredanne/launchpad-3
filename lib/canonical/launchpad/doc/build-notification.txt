@@ -70,6 +70,9 @@ Checking subject and extra headers:
   >>> build_notification['X-Launchpad-Build-Arch']
   'i386'
 
+  >>> 'X-Launchpad-PPA' in build_notification.keys()
+  False
+
 Let's check the notification content.  It should contain:
 
  * The source package name
@@ -156,6 +159,9 @@ Checking subject and extra headers:
   >>> build_notification['X-Launchpad-Build-Arch']
   'i386'
 
+  >>> 'X-Launchpad-PPA' in build_notification.keys()
+  False
+
 Check the notification content:
 
   >>> notification_body = build_notification.get_payload()
@@ -231,6 +237,9 @@ Checking subject and extra headers:
   >>> build_notification['X-Launchpad-Build-Arch']
   'i386'
 
+  >>> 'X-Launchpad-PPA' in build_notification.keys()
+  False
+
 Check the notification content:
 
   >>> notification_body = build_notification.get_payload()
@@ -305,6 +314,9 @@ Checking subject and extra headers:
 
   >>> build_notification['X-Launchpad-Build-Arch']
   'i386'
+
+  >>> 'X-Launchpad-PPA' in build_notification.keys()
+  False
 
 Check the notification content:
 
@@ -384,6 +396,9 @@ Checking subject and extra headers:
   >>> build_notification['X-Launchpad-Build-Arch']
   'i386'
 
+  >>> 'X-Launchpad-PPA' in build_notification.keys()
+  False
+
 Just to keep the config sane, as it was before:
 
   >>> config.builddmaster.notify_owner = True
@@ -449,6 +464,9 @@ Checking subject and extra headers:
 
   >>> build_notification['X-Launchpad-Build-Arch']
   'i386'
+
+  >>> build_notification['X-Launchpad-PPA']
+  'cprov'
 
 PPA build notifications should be as much as possible similar to those
 in the main archive, the important differences are:
