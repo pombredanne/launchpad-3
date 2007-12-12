@@ -256,6 +256,12 @@ class UploadProcessor:
             distribution = getUtility(IDistributionSet)['ubuntu']
             suite_name = None
             archive = distribution.main_archive
+            # XXX cprov 20071212: overriding primary-archive is not exactly
+            # fine because it can confuse the code that sends rejection
+            # messages if it relies only on archive.purpose (which should be
+            # enough). On the other hand if we set an arbitrary owner it
+            # will break nascentupload ACL calculations.
+
             # This is fine because the transaction will be aborted when
             # the rejection happens.
             archive.purpose = ArchivePurpose.PPA

@@ -57,8 +57,8 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
         self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
 
-    def assertEmail(self, contents=None, recipients=None):
-        """Check email last email content and recipients."""
+    def assertEmail(self, contents=None, recipients=None, ppa_header='name16'):
+        """Check email last email content, recipients and PPA header."""
         # 'name16' it the owner of the PPA used in this test, therefore it's
         # always notified, a 'default_recipient'.
         if not recipients:
@@ -92,6 +92,13 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
             self.assertTrue(
                 content in body,
                 "Expect: '%s'\nGot:\n%s" % (content, body))
+
+        if ppa_header is not None:
+            self.assertTrue(
+                'X-Launchpad-PPA' in msg.keys(), "PPA header not present.")
+            self.assertEqual(
+                msg['X-Launchpad-PPA'], ppa_header,
+                "Mismatching PPA header: %s" % msg['X-Launchpad-PPA'])
 
 
 class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
@@ -340,7 +347,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # name16 is Foo Bar, who signed the upload.  The package that was
         # uploaded also contains two other valid (in sampledata) email
         # addresses for maintainer and changed-by which must be ignored.
-        self.assertEmail(recipients=[self.name16_recipient])
+        self.assertEmail()
 
     def testUploadToUnknownPPA(self):
         """Upload to a unknown PPA.
@@ -349,7 +356,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         archive, however it is rejected, since it could not find the
         specified PPA.
 
-        A rejection notification is sent to the uploader.
+        A rejection notification is sent to the uploader without the PPA
+        notification header, because it can't be calculated.
         """
         upload_dir = self.queueUpload("bar_1.0-1", "~spiv/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
@@ -357,7 +365,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
             "Could not find PPA for 'spiv'"]
-        self.assertEmail(contents)
+        self.assertEmail(contents, ppa_header=None)
 
     def testUploadToDisabledPPA(self):
         """Upload to a disabled PPA.
@@ -383,7 +391,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
                  "send an email",
             "to launchpad-users@lists.canonical.com for help."
             ]
-        self.assertEmail(contents)
+        self.assertEmail(contents, ppa_header=None)
 
     def testPPADistroSeriesOverrides(self):
         """It's possible to override target distroserieses of PPA uploads.
@@ -438,7 +446,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         contents = [
             "Subject: [PPA ubuntu-team] Accepted: bar 1.0-1 (source)"]
-        self.assertEmail(contents)
+        self.assertEmail(contents, ppa_header='ubuntu-team')
 
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.DONE, name="bar",
@@ -467,7 +475,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [""]
-        self.assertEmail(contents)
+        self.assertEmail(contents, ppa_header='ubuntu-translators')
 
         pending_ppas = self.ubuntu.getPendingPublicationPPAs()
         self.assertEqual(pending_ppas.count(), 0)
@@ -486,7 +494,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
             "Signer has no upload rights to this PPA"]
-        self.assertEmail(contents)
+        self.assertEmail(contents, ppa_header=None)
 
     def testPPAPartnerUploadFails(self):
         """Upload a partner package to a PPA and ensure it's rejected."""
@@ -540,7 +548,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
             "PPA for Celso Providelo only supports uploads to 'ubuntu'"]
-        self.assertEmail(contents)
+        self.assertEmail(contents, ppa_header=None)
 
     def testUploadToUnknownDistribution(self):
         """Upload to unknown distribution gets proper rejection email."""
@@ -552,7 +560,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "Could not find distribution 'biscuit'"]
         self.assertEmail(
             contents,
-            recipients=[self.name16_recipient, self.kinnison_recipient])
+            recipients=[self.name16_recipient, self.kinnison_recipient],
+            ppa_header=None)
 
     def testUploadWithMismatchingPPANotation(self):
         """Upload with mismatching PPA notation results in rejection email."""
@@ -562,7 +571,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
             "PPA upload path must start with '~'."]
-        self.assertEmail(contents)
+        self.assertEmail(contents, ppa_header=None)
 
     def testUploadToUnknownPerson(self):
         """Upload to unknown person gets proper rejection email."""
@@ -572,7 +581,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
             "Could not find person 'orange'"]
-        self.assertEmail(contents)
+        self.assertEmail(contents, ppa_header=None)
 
     def testUploadWithMismatchingPath(self):
         """Upload with mismating path gets proper rejection email."""
@@ -586,7 +595,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "Use ~<person>/<distro>/[distroseries]/[files] for PPAs "
             "and <distro>/[files] for normal uploads."]
         self.assertEmail(
-            contents,
+            contents, ppa_header=None,
             recipients=[self.name16_recipient, self.kinnison_recipient])
 
     def testUploadWithBadComponent(self):
@@ -609,7 +618,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "\n-----BEGIN PGP SIGNED MESSAGE-----\n"
             ]
 
-        self.assertEmail(contents)
+        self.assertEmail(contents, ppa_header=None)
 
     def testUploadWithBadDistroseries(self):
         """Test uploading with a bad distroseries in the changes file.
@@ -630,10 +639,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "\n-----BEGIN PGP SIGNED MESSAGE-----\n"
             ]
         self.assertEmail(
-            contents,
-            recipients=[
-                'Foo Bar <foo.bar@canonical.com>',
-                'Daniel Silverstone <daniel.silverstone@canonical.com>'])
+            contents,ppa_header=None,
+            recipients=[self.name16_recipient, self.kinnison_recipient])
 
     def testUploadWithBadSection(self):
         """Uploads with a bad section are rejected."""
@@ -668,7 +675,8 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             "Subject: New: bar 1.0-1 (source)"]
         ubuntu_recipients = [
             self.name16_recipient, self.kinnison_recipient]
-        self.assertEmail(contents, recipients=ubuntu_recipients)
+        self.assertEmail(contents, recipients=ubuntu_recipients,
+                         ppa_header=None)
 
         [queue_item] = self.breezy.getQueueItems(
             status=PackageUploadStatus.NEW, name="bar",
@@ -696,7 +704,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         announcement = stub.test_emails.pop()
         contents = [
             "Subject: Accepted: bar 1.0-10 (source)"]
-        self.assertEmail(contents)
+        self.assertEmail(contents, ppa_header=None)
 
     def testPPAReusingOrigFromUbuntu(self):
         """Official 'orig.tar.gz' can be reused for PPA uploads."""

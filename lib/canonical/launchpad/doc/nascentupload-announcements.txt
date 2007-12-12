@@ -34,6 +34,9 @@ contains the special header 'X-Katie', its presence is checked by
 third part application and also in our changeslist (gutsy-changes@).
 See further information in bug #121752.
 
+PPA upload notifications also include a 'X-Launchpad-PPA' email header
+containing the target PPA owner name, see bug #172377.
+
 We need to be logged into the security model in order to get any further
 
   >>> login('foo.bar@canonical.com')
@@ -45,6 +48,11 @@ Helper functions to examine emails that were sent:
   >>> def by_to_addrs(a, b):
   ...     return cmp(a[1], b[1])
   >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+
+Import the test keys to use 'insecure' policy.
+
+  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> import_public_test_keys()
 
 For the purpose of this test, hoary needs to be an open (development)
 distroseries so that we can upload to it. Also adjust 'changeslist'
@@ -85,7 +93,7 @@ unsigned changes):
   ...
   DEBUG: above if files already exist in other distroseries.
   ...
-  DEBUG: -- 
+  DEBUG: --
   DEBUG: You are receiving this email because you are the uploader, maintainer or
   DEBUG: signer of the above package.
 
@@ -145,6 +153,45 @@ Uploading the same package again will result in a rejection email:
   >>> notification['To']
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
 
+Ensure that upload notifications for primary archive do not contain
+the PPA header.
+
+  >>> 'X-Launchpad-PPA' in notification.keys()
+  False
+
+Let's perform and PPA upload to verify the PPA header presence.
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     ArchivePurpose, IArchiveSet, IDistributionSet, IPersonSet)
+
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> name16 = getUtility(IPersonSet).getByName('name16')
+  >>> name16_ppa = getUtility(IArchiveSet).new(
+  ...     owner=name16, distribution=ubuntu, purpose=ArchivePurpose.PPA)
+
+  >>> ppa_policy = getPolicy(
+  ...     name='insecure', distro='ubuntu', distroseries=None)
+  >>> ppa_policy.archive = name16_ppa
+  >>> ppa_policy.setDistroSeriesAndPocket('hoary')
+
+  >>> ppa_bar_src = NascentUpload(
+  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+  ...     ppa_policy, mock_logger_quiet)
+  >>> ppa_bar_src.process()
+  >>> result = ppa_bar_src.do_accept()
+
+  >>> [notification] = pop_notifications()
+
+  >>> notification['X-Katie']
+  'Launchpad actually'
+
+  >>> notification['To']
+  'Foo Bar <foo.bar@canonical.com>'
+
+  >>> notification['X-Launchpad-PPA']
+  'name16'
+
+See further tests upon PPA upload notifications on archiveuploader/ftests/test_ppauploadprocessor.
 
 NEW binary upload to RELEASE pocket via 'sync' policy (we need to
 override sync policy to allow binary uploads):
@@ -234,17 +281,9 @@ Again, no messages were generated since this upload is targeted for
   >>> len(stub.test_emails)
   0
 
-
 Release hoary, enable uploads to post-release pockets:
 
   >>> hoary.status = DistroSeriesStatus.CURRENT
-
-
-Import the test keys to use 'insecure' policy.
-
-  >>> from canonical.launchpad.ftests import import_public_test_keys
-  >>> import_public_test_keys()
-
 
 UNAPPROVED source uploads for 'translations' section via insecure:
 
@@ -357,7 +396,7 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   DEBUG:
   DEBUG: Thank you for your contribution to Ubuntu Linux.
   ...
-  DEBUG: -- 
+  DEBUG: --
   DEBUG: You are receiving this email because you are the uploader, maintainer or
   DEBUG: signer of the above package.
 
@@ -648,7 +687,7 @@ No emails generated:
   >>> len(msgs)
   0
 
-Uploads with UTF-8 characters in email addresses in the changes file are 
+Uploads with UTF-8 characters in email addresses in the changes file are
 permitted, but converted to ASCII, which is a limitation of the mailer.
 However, UTF-8 in the mail content is preserved.
 
