@@ -619,7 +619,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     @property
     def initial_values(self):
-        return {'branch_type': UICreatableBranchType.MIRRORED}
+        return {'author': self.user,
+                'branch_type': UICreatableBranchType.MIRRORED}
 
     @action('Add Branch', name='add')
     def add_action(self, action, data):
@@ -723,13 +724,9 @@ class PersonBranchAddView(BranchAddView):
     """See `BranchAddView`."""
 
     @property
-    def field_names(self):
-        fields = list(BranchAddView.field_names)
-        fields.remove('author')
-        return fields
-
-    def getAuthor(self, data):
-        return self.context
+    def initial_values(self):
+        return {'author': self.context,
+                'branch_type': UICreatableBranchType.MIRRORED}
 
 
 class ProductBranchAddView(BranchAddView):
@@ -746,11 +743,6 @@ class ProductBranchAddView(BranchAddView):
 
     def getProduct(self, data):
         return self.context
-
-    @property
-    def initial_values(self):
-        return {'author': self.user,
-                'branch_type': UICreatableBranchType.MIRRORED}
 
     def setForbiddenError(self, product):
         """There is no product widget, so set a form wide error."""

@@ -38,7 +38,7 @@
        >Edit this announcement.</a>
     <a tal:condition="not: context/published"
        tal:attributes="href string:${context/fmt:url}/+publish"
-       >Publish now</a>
+       >Publish now.</a>
     <a tal:condition="context/active"
        tal:attributes="href string:${context/fmt:url}/+retract"
        >Retract this announcement.</a>

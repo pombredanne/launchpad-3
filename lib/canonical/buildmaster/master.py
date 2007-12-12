@@ -297,18 +297,22 @@ class BuilddMaster:
 
     def scoreCandidates(self):
         """Iterate over the pending buildqueue entries and re-score them."""
-        # Get the current build job candidates
-        bqset = getUtility(IBuildQueueSet)
-        candidates = bqset.calculateCandidates(
-            self._archserieses, state=BuildStatus.NEEDSBUILD)
-
-        if not candidates:
+        if not self._archserieses:
+            self._logger.info("No architecture found to rescore.")
             return
+
+        # Get the current build job candidates.
+        archseries = self._archserieses.keys()
+        bqset = getUtility(IBuildQueueSet)
+        candidates = bqset.calculateCandidates(archseries)
 
         self._logger.info("Found %d build in NEEDSBUILD state. Rescoring"
                           % candidates.count())
 
         for job in candidates:
+            uptodate_build = getUtility(IBuildSet).getByBuildID(job.build.id)
+            if uptodate_build.buildstate != BuildStatus.NEEDSBUILD:
+                continue
             job.score()
 
         self.commit()
