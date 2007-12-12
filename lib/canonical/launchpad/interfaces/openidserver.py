@@ -15,13 +15,14 @@ __all__ = [
         'ILoginServiceLoginForm',
         ]
 
-from zope.schema import Choice, Datetime, Int, List, Object, TextLine
+from zope.component import getUtility
+from zope.schema import Choice, Datetime, Int, List, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PasswordField, BaseImageUpload
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.fields import (
+    BaseImageUpload, PasswordField, UniqueField)
 from canonical.launchpad.interfaces.person import PersonCreationRationale
 
 
@@ -43,7 +44,7 @@ class IOpenIdAuthorization(Interface):
 
 class IOpenIdAuthorizationSet(Interface):
     def isAuthorized(person, trust_root, client_id):
-        """Check the authorization list to see if the trust_root is authorized.
+        """Check to see if the trust_root is authorized.
 
         Returns True or False.
         """
@@ -67,6 +68,20 @@ class ILaunchpadOpenIdStoreFactory(Interface):
 
     def __call__():
         """Create a LaunchpadOpenIdStore instance."""
+
+
+class TrustRootField(UniqueField):
+    """An OpenID Relying Party trust root, which is unique."""
+
+    attribute = 'trust_root'
+    errormessage = _("%s is already in use for another Relying Party.")
+
+    @property
+    def _content_iface(self):
+        return IOpenIDRPConfig
+
+    def _getByAttribute(self, trust_root):
+        return getUtility(IOpenIDRPConfigSet).getByTrustRoot(trust_root)
 
 
 class RPLogoImageUpload(BaseImageUpload):
@@ -95,18 +110,19 @@ sreg_fields_vocabulary = SimpleVocabulary([
 class IOpenIDRPConfig(Interface):
     """Configuration for a particular OpenID Relying Party."""
     id = Int(title=u'ID', required=True)
-    trust_root = TextLine(
+    trust_root = TrustRootField(
         title=_('Trust Root'), required=True,
-        description=_('The openid.trust_root value sent by the Relying Party'))
+        description=_('The openid.trust_root value sent by the '
+                      'Relying Party'))
     displayname = TextLine(
         title=_('Display Name'), required=True,
         description=_('A human readable name for the Relying Party'))
-    description = TextLine(
+    description = Text(
         title=_('Description'), required=True,
         description=_('A description of the Relying Party, explaining why '
                       'the user should authenticate.'))
     logo = RPLogoImageUpload(
-        title=_('logo'), required=False,
+        title=_('Logo'), required=False,
         description=_('A banner that identifies the Relying Party'))
     allowed_sreg = List(
         title=_('Allowed Sreg Fields'),
@@ -122,8 +138,9 @@ class IOpenIDRPConfig(Interface):
 
 class IOpenIDRPConfigSet(Interface):
     """The set of OpenID Relying Party configurations."""
-    def new(trust_root, displayname, description, logo=None, allowed_sreg=None,
-            creation_rationale=PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT):
+    def new(trust_root, displayname, description, logo=None,
+            allowed_sreg=None, creation_rationale=PersonCreationRationale
+            .OWNER_CREATED_UNKNOWN_TRUSTROOT):
         """Create a new IOpenIdRPConfig"""
 
     def get(id):

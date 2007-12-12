@@ -1,6 +1,11 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""View classes used to edit `IOpenIDRPConfig` objects."""
+"""View classes used to edit `IOpenIDRPConfig` objects.
+
+OpenID Relying Party configurations are used to customise the
+appearance and behaviour of the login page when authenticating to a
+particular RP.
+"""
 
 __metaclass__ = type
 __all__ = []

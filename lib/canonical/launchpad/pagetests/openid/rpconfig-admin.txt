@@ -28,8 +28,8 @@ to Launchpad administrators:
 We can add new RP configurations from this page:
 
     >>> admin_browser.getLink('Add an RP config').click()
-    >>> print admin_browser.url
-    http://openid.launchpad.dev/+rpconfig/+add
+    >>> print admin_browser.title
+    Add an OpenID Relying Party Configuration
 
     >>> import os
     >>> from canonical.config import config
@@ -45,8 +45,8 @@ We can add new RP configurations from this page:
     >>> admin_browser.getControl('Full name').click()
     >>> admin_browser.getControl('Email address').click()
     >>> admin_browser.getControl('Create').click()
-    >>> print admin_browser.url
-    http://openid.launchpad.dev/+rpconfig
+    >>> print admin_browser.title
+    OpenID Relying Party Configurations
 
 The new RP configuration page is now included in the list:
 
@@ -83,14 +83,14 @@ The RP config contains all the information we'd expect:
 We can also edit existing RP configurations:
 
     >>> admin_browser.getLink('Example RP').click()
-    >>> print admin_browser.url
-    http://openid.launchpad.dev/+rpconfig/...
+    >>> print admin_browser.title
+    Edit Relying Party Configuration for Example RP
 
     >>> admin_browser.getControl('Description').value = 'new description'
     >>> admin_browser.getControl('Launchpad ID').click()
     >>> admin_browser.getControl('Save').click()
-    >>> print admin_browser.url
-    http://openid.launchpad.dev/+rpconfig
+    >>> print admin_browser.title
+    OpenID Relying Party Configurations
 
 The changes have now been made to the RP configuration:
 
@@ -104,14 +104,55 @@ The changes have now been made to the RP configuration:
     >>> logout()
 
 
+== Only One RP Configuration Per Trust Root ==
+
+There can only be one RP configuration per trust root.  Trying to
+create a second configuration fails:
+
+    >>> admin_browser.getLink('Add an RP config').click()
+    >>> admin_browser.getControl('Trust Root').value = 'http://example.com/'
+    >>> admin_browser.getControl('Display Name').value = 'Second RP'
+    >>> admin_browser.getControl('Description').value = 'description'
+    >>> admin_browser.getControl('Create').click()
+    >>> print admin_browser.title
+    Add an OpenID Relying Party Configuration
+
+    >>> for error in find_tags_by_class(admin_browser.contents, 'message'):
+    ...     print extract_text(error)
+    There is 1 error.
+    http://example.com/ is already in use for another Relying Party.
+
+Changing the trust root value fixes the problem:
+
+    >>> admin_browser.getControl('Trust Root').value = 'http://example.net/'
+    >>> admin_browser.getControl('Create').click()
+    >>> print admin_browser.title
+    OpenID Relying Party Configurations
+
+Similarly, we can't change the trust root of a configuration to
+conflict with another configuration:
+
+    >>> admin_browser.getLink('Second RP').click()
+    >>> admin_browser.getControl('Trust Root').value = 'http://example.com/'
+    >>> admin_browser.getControl('Save').click()
+    >>> print admin_browser.title
+    Edit Relying Party Configuration for Second RP
+
+    >>> for error in find_tags_by_class(admin_browser.contents, 'message'):
+    ...     print extract_text(error)
+    There is 1 error.
+    http://example.com/ is already in use for another Relying Party.
+
+
 == Deleting RP Configurations ==
 
 RP configurations can be deleted from the edit form:
 
+    >>> admin_browser.open('http://openid.launchpad.dev/+rpconfig')
     >>> admin_browser.getLink('Example RP').click()
     >>> admin_browser.getControl('Remove').click()
-    >>> print admin_browser.url
-    http://openid.launchpad.dev/+rpconfig
+    >>> print admin_browser.title
+    OpenID Relying Party Configurations
 
 The RP configuration has now been removed:
 
