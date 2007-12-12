@@ -25,21 +25,13 @@ Now we can see the new owner and also the old owner which has been made an
 administrator of the team.
 
     >>> browser.url
-    'http://launchpad.dev/~landscape-developers/'
+    'http://launchpad.dev/~landscape-developers'
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'membership-summary'))
-    Team and membership summary
-    Team owner:
-    Celso Providelo
-    Membership:
-    3
-    active members
-    1 proposed members
-    1 invited members
-    2 inactive members
-    Moderated Team:
-    All subscriptions for this team are subject to approval by one of
-    the team's administrators.
+    ...     find_tag_by_id(browser.contents, 'portlet-details'))
+    Summary
+    Team owner: Celso Providelo
+    Created on: 2006-07-12
+    ...
 
     >>> browser.open('http://launchpad.dev/~landscape-developers/+members')
     >>> print extract_text(find_tag_by_id(browser.contents, 'activemembers'))
@@ -72,10 +64,10 @@ But cprov can.
     >>> browser.getControl('Change Registrant').click()
 
     >>> browser.url
-    'http://launchpad.dev/~landscape-developers/'
+    'http://launchpad.dev/~landscape-developers'
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'membership-summary'))
-    Team and membership summary
+    ...     find_tag_by_id(browser.contents, 'portlet-details'))
+    Summary
     Team owner:
     Ubuntu Team
     ...
@@ -84,8 +76,9 @@ But cprov can.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers/+members')
     >>> print extract_text(find_tag_by_id(browser.contents, 'activemembers'))
-    Name   Member since   Expires   Status
-    Celso Providelo   ...   Administrator
-    Guilherme Salgado   ...   Approved
-    Sample Person   ...   Administrator
-    Ubuntu Team   ...   Administrator
+    Name              Member since   Expires   Status
+    Celso Providelo   ...                      Administrator
+    Guilherme Salgado ...                      Approved
+    Sample Person     ...                      Administrator
+    Ubuntu Team       ...                      Administrator
+

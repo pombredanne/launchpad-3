@@ -102,6 +102,9 @@ message is preceded with '_n: ' (space at the end of the string is important).
     ... #, c-format
     ... msgid "_n: %%d foo\n%%d foos"
     ... msgstr ""
+    ...
+    ... msgid "_n: entry\nentries"
+    ... msgstr ""
     ... ''' % ISO_FORMATTED_DATE
 
 And strangely, importing this file actually works, and format is changed
@@ -161,6 +164,12 @@ forms. They are simply newline-separated strings.
     ... #, c-format
     ... msgid "_n: %%d foo\n%%d foos"
     ... msgstr "%%d translation\n%%d translationes\n%%d translations"
+    ...
+    ... # This translation is incomplete, since it fails to provide
+    ... # translations for the second plural form.
+    ... msgid "_n: entry\nentries"
+    ... msgstr "singular entry\n\nplural entries"
+    ...
     ... ''' % ISO_FORMATTED_DATE
 
 Importing this file succeeds, even if the number of %d printf specifications
@@ -247,6 +256,11 @@ Template export turns it back into a KDE-style PO file:
     "_n: %d foo\n"
     "%d foos"
     msgstr ""
+    <BLANKLINE>
+    msgid ""
+    "_n: entry\n"
+    "entries"
+    msgstr ""
 
 But, we can also export it as a regular gettext PO file:
 
@@ -276,6 +290,11 @@ But, we can also export it as a regular gettext PO file:
     #, c-format
     msgid "%d foo"
     msgid_plural "%d foos"
+    msgstr[0] ""
+    msgstr[1] ""
+    <BLANKLINE>
+    msgid "entry"
+    msgid_plural "entries"
     msgstr[0] ""
     msgstr[1] ""
 
@@ -311,6 +330,15 @@ Exporting a translation is possible in a very similar way.
     "%d translation\n"
     "%d translationes\n"
     "%d translations"
+    # This translation is incomplete, since it fails to provide
+    # translations for the second plural form.
+    msgid ""
+    "_n: entry\n"
+    "entries"
+    msgstr ""
+    "singular entry\n"
+    "\n"
+    "plural entries"
 
 
 == Context support ==
