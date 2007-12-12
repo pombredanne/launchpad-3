@@ -183,6 +183,15 @@
     />
 
   <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    facet="overview"
+    class="canonical.launchpad.browser.DistributionPendingReviewMirrorsView"
+    permission="zope.Public"
+    name="+pendingreviewmirrors"
+    template="../templates/distribution-mirrors.pt"
+    />
+
+  <browser:page
     name="+newmirror"
     facet="overview"
     for="canonical.launchpad.interfaces.IDistribution"

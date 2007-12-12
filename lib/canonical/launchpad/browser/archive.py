@@ -198,10 +198,6 @@ class ArchiveActivateView(LaunchpadFormView):
                     "PPA Terms of Service must be accepted to activate "
                     "your PPA.")
 
-    def validate_cancel(self, action, data):
-        """Noop validation in case we cancel"""
-        return []
-
     @action(_("Activate"), name="activate")
     def action_save(self, action, data):
         """Activate PPA and moves to its page."""

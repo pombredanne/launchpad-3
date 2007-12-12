@@ -317,7 +317,7 @@ class PageStoryTestCase(unittest.TestCase):
 # but does follow the convention of the other doctest related *Suite()
 # functions.
 
-def PageTestSuite(storydir, package=None):
+def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     """Create a suite of page tests for files found in storydir.
 
     :param storydir: the directory containing the page tests.
@@ -351,14 +351,14 @@ def PageTestSuite(storydir, package=None):
     checker = SpecialOutputChecker()
     suite = PageTestDocFileSuite(
         package=package, checker=checker,
-        layer=PageTestLayer, setUp=setUpGlobs,
+        layer=PageTestLayer, setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in unnumberedfilenames])
 
     # Add numbered tests to the suite as a single story.
     storysuite = PageTestDocFileSuite(
         package=package, checker=checker,
-        layer=PageTestLayer, setUp=setUpGlobs,
+        layer=PageTestLayer, setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in numberedfilenames])
     suite.addTest(PageStoryTestCase(abs_storydir, storysuite))
@@ -384,6 +384,3 @@ def test_suite():
     for storydir in stories:
         suite.addTest(PageTestSuite(storydir))
     return suite
-
-if __name__ == '__main__':
-    r = unittest.TextTestRunner().run(test_suite())

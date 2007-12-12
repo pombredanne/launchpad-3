@@ -25,6 +25,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
     IHasOwner, IHasSecurityContact, ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationTarget)
 from canonical.launchpad.interfaces.sprint import IHasSprints
@@ -75,9 +76,9 @@ class License(DBEnumeratedType):
 
 class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
-               IHasMilestones, IHasMugshot, IHasOwner, IHasSecurityContact,
-               IHasSprints, IHasTranslationGroup, IKarmaContext,
-               ILaunchpadUsage, ISpecificationTarget):
+               IHasMilestones, IHasMugshot, IMakesAnnouncements, IHasOwner,
+               IHasSecurityContact, IHasSprints, IHasTranslationGroup,
+               IKarmaContext, ILaunchpadUsage, ISpecificationTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
