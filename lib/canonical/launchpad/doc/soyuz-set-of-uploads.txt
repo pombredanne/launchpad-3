@@ -240,7 +240,6 @@ A helper function, simulate_upload does that with all the checking.
   ...     # We seem to be leaving a lock file behind here for some reason.
   ...     # Naturally it doesn't count as an unprocessed incoming file, which
   ...     # is what we're really looking for.
-  ...     # XXX: JeroenVermeulen 2007-11-07: why this lock file?
   ...     lockfile = os.path.join(incoming_dir, '.lock')
   ...     if os.access(lockfile, os.F_OK):
   ...         os.remove(lockfile)
@@ -274,17 +273,8 @@ A helper function, simulate_upload does that with all the checking.
   ...     for message in pop_notifications(commit=False):
   ...         print "To:", message['to']
   ...         print "Subject:", message['subject']
-  ...         raw_message = message.as_string()
-  ...         # Print message bodies (but skip headers).
-  ...         in_header = True
-  ...         for line in raw_message.splitlines():
-  ...             if line == '':
-  ...                 in_header = False
-  ...             elif in_header:
-  ...                 # Don't print header lines.
-  ...                 pass
-  ...             else:
-  ...                 print line
+  ...         print message.get_payload()
+  ...         print ''
 
 The 'bar' package' is an arch-all package. We have four stages to the
 bar test. Each stage should be simple enough. First we have a new
@@ -295,7 +285,7 @@ and arch-independent binaries.
   >>> simulate_upload('bar_1.0-1', is_new=True, loglevel=logging.INFO)
   log> Processing upload
   ...
-  log> Upload complete.
+  Upload complete.
 
   >>> simulate_upload('bar_1.0-1_binary', is_new=True)
 
