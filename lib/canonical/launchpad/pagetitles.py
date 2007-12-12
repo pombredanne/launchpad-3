@@ -1048,6 +1048,8 @@ related_bounties = ContextDisplayName('Bounties for %s')
 
 remotebug_index = ContextTitle('%s')
 
+root_featuredprojects = 'Manage featured projects in Launchpad'
+
 root_index = 'Launchpad'
 
 rosetta_about = 'About Launchpad Translations'
