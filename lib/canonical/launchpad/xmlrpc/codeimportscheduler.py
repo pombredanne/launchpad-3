@@ -23,5 +23,6 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
         """See `ICodeImportScheduler`.
 
         Currently hard coded to return 4 until more of the code import
-        machinery is implemented."""
+        machinery is implemented.
+        """
         return 4
