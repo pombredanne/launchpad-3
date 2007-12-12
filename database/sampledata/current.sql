@@ -3784,7 +3784,7 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Report-Msgid-Bugs-To: serrador@hispalinux.es
 Plural-Forms: nplurals=2; plural=(n != 1);
-', true, 13, NULL, 6, 0, 1, NULL, 12, NULL, 'es.po', 60, '2007-01-03 17:26:27.288968', '2005-06-06 08:59:54.24073', NULL, 2, '2007-01-04 11:02:02.844658');
+', true, 13, NULL, 6, 0, 2, NULL, 12, NULL, 'es.po', 60, '2007-01-03 17:26:27.288968', '2005-06-06 08:59:54.24073', NULL, 2, '2007-01-04 11:02:02.844658');
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (3, 2, 387, NULL, ' Spanish (Spain) translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the mount removable devices as normal user package.
