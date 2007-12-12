@@ -433,18 +433,18 @@ imported comments are stored.
 
     >>> from canonical.config import config
     >>> config.malone.show_imported_comments = True
-    >>> chunks = removeSecurityProxy(bug.getMessageChunks())
-    >>> for chunk in sorted(chunks):
-    ...     print chunk.content
-    Things happen.
+    >>> message_chunks = removeSecurityProxy(bug.getMessageChunks())
+    >>> for chunk in sorted([chunk.content for chunk in message_chunks]):
+    ...     print chunk
     Test description.
+    Things happen.
 
     >>> config.malone.show_imported_comments = False
 
 The author of the comment will have had a Launchpad Person created for
 them if they didn't exist already:
 
-    >>> message = chunks[0].message
+    >>> message = message_chunks[0].message
     >>> message.owner.displayname
     u'Teun Vink'
 
