@@ -27,17 +27,27 @@
         layer="canonical.launchpad.layers.OpenIdLayer" />
 
     <!-- Root document -->
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        name="+index"
+        />
+
     <browser:page
         layer="canonical.launchpad.layers.OpenIdLayer"
         for="canonical.launchpad.interfaces.IOpenIdApplication"
         permission="zope.Public"
         name="+index"
+        class="canonical.launchpad.browser.openiddiscovery.OpenIdApplicationIndexView"
         template="../templates/openid-index.pt"
         />
 
-    <browser:defaultView
+    <browser:page
         for="canonical.launchpad.interfaces.IOpenIdApplication"
-        name="+index"
+        name="+xrds"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.openiddiscovery.OpenIdApplicationIndexView"
+        attribute="xrds"
         />
 
     <!-- OpenID persistent identity URLs -->
@@ -51,6 +61,7 @@
         for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
         path_expression="string:+id/${person/openid_identifier}"
         parent_utility="canonical.launchpad.interfaces.IOpenIdApplication"
+        rootsite="openid"
         />
 
     <browser:defaultView
