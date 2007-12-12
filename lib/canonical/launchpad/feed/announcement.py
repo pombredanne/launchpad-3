@@ -37,14 +37,12 @@ class AnnouncementsFeed(FeedBase):
         """See `IFeed`."""
         title = FeedTypedData('[%s] %s' % (
             announcement.target.name, announcement.title))
-        if announcement.url is None:
-            url = canonical_url(announcement.target, rootsite="mainsite")
-            url += '/+announcements'
-        else:
-            url = announcement.url
+        id = 'tag:launchpad.net,%s:/+announcements/%d' % (
+                announcement.date_created.date().isoformat(),
+                announcement.id)
         entry = FeedEntry(title=title,
-                          id_=url,
-                          link_alternate=url,
+                          id_=id,
+                          link_alternate=announcement.url,
                           date_updated=announcement.date_last_modified,
                           date_published=announcement.date_announced,
                           authors=[FeedPerson(
@@ -73,7 +71,7 @@ class AnnouncementsFeed(FeedBase):
     @property
     def url(self):
         """See `IFeed`."""
-        return "%s/%s.%s" % (
+        return "%s%s.%s" % (
             canonical_url(self.context), self.feedname, self.format)
 
 
@@ -94,14 +92,12 @@ class TargetAnnouncementsFeed(FeedBase):
     def itemToFeedEntry(self, announcement):
         """See `IFeed`."""
         title = FeedTypedData(announcement.title)
-        if announcement.url is None:
-            url = canonical_url(self.context, rootsite="mainsite")
-            url += '/+announcements'
-        else:
-            url = announcement.url
+        id = 'tag:launchpad.net,%s:/+announcements/%d' % (
+                announcement.date_created.date().isoformat(),
+                announcement.id)
         entry = FeedEntry(title=title,
-                          id_=url,
-                          link_alternate=url,
+                          id_=id,
+                          link_alternate=announcement.url,
                           date_updated=announcement.date_last_modified,
                           date_published=announcement.date_announced,
                           authors=[FeedPerson(

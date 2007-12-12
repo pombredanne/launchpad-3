@@ -1989,6 +1989,20 @@ ALTER TABLE faq ENABLE TRIGGER ALL;
 
 
 
+ALTER TABLE featuredproject DISABLE TRIGGER ALL;
+
+INSERT INTO featuredproject (id, pillar_name) VALUES (1, 1);  -- ubuntu
+INSERT INTO featuredproject (id, pillar_name) VALUES (2, 4);  -- gentoo
+INSERT INTO featuredproject (id, pillar_name) VALUES (3, 11); -- firefox
+INSERT INTO featuredproject (id, pillar_name) VALUES (4, 27); -- mozilla
+INSERT INTO featuredproject (id, pillar_name) VALUES (5, 15); -- thunderbird
+INSERT INTO featuredproject (id, pillar_name) VALUES (6, 28); -- gnome
+INSERT INTO featuredproject (id, pillar_name) VALUES (7, 13); -- gnome-terminal
+INSERT INTO featuredproject (id, pillar_name) VALUES (8, 16); -- applets
+INSERT INTO featuredproject (id, pillar_name) VALUES (9, 21); -- bazaar
+
+ALTER TABLE featuredproject ENABLE TRIGGER ALL;
+
 
 
 

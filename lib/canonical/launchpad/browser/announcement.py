@@ -70,10 +70,10 @@ class AnnouncementContextMenu(ContextMenu):
 class AnnouncementSHP(StructuralHeaderPresentation):
 
     def getIntroHeading(self):
-        return "News for %s" % cgi.escape(self.context.target.displayname)
+        return "Announcement for:"
 
     def getMainHeading(self):
-        return self.context.title
+        return self.context.target.displayname
 
 
 class AddAnnouncementForm(Interface):
