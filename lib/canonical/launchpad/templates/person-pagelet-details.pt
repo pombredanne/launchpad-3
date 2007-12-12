@@ -1,0 +1,115 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-details">
+
+  <div class="portletBody portletContent">
+
+    <h2>Summary</h2>
+
+    <tal:valid_person condition="context/is_valid_person">
+
+      <b>Karma:</b>
+      <span id="karma-total" tal:content="context/karma">342</span><br />
+
+      <b>Timezone:</b>
+      <tal:timezone replace="context/timezone">UTC</tal:timezone>
+      <i tal:condition="not: context/timezone">None given</i><br />
+
+      <tal:ubuntero condition="context/is_ubuntero"><b>Ubuntero:</b>
+        Yes<br /></tal:ubuntero>
+
+      <tal:not-ubuntero condition="not: context/is_ubuntero">
+        <tal:is_request_person condition="view/viewingOwnPage">
+          <b>Ubuntero:</b> No
+          <small>(<a href="/codeofconduct">apply now</a>)</small>
+          <br />
+        </tal:is_request_person>
+      </tal:not-ubuntero>
+
+      <b>Member since:</b>
+      <span id="member-since"
+      tal:content="context/datecreated/fmt:date" /><br />
+
+      <div tal:condition="context/teams_with_icons/count">
+        <a tal:repeat="team context/teams_with_icons"
+           tal:attributes="href team/fmt:url"
+          ><img tal:attributes="src team/icon/getURL;
+                                title string:Icon of ${team/name}"
+        /></a>
+      </div>
+
+      <table tal:condition="context/sshkeys" class="slimpadding">
+        <tal:keys repeat="sshkey context/sshkeys">
+          <tr>
+            <th tal:condition="repeat/sshkey/start">
+              SSH Keys:</th>
+            <th tal:condition="not: repeat/sshkey/start">
+            </th>
+            <td tal:content="sshkey/comment" />
+          </tr>
+          <tr tal:condition="repeat/sshkey/end">
+            <td>&nbsp;</td>
+            <td><small><a href="+sshkeys">(view key text)</a></small></td>
+          </tr>
+        </tal:keys>
+      </table>
+
+    </tal:valid_person>
+
+    <tal:is_team condition="context/teamowner">
+
+      <b>Team owner:</b>
+        <a
+          tal:attributes="href context/teamowner/fmt:url"
+          tal:content="context/teamowner/browsername"
+        >sabdfl</a>
+      <br />
+
+      <b>Created on:</b>
+      <span id="created-date"
+            tal:content="context/datecreated/fmt:date" /><br />
+
+      <strong id="subscription-policy"
+              tal:content="context/subscriptionpolicy/title">
+        Moderated Team
+      </strong>:
+      <tal:description replace="context/subscriptionpolicy/description" />
+
+      <table class="slimpadding" id="membership-summary" style="margin-top: 1em">
+        <tr>
+          <th>Membership:</th>
+          <td tal:content="string: ${context/all_member_count} active members" />
+        </tr><tr tal:condition="context/proposed_member_count">
+          <td></td>
+          <td tal:content="string: ${context/proposed_member_count} proposed members" />
+        </tr><tr tal:condition="context/invited_member_count">
+          <td></td>
+          <td tal:content="string: ${context/invited_member_count} invited members" />
+        </tr><tr tal:condition="context/inactive_member_count">
+          <td></td>
+          <td tal:content="string: ${context/inactive_member_count} inactive members" />
+        </tr>
+      </table>
+
+      <table class="slimpadding" style="margin-top: 1em"
+             tal:define="archive_url view/archive_url"
+             tal:condition="archive_url">
+        <tr>
+          <th>Mailing list archive:</th>
+          <td><a id="mailing-list-archive" tal:content="archive_url"
+                 tal:attributes="href archive_url"
+               >http://lists.launchpad.dev/archives/team_name</a>
+          </td>
+        </tr>
+      </table>
+
+    </tal:is_team>
+
+  </div>
+
+</div>
+</tal:root>

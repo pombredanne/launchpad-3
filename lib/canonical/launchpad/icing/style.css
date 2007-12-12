@@ -69,20 +69,35 @@ html {
   color: #333;
   background-color: #fff;
 }
-body {margin: 0; padding: 0;}
+body {
+  margin: 0;
+  padding: 0;
+  /* Minimal width to display the application tabs and rounded corners. */
+  min-width: 529px;
+}
 
 :link                         {color: #039;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
 :link:active, :visited:active {color: #36c;}
 :visited                      {color: #324c7f; text-decoration: none;}
 
-h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
-h1 {font-size: 2.2em;  margin: 0;              padding: 0px 0px 10px 0px;}
-h2 {font-size: 1.5em;  margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
-h3 {font-size: 1.1em;  margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors */
-h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
-h5 {font-size: 1em;    margin: 0;              padding: 0;}
-h6 {font-size: 1em;    margin: 0;              padding: 0;}
+h1, h2, h3, h4, h5, h6 {
+  background: none;
+  padding: 0;
+  margin: 0;
+  /* Content headings are highlighted using a different color (the color is
+     overriden per-application in subsequent rules) instead of bold text. */
+  color: #83ad23;
+  font-weight: normal;
+}
+h1 { font-size: 2.2em; }
+h2 { font-size: 1.5em; }
+h3 { font-size: 1.1em; }
+h4, h5, h6 { font-size: 1em; }
+h1, h2, h3, h4, h5, h6 { margin-bottom: 0.5em; }
+/* H1 is only used at the top the maincontent, maybe below a short description
+   of the displayed object. It must have zero margin-top. */
+h2, h3, h4, h5, h6 { margin-top: 1em; }
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 80%;}
@@ -161,6 +176,11 @@ table.listing div.actions {
 }
 textarea {width: 100%;}
 table.form {width: 100%;}
+/* XXX: this is just to make tables look more consistent when used in a
+ * summary pagelet; the concrete use case is in
+ * person-pagelet-details.pt. We should move to use tables everywhere
+ * and then kill this class I guess. -- kiko, 2007-12-05 */
+table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
 
 /* --- Other --- */
 
@@ -291,6 +311,7 @@ hr {
   background-color: #6D6D6D;
 }
 /* Next is a location bar. */
+
 #locationbar {
   width: 100%;
   height: 26px;
@@ -316,6 +337,19 @@ ul#menuroot {
   display: inline;
   float: left;
   margin: 0;
+  /* Right padding needed so the rightmost arrow is within the box. It must be
+     the opposite of the negative right margin on breadcrumb items. */
+  /* Other paddings and margins set to zero to undo the generic "ul" style. */
+  padding: 0 16px 0 0;
+  margin: 0;
+  /* To prevent a gap when "#logincontrol" wraps around and the font size is
+     increased, we need to prevent the box height from being greater than the
+     height of the #locationbar box, which sets the green background. We do not
+     inherit the height limit from #location bar because this element is
+     floated.
+
+     0px vertical padding + 26px height = 26px, height of "#locationbar". */
+  height: 26px;
 }
 /* XXX: needs explanation */
 ul#menuroot li {
@@ -351,6 +385,14 @@ ul#menuroot a.breadcrumb {
   background-position: -1100px 0px;
   padding: 6px 0 6px 10px;
   margin-right: -1px;
+  /* To prevent a gap when "#logincontrol" wraps around and the font size is
+     increased, we need to prevent the box height from being greater than the
+     height of the #locationbar box, which sets the green background. We do not
+     inherit the height limit from #location bar because this element is
+     floated.
+
+     12px vertical padding + 14px height = 26px, height of "#locationbar". */
+  height: 14px;
 }
 /* IE6 specific rule to make the location bar look better. */
 * html #yourlocation {padding-bottom: 4px;}
@@ -379,11 +421,6 @@ ul#menuroot a.breadcrumb em { /* should be changed to not need em */
 /* When a breadcrumb has a submenu, show a down-arrow. */
 ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
   background-image: url(locationbar_em_bg.gif);
-}
-/* Undo more generic formatting around ul elements. */
-#locationbar ul {
-    margin: 0;
-    padding: 0;
 }
 /* General appearance of a dynamic menu item.
  * The area we actually see on the page is an <a> element.
@@ -501,6 +538,11 @@ ul#menuroot li.selected a.breadcrumb {
 #logincontrol {
   float: right;
   height: 100%;
+  /* In narrow windows, when the "#menuroot" is wide, this can wrap around. So
+     use the same background color as the rest of the "#locationbar". */
+  background-color: #AFDB1F;
+  /* Override margin set in common.css (for help.launchpad.net). */
+  margin: 0;
 }
 /* The control itself is actually in a table cell, vertically aligned to
  * the middle of the locationbar.
@@ -510,7 +552,19 @@ ul#menuroot li.selected a.breadcrumb {
   font-size: 11px;
   font-weight: bold;
   vertical-align: middle;
+  /* Reset vertical padding specified by the "td" style. It causes the
+     "#logincontrol" background area to exceed the "#locationbar" height for
+     even modest increases in font size. */
+  padding-top: 0;
+  padding-bottom: 0;
+  /* Set horizontal padding to 10px, which is also the left padding of the
+     "#yourlocation" box (hence the visible space left of the location bar). */
+  padding-left: 10px;
+  padding-right: 10px;
 }
+/* Reset standard margin from "input[type='submit']" to avoid unwanted spacing
+   when logged in. */
+#logincontrol input[type='submit'] { margin-right: 0; }
 /* Link text is black. */
 #logincontrol a {
     color: #000000;
@@ -528,11 +582,22 @@ ul#menuroot li.selected a.breadcrumb {
 /* The widget has two parts. First, the tab itself. */
 #help-tab {
   background: url(help-tab.gif);
-  color: #f7f7f7;
   float: right;
-  font-size: 1px;
+  /* The help-tab.gif dimensions are 32x62. We must set absolute width and
+     height and override any padding that could be applied by less specific
+     rules. */
   width: 32px;
   height: 62px;
+  padding: 0;
+  /* The help-tab element contains the "Help" text for rendering without CSS.
+     For reasonable minimum font sizes, this text should fit in the gray area
+     at the top of the image. We set the text color to the background color of
+     the image to make it invisible. */
+  color: #f7f7f7;
+  font-size: 1px;
+  /* For correct positioning, the help-tab must have zero margin. Reset
+     margins set by less specific rules (such as "h2"). */
+  margin: 0;
 }
 /* Second, the help panel, which takes up the rest of the 300px. */
 #help-panel {float: left; width: 268px;}
@@ -572,7 +637,6 @@ So it's hidden initially, and then revealed if JavaScript is available.
 /* test: http://launchpad.dev/+logout */
 #nonhelp {
   margin: 0 20px 0 38px;
-  min-width: 752px; /* prevents search field from sliding under tabs */
   padding-top: 10px;
 }
 
@@ -585,7 +649,7 @@ body.freeform #globalfooter {
 }
 #colophon            {float: left;                     width: 49%;}
 #applications-footer {float: right; text-align: right; width: 49%;}
-#copyright           {float: right; text-align: right; width: 45%;}
+#copyright           {float: right; text-align: right; width: 48%;}
 
 /* === Specific page layouts === */
 
@@ -608,11 +672,33 @@ body.pillarindex table#applications th {padding-left: 0;}
 /* Other page types have a global search field. */
 #globalsearch {
   float: right;
+  /* XXX: This font-size is currently redundant with the 10pt defined for
+     "html", but it is important for the layout of the heading, so we will
+     want to set it explicitly when we decide to stop overriding the font size
+     set by the user-agent. -- DavidAllouche 2007-10-27. */
+  font-size: 10px;
+  /* Additional margin-top, since all the elements in the "#globalsearch" and
+     "#structuralobject" have pixel sizes, the bottom of the "#globalsearch"
+     box is aligned with the baseline of "#structuralobjectheading .main".
+
+     That assumes sans-serif is set to Bitstream Vera Sans, which is the
+     default for Firefox on Ubuntu.*/
   margin-top: 15px;
+  /* The "#globalsearch" margin-bottom serves two purposes:
+
+     1. In wide windows, when the "#structuralobject .main" text does not
+        wrap, it provides 2px (with default Firefox/Ubuntu fonts) of extra
+        spacing between the heading and the "#mainarea".
+
+     2. In narrow windows, the "#globalsearch" can wrap around and be just
+        above the "#mainarea". This margin provides the needed visual
+        separation. */
+  margin-bottom: 8px;
 }
-#globalsearch #q {border: 1px solid #a7c2ce; width: 170px;}
 #globalsearch #searchbutton {
   position: relative;
+  /* The top position aligns the search image nicely with the text input. This
+     relies on Firefox/Ubuntu default settings. */
   top: 6px;
   border: 0;
   width: 20px;
@@ -634,22 +720,42 @@ partly (but not visibly) overlaps the rounded border of the main area. */
   position: relative;
   z-index: 1;
 }
+
+/* Display the pillar image above mainarea, so the image does not appear
+   cropped in wide windows on browsers that do not support transparent
+   background. */
+#structuralobjectheading img { 
+  z-index: 2;
+}
+
 #structuralobjectheading {
   background: none;
   color: black;
   float: left;
   width: 70%;
 }
-/* Structural headings contain an icon, maybe an intro, and a main heading. */
+/* Structural headings contain an icon, maybe an intro, and a main heading.
+
+   The icon size (when present) is 64x64, and is floated left. The left
+   margins (3px on the icon, 70px on .intro and .main) provides 3px of
+   horizontal spacing on each side of the icon. */
 #structuralobjectheading img {
   float: left;
-  margin: 0 0 0 3px;
+  margin: 0;
+  margin-right: 3px;
+  /* Large negative margin-bottom, so the presence or absence of the image
+     will not affect the positioning of the #mainarea. */
+  margin-bottom: -32px;
 }
 #structuralobjectheading .intro {
   margin: 2px 0 0 70px;
   font-size: 12px;
 }
 #structuralobjectheading .main {
+  /* No bottom spacing here. If this does not wrap around, the spacing with
+     "#mainarea" is provided by the margin-botom of "#globalsearch". If this
+     does wrap around, we do not want spacing in addition to the font's
+     descent. */
   font-weight: bold;
   margin: 1px 0 0 70px;
   font-size: 24px;
@@ -660,16 +766,12 @@ partly (but not visibly) overlaps the rounded border of the main area. */
 border. */
 #mainarea {
   clear: both;
-  min-width: 712px;
   background-image: url(mainarea_bottom.gif);
   background-repeat: repeat-x;
   background-position: bottom left;
   margin: 0 -20px 0 -38px; /* opposite of margin for #nonhelp */
   position: relative;
 }
-body.freeform #mainarea {top: 0;}
-* html #mainarea {top: 0;}
-body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
 #mainarea div.v {
   position: relative;
   width: 100%;
@@ -695,8 +797,6 @@ body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
   width: 100%;
   background: url(mainarea_topright.gif) 100% top no-repeat;
 }
-
-body {min-width: 480px;}
 
 /* Inside those is a container for the main content, and the portlets if any. */
 #container {
@@ -921,7 +1021,7 @@ a conditional comment in main-template.pt to work around the above rule. */
 #applicationchooser {
   clear: both;
   position: relative; /* needed to make z-index work */
-  z-index: 1; /* ensures tabs appear above structural object heading */
+  z-index: 10; /* ensures tabs appear above structural object heading */
 }
 
 /* Some pages end with links to related items. */
@@ -970,6 +1070,7 @@ ul.person, li.person                 {list-style-image: url(/@@/person);}
 ul.product, li.product               {list-style-image: url(/@@/product);}
 dl.products>dt:before                {content: url(/@@/product);}
 ul.question, li.question             {list-style-image: url(/@@/question);}
+ul.rss, li.rss                       {list-style-image: url(/@@/rss);}
 ul.search, li.search                 {list-style-image: url(/@@/search);}
 ul.team, li.team                     {list-style-image: url(/@@/team);}
 ul.translation, li.translation       {list-style-image: url(/@@/translation);}
@@ -1463,9 +1564,9 @@ div.three.column.left, div.three.column.middle, div.three.column.right {
 .title {
   font-weight: bold;
 }
-ul.buttons {margin: 2em 0 4em 0 !important; padding: 0 !important;}
+ul.buttons {margin: 0.5em 0 0.5em 0 !important; padding: 0 !important;}
 /*- without !important, gets overridden by the '#maincontent ol' etc rule -*/
-ul.buttons li {display: inline; margin-right: 1em;}
+ul.buttons li {display: inline; margin: 0 0 0 0;}
 body.applicationhome ul.buttons {float: right; margin: 0 0 0 1em !important;}
 body.applicationhome ul.buttons li {display: block; margin-right: 0;}
 ul.cross-reference {font-size: 1.25em;}

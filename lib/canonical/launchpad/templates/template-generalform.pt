@@ -13,17 +13,13 @@
 <body>
 
 <div tal:replace="nothing">
-  This page uses the launchpad-form.pt METAL. Copy this page to your
-  object-form.pt and then tweak the various bits below to make it all look
-  nice.
+  THIS IS DEPRECATED, PLEASE USE template-form.pt and LaunchpadFormView
+  instead.
 </div>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
+</metal:portlets>
 
 <div metal:fill-slot="main">
 

@@ -36,6 +36,8 @@ Trac.convertRemoteStatus() handles the conversion.
     'Confirmed'
     >>> trac.convertRemoteStatus('fixed').title
     'Fix Released'
+    >>> trac.convertRemoteStatus('closed').title
+    'Fix Released'
     >>> trac.convertRemoteStatus('invalid').title
     'Invalid'
     >>> trac.convertRemoteStatus('wontfix').title
@@ -158,6 +160,8 @@ And have a Trac instance process them:
 
     >>> trac = TestTrac(example_bug_tracker)
     >>> trac.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 1 watches on http://bugs.some.where
+
     >>> for bug_watch in example_bug_tracker.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     1: fixed
@@ -198,6 +202,7 @@ We'll add some more watches now.
 
     >>> trac.trace_calls = True
     >>> trac.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 12 watches on http://bugs.some.where
     CALLED urlopen(u'http://.../query?id=...
 
     >>> for remote_bug_id in sorted(bug_watches.keys()):
@@ -236,5 +241,6 @@ watch hasn't altered:
     >>> old_last_changed = bug_watch.lastchanged
     >>> trac.trace_calls = False
     >>> trac.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 12 watches on http://bugs.some.where
     >>> bug_watch.lastchanged == old_last_changed
     True

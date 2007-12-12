@@ -671,6 +671,16 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadZopelessLayer
             ),
+    'openid-fetcher.txt': FunctionalDocFileSuite(
+            '../doc/openid-fetcher.txt',
+            optionflags=default_optionflags,
+            stdout_logging=False,
+            layer=LaunchpadFunctionalLayer
+            ),
+    'soyuz-set-of-uploads.txt': LayeredDocFileSuite(
+            '../doc/soyuz-set-of-uploads.txt',
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
+            ),
     }
 
 

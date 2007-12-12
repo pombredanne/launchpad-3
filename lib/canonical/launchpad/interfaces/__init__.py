@@ -15,6 +15,7 @@ from canonical.launchpad.interfaces.specificationtarget import *
 from canonical.launchpad.interfaces.messagetarget import *
 from canonical.launchpad.interfaces.pillar import *
 
+from canonical.launchpad.interfaces.announcement import *
 from canonical.launchpad.interfaces.answercontact import *
 from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
@@ -74,6 +75,7 @@ from canonical.launchpad.interfaces.externalbugtracker import *
 from canonical.launchpad.interfaces.faq import *
 from canonical.launchpad.interfaces.faqcollection import *
 from canonical.launchpad.interfaces.faqtarget import *
+from canonical.launchpad.interfaces.featuredproject import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.gpg import *

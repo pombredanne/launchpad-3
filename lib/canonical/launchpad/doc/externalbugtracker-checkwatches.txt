@@ -30,6 +30,7 @@ get_external_bugtracker supports five external bug tracker types:
     ...     BugTrackerType.MANTIS,
     ...     BugTrackerType.ROUNDUP,
     ...     BugTrackerType.RT,
+    ...     BugTrackerType.SOURCEFORGE,
     ...     BugTrackerType.TRAC]
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
@@ -50,4 +51,5 @@ get_external_bugtracker supports five external bug tracker types:
     Mantis --> <...externalbugtracker.Mantis object at ...>
     Roundup --> <...externalbugtracker.Roundup object at ...>
     Request Tracker (RT) --> <...externalbugtracker.RequestTracker ...>
+    SourceForge --> <...externalbugtracker.SourceForge object at ...>
     Trac --> <...externalbugtracker.Trac object at ...>

@@ -35,16 +35,7 @@
 
   <h2>Download</h2>
 
-   <div id="files">
-     <ul class="download" tal:condition="context/files">
-        <li tal:repeat="file context/files">
-          <a tal:content="file/libraryfile/filename"
-             tal:attributes="href file/libraryfile/http_url" />
-          (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
-        </li>
-     </ul>
-     <p tal:condition="not:context/files">No files available for download.</p>
-   </div>
+   <div id="files" tal:content="structure context/sourcepackagerelease/@@+files" />
 
   <h2>Changelog</h2>
 
