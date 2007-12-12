@@ -1772,8 +1772,9 @@ BUG_TRACKER_CLASSES = {
 def get_external_bugtracker(txn, bugtracker):
     """Return an `ExternalBugTracker` for bugtracker."""
     bugtrackertype = bugtracker.bugtrackertype
-    if bugtrackertype in BUG_TRACKER_CLASSES:
-        return BUG_TRACKER_CLASSES[bugtrackertype](txn, bugtracker)
+    bugtracker_class = BUG_TRACKER_CLASSES.get(bugtracker.bugtrackertype)    
+    if bugtracker_class is not None:
+        return bugtracker_class(txn, bugtracker)
     else:
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)
