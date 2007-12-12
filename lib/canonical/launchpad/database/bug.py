@@ -927,12 +927,14 @@ class Bug(SQLBase):
         if bugtask.conjoined_master is not None:
             bugtask = bugtask.conjoined_master
 
+        if bugtask.status == status:
+            return None
+
         bugtask_before_modification = Snapshot(
             bugtask, providing=providedBy(bugtask))
         bugtask.transitionToStatus(status, user)
-        if bugtask_before_modification.status != bugtask.status:
-            notify(SQLObjectModifiedEvent(
-                bugtask, bugtask_before_modification, ['status'], user=user))
+        notify(SQLObjectModifiedEvent(
+            bugtask, bugtask_before_modification, ['status'], user=user))
 
         return bugtask
 
