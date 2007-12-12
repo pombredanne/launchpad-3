@@ -265,7 +265,8 @@ class IProjectSet(Interface):
         """Return a list of projects that have productseries ready to
         import which need review."""
 
-class IProjectSeries(IHasSpecifications):
+class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
+                     IHasOwner):
     """Interface for ProjectSeries.
 
     This class provides the specifications related to a "virtual project
@@ -279,3 +280,12 @@ class IProjectSeries(IHasSpecifications):
     title = Attribute('The full name of the project group.')
 
     project = Attribute('The project this series belongs to')
+
+    active = Attribute(
+        'Whether or not this project group is considered active.')
+
+    reviewed = Attribute(
+        'Whether or not this project group has been reviewed.')
+
+    bugtracker = Attribute(
+        'The bug tracker the products in this project group use.')

@@ -381,22 +381,26 @@
     <!-- ProjectSeries -->
     <content class="canonical.launchpad.database.ProjectSeries">
         <allow interface="canonical.launchpad.interfaces.IProjectSeries" />
-        <require
-            permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IProjectSeries"
-        />
     </content>
 
     <browser:url
-         for="canonical.launchpad.interfaces.IProjectSeries"
-         path_expression="string:+series/${name}"
-         attribute_to_parent="project"
-         />
+        for="canonical.launchpad.interfaces.IProjectSeries"
+        path_expression="string:+series/${name}"
+        attribute_to_parent="project"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProjectSeries"
         name="+specs"
         layer="canonical.launchpad.layers.BlueprintLayer"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProjectSeries"
+        permission="zope.Public"
+        name="+portlet-details"
+        facet="overview"
+        template="../templates/project-portlet-details.pt"
         />
 
 </configure>

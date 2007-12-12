@@ -107,184 +107,184 @@ ordered by their names.
 
 We should be able to generate filtered lists of specs on a project.
 
- >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
- >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
+    >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 First, there should be only one informational spec for mozilla:
 
- >>> filter = [SpecificationFilter.INFORMATIONAL]
- >>> for spec in mozilla.specifications(filter=filter):
- ...    print spec.name
- extension-manager-upgrades
+    >>> filter = [SpecificationFilter.INFORMATIONAL]
+    >>> for spec in mozilla.specifications(filter=filter):
+    ...    print spec.name
+    extension-manager-upgrades
 
 
 There are no completed specs for mozilla:
 
- >>> filter = [SpecificationFilter.COMPLETE]
- >>> for spec in mozilla.specifications(filter=filter):
- ...    print spec.name
+    >>> filter = [SpecificationFilter.COMPLETE]
+    >>> for spec in mozilla.specifications(filter=filter):
+    ...    print spec.name
 
 
 And there are five incomplete specs:
 
- >>> filter = [SpecificationFilter.INCOMPLETE]
- >>> mozilla.specifications(filter=filter).count()
- 5
+    >>> filter = [SpecificationFilter.INCOMPLETE]
+    >>> mozilla.specifications(filter=filter).count()
+    5
 
 We can filter for specifications that contain specific text:
 
- >>> for spec in mozilla.specifications(filter=['install']):
- ...     print spec.name
- extension-manager-upgrades
+    >>> for spec in mozilla.specifications(filter=['install']):
+    ...     print spec.name
+    extension-manager-upgrades
 
 
 Inactive products are excluded from the listings.
 
- >>> filter = [SpecificationFilter.INCOMPLETE]
- >>> mozilla.specifications(filter=filter).count()
- 5
+    >>> filter = [SpecificationFilter.INCOMPLETE]
+    >>> mozilla.specifications(filter=filter).count()
+    5
 
- >>> from canonical.launchpad.interfaces import IProductSet
- >>> firefox = getUtility(IProductSet).getByName('firefox')
- >>> firefox.active = False
- >>> flush_database_updates()
- >>> filter = [SpecificationFilter.INCOMPLETE]
- >>> mozilla.specifications(filter=filter).count()
- 0
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox.active = False
+    >>> flush_database_updates()
+    >>> filter = [SpecificationFilter.INCOMPLETE]
+    >>> mozilla.specifications(filter=filter).count()
+    0
 
 Reset firefox so we don't mess up later tests.
 
- >>> firefox.active = True
- >>> flush_database_updates()
+    >>> firefox.active = True
+    >>> flush_database_updates()
 
 We can get all the specifications via the all_specifications property,
 and all valid specifications via the valid_specifications property:
 
- >>> for spec in mozilla.all_specifications:
- ...    print spec.name
- svg-support
- canvas
- extension-manager-upgrades
- mergewin
- e4x
+    >>> for spec in mozilla.all_specifications:
+    ...    print spec.name
+    svg-support
+    canvas
+    extension-manager-upgrades
+    mergewin
+    e4x
 
- >>> for spec in mozilla.valid_specifications:
- ...    print spec.name
- svg-support
- canvas
- extension-manager-upgrades
- mergewin
- e4x
+    >>> for spec in mozilla.valid_specifications:
+    ...    print spec.name
+    svg-support
+    canvas
+    extension-manager-upgrades
+    mergewin
+    e4x
 
 
 == Specification Listings for a Project Series ==
 
 An IProjectSeries object can be retrieved by IProject.getSeries.
 
- >>> mozilla_series_1_0 = mozilla.getSeries('1.0')
- >>> mozilla_series_1_0
- <canonical.launchpad.database.project.ProjectSeries object at...
+    >>> mozilla_series_1_0 = mozilla.getSeries('1.0')
+    >>> mozilla_series_1_0
+    <canonical.launchpad.database.project.ProjectSeries object at...
 
 If no series with the given name exists, IProject.getSeries returns None.
 
- >>> print mozilla.getSeries('nonsense')
- None
+    >>> print mozilla.getSeries('nonsense')
+    None
 
 IProjectSeries.all_specifications lists all specifications
 assigned to a series. Currently, no specifications are assigned to the
 Mozilla series 1.0.
 
- >>> specs = mozilla_series_1_0.all_specifications
- >>> specs.count()
- 0
+    >>> specs = mozilla_series_1_0.all_specifications
+    >>> specs.count()
+    0
 
 If a specification is assigned to series 1.0, it appears in
 mozilla_1_0_series.all_specifications.
 
- >>> from canonical.launchpad.ftests import syncUpdate
- >>> filter = [SpecificationFilter.INFORMATIONAL]
- >>> extension_manager_upgrades = mozilla.specifications(filter=filter)[0]
- >>> series_1_0 = firefox.getSeries('1.0')
- >>> extension_manager_upgrades.proposeGoal(series_1_0, no_priv)
- >>> syncUpdate(extension_manager_upgrades)
- >>> for spec in mozilla_series_1_0.all_specifications:
- ...     print spec.name
- extension-manager-upgrades
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> filter = [SpecificationFilter.INFORMATIONAL]
+    >>> extension_manager_upgrades = mozilla.specifications(filter=filter)[0]
+    >>> series_1_0 = firefox.getSeries('1.0')
+    >>> extension_manager_upgrades.proposeGoal(series_1_0, no_priv)
+    >>> syncUpdate(extension_manager_upgrades)
+    >>> for spec in mozilla_series_1_0.all_specifications:
+    ...     print spec.name
+    extension-manager-upgrades
 
 This specification is not listed for other serieses.
 
- >>> mozilla_trunk = mozilla.getSeries('trunk')
- >>> print mozilla_trunk.all_specifications.count()
- 0
+    >>> mozilla_trunk = mozilla.getSeries('trunk')
+    >>> print mozilla_trunk.all_specifications.count()
+    0
 
 Filtered lists of project series related specifications are generated
 the same way as for project related specifications.
 
- >>> for spec in mozilla_series_1_0.specifications(filter=filter):
- ...     print spec.name
- extension-manager-upgrades
+    >>> for spec in mozilla_series_1_0.specifications(filter=filter):
+    ...     print spec.name
+    extension-manager-upgrades
 
 If all existing specifications are assigned to the 1.0 series,...
 
- >>> for spec in mozilla.all_specifications:
- ...     spec.proposeGoal(series_1_0, no_priv)
- ...     syncUpdate(spec)
+    >>> for spec in mozilla.all_specifications:
+    ...     spec.proposeGoal(series_1_0, no_priv)
+    ...     syncUpdate(spec)
 
 we have the save five incomplete specs in the series 1.0 as we have for the
 project itself.
 
- >>> filter = [SpecificationFilter.INCOMPLETE]
- >>> for spec in mozilla_series_1_0.specifications(filter=filter):
- ...     print spec.name
- svg-support
- canvas
- extension-manager-upgrades
- mergewin
- e4x
+    >>> filter = [SpecificationFilter.INCOMPLETE]
+    >>> for spec in mozilla_series_1_0.specifications(filter=filter):
+    ...     print spec.name
+    svg-support
+    canvas
+    extension-manager-upgrades
+    mergewin
+    e4x
 
  Searching for text is also possible.
 
- >>> for spec in mozilla_series_1_0.specifications(filter=['install']):
- ...     print spec.name
- extension-manager-upgrades
+    >>> for spec in mozilla_series_1_0.specifications(filter=['install']):
+    ...     print spec.name
+    extension-manager-upgrades
 
 Inactive products are excluded from the series listings.
 
- >>> filter = [SpecificationFilter.INCOMPLETE]
- >>> specs = mozilla_series_1_0.specifications(filter=filter)
- >>> print specs.count()
- 5
+    >>> filter = [SpecificationFilter.INCOMPLETE]
+    >>> specs = mozilla_series_1_0.specifications(filter=filter)
+    >>> print specs.count()
+    5
 
- >>> firefox = getUtility(IProductSet).getByName('firefox')
- >>> firefox.active = False
- >>> syncUpdate(firefox)
- >>> filter = [SpecificationFilter.INCOMPLETE]
- >>> mozilla_series_1_0.specifications(filter=filter).count()
- 0
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox.active = False
+    >>> syncUpdate(firefox)
+    >>> filter = [SpecificationFilter.INCOMPLETE]
+    >>> mozilla_series_1_0.specifications(filter=filter).count()
+    0
 
 Reset firefox so we don't mess up later tests.
 
- >>> firefox.active = True
- >>> syncUpdate(firefox)
+    >>> firefox.active = True
+    >>> syncUpdate(firefox)
 
 We can get all the specifications via the all_specifications property,
 and all valid specifications via the valid_specifications property:
 
- >>> for spec in mozilla_series_1_0.all_specifications:
- ...    print spec.name
- svg-support
- canvas
- extension-manager-upgrades
- mergewin
- e4x
+    >>> for spec in mozilla_series_1_0.all_specifications:
+    ...    print spec.name
+    svg-support
+    canvas
+    extension-manager-upgrades
+    mergewin
+    e4x
 
- >>> for spec in mozilla_series_1_0.valid_specifications:
- ...    print spec.name
- svg-support
- canvas
- extension-manager-upgrades
- mergewin
- e4x
+    >>> for spec in mozilla_series_1_0.valid_specifications:
+    ...    print spec.name
+    svg-support
+    canvas
+    extension-manager-upgrades
+    mergewin
+    e4x
 
 
 == translatables ==
@@ -293,60 +293,60 @@ A project would have IProduct objects that have resources to translate. This
 method return us the ones that are translatable and officially using Rosetta
 to handle translations.
 
-  # Revert any change done until now.
-  >>> import transaction
-  >>> transaction.abort()
+    # Revert any change done until now.
+    >>> import transaction
+    >>> transaction.abort()
 
 GNOME Project is a good example that has translations.
 It has one translatable product.
 
-  >>> gnome = getUtility(IProjectSet)['gnome']
-  >>> translatables = gnome.translatables()
-  >>> translatables.count()
-  1
+    >>> gnome = getUtility(IProjectSet)['gnome']
+    >>> translatables = gnome.translatables()
+    >>> translatables.count()
+    1
 
 And that translatable product is 'Evolution'.
 
-  >>> evolution = translatables[0]
-  >>> print evolution.title
-  The Evolution Groupware Application
+    >>> evolution = translatables[0]
+    >>> print evolution.title
+    The Evolution Groupware Application
 
 With its 'trunk' series translatable.
 
-  >>> evo_series = evolution.translatable_series
-  >>> len(evo_series)
-  1
-  >>> evo_trunk = evo_series[0]
-  >>> print evo_trunk.name
-  trunk
+    >>> evo_series = evolution.translatable_series
+    >>> len(evo_series)
+    1
+    >>> evo_trunk = evo_series[0]
+    >>> print evo_trunk.name
+    trunk
 
 That is using Rosetta officially.
 
-  >>> evolution.official_rosetta
-  True
+    >>> evolution.official_rosetta
+    True
 
 GNOME project has also another product, netapplet.
 
-  >>> netapplet = gnome.getProduct('netapplet')
-  >>> print netapplet.title
-  Network Applet
+    >>> netapplet = gnome.getProduct('netapplet')
+    >>> print netapplet.title
+    Network Applet
 
 But it was not returned from 'translatables' method because it's not using
 Rosetta officially.
 
-  >>> netapplet.official_rosetta
-  False
+    >>> netapplet.official_rosetta
+    False
 
 And thus, it doesn't have any translatable series.
 
-  >>> len(netapplet.translatable_series)
-  0
+    >>> len(netapplet.translatable_series)
+    0
 
 Even if it has resources to translate.
 
-  >>> sum([len(series.getTranslationTemplates())
-  ...      for series in netapplet.serieses])
-  1
+    >>> sum([len(series.getTranslationTemplates())
+    ...      for series in netapplet.serieses])
+    1
 
 
 == Milestones ==

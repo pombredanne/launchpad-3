@@ -390,12 +390,12 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getSeries(self, series_name):
         """See `IProject.`"""
-        has_series = ProductSeries.select(
+        has_series = ProductSeries.selectFirst(
             AND(ProductSeries.q.productID == Product.q.id,
                 ProductSeries.q.name == series_name,
-                Product.q.projectID == self.id), limit=1)
+                Product.q.projectID == self.id), orderBy='id')
 
-        if has_series.count() == 0:
+        if has_series is None:
             return None
 
         return ProjectSeries(self, series_name)
@@ -559,4 +559,28 @@ class ProjectSeries(HasSpecificationsMixin):
 
     @property
     def displayname(self):
-        return self.project.displayname
+        return self.name
+
+    @property
+    def active(self):
+        return self.project.active
+
+    @property
+    def reviewed(self):
+        return self.project.reviewed
+
+    @property
+    def icon(self):
+        return self.project.icon
+
+    @property
+    def owner(self):
+        return self.project.owner
+
+    @property
+    def driver(self):
+        return self.project.driver
+
+    @property
+    def bugtracker(self):
+        return self.project.bugtracker

@@ -89,6 +89,7 @@ class HasSpecificationsView(LaunchpadView):
             self.show_target = True
             self.show_series = True
         elif IProjectSeries.providedBy(self.context):
+            self.show_milestone = True
             self.show_target = True
             self.show_series = True
         elif (IProductSeries.providedBy(self.context) or
