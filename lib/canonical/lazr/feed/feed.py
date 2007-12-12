@@ -117,7 +117,7 @@ class FeedBase(LaunchpadFormView):
                               key=operator.attrgetter('last_modified'),
                               reverse=True)
         if len(sorted_items) == 0:
-            return None
+            raise AssertionError, 'All feed entries require a date updated.'
         return sorted_items[0].last_modified
 
     def render(self):
@@ -157,7 +157,7 @@ class FeedEntry:
                  title,
                  id_,
                  link_alternate,
-                 date_updated=None,
+                 date_updated,
                  date_published=None,
                  authors=None,
                  contributors=None,
@@ -180,9 +180,9 @@ class FeedEntry:
 
     @property
     def last_modified(self):
-        if self.date_published is not None and self.date_updated is not None:
+        if self.date_published is not None:
             return max(self.date_published, self.date_updated)
-        return self.date_published or self.date_updated
+        return self.date_updated
 
 
 class FeedTypedData:
