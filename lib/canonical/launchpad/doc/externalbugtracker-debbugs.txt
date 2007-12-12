@@ -73,13 +73,10 @@ Bug 563 resides in the archive. It is also fetchable:
     >>> len(bug_watches)
     4
 
-Log in and kick off the update. We use a test version of the DebBugs
-external bug tracker here that won't attempt to import comments:
+Log in and kick off the update. We disable comment imports here because
+we will test them later.
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     TestNoCommentsDebBugs)
-    >>> external_debbugs = TestNoCommentsDebBugs(
-    ...     new_bugtracker(BugTrackerType.DEBBUGS))
+    >>> external_debbugs.import_comments = False
     >>> external_debbugs.updateBugWatches(bug_watches)
     INFO:...:Updating 4 watches on http://bugs.some.where
 
@@ -336,7 +333,7 @@ kept in sync.
     u'evolution (Debian)'
 
     >>> debian_task.bugwatch.bugtracker.name
-    u'debbugs-checkwatches-2'
+    u'debbugs-checkwatches-1'
     >>> debian_task.bugwatch.remotebug
     u'322535'
 

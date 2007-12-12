@@ -464,23 +464,3 @@ class TestDebBugs(DebBugs):
             raise BugNotFound(bug_id)
         return self.bugs[bug_id]
 
-    def _updateBugWatch(self, bug_watch):
-        """See `DebBugs`.
-
-        This method does nothing so that bug comment imports can be
-        tested separately from bug status imports.
-        """
-        if self.import_comments:
-            super(TestDebBugs, self)._updateBugWatch(bug_watch)
-
-
-class TestNoCommentsDebBugs(DebBugs):
-    """A Test DebBugs subclass that doesn't do comment imports."""
-
-    def _updateBugWatch(self, bug_watch):
-        """See `DebBugs`.
-
-        This method does nothing so that bug comment imports can be
-        tested separately from bug status imports.
-        """
-        pass

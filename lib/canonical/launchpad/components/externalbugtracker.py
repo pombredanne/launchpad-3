@@ -134,9 +134,10 @@ def get_bugwatcherrortype_for_error(error):
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
 
-    implements(IExternalBugTracker)
     batch_query_threshold = config.checkwatches.batch_query_threshold
     batch_size = None
+    implements(IExternalBugTracker)
+    import_comments = config.checkwatches.import_comments
 
     def __init__(self, bugtracker):
         self.bugtracker = bugtracker
@@ -223,12 +224,9 @@ class ExternalBugTracker:
         page_contents = url.read()
         return page_contents
 
-    def _updateBugWatch(self, bug_watch):
-        """Carry out bugtracker-specific tasks for updating a  bugwatch."""
-        # This method isn't implemented here because it should be
-        # implemented on a bugtracker by bugtracker basis (c.f.
-        # DebBugs._updateBugWatch().
-        pass
+    def importBugComments(self, bug_watch):
+        """Import the comments from a remote bug."""
+        raise NotImplementedError(self.importBugComments)
 
     def updateBugWatches(self, bug_watches):
         """Update the given bug watches."""
@@ -313,11 +311,17 @@ class ExternalBugTracker:
                 for bug_watch in bug_watches:
                     bug_watch.lastchecked = UTC_NOW
                     bug_watch.last_error_type = error
-                    self._updateBugWatch(bug_watch)
                     if new_malone_status is not None:
                         bug_watch.updateStatus(new_remote_status,
                                                new_malone_status)
-
+                    if self.import_comments:
+                        try:
+                            self.importBugComments(bug_watch)
+                        except NotImplementedError:
+                            # Not all ExternalBugTrackers implement an
+                            # importBugComments() method, so we ignore
+                            # NotImplementedErrors.
+                            pass
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -627,8 +631,6 @@ class DebBugs(ExternalBugTracker):
     debbugs_pl = os.path.join(
         os.path.dirname(debbugs.__file__), 'debbugs-log.pl')
 
-    import_comments = config.checkwatches.import_comments
-
     def __init__(self, bugtracker, db_location=None):
         super(DebBugs, self).__init__(bugtracker)
         if db_location is None:
@@ -769,11 +771,6 @@ class DebBugs(ExternalBugTracker):
 
         return bug
 
-    def _updateBugWatch(self, bug_watch):
-        """See `ExternalBugTracker`."""
-        if self.import_comments:
-            self.importBugComments(bug_watch)
-
     def importBugComments(self, bug_watch):
         """Import the comments from a DebBugs bug."""
         log.info("Importing comments for remote bug %s (local bug %s) on %s."
@@ -793,7 +790,7 @@ class DebBugs(ExternalBugTracker):
             # We need to assign this comment to an owner, so we look for
             # a From header to the email or, failing that, a Reply-to
             # header.
-            if parsed_comment.has_key('from'):
+            if 'from' in parsed_comment:
                 owner_email = parsed_comment['from']
             else:
                 # If we can't find an owner for the comment we can't
