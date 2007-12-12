@@ -171,7 +171,7 @@
       <thead>
         <tr>
           <th tal:condition="view/show_priority">Priority</th>
-          <th>Specification</th>
+          <th>Blueprint</th>
           <th tal:condition="view/show_design">Design</th>
           <th tal:condition="view/show_implementation">Delivery</th>
           <th tal:condition="view/show_assignee">Assignee</th>
@@ -229,6 +229,12 @@
               <a tal:attributes="href spec/distroseries/fmt:url"
                  tal:content="spec/distroseries/name">1.0</a>
             </tal:distroseries>
+          </td>
+          <td tal:condition="view/show_milestone">
+            <tal:milestone condition="spec/milestone">
+              <a tal:attributes="href spec/milestone/fmt:url"
+                 tal:content="spec/milestone/name">1.0.0</a>
+            </tal:milestone>
           </td>
         </tr>
       </tbody>

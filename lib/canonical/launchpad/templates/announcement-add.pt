@@ -1,0 +1,39 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:portlets fill-slot="portlets">
+</metal:portlets>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+
+    <div metal:fill-slot="extra_info" class="documentDescription">
+      Publish news about your project through Launchpad. Readers can
+      subscribe to an RSS feed of your announcements.
+    <div class="error message" tal:condition="not: view/isBetaUser">
+      This function is in beta test, and is available to Launchpad beta
+      testers only. Please join the <a href="/~launchpad-beta-testers">beta
+      test team</a> if you'd like to explore this capability before it is
+      widely available to all Launchpad users.
+    </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

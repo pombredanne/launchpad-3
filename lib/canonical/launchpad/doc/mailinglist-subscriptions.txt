@@ -66,6 +66,31 @@ Neither can a team subscribe to a mailing list.
     CannotSubscribe: Teams cannot be mailing list members: Team One
 
 
+== MailingListSubscription objects ==
+
+MailingListSubscription objects make it possible to see under which
+address (if any) a user is subscribed. That information is available
+as the email_address member.
+
+    >>> list_one.getSubscription(bart).email_address.email
+    u'bperson@example.org'
+
+Every subscription has a corresponding MailingListSubscription object,
+but not every MailingListSubscription object names a specific email
+address. If a user is subscribed under their preferred address, the
+corresponding MailingListSubscription object will exist but not be
+associated with any specific address.
+
+    >>> list_one.getSubscription(anne).email_address is None
+    True
+
+If a user is not subscribed to a mailing list, they will have no
+MailingListSubscription object for that mailing list.
+
+    >>> list_one.getSubscription(cris) is None
+    True
+
+
 == Nested teams ==
 
 Indirect members can subscribe to a team's mailing list.  To illustrate this,
@@ -396,3 +421,17 @@ subscription address.
     ...
     CannotChangeSubscription: Anne Person is not a member of
         the mailing list: Team Six
+
+
+== Deleting addresses ==
+
+When a user deletes an email address, all of their mailing list
+subscriptions that use that address are automatically deleted as well.
+
+    >>> list_six.changeAddress(kara, kara_alternative)
+    >>> print sorted(list_six.getAddresses())
+    [u'kperson@example.org']
+
+    >>> kara_alternative.destroySelf()
+    >>> print sorted(list_six.getAddresses())
+    []

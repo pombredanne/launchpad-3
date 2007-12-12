@@ -49,8 +49,10 @@ class KdePOExporter(GettextPOExporter):
         elif translation_message.msgid_plural is not None:
             # Also, let's handle legacy KDE plural forms.
             translations = translation_message.translations
-            translation_message._translations = [
-                "\n".join(translation_message.translations)]
+            for pluralform_index in xrange(len(translations)):
+                if translations[pluralform_index] is None:
+                    translations[pluralform_index] = ''
+            translation_message._translations = ["\n".join(translations)]
             translation_message.msgid_singular = u"_n: %s\n%s" % (
                 translation_message.msgid_singular,
                 translation_message.msgid_plural)

@@ -56,6 +56,11 @@
       template="../templates/sourcepackagerelease-changelog.pt"
     />
     <browser:page
+      name="+files"
+      facet="overview"
+      template="../templates/sourcepackagerelease-files.pt"
+      />
+    <browser:page
       name="+change_summary"
       template="../templates/sourcepackagerelease-change-summary.pt"
     />

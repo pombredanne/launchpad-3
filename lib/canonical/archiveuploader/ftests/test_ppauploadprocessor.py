@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+import os
+import shutil
 import unittest
 
 from email import message_from_string
@@ -15,13 +17,13 @@ from canonical.archiveuploader.ftests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchiveSet, IDistributionSet, ILaunchpadCelebrities,
-    IPersonSet, PackageUploadStatus, PackagePublishingStatus,
+    IPersonSet, NotFoundError, PackageUploadStatus, PackagePublishingStatus,
     PackagePublishingPocket)
 from canonical.launchpad.mail import stub
 
 
-class TestPPAUploadProcessor(TestUploadProcessorBase):
-    """Functional tests for uploadprocessor.py in PPA operation."""
+class TestPPAUploadProcessorBase(TestUploadProcessorBase):
+    """Help class for functional tests for uploadprocessor.py and PPA."""
 
     def setUp(self):
         """Setup infrastructure for PPA tests.
@@ -65,9 +67,11 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         if not contents:
             contents = []
 
+        queue_size = len(stub.test_emails)
+        messages = "\n".join(m for f, t, m in stub.test_emails)
         self.assertEqual(
-            len(stub.test_emails), 1,
-            'Unexpected number of emails sent: %s' % len(stub.test_emails))
+            queue_size, 1,'Unexpected number of emails sent: %s\n%s'
+            % (queue_size, messages))
 
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         msg = message_from_string(raw_msg)
@@ -88,6 +92,10 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
             self.assertTrue(
                 content in body,
                 "Expect: '%s'\nGot:\n%s" % (content, body))
+
+
+class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
+    """Functional tests for uploadprocessor.py in PPA operation."""
 
     def testUploadToPPA(self):
         """Upload to a PPA gets there.
@@ -238,6 +246,86 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
             version="1.0-1", exact_match=True, archive=cprov.archive)
+        self.assertEqual(queue_items.count(), 1)
+
+    def testPPASizeQuotaSourceRejection(self):
+        """Verify the size quota check for PPA uploads.
+
+        New source uploads are submitted to the size quota check, where
+        the size of the upload plus the current PPA size must be smaller
+        than the PPA.authorized_size, otherwise the upload will be rejected.
+        """
+        # Reducing the target PPA size quota to 1 byte.
+        self.name16.archive.authorized_size = 1
+
+        # XXX cprov 20071204: see uploadpolicy.py line 255.
+        # When we change the code to actually reject the upload this
+        # test should also be modified to cope with the rejection
+        # notification.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)",
+            "Upload Warnings:",
+            "PPA exceeded its size limit (1213 of 1 bytes). "
+            "Contact a Launchpad administrator if you need more space."]
+        self.assertEmail(contents)
+
+    def testPPASizeQuotaSourceWarning(self):
+        """Verify the size quota warning for PPA near size limit.
+
+        The system start warning users for uploads exceeding 80 % of
+        the current size limit.
+        """
+        # Set a PPA size_quota that doesn't fit 'bar' source upload
+        # under its 95 % 'safe' limit.
+        self.name16.archive.authorized_size = 1250
+
+        # Ensure the warning is sent in the acceptance notification.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)",
+            "Upload Warnings:",
+            "PPA exceeded 95 % of its size limit (1213 of 1250 bytes). "
+            "Contact a Launchpad administrator if you need more space."]
+        self.assertEmail(contents)
+
+    def testPPADoNotCheckSizeQuotaForBinary(self):
+        """Verify the size quota check for internal binary PPA uploads.
+
+        Binary uploads are not submitted to the size quota check, since
+        they are automatically generated, rejecting/warning them would
+        just cause unnecessary hassle.
+        """
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+        self.assertEmail(contents)
+
+        # Create a build record for source bar in breezy-i386
+        # distroarchseries, and setup a appropriate upload policy
+        # in preparation to the corresponding binary upload.
+        pub_sources = self.name16.archive.getPublishedSources(name='bar')
+        [pub_bar] = pub_sources
+        build_bar_i386 = pub_bar.sourcepackagerelease.createBuild(
+            self.breezy['i386'], PackagePublishingPocket.RELEASE,
+            self.name16.archive)
+        self.options.context = 'buildd'
+        self.options.buildid = build_bar_i386.id
+
+        # Drastically reduce the size quota to check if it doesn't
+        # affect binary uploads as expected.
+        self.name16.archive.authorized_size = 1
+
+        upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        # The binary upload was accepted, and it's waiting in the queue.
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED, name="bar",
+            version="1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
     def testUploadDoesNotEmailMaintainerOrChangedBy(self):
@@ -559,6 +647,170 @@ class TestPPAUploadProcessor(TestUploadProcessorBase):
             "bar_1.0.orig.tar.gz: Section 'badsection' is not valid",
             "bar_1.0-1.diff.gz: Section 'badsection' is not valid"]
         self.assertEmail(contents)
+
+
+class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
+    """Functional test for uploadprocessor.py file-lookups in PPA."""
+    # XXX cprov 20071204: the DSCFile tests are not yet implemented, this
+    # issue should be addressed by bug #106084, while implementing those
+    # tests we should revisit this test-suite checking if we have a
+    # satisfactory coverage.
+
+    def uploadNewBarToUbuntu(self):
+        """Upload a 'bar' source containing a unseen orig.tar.gz in ubuntu.
+
+        Accept and publish the NEW source, so it becomes available to
+        the rest of the system.
+        """
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: New: bar 1.0-1 (source)"]
+        ubuntu_recipients = [
+            self.name16_recipient, self.kinnison_recipient]
+        self.assertEmail(contents, recipients=ubuntu_recipients)
+
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.NEW, name="bar",
+            version="1.0-1", exact_match=True)
+        queue_item.setAccepted()
+        queue_item.realiseUpload()
+        self.layer.commit()
+
+    def uploadHigherBarToUbuntu(self):
+        """Upload the same higher version of 'bar' to the ubuntu.
+
+        We expect the official orig.tar.gz to be already available in the
+        system.
+        """
+        try:
+            self.ubuntu.getFileByName(
+                'bar_1.0.orig.tar.gz', source=True, binary=False)
+        except NotFoundError:
+            self.fail('bar_1.0.orig.tar.gz is not yet published.')
+
+        upload_dir = self.queueUpload("bar_1.0-10")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        # Discard the announcement email and check the acceptance message
+        # content.
+        announcement = stub.test_emails.pop()
+        contents = [
+            "Subject: Accepted: bar 1.0-10 (source)"]
+        self.assertEmail(contents)
+
+    def testPPAReusingOrigFromUbuntu(self):
+        """Official 'orig.tar.gz' can be reused for PPA uploads."""
+        # Make the official bar orig.tar.gz available in the system.
+        self.uploadNewBarToUbuntu()
+
+        # Upload a higher version of 'bar' to a PPA that relies on the
+        # availability of orig.tar.gz published in ubuntu.
+        upload_dir = self.queueUpload("bar_1.0-10", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-10 (source)"]
+        self.assertEmail(contents)
+
+        # Cleanup queue directory in order to re-upload the same source.
+        shutil.rmtree(
+            os.path.join(self.queue_folder, 'incoming', 'bar_1.0-10'))
+
+        # Upload a higher version of bar that relies on the official
+        # orig.tar.gz availability.
+        self.uploadHigherBarToUbuntu()
+
+    def testPPAOrigGetsPrecedence(self):
+        """When available, the PPA overridden 'orig.tar.gz' gets precedence.
+
+        This test is required to guarantee the system will continue to cope
+        with possibly different 'orig.tar.gz' contents already uploaded to
+        PPAs.
+        """
+        # Upload a initial version of 'bar' source introducing a 'orig.tar.gz'
+        # different than the official one. It emulates the origs already
+        # uploaded to PPAs before bug #139619 got fixed.
+        # It's only possible to do such thing in the current codeline when
+        # the *tainted* upload reaches the system before the 'official' orig
+        # is published in the primary archive, if uploaded after the official
+        # orig is published in primary archive it would fail due to different
+        # file contents.
+        upload_dir = self.queueUpload("bar_1.0-1-ppa-orig", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+        self.assertEmail(contents)
+
+        # Make the official bar orig.tar.gz available in the system.
+        self.uploadNewBarToUbuntu()
+
+        # Upload a higher version of 'bar' to a PPA that relies on the
+        # availability of orig.tar.gz published in the PPA itself.
+        upload_dir = self.queueUpload("bar_1.0-10-ppa-orig", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-10 (source)"]
+        self.assertEmail(contents)
+
+        # Upload a higher version of bar that relies on the official
+        # orig.tar.gz availability.
+        self.uploadHigherBarToUbuntu()
+
+    def testPPAConflictingOrigFiles(self):
+        """When available, the official 'orig.tar.gz' restricts PPA uploads.
+
+        This test guarantee that when not previously overridden in the
+        context PPA, users will be forced to use the offical 'orig.tar.gz'
+        from primary archive.
+        """
+        # Make the official bar orig.tar.gz available in the system.
+        self.uploadNewBarToUbuntu()
+
+        # Upload of version of 'bar' to a PPA that relies on the
+        # availability of orig.tar.gz published in the PPA itself.
+
+        # The same 'bar' version will fail due to the conflicting
+        # 'orig.tar.gz' contents.
+        upload_dir = self.queueUpload("bar_1.0-1-ppa-orig", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "MD5 sum of uploaded file does not match existing file "
+                 "in archive",
+            "Files specified in DSC are broken or missing, skipping package "
+                 "unpack verification."]
+        self.assertEmail(contents)
+
+        self.log.lines = []
+        # The happens with higher versions of 'bar' depending on the
+        # unofficial 'orig.tar.gz'.
+        upload_dir = self.queueUpload("bar_1.0-10-ppa-orig", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: bar_1.0-10_source.changes rejected",
+            "MD5 sum of uploaded file does not match existing file "
+                 "in archive",
+            "Files specified in DSC are broken or missing, skipping package "
+                 "unpack verification."]
+        self.assertEmail(contents)
+
+        # Cleanup queue directory in order to re-upload the same source.
+        shutil.rmtree(
+            os.path.join(self.queue_folder, 'incoming', 'bar_1.0-1'))
+
+        # Only versions of 'bar' matching the official 'orig.tar.gz' will
+        # be accepted.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+        self.assertEmail(contents)
+
+        upload_dir = self.queueUpload("bar_1.0-10", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-10 (source)"]
+        self.assertEmail(contents)
+
 
 
 def test_suite():

@@ -109,7 +109,8 @@ class HWDBUploadView(LaunchpadFormView):
 
     def addErrorHeader(self, field_name, error):
         """Adds a header informing an error to automated clients."""
-        return self.addCustomHeader(u'Error in %s - %s' % (field_name, error))
+        return self.addCustomHeader(u"Error in field '%s' - %s" %
+                                    (field_name, error))
 
     def addCustomHeader(self, value):
         """Adds a custom header to HWDB clients."""

@@ -169,6 +169,22 @@ single e-mail later.
      -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300
     <BLANKLINE>
 
+If another upload claims to close the same bug (which is already
+closed), no additional comment is added. This situation may occur when
+packages are synced from Debian.
+
+    >>> print_single_task_status(pmount_bug_id)
+    'FIXRELEASED'
+    >>> number_of_old_notifications = notifications.count()
+
+    >>> close_bugs([queue_item_id])
+
+    >>> notifications = BugNotification.select(orderBy='id')
+    >>> new_notifications = notifications[number_of_old_notifications:]
+    >>> [notification.message.text_contents
+    ...  for notification in new_notifications]
+    []
+
 
 Let's define another helper function that will compare a bug status,
 call close_bugs() and then check the status again.

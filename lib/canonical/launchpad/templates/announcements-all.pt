@@ -1,0 +1,37 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="launchpad">
+<body>
+
+<p metal:fill-slot="help">
+  Project administrators can publish additional announcements, edit these
+  announcements or retract them.
+</p>
+
+<h1 metal:fill-slot="heading">News and announcements</h1>
+
+<div metal:fill-slot="main">
+
+  <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+        tal:attributes="href view/feed_url" />
+
+  <div tal:condition="view/announcement_nav/batch/listlength" id="announcements">
+    <tal:per_announcement
+        repeat="announcement view/announcement_nav/currentBatch"
+        replace="structure announcement/@@+listing-detailed" />
+  </div>
+
+  <div class="lesser"
+       tal:content="structure view/announcement_nav/@@+navigation-links-lower" />
+
+</div>
+
+</body>
+</html>
