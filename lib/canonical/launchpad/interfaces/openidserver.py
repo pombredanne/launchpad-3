@@ -123,7 +123,8 @@ class IOpenIDRPConfig(Interface):
                       'the user should authenticate.'))
     logo = RPLogoImageUpload(
         title=_('Logo'), required=False,
-        description=_('A banner that identifies the Relying Party'))
+        description=_('A banner that identifies the Relying Party, '
+                      'no larger than 400x100 pixels.'))
     allowed_sreg = List(
         title=_('Allowed Sreg Fields'),
         description=_('The simple registration fields that may be '
