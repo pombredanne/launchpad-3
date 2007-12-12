@@ -37,13 +37,12 @@ class AnnouncementsFeed(FeedBase):
         """See `IFeed`."""
         title = FeedTypedData('[%s] %s' % (
             announcement.target.name, announcement.title))
-        if announcement.url is None:
-            url = canonical_url(announcement, rootsite="mainsite")
-        else:
-            url = announcement.url
+        id = 'tag:launchpad.net,%s:/+announcements/%d' % (
+                announcement.date_created.date().isoformat(),
+                announcement.id)
         entry = FeedEntry(title=title,
-                          id_=url,
-                          link_alternate=url,
+                          id_=id,
+                          link_alternate=announcement.url,
                           date_updated=announcement.date_last_modified,
                           date_published=announcement.date_announced,
                           authors=[FeedPerson(
@@ -93,13 +92,12 @@ class TargetAnnouncementsFeed(FeedBase):
     def itemToFeedEntry(self, announcement):
         """See `IFeed`."""
         title = FeedTypedData(announcement.title)
-        if announcement.url is None:
-            url = canonical_url(announcement, rootsite="mainsite")
-        else:
-            url = announcement.url
+        id = 'tag:launchpad.net,%s:/+announcements/%d' % (
+                announcement.date_created.date().isoformat(),
+                announcement.id)
         entry = FeedEntry(title=title,
-                          id_=url,
-                          link_alternate=url,
+                          id_=id,
+                          link_alternate=announcement.url,
                           date_updated=announcement.date_last_modified,
                           date_published=announcement.date_announced,
                           authors=[FeedPerson(
