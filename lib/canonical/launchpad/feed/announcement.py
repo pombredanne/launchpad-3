@@ -38,8 +38,7 @@ class AnnouncementsFeed(FeedBase):
         title = FeedTypedData('[%s] %s' % (
             announcement.target.name, announcement.title))
         if announcement.url is None:
-            url = canonical_url(announcement.target, rootsite="mainsite")
-            url += '/+announcements'
+            url = canonical_url(announcement, rootsite="mainsite")
         else:
             url = announcement.url
         entry = FeedEntry(title=title,
@@ -73,7 +72,7 @@ class AnnouncementsFeed(FeedBase):
     @property
     def url(self):
         """See `IFeed`."""
-        return "%s/%s.%s" % (
+        return "%s%s.%s" % (
             canonical_url(self.context), self.feedname, self.format)
 
 
@@ -95,8 +94,7 @@ class TargetAnnouncementsFeed(FeedBase):
         """See `IFeed`."""
         title = FeedTypedData(announcement.title)
         if announcement.url is None:
-            url = canonical_url(self.context, rootsite="mainsite")
-            url += '/+announcements'
+            url = canonical_url(announcement, rootsite="mainsite")
         else:
             url = announcement.url
         entry = FeedEntry(title=title,

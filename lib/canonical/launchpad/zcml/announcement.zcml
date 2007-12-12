@@ -19,6 +19,12 @@
     classes="AnnouncementContextMenu"
     />
 
+  <browser:url
+    for="canonical.launchpad.interfaces.IAnnouncement"
+    path_expression="string:+announcement/${id}"
+    attribute_to_parent="target"
+    />
+
   <adapter
     provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
     for="canonical.launchpad.interfaces.IAnnouncement"
@@ -28,18 +34,20 @@
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IAnnouncement"
-    name="+edit" />
+    name="+index" />
 
-  <browser:url
+  <browser:page
     for="canonical.launchpad.interfaces.IAnnouncement"
-    path_expression="string:+announcement/${id}"
-    attribute_to_parent="target"
+    facet="overview"
+    permission="launchpad.View"
+    template="../templates/announcement-index.pt"
+    name="+index"
     />
 
   <browser:page
     for="canonical.launchpad.interfaces.IAnnouncement"
     facet="overview"
-    permission="zope.Public"
+    permission="launchpad.View"
     template="../templates/announcement-listing-detailed.pt"
     name="+listing-detailed"
     />

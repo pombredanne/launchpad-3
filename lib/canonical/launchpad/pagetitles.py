@@ -747,6 +747,9 @@ announcement_delete = 'Permanently delete this announcement'
 
 announcement_edit = 'Modify this announcement'
 
+def announcement_index(context, view):
+    return '%s announcement' % context.target.displayname
+
 announcement_publish = 'Publish this announcement'
 
 announcement_retarget = 'Move this announcement to a different project'
