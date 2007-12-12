@@ -435,11 +435,18 @@ summary and URL of the announcement:
     >>> priv_browser.getLink(edit_link_text).click()
     >>> print priv_browser.url
     http://launchpad.dev/apache/+announcement/...
-    >>> priv_browser.getControl('Headline').value = (
-    ...     'Modified headline')
-    >>> priv_browser.getControl('Summary').value = (
-    ...     'Modified summary')
-    >>> priv_browser.getControl('URL').value = (
+    >>> headline = priv_browser.getControl('Headline')
+    >>> print headline.value
+    Apache announcement headline
+    >>> headline.value = 'Modified headline'
+    >>> summary = priv_browser.getControl('Summary')
+    >>> print summary.value
+    Apache announcement summary
+    >>> summary.value = 'Modified summary'
+    >>> url = priv_browser.getControl('URL')
+    >>> print url.value
+    http://apache.org/announcement/rocking/
+    >>> url.value = (
     ...     'http://apache.org/modified/url/')
     >>> priv_browser.getControl('Modify').click()
     >>> print priv_browser.url

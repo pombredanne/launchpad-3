@@ -45,7 +45,7 @@
   Got redirected to team's home page and see that now he can join.
 
   >>> print http(r"""
-  ... GET /~ubuntu-team/ HTTP/1.1
+  ... GET /~ubuntu-team HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

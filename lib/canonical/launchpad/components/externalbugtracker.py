@@ -11,7 +11,7 @@ import re
 import socket
 import urllib
 import urllib2
-import urlparse
+from urlparse import urlunparse
 import ClientCookie
 import xml.parsers.expat
 from email.Utils import parseaddr
@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTrackerType, BugWatchErrorType, CreateBugParams,
     IBugWatchSet, IDistribution, IExternalBugTracker, ILaunchpadCelebrities,
     IPersonSet, PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+from canonical.launchpad.webapp.url import urlparse
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
@@ -46,6 +47,7 @@ class UnknownBugTrackerTypeError(BugWatchUpdateError):
     """Exception class to catch systems we don't have a class for yet."""
 
     def __init__(self, bugtrackertypename, bugtrackername):
+        BugWatchUpdateError.__init__(self)
         self.bugtrackertypename = bugtrackertypename
         self.bugtrackername = bugtrackername
 
@@ -69,6 +71,7 @@ class BugTrackerConnectError(BugWatchUpdateError):
     """Exception class to catch misc errors contacting a bugtracker."""
 
     def __init__(self, url, error):
+        BugWatchUpdateError.__init__(self)
         self.url = url
         self.error = str(error)
 
@@ -227,16 +230,26 @@ class ExternalBugTracker:
         # error after a transaction has been aborted.
         bug_tracker_url = self.baseurl
 
-        # We limit the number of watches we're updating by the
-        # ExternalBugTracker's batch_size.
-        if self.batch_size is not None:
-            bug_watches = bug_watches[:self.batch_size]
-
         # Some tests pass a list of bug watches whilst checkwatches.py
         # will pass a SelectResults instance. We convert bug_watches to a
         # list here to ensure that were're doing sane things with it
         # later on.
         bug_watches = list(bug_watches)
+
+        # We limit the number of watches we're updating by the
+        # ExternalBugTracker's batch_size. In an ideal world we'd just
+        # slice the bug_watches list but for the sake of testing we need
+        # to ensure that the list of bug watches is ordered by remote
+        # bug id before we do so.
+        remote_ids = sorted(
+            [bug_watch.remotebug for bug_watch in bug_watches])
+        if self.batch_size is not None:
+            remote_ids = remote_ids[:self.batch_size]
+
+            for bug_watch in list(bug_watches):
+                if bug_watch.remotebug not in remote_ids:
+                    bug_watches.remove(bug_watch)
+
         log.info("Updating %i watches on %s" %
             (len(bug_watches), bug_tracker_url))
 
@@ -619,22 +632,17 @@ class DebBugs(ExternalBugTracker):
             log.error("There's no debbugs db at %s." % self.db_location)
             self.debbugs_db = None
 
-            # XXX gmb 2007-11-02 (bug 153532):
-            #     We really shouldn't be returning in an __init__(), and
-            #     make lint will complain about this. This is one of the
-            #     the things that can be fixed when we refactor
-            #     ExternalBugTrackers.
-            return
-
-        # The debbugs database is split in two parts: a current
-        # database, which is kept under the 'db-h' directory, and the
-        # archived database, which is kept under 'archive'. The archived
-        # database is used as a fallback, as you can see in getRemoteStatus
-        self.debbugs_db = debbugs.Database(self.db_location, self.debbugs_pl)
-        if os.path.exists(os.path.join(self.db_location, 'archive')):
-            self.debbugs_db_archive = debbugs.Database(self.db_location,
-                                                       self.debbugs_pl,
-                                                       subdir="archive")
+        else:
+            # The debbugs database is split in two parts: a current
+            # database, which is kept under the 'db-h' directory, and
+            # the archived database, which is kept under 'archive'. The
+            # archived database is used as a fallback, as you can see in
+            # getRemoteStatus
+            self.debbugs_db = debbugs.Database(self.db_location,
+                self.debbugs_pl)
+            if os.path.exists(os.path.join(self.db_location, 'archive')):
+                self.debbugs_db_archive = debbugs.Database(
+                    self.db_location, self.debbugs_pl, subdir="archive")
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
@@ -783,8 +791,7 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
         # urllib2 (and does subclass it), so this is probably a
         # bug. -- Gavin Panella, 2007-08-27
 
-        scheme, host, path, params, query, fragment = (
-            urlparse.urlparse(newurl))
+        scheme, host, path, params, query, fragment = urlparse(newurl)
 
         # If we can, skip the login page and submit credentials
         # directly. The query should contain a 'return' parameter
@@ -800,7 +807,7 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
                 log.warn("Mantis redirected us to the login page "
                     "but did not set a return path.")
             query = urllib.urlencode(query, True)
-            newurl = urlparse.urlunparse(
+            newurl = urlunparse(
                 (scheme, host, path, params, query, fragment))
 
         # XXX: Previous versions of the Mantis external bug tracker
@@ -1348,6 +1355,7 @@ class Trac(ExternalBugTracker):
             #      We should follow dupes if possible.
             'duplicate': BugTaskStatus.CONFIRMED,
             'fixed': BugTaskStatus.FIXRELEASED,
+            'closed': BugTaskStatus.FIXRELEASED,
             'invalid': BugTaskStatus.INVALID,
             'new': BugTaskStatus.NEW,
             'open': BugTaskStatus.NEW,
@@ -1618,6 +1626,9 @@ class Roundup(ExternalBugTracker):
 class SourceForge(ExternalBugTracker):
     """An ExternalBugTracker for SourceForge bugs."""
 
+    # We only allow ourselves to update one SourceForge bug at a time to
+    # avoid getting clobbered by SourceForge's rate limiting code.
+    batch_size = 1
     export_url = 'support/tracker.php?aid=%s'
 
     def initializeRemoteBugDB(self, bug_ids):
@@ -1765,7 +1776,8 @@ BUG_TRACKER_CLASSES = {
     BugTrackerType.DEBBUGS: DebBugs,
     BugTrackerType.MANTIS: Mantis,
     BugTrackerType.TRAC: Trac,
-    BugTrackerType.ROUNDUP: Roundup
+    BugTrackerType.ROUNDUP: Roundup,
+    BugTrackerType.SOURCEFORGE: SourceForge
     }
 
 
