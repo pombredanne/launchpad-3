@@ -13,6 +13,7 @@ __all__ = [
 'PROBE_INTERVAL',
 'UnableToFetchCDImageFileList',
 'MirrorContent',
+'MirrorFreshness',
 'MirrorSpeed',
 'MirrorStatus']
 
@@ -133,8 +134,8 @@ class MirrorSpeed(DBEnumeratedType):
         """)
 
 
-class MirrorStatus(DBEnumeratedType):
-    """The status (freshness) of a given mirror."""
+class MirrorFreshness(DBEnumeratedType):
+    """The freshness of a given mirror's content."""
 
     UP = DBItem(1, """
         Up to date
@@ -182,6 +183,30 @@ class MirrorStatus(DBEnumeratedType):
         Unknown freshness
 
         We couldn't determine when this mirror's content was last updated.
+        """)
+
+
+class MirrorStatus(DBEnumeratedType):
+    """The status of a mirror."""
+
+    PENDING_REVIEW = DBItem(10, """
+        Pending review
+
+        This mirror hasn't been reviewed by a mirror admin.
+        """)
+
+    UNOFFICIAL = DBItem(20, """
+        Unofficial
+
+        This mirror has been reviewed by a mirror admin and is not one of
+        the official mirrors for its distribution.
+        """)
+
+    OFFICIAL = DBItem(30, """
+        Official
+
+        This mirror has been reviewed by a mirror admin and is one of
+        the official mirrors for its distribution.
         """)
 
 
@@ -253,6 +278,8 @@ class IDistributionMirror(Interface):
     id = Int(title=_('The unique id'), required=True, readonly=True)
     owner = Choice(title=_('Owner'), required=False, readonly=True,
                    vocabulary='ValidOwner')
+    reviewer = Choice(title=_('Reviewer'), required=False, readonly=False,
+                      vocabulary='ValidPersonOrTeam')
     distribution = Attribute(_("The distribution that is mirrored"))
     name = DistributionMirrorNameField(
         title=_('Name'), required=True, readonly=False,
@@ -297,22 +324,26 @@ class IDistributionMirror(Interface):
     official_candidate = Bool(
         title=_('Apply to be an official mirror of this distribution'),
         required=False, readonly=False, default=True)
-    official_approved = Bool(
-        title=_('This is one of the official mirrors of this distribution'),
-        required=False, readonly=False, default=False)
+    status = Choice(
+        title=_('Status'), required=True, readonly=False,
+        vocabulary=MirrorStatus)
 
     title = Attribute('The title of this mirror')
     cdimage_serieses = Attribute(
         'All MirrorCDImageDistroSerieses of this mirror')
-    source_serieses = Attribute('All MirrorDistroSeriesSources of this mirror')
+    source_serieses = Attribute(
+        'All MirrorDistroSeriesSources of this mirror')
     arch_serieses = Attribute('All MirrorDistroArchSerieses of this mirror')
-    last_probe_record = Attribute('The last MirrorProbeRecord for this mirror.')
+    last_probe_record = Attribute(
+        'The last MirrorProbeRecord for this mirror.')
     all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
     has_ftp_or_rsync_base_url = Bool(
         title=_('Does this mirror have a ftp or rsync base URL?'))
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    date_reviewed = Datetime(
+        title=_('Date reviewed'), required=False, readonly=False)
     whiteboard = Whiteboard(
         title=_('Whiteboard'), required=False,
         description=_("Notes on the current status of the mirror (only "
@@ -328,7 +359,7 @@ class IDistributionMirror(Interface):
         MirrorDistroSeriesSource objects.
 
         Summarized, in this case, means that it ignores pocket and components
-        and returns the MirrorDistroSeriesSource with the worst status for
+        and returns the MirrorDistroSeriesSource with the worst freshness for
         each distroseries of this distribution mirror.
         """
 
@@ -337,18 +368,18 @@ class IDistributionMirror(Interface):
         MirrorDistroArchSeries objects.
 
         Summarized, in this case, means that it ignores pocket and components
-        and returns the MirrorDistroArchSeries with the worst status for
+        and returns the MirrorDistroArchSeries with the worst freshness for
         each distro_arch_series of this distribution mirror.
         """
 
-    def getOverallStatus():
-        """Return this mirror's overall status.
+    def getOverallFreshness():
+        """Return this mirror's overall freshness.
 
-        For ARCHIVE mirrors, the overall status is the worst status of all
-        of this mirror's content objects (MirrorDistroArchSeries,
+        For ARCHIVE mirrors, the overall freshness is the worst freshness of
+        all of this mirror's content objects (MirrorDistroArchSeries,
         MirrorDistroSeriesSource or MirrorCDImageDistroSeriess).
 
-        For RELEASE mirrors, the overall status is either UPTODATE, if the
+        For RELEASE mirrors, the overall freshness is either UPTODATE, if the
         mirror contains all ISO images that it should or UNKNOWN if it doesn't
         contain one or more ISO images.
         """
@@ -500,9 +531,9 @@ class IMirrorDistroArchSeries(Interface):
     distro_arch_series = Choice(
         title=_('Version and Architecture'), required=True, readonly=True,
         vocabulary='FilteredDistroArchSeries')
-    status = Choice(
-        title=_('Status'), required=True, readonly=False,
-        vocabulary=MirrorStatus)
+    freshness = Choice(
+        title=_('Freshness'), required=True, readonly=False,
+        vocabulary=MirrorFreshness)
     # Is it possible to use a Choice here without specifying a vocabulary?
     component = Int(title=_('Component'), required=True, readonly=True)
     pocket = Choice(
@@ -510,14 +541,13 @@ class IMirrorDistroArchSeries(Interface):
         vocabulary='PackagePublishingPocket')
 
     def getURLsToCheckUpdateness():
-        """Return a dictionary mapping each different MirrorStatus to a URL on
-        this mirror.
+        """Return a dict mapping each MirrorFreshness to a URL on this mirror.
 
         If there's not publishing records for this DistroArchSeries,
         Component and Pocket, an empty dictionary is returned.
 
         These URLs should be checked and, if they are accessible, we know
-        that's the current status of this mirror.
+        that's the current freshness of this mirror.
         """
 
 
@@ -528,9 +558,9 @@ class IMirrorDistroSeriesSource(Interface):
     distroseries = Choice(
         title=_('Series'), required=True, readonly=True,
         vocabulary='FilteredDistroSeries')
-    status = Choice(
-        title=_('Status'), required=True, readonly=False,
-        vocabulary=MirrorStatus)
+    freshness = Choice(
+        title=_('Freshness'), required=True, readonly=False,
+        vocabulary=MirrorFreshness)
     # Is it possible to use a Choice here without specifying a vocabulary?
     component = Int(title=_('Component'), required=True, readonly=True)
     pocket = Choice(
@@ -538,14 +568,13 @@ class IMirrorDistroSeriesSource(Interface):
         vocabulary='PackagePublishingPocket')
 
     def getURLsToCheckUpdateness():
-        """Return a dictionary mapping each different MirrorStatus to a URL on
-        this mirror.
+        """Return a dict mapping each MirrorFreshness to a URL on this mirror.
 
         If there's not publishing records for this DistroSeries, Component
         and Pocket, an empty dictionary is returned.
 
         These URLs should be checked and, if they are accessible, we know
-        that's the current status of this mirror.
+        that's the current freshness of this mirror.
         """
 
 

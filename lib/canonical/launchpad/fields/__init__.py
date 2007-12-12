@@ -6,9 +6,10 @@ from textwrap import dedent
 
 from zope.component import getUtility
 from zope.schema import (
-    Bool, Bytes, Choice, Field, Int, Text, TextLine, Password, Tuple)
+    Bool, Bytes, Choice, Datetime, Field, Int, Text, TextLine, Password,
+    Tuple)
 from zope.schema.interfaces import (
-    IBytes, IField, IInt, IPassword, IText, ITextLine)
+    IBytes, IDatetime, IField, IInt, IPassword, IText, ITextLine)
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
@@ -49,6 +50,15 @@ class IBugField(IField):
 class IPasswordField(IPassword):
     """A field that ensures we only use http basic authentication safe
     ascii characters."""
+
+class IAnnouncementDate(IDatetime):
+    """Marker interface for AnnouncementDate fields.
+
+    This is used in cases where we either want to publish something
+    immediately, or come back in future to publish it, or set a date for
+    publication in advance. Essentially this amounts to a Datetime that can
+    be None.
+    """
 
 class IShipItRecipientDisplayname(ITextLine):
     """A field used for the recipientdisplayname attribute on shipit forms.
@@ -181,6 +191,10 @@ class Description(Text):
 # A field capture a Launchpad object whiteboard
 class Whiteboard(Text):
     implements(IWhiteboard)
+
+
+class AnnouncementDate(Datetime):
+    implements(IDatetime)
 
 
 # TimeInterval

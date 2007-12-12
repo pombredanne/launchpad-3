@@ -73,7 +73,8 @@ class FilePublishingBase(SQLBase):
     def archive_url(self):
         """See IFilePublishing."""
         return (self.archive.archive_url + "/" +
-                makePoolPath(self.sourcepackagename, self.componentname) + "/" +
+                makePoolPath(self.sourcepackagename, self.componentname) +
+                "/" +
                 self.libraryfilealiasfilename)
 
 
@@ -97,7 +98,8 @@ class SourcePackageFilePublishing(FilePublishingBase):
          foreignKey='SecureSourcePackagePublishingHistory')
 
     libraryfilealias = ForeignKey(
-        dbName='libraryfilealias', foreignKey='LibraryFileAlias', notNull=True)
+        dbName='libraryfilealias', foreignKey='LibraryFileAlias',
+        notNull=True)
 
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
                                          unique=False, notNull=True)
@@ -159,7 +161,8 @@ class BinaryPackageFilePublishing(FilePublishingBase):
         foreignKey='SecureBinaryPackagePublishingHistory', immutable=True)
 
     libraryfilealias = ForeignKey(
-        dbName='libraryfilealias', foreignKey='LibraryFileAlias', notNull=True)
+        dbName='libraryfilealias', foreignKey='LibraryFileAlias',
+        notNull=True)
 
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
                                          unique=False, notNull=True,
@@ -335,6 +338,19 @@ class ArchivePublisherBase:
         current.datesuperseded = UTC_NOW
         current.removed_by = removed_by
         current.removal_comment = removal_comment
+        return current
+
+    def requestObsolescence(self):
+        """See `IArchivePublisher`."""
+        # The tactic here is to bypass the domination step when publishing,
+        # and let it go straight to death row processing.  This is because
+        # domination ignores stable distroseries, and that is exactly what
+        # we're most likely to be obsoleting.
+        #
+        # Setting scheduleddeletiondate achieves that aim.
+        current = self.secure_record
+        current.status = PackagePublishingStatus.OBSOLETE
+        current.scheduleddeletiondate = UTC_NOW
         return current
 
 
@@ -593,9 +609,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def distroarchseriesbinarypackagerelease(self):
         """See `IBinaryPackagePublishingHistory`."""
-        # import here to avoid circular import
-        from canonical.launchpad.database.distroarchseriesbinarypackagerelease \
-            import DistroArchSeriesBinaryPackageRelease
+        # Import here to avoid circular import.
+        from canonical.launchpad.database import (
+            DistroArchSeriesBinaryPackageRelease)
 
         return DistroArchSeriesBinaryPackageRelease(
             self.distroarchseries,

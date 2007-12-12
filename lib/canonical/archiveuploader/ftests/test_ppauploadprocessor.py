@@ -7,7 +7,6 @@ __metaclass__ = type
 import os
 import shutil
 import unittest
-import shutil
 
 from email import message_from_string
 
@@ -249,36 +248,56 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             version="1.0-1", exact_match=True, archive=cprov.archive)
         self.assertEqual(queue_items.count(), 1)
 
-    def testPPASizeQuotaCheck(self):
-        """Verifying the size quota check for PPA uploads.
+    def testPPASizeQuotaSourceRejection(self):
+        """Verify the size quota check for PPA uploads.
 
         New source uploads are submitted to the size quota check, where
         the size of the upload plus the current PPA size must be smaller
         than the PPA.authorized_size, otherwise the upload will be rejected.
-
-        Binary uploads are not submitted to this check, since they are
-        automatically generated, rejecting them would just cause unnecessary
-        hassle.
         """
         # Reducing the target PPA size quota to 1 byte.
         self.name16.archive.authorized_size = 1
 
-        # Since the authorized_size is very low the upload will be rejected.
+        # XXX cprov 20071204: see uploadpolicy.py line 255.
+        # When we change the code to actually reject the upload this
+        # test should also be modified to cope with the rejection
+        # notification.
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
-            "Subject: bar_1.0-1_source.changes rejected",
-            "PPA exceeded its size limit of 1 bytes. Contact a Launchpad "
-            "administrator if you really need more space."]
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)",
+            "Upload Warnings:",
+            "PPA exceeded its size limit (1213 of 1 bytes). "
+            "Contact a Launchpad administrator if you need more space."]
         self.assertEmail(contents)
 
-        # Cleanup the upload queue directory.
-        shutil.rmtree(self.queue_folder)
+    def testPPASizeQuotaSourceWarning(self):
+        """Verify the size quota warning for PPA near size limit.
 
-        # Increasing the size_quota again to fit the source upload.
-        self.name16.archive.authorized_size = 10000
+        The system start warning users for uploads exceeding 80 % of
+        the current size limit.
+        """
+        # Set a PPA size_quota that doesn't fit 'bar' source upload
+        # under its 95 % 'safe' limit.
+        self.name16.archive.authorized_size = 1250
 
-        # Re-uploading the source, which now can be accepted.
+        # Ensure the warning is sent in the acceptance notification.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)",
+            "Upload Warnings:",
+            "PPA exceeded 95 % of its size limit (1213 of 1250 bytes). "
+            "Contact a Launchpad administrator if you need more space."]
+        self.assertEmail(contents)
+
+    def testPPADoNotCheckSizeQuotaForBinary(self):
+        """Verify the size quota check for internal binary PPA uploads.
+
+        Binary uploads are not submitted to the size quota check, since
+        they are automatically generated, rejecting/warning them would
+        just cause unnecessary hassle.
+        """
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
@@ -296,7 +315,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.options.context = 'buildd'
         self.options.buildid = build_bar_i386.id
 
-        # Drastically reduce the size quota again to check if it doesn't
+        # Drastically reduce the size quota to check if it doesn't
         # affect binary uploads as expected.
         self.name16.archive.authorized_size = 1
 

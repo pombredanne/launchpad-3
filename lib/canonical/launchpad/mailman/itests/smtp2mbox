@@ -12,27 +12,107 @@ just write messages to the file.
 
 import os
 import sys
+import errno
 import smtpd
 import signal
+import socket
+import smtplib
 import asyncore
 
 import itest_helper
 from email import message_from_string
 
 sys.path.insert(0, itest_helper.TOP)
+sys.path.insert(1, os.path.join(itest_helper.TOP, 'mailman'))
 
 from canonical.config import config
+from Mailman.Post import inject
+from Mailman.Utils import list_names
+
+
+class ResettingChannel(smtpd.SMTPChannel):
+    """A channel that can reset the temporary file."""
+
+    def __init__(self, server, conn, addr):
+        smtpd.SMTPChannel.__init__(self, server, conn, addr)
+        # Stash this here since the subclass uses private attributes. :(
+        self._server = server
+
+    def smtp_RSET(self, arg):
+        """Reset the mbox file on the server instance."""
+        self._server.resetMailboxFile()
+        smtpd.SMTPChannel.smtp_RSET(self, arg)
+
+    def send(self, data):
+        """Silence the bloody asynchat/asyncore broken pipe errors!"""
+        try:
+            return smtpd.SMTPChannel.send(self, data)
+        except socket.error:
+            # Nothing here can affect the outcome, and these messages are just
+            # plain annoying!  So ignore them.
+            pass
 
 
 class Server(smtpd.SMTPServer):
+    """An SMTP server subclass that stores to an mbox file."""
     def __init__(self):
         smtpd.SMTPServer.__init__(self, config.mailman.smtp, None)
-        self._mbox = open(sys.argv[1], 'w')
+        self._mbox_file = sys.argv[1]
+        self._mbox = open(self._mbox_file, 'w')
+
+    def handle_accept(self):
+        """Open a resetting channel."""
+        conn, addr = self.accept()
+        channel = ResettingChannel(self, conn, addr)
+        # Do not dispatch to the base class, since that would create a second
+        # channel that we don't want, and wouldn't support the extended RSET
+        # command anyway.
+
+    def resetMailboxFile(self):
+        """Re-open the mailbox file."""
+        self._mbox = open(self._mbox_file, 'w')
 
     def process_message(self, peer, mailfrom, rcpttos, data):
-        """Shove the message into the mbox file."""
-        msg = message_from_string(data)
-        print >> self._mbox, msg
+        """Deliver a message.
+
+        The message is either delivered to the mbox file specified on the
+        command line, the local host's real SMTPd, or it is dropped into
+        Mailman's incoming queue.
+        """
+        message = message_from_string(data)
+        message['Received'] = 'by smtp2mbox'
+        # Get the localpart of the recipient.  If this localpart corresponds
+        # to an existing mailing list, drop the message into Mailman's
+        # incoming queue.
+        try:
+            local, hostname = message['to'].split('@', 1)
+        except ValueError:
+            # There was no '@' sign in the email message, so let the upstream
+            # SMTPd handle the message.
+            self._deliver_to_smtpd(message)
+            return
+        # If the message came from Mailman, drop it in the mbox (this must be
+        # tested first).  If the local part indicates that the message is
+        # destined for a Mailman mailing list, deliver it to Mailman's
+        # incoming queue.  Otherwise, deliver it to the upstream SMTPd.
+        if 'x-beenthere' in message:
+            # It came from Mailman and goes to the mbox.
+            self._deliver_to_mbox(message)
+        elif local in list_names():
+            # It's destined for a mailing list.
+            self._deliver_to_mailman(local, message)
+        # Otherwise, it's destined for a 'normal' user.  Store this in the
+        # mbox so the doctests can check it.
+        else:
+            self._deliver_to_mbox(message)
+
+    def _deliver_to_mailman(self, listname, message):
+        """Deliver the message to Mailman's incoming queue."""
+        inject(listname, message)
+
+    def _deliver_to_mbox(self, message):
+        """Store the message in the mbox."""
+        print >> self._mbox, message
         print >> self._mbox
         self._mbox.flush()
 

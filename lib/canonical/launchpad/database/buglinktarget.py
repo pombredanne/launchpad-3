@@ -27,6 +27,12 @@ class BugLinkTargetMixin:
     # IBugLinkTarget implementation
     def linkBug(self, bug):
         """See IBugLinkTarget."""
+        # XXX gmb 2007-12-11 bug #175545:
+        #     We shouldn't be calling check_permission here. The user's
+        #     permissions should have been checked before this method
+        #     was called. Also, we shouldn't be relying on the logged-in
+        #     user in this method; the method should accept a user
+        #     parameter.
         if not check_permission('launchpad.View', bug):
             raise Unauthorized(
                 "cannot link to a private bug you don't have access to")
@@ -39,10 +45,17 @@ class BugLinkTargetMixin:
 
     def unlinkBug(self, bug):
         """See IBugLinkTarget."""
-        # see if a relevant bug link exists, and if so, delete it
+        # XXX gmb 2007-12-11 bug #175545:
+        #     We shouldn't be calling check_permission here. The user's
+        #     permissions should have been checked before this method
+        #     was called. Also, we shouldn't be relying on the logged-in
+        #     user in this method; the method should accept a user
+        #     parameter.
         if not check_permission('launchpad.View', bug):
             raise Unauthorized(
                 "cannot unlink a private bug you don't have access to")
+
+        # see if a relevant bug link exists, and if so, delete it
         for buglink in self.bug_links:
             if buglink.bug.id == bug.id:
                 notify(SQLObjectDeletedEvent(buglink))
