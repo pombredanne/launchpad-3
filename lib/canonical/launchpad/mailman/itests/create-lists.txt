@@ -18,9 +18,16 @@ the web.
     >>> browser.title
     'ITest One in Launchpad'
 
+XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
+program in order to apply for mailing lists.  When mailing lists go public,
+this stanza can be removed.
+
+    >>> itest_helper.beta_program_enable('itest-one')
+
 To request a mailing list, No Privileges Person navigates to the 'Configure
 mailing list' page and registers their application for a mailing list.
 
+    >>> browser.reload()
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
@@ -39,6 +46,7 @@ expert' must approve the application.  This cannot currently be done through
 the web, so we'll go behind the scenes to do this.
 
     >>> list_one = itest_helper.review_list('itest-one')
+    >>> itest_helper.wait_for_mailman()
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
 
@@ -54,7 +62,9 @@ for this new team.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
+    >>> itest_helper.beta_program_enable('itest-two')
 
+    >>> browser.reload()
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
@@ -64,5 +74,6 @@ mailing list.
     >>> from canonical.launchpad.interfaces import MailingListStatus
     >>> list_two = itest_helper.review_list(
     ...     'itest-two', MailingListStatus.DECLINED)
+    >>> itest_helper.wait_for_mailman()
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
