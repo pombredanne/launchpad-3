@@ -1,0 +1,45 @@
+= The CodeImportScheduler =
+
+The code import scheduler is an XMLRPC service that provides (ids of)
+CodeImportJobs for code import slaves to run.  It is available as the
+codeimportscheduler attribute of our private XMLRPC instance.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ICodeImportSchedulerApplication, IPrivateApplication)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> private_root = getUtility(IPrivateApplication)
+    >>> verifyObject(
+    ...     ICodeImportSchedulerApplication, private_root.codeimportscheduler)
+    True
+
+The CodeImportSchedulerAPIView provides the ICodeImportScheduler
+XML-RPC API:
+
+    >>> from zope.publisher.xmlrpc import TestRequest
+    >>> from canonical.launchpad.interfaces import ICodeImportScheduler
+    >>> from canonical.launchpad.xmlrpc.authserver import (
+    ...     CodeImportSchedulerAPI)
+
+    >>> codeimportscheduler_api = CodeImportSchedulerAPI(
+    ...     private_root.codeimportscheduler, TestRequest())
+    >>> verifyObject(ICodeImportScheduler, codeimportscheduler_api)
+    True
+
+The ICodeImportScheduler interface defines a single method,
+getJobForMachine(), that returns the id of the job that the code
+import slave should next run.  Currently it is hard coded to return
+the integer "4".
+
+    >>> codeimportscheduler_api.getJobForMachine()
+    4
+
+Of course, the point of all this is for it to be accessed over XMLRPC.
+
+    >>> import xmlrpclib
+    >>> from canonical.functional import XMLRPCTestTransport
+    >>> codeimportscheduler = xmlrpclib.ServerProxy(
+    ...     'http://xmlrpc-private.launchpad.dev:8087/codeimportscheduler',
+    ...     transport=XMLRPCTestTransport())
+    >>> codeimportscheduler.getJobForMachine()
+    4
