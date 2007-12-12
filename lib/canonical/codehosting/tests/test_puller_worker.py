@@ -282,15 +282,16 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
             mirrored_branch.bzrdir._format.get_format_description())
 
 
-class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
+class TestPullerWorker_SourceProblems(TestCaseWithTransport,
+                                      PullerWorkerMixin):
 
     def setUp(self):
-        TestCaseInTempDir.setUp(self)
+        TestCaseWithTransport.setUp(self)
         PullerWorkerMixin.setUp(self)
 
     def tearDown(self):
         PullerWorkerMixin.tearDown(self)
-        TestCaseInTempDir.tearDown(self)
+        TestCaseWithTransport.tearDown(self)
         reset_logging()
 
     def assertMirrorFailed(self, puller_worker, message_substring):
@@ -329,8 +330,7 @@ class TestPullerWorker_SourceProblems(TestCaseInTempDir, PullerWorkerMixin):
     def testMissingFileRevisionData(self):
         self.build_tree(['missingrevision/',
                          'missingrevision/afile'])
-        tree = bzrdir.BzrDir.create_standalone_workingtree(
-            'missingrevision')
+        tree = self.make_branch_and_tree('missingrevision', format='dirstate')
         tree.add(['afile'], ['myid'])
         tree.commit('start')
         # Now we have a good branch with a file called afile and id myid we
@@ -859,7 +859,7 @@ class TestCanonicalUrl(unittest.TestCase):
             get_canonical_url_for_branch_name(unique_name))
 
 
-class TestWorkerProgressReporting(TestCaseWithMemoryTransport):
+class TestWorkerProgressReporting(TestCaseWithTransport):
     """Tests for the WorkerProgressBar progress reporting mechanism."""
 
     class StubProtocol:
@@ -870,11 +870,11 @@ class TestWorkerProgressReporting(TestCaseWithMemoryTransport):
             self.call_count += 1
 
     def setUp(self):
-        TestCaseWithMemoryTransport.setUp(self)
+        TestCaseWithTransport.setUp(self)
         self.saved_factory = bzrlib.ui.ui_factory
 
     def tearDown(self):
-        TestCaseWithMemoryTransport.tearDown(self)
+        TestCaseWithTransport.tearDown(self)
         bzrlib.ui.ui_factory = self.saved_factory
         reset_logging()
 
@@ -883,7 +883,9 @@ class TestWorkerProgressReporting(TestCaseWithMemoryTransport):
         p = self.StubProtocol()
         install_worker_progress_factory(p)
         b1 = self.make_branch('some-branch')
-        b2 = self.make_branch('some-other-branch')
+        b2_tree = self.make_branch_and_tree('some-other-branch')
+        b2 = b2_tree.branch
+        b2_tree.commit('rev1', allow_pointless=True)
         b1.pull(b2)
         self.assertPositive(p.call_count)
 

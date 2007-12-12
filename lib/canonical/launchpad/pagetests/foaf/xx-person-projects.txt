@@ -69,7 +69,7 @@ the config.launchpad.default_batch_size threshold.
 
     >>> for tag in find_tags_by_class(anon_browser.contents, 'informational'):
     ...     print tag.renderContents()
-    9 projects are related to Mark Shuttleworth. Displaying only the first 5:
+    10 projects are related to Mark Shuttleworth. Displaying only the first 5:
 
     >>> related_projects = find_tag_by_id(
     ...     anon_browser.contents, 'related-projects')

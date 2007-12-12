@@ -44,7 +44,7 @@ from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.launchpad.interfaces import (
     AccountStatus, ArchivePurpose, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, EmailAddressStatus, IBugTaskSet, IDistribution,
+    BugTaskStatus, EmailAddressStatus, IBugTarget, IBugTaskSet, IDistribution,
     IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet,
     IHWSubmissionSet, IHasIcon, IHasLogo, IHasMugshot, IIrcID, IIrcIDSet,
     IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
@@ -740,6 +740,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         """See `IPerson`."""
         return self.teamowner is not None
 
+    @property
+    def mailing_list(self):
+        """See `IPerson`."""
+        return getUtility(IMailingListSet).get(self.name)
+
     @cachedproperty
     def is_trusted_on_shipit(self):
         """See `IPerson`."""
@@ -951,9 +956,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     @property
     def is_openid_enabled(self):
         """See `IPerson`."""
-        if self.isTeam():
-            return False
-
         if not self.is_valid_person:
             return False
 
@@ -1015,6 +1017,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         """See `IPerson`."""
         if team is None:
             return False
+
+        # Translate the team name to an ITeam if we were passed a team.
+        if isinstance(team, str):
+            team = PersonSet().getByName(team)
 
         if team.id == self.id: # Short circuit - would return True anyway
             return True
@@ -1085,9 +1091,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             raise AssertionError(
                 "Unknown subscription policy: %s" % team.subscriptionpolicy)
 
-        self._inTeam_cache = {} # Flush the cache used by the inTeam method
-
         team.addMember(self, reviewer=self, status=status)
+
+    def clearInTeamCache(self):
+        """See `IPerson`."""
+        self._inTeam_cache = {}
 
     #
     # ITeam methods
@@ -1435,7 +1443,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
             # XXX flacoste 2007/11/26 The comparison using id in the assert
-            # below works around a nasty intermittent failure. 
+            # below works around a nasty intermittent failure.
             # See bug #164635.
             assert bug_task.assignee.id == self.id, (
                "Bugtask %s assignee isn't the one expected: %s != %s" % (
@@ -1814,9 +1822,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 'sourcepackagerelease.maintainer = %s' % quote(self.id))
 
         if ppa_only:
-            clauses.append('archive.purpose = %s' % quote(ArchivePurpose.PPA))
+            clauses.append(
+                'archive.purpose = %s' % quote(ArchivePurpose.PPA))
         else:
-            clauses.append('archive.purpose != %s' % quote(ArchivePurpose.PPA))
+            clauses.append(
+                'archive.purpose != %s' % quote(ArchivePurpose.PPA))
 
         query_clause = " AND ".join(clauses)
         query = """
@@ -1872,6 +1882,20 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def archive(self):
         """See `IPerson`."""
         return Archive.selectOneBy(owner=self)
+
+    def isBugContributor(self, user=None):
+        """See `IPerson`."""
+        search_params = BugTaskSearchParams(user=user, assignee=self)
+        bugtask_count = self.searchTasks(search_params).count()
+        return bugtask_count > 0
+
+    def isBugContributorInTarget(self, user=None, target=None):
+        """See `IPerson`."""
+        assert IBugTarget.providedBy(target), (
+            "%s isn't a valid bug target." % target)
+        search_params = BugTaskSearchParams(user=user, assignee=self)
+        bugtask_count = target.searchTasks(search_params).count()
+        return bugtask_count > 0
 
 
 class PersonSet:
@@ -1977,15 +2001,9 @@ class PersonSet:
         return Person.selectOne(query)
 
     def getByOpenIdIdentifier(self, openid_identifier):
-        """Returns a Person with the given openid_identifier, or None.
-
-        None is returned if the person is not enabled for OpenID usage
-        (see Person.is_openid_enabled).
-        """
-        person = Person.selectOne(
-                Person.q.openid_identifier == openid_identifier
-                )
-        if person is not None and person.is_openid_enabled:
+        """Returns a Person with the given openid_identifier, or None."""
+        person = Person.selectOneBy(openid_identifier=openid_identifier)
+        if person.is_valid_person:
             return person
         else:
             return None
