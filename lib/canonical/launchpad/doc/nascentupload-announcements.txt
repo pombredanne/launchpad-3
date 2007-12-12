@@ -134,7 +134,10 @@ Uploading the same package again will result in a rejection email:
   DEBUG: Sending rejection email.
   ...
   DEBUG: Rejected:
-  DEBUG: The source bar - 1.0-1 is already accepted in ubuntu/hoary and you cannot upload the same version within the same distribution. You have to modify the source version and re-upload.
+  DEBUG: The source bar - 1.0-1 is already accepted in ubuntu/hoary
+         and you cannot upload the same version within the same
+         distribution. You have to modify the source version and
+         re-upload.
   ...
 
   >>> [notification] = pop_notifications()
