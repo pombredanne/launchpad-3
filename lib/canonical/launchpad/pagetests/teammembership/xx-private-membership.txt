@@ -62,7 +62,7 @@ The +members page is visible for someone on the team.
 
 == Team Page ==
 
-An unauthorized user cannot see the recently approved members, 
+An unauthorized user cannot see the recently approved members,
 recently applied members, or the membership summary on the ~myteam page.
 
     >>> nopriv_browser.open('http://launchpad.dev/~myteam')
@@ -77,15 +77,78 @@ A team member will be able to see these parts of the team page.
     >>> browser.open('http://launchpad.dev/~myteam')
     >>> soup = Soup(browser.contents)
     >>> soup.find('div', id='recently-approved')
-    <div class="portlet" id="recently-approved">
-    ...
-    <a href="/~member">Gold Member (member)</a>...
+    <...<a href="/~member">Gold Member (member)</a>...
 
 
     >>> soup.find('div', id='recently-applied')
-    <div class="portlet" id="recently-applied">
-    ... 
-    <a href="/~no-priv">No Privileges Person (no-priv)</a>...
+    <...<a href="/~no-priv">No Privileges Person (no-priv)</a>...
 
     >>> soup.find('table', id='membership-summary')
     <...2 active members...1 proposed members...
+
+== Team Participation ==
+
+On the person page, it will show which teams they belong to. Although, it
+would be time consuming to gather the entire team membership, we don't want
+to leak this information, so MyTeam which has a private membership won't
+show up below.
+
+    >>> nopriv_browser.open('http://launchpad.dev/~name16')
+    >>> soup = Soup(nopriv_browser.contents)
+    >>> a_tags = soup.find('table', id='participation').findAll('a')
+    >>> for a_tag in a_tags:
+    ...     print a_tag.contents
+    [u'GuadaMen']
+    [u'Launchpad Administrators']
+    [u'Launchpad Buildd Admins']
+    [u'Launchpad Developers']
+
+Another member of MyTeam can see that name16 (Foo Bar) participates in
+MyTeam.
+
+    >>> browser.open('http://launchpad.dev/~name16')
+    >>> soup = Soup(browser.contents)
+    >>> a_tags = soup.find('table', id='participation').findAll('a')
+    >>> for a_tag in a_tags:
+    ...     print a_tag.contents
+    [u'GuadaMen']
+    [u'Launchpad Administrators']
+    [u'Launchpad Buildd Admins']
+    [u'Launchpad Developers']
+    [u'My Team']
+
+== Teams with Icons ==
+
+The person page also shows a list of icons for all the teams that have
+custom icons that the person belongs to. We need to filter out teams
+with private membership.
+
+First, we will add a custom icon to two teams.
+
+    >>> from canonical.launchpad.ftests import set_branding
+    >>> admin_browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> admin_browser.open('http://launchpad.dev/~myteam/+branding')
+    >>> set_branding(admin_browser)
+    >>> admin_browser.getControl('Change Branding').click()
+
+    >>> admin_browser.open('http://launchpad.dev/~guadamen/+branding')
+    >>> set_branding(admin_browser)
+    >>> admin_browser.getControl('Change Branding').click()
+
+The user which is not on myteam will only see guadamen listed.
+
+    >>> nopriv_browser.open('http://launchpad.dev/~name16')
+    >>> soup = Soup(nopriv_browser.contents)
+    >>> for a_tag in soup.find('div', id='teams_with_icons').findAll('a'):
+    ...     print a_tag['href']
+    /~guadamen
+
+
+Another team member will see both the icons for guadamen and myteam.
+
+    >>> browser.open('http://launchpad.dev/~name16')
+    >>> soup = Soup(browser.contents)
+    >>> for a_tag in soup.find('div', id='teams_with_icons').findAll('a'):
+    ...     print a_tag['href']
+    /~guadamen
+    /~myteam

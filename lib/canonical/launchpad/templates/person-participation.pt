@@ -47,9 +47,12 @@
   <div class="left" tal:condition="direct/count">
     <div class="portlet">
       <h2>Direct membership</h2>
-      <table>
-        <tr tal:repeat="membership context/myactivememberships"
-            tal:replace="structure membership/@@+listing-simple" />
+      <table id="participation">
+        <tal:loop repeat="membership context/myactivememberships">
+          <tr tal:replace="structure membership/@@+listing-simple"
+              tal:condition="python: view.userCanViewMembership(membership.team)"
+              />
+        </tal:loop>
       </table>
     </div>
   </div>

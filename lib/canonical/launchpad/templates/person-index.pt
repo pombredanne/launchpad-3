@@ -111,9 +111,12 @@
       <div class="portlet"
            tal:define="memberships context/getLatestApprovedMembershipsForPerson">
         <h2>Latest memberships</h2>
-        <table>
-          <tr tal:repeat="membership memberships"
-              tal:replace="structure membership/@@+listing-simple" />
+        <table id="participation">
+          <tal:loop repeat="membership memberships">
+            <tr tal:replace="structure membership/@@+listing-simple"
+                tal:condition="python: view.userCanViewMembership(membership.team)"
+                />
+          </tal:loop>
         </table>
 
         <p tal:condition="memberships/count">

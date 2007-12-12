@@ -1928,13 +1928,18 @@ class PersonView(LaunchpadView):
             return False
         return self.user in self.context.proposedmembers
 
-    def userCanViewMembership(self):
+    def userCanViewMembership(self, team=None):
         """Return true if the user can view a team's membership.
 
         Only launchpad admins and team members can view the private
         membership. Anyone can view a public team's membership.
         """
-        return check_permission('launchpad.View', self.context)
+        if team is None:
+            return check_permission('launchpad.View', self.context)
+        elif ITeam.providedBy(team):
+            return check_permission('launchpad.View', team)
+        else:
+            raise AssertionError("Non-team argument: %r" % team)
 
     def userCanRequestToLeave(self):
         """Return true if the user can request to leave this team.

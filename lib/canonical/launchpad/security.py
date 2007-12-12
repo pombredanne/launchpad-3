@@ -436,13 +436,19 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
 
     def checkUnauthenticated(self):
         """An admin or a team member can view the Team's membership."""
-        if self.obj.visibility == PersonVisibility.PUBLIC:
+        # XXX Edwin Grubbs 2007-12-11 bug=175758
+        # Checking if None is only valid necessary until next cycle.
+        if (self.obj.visibility is None
+            or self.obj.visibility == PersonVisibility.PUBLIC):
             return True
         return False
 
     def checkAuthenticated(self, user):
         """An admin or a team member can view the Team's membership."""
-        if self.obj.visibility == PersonVisibility.PUBLIC:
+        # XXX Edwin Grubbs 2007-12-11 bug=175758
+        # Checking if None is only valid necessary until next cycle.
+        if (self.obj.visibility is None
+            or self.obj.visibility == PersonVisibility.PUBLIC):
             return True
         admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(admins) or user.inTeam(self.obj):
