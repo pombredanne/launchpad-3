@@ -210,19 +210,19 @@ class PillarNameSet:
         """See `IPillarSet`."""
         query = """
             PillarName.name = %s
-            AND PillarName.id = FeaturedProject.pillarname
+            AND PillarName.id = FeaturedProject.pillar_name
             """ % sqlvalues(project.name)
         existing = FeaturedProject.selectOne(
             query, clauseTables=['PillarName'])
         if existing is None:
-            pillarname = PillarName.selectOneBy(name=project.name)
-            return FeaturedProject(pillarname=pillarname.id)
+            pillar_name = PillarName.selectOneBy(name=project.name)
+            return FeaturedProject(pillar_name=pillar_name.id)
 
     def remove_featured_project(self, project):
         """See `IPillarSet`."""
         query = """
             PillarName.name = %s
-            AND PillarName.id = FeaturedProject.pillarname
+            AND PillarName.id = FeaturedProject.pillar_name
             """ % sqlvalues(project.name)
         existing = FeaturedProject.selectOne(
             query, clauseTables=['PillarName'])
@@ -233,8 +233,8 @@ class PillarNameSet:
     def featured_projects(self):
         """See `IPillarSet`."""
 
-        query = "PillarName.id = FeaturedProject.pillarname"
-        return [pillarname.pillar for pillarname in PillarName.select(
+        query = "PillarName.id = FeaturedProject.pillar_name"
+        return [pillar_name.pillar for pillar_name in PillarName.select(
                     query, clauseTables=['FeaturedProject'])]
 
 

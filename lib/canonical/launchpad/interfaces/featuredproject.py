@@ -16,7 +16,7 @@ class IFeaturedProject(Interface):
     """A featured project name."""
 
     id = Attribute("The unique ID of this featured project.")
-    pillarname = Attribute("The pillarname of the featured project.")
+    pillar_name = Attribute("The pillar name of the featured project.")
 
     def destroySelf():
         """Remove this project from the featured project list."""

@@ -1550,13 +1550,13 @@ class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
 class FeaturedProjectVocabulary(DistributionOrProductOrProjectVocabulary):
     """Vocabulary of projects that are featured on the LP Home Page."""
 
-    _filter = AND(PillarName.q.id == FeaturedProject.q.pillarname,
+    _filter = AND(PillarName.q.id == FeaturedProject.q.pillar_name,
                   PillarName.q.active == True)
     _clauseTables = ['FeaturedProject']
 
     def __contains__(self, obj):
         """See `IVocabulary`."""
-        query = """PillarName.id=FeaturedProject.pillarname
+        query = """PillarName.id=FeaturedProject.pillar_name
                    AND PillarName.name = %s""" % sqlvalues(obj.name)
         return PillarName.selectOne(
                    query, clauseTables=['FeaturedProject']) is not None
