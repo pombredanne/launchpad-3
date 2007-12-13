@@ -1,4 +1,5 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0141
 
 """Tests for lib/canonical/authserver/database.py"""
 
@@ -663,9 +664,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
         [current_db_time] = cur.fetchone()
 
-        storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(salgado.id, branch_id)
-
+        store._requestMirrorInteraction(salgado.id, branch_id)
         self.assertTrue(
             current_db_time < self.getNextMirrorTime(branch_id),
             "Branch next_mirror_time not updated.")
