@@ -282,6 +282,10 @@ class PullerMaster:
         :param logger: A Python logging object.
         :param client: An asynchronous client for the branch status XML-RPC
             service.
+        :param available_oops_prefixes: A set of OOPS prefixes to pass out to
+            worker processes. The purpose is to ensure that there are no
+            collisions in OOPS prefixes between currently-running worker
+            processes.
         """
         self.branch_id = branch_id
         self.source_url = source_url.strip()
@@ -296,16 +300,24 @@ class PullerMaster:
 
     @cachedproperty
     def oops_prefix(self):
+        """Allocate and return an OOPS prefix for the worker process."""
         try:
             return self._available_oops_prefixes.pop()
         except KeyError:
             self.unexpectedError(failure.Failure())
             raise
 
-    def releaseOopsPrefix(self):
+    def releaseOopsPrefix(self, pass_through=None):
+        """Release the OOPS prefix allocated to this worker.
+
+        :param pass_through: An unused parameter that is returned unmodified.
+            Useful for adding this method as a Twisted callback / errback.
+        """
         self._available_oops_prefixes.add(self.oops_prefix)
+        return pass_through
 
     def mirror(self):
+        """Spawn a worker process to mirror a branch."""
         path_to_script = os.path.join(
             os.path.dirname(
                 os.path.dirname(os.path.dirname(canonical.__file__))),
@@ -324,12 +336,13 @@ class PullerMaster:
         return deferred
 
     def run(self):
-        def restore_oops_prefix(pass_through):
-            self.releaseOopsPrefix()
-            return pass_through
+        """Launch a child worker and mirror a branch, handling errors.
+
+        This is the main method to call to mirror a branch.
+        """
         deferred = self.mirror()
         deferred.addErrback(self.unexpectedError)
-        deferred.addBoth(restore_oops_prefix)
+        deferred.addBoth(self.releaseOopsPrefix)
         return deferred
 
     def startMirroring(self):
@@ -378,6 +391,12 @@ class JobScheduler:
 
     @cachedproperty
     def available_oops_prefixes(self):
+        """Generate and return a set of OOPS prefixes for worker processes.
+
+        This set will contain at most config.supermirror.maximum_workers
+        elements. It's expected that the contents of the set will be modified
+        by `PullerMaster` objects.
+        """
         return set(
             [config.launchpad.errorreports.oops_prefix + str(i)
              for i in range(config.supermirror.maximum_workers)])
