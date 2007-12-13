@@ -1826,8 +1826,9 @@ class RequestTracker(ExternalBugTracker):
     def getRemoteBug(self, bug_id):
         """See `ExternalBugTracker`."""
         ticket_url = self.ticket_url % str(bug_id)
+        query_url = '%s/%s' % (self.baseurl, ticket_url)
         try:
-            bug_data = self.urlopen('%s/%s' % (self.baseurl, ticket_url))
+            bug_data = self.urlopen(query_url)
         except urllib2.HTTPError, error:
             raise BugTrackerConnectError(ticket_url, error.message)
 
@@ -1839,9 +1840,10 @@ class RequestTracker(ExternalBugTracker):
             # We included in the error message the status code and error
             # message returned by the server.
             raise BugTrackerConnectError(
+                query_url,
                 "Unable to retrieve bug %s. The remote server returned the "
-                "following error:  %s." %
-                (str(bug_id), " ".join(firstline[-1])))
+                "following error: %s." %
+                (str(bug_id), " ".join(firstline[1:])))
 
         # RT's REST interface returns tickets in RFC822 format, so we
         # can use the email module to parse them.
@@ -1858,10 +1860,11 @@ class RequestTracker(ExternalBugTracker):
         id_list = [str(id) for id in bug_ids]
         query = "id = " + "OR id = ".join(id_list)
 
+        query_url = '%s/%s' % (self.baseurl, self.batch_url)
         request_params = {'query': query, 'format': 'l'}
         try:
-            bug_data = self.urlopen('%s/%s' % (self.baseurl, self.batch_url),
-                urllib.urlencode(request_params))
+            bug_data = self.urlopen(query_url, urllib.urlencode(
+                request_params))
         except urllib2.HTTPError, error:
             raise BugTrackerConnectError(ticket_url, error.message)
 
@@ -1872,10 +1875,12 @@ class RequestTracker(ExternalBugTracker):
             # If anything goes wrong we raise a BugTrackerConnectError.
             # We included in the error message the status code and error
             # message returned by the server.
+            bug_id_string = ", ".join([str(bug_id) for bug_id in bug_ids])
             raise BugTrackerConnectError(
+                query_url,
                 "Unable to retrieve bugs %s. The remote server returned the "
                 "following error:  %s." %
-                (", ".join(bug_ids), " ".join(firstline[-1])))
+                (bug_id_string, " ".join(firstline[1:])))
 
         # Tickets returned in RT multiline format are separated by lines
         # containing only --\n.

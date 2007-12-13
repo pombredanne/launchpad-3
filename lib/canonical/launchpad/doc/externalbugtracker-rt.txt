@@ -96,6 +96,23 @@ fetched as a batch:
     >>> sorted(rt.bugs.keys())
     [1585, 1586, 1587, 1588, 1589]
 
+If something goes wrong when we request a bug from the remote server a
+BugTrackerConnectError will be raised. We can demonstrate this by making
+our test RT instance simulate such a situation.
+
+    >>> rt.simulate_bad_response = True
+    >>> rt.initializeRemoteBugDB([1585])
+    Traceback (most recent call last):
+      ...
+    BugTrackerConnectError...
+
+This can also be demonstrated for importing bugs as a batch:
+
+    >>> rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
+    Traceback (most recent call last):
+      ...
+    BugTrackerConnectError...
+    >>> rt.simulate_bad_response = False
 
 == Updating Bug Watches ==
 

@@ -403,12 +403,16 @@ class TestRequestTracker(RequestTracker):
     instance is not needed.
     """
     trace_calls = False
+    simulate_bad_response = False
 
     def urlopen(self, page, data=None):
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
         path = urlparse.urlparse(page)[2].lstrip('/')
         if self.trace_calls:
             print "CALLED urlopen(%r)" % path
+
+        if self.simulate_bad_response:
+            return open(file_path + '/' + 'rt-sample-bug-bad.txt')
 
         if path == self.batch_url:
             return open(file_path + '/' + 'rt-sample-bug-batch.txt')
