@@ -22,6 +22,9 @@ def configure_oops_reporting(branch_type, oops_prefix=None):
     """Set up OOPS reporting for this scripts.
 
     :param branch_type: The type of branch that is being mirrored.
+    :param oops_prefix: The OOPS prefix to use. If None, use the configured
+        OOPS prefix. This is used particularly by mirror-branch.py to prevent
+        clashing OOPS reports between workers.
     """
 
     # XXX: JonathanLange 2007-10-04: The config schema uses old-fashioned
