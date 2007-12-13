@@ -1775,9 +1775,16 @@ class RequestTracker(ExternalBugTracker):
     batch_url = 'REST/1.0/search/ticket/'
 
     @property
-    def is_cpan(self):
-        """Return true if the RT instance is at rt.cpan.org."""
-        return False
+    def credentials(self):
+        credentials_map = {
+            'rt.cpan.org': {'user': 'launchpad@launchpad.net',
+                            'pass': 'th4t3'}}
+
+        hostname = urlparse(self.baseurl)[1]
+        try:
+            return credentials_map[hostname]
+        except KeyError:
+            return {'user': 'guest', 'pass': 'guest'}
 
     @cachedproperty
     def _opener(self):
@@ -1820,11 +1827,6 @@ class RequestTracker(ExternalBugTracker):
                 "Could not retrieve ticket #1.")
         else:
             return opener
-
-    def __init__(self, bugtracker):
-        """See `ExternalBugTracker`."""
-        super(RequestTracker, self).__init__(bugtracker)
-        self.credentials = {'user': 'guest', 'pass': 'guest'}
 
     def urlopen(self, request, data=None):
         """Return a handle to a remote resource.
