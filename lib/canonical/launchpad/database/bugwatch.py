@@ -161,7 +161,7 @@ class BugWatchSet(BugSetBase):
             BugTrackerType.BUGZILLA: self.parseBugzillaURL,
             BugTrackerType.DEBBUGS:  self.parseDebbugsURL,
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
-            BugTrackerType.ROUNDUP: self.parseRTURL,
+            BugTrackerType.RT: self.parseRTURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
             BugTrackerType.TRAC: self.parseTracURL,
             BugTrackerType.MANTIS: self.parseMantisURL,
