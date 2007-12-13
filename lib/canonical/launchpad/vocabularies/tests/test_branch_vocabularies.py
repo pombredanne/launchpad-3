@@ -77,8 +77,23 @@ class TestBranchVocabulary(BranchVocabTestCase):
         self.assertEqual(expected, branch_names)
 
 
-class RestrictedBranchVocabBase(BranchVocabTestCase):
-    """Base class for the two ways of restricting a vocabulary."""
+class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
+    """Test the BranchRestrictedOnProductVocabulary behaves as expected.
+
+    When a BranchRestrictedOnProductVocabulary is used with a product the
+    product of the branches in the vocabulary match the product given as the
+    context.
+    """
+
+    def setUp(self):
+        RestrictedBranchVocabBase.setUp(self)
+        self._createBranches()
+        self.vocab = BranchRestrictedOnProductVocabulary(
+            context=self._getVocabRestriction())
+
+    def _getVocabRestriction(self):
+        """Restrict using the widget product."""
+        return getUtility(IProductSet).getByName('widget')
 
     def _createBranches(self):
         factory = LaunchpadObjectFactory()
@@ -94,21 +109,6 @@ class RestrictedBranchVocabBase(BranchVocabTestCase):
         person = factory.makePerson(name='spotty')
         factory.makeBranch(
             owner=person, product=test_product, name='hill')
-
-
-class TestRestrictedBranchVocabularyOnProduct(RestrictedBranchVocabBase):
-    """Test the BranchRestrictedOnProductVocabulary behaves as expected.
-
-    When a BranchRestrictedOnProductVocabulary is used with a product the
-    product of the branches in the vocabulary match the product given as the
-    context.
-    """
-
-    def setUp(self):
-        RestrictedBranchVocabBase.setUp(self)
-        self._createBranches()
-        self.vocab = BranchRestrictedOnProductVocabulary(
-            context=getUtility(IProductSet).getByName('widget'))
 
     def test_mainBranches(self):
         """Look for widget's main branch.
@@ -145,38 +145,9 @@ class TestRestrictedBranchVocabularyOnBranch(RestrictedBranchVocabBase):
     that is the context.
     """
 
-    def setUp(self):
-        RestrictedBranchVocabBase.setUp(self)
-        self._createBranches()
-        self.vocab = BranchRestrictedOnProductVocabulary(
-            context=getUtility(IBranchSet).getByUniqueName(
-                    '~spotty/widget/hill'))
-
-    def test_mainBranches(self):
-        """Look for widget's main branch.
-
-        The result set should not show ~scotty/sprocket/main.
-        """
-        results = self.vocab.search('main')
-        expected = [
-            u'~scotty/widget/main',
-            ]
-        branch_names = sorted([branch.unique_name for branch in results])
-        self.assertEqual(expected, branch_names)
-
-    def test_ownersBranches(self):
-        """Look for branches owned by scotty.
-
-        The result set should not show ~scotty/sprocket/main.
-        """
-        results = self.vocab.search('scotty')
-
-        expected = [
-            u'~scotty/widget/main',
-            u'~scotty/widget/mountain',
-            ]
-        branch_names = sorted([branch.unique_name for branch in results])
-        self.assertEqual(expected, branch_names)
+    def _getVocabRestriction(self):
+        """Restrict using a branch on widget."""
+        return getUtility(IBranchSet).getByUniqueName('~spotty/widget/hill')
 
 
 def test_suite():

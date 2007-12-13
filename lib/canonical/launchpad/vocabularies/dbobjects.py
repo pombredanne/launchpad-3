@@ -174,12 +174,12 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
         """See `IVocabulary`."""
         return self.search('').count()
 
-    def _branchAttributeQuery(self, quoted_query):
+    def _constructBranchAttributeQuery(self, quoted_query):
         """Return a query that will identify branches that match.
 
         Checks for matches by branch name or URL.
 
-        See `_generalQuery` for more details.
+        See `_constructGeneralQuery` for more details.
         """
         return """
             SELECT id FROM Branch
@@ -188,12 +188,12 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
             OR Branch.url LIKE '%%' || %s || '%%'
             """ % (quoted_query, quoted_query)
 
-    def _registrantNameQuery(self, quoted_query):
+    def _constructRegistrantNameQuery(self, quoted_query):
         """Return a query that will identify branches that match.
 
         Checks for matches by the name of the branch owner (registrant).
 
-        See `_generalQuery` for more details.
+        See `_constructGeneralQuery` for more details.
         """
         return """
             SELECT Branch.id FROM Branch, Person
@@ -202,12 +202,12 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
             AND Person.name LIKE '%%' || %s || '%%'
             """ % quoted_query
 
-    def _productNameQuery(self, quoted_query):
+    def _constructProductNameQuery(self, quoted_query):
         """Return a query that will identify branches that match.
 
         Checks for matches by the name of the product that the branch is for.
 
-        See `_generalQuery` for more details.
+        See `_constructGeneralQuery` for more details.
         """
         return """
             SELECT Branch.id from Branch, Product
@@ -216,7 +216,7 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
             AND Product.name LIKE '%%' || %s || '%%'
             """ % quoted_query
 
-    def _generalQuery(self, quoted_query,
+    def _constructGeneralQuery(self, quoted_query,
                       check_product=True, check_registrant=True):
         """Return the naive branch where clause for the given query.
 
@@ -232,16 +232,16 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
             return ''
         # Generate the query for the branch attributes, and optionally the
         # product name and registrant name.
-        args = [self._branchAttributeQuery(quoted_query)]
+        args = [self._constructBranchAttributeQuery(quoted_query)]
         if check_product:
-            args.append(self._productNameQuery(quoted_query))
+            args.append(self._constructProductNameQuery(quoted_query))
         if check_registrant:
-            args.append(self._registrantNameQuery(quoted_query))
+            args.append(self._constructRegistrantNameQuery(quoted_query))
         id_query = '\n\nUNION\n\n'.join(args)
         return 'Branch.id in (%s)' % id_query
 
     def search(self, query):
-        """Return the branches that match.
+        """Returns branches where the name, owner or product match the query.
 
         Only branches that the logged in user is able to see are actually
         returned.
@@ -250,6 +250,10 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
             self._constructNaiveQueryString(quote_like(query)),
             visible_by_user=getUtility(ILaunchBag).user)
         return Branch.select(sql_query, orderBy=self._orderBy)
+
+    def _constructNaiveQueryString(self, quoted_query):
+        """Return the naive branch where clause based on the query."""
+        raise NotImplementedError
 
 
 class BranchVocabulary(BranchVocabularyBase):
@@ -260,8 +264,8 @@ class BranchVocabulary(BranchVocabularyBase):
     value.
     """
     def _constructNaiveQueryString(self, quoted_query):
-        """Return the naive branch where clause based on the query."""
-        return self._generalQuery(quoted_query)
+        """See `BranchVocabularyBase`."""
+        return self._constructGeneralQuery(quoted_query)
 
 
 class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
@@ -279,7 +283,7 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
             return 'Branch.product = %s' % quote(product)
 
     def _constructNaiveQueryString(self, quoted_query):
-        """Return the naive branch where clause based on the query."""
+        """See `BranchVocabularyBase`."""
         if IProduct.providedBy(self.context):
             restrict_sql = self._restrictToProduct(self.context)
         elif IBranch.providedBy(self.context):
@@ -288,7 +292,7 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
             # An unexpected type.
             raise AssertionError('Unexpected context type')
 
-        base_sql = self._generalQuery(quoted_query, check_product=False)
+        base_sql = self._constructGeneralQuery(quoted_query, check_product=False)
         if len(base_sql) > 0:
             return '%s AND %s' % (base_sql, restrict_sql)
         else:
