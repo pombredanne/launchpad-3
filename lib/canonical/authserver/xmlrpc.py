@@ -46,6 +46,7 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
     """A new (and simpler) version of the user details XML-RPC API."""
 
     def __init__(self, storage, debug=False):
+        xmlrpc.XMLRPC.__init__(self)
         self.storage = storage
         self.debug = debug
 

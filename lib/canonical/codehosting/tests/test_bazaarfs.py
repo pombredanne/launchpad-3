@@ -91,7 +91,8 @@ class TestTopLevelDir(AvatarTestCase):
     def testTeamDirPlusJunk(self):
         root = self.bob.makeFileSystem().root
         userDir = root.child('~test-team')
-        self.assertNotIn('+junk', [name for name, child in userDir.children()])
+        self.assertNotIn(
+            '+junk', [name for name, child in userDir.children()])
 
 
 class UserDirsTestCase(AvatarTestCase):
@@ -161,8 +162,9 @@ class UserDirsTestCase(AvatarTestCase):
             set(['.', '..', '+junk', 'mozilla-firefox', 'product-x']))
 
         # The team dir will have just 'thing'.
+        children = root.child('~test-team').children()
         self.assertEqual(
-            set([name for name, child in root.child('~test-team').children()]),
+            set([name for name, child in children]),
             set(['.', '..', 'thing']))
 
 
@@ -305,7 +307,8 @@ class ProductPlaceholderTestCase(AvatarTestCase):
         # Test that we get an error if we try to create a branch
         # inside a product placeholder for a non-existant product.
         noproduct = self.filesystem.fetch('/~alice/no-such-product')
-        self.failUnless(isinstance(noproduct, SFTPServerProductDirPlaceholder))
+        self.failUnless(
+            isinstance(noproduct, SFTPServerProductDirPlaceholder))
         return self.assertFailure(defer.maybeDeferred(
             noproduct.createDirectory, 'new-branch'), PermissionError)
 

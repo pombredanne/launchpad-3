@@ -98,7 +98,8 @@ class DatabaseTest(unittest.TestCase):
             "UPDATE ProductSeries SET datelastsynced = (%s) WHERE id = %d"
             % (value, series_id))
 
-    def setBranchLastMirrorAttempt(self, branch_id, value=None, now_minus=None):
+    def setBranchLastMirrorAttempt(self, branch_id, value=None,
+                                   now_minus=None):
         """Helper to set the last_mirror_attempt of a Branch.
 
         :param branch_id: Database id of the Branch to update.
@@ -240,7 +241,8 @@ class UserDetailsStorageTest(DatabaseTest):
         # Authing a user with a NULL password should always return {}
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        # The 'admins' user in the sample data has no password, so we use that.
+        # The 'admins' user in the sample data has no password, so we use
+        # that.
         userDict = storage._authUserInteraction('admins', ssha)
         self.assertEqual({}, userDict)
 
@@ -383,7 +385,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         storage = DatabaseUserDetailsStorageV2(None)
         branchID = storage._createBranchInteraction(
             12, 'name12', 'firefox', 'foo')
-        # Assert branchID now appears in database.  Note that title and summary
+        # Assert branchID now appears in database. Note that title and summary
         # should be NULL, and author should be set to the owner.
         cur = cursor()
         cur.execute("""
@@ -471,9 +473,9 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         self.assertEqual('', productID)
 
     def test_getBranchesForUser(self):
-        # getBranchesForUser returns all of the hosted branches that a user may
-        # write to. The branches are grouped by product, and are specified by
-        # name and id. The name and id of the products are also included.
+        # getBranchesForUser returns all of the hosted branches that a user
+        # may write to. The branches are grouped by product, and are specified
+        # by name and id. The name and id of the products are also included.
         transaction.begin()
         no_priv = getUtility(IPersonSet).getByName('no-priv')
         firefox = getUtility(IProductSet).getByName('firefox')
@@ -544,8 +546,8 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
 
     def test_getBranchInformation_nonexistent(self):
         # When we get the branch information for a non-existent branch, we get
-        # a tuple of two empty strings (the empty string being an approximation
-        # of 'None').
+        # a tuple of two empty strings (the empty string being an
+        # approximation of 'None').
         store = DatabaseUserDetailsStorageV2(None)
         branch_id, permissions = store._getBranchInformationInteraction(
             12, 'name12', 'gnome-terminal', 'doesnt-exist')
@@ -553,8 +555,8 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         self.assertEqual('', permissions)
 
     def test_getBranchInformation_unowned(self):
-        # When we get the branch information for a branch that we don't own, we
-        # get the database id and a flag saying that we can only read that
+        # When we get the branch information for a branch that we don't own,
+        # we get the database id and a flag saying that we can only read that
         # branch.
         store = DatabaseUserDetailsStorageV2(None)
         branch_id, permissions = store._getBranchInformationInteraction(
@@ -581,7 +583,8 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         self.assertEqual(READ_ONLY, permissions)
 
     def test_getBranchInformation_remote(self):
-        # Remote branches are not accessible by the smartserver or SFTP server.
+        # Remote branches are not accessible by the smartserver or SFTP
+        # server.
         no_priv = getUtility(IPersonSet).getByName('no-priv')
         firefox = getUtility(IProductSet).getByName('firefox')
         branch = getUtility(IBranchSet).new(
@@ -690,9 +693,9 @@ class UserDetailsStorageV2Test(DatabaseTest):
     """Test the implementation of `IUserDetailsStorageV2`."""
 
     def test_teamDict(self):
-        # The user dict from a V2 storage should include a 'teams' element with
-        # a list of team dicts, one for each team the user is in, including
-        # the user.
+        # The user dict from a V2 storage should include a 'teams' element
+        # with a list of team dicts, one for each team the user is in,
+        # including the user.
 
         # Get a user dict
         storage = DatabaseUserDetailsStorageV2(None)
@@ -701,12 +704,14 @@ class UserDetailsStorageV2Test(DatabaseTest):
         # Sort the teams by id, they may be returned in any order.
         teams = sorted(userDict['teams'], key=lambda teamDict: teamDict['id'])
 
-        # Mark should be in his own team, Ubuntu Team, Launchpad Administrators
-        # and testing Spanish team, and other teams of which Launchpad
-        # Administrators is a member or owner.
+        # Mark should be in his own team, Ubuntu Team, Launchpad
+        # Administrators and testing Spanish team, and other teams of which
+        # Launchpad Administrators is a member or owner.
         self.assertEqual(
-            [{'displayname': u'Mark Shuttleworth', 'id': 1, 'name': u'sabdfl'},
-             {'displayname': u'Ubuntu Team', 'id': 17, 'name': u'ubuntu-team'},
+            [{'displayname': u'Mark Shuttleworth',
+              'id': 1, 'name': u'sabdfl'},
+             {'displayname': u'Ubuntu Team',
+              'id': 17, 'name': u'ubuntu-team'},
              {'displayname': u'Launchpad Administrators',
               'id': 25, 'name': u'admins'},
              {'displayname': u'testing Spanish team',
@@ -746,8 +751,8 @@ class UserDetailsStorageV2Test(DatabaseTest):
         # Ensure that the authserver copes gracefully with users with:
         #    a) no wikinames at all
         #    b) no wikiname for http://www.ubuntulinux.com/wiki/
-        # (even though in the long run we want to make sure these situations can
-        # never happen, until then the authserver should be robust).
+        # (even though in the long run we want to make sure these situations
+        # can never happen, until then the authserver should be robust).
 
         # First, make sure that the sample user has no wikiname.
         transaction.begin()
@@ -770,7 +775,8 @@ class UserDetailsStorageV2Test(DatabaseTest):
         transaction.begin()
         login(ANONYMOUS)
         person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-        getUtility(IWikiNameSet).new(person, 'http://foowiki/', 'SamplePerson')
+        getUtility(IWikiNameSet).new(
+            person, 'http://foowiki/', 'SamplePerson')
         logout()
         transaction.commit()
 

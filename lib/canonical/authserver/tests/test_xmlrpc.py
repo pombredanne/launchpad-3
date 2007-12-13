@@ -87,8 +87,8 @@ class XMLRPCv1TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
         self.assert_(mark_dict.has_key('salt'))
 
         # Check that the salt is base64 encoded
-        # FIXME: This is a pretty weak test, because this particular salt is ''
-        #        (the sample data specifies no pw for Mark)
+        # FIXME: This is a pretty weak test, because this particular salt is
+        #        '' (the sample data specifies no pw for Mark)
         mark_dict['salt'].decode('base64')  # Should raise no errors
 
         # Check that the failure case (no such user) returns {}
