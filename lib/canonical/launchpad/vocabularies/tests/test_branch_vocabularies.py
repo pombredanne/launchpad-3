@@ -86,7 +86,7 @@ class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
     """
 
     def setUp(self):
-        RestrictedBranchVocabBase.setUp(self)
+        BranchVocabTestCase.setUp(self)
         self._createBranches()
         self.vocab = BranchRestrictedOnProductVocabulary(
             context=self._getVocabRestriction())
@@ -137,7 +137,8 @@ class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
         self.assertEqual(expected, branch_names)
 
 
-class TestRestrictedBranchVocabularyOnBranch(RestrictedBranchVocabBase):
+class TestRestrictedBranchVocabularyOnBranch(
+    TestRestrictedBranchVocabularyOnProduct):
     """Test the BranchRestrictedOnProductVocabulary behaves as expected.
 
     When a BranchRestrictedOnProductVocabulary is used with a branch the
