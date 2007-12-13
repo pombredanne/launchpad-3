@@ -1941,10 +1941,12 @@ class RequestTracker(ExternalBugTracker):
             'open': BugTaskStatus.CONFIRMED,
             'stalled': BugTaskStatus.INPROGRESS,
             'rejected': BugTaskStatus.INVALID,
-            'resolved': BugTaskStatus.FIXRELEASED}
+            'resolved': BugTaskStatus.FIXRELEASED,
+            UNKNOWN_REMOTE_STATUS.lower(): BugTaskStatus.UNKNOWN}
 
         try:
             remote_status = remote_status.lower()
             return status_map[remote_status]
         except KeyError:
-            return UNKNOWN_REMOTE_STATUS
+            log.warn("Unknown status '%s'." % remote_status)
+            return BugTaskStatus.UNKNOWN

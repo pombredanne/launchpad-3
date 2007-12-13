@@ -12,12 +12,12 @@ implementation of ExternalBugTracker, RequestTracker.
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     RequestTracker)
     >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IExternalBugtracker)
+    ...     BugTrackerType, IExternalBugTracker)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(
-    ...     IExternalBugtracker,
+    ...     IExternalBugTracker,
     ...     RequestTracker(new_bugtracker(BugTrackerType.RT)))
     True
 
@@ -42,8 +42,9 @@ Launchpad statuses:
 Passing a status which the RequestTracker instance can't understand will
 result in a status of 'Unknown' being returned:
 
-    >>> rt.convertRemoteStatus('spam')
-    'UNKNOWN'
+    >>> rt.convertRemoteStatus('spam').title
+    WARNING:...:Unknown status 'spam'.
+    'Unknown'
 
 
 == Initialisation ==
@@ -124,6 +125,8 @@ remote status for, the bug watch that we have created.
 
     >>> rt = TestRequestTracker(example_bug_tracker)
     >>> rt.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 1 watches on http://bugs.some.where
+
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1585: new
 
@@ -151,6 +154,7 @@ tracker with a variety of statuses.
 
     >>> rt.trace_calls = True
     >>> rt.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 5 watches on http://bugs.some.where
     CALLED urlopen(u'REST/1.0/ticket/1585/show')
     CALLED urlopen(u'REST/1.0/ticket/1586/show')
     CALLED urlopen(u'REST/1.0/ticket/1587/show')
