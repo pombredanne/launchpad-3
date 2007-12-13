@@ -362,8 +362,8 @@ class DistributionSourcePackageView(LaunchpadFormView):
         getUtility(IPackagingUtil).deletePackaging(
             productseries, packaging.sourcepackagename, distroseries)
         self.request.response.addNotification(
-            _("Removed upstream association between %{product} "
-              "%{productseries} and %{distroseries}.", mapping=dict(
+            _("Removed upstream association between ${product} "
+              "${productseries} and ${distroseries}.", mapping=dict(
               product=productseries.product.displayname,
               productseries=productseries.displayname,
               distroseries=distroseries.displayname)))
