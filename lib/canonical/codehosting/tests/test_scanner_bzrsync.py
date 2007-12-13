@@ -2,6 +2,7 @@
 # Copyright (c) 2005-2006 Canonical Ltd.
 # Author: Gustavo Niemeyer <gustavo@niemeyer.net>
 #         David Allouche <david@allouche.net>
+# pylint: disable-msg=W0141
 
 import datetime
 import email
@@ -23,7 +24,8 @@ from canonical.launchpad.mail import stub
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     BranchType, IBranchSet, IPersonSet, IRevisionSet)
-from canonical.codehosting.scanner.bzrsync import BzrSync, RevisionModifiedError
+from canonical.codehosting.scanner.bzrsync import (
+    BzrSync, RevisionModifiedError)
 from canonical.launchpad.scripts.importd.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
@@ -358,8 +360,8 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual([], list(bzrsync.getRevisions()))
 
     def test_get_revisions_linear(self):
-        # If the branch has a linear ancestry, getRevisions() should yield each
-        # revision along with a sequence number, starting at 1.
+        # If the branch has a linear ancestry, getRevisions() should yield
+        # each revision along with a sequence number, starting at 1.
         self.commitRevision(rev_id='rev-1')
         bzrsync = self.makeBzrSync()
         bzrsync.retrieveBranchDetails()
@@ -428,8 +430,9 @@ class TestBzrSync(BzrSyncTestCase):
         # BranchRevision.ids.
 
         # Use the sampledata for this test, so we do not have to rely on
-        # BzrSync to fill the database. That would cause a circular dependency,
-        # as the test setup would depend on retrieveDatabaseAncestry.
+        # BzrSync to fill the database. That would cause a circular
+        # dependency, as the test setup would depend on
+        # retrieveDatabaseAncestry.
         branch = getUtility(IBranchSet).getByUniqueName(
             '~name12/+junk/junk.contrib')
         self.db_branch = branch
@@ -454,8 +457,8 @@ class TestBzrSync(BzrSyncTestCase):
 class TestBzrSyncPerformance(BzrSyncTestCase):
 
     # TODO: Turn these into unit tests for planDatabaseChanges. To do this, we
-    # need to change the BzrSync constructor to either delay the opening of the
-    # bzr branch, so those unit-tests need not set up a dummy bzr branch.
+    # need to change the BzrSync constructor to either delay the opening of
+    # the bzr branch, so those unit-tests need not set up a dummy bzr branch.
     # -- DavidAllouche 2007-03-01
 
     def setUp(self):
@@ -475,7 +478,8 @@ class TestBzrSyncPerformance(BzrSyncTestCase):
             (single_arg,) = args
             self.assertEqual(kwargs, {})
             self.calls[name].append(single_arg)
-        unary_observer = InstrumentedMethodObserver(called=unary_method_called)
+        unary_observer = InstrumentedMethodObserver(
+            called=unary_method_called)
         instrument_method(unary_observer, bzrsync, 'syncRevisions')
         instrument_method(unary_observer, bzrsync, 'deleteBranchRevisions')
         instrument_method(unary_observer, bzrsync, 'insertBranchRevisions')
@@ -578,7 +582,8 @@ class TestBzrSyncModified(BzrSyncTestCase):
         self.assertEqual(date, self.bzrsync._timestampToDatetime(timestamp))
 
     def test_ancient_revision(self):
-        # Test that we can sync revisions with negative, fractional timestamps.
+        # Test that we can sync revisions with negative, fractional
+        # timestamps.
 
         # Make a negative, fractional timestamp and equivalent datetime
         UTC = pytz.timezone('UTC')
@@ -679,13 +684,16 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         if text1 == text2:
             return
         # find the first point of difference
+        error_pos = 0
         for pos in xrange(len(text1)):
             if text1[pos] != text2[pos]:
+                error_pos = pos
                 break
         raise AssertionError(
             "Text differs at position %d" '\n'
             "  text1[%d:]: %s" '\n' "  text2[%d:]: %s" '\n'
-            % (pos, pos, repr(text1[pos:]), pos, repr(text2[pos:])))
+            % (error_pos, error_pos, repr(text1[error_pos:]),
+               error_pos, repr(text2[error_pos:])))
 
     def test_empty_branch(self):
         self.syncBranch()
@@ -714,7 +722,8 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.assertEqual(len(stub.test_emails), 1)
         [uncommit_email] = stub.test_emails
         expected = '1 revision was removed from the branch.'
-        email_body = email.message_from_string(uncommit_email[2]).get_payload()
+        email_body = email.message_from_string(
+            uncommit_email[2]).get_payload()
         self.assertTextIn(expected, email_body)
 
     def test_import_recommit(self):
@@ -735,8 +744,11 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         uncommit_email_body = uncommit_email[2]
         expected = '1 revision was removed from the branch.'
         self.assertTextIn(expected, uncommit_email_body)
+        subject = 'Subject: [Branch ~sabdfl/+junk/test] Test branch'
+        self.assertTextIn(expected, uncommit_email_body)
         recommit_email_body = recommit_email[2]
         body_bits = [
+            'Subject: [Branch ~sabdfl/+junk/test] Rev 1: second',
             'revno: 1',
             'committer: Revision Author <author@example.com>',
             'branch nick: bzr_branch',
@@ -871,8 +883,8 @@ class TestBzrSyncEmail(BzrSyncTestCase):
 
 
 class TestBzrSyncNoEmail(BzrSyncTestCase):
-    """Tests BzrSync support for not generating branch email notifications when
-    no one is interested.
+    """Tests BzrSync support for not generating branch email notifications
+    when no one is interested.
     """
 
     def setUp(self):

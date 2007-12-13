@@ -4,5 +4,4 @@
 %(branch_title)s
 %(branch_url)s
 
-You are receiving this branch notification because you are subscribed to it.
-To unsubscribe from this branch go to %(unsubscribe_url)s.
+%(rationale)s%(unsubscribe)s
