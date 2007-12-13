@@ -854,16 +854,22 @@ class PackageUploadSource(SQLBase):
         """See `IPackageUploadSource`."""
         # Check for duplicate source version across all distroseries.
         for distroseries in self.packageupload.distroseries.distribution:
-            if distroseries.getQueueItems(
+            uploads = distroseries.getQueueItems(
                 status=[PackageUploadStatus.ACCEPTED,
                         PackageUploadStatus.DONE],
                 name=self.sourcepackagerelease.name,
                 version=self.sourcepackagerelease.version,
                 archive=self.packageupload.archive,
-                exact_match=True).count() > 0:
+                exact_match=True)
+            if uploads.count() > 0:
                 raise QueueInconsistentStateError(
-                    'This sourcepackagerelease is already accepted in %s.'
-                    % self.packageupload.distroseries.name)
+                    "The source %s is already accepted in %s/%s and you "
+                    "cannot upload the same version within the same "
+                    "distribution. You have to modify the source version "
+                    "and re-upload." % (
+                    self.sourcepackagerelease.title,
+                    distroseries.distribution.name,
+                    distroseries.name))
 
     def verifyBeforePublish(self):
         """See `IPackageUploadSource`."""

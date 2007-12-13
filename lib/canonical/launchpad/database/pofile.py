@@ -511,7 +511,8 @@ class POFile(SQLBase, POFileMixIn):
             JOIN TranslationMessage AS imported ON
                 POTMsgSet.id = imported.potmsgset AND
                 imported.pofile = %s AND
-                imported.is_imported IS TRUE
+                imported.is_imported IS TRUE AND
+                NOT imported.was_fuzzy_in_last_import
             JOIN TranslationMessage AS current ON
                 POTMsgSet.id = current.potmsgset AND
                 imported.id <> current.id AND
@@ -647,6 +648,7 @@ class POFile(SQLBase, POFileMixIn):
                 imported.potmsgset = TranslationMessage.potmsgset AND
                 imported.pofile = TranslationMessage.pofile AND
                 imported.is_imported IS TRUE AND
+                NOT imported.was_fuzzy_in_last_import AND
                 (imported.msgstr0 IS NOT NULL OR
                  imported.msgstr1 IS NOT NULL OR
                  imported.msgstr2 IS NOT NULL OR

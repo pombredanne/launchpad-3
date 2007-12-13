@@ -56,6 +56,11 @@
     />
 
   <vocabulary
+    name="FeaturedProject"
+    factory="canonical.launchpad.vocabularies.FeaturedProjectVocabulary"
+    />
+
+  <vocabulary
     name="FilteredDeltaLanguagePack"
     factory="canonical.launchpad.vocabularies.FilteredDeltaLanguagePackVocabulary"
     />

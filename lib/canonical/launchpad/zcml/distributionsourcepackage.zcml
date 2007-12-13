@@ -10,7 +10,7 @@
       attributes="distribution sourcepackagename name displayname title
                   distro get_distroseries_packages subscribers currentrelease
                   releases publishing_history binary_package_names
-                  current_publishing_records
+                  current_publishing_records bug_reporting_guidelines
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
                   searchTasks isBugContact open_bugtasks closed_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
