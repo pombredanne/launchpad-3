@@ -204,12 +204,9 @@ class ArchiveActivateView(LaunchpadFormView):
     @action(_("Activate"), name="activate")
     def action_save(self, action, data):
         """Activate PPA and moves to its page."""
-        # XXX cprov 20071207: why I can't use 'self.distribution' which is
-        # set on initialize ?!
-        data['distribution'] = getUtility(ILaunchpadCelebrities).ubuntu
         ppa = getUtility(IArchiveSet).ensure(
-            owner=self.context, distribution=data['distribution'],
-            purpose=ArchivePurpose.PPA, description=data['description'])
+            owner=self.context, purpose=ArchivePurpose.PPA,
+            description=data['description'], distribution=None)
         self.next_url = canonical_url(ppa)
 
     @action(_("Cancel"), name="cancel", validator='validate_cancel')

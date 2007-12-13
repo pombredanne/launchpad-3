@@ -35,9 +35,8 @@ this architecture:
 It also provides a link to the currently published version:
 
     >>> browser.getLink("0.9").click()
-    >>> browser.url
-    'http://localhost/ubuntu/warty/i386/mozilla-firefox/0.9'
-
+    >>> browser.title
+    'mozilla-firefox 0.9 (i386 binary) in ubuntu warty'
 
 A BinaryPackageRelease once published in a DistroArchSeries is
 represented by a DistroArchSeriesBinaryPackageRelease and easily
@@ -48,8 +47,7 @@ $LP/ubuntu/$DISTRORELEASE/$ARCHTAG/$BINARYNAME/$VERSION
 
 It's also reachable in a more natural way, starting from distribution page:
 
-    >>> browser.open(
-    ...     'http://localhost/ubuntu')
+    >>> browser.open('http://localhost/ubuntu')
 
 Then we get to the DistroSeries page:
 
@@ -67,8 +65,8 @@ Now we are able to use the search box in this page:
 Click on the wanted name to get on the DistroArchSeriesBinaryPackageRelease:
 
     >>> browser.getLink("mozilla-firefox").click()
-    >>> browser.url
-    'http://localhost/ubuntu/warty/i386/mozilla-firefox/0.9'
+    >>> browser.title
+    'mozilla-firefox 0.9 (i386 binary) in ubuntu warty'
 
 This page represents an IDistroArchSeriesBinaryPackageRelease and is
 able to point the user to the IDistroSeriesSourcePackageRelease which
@@ -125,9 +123,8 @@ this architecture:
 It also provides a link to the currently published version:
 
     >>> browser.getLink("1.0-1").click()
-    >>> browser.url
-    'http://launchpad.dev/ubuntu/breezy-autotest/i386/commercialpackage/1.0-1'
-
+    >>> browser.title
+    'commercialpackage 1.0-1 (i386 binary) in ubuntu breezy-autotest'
 
 A BinaryPackageRelease once published in a DistroArchSeries is
 represented by a DistroArchSeriesBinaryPackageRelease and easily
@@ -157,8 +154,8 @@ Now we are able to use the search box in this page:
 Click on the wanted name to get on the DistroArchSeriesBinaryPackageRelease:
 
     >>> browser.getLink("commercialpackage").click()
-    >>> browser.url
-    'http://launchpad.dev/ubuntu/breezy-autotest/i386/commercialpackage/1.0-1'
+    >>> browser.title
+    'commercialpackage 1.0-1 (i386 binary) in ubuntu breezy-autotest'
 
 This page represents an IDistroArchSeriesBinaryPackageRelease and is
 able to point the user to the IDistroSeriesSourcePackageRelease which
