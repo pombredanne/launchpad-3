@@ -234,7 +234,13 @@ class IBugTrackerAliasSet(Interface):
         """Get a BugTrackerAlias by its id, or return default if it doesn't
            exist."""
 
-    def queryByBaseURL(baseurl):
+    def queryByBugTracker(bugtracker):
+        """Query BugTrackerAliases by BugTracker.
+
+        A BugTracker can be passed in, or the ID of a BugTracker.
+        """
+
+    def queryByBaseURL(base_url):
         """Return one or None BugTrackerAliases by baseurl."""
 
 
