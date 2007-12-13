@@ -144,13 +144,13 @@ Finally, lets also check that translated entries show up as well.
 
 == Links to filtered pages ==
 
-DistroRelease per-language overview page shows different statistics:
+The DistroRelease per-language overview page shows different statistics:
 a count of untranslated messages, messages with new, unreviewed suggestions,
 and a count of messages which had their imported translations changed in
 Launchpad.
 
 We use a helper method to construct complete links from a base URL and
-a relative URL we extract from the page contents.
+a relative URL, which we extract from the page contents.
 
     >>> from urlparse import urljoin
     >>> def get_link_for(base, link):
@@ -168,7 +168,7 @@ Looking at the Spanish language overview page, we can see that there are
     15 15 1 1 1 1
     ...
 
-Template title points to the general translate page:
+The template title points to the general translate page:
 
     # We are not using browser.getLink because there is no unique way to
     # get all of the relevant links, and we don't want to pollute the
@@ -181,9 +181,9 @@ Template title points to the general translate page:
     >>> get_link_for(base_href, unfiltered)
     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
 
-The number of untranslated entries points to the same page, but filtered only
-by untranslated items. When we follow this link, filtering combo box has the
-right filter preselected.
+The number of untranslated entries points to the same page, which now show
+only untranslated items. When we follow this link, the filtering combo box
+has the right filter preselected.
 
     >>> untranslated = all_links[1]
     >>> print extract_text(untranslated)
@@ -196,7 +196,7 @@ right filter preselected.
     ['untranslated']
 
 Similarly, the number of unreviewed entries points to the translation page
-with the 'with new suggestions' filter loaded.
+with the 'with new suggestions' filter selected.
 
     >>> unreviewed = all_links[2]
     >>> print extract_text(unreviewed)
@@ -209,7 +209,7 @@ with the 'with new suggestions' filter loaded.
     ['new_suggestions']
 
 The number of updated entries points to the translation page with the
-'changed in Launchpad' filter loaded.
+'changed in Launchpad' filter selected.
 
     >>> updated = all_links[3]
     >>> print extract_text(updated)
