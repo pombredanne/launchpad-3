@@ -66,8 +66,9 @@ Person action-menu presents a link to 'Activate Personal Package Archive':
 
 This page presents the current PPA-ToS (terms of service) with a
 mandatory checkbox ('accepted') indicating that the user has read and
-accepted the conditions and an optional 'description' text-area. It
-also contains a portlet with all the distroseries and corresponding
+accepted the conditions and an optional 'description' text-area.
+
+It also contains a portlet with all the distroseries and corresponding
 architectures supported for PPA.
 
     >>> print extract_text(

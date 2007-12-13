@@ -1030,10 +1030,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def newArch(self, architecturetag, processorfamily, official, owner,
                 ppa_supported):
         """See IDistroSeries."""
-        dar = DistroArchSeries(architecturetag=architecturetag,
-            processorfamily=processorfamily, official=official,
-            distroseries=self, owner=owner, ppa_supported=ppa_supported)
-        return dar
+        distroarchseries = DistroArchSeries(
+            architecturetag=architecturetag, processorfamily=processorfamily,
+            official=official, distroseries=self, owner=owner,
+            ppa_supported=ppa_supported)
+        return distroarchseries
 
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IDistroSeries."""

@@ -269,23 +269,27 @@ via the 'architectures' property.
     The Hoary Hedgehog Release for hppa (hppa)
     The Hoary Hedgehog Release for i386 (x86) (official, ppa)
 
-There is also another property in DistroSeries which returns only
-DistroArchSeries for which we support PPA building.
+DistroArchSeries for which we support PPA building can be obtained via
+another distroseries method called 'ppa_architectures'.
 
-    >>> mock_ppa_archs = [a.id for a in warty.architectures
-    ...                   if a.ppa_supported is True]
-    >>> actual_ppa_archs = [a.id for a in warty.ppa_architectures]
-    >>> mock_ppa_archs == actual_ppa_archs
-    True
+For testing purpose we can compare the results of a
+manually-calculated set of warty architectures for which we support
+PPA  and the actual value returned from the 'ppa_architecture'
+property.
+
+    >>> expected_ppa_archs = [arch for arch in warty.architectures
+    ...                       if arch.ppa_supported is True]
+    >>> print_architectures(expected_ppa_archs)
+    The Warty Warthog Release for i386 (x86) (official, ppa)
 
     >>> print_architectures(warty.ppa_architectures)
     The Warty Warthog Release for i386 (x86) (official, ppa)
 
-    >>> print_architectures(hoary.ppa_architectures)
-    The Hoary Hedgehog Release for i386 (x86) (official, ppa)
-
 Let's activate ppa support for hoary/hppa and check if
 'ppa_architectures' will include it this time.
+
+    >>> print_architectures(hoary.ppa_architectures)
+    The Hoary Hedgehog Release for i386 (x86) (official, ppa)
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
