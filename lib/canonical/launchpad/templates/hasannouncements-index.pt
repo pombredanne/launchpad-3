@@ -21,7 +21,6 @@
 </p>
 
 <div metal:fill-slot="main">
-<tal:beta-testers-only condition="view/isBetaUser">
 
   <h1>News and announcements</h1>
 
@@ -41,7 +40,6 @@
   <div class="lesser"
        tal:content="structure view/announcement_nav/@@+navigation-links-lower" />
 
-</tal:beta-testers-only>
 </div>
 </body>
 </html>
