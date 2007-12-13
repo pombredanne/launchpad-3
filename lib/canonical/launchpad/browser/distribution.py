@@ -300,14 +300,12 @@ class DistributionOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def announce(self):
         text = 'Make announcement'
-        enabled = self.isBetaUser
         summary = 'Publish an item of news for this project'
-        return Link('+announce', text, summary, enabled=enabled, icon='add')
+        return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
         text = 'Show announcements'
-        enabled = bool(self.context.announcements().count()
-                       and self.isBetaUser)
+        enabled = bool(self.context.announcements().count())
         return Link('+announcements', text, enabled=enabled)
 
     def builds(self):
@@ -546,8 +544,9 @@ class DistributionEditView(LaunchpadEditFormView):
     schema = IDistribution
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
-                   'official_malone', 'enable_bug_expiration',
-                   'official_rosetta', 'official_answers']
+                   'bug_reporting_guidelines', 'official_malone',
+                   'enable_bug_expiration', 'official_rosetta',
+                   'official_answers']
 
     def isAdmin(self):
         return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)

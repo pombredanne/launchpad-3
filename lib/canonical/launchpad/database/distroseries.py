@@ -267,6 +267,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 orderBy=['-datereleased'])
         return list(results)
 
+    @property
+    def bug_reporting_guidelines(self):
+        """See `IBugTarget`."""
+        return self.distribution.bug_reporting_guidelines
+
     def canUploadToPocket(self, pocket):
         """See IDistroSeries."""
         # Allow everything for distroseries in FROZEN state.
