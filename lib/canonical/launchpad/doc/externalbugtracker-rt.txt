@@ -102,8 +102,8 @@ fetched as a batch:
 First, we create some bug watches to test with. Example.com hosts an RT
 instance which has several bugs that we wish to watch:
 
-    >>> from canonical.launchpad.interfaces import (IBugSet,
-    ...     IBugWatchSet, IPersonSet)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IBugWatchSet, IPersonSet)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     print_bugwatches)
 

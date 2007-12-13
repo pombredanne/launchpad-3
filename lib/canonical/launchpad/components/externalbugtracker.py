@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import cgi
 import csv
+import email
 import os.path
 import re
 import socket
@@ -1800,33 +1801,11 @@ class RequestTracker(ExternalBugTracker):
         try:
             opener.open('%s/' % self.baseurl, urllib.urlencode(
                 self.credentials))
-        except Exception, e:
+        except (urrlib2.HTTPError, urllib2.URLError), error:
             raise BugTrackerConnectError('%s/' % self.baseurl,
                 "Unable to authenticate with remote RT service: "
                 "Could not submit login form: " +
-                e.message)
-
-        # Although it's not very elegant, the only way at present to
-        # check for logged-in-ness on an RT instance is to try and
-        # retrieve ticket #1.
-        ticket_url = '%s/%s' % (self.baseurl, self.ticket_url % '1')
-        try:
-            data = opener.open(ticket_url)
-        except urllib2.HTTPError, e:
-            raise BugTrackerConnectError(ticket_url, e.msg)
-
-        # Somewhat annoyingly, RT doesn't use the HTTP header to tell
-        # clients when there's a problem. Instead, it's the second item
-        # of the first line of the response body. Happily, it does use
-        # HTTP response status codes, so if we don't receive a 200 (OK),
-        # we abort with a BugTrackerConnectError.
-        firstline = data.readline().split(' ')
-        if firstline[1] != '200':
-            raise BugTrackerConnectError(ticket_url,
-                "Unable to authenticate with remote RT service: "
-                "Could not retrieve ticket #1.")
-        else:
-            return opener
+                error.message)
 
     def urlopen(self, request, data=None):
         """Return a handle to a remote resource.
@@ -1838,51 +1817,34 @@ class RequestTracker(ExternalBugTracker):
         # cookies that need to be passed around.
         return self._opener.open(request, data)
 
-    def _parseRemoteBug(self, bug_data):
-        """Parse an RT bug representation and return it as a dict.
-
-        If the bug cannot be parsed into a sensible format an
-        UnparseableBugData error will be raised.
-        """
-        lines = bug_data.strip().split("\n")
-        bug_dict = {'id': None, 'status': None,}
-
-        for line in lines:
-            # We ignore lines that aren't in the form key: value
-            try:
-                key, value = line.split(':')
-            except ValueError:
-                continue
-
-            key = key.strip().lower()
-            if key in bug_dict:
-                # In batches of bugs the id field is stored as
-                # ticket/<id>. We strip out the ticket/ part because we
-                # don't need it.
-                if key == 'id':
-                    value = value.replace('ticket/', '')
-                bug_dict[key] = value.strip()
-
-        return bug_dict
-
     def getRemoteBug(self, bug_id):
         """See `ExternalBugTracker`."""
         ticket_url = self.ticket_url % str(bug_id)
-        bug_data = self.urlopen('%s/%s' % (self.baseurl, ticket_url))
+        try:
+            bug_data = self.urlopen('%s/%s' % (self.baseurl, ticket_url))
+        except urllib2.HTTPError, error:
+            raise BugTrackerConnectError(ticket_url, error.message)
 
         # We use the first line of the response to ensure that we've
         # made a successful request.
         firstline = bug_data.readline().strip().split(' ')
         if firstline[1] != '200':
+            # If anything goes wrong we raise a BugTrackerConnectError.
+            # We included in the error message the status code and error
+            # message returned by the server.
             raise BugTrackerConnectError(
-                "Unable to retrieve bug %s: %s" %
-                (str(bug_id), firstline[-1]))
+                "Unable to retrieve bug %s. The remote server returned the "
+                "following error:  %s." %
+                (str(bug_id), " ".join(firstline[-1])))
 
-        bug = self._parseRemoteBug(bug_data.read())
-        if bug['id'] is None:
+        # RT's REST interface returns tickets in RFC822 format, so we
+        # can use the email module to parse them.
+        bug = email.message_from_string(bug_data.read().strip())
+        if bug.get('id') is None:
             return None, None
         else:
-            return int(bug['id']), bug
+            bug_id = bug['id'].replace('ticket/', '')
+            return int(bug_id), bug
 
     def getRemoteBugBatch(self, bug_ids):
         """See `ExternalBugTracker`."""
@@ -1891,16 +1853,23 @@ class RequestTracker(ExternalBugTracker):
         query = "id = " + "OR id = ".join(id_list)
 
         request_params = {'query': query, 'format': 'l'}
-        bug_data = self.urlopen('%s/%s' % (self.baseurl, self.batch_url),
-            urllib.urlencode(request_params))
+        try:
+            bug_data = self.urlopen('%s/%s' % (self.baseurl, self.batch_url),
+                urllib.urlencode(request_params))
+        except urllib2.HTTPError, error:
+            raise BugTrackerConnectError(ticket_url, error.message)
 
         # We use the first line of the response to ensure that we've
         # made a successful request.
         firstline = bug_data.readline().strip().split(' ')
         if firstline[1] != '200':
+            # If anything goes wrong we raise a BugTrackerConnectError.
+            # We included in the error message the status code and error
+            # message returned by the server.
             raise BugTrackerConnectError(
-                "Unable to retrieve bug %s: %s" %
-                (str(bug_id), firstline[-1]))
+                "Unable to retrieve bugs %s. The remote server returned the "
+                "following error:  %s." %
+                (", ".join(bug_ids), " ".join(firstline[-1])))
 
         # Tickets returned in RT multiline format are separated by lines
         # containing only --\n.
@@ -1908,12 +1877,16 @@ class RequestTracker(ExternalBugTracker):
         bugs = {}
         for ticket in tickets:
             ticket = ticket.strip()
-            bug = self._parseRemoteBug(ticket)
+
+            # RT's REST interface returns tickets in RFC822 format, so we
+            # can use the email module to parse them.
+            bug = email.message_from_string(ticket)
 
             # We only bother adding the bug to the bugs dict if we
             # actually have some data worth adding.
-            if bug['id'] is not None:
-                bugs[int(bug['id'])] = bug
+            if bug.get('id') is not None:
+                bug_id = bug['id'].replace('ticket/', '')
+                bugs[int(bug_id)] = bug
 
         return bugs
 
