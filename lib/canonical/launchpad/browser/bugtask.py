@@ -748,12 +748,12 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
             return None
 
         days_to_expiration = self.days_to_expiration
-        if days_to_expiration < 0:
+        if days_to_expiration <= 0:
             # We should always display a positive number to the user,
             # whether we're talking about the past or the future.
             days_to_expiration = -days_to_expiration
-            message = ("This bug report has been marked for expiration, "
-                "since there has been no activity for the last %i days.")
+            message = ("This bug report was marked for expiration %i days "
+                "ago.")
         else:
             message = ("This bug report will be marked for expiration in %i "
                 "days if no further activity occurs.")

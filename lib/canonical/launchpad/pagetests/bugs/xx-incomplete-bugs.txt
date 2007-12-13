@@ -109,7 +109,7 @@ date. We alter the date_last_updated field of bug 11 to demonstrate this.
     >>> login('test@canonical.com')
 
     >>> bug_11 = getUtility(IBugSet).get(11)
-    >>> time_delta = timedelta(days=100)
+    >>> time_delta = timedelta(days=60)
     >>> bug_11.date_last_updated = bug_11.date_last_updated - time_delta
     >>> flush_database_updates()
     >>> logout()
@@ -117,8 +117,7 @@ date. We alter the date_last_updated field of bug 11 to demonstrate this.
     >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bug/11')
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'can-expire'))
-    This bug report has been marked for expiration, since there has been
-    no activity for the last 41 days.
+    This bug report was marked for expiration 1 days ago.
     (find out why)
 
     >>> user_browser.getLink('find out why').url
