@@ -57,7 +57,8 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
         self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
 
-    def assertEmail(self, contents=None, recipients=None, ppa_header='name16'):
+    def assertEmail(self, contents=None, recipients=None,
+                    ppa_header='name16'):
         """Check email last upload notification attributes.
 
         'content' argument can be a list of one or more lines, if passed

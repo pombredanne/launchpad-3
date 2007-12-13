@@ -162,8 +162,9 @@ class UploadProcessor:
             except (KeyboardInterrupt, SystemExit):
                 raise
             except:
-                self.log.error("Unhandled exception from processing an upload",
-                               exc_info=True)
+                self.log.error(
+                    "Unhandled exception from processing an upload",
+                    exc_info=True)
                 some_failed = True
 
         if some_failed:
@@ -215,7 +216,8 @@ class UploadProcessor:
             relative_path = dirpath[len(upload_path) + 1:]
             for filename in filenames:
                 if filename.endswith(".changes"):
-                    changes_files.append(os.path.join(relative_path, filename))
+                    changes_files.append(
+                        os.path.join(relative_path, filename))
         return self.orderFilenames(changes_files)
 
     def processChangesFile(self, upload_path, changes_file):
@@ -241,8 +243,8 @@ class UploadProcessor:
         relative_path = os.path.dirname(changes_file)
         error = None
         try:
-            distribution, suite_name, archive = self.getDistributionAndArchive(
-                relative_path)
+            (distribution, suite_name,
+             archive) = self.getDistributionAndArchive(relative_path)
         except UploadPathError, e:
             # pick some defaults to create the NascentUploap() object.
             # We will be rejecting the upload so it doesn matter much.
@@ -256,15 +258,14 @@ class UploadProcessor:
             distribution = getUtility(IDistributionSet)['ubuntu']
             suite_name = None
             archive = distribution.main_archive
+            # This is fine because the transaction will be aborted when
+            # the rejection happens.
+            archive.purpose = ArchivePurpose.PPA
             # XXX cprov 20071212: overriding primary-archive is not exactly
             # fine because it can confuse the code that sends rejection
             # messages if it relies only on archive.purpose (which should be
             # enough). On the other hand if we set an arbitrary owner it
             # will break nascentupload ACL calculations.
-
-            # This is fine because the transaction will be aborted when
-            # the rejection happens.
-            archive.purpose = ArchivePurpose.PPA
             error = str(e)
 
         self.log.debug("Finding fresh policy")
