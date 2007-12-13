@@ -9,11 +9,15 @@ __all__ = [
     'SectionSchema',]
 
 import os
-from ConfigParser import SafeConfigParser
+from ConfigParser import SafeConfigParser, NoSectionError
 
 from zope.interface import implements
 
 from canonical.lazr.interfaces import ISectionSchema, IConfigSchema
+
+
+class NoCategoryError(LookupError):
+    """No SchemaSections belong to the category name."""
 
 
 class ConfigSchema(object):
@@ -24,16 +28,15 @@ class ConfigSchema(object):
         """See `IConfigSchema`."""
         config = SafeConfigParser()
         config.readfp(open(filename))
-        self._section_schemas = self._parseSectionSchemas(config)
+        self._setSectionSchemasAndCategoriesNames(config)
         self.filename = filename
         self.name = os.path.basename(filename)
 
-    def _parseSectionSchemas(self, config):
-        """Return a list of SectionSchemas from the config."""
-        section_schemas = []
-        # Template sections define default options for categories. They are
-        # copied to each SectionSchema that belong to the category.        
+    def _setSectionSchemasAndCategoriesNames(self, config):
+        """Set the SectionSchemas and category_names from the config."""
+        section_schemas = {}
         templates = {}
+        category_names = set()
         for name in config.sections():
             (section_name, category_name,
              is_template, is_optional) = self._parseSectionName(name)
@@ -42,9 +45,12 @@ class ConfigSchema(object):
             if is_template:
                 templates[category_name] = options
             else:
-                section_schemas.append(
-                    SectionSchema(section_name, options, is_optional))
-        return section_schemas
+                section_schemas[section_name] = SectionSchema(
+                    section_name, options, is_optional)
+            if category_name is not None:
+                category_names.add(category_name)
+        self._category_name = list(category_names)
+        self._section_schemas = section_schemas
 
     def _parseSectionName(self, name):
         """Return a 4-tuple of names and kinds embedded in the name.
@@ -78,20 +84,32 @@ class ConfigSchema(object):
     @property
     def category_names(self):
         """See `IConfigSchema`."""
+        return self._category_name
 
     def __iter__(self):
         """See `IConfigSchema`."""
-        for section_schema in self._section_schemas:
-            yield section_schema
+        return self._section_schemas.itervalues()
 
     def __contains__(self, name):
         """See `IConfigSchema`."""
+        return name in self._section_schemas.keys()
 
     def __getitem__(self, name):
         """See `IConfigSchema`."""
+        try:
+            return self._section_schemas[name]
+        except KeyError:
+            raise NoSectionError, name
 
     def getByCategory(self, name):
         """See `IConfigSchema`."""
+        section_schemas = []
+        for key in self._section_schemas:
+            if key.startswith(name):
+                section_schemas.append(self._section_schemas[key])
+        if len(section_schemas) == 0:
+            raise NoCategoryError, name
+        return section_schemas
 
 
 class SectionSchema(object):
@@ -102,3 +120,16 @@ class SectionSchema(object):
         """See `ISectionSchema`"""
         self.name = name
         self._options = options
+        self.optional = is_optional
+
+    def __iter__(self):
+        """See `ISectionSchema`"""
+        return self._options.iterkeys()
+
+    def __contains__(self, name):
+        """See `ISectionSchema`"""
+        return name in self._options.keys()
+
+    def __getitem__(self, key):
+        """See `ISectionSchema`"""
+        return self._options[key]
