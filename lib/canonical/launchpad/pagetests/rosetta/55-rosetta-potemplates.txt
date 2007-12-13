@@ -150,7 +150,7 @@ the right filter preselected.
     ['untranslated']
 
 Similarly, the number of unreviewed entries points to the translation page
-with the 'with new suggestions' filter loaded.
+with the 'with new suggestions' filter selected.
 
     >>> unreviewed = all_links[2]
     >>> print extract_text(unreviewed)
@@ -163,7 +163,7 @@ with the 'with new suggestions' filter loaded.
     ['new_suggestions']
 
 The number of updated entries points to the translation page with the
-'changed in Launchpad' filter loaded.
+'changed in Launchpad' filter selected.
 
     >>> updated = all_links[3]
     >>> print extract_text(updated)
