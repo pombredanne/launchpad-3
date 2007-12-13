@@ -61,19 +61,15 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
                     ppa_header='name16'):
         """Check email last upload notification attributes.
 
-        'content' argument can be a list of one or more lines, if passed
-        they will be checked against the lines in Subject + Body.
-
-        'recipients' argument can be a list of recipients lines, it defaults
-        to 'Foo Bar <foo.bar@canonical.com>' (name16 account) and should match
-        the email To: header content.
-
-        'ppa_header' arguments is the content of the 'X-Launchpad-PPA' header,
-        it defaults to 'name16' and should be explicitly set to None for
-        non-PPA or rejection notifications.
+        :param: contents: can be a list of one or more lines, if passed
+            they will be checked against the lines in Subject + Body.
+        :param: recipients: can be a list of recipients lines, it defaults
+            to 'Foo Bar <foo.bar@canonical.com>' (name16 account) and
+            should match the email To: header content.
+        :param: ppa_header: is the content of the 'X-Launchpad-PPA' header,
+            it defaults to 'name16' and should be explicitly set to None for
+            non-PPA or rejection notifications.
         """
-        # 'name16' it the owner of the PPA used in this test, therefore it's
-        # always notified, a 'default_recipient'.
         if not recipients:
             recipients = [self.name16_recipient]
 
