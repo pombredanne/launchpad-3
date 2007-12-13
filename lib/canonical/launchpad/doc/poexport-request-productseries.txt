@@ -38,8 +38,11 @@ Now we request that the queue be processed.
     ...     def commit(self):
     ...         pass
 
+    >>> import logging
     >>> from canonical.launchpad.scripts.po_export_queue import process_queue
-    >>> process_queue(MockTransactionManager(), MockLogger())
+    >>> logger = MockLogger()
+    >>> logger.setLevel(logging.DEBUG)
+    >>> process_queue(MockTransactionManager(), logger)
     log> Exporting objects for ..., related to template evolution-2.2 in
     Evolution trunk
     log> Exporting objects for ..., related to template evolution-2.2-test in

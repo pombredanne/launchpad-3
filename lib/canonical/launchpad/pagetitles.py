@@ -747,6 +747,9 @@ announcement_delete = 'Permanently delete this announcement'
 
 announcement_edit = 'Modify this announcement'
 
+def announcement_index(context, view):
+    return '%s announcement' % context.target.displayname
+
 announcement_publish = 'Publish this announcement'
 
 announcement_retarget = 'Move this announcement to a different project'
@@ -1044,6 +1047,8 @@ registry_review = 'Review Launchpad items'
 related_bounties = ContextDisplayName('Bounties for %s')
 
 remotebug_index = ContextTitle('%s')
+
+root_featuredprojects = 'Manage featured projects in Launchpad'
 
 root_index = 'Launchpad'
 

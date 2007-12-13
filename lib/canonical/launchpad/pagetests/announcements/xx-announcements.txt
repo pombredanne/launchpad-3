@@ -220,6 +220,34 @@ And finally for RedHat, an IDistribution, with immediate announcement:
     True
 
 
+== Showing announcements ==
+
+Announcements have their own simple page where they are displayed. This
+page is visible to anonymous users when the announcement is published.
+
+We will use the privileged user to get the link URL to the page that
+shows the Kubuntu announcement, then try to open the page with the
+anon_browser.
+
+   >>> priv_browser.open('http://launchpad.dev/kubuntu/+announcements')
+   >>> priv_browser.getLink('Permalink').click()
+   >>> link_url = priv_browser.url
+   >>> anon_browser.open(link_url)
+   Traceback (most recent call last):
+   ...
+   Unauthorized: ...
+
+We will show that the anonymous user can see an announcement that was
+published:
+
+   >>> priv_browser.open('http://launchpad.dev/apache/+announcements')
+   >>> priv_browser.getLink('Permalink').click()
+   >>> link_url = priv_browser.url
+   >>> anon_browser.open(link_url)
+   >>> print anon_browser.title
+   Derby announcement
+
+
 == Listings ==
 
 There is a listing page, +announcements, for each pillar that has
