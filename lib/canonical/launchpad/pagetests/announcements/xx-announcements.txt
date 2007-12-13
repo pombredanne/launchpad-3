@@ -26,37 +26,6 @@ news feed.
    ...         return ''
    ...     return extract_text(announcements)
 
-== Beta testers only ==
-
-For the purposes of these tests, during the beta tests, sabdfl and
-kamion need to be beta testers.
-
-    >>> admin_browser.open('http://launchpad.dev/~launchpad-beta-testers')
-    >>> admin_browser.getLink('Add member').click()
-    >>> admin_browser.getControl('New member').value = ('sabdfl')
-    >>> admin_browser.getControl('Add Member').click()
-    >>> admin_browser.getControl('New member').value = ('kamion')
-    >>> admin_browser.getControl('Add Member').click()
-
-Also, anon_browser can't be truly anonymous, it must be a logged in user
-who has nothing to do with any of these pillars or announcements but is
-at least in the beta team.
-
-    >>> admin_browser.getControl('New member').value = ('no-priv')
-    >>> admin_browser.getControl('Add Member').click()
-    >>> anon_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
-
-And finally, because of a quirk of the data where Ubuntu Team has LP
-Beta Testers as a member, and because we just added
-no-priv@canonical.com to LP Beta Testers, and because the Ubuntu Team is
-the product owner of Tomcat which is where we create some announcements,
-no-priv turns out to have some-priv in weird spots. We will fix that
-temporarily here:
-
-   >>> admin_browser.open(
-   ...    'http://launchpad.dev/~ubuntu-team/+member/launchpad-beta-testers')
-   >>> admin_browser.getControl('Deactivate').click()
-
 == Making an announcement ==
 
 If you are not logged in, you don't see the link to make an
@@ -240,10 +209,8 @@ anon_browser.
 We will show that the anonymous user can see an announcement that was
 published:
 
-   >>> priv_browser.open('http://launchpad.dev/apache/+announcements')
-   >>> priv_browser.getLink('Permalink').click()
-   >>> link_url = priv_browser.url
-   >>> anon_browser.open(link_url)
+   >>> anon_browser.open('http://launchpad.dev/apache/+announcements')
+   >>> anon_browser.getLink('Permalink').click()
    >>> print anon_browser.title
    Derby announcement
 

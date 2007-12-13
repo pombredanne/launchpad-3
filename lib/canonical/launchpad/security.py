@@ -694,14 +694,22 @@ class ViewAnnouncement(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IAnnouncement
 
+    def checkUnauthenticated(self):
+        """Let anonymous users see published announcements."""
+        if self.obj.published:
+            return True
+        return False
+
     def checkAuthenticated(self, user):
         """Keep project news invisible to end-users unless they are project
         admins, until the announcements are published."""
 
+        # Every user can view published announcements.
+        if self.obj.published:
+            return True
+
+        # Project drivers can view any project announcements.
         assert self.obj.target
-        if not user.inTeam(
-            getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
-            return False
         if self.obj.target.drivers:
             for driver in self.obj.target.drivers:
                 if user.inTeam(driver):
@@ -709,12 +717,9 @@ class ViewAnnouncement(AuthorizationBase):
         if user.inTeam(self.obj.target.owner):
             return True
 
+        # Launchpad admins can view any announcement.
         admins = getUtility(ILaunchpadCelebrities).admin
-        if user.inTeam(admins):
-            return True
-
-        # Every user can view published announcements.
-        return self.obj.published
+        return user.inTeam(admins)
 
 
 class EditAnnouncement(AuthorizationBase):
@@ -725,9 +730,6 @@ class EditAnnouncement(AuthorizationBase):
         """Allow the project owner and drivers to edit any project news."""
 
         assert self.obj.target
-        if not user.inTeam(
-            getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
-            return False
         if self.obj.target.drivers:
             for driver in self.obj.target.drivers:
                 if user.inTeam(driver):
