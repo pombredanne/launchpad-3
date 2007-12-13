@@ -153,8 +153,8 @@ Uploading the same package again will result in a rejection email:
   >>> notification['To']
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
 
-Ensure that upload notifications for primary archive do not contain
-the PPA header.
+Upload notifications from primary archive do not contain the
+'X-Launchpad-PPA' header, since it doesn't apply to this context.
 
   >>> 'X-Launchpad-PPA' in notification.keys()
   False
@@ -188,10 +188,14 @@ Let's perform and PPA upload to verify the PPA header presence.
   >>> notification['To']
   'Foo Bar <foo.bar@canonical.com>'
 
+On PPA upload notifications the 'X-Launchpad-PPA' is present and
+contains the target PPA owner account name.
+
   >>> notification['X-Launchpad-PPA']
   'name16'
 
-See further tests upon PPA upload notifications on archiveuploader/ftests/test_ppauploadprocessor.
+See further tests upon PPA upload notifications on
+archiveuploader/ftests/test_ppauploadprocessor.
 
 NEW binary upload to RELEASE pocket via 'sync' policy (we need to
 override sync policy to allow binary uploads):
