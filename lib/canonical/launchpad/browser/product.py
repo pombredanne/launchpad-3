@@ -712,6 +712,13 @@ class ProductDownloadFileMixin:
         return "%s/+download/%s" % (canonical_url(release),
                                     file_.filename)
 
+    def md5URL(self, file_, release=None):
+        """Create a URL for the MD5 digest."""
+        if release is None:
+            release = self.context
+        return "%s/+download/%s/+md5" % (canonical_url(release),
+                                         file_.filename)
+
     def processDeleteFiles(self):
         """If the 'delete_files' button was pressed, process the deletions."""
         del_count = None

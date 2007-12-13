@@ -50,9 +50,8 @@
             <tr>
               <th tal:condition="has_edit" width="10%">Delete</th>
               <th>Download</th>
-              <th width="40%">Checksums</th>
               <th>Release</th>
-              <th>Description</th>
+              <th width="50%">Description</th>
             </tr>
           </thead>
           <tbody>
@@ -69,16 +68,13 @@
                   <img alt="download icon" src="/@@/download" />
                   <a tal:attributes="href python:view.fileURL(file.libraryfile, release)"
                        tal:content="file/libraryfile/filename">filename</a>
+                  (<a tal:attributes="href python:view.md5URL(file.libraryfile, release)">md5</a>
                   <tal:signature condition="file/signature">
                     <br />
                     <img alt="download icon" src="/@@/download" />
                     <a tal:attributes="href python:view.fileURL(file.signature,release)"
                        tal:content="file/signature/filename">signature</a>
-                  </tal:signature>
-                </td>
-                <td>
-                  <div tal:content="string: SHA-1: ${file/libraryfile/content/sha1}">SHA-1</div>
-                  <div tal:content="string: MD5: ${file/libraryfile/content/md5}">MD5</div>
+                  </tal:signature>)
                 </td>
                 <td>
                    <tal:version content="release/version">version</tal:version>
@@ -112,14 +108,16 @@
         value="Delete Files" />
 
   </form>
+  <tal:hasdownloadfiles condition="view/has_download_files">
   <p>
     If a file has a signature associated with it, download both the file and
     the signature file.  You can then verify the file by
     doing the following:
   </p>
   <p>
-    <code> % gpg --verify &lt;filename.sig&gt;</code>
+    <code> % gpg --verify &lt;filename.asc&gt;</code>
   </p>
+  </tal:hasdownloadfiles>
 </div>
 </body>
 </html>
