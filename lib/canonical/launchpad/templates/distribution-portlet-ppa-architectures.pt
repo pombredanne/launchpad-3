@@ -12,9 +12,9 @@
       <tal:per_series repeat="series serieses">
         <li tal:condition="series/active">
           <a tal:attributes="href series/fmt:url">
-             <tal:version replace="series/version"
-             /> "<tal:codename replace="series/displayname" />"</a
-          > - <tal:status replace="series/status/name/fmt:lower" />
+             <tal:version replace="series/version" />
+             "<tal:codename replace="series/displayname" />"</a>
+             - <tal:status replace="series/status/name/fmt:lower" />
 
           <ul class="architecture" tal:define="archs series/ppa_architectures"
               tal:condition="archs">

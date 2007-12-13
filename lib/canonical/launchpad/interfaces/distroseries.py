@@ -162,7 +162,8 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     architecturecount = Attribute("The number of architectures in this "
         "series.")
     architectures = Attribute("All architectures supported in this series.")
-    ppa_architectures = Attribute("PPA architectures supported in this series.")
+    ppa_architectures = Attribute(
+        "PPA architectures supported in this series.")
     nominatedarchindep = Attribute(
         "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")

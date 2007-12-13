@@ -30,20 +30,21 @@ from canonical.buildmaster.buildergroup import BuilderGroup
 
 def determineArchitecturesToBuild(pubrec, legal_archserieses,
                                   distroseries, pas_verify=None):
-    """Return the `DistroArchSeries` for which this publication should build.
+    """Return a list of architectures for which this publication should build.
 
     This function answers the question: given a publication, what
     architectures should we build it for? It takes a set of legal
     distroarchserieses and the distribution series for which we are
-    building, and optionally a BuildDaemonPackagesArchSpecific (
-    informally known as 'P-a-s') instance.
+    building, and optionally a BuildDaemonPackagesArchSpecific
+    (informally known as 'P-a-s') instance.
 
     The P-a-s component contains a list of forbidden architectures for
-    each source, which should respected regardless of which architectures
-    have been requested in the source package metadata, for instance:
+    each source package, which should be respected regardless of which
+    architectures have been requested in the source package metadata,
+    for instance:
 
       * 'aboot' should only build on powerpc
-      * 'mozilla-firefox' should not build for sparc
+      * 'mozilla-firefox' should not build on sparc
 
     This black/white list is an optimization to suppress temporarily
     known-failures build attempts and thus saving build-farm time.
@@ -52,19 +53,27 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
     subsystem (`DistroArchSeries`.ppa_supported flag) and P-a-s is turned
     off to give the users the chance to test their fixes for upstream
     problems.
+
+    :param: pubrec: `ISourcePackagePublishingHistory` representing the
+        source publication.
+    :param: legal_archserieses: a list of all initialized `DistroArchSeries`
+        to be considered.
+    :param: distroseries: the context `DistroSeries`.
+    :param: pas_verify: optional P-a-s verifier object/component.
+    :returns: a list of `DistroArchSeries` for which the source publication in
+        question should be built.
     """
     hint_string = pubrec.sourcepackagerelease.architecturehintlist
 
     assert hint_string, 'Missing arch_hint_list'
 
-    # Exclude non-PPA architectures and ignore P-a-s for PPA candidates.
+    # For PPA publications wxclude non-PPA architectures and ignore P-a-s.
     if pubrec.archive.purpose == ArchivePurpose.PPA:
         legal_archserieses = [
-            das for das in legal_archserieses if das.ppa_supported]
+            arch for arch in legal_archserieses if arch.ppa_supported]
         pas_verify = None
 
-    legal_arch_tags = set(arch.architecturetag
-                          for arch in legal_archserieses)
+    legal_arch_tags = set(arch.architecturetag for arch in legal_archserieses)
 
     if hint_string == 'any':
         package_tags = legal_arch_tags
