@@ -28,27 +28,6 @@ from canonical.testing import LaunchpadScriptLayer, reset_logging
 from canonical.launchpad.webapp import errorlog
 
 
-def _get_last_oops_filename(time):
-    """Find the filename for the OOPS logged at 'time'."""
-    utility = errorlog.globalErrorUtility
-    error_dir = utility.errordir(time)
-    oops_id = utility._findLastOopsId(error_dir)
-    second_in_day = time.hour * 3600 + time.minute * 60 + time.second
-    oops_prefix = config.launchpad.errorreports.oops_prefix
-    return os.path.join(
-        error_dir, '%05d.%s%s' % (second_in_day, oops_prefix, oops_id))
-
-
-def get_last_oops(time):
-    """Return the OOPS report logged at the given time."""
-    oops_filename = _get_last_oops_filename(time)
-    oops_report = open(oops_filename, 'r')
-    try:
-        return errorlog.ErrorReport.read(oops_report)
-    finally:
-        oops_report.close()
-
-
 class FakeBranchStatusClient:
 
     def __init__(self, branch_queues=None):
@@ -412,7 +391,7 @@ class TestPullerMaster(TrialTestCase):
         now = datetime.now(pytz.timezone('UTC'))
         fail = makeFailure(RuntimeError, 'error message')
         self.eventHandler.unexpectedError(fail, now)
-        oops = get_last_oops(now)
+        oops = errorlog.globalErrorUtility.getOopsReport(now)
         self.assertEqual(fail.getTraceback(), oops.tb_text)
         self.assertEqual('error message', oops.value)
         self.assertEqual('RuntimeError', oops.type)
@@ -509,7 +488,7 @@ class TestPullerMasterSpawning(TrialTestCase):
         # set of available prefixes, even if the worker failed.
         available_oops_prefixes = set(['foo'])
         deferred = self.eventHandler.run(available_oops_prefixes)
-        # Fake a successful run.
+        # Fake a failed run.
         try:
             raise RuntimeError("Spurious error")
         except RuntimeError:

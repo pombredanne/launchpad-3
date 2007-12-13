@@ -217,6 +217,24 @@ class ErrorReportingUtility:
                 lastid = int(oopsid)
         return lastid
 
+    def _getLastOopsFilename(self, time):
+        """Find the filename for the OOPS logged at 'time'."""
+        prefix = config.launchpad.errorreports.oops_prefix
+        error_dir = self.errordir(time)
+        oops_id = self._findLastOopsId(error_dir)
+        second_in_day = time.hour * 3600 + time.minute * 60 + time.second
+        return os.path.join(
+            error_dir, '%05d.%s%s' % (second_in_day, prefix, oops_id))
+
+    def getOopsReport(self, time):
+        """Return the contents of the OOPS report logged at 'time'."""
+        oops_filename = self._getLastOopsFilename(time)
+        oops_report = open(oops_filename, 'r')
+        try:
+            return ErrorReport.read(oops_report)
+        finally:
+            oops_report.close()
+
     def errordir(self, now=None):
         """Find the directory to write error reports to.
 
