@@ -10,6 +10,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests.harness import login, logout, ANONYMOUS
 from canonical.launchpad.interfaces import IBranchSet, IProductSet
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.vocabularies.dbobjects import (
     BranchRestrictedOnProductVocabulary, BranchVocabulary)
 from canonical.testing import LaunchpadFunctionalLayer
@@ -20,6 +21,7 @@ class BranchVocabTestCase(TestCase):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        # Set up the anonymous security interaction.
         login(ANONYMOUS)
 
     def tearDown(self):
@@ -27,16 +29,17 @@ class BranchVocabTestCase(TestCase):
 
 
 class TestBranchVocabulary(BranchVocabTestCase):
-    """Test that the BranchVocabulary behavies as expected."""
+    """Test that the BranchVocabulary behaves as expected."""
 
     def setUp(self):
         BranchVocabTestCase.setUp(self)
         self.vocab = BranchVocabulary(context=None)
 
     def test_emptySearch(self):
-        """An empty search should return an empty query."""
-        query = self.vocab._search('')
-        self.assertEqual('', query, "Expected empty query and got %r" % query)
+        """An empty search should return an empty query string."""
+        query = self.vocab._constructNaiveQueryString('')
+        self.assertEqual(
+            '', query, "Expected empty query string and got %r" % query)
 
     def test_mainBranches(self):
         """Return branches that match the string 'main'."""
@@ -65,28 +68,35 @@ class TestBranchVocabulary(BranchVocabTestCase):
 
     def test_vcsImportsBranches(self):
         """Searches also match the registrant name."""
-        results = self.vocab.search('vcs-imports')
+        results = self.vocab.search('spiv')
         expected = [
-            u'~vcs-imports/evolution/import',
-            u'~vcs-imports/evolution/main',
-            u'~vcs-imports/gnome-terminal/import']
+            u'~spiv/+junk/feature',
+            u'~spiv/+junk/feature2',
+            u'~spiv/+junk/trunk']
         branch_names = sorted([branch.unique_name for branch in results])
         self.assertEqual(expected, branch_names)
 
-    def test_branchesThatHaveB(self):
-        """Searches match the branch unique name or the url."""
-        results = self.vocab.search('b')
 
-        built_strings = ['%s %s' % (branch.unique_name, branch.url)
-                         for branch in results]
+class RestrictedBranchVocabBase(BranchVocabTestCase):
+    """Base class for the two ways of restricting a vocabulary."""
 
-        self.assertTrue(
-            len(built_strings) > 0, 'There are not any branches that match.')
-        for mash_up in built_strings:
-            self.assertTrue('b' in mash_up, "%r doesn't have a b" % mash_up)
+    def _createBranches(self):
+        factory = LaunchpadObjectFactory()
+        test_product = factory.makeProduct(name='widget')
+        other_product = factory.makeProduct(name='sprocket')
+        person = factory.makePerson(name='scotty')
+        factory.makeBranch(
+            owner=person, product=test_product, name='main')
+        factory.makeBranch(
+            owner=person, product=test_product, name='mountain')
+        factory.makeBranch(
+            owner=person, product=other_product, name='main')
+        person = factory.makePerson(name='spotty')
+        factory.makeBranch(
+            owner=person, product=test_product, name='hill')
 
 
-class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
+class TestRestrictedBranchVocabularyOnProduct(RestrictedBranchVocabBase):
     """Test the BranchRestrictedOnProductVocabulary behaves as expected.
 
     When a BranchRestrictedOnProductVocabulary is used with a product the
@@ -95,32 +105,39 @@ class TestRestrictedBranchVocabularyOnProduct(BranchVocabTestCase):
     """
 
     def setUp(self):
-        BranchVocabTestCase.setUp(self)
-        self.product = getUtility(IProductSet).getByName('gnome-terminal')
-        self.vocab = BranchRestrictedOnProductVocabulary(context=self.product)
+        RestrictedBranchVocabBase.setUp(self)
+        self._createBranches()
+        self.vocab = BranchRestrictedOnProductVocabulary(
+            context=getUtility(IProductSet).getByName('widget'))
 
     def test_mainBranches(self):
-        """Check the main branches for gnome-terminal."""
+        """Look for widget's main branch.
+
+        The result set should not show ~scotty/sprocket/main.
+        """
         results = self.vocab.search('main')
         expected = [
-            u'~name12/gnome-terminal/main',
+            u'~scotty/widget/main',
             ]
         branch_names = sorted([branch.unique_name for branch in results])
         self.assertEqual(expected, branch_names)
 
-    def test_orBranches(self):
-        """Look for branches for gnome-terminal that have the string 'or'."""
-        results = self.vocab.search('or')
+    def test_ownersBranches(self):
+        """Look for branches owned by scotty.
 
-        built_strings = ['%s %s' % (branch.unique_name, branch.url)
-                         for branch in results]
-        self.assertTrue(
-            len(built_strings) > 0, 'There are not any branches that match.')
-        for mash_up in built_strings:
-            self.assertTrue('or' in mash_up, "%r doesn't have 'or'" % mash_up)
+        The result set should not show ~scotty/sprocket/main.
+        """
+        results = self.vocab.search('scotty')
+
+        expected = [
+            u'~scotty/widget/main',
+            u'~scotty/widget/mountain',
+            ]
+        branch_names = sorted([branch.unique_name for branch in results])
+        self.assertEqual(expected, branch_names)
 
 
-class TestRestrictedBranchVocabularyOnBranch(BranchVocabTestCase):
+class TestRestrictedBranchVocabularyOnBranch(RestrictedBranchVocabBase):
     """Test the BranchRestrictedOnProductVocabulary behaves as expected.
 
     When a BranchRestrictedOnProductVocabulary is used with a branch the
@@ -129,31 +146,37 @@ class TestRestrictedBranchVocabularyOnBranch(BranchVocabTestCase):
     """
 
     def setUp(self):
-        BranchVocabTestCase.setUp(self)
-        self.branch = getUtility(IBranchSet).getByUniqueName(
-            '~name12/gnome-terminal/main')
-        self.vocab = BranchRestrictedOnProductVocabulary(context=self.branch)
+        RestrictedBranchVocabBase.setUp(self)
+        self._createBranches()
+        self.vocab = BranchRestrictedOnProductVocabulary(
+            context=getUtility(IBranchSet).getByUniqueName(
+                    '~spotty/widget/hill'))
 
     def test_mainBranches(self):
-        """Check the main branches for gnome-terminal."""
+        """Look for widget's main branch.
+
+        The result set should not show ~scotty/sprocket/main.
+        """
         results = self.vocab.search('main')
         expected = [
-            u'~name12/gnome-terminal/main',
+            u'~scotty/widget/main',
             ]
         branch_names = sorted([branch.unique_name for branch in results])
         self.assertEqual(expected, branch_names)
 
-    def test_orBranches(self):
-        """Look for branches for gnome-terminal that have the string 'or'."""
-        results = self.vocab.search('or')
+    def test_ownersBranches(self):
+        """Look for branches owned by scotty.
 
-        built_strings = ['%s %s' % (branch.unique_name, branch.url)
-                         for branch in results]
+        The result set should not show ~scotty/sprocket/main.
+        """
+        results = self.vocab.search('scotty')
 
-        self.assertTrue(
-            len(built_strings) > 0, 'There are not any branches that match.')
-        for mash_up in built_strings:
-            self.assertTrue('or' in mash_up, "%r doesn't have 'or'" % mash_up)
+        expected = [
+            u'~scotty/widget/main',
+            u'~scotty/widget/mountain',
+            ]
+        branch_names = sorted([branch.unique_name for branch in results])
+        self.assertEqual(expected, branch_names)
 
 
 def test_suite():

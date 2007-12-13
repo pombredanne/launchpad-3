@@ -247,7 +247,7 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
         returned.
         """
         sql_query = BranchSet()._generateBranchClause(
-            self._search(quote_like(query)),
+            self._constructNaiveQueryString(quote_like(query)),
             visible_by_user=getUtility(ILaunchBag).user)
         return Branch.select(sql_query, orderBy=self._orderBy)
 
@@ -259,7 +259,7 @@ class BranchVocabulary(BranchVocabularyBase):
     name of the registrant of the branches is checked for the entered
     value.
     """
-    def _search(self, quoted_query):
+    def _constructNaiveQueryString(self, quoted_query):
         """Return the naive branch where clause based on the query."""
         return self._generalQuery(quoted_query)
 
@@ -278,7 +278,7 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
         else:
             return 'Branch.product = %s' % quote(product)
 
-    def _search(self, quoted_query):
+    def _constructNaiveQueryString(self, quoted_query):
         """Return the naive branch where clause based on the query."""
         if IProduct.providedBy(self.context):
             restrict_sql = self._restrictToProduct(self.context)
