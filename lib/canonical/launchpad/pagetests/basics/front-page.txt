@@ -38,7 +38,6 @@ and lists of featured projects and marketing material.
   Featured projects
   ...
   Ubuntu
-  ...
 
   >>> for tag in find_tags_by_class(browser.contents, 'three column left'):
   ...     print extract_text(tag.renderContents())

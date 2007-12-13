@@ -1,9 +1,9 @@
 = Email Notifications for Branches =
 
 Only subscribers get email notifications.  If the owner/author of the
-branch want to receive emails, then they need to subscribe to the
+branch wants to receive emails, then they need to subscribe to the
 branch.  There is one specific case where the owner of the branch
-receives emails without being subscribed, and that is if some of the
+receives emails without being subscribed, and that is when the
 branch details were changed by someone who is not a member of the owner
 team.
 

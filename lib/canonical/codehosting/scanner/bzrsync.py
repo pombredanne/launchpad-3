@@ -12,7 +12,6 @@ __all__ = [
 import logging
 from datetime import datetime, timedelta
 from StringIO import StringIO
-import sys
 import urlparse
 
 import pytz
@@ -30,9 +29,10 @@ from canonical.launchpad.interfaces import (
     IRevisionSet, NotFoundError)
 from canonical.launchpad.mailnotification import (
     send_branch_revision_notifications)
-from canonical.launchpad.webapp import canonical_url, errorlog
 
 UTC = pytz.timezone('UTC')
+# Use at most the first 100 characters of the commit message.
+SUBJECT_COMMIT_MESSAGE_LENGTH = 100
 
 
 class BadLineInBugsProperty(Exception):
@@ -484,8 +484,9 @@ class BzrSync:
                         first_line = 'no commit message given'
                     else:
                         first_line = message_lines[0]
-                        if len(first_line) > 100:
-                            first_line = first_line[:97] + '...'
+                        if len(first_line) > SUBJECT_COMMIT_MESSAGE_LENGTH:
+                            offset = SUBJECT_COMMIT_MESSAGE_LENGTH - 3
+                            first_line = first_line[:offset] + '...'
                     subject = '[Branch %s] Rev %s: %s' % (
                         self.db_branch.unique_name, sequence, first_line)
                     self.pending_emails.append(

@@ -84,17 +84,45 @@ A notice is displayed on all bugs that can expire to state that
 additional action is required to confirm the bug.
 
 Jokosher uses Launchpad to track bugs, so a notice is displayed
-stating that the bug report can expire.
+stating that the bug report will be marked for expiration.
 
     >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bug/11')
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'can-expire'))
-    This bug report will expire in 59 days if no further activity occurs.
+    This bug report will be marked for expiration in 59 days if no further
+    activity occurs.
     (find out why)
 
     >>> user_browser.getLink('find out why').url
     'https://help.launchpad.net/BugStatuses'
 
+If the time by which a bug should have been expired has passed but the
+bug has not yet been expired, a different message will be displayed,
+detailing the amount of time that has passed since the bug's expiration
+date. We alter the date_last_updated field of bug 11 to demonstrate this.
+
+    >>> from datetime import timedelta
+    >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> login('test@canonical.com')
+
+    >>> bug_11 = getUtility(IBugSet).get(11)
+    >>> time_delta = timedelta(days=100)
+    >>> bug_11.date_last_updated = bug_11.date_last_updated - time_delta
+    >>> flush_database_updates()
+    >>> logout()
+
+    >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bug/11')
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'can-expire'))
+    This bug report has been marked for expiration, since there has been
+    no activity for the last 41 days.
+    (find out why)
+
+    >>> user_browser.getLink('find out why').url
+    'https://help.launchpad.net/BugStatuses'
 
 == The expirable bug search ==
 
