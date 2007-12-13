@@ -659,6 +659,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         branch_id = store._createBranchInteraction(
             'salgado', 'landscape-developers', 'landscape',
             'some-branch')
+        self.assertTrue(getUtility(IBranchSet).get(branch_id).private)
 
         cur = cursor()
         cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
@@ -674,18 +675,24 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         # After successfully mirroring a branch, next_mirror_time should be
         # set to NULL.
 
+        # An arbitrary hosted branch.
+        hosted_branch_id = 25
+
+        # The user id of a person who can see the hosted branch.
+        user_id = 1
+
         # Request that 25 (a hosted branch) be mirrored. This sets
         # next_mirror_time.
         storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(1, 25)
+        storage._requestMirrorInteraction(user_id, hosted_branch_id)
 
         # Simulate successfully mirroring branch 25
         storage = DatabaseBranchDetailsStorage(None)
         cur = cursor()
-        storage._startMirroringInteraction(25)
-        storage._mirrorCompleteInteraction(25, 'rev-1')
+        storage._startMirroringInteraction(hosted_branch_id)
+        storage._mirrorCompleteInteraction(hosted_branch_id, 'rev-1')
 
-        self.assertEqual(None, self.getNextMirrorTime(25))
+        self.assertEqual(None, self.getNextMirrorTime(hosted_branch_id))
 
 
 class UserDetailsStorageV2Test(DatabaseTest):

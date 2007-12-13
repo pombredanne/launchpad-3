@@ -189,8 +189,12 @@ class XMLRPCHostedBranchStorage(XMLRPCAuthServerTestCase):
         # XXX Andrew Bennetts, 2007-01-24:
         # Only checks that requestMirror doesn't error. Should instead
         # check the result.
+
+        # This is a user who has launchpad.View permissions on the hosted
+        # branch.
+        user_id = 1
         hosted_branch_id = 25
-        self.server.requestMirror(1, hosted_branch_id)
+        self.server.requestMirror(user_id, hosted_branch_id)
 
     def test_getBranchInformation(self):
         # Don't test the full range of values for getBranchInformation, as we
