@@ -46,7 +46,7 @@ class FakeLaunchpad:
         return defer.succeed(0xabcdef12)
 
     def requestMirror(self, loginID, branch_id):
-        self._request_mirror_log.append(loginID, branch_id)
+        self._request_mirror_log.append((loginID, branch_id))
 
 
 class TestTopLevelDir(AvatarTestCase):
@@ -320,6 +320,7 @@ class TestSFTPServerBranch(AvatarTestCase):
         self.authserver = FakeLaunchpad(self)
         avatar = LaunchpadAvatar(
             'alice', self.tmpdir, self.aliceUserDict, self.authserver)
+        self.login_id = avatar.lpid
         root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
         deferred = defer.maybeDeferred(
@@ -392,7 +393,7 @@ class TestSFTPServerBranch(AvatarTestCase):
         actual_lock.rename(
             os.path.join(lock_dir.getAbsolutePath(), 'temporary'))
         self.assertEqual(
-            [self.server_branch.branchID],
+            [(self.login_id, self.server_branch.branchID)],
             self.authserver._request_mirror_log)
 
 
