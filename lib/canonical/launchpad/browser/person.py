@@ -1,4 +1,6 @@
 # Copyright 2004-2007 Canonical Ltd
+# pylint: disable-msg=E0602
+
 
 """Person-related wiew classes."""
 

@@ -320,15 +320,33 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
         New members can only be added by one of the team's administrators.
         """)
 
-class PersonVisibility(DBEnumeratedType):
-    """TeamMembership Renewal Policy.
 
-    How Team Memberships can be renewed on a given team.
+class PersonVisibility(DBEnumeratedType):
+    """The visibility level of person or team objects.
+
+    Currently, only teams can have their visibility set to something
+    besides PUBLIC.
     """
 
-    PUBLIC = DBItem(1, "Public")
-    PRIVATE_MEMBERSHIP = DBItem(20, "Private Membership")
-    PRIVATE = DBItem(30, "Private")
+    PUBLIC = DBItem(1, """
+        Public
+
+        Everyone can view all the attributes of this person.
+        """)
+
+    PRIVATE_MEMBERSHIP = DBItem(20, """
+        Private Membership
+
+        Only launchpad admins and team members can view the
+        membership list for this team.
+        """)
+
+    PRIVATE = DBItem(30, """
+        Private
+
+        Only launchpad admins and team members can see that
+        this team even exists in launchpad.
+        """)
 
 
 class PersonNameField(BlacklistableContentNameField):

@@ -53,7 +53,7 @@ from canonical.launchpad.interfaces import (
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
     IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType, MailingListStatus,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType,
     PersonCreationRationale, PersonVisibility,
     QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
     ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,

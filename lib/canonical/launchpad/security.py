@@ -39,12 +39,16 @@ class AuthorizationBase:
         self.obj = obj
 
     def checkUnauthenticated(self):
-        """Must return True or False.  See IAuthorization.checkUnauthenticated.
+        """Must return True or False.
+
+        See IAuthorization.checkUnauthenticated.
         """
         return False
 
     def checkAuthenticated(self, user):
-        """Must return True or False.  See IAuthorization.checkAuthenticated.
+        """Must return True or False.
+
+        See IAuthorization.checkAuthenticated.
         """
         return False
 
@@ -334,7 +338,8 @@ class AdminShipItApplicationByShipItAdmins(
     usedfor = IShipItApplication
 
 
-class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
+class AdminShippingRequestSetByShipItAdmins(
+        AdminShippingRequestByShipItAdmins):
     permission = 'launchpad.Admin'
     usedfor = IShippingRequestSet
 
@@ -395,7 +400,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = ITeam
 
     def checkAuthenticated(self, user):
-        """The team owner and all team admins have launchpad.Edit on that team.
+        """The team owner and team admins have launchpad.Edit on that team.
 
         The Launchpad admins also have launchpad.Edit on all teams.
         """
@@ -557,7 +562,8 @@ class EditProductSeries(EditByRegistryExpertsOrOwnersOrAdmins):
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
         if user.inTeam(rosetta_experts):
             return True
-        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(self, user)
+        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(
+            self, user)
 
 
 class EditBugTask(AuthorizationBase):
@@ -684,7 +690,8 @@ class EditBugBranch(EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
     def __init__(self, bug_branch):
         # The same permissions as for the BugBranch's bug should apply
         # to the BugBranch itself.
-        self.obj = bug_branch.bug
+        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
+            self, bug_branch.bug)
 
 
 class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
@@ -697,7 +704,8 @@ class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
     usedfor = IBugAttachment
 
     def __init__(self, bugattachment):
-        self.obj = bugattachment.bug
+        PublicToAllOrPrivateToExplicitSubscribersForBug.__init__(
+            self, bugattachment.bug)
 
 
 class EditBugAttachment(
@@ -711,7 +719,8 @@ class EditBugAttachment(
     usedfor = IBugAttachment
 
     def __init__(self, bugattachment):
-        self.obj = bugattachment.bug
+        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
+            self, bugattachment.bug)
 
 
 class ViewAnnouncement(AuthorizationBase):
@@ -931,7 +940,8 @@ class EditProductRelease(EditByRegistryExpertsOrOwnersOrAdmins):
         if (user.inTeam(self.obj.productseries.owner) or
             user.inTeam(self.obj.productseries.product.owner)):
             return True
-        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(self, user)
+        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(
+            self, user)
 
 
 class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
