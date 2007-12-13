@@ -16,6 +16,14 @@ class ISectionSchema(Interface):
     """A group of key-value pairs that configure a process."""
     name = Attribute("The section schema name.")
 
+    def __init__(name, options, is_optional=False):
+        """Create an ISectionSchema from the name and options.
+
+        :param name: A string. The name of the ISectionSchema.
+        :param options: A dict of the key-value pairs in the ISectionSchema.
+        :param is_optional: A boolean. Is this section schema optional?
+        """
+
     def __iter__():
         """Iterate over the keys."""
 
@@ -43,7 +51,7 @@ class IConfigSchema(Interface):
     """
     name = Attribute('The basename of the config filename.')
     filename = Attribute('The path to config file')
-    categories = Attribute('The list of section category names.')
+    category_names = Attribute('The list of section category names.')
 
     def __init__(filename):
         """Load a configuration schema from the provided filename."""

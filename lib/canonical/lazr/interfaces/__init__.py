@@ -1,5 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
-
+# pylint: disable-msg=W0401
 """Lazr interfaces."""
 
 __metaclass__ = type

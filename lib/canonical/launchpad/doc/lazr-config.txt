@@ -65,12 +65,11 @@ are comments.
 A schema is made up of multiple SchemaSections. They can be iterated
 over in a loop as needed.
 
-    >>> for schema_section in schema:
-    ...     print schema_section.name
-    'section-1'
-    'section-2'
-    'section-3.app-a'
-    'section-3.app-b'
+    >>> for section_schema in schema:
+    ...     print section_schema.name
+    section-3.app-b
+    section-3.app-a
+    section-1
 
 You can check if the schema contains a section name, and that can be
 used to access the SchemaSection as a subscript.
@@ -83,22 +82,26 @@ used to access the SchemaSection as a subscript.
 A SectionNotFound error is raised if the name does not match any of the
 SectionSchemas.
 
-    >>> schema_section_2 = schema['section-2']
+    >>> section_schema_2 = schema['section-2']
     >>> schema['section-4']
     Traceback (most recent call last):
       ...
     NoSectionError: ...
 
 Processes often require resources like databases or vhosts that have a
-common category of keys. The list of SchemaSections that share common
-category can be retrieved using getByCategory(). An empty list is
-returned when the category name does not match any SectionSchemas in
-the schema.
+common category of keys. The list of all category names can be retried
+via the categories attribute.
 
-    >>> for schema_section in schema.getByCategory('section-3'):
+    >>> schema.category_names
+    ['section-3']
+
+The list of SchemaSections that share common category can be retrieved
+using getByCategory(). An empty list is returned when the category name
+does not match any SectionSchemas in the schema.
+    >>> for section_schema in schema.getByCategory('section-3'):
     ...     print section.name
-    'section-3.app-a'
-    'section-3.app-b'
+    section-3.app-b
+    section-3.app-a
 
 An error is raised when accessing a category does not exist.
 
@@ -114,38 +117,38 @@ A SchemaSection behaves similar to a dictionary. It has keys and
 values. Each SchemaSection has a name.
 
     >>> from canonical.lazr.interfaces import ISchemaSection
-    >>> schema_section_1 = schema['section-1']
-    >>> verifyObject(ISchemaSection, schema_section_1)
+    >>> section_schema_1 = schema['section-1']
+    >>> verifyObject(ISchemaSection, section_schema_1)
     True
 
-    >>> schema_section_1.name
+    >>> section_schema_1.name
     'section-1'
 
 Optional sections have the optional attribute set to True:
 
-    >>> schema_section_1.optional
+    >>> section_schema_1.optional
     False
     >>> schema['section-3.app-a'].optional
     True
 
 A key can be verified to be in a section.
 
-    >>> 'key1' in schema_section_1
+    >>> 'key1' in section_schema_1
     True
-    >>> 'nonkey' in schema_section_1
+    >>> 'nonkey' in section_schema_1
     False
 
 A key can be accessed directly using as a subscript of the SchemaSection.
 The value is always a string or None.
 
-    >>> schema_section_1['key3']
+    >>> section_schema_1['key3']
     'Launchpad&nbsp;rocks'
-    >>> print schema_section_2['key3']
+    >>> print section_schema_2['key3']
     None
 
 An error is raised if a non-existent key is accessed.
 
-    >>> schema_section_2['not-exist']
+    >>> section_schema_2['not-exist']
     Traceback (most recent call last):
       ...
     KeyError: ...
@@ -155,8 +158,8 @@ defines keys and values. The values are the default values to return in
 the section instance does not redefine the key. In the case of key5,
 the key had no explicit value, so the value is an empty string.
 
-    >>> for key in schema_section_1:
-    ...     print key, ':', schema_section_1[key]
+    >>> for key in section_schema_1:
+    ...     print key, ':', section_schema_1[key]
     key1 : 'foo'
     key2 : 'bar and baz'
     key3 : 'Launchpad&nbsp;rocks'
@@ -166,10 +169,10 @@ the key had no explicit value, so the value is an empty string.
 In the conf file '[section-3.template]' defines a common set of keys and
 default values for '[section-3.app-a]' and '[section-3.app-b]'.
 
-    >>> for schema_section in schema.getByCategory('section-3'):
-    ...     print schema_section.name
-    ...     for key in schema_section:NoSectionError
-    ...         print key, ':', schema_section[key]
+    >>> for section_schema in schema.getByCategory('section-3'):
+    ...     print section_schema.name
+    ...     for key in section_schema:
+    ...         print key, ':', section_schema[key]
     section-3.app-a
     Key1: 17
     Key2: 3.1415
@@ -179,6 +182,14 @@ default values for '[section-3.app-a]' and '[section-3.app-b]'.
 
 
 == ConfigSchema is self-validating ==
+
+Config schema will raise an error if the schema file cannot be opened.
+
+    >>> ConfigSchema("no-such-file")
+    Traceback (most recent call last):
+      ...
+    IOError: [Errno 2] No such file or directory: ...
+
 
 The schema parser is self-validating. The file must be ASCII encoded.
 Orphaned keys are not allowed. Sections cannot be defined more than
@@ -193,20 +204,22 @@ is tuple of filename, line, and message.
 
     >>> bad_conf = path.normpath(path.join(
     ...     path.dirname(__file__), '..', 'ftests', 'testfiles', 'bad.conf'))
-    >>> bad_schema = ConfigSchemaParser(bad_conf)
+    >>> bad_schema = ConfigSchema(bad_conf)
     >>> for (filename, line, message) in bad_schema.listValidationErrors():
     ...     print line, ':',  message
     1 : Unclassified text.
     2 : Orphaned key and value
     4 : Non ascii character.
-    6 : Key redefined.
-    8 : Section  redefined.
+    7 : Key redefined.
+    10 : Section  redefined.
+    14 : SyntaxError The section [category.other_category.name.optional]
+         belongs to more than one category.
 
 The validate() method Raises an exception if invalid schema is invalid.
 
 / me wonders if several exception types should be defined.
 
-    >>> ConfigSchemaParser(bad_conf)
+    >>> ConfigSchema(bad_conf)
     Traceback (most recent call last):
       ...
     FormatError: ...
