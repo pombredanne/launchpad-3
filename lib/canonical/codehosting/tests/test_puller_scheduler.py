@@ -382,7 +382,8 @@ class TestPullerMaster(TrialTestCase):
         self.arbitrary_branch_id = 1
         self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
-            BranchType.HOSTED, logging.getLogger(), self.status_client)
+            BranchType.HOSTED, logging.getLogger(), self.status_client,
+            set(['oops-prefix']))
 
     def test_unexpectedError(self):
         """The puller master logs an OOPS when it receives an unexpected
@@ -450,9 +451,11 @@ class TestPullerMasterSpawning(TrialTestCase):
         from twisted.internet import reactor
         self.status_client = FakeBranchStatusClient()
         self.arbitrary_branch_id = 1
+        self.available_oops_prefixes = set(['foo'])
         self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
-            BranchType.HOSTED, logging.getLogger(), self.status_client)
+            BranchType.HOSTED, logging.getLogger(), self.status_client,
+            self.available_oops_prefixes)
         self._realSpawnProcess = reactor.spawnProcess
         reactor.spawnProcess = self.spawnProcess
         self.oops_prefixes = []
@@ -467,27 +470,24 @@ class TestPullerMasterSpawning(TrialTestCase):
     def test_getsOopsPrefixFromSet(self):
         # Different workers should have different OOPS prefixes. They get
         # those prefixes from a limited set of possible prefixes.
-        available_oops_prefixes = set(['foo'])
-        self.eventHandler.run(available_oops_prefixes)
-        self.assertEqual(available_oops_prefixes, set())
+        self.eventHandler.run()
+        self.assertEqual(self.available_oops_prefixes, set())
         self.assertEqual(self.oops_prefixes, ['foo'])
 
     def test_restoresOopsPrefixToSetOnSuccess(self):
         # When a worker finishes running, they restore the OOPS prefix to the
         # set of available prefixes.
-        available_oops_prefixes = set(['foo'])
-        deferred = self.eventHandler.run(available_oops_prefixes)
+        deferred = self.eventHandler.run()
         # Fake a successful run.
         deferred.callback(None)
         def check_available_prefixes(ignored):
-            self.assertEqual(available_oops_prefixes, set(['foo']))
+            self.assertEqual(self.available_oops_prefixes, set(['foo']))
         return deferred.addCallback(check_available_prefixes)
 
     def test_restoresOopsPrefixToSetOnFailure(self):
         # When a worker finishes running, they restore the OOPS prefix to the
         # set of available prefixes, even if the worker failed.
-        available_oops_prefixes = set(['foo'])
-        deferred = self.eventHandler.run(available_oops_prefixes)
+        deferred = self.eventHandler.run()
         # Fake a failed run.
         try:
             raise RuntimeError("Spurious error")
@@ -495,19 +495,21 @@ class TestPullerMasterSpawning(TrialTestCase):
             fail = failure.Failure()
         deferred.errback(fail)
         def check_available_prefixes(ignored):
-            self.assertEqual(available_oops_prefixes, set(['foo']))
+            self.assertEqual(self.available_oops_prefixes, set(['foo']))
         return deferred.addErrback(check_available_prefixes)
 
     def test_logOopsWhenNoAvailablePrefix(self):
         # If there are no available prefixes then we log an OOPS and re-raise
         # the error, aborting the rest of the run.
-        available_oops_prefixes = set()
+
+        # Empty the set of available OOPS prefixes
+        self.available_oops_prefixes.clear()
+
         unexpected_errors = []
         def unexpectedError(failure, now=None):
             unexpected_errors.append(failure)
         self.eventHandler.unexpectedError = unexpectedError
-        self.assertRaises(
-            KeyError, self.eventHandler.run, available_oops_prefixes)
+        self.assertRaises(KeyError, self.eventHandler.run)
         self.assertEqual(unexpected_errors[0].type, KeyError)
 
 
@@ -544,10 +546,10 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         puller_master = scheduler.PullerMaster(
             self.db_branch.id, local_path_to_url('src-branch'),
             self.db_branch.unique_name, self.db_branch.branch_type,
-            logging.getLogger(), self.client)
+            logging.getLogger(), self.client,
+            set([config.launchpad.errorreports.oops_prefix]))
         puller_master.destination_url = os.path.abspath('dest-branch')
-        deferred = puller_master.mirror(
-            config.launchpad.errorreports.oops_prefix)
+        deferred = puller_master.mirror()
         deferred.addErrback(self._dumpError)
 
         def check_authserver_called(ignored):

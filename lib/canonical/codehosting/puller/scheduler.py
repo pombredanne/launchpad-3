@@ -26,6 +26,7 @@ from twisted.web.xmlrpc import Proxy
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 import canonical
+from canonical.cachedproperty import cachedproperty
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
@@ -269,7 +270,7 @@ class PullerMaster:
     """
 
     def __init__(self, branch_id, source_url, unique_name, branch_type,
-                 logger, client):
+                 logger, client, available_oops_prefixes):
         """Construct a PullerMaster object.
 
         :param branch_id: The database ID of the branch to be mirrored.
@@ -291,8 +292,20 @@ class PullerMaster:
         self.branch_type = branch_type
         self.logger = logger
         self.branch_status_client = client
+        self._available_oops_prefixes = available_oops_prefixes
 
-    def mirror(self, oops_prefix):
+    @cachedproperty
+    def oops_prefix(self):
+        try:
+            return self._available_oops_prefixes.pop()
+        except KeyError:
+            self.unexpectedError(failure.Failure())
+            raise
+
+    def releaseOopsPrefix(self):
+        self._available_oops_prefixes.add(self.oops_prefix)
+
+    def mirror(self):
         path_to_script = os.path.join(
             os.path.dirname(
                 os.path.dirname(os.path.dirname(canonical.__file__))),
@@ -302,7 +315,7 @@ class PullerMaster:
         command = [
             sys.executable, path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), self.unique_name,
-            self.branch_type.name, oops_prefix]
+            self.branch_type.name, self.oops_prefix]
         # Passing env=None means that the subprocess will inherit our
         # environment, and thus our configuration settings. This is necessary
         # to ensure that branches are mirrored to the right place, that
@@ -310,16 +323,11 @@ class PullerMaster:
         reactor.spawnProcess(protocol, sys.executable, command, env=None)
         return deferred
 
-    def run(self, available_oops_prefixes):
-        try:
-            oops_prefix = available_oops_prefixes.pop()
-        except KeyError:
-            self.unexpectedError(failure.Failure())
-            raise
+    def run(self):
         def restore_oops_prefix(pass_through):
-            available_oops_prefixes.add(oops_prefix)
+            self.releaseOopsPrefix()
             return pass_through
-        deferred = self.mirror(oops_prefix)
+        deferred = self.mirror()
         deferred.addErrback(self.unexpectedError)
         deferred.addBoth(restore_oops_prefix)
         return deferred
@@ -368,6 +376,12 @@ class JobScheduler:
         self.name = 'branch-puller-%s' % branch_type.name.lower()
         self.lockfilename = '/var/lock/launchpad-%s.lock' % self.name
 
+    @cachedproperty
+    def available_oops_prefixes(self):
+        return set(
+            [config.launchpad.errorreports.oops_prefix + str(i)
+             for i in range(config.supermirror.maximum_workers)])
+
     def _run(self, puller_masters):
         """Run all branches_to_mirror registered with the JobScheduler."""
         self.logger.info('%d branches to mirror', len(puller_masters))
@@ -375,11 +389,8 @@ class JobScheduler:
             "config.supermirror.maximum_workers is not defined.")
         semaphore = defer.DeferredSemaphore(
             config.supermirror.maximum_workers)
-        oops_prefixes = set(
-            [config.launchpad.errorreports.oops_prefix + str(i)
-             for i in range(config.supermirror.maximum_workers)])
         deferreds = [
-            semaphore.run(puller_master.run, oops_prefixes)
+            semaphore.run(puller_master.run)
             for puller_master in puller_masters]
         deferred = defer.gatherResults(deferreds)
         deferred.addCallback(self._finishedRunning)
@@ -400,7 +411,7 @@ class JobScheduler:
         branch_src = branch_src.strip()
         return PullerMaster(
             branch_id, branch_src, unique_name, self.branch_type, self.logger,
-            self.branch_status_client)
+            self.branch_status_client, self.available_oops_prefixes)
 
     def getPullerMasters(self, branches_to_pull):
         return [
