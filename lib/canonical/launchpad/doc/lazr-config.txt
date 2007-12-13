@@ -167,7 +167,7 @@ the key had no explicit value, so the value is an empty string.
     key3 : Launchpad&nbsp;rocks
     key2 : bar and baz
     key1 : foo
-    key5 : 
+    key5 :
     key4 : F&#028c;k yeah!
 
 In the conf file '[section-3.template]' defines a common set of keys and
@@ -193,7 +193,6 @@ Config schema will raise an error if the schema file cannot be opened.
     Traceback (most recent call last):
       ...
     IOError: [Errno 2] No such file or directory: ...
-
 
 The schema parser is self-validating. The file must be ASCII encoded.
 Orphaned keys are not allowed. Sections cannot be defined more than
