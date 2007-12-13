@@ -335,7 +335,7 @@ The `lastchanged` field was updated, though.
 Changes to bug watch statuses will produce notifications in the usual
 manner:
 
-    >>> for bug_notification in sorted(BugNotification.select()):
+    >>> for bug_notification in BugNotification.select(orderBy='id'):
     ...     print "Bug %s changed by %s:" % (
     ...         bug_notification.bug.id,
     ...         bug_notification.message.owner.displayname)
