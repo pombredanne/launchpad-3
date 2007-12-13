@@ -53,17 +53,3 @@ Clicking this button deletes the corresponding packaging association.
     hoary   development   release   1.0.9a-4ubuntu1   None defined
     warty   current       release   1.0.9a-4          None defined
                                     1.0.8-1ubuntu1
-
-The packaging association is persistently deleted. It does not reappear
-if the page is reloaded.
-
-XXX: if the incorrect behaviour does occur, user_browser.reload() does
-not expose it, but user_browse.open() does. -- David Allouche 2007-12-02
-
-    >>> user_browser.open(user_browser.url)
-    >>> content = user_browser.contents
-    >>> print extract_text(find_tag_by_id(content, 'packaging'))
-    Ubuntu version                  Upstream version
-    hoary   development   release   1.0.9a-4ubuntu1   None defined
-    warty   current       release   1.0.9a-4          None defined
-                                    1.0.8-1ubuntu1
