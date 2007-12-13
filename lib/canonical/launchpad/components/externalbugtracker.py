@@ -1777,6 +1777,12 @@ class RequestTracker(ExternalBugTracker):
 
     @property
     def credentials(self):
+        """Return the authentication credentials needed to log in.
+
+        If there are specific credentials for the current RT instance,
+        these will be returned. Otherwise the RT default guest
+        credentials (username and password of 'guest') will be returned.
+        """
         credentials_map = {
             'rt.cpan.org': {'user': 'launchpad@launchpad.net',
                             'pass': 'th4t3'}}
@@ -1897,15 +1903,15 @@ class RequestTracker(ExternalBugTracker):
         """
         try:
             bug_id = int(bug_id)
-            bug = self.bugs[bug_id]
         except ValueError:
             raise InvalidBugId(
                 "RequestTracker bug ids must be integers (was passed %r)"
                 % bug_id)
-        except KeyError:
+
+        if bug_id not in self.bugs:
             raise BugNotFound(bug_id)
 
-        return bug['status']
+        return self.bugs[bug_id]['status']
 
     def convertRemoteStatus(self, remote_status):
         """Convert an RT status into a Launchpad BugTaskStatus."""
