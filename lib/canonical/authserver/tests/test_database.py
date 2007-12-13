@@ -659,7 +659,6 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         branch_id = store._createBranchInteraction(
             'salgado', 'landscape-developers', 'landscape',
             'some-branch')
-        self.assertTrue(getUtility(IBranchSet).get(branch_id).private)
 
         cur = cursor()
         cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
