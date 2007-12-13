@@ -194,47 +194,43 @@ Config schema will raise an error if the schema file cannot be opened.
       ...
     IOError: [Errno 2] No such file or directory: ...
 
-The schema parser is self-validating. The file must be ASCII encoded.
-Orphaned keys are not allowed. Sections cannot be defined more than
-once. Keys withing a section cannot be defined more than once. Text that
-is not a comment is not allowed.
+The schema parser is self-validating. It will check that the character
+encoding is ascii. It will check that the data is not ambiguous or
+self-contradicting.
 
-# Will have to be updated based on the actual feature-set supported
-# by ConfigParser
+Schema files that contain non-ASCII characters raise a
+UnicodeDecodeError.
 
-The listValidationErrors() method returns a list of errors. Each error
-is tuple of filename, line, and message.
-
-    >>> bad_conf = path.normpath(path.join(
-    ...     path.dirname(__file__), '..', 'ftests', 'testfiles', 'bad.conf'))
-    >>> bad_schema = ConfigSchema(bad_conf)
-    >>> for (filename, line, message) in bad_schema.listValidationErrors():
-    ...     print line, ':',  message
-    1 : Unclassified text.
-    2 : Orphaned key and value
-    4 : Non ascii character.
-    7 : Key redefined.
-    10 : Section  redefined.
-    14 : SyntaxError The section [category.other_category.name.optional]
-         belongs to more than one category.
-
-The validate() method Raises an exception if invalid schema is invalid.
-
-/ me wonders if several exception types should be defined.
-
-    >>> ConfigSchema(bad_conf)
+    >>> testfiles_dir = path.normpath(path.join(
+    ...     path.dirname(__file__), '..', 'ftests', 'testfiles'))
+    >>> ConfigSchema('%s/%s' % (testfiles_dir, 'bad-nonascii.conf'))
     Traceback (most recent call last):
       ...
-    FormatError: ...
+    UnicodeDecodeError: ...
 
+Keys without sections raise MissingSectionHeaderError.
 
-== Config ==
+    >>> ConfigSchema('%s/%s' % (testfiles_dir, 'bad-sectionless.conf'))
+    Traceback (most recent call last):
+      ...
+    MissingSectionHeaderError: File contains no section headers. ...
 
-raise NotImplementedError
+Redefining a section in a config file will raise a RedefinedSectionError.
 
-Optional sections in the schema that are not in the config may return
-an empty list. Is this still true? The config cannot undefine a section.
+    >>> ConfigSchema('%s/%s' % (testfiles_dir, 'bad-redefined-section.conf'))
+    Traceback (most recent call last):
+      ...
+    RedefinedSectionError: ...
 
-== Section ==
+# XXX sinzui 2007-12-13:
+# ConfigSchema should raise RedefinedKeyError when a section redefines
+# a key.
 
-raise NotImplementedError
+Defining a section that belongs to many categories will raise
+a MultipleCategoriesError.
+
+    >>> ConfigSchema('%s/%s' % (
+    ...     testfiles_dir, 'bad-multiple-categories.conf'))
+    Traceback (most recent call last):
+      ...
+    MultipleCategoriesError: ...

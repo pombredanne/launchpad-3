@@ -6,7 +6,6 @@ __metaclass__ = type
 
 __all__ = [
     'IConfigSchema',
-    'IConfigSchemaParser',
     'ISectionSchema',]
 
 from zope.interface import Interface, Attribute
@@ -22,6 +21,7 @@ class ISectionSchema(Interface):
         :param name: A string. The name of the ISectionSchema.
         :param options: A dict of the key-value pairs in the ISectionSchema.
         :param is_optional: A boolean. Is this section schema optional?
+        :raises RedefinedKeyError: if a keys is redefined in SectionSchema.
         """
 
     def __iter__():
@@ -54,7 +54,12 @@ class IConfigSchema(Interface):
     category_names = Attribute('The list of section category names.')
 
     def __init__(filename):
-        """Load a configuration schema from the provided filename."""
+        """Load a configuration schema from the provided filename.
+
+        :raises UnicodeDecodeError: if the string contains non-ascii
+            characters.
+        :raises RedefinedSectionError: if a SectionSchema name is redefined.
+        """
 
     def __iter__():
         """Iterate over the SectionSchema."""
@@ -63,9 +68,9 @@ class IConfigSchema(Interface):
         """Return True or False if the name matches a SectionSchema."""
 
     def __getitem__(name):
-        """Return the SchemaSection with the matching name.
+        """Return the SectionSchema with the matching name.
 
-        :raises NoSectionError: if the no SchemaSection has the name.
+        :raises NoSectionError: if the no SectionSchema has the name.
         """
 
     def getByCategory(name):
@@ -80,13 +85,3 @@ class IConfigSchema(Interface):
         :raises CategoryNotFound: if no sections have a name that starts
             with the category name.
         """
-
-class IConfigSchemaParser(Interface):
-    """A process configuration file parser.
-
-    XXX sinzui 2007-12-12:
-    We may not need this. Less is more.
-    """
-
-    def __init__(filename):
-        """Load a schema from the provided filename."""

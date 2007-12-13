@@ -8,12 +8,26 @@ __all__ = [
     'ConfigSchema',
     'SectionSchema',]
 
-import os
 from ConfigParser import SafeConfigParser, NoSectionError
+import os
+import re
+import StringIO
 
 from zope.interface import implements
 
 from canonical.lazr.interfaces import ISectionSchema, IConfigSchema
+
+
+class RedefinedKeyError(SyntaxError):
+    """A key in a section cannot be redefined."""
+
+
+class RedefinedSectionError(SyntaxError):
+    """A section in a config file cannot be redefined."""
+
+
+class MultipleCategoriesError(SyntaxError):
+    """The section name contains more than one category."""
 
 
 class NoCategoryError(LookupError):
@@ -26,17 +40,41 @@ class ConfigSchema(object):
 
     def __init__(self, filename):
         """See `IConfigSchema`."""
+        # XXX sinzui 2007-12-13:
+        # SafeConfigParser permits redefinition and non-ascii characters.
+        # The raw schema data is examined before creating a config.
+        raw_schema = self._getRawSchema(filename)
         config = SafeConfigParser()
-        config.readfp(open(filename))
+        config.readfp(raw_schema, filename)
         self._setSectionSchemasAndCategoriesNames(config)
         self.filename = filename
         self.name = os.path.basename(filename)
 
+    def _getRawSchema(self, filename):
+        """Return the contents of the schema file as a StringIO.
+        
+        This method veries that the file is ascii encoded and that no
+        section name is refined.
+        """
+        schema_file = open(filename, 'r')
+        raw_schema = schema_file.read()
+        schema_file.close()
+        # Verify that the string is ascii.
+        raw_schema.encode('ascii', 'ignore')
+        # Verify that no sections are redefined.
+        section_names = []
+        for section_name in re.findall(r'^\s*\[[^\]]+\]', raw_schema, re.M):
+            if section_name in section_names:
+                raise RedefinedSectionError, section_name
+            else:
+                section_names.append(section_name)
+        return StringIO.StringIO(raw_schema)
+
     def _setSectionSchemasAndCategoriesNames(self, config):
         """Set the SectionSchemas and category_names from the config."""
         section_schemas = {}
-        templates = {}
         category_names = set()
+        templates = {}
         for name in config.sections():
             (section_name, category_name,
              is_template, is_optional) = self._parseSectionName(name)
@@ -73,7 +111,7 @@ class ConfigSchema(object):
         dots = section_name.count('.')
         if dots > 1:
             message = 'The section [%s] belongs to more than one category.'
-            raise SyntaxError, (message % name)
+            raise MultipleCategoriesError, (message % name)
         if dots == 1:
             category_name, process_name = section_name.split('.')
             if process_name == 'template':
@@ -118,6 +156,8 @@ class SectionSchema(object):
 
     def __init__(self, name, options, is_optional=False):
         """See `ISectionSchema`"""
+        # This method should raise RedefinedKeyError if the schema file
+        # redefines a key, but SafeConfigParser swallows redefined keys.
         self.name = name
         self._options = options
         self.optional = is_optional
