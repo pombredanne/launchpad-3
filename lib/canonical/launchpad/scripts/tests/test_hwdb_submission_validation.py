@@ -122,7 +122,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             from_text='<?xml',
             to_text='?>')
 
-    def _testAsciiEncoding(self):
+    def testAsciiEncoding(self):
         """Validation of ASCII encoded XML data.
 
         Bytes with bit 7 set must be detected as invalid.
@@ -147,7 +147,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                 "system line 2" % submission_id,
             logging.ERROR)
 
-    def _testISO8859_1_Encoding(self):
+    def testISO8859_1_Encoding(self):
         """XML data with ISO-8859-1 may have bytes with bit 7 set."""
         sample_data_iso_8859_1_encoded = self._setEncoding('ISO-8859-1')
         tag_with_umlaut = '<architecture value="\xc4"/>'
@@ -161,7 +161,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                             'Valid submission with ISO-8859-1 encoding '
                                 'rejected')
 
-    def _testUTF8Encoding(self):
+    def testUTF8Encoding(self):
         """UTF-8 encoded data is properly detected and parsed."""
         sample_data_utf8_encoded = self._setEncoding('UTF-8')
         umlaut = u'\xc4'.encode('utf8')
@@ -191,11 +191,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                 "line 1: Input is not proper UTF-8, indicate encoding !\n"
                 "Bytes: 0xC3 0x22 0x2F 0x3E" % submission_id,
             logging.ERROR)
-
-    def testEncodings(self):
-        self._testAsciiEncoding()
-        self._testISO8859_1_Encoding()
-        self._testUTF8Encoding()
 
     # Using self.log.assertLogsMessage, the usual way to assert the
     # existence of an error or warning in the log data, leads to
