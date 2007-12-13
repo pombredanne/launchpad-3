@@ -400,7 +400,7 @@
         permission="zope.Public"
         name="+portlet-details"
         facet="overview"
-        template="../templates/project-portlet-details.pt"
+        template="../templates/project-series-portlet-details.pt"
         />
 
 </configure>

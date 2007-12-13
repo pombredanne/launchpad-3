@@ -560,27 +560,3 @@ class ProjectSeries(HasSpecificationsMixin):
     @property
     def displayname(self):
         return self.name
-
-    @property
-    def active(self):
-        return self.project.active
-
-    @property
-    def reviewed(self):
-        return self.project.reviewed
-
-    @property
-    def icon(self):
-        return self.project.icon
-
-    @property
-    def owner(self):
-        return self.project.owner
-
-    @property
-    def driver(self):
-        return self.project.driver
-
-    @property
-    def bugtracker(self):
-        return self.project.bugtracker

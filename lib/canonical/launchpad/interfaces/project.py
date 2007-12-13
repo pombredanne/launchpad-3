@@ -280,12 +280,3 @@ class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
     title = Attribute('The full name of the project group.')
 
     project = Attribute('The project this series belongs to')
-
-    active = Attribute(
-        'Whether or not this project group is considered active.')
-
-    reviewed = Attribute(
-        'Whether or not this project group has been reviewed.')
-
-    bugtracker = Attribute(
-        'The bug tracker the products in this project group use.')
