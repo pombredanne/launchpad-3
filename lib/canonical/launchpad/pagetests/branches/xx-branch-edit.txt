@@ -294,6 +294,10 @@ The whiteboard is now editable by any logged in user.
     ...     '/~name12/gnome-terminal/main')
     >>> whiteboard_tag = find_tag_by_id(
     ...     nopriv_browser.contents, 'branch-whiteboard-value')
+
+There is no whiteboard section shown if there is no whiteboard value
+set.
+
     >>> print whiteboard_tag
     None
 
