@@ -60,14 +60,14 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
         to be considered.
     :param: distroseries: the context `DistroSeries`.
     :param: pas_verify: optional P-a-s verifier object/component.
-    :returns: a list of `DistroArchSeries` for which the source publication in
+    :return: a list of `DistroArchSeries` for which the source publication in
         question should be built.
     """
     hint_string = pubrec.sourcepackagerelease.architecturehintlist
 
     assert hint_string, 'Missing arch_hint_list'
 
-    # For PPA publications wxclude non-PPA architectures and ignore P-a-s.
+    # For PPA publications exclude non-PPA architectures and ignore P-a-s.
     if pubrec.archive.purpose == ArchivePurpose.PPA:
         legal_archserieses = [
             arch for arch in legal_archserieses if arch.ppa_supported]

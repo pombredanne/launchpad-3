@@ -83,11 +83,6 @@ distroarchseries details.
 Non privileged access to the admin page results in a 'Unauthorized'
 error.
 
-    >>> anon_browser.open("http://launchpad.dev/ubuntu/warty/i386/+admin")
-    Traceback (most recent call last):
-    ...
-    Unauthorized...
-
     >>> user_browser.open("http://launchpad.dev/ubuntu/warty/i386/+admin")
     Traceback (most recent call last):
     ...
@@ -195,11 +190,7 @@ restricted and rarely used.
     ...
     RetryPsycopgIntegrityError: ERROR:  duplicate key violates unique
     constraint "distroarchseries__architecturetag__distroseries__key"
-    <BLANKLINE>
-    INSERT INTO DistroArchSeries (id, processorfamily,
-    ppa_supported, owner, distroseries, package_count, official,
-    architecturetag) VALUES (18, 1, 't', 16, 3, DEFAULT, 't', 'i386')
-
+    ...
 
 An administrator can open new distinct architecture, for instance,
 'amd64'.
@@ -213,8 +204,8 @@ An administrator can open new distinct architecture, for instance,
     >>> admin_browser.getControl("PPA support available").selected = True
     >>> admin_browser.getControl("Add").click()
 
-Once submitted and successfully processed this page redirects the user
-to the just-created distroarchseries page.
+When the new architecture has been created, it is displayed to the
+administrator.
 
     >>> admin_browser.title
     'The Hoary Hedgehog Release for amd64 (amd64) in Launchpad'

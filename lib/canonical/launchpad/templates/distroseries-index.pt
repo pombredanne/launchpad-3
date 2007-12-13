@@ -57,7 +57,7 @@
         />
         <div
           class="section"
-          tal:content="structure context/@@+portlet-architectures"
+          tal:content="structure context/@@+pagelet-architectures"
         />
         <div
           class="section"

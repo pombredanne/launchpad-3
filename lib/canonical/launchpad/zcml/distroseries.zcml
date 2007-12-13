@@ -197,8 +197,8 @@
       template="../templates/distroseries-portlet-latestuploads.pt"
       />
     <browser:page
-      name="+portlet-architectures"
-      template="../templates/distroseries-portlet-architectures.pt"
+      name="+pagelet-architectures"
+      template="../templates/distroseries-pagelet-architectures.pt"
       />
   </browser:pages>
 

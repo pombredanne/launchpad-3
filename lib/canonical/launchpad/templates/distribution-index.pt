@@ -90,7 +90,7 @@
         <div
           class="section"
           tal:condition="context/currentseries"
-          tal:content="structure context/currentseries/@@+portlet-architectures"
+          tal:content="structure context/currentseries/@@+pagelet-architectures"
         />
         <div
           class="section"
