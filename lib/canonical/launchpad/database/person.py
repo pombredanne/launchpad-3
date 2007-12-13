@@ -52,10 +52,10 @@ from canonical.launchpad.interfaces import (
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
     IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType, PersonCreationRationale,
-    QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
-    ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType, MailingListStatus,
+    PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
+    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -956,9 +956,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     @property
     def is_openid_enabled(self):
         """See `IPerson`."""
-        if self.isTeam():
-            return False
-
         if not self.is_valid_person:
             return False
 
@@ -2004,15 +2001,9 @@ class PersonSet:
         return Person.selectOne(query)
 
     def getByOpenIdIdentifier(self, openid_identifier):
-        """Returns a Person with the given openid_identifier, or None.
-
-        None is returned if the person is not enabled for OpenID usage
-        (see Person.is_openid_enabled).
-        """
-        person = Person.selectOne(
-                Person.q.openid_identifier == openid_identifier
-                )
-        if person is not None and person.is_openid_enabled:
+        """Returns a Person with the given openid_identifier, or None."""
+        person = Person.selectOneBy(openid_identifier=openid_identifier)
+        if person.is_valid_person:
             return person
         else:
             return None

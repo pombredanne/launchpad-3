@@ -46,6 +46,7 @@ expert' must approve the application.  This cannot currently be done through
 the web, so we'll go behind the scenes to do this.
 
     >>> list_one = itest_helper.review_list('itest-one')
+    >>> itest_helper.wait_for_mailman()
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
 
@@ -73,5 +74,6 @@ mailing list.
     >>> from canonical.launchpad.interfaces import MailingListStatus
     >>> list_two = itest_helper.review_list(
     ...     'itest-two', MailingListStatus.DECLINED)
+    >>> itest_helper.wait_for_mailman()
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']

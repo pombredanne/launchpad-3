@@ -35,13 +35,13 @@ from canonical.launchpad.database.publishing import (
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IPackageUpload, IPackageUploadBuild, IPackageUploadSource,
-    IPackageUploadCustom, IPackageUploadQueue, IPackageUploadSet, IPersonSet,
-    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus, PackageUploadCustomFormat, pocketsuffix,
-    QueueBuildAcceptError, QueueInconsistentStateError,
-    QueueStateWriteProtectedError, QueueSourceAcceptError,
-    SourcePackageFileType)
+    ArchivePurpose, ILaunchpadCelebrities, IPackageUpload,
+    IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
+    IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
+    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
+    PackageUploadCustomFormat, pocketsuffix, QueueBuildAcceptError,
+    QueueInconsistentStateError, QueueStateWriteProtectedError,
+    QueueSourceAcceptError, SourcePackageFileType)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
@@ -213,14 +213,18 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         return self.builds
 
-    @cachedproperty
-    def _is_sync_upload(self):
-        """Return True if this is a (Debian) sync upload.
+    def _is_auto_sync_upload(self, changed_by_email):
+        """Return True if this is a (Debian) auto sync upload.
 
         Sync uploads are source-only, unsigned and not targeted to
-        the security pocket."""
+        the security pocket.  The Changed-By field is also the Katie
+        user (archive@ubuntu.com).
+        """
+        katie = getUtility(ILaunchpadCelebrities).katie
+        changed_by = self._emailToPerson(changed_by_email)
         return (not self.signing_key
                 and self.contains_source and not self.contains_build
+                and changed_by == katie
                 and self.pocket != PackagePublishingPocket.SECURITY)
 
     @cachedproperty
@@ -552,8 +556,8 @@ class PackageUpload(SQLBase):
         # policies should send an acceptance and an announcement message.
         do_sendmail(AcceptedMessage)
 
-        # Don't send announcements for Debian sync uploads.
-        if self._is_sync_upload:
+        # Don't send announcements for Debian auto sync uploads.
+        if self._is_auto_sync_upload(changed_by_email=changes['changed-by']):
             return
 
         if announce_list:
@@ -850,16 +854,22 @@ class PackageUploadSource(SQLBase):
         """See `IPackageUploadSource`."""
         # Check for duplicate source version across all distroseries.
         for distroseries in self.packageupload.distroseries.distribution:
-            if distroseries.getQueueItems(
+            uploads = distroseries.getQueueItems(
                 status=[PackageUploadStatus.ACCEPTED,
                         PackageUploadStatus.DONE],
                 name=self.sourcepackagerelease.name,
                 version=self.sourcepackagerelease.version,
                 archive=self.packageupload.archive,
-                exact_match=True).count() > 0:
+                exact_match=True)
+            if uploads.count() > 0:
                 raise QueueInconsistentStateError(
-                    'This sourcepackagerelease is already accepted in %s.'
-                    % self.packageupload.distroseries.name)
+                    "The source %s is already accepted in %s/%s and you "
+                    "cannot upload the same version within the same "
+                    "distribution. You have to modify the source version "
+                    "and re-upload." % (
+                    self.sourcepackagerelease.title,
+                    distroseries.distribution.name,
+                    distroseries.name))
 
     def verifyBeforePublish(self):
         """See `IPackageUploadSource`."""

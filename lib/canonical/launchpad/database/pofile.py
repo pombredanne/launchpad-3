@@ -511,7 +511,8 @@ class POFile(SQLBase, POFileMixIn):
             JOIN TranslationMessage AS imported ON
                 POTMsgSet.id = imported.potmsgset AND
                 imported.pofile = %s AND
-                imported.is_imported IS TRUE
+                imported.is_imported IS TRUE AND
+                NOT imported.was_fuzzy_in_last_import
             JOIN TranslationMessage AS current ON
                 POTMsgSet.id = current.potmsgset AND
                 imported.id <> current.id AND
@@ -647,6 +648,7 @@ class POFile(SQLBase, POFileMixIn):
                 imported.potmsgset = TranslationMessage.potmsgset AND
                 imported.pofile = TranslationMessage.pofile AND
                 imported.is_imported IS TRUE AND
+                NOT imported.was_fuzzy_in_last_import AND
                 (imported.msgstr0 IS NOT NULL OR
                  imported.msgstr1 IS NOT NULL OR
                  imported.msgstr2 IS NOT NULL OR
@@ -689,6 +691,11 @@ class POFile(SQLBase, POFileMixIn):
 
         # Check whether the date is older.
         return old_date > new_date
+
+    def setPathIfUnique(self, path):
+        """See `IPOFile`."""
+        if path != self.path and self.potemplate.isPOFilePathAvailable(path):
+            self.path = path
 
     def importFromQueue(self, entry_to_import, logger=None):
         """See `IPOFile`."""
@@ -1172,6 +1179,11 @@ class DummyPOFile(POFileMixIn):
     def isTranslationRevisionDateOlder(self, header):
         """See `IPOFile`."""
         raise NotImplementedError
+
+    def setPathIfUnique(self, path):
+        """See `IPOFile`."""
+        # Any path will do for a DummyPOFile.
+        self.path = path
 
     def getNextToImport(self):
         """See `IPOFile`."""

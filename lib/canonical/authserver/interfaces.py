@@ -238,7 +238,7 @@ class IBranchDetailsStorage(Interface):
 
         In the Launchpad database, the last_mirrored field will be updated to
         match the last_mirror_attempt value, the mirror_failures counter will
-        be reset to zero and the mirror_request_time will be set to NULL.
+        be reset to zero and the next_mirror_time will be set to NULL.
 
         :param branchID: The database ID of the given branch.
         :param lastRevisionID: The last revision ID mirrored.
@@ -249,7 +249,7 @@ class IBranchDetailsStorage(Interface):
         """Notify Launchpad that the branch could not be mirrored.
 
         The mirror_failures counter for the given branch record will be
-        incremented and the mirror_request_time will be set to NULL.
+        incremented and the next_mirror_time will be set to NULL.
 
         :param branchID: The database ID of the given branch.
         :param reason: A string giving the reason for the failure.

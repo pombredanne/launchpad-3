@@ -8,14 +8,15 @@ __all__ = [
     'ArchiveOverriderError',
     'ArchiveCruftChecker',
     'ArchiveCruftCheckerError',
-    'PubSourceChecker',
     'ChrootManager',
     'ChrootManagerError',
+    'LpQueryDistro',
+    'ObsoleteDistroseries',
+    'PackageCopier',
+    'PackageRemover',
+    'PubSourceChecker',
     'SyncSource',
     'SyncSourceError',
-    'PackageCopier',
-    'LpQueryDistro',
-    'PackageRemover',
     ]
 
 import apt_pkg
@@ -41,7 +42,8 @@ from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.scripts.ftpmasterbase import (
-    build_package_location, PackageLocationError, SoyuzScript, SoyuzScriptError)
+    build_package_location, PackageLocationError, SoyuzScript,
+    SoyuzScriptError)
 
 
 class ArchiveOverriderError(Exception):
@@ -518,11 +520,13 @@ class ArchiveCruftChecker:
 
                 source_version = self.source_versions.get(source, "0")
 
-                if apt_pkg.VersionCompare(latest_version, source_version) == 0:
-                    self.addNBS(
-                        self.dubious_nbs, source, latest_version, package)
+                if apt_pkg.VersionCompare(latest_version,
+                                          source_version) == 0:
+                    self.addNBS(self.dubious_nbs, source, latest_version,
+                                package)
                 else:
-                    self.addNBS(self.real_nbs, source, latest_version, package)
+                    self.addNBS(self.real_nbs, source, latest_version,
+                                package)
 
     def outputNBS(self):
         """Properly display built NBS entries.
@@ -553,7 +557,8 @@ class ArchiveCruftChecker:
                 for pkg in packages:
                     self.nbs_to_remove.append(pkg)
 
-                output += "        o %s: %s\n" % (version, ", ".join(packages))
+                output += "        o %s: %s\n" % (
+                    version, ", ".join(packages))
 
             output += "\n"
 
@@ -1159,7 +1164,8 @@ class PackageCopier(SoyuzScript):
            operate only in PARTNER, but that's odd)
         """
         if ((self.options.partner_archive and not self.options.to_partner)
-            or (self.options.to_partner and not self.options.partner_archive)):
+            or (self.options.to_partner and not
+                self.options.partner_archive)):
             raise SoyuzScriptError(
                 "Cross-PARTNER copies are not allowed.")
 
@@ -1577,3 +1583,84 @@ class PackageRemover(SoyuzScript):
 
         # Information returned mainly for the benefit of the test harness.
         return removals
+
+
+class ObsoleteDistroseries(SoyuzScript):
+    """`SoyuzScript` that obsoletes a distroseries."""
+
+    usage = "%prog -d <distribution> -s <suite>"
+    description = ("Make obsolete (schedule for removal) packages in an "
+                  "obsolete distroseries.")
+
+    def add_my_options(self):
+        """Add -d, -s, dry-run and confirmation options."""
+        SoyuzScript.add_distro_options(self)
+        SoyuzScript.add_transaction_options(self)
+
+    def mainTask(self):
+        """Execute package obsolescence procedure.
+
+        Modules using this class outside of its normal usage in the
+        main script can call this method to start the copy.
+
+        In this case the caller can override test_args on __init__
+        to set the command line arguments.
+
+        :raise SoyuzScriptError: If the distroseries is not provided or
+            it is already obsolete.
+        """
+        assert self.location, (
+            "location is not available, call SoyuzScript.setupLocation() "
+            "before calling mainTask().")
+
+        # Shortcut variable name to reduce long lines.
+        distroseries = self.location.distroseries
+
+        self._checkParameters(distroseries)
+
+        self.logger.info("Obsoleting all packages for distroseries %s in "
+                         "the %s distribution." % (
+                            distroseries.name,
+                            distroseries.distribution.name))
+
+        sources = distroseries.getAllPublishedSources()
+        binaries = distroseries.getAllPublishedBinaries()
+        num_sources = sources.count()
+        num_binaries = binaries.count()
+        self.logger.info("There are %d sources and %d binaries." % (
+            num_sources, num_binaries))
+
+        if num_sources == 0 and num_binaries == 0:
+            raise SoyuzScriptError("Nothing to do, no published packages.")
+
+        self.logger.info("Obsoleting sources...")
+        for package in sources:
+            self.logger.debug("Obsoleting %s" % package.displayname)
+            package.requestObsolescence()
+
+        self.logger.info("Obsoleting binaries...")
+        for package in binaries:
+            self.logger.debug("Obsoleting %s" % package.displayname)
+            package.requestObsolescence()
+
+        # The obsoleted packages will be caught by death row processing
+        # the next time it runs.  We skip the domination phase in the
+        # publisher because it won't consider stable distroseries.
+
+    def _checkParameters(self, distroseries):
+        """Sanity check the supplied script parameters."""
+        # Did the user provide a suite name? (distribution defaults
+        # to 'ubuntu' which is fine.)
+        if distroseries == distroseries.distribution.currentseries:
+            # SoyuzScript defaults to the latest series.  Since this
+            # will never get obsoleted it's safe to assume that the
+            # user let this option default, so complain and exit.
+            raise SoyuzScriptError(
+                "Please specify a valid distroseries name with -s/--suite "
+                "and which is not the most recent distroseries.")
+
+        # Is the distroseries in an obsolete state?  Bail out now if not.
+        if distroseries.status != DistroSeriesStatus.OBSOLETE:
+            raise SoyuzScriptError(
+                "%s is not at status OBSOLETE." % distroseries.name)
+

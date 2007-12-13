@@ -557,12 +557,12 @@ class SortSeriesMixin:
         return series_list
 
 
-class ProductView(HasAnnouncementsView, LaunchpadView, SortSeriesMixin):
+class ProductView(HasAnnouncementsView, SortSeriesMixin):
 
     __used_for__ = IProduct
 
     def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
+        HasAnnouncementsView.__init__(self, context, request)
         self.form = request.form_ng
 
     def initialize(self):
@@ -795,11 +795,12 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     schema = IProduct
     label = "Change project details"
     field_names = [
-        "displayname", "title", "summary", "description", "project",
-        "bugtracker", 'enable_bug_expiration', "official_rosetta",
-        "official_answers", "homepageurl", "sourceforgeproject",
-        "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
-        "programminglang", "development_focus", "licenses", "license_info"]
+        "displayname", "title", "summary", "description",
+        "bug_reporting_guidelines", "project", "bugtracker",
+        "enable_bug_expiration", "official_rosetta", "official_answers",
+        "homepageurl", "sourceforgeproject", "freshmeatproject", "wikiurl",
+        "screenshotsurl", "downloadurl", "programminglang",
+        "development_focus", "licenses", "license_info"]
     custom_widget(
         'licenses', LicenseWidget, column_count=3, orientation='vertical')
     custom_widget('bugtracker', ProductBugTrackerWidget)
@@ -1248,6 +1249,10 @@ class ProductBranchesView(BranchListingView):
 
     extra_columns = ('author',)
     no_sort_by = (BranchListingSort.PRODUCT,)
+
+    @cachedproperty
+    def development_focus_branch(self):
+        return self.context.development_focus.series_branch
 
     def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForProduct(
