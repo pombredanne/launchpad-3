@@ -816,7 +816,6 @@ class DebBugs(ExternalBugTracker):
                 message = message_set.fromEmail(comment, owner,
                     parsed_message=parsed_comment)
                 bug_message = bug_watch.bug.linkMessage(message, bug_watch)
-                flush_database_updates()
 
 
 #
