@@ -8,7 +8,8 @@ By using the back button in their browser, it is possible for the user
 to perform this action twice.  The result should be the same: the user
 is taken to the login form.
 
-To test this, we will first sign the user in as Sample Person:
+To test this, we will first sign the user in.  First we'll set up the
+OpenID consumer:
 
     >>> from openid.consumer.consumer import Consumer
     >>> from openid.fetchers import setDefaultFetcher
@@ -21,6 +22,8 @@ To test this, we will first sign the user in as Sample Person:
 
     >>> openid_store = MemoryStore()
     >>> consumer = Consumer(session={}, store=openid_store)
+
+Then log in as Sample Person:
 
     >>> request = consumer.beginWithoutDiscovery(
     ...     make_identifier_select_endpoint(PROTOCOL_URI))
