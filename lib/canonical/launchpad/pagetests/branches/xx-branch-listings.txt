@@ -334,3 +334,45 @@ Finally, sorting by a particular criterion has the desired effect.
     main                                Development
     import                              New
     mirrored                            New
+
+
+== Highlighting the development focus branch ==
+
+The branch associated with the development focus series is highlighted
+on the branch listings using the same CSS style that is used to
+highlight the development focus series on the product overview page.
+
+Firstly we need to make the "main" branch of gnome-terminal the
+development focus branch.
+
+    >>> admin_browser.open('http://launchpad.dev/gnome-terminal/trunk')
+    >>> admin_browser.getLink('Edit source').click()
+    >>> admin_browser.getControl(name='field.user_branch').value = (
+    ...     '~name12/gnome-terminal/main')
+    >>> admin_browser.getControl('Update Details').click()
+
+Now when we look at the branches for gnome-terminal, the main branch
+now shows as the "Current development focus".
+
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> # The main branch is the second in the listing.
+    >>> row = table.tbody.fetch('tr')[1]
+    >>> print row['class']
+    highlighted
+    >>> print extract_text(row)
+    main  Current development focus     Development
+
+The branch is not shown as development focus when listed from
+the person context.
+
+    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    main      Sample Person        New          firefox         Author
+    2.6                            Mature       gnome-terminal  Registrant
+    main                           Development  gnome-terminal  Registrant
+    klingon   Sample Person        Experimental gnome-terminal  Author
+    launchpad Launchpad Developers New          gnome-terminal  Subscriber
+    mirrored                       New          gnome-terminal  Registrant

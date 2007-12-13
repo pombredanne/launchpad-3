@@ -211,7 +211,7 @@ By default, we got a safe path to prevent collisions with other IPOFile.
 
 Let's override the default good path with one we know is the right one.
 
-    >>> pofile.path = u'po/cy.po'
+    >>> pofile.setPathIfUnique(u'po/cy.po')
 
 It's newly created, so it has no translated messages yet.
 

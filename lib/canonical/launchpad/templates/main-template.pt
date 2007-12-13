@@ -280,10 +280,9 @@
           tal:replace="nothing">
           <a tal:attributes="href vhosts/mainsite/rooturl">Launchpad home</a> |
           <a tal:attributes="href vhosts/code/rooturl">Code</a> |
-        <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> |
-        <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> |
-        <a tal:attributes="href vhosts/translations/rooturl">Translations</a> |
-  
+          <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> |
+          <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> |
+          <a tal:attributes="href vhosts/translations/rooturl">Translations</a> |
           <a tal:attributes="href vhosts/answers/rooturl">Answers</a>
         </div>
         <div id="colophon">

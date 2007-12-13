@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -10,6 +10,7 @@ import unittest
 import shutil
 import StringIO
 from textwrap import dedent
+import traceback
 
 from zope.publisher.browser import TestRequest
 from zope.security.interfaces import Unauthorized
@@ -18,17 +19,24 @@ from zope.testing.loggingsupport import InstalledHandler
 from canonical.config import config
 from canonical.testing import reset_logging
 from canonical.launchpad import versioninfo
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
+
 
 UTC = pytz.timezone('UTC')
 
+
+class ArbitraryException(Exception):
+    """Used to test handling of exceptions in OOPS reports."""
+
+
 class TestErrorReport(unittest.TestCase):
+
     def tearDown(self):
         reset_logging()
 
     def test_import(self):
-        from canonical.launchpad.webapp.errorlog import (
-            ErrorReport, ErrorReportingUtility)
+        from canonical.launchpad.webapp.errorlog import ErrorReport
 
     def test___init__(self):
         """Test ErrorReport.__init__()"""
@@ -150,7 +158,6 @@ class TestErrorReportingUtility(unittest.TestCase):
 
     def test_newOopsId(self):
         """Test ErrorReportingUtility.newOopsId()"""
-        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
         utility = ErrorReportingUtility()
 
         # first oops of the day
@@ -183,7 +190,6 @@ class TestErrorReportingUtility(unittest.TestCase):
 
     def test_findLastOopsId(self):
         """Test ErrorReportingUtility._findLastOopsId()"""
-        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
         utility = ErrorReportingUtility()
 
         self.assertEqual(config.launchpad.errorreports.oops_prefix, 'T')
@@ -201,13 +207,12 @@ class TestErrorReportingUtility(unittest.TestCase):
 
     def test_raising(self):
         """Test ErrorReportingUtility.raising() with no request"""
-        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
         try:
-            raise Exception('xyz')
-        except:
+            raise ArbitraryException('xyz')
+        except ArbitraryException:
             utility.raising(sys.exc_info(), now=now)
 
         errorfile = os.path.join(utility.errordir(now), '01800.T1')
@@ -216,7 +221,7 @@ class TestErrorReportingUtility(unittest.TestCase):
 
         # the header
         self.assertEqual(lines[0], 'Oops-Id: OOPS-91T1\n')
-        self.assertEqual(lines[1], 'Exception-Type: Exception\n')
+        self.assertEqual(lines[1], 'Exception-Type: ArbitraryException\n')
         self.assertEqual(lines[2], 'Exception-Value: xyz\n')
         self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'Page-Id: \n')
@@ -236,12 +241,11 @@ class TestErrorReportingUtility(unittest.TestCase):
         # traceback
         self.assertEqual(lines[13], 'Traceback (innermost last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
-        #    raise Exception(\'xyz\')
-        self.assertEqual(lines[16], 'Exception: xyz\n')
+        #    raise ArbitraryException(\'xyz\')
+        self.assertEqual(lines[16], 'ArbitraryException: xyz\n')
 
     def test_raising_with_request(self):
         """Test ErrorReportingUtility.raising() with a request"""
-        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
@@ -274,8 +278,8 @@ class TestErrorReportingUtility(unittest.TestCase):
         request.setInWSGIEnvironment('launchpad.pageid', 'IFoo:+foo-template')
 
         try:
-            raise Exception('xyz\nabc')
-        except:
+            raise ArbitraryException('xyz\nabc')
+        except ArbitraryException:
             utility.raising(sys.exc_info(), request, now=now)
 
         errorfile = os.path.join(utility.errordir(now), '01800.T1')
@@ -284,7 +288,7 @@ class TestErrorReportingUtility(unittest.TestCase):
 
         # the header
         self.assertEqual(lines.pop(0), 'Oops-Id: OOPS-91T1\n')
-        self.assertEqual(lines.pop(0), 'Exception-Type: Exception\n')
+        self.assertEqual(lines.pop(0), 'Exception-Type: ArbitraryException\n')
         self.assertEqual(lines.pop(0), 'Exception-Value: xyz abc\n')
         self.assertEqual(lines.pop(0), 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines.pop(0), 'Page-Id: IFoo:+foo-template\n')
@@ -319,24 +323,23 @@ class TestErrorReportingUtility(unittest.TestCase):
         # traceback
         self.assertEqual(lines.pop(0), 'Traceback (innermost last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
-        #    raise Exception(\'xyz\')
+        #    raise ArbitraryException(\'xyz\')
         lines.pop(0)
         lines.pop(0)
-        self.assertEqual(lines.pop(0), 'Exception: xyz\n')
+        self.assertEqual(lines.pop(0), 'ArbitraryException: xyz\n')
 
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
 
     def test_raising_for_script(self):
         """Test ErrorReportingUtility.raising with a ScriptRequest."""
-        from canonical.launchpad.webapp.errorlog import (
-            ErrorReportingUtility, ScriptRequest)
+        from canonical.launchpad.webapp.errorlog import ScriptRequest
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
         try:
-            raise Exception('xyz\nabc')
-        except:
+            raise ArbitraryException('xyz\nabc')
+        except ArbitraryException:
             # Do not test escaping of request vars here, it is already tested
             # in test_raising_with_request.
             request = ScriptRequest([
@@ -350,7 +353,7 @@ class TestErrorReportingUtility(unittest.TestCase):
 
         # the header
         self.assertEqual(lines[0], 'Oops-Id: OOPS-91T1\n')
-        self.assertEqual(lines[1], 'Exception-Type: Exception\n')
+        self.assertEqual(lines[1], 'Exception-Type: ArbitraryException\n')
         self.assertEqual(lines[2], 'Exception-Value: xyz abc\n')
         self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'Page-Id: \n')
@@ -373,16 +376,15 @@ class TestErrorReportingUtility(unittest.TestCase):
         # traceback
         self.assertEqual(lines[16], 'Traceback (innermost last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
-        #    raise Exception(\'xyz\')
-        self.assertEqual(lines[19], 'Exception: xyz\n')
+        #    raise ArbitraryException(\'xyz\')
+        self.assertEqual(lines[19], 'ArbitraryException: xyz\n')
 
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
 
 
     def test_raising_with_unprintable_exception(self):
-        """Test ErrorReportingUtility.raising() with an unprintable exception"""
-        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+        # Test ErrorReportingUtility.raising() with an unprintable exception.
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 01, 01, 00, 30, 00, tzinfo=UTC)
 
@@ -393,7 +395,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         log = InstalledHandler('SiteError')
         try:
             raise UnprintableException()
-        except:
+        except UnprintableException:
             utility.raising(sys.exc_info(), now=now)
         log.uninstall()
 
@@ -435,13 +437,12 @@ class TestErrorReportingUtility(unittest.TestCase):
 
         An OOPS is not recorded when a Unauthorized exceptions is raised.
         """
-        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
         try:
             raise Unauthorized('xyz')
-        except:
+        except Unauthorized:
             utility.raising(sys.exc_info(), now=now)
 
         errorfile = os.path.join(utility.errordir(now), '01800.T1')
@@ -454,17 +455,62 @@ class TestErrorReportingUtility(unittest.TestCase):
         An OOPS is not recorded when a TranslationUnavailable exception is
         raised.
         """
-        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
         try:
             raise TranslationUnavailable('xyz')
-        except:
+        except TranslationUnavailable:
             utility.raising(sys.exc_info(), now=now)
 
         errorfile = os.path.join(utility.errordir(now), '01800.T1')
         self.assertFalse(os.path.exists(errorfile))
+
+    def test_raising_with_string_as_traceback(self):
+        # ErrorReportingUtility.raising() can be called with a string in the
+        # place of a traceback. This is useful when the original traceback
+        # object is unavailable.
+        utility = ErrorReportingUtility()
+        utility.copy_to_zlog = True
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+
+        try:
+            raise RuntimeError('hello')
+        except RuntimeError:
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            # Turn the traceback into a string. When the traceback itself
+            # cannot be passed to ErrorReportingUtility.raising, a string like
+            # one generated by format_exc is sometimes passed instead.
+            exc_tb = traceback.format_exc()
+
+        utility.raising((exc_type, exc_value, exc_tb), now=now)
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+
+        self.assertTrue(os.path.exists(errorfile))
+        lines = open(errorfile, 'r').readlines()
+
+        # the header
+        self.assertEqual(lines[0], 'Oops-Id: OOPS-91T1\n')
+        self.assertEqual(lines[1], 'Exception-Type: RuntimeError\n')
+        self.assertEqual(lines[2], 'Exception-Value: hello\n')
+        self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
+        self.assertEqual(lines[4], 'Page-Id: \n')
+        self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
+        self.assertEqual(lines[6], 'Revision: %s\n'% versioninfo.revno)
+        self.assertEqual(lines[7], 'User: None\n')
+        self.assertEqual(lines[8], 'URL: None\n')
+        self.assertEqual(lines[9], 'Duration: -1\n')
+        self.assertEqual(lines[10], '\n')
+
+        # no request vars
+        self.assertEqual(lines[11], '\n')
+
+        # no database statements
+        self.assertEqual(lines[12], '\n')
+
+        # traceback
+        self.assertEqual(''.join(lines[13:17]), exc_tb)
+
 
 
 def test_suite():

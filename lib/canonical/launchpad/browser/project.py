@@ -367,8 +367,8 @@ class ProjectEditView(LaunchpadEditFormView):
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
-        'homepageurl', 'bugtracker', 'sourceforgeproject',
-        'freshmeatproject', 'wikiurl']
+        'bug_reporting_guidelines', 'homepageurl', 'bugtracker',
+        'sourceforgeproject', 'freshmeatproject', 'wikiurl']
 
 
     @action('Change Details', name='change')

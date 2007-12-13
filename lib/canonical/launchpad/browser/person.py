@@ -65,6 +65,7 @@ __all__ = [
     'PersonTeamBranchesView',
     'PersonTranslationView',
     'PersonView',
+    'PersonIndexView',
     'RedirectToEditLanguagesView',
     'ReportedBugTaskSearchListingView',
     'SearchAnsweredQuestionsView',
@@ -123,7 +124,8 @@ from canonical.launchpad.interfaces import (
     LoginTokenType, NotFoundError, PersonCreationRationale,
     QuestionParticipation, SSHKeyType, SpecificationFilter,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    is_participant_in_beta_program)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -132,6 +134,8 @@ from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
+from canonical.launchpad.browser.openiddiscovery import (
+    OpenIDPersistentIdentity, XRDSContentNegotiationMixin)
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -148,10 +152,9 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
-    Link, Navigation, smartquote, StandardLaunchpadFacets, stepthrough,
-    stepto)
+    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
+    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
+    custom_widget, enabled_with_permission, smartquote, stepthrough, stepto)
 
 from canonical.launchpad import _
 
@@ -975,11 +978,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def configure_mailing_list(self):
         target = '+mailinglist'
         text = 'Configure mailing list'
-        mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        enabled = config.mailman.expose_hosted_mailing_lists
         summary = (
             'The mailing list associated with %s' % self.context.browsername)
-        return Link(target, text, summary, enabled=enabled, icon='edit')
+        return Link(target, text, summary,
+                    enabled=is_participant_in_beta_program(self.context),
+                    icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):
@@ -1993,6 +1996,22 @@ class PersonView(LaunchpadView, FeedsMixin):
         return mailing_list.archive_url
 
 
+class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
+    """View class for person +index and +xrds pages."""
+
+    xrds_template = ViewPageTemplateFile("../templates/person-xrds.pt")
+
+    @cachedproperty
+    def enable_xrds_discovery(self):
+        """Only enable discovery if person is OpenID enabled."""
+        return self.context.is_openid_enabled
+
+    @cachedproperty
+    def openid_identity_url(self):
+        """The identity URL for the person."""
+        return canonical_url(OpenIDPersistentIdentity(self.context))
+
+
 class PersonRelatedProjectsView(LaunchpadView):
 
     # Safety net for the Registry Admins case which is the owner/driver of
@@ -2699,8 +2718,8 @@ class PersonEditEmailsView(LaunchpadFormView):
     def _mailing_list_subscription_type(self, mailing_list):
         """Return the context user's subscription type for the given list.
 
-        This is "Preferred address" if the user is subscribed using her
-        preferred address and "Don't subscribe" if the user is not
+        This is 'Preferred address' if the user is subscribed using her
+        preferred address and 'Don't subscribe' if the user is not
         subscribed at all. Otherwise it's the EmailAddress under
         which the user is subscribed to this mailing list.
         """

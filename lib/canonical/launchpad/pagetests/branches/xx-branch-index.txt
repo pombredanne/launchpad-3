@@ -205,7 +205,7 @@ been mirrored:
     ...     title='Disabled branch')
     >>> branch.last_mirrored = datetime(
     ...     year=2007, month=10, day=1, tzinfo=pytz.timezone('UTC'))
-    >>> branch.mirror_request_time = None
+    >>> branch.next_mirror_time = None
     >>> flush_database_updates()
     >>> logout()
 
@@ -227,9 +227,9 @@ Branches that have never been mirrored don't have a 'Last mirrored' field.
     Last mirrored: Not mirrored yet
     Next mirror: As soon as possible
 
-If mirror_request_time is NULL, then mirroring of the branch is disabled.
+If next_mirror_time is NULL, then mirroring of the branch is disabled.
 
-(First we make a branch which has a NULL mirror_request_time)
+(First we make a branch which has a NULL next_mirror_time)
 
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
@@ -237,7 +237,7 @@ If mirror_request_time is NULL, then mirroring of the branch is disabled.
     ...     BranchType.MIRRORED, name='mirror-disabled', creator=no_priv,
     ...     owner=no_priv, product=None, url='http://example.com/disabled',
     ...     title='Disabled branch')
-    >>> branch.mirror_request_time = None
+    >>> branch.next_mirror_time = None
     >>> flush_database_updates()
     >>> logout()
 

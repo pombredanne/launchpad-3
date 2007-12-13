@@ -286,6 +286,16 @@ class IPOFile(IRosettaStats):
     def isTranslationRevisionDateOlder(header):
         """Whether given header revision date is newer then self one."""
 
+    def setPathIfUnique(path):
+        """Set path to given one, provided it's a valid, unique path.
+
+        A `POFile`'s path must be unique within its context, i.e. for either
+        the same `DistroSeries` and `SourcePackageName`, or for the same
+        `ProductSeries`, depending on which the `POFile` is attached to.
+
+        If the new path is not unique, the old path will be retained instead.
+        """
+
     def importFromQueue(entry_to_import, logger=None):
         """Import given queue entry.
 
