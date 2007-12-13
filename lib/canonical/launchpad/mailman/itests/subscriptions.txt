@@ -23,6 +23,7 @@ this stanza can be removed.
     >>> browser.getControl('Apply for Mailing List').click()
 
     >>> list_one = itest_helper.review_list('itest-one')
+    >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
