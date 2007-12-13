@@ -446,7 +446,9 @@ The upload will be rejected.
 
   >>> success = ed_src_dup.do_accept()
   ERROR: Exception while accepting:
-  This sourcepackagerelease is already accepted in hoary.
+  The source ed - 0.2-20 is already accepted in ubuntu/hoary and you
+  cannot upload the same version within the same distribution. You
+  have to modify the source version and re-upload.
   <BLANKLINE>
   Traceback...
   ...
@@ -456,7 +458,9 @@ The upload will be rejected.
   True
 
   >>> print ed_src_dup.rejection_message
-  This sourcepackagerelease is already accepted in hoary.
+  The source ed - 0.2-20 is already accepted in ubuntu/hoary and you
+  cannot upload the same version within the same distribution. You
+  have to modify the source version and re-upload.
 
 We rely on process-upload transaction rollback to not store bogus
 queue entry in the database.

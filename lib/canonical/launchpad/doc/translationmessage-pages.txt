@@ -231,13 +231,13 @@ But first, let's see current values.
     >>> translationmessage = TranslationMessage.get(1)
     >>> pofile = translationmessage.pofile
     >>> pofile.updateStatistics()
-    (6, 0, 1, 2)
+    (6, 0, 2, 2)
     >>> pofile.currentCount()
     6
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
-    1
+    2
     >>> pofile.unreviewedCount()
     2
 
@@ -290,7 +290,7 @@ statistics were updated accordly.
     >>> pofile.updatesCount()
     1
     >>> pofile.rosettaCount()
-    1
+    2
     >>> pofile.unreviewedCount()
     2
 

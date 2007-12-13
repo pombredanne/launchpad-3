@@ -556,8 +556,10 @@ remain in the original queue
   >>> dup_two.setAccepted()
   Traceback (most recent call last):
   ...
-  QueueInconsistentStateError: This sourcepackagerelease is already accepted in breezy-autotest.
-
+  QueueInconsistentStateError: The source cnews - 1.0 is already
+  accepted in ubuntu/breezy-autotest and you cannot upload the same
+  version within the same distribution. You have to modify the source
+  version and re-upload.
   >>> dup_two.status.name
   'UNAPPROVED'
 
@@ -586,8 +588,10 @@ The protection code should also identify dups with items in DONE queue
   >>> dup_two.setAccepted()
   Traceback (most recent call last):
   ...
-  QueueInconsistentStateError: This sourcepackagerelease is already accepted in breezy-autotest.
-
+  QueueInconsistentStateError: The source cnews - 1.0 is already
+  accepted in ubuntu/breezy-autotest and you cannot upload the same
+  version within the same distribution. You have to modify the source
+  version and re-upload.
 
 Check forbidden approval of not selected Section:
 

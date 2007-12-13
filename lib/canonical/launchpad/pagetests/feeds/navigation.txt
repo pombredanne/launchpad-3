@@ -1,7 +1,7 @@
 = Feeds Navigation =
 
 Feeds are served over HTTP, and are heavily cached. Pages which are not
-registered on the Feeds layer should not be served from the feeds.lp.n
+registered on the Feeds layer should not be served from the feeds.lp.net
 subdomain. 
 
 

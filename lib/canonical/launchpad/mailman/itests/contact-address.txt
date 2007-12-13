@@ -1,0 +1,305 @@
+= Using a mailing list as a team's contact address =
+
+Mailing lists hosted by Launchpad can be used as the contact address of any
+team in Launchpad.  When this feature is used, all notifications sent by
+Launchpad to the team will be sent to the mailing list's address, in fact.
+
+    # This test requires us to start an SMTP server that accepts messages
+    # sent by Mailman's outgoing qrunner and stores these in a Unix mbox.
+    >>> import itest_helper
+    >>> smtpd = itest_helper.SMTPServer()
+    >>> smtpd.start()
+
+We'll now register and approve the mailing list we'll be using as the
+contact address of our new team.
+
+    # Create a mailing list for this test.
+    >>> browser = itest_helper.make_browser()
+    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.getControl(name='field.name').value = 'itest-one'
+    >>> browser.getControl('Display Name').value = 'ITest One'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+
+    >>> browser.getLink('Configure mailing list')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> itest_helper.beta_program_enable('itest-one')
+    >>> browser.reload()
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+
+    >>> list_one = itest_helper.review_list('itest-one')
+    >>> itest_helper.wait_for_mailman()
+    >>> from Mailman.Utils import list_names
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    ['itest-one']
+
+Subscribe someone to the team and mailing list so that these messages can get
+delivered.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from zope.component import getUtility
+    >>> login('foo.bar@canonical.com')
+    >>> person_set = getUtility(IPersonSet)
+    >>> team_one = person_set.getByName('itest-one')
+
+    # Subscribe Anne with her preferred address.
+    >>> anne = new_person('Anne')
+    >>> anne.join(team_one)
+    >>> from canonical.launchpad.ftests import sync
+    >>> sync(list_one)
+    >>> list_one.subscribe(anne)
+    >>> from canonical.database.sqlbase import commit
+    >>> logout()
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
+
+It's possible to set the team as a project's answer contact.  Then creating
+new questions will email the mailing list.
+
+    >>> browser.open('http://launchpad.dev/~itest-one/+contactaddress')
+    >>> browser.getControl('The Launchpad mailing list').selected = True
+    >>> browser.getControl('Change').click()
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0The Launchpad mailing list for this team...]
+
+    >>> browser.open('http://answers.launchpad.dev/firefox/+answer-contact')
+    >>> browser.getControl(name='field.answer_contact_teams').displayValue = [
+    ...     'ITest One']
+    >>> browser.getControl('Continue').click()
+
+    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
+
+    >>> browser.open('http://answers.launchpad.dev/firefox/+addquestion')
+    >>> browser.getControl('Summary').value = 'A new question'
+    >>> browser.getControl('Continue').click()
+    >>> browser.getControl('Description').value = 'More detail.'
+    >>> browser.getControl('Add').click()
+
+There are now two messages in the mailbox.  One message goes to
+no-priv@canonical.com because he added the question.  The other goes to the
+mailing list since it is the contact address.
+
+    >>> smtp_watcher.wait_for_growth()
+    >>> messages = smtpd.getMessages()
+    >>> len(messages)
+    2
+
+    >>> from operator import itemgetter
+    >>> messages.sort(key=itemgetter('to'), reverse=True)
+
+This is the message to the submitter of the question.
+
+    >>> print messages[0].as_string()
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    X-Launchpad-Question: product=firefox; status=Open; assignee=None;
+      priority=Normal; language=en
+    Reply-To: question...@answers.launchpad.net
+    X-Launchpad-Message-Rationale: Subscriber
+    To: no-priv@canonical.com
+    From: No Privileges Person <question...@answers.launchpad.net>
+    Subject: [Question #...]: A new question
+    ...
+    <BLANKLINE>
+    New question #... on Mozilla Firefox:
+    http://answers.launchpad.dev/firefox/+question/...
+    <BLANKLINE>
+    More detail.
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this question notification because you are a direct
+    subscriber of the question.
+    <BLANKLINE>
+    <BLANKLINE>
+
+This is the message to the contact address.
+
+    >>> print messages[1].as_string()
+    MIME-Version: 1.0
+    X-Launchpad-Question: product=firefox; status=Open; assignee=None;
+      priority=Normal; language=en
+    X-Launchpad-Message-Rationale: Answer Contact (firefox) @itest-one
+    To: itest-one@lists.launchpad.net
+    From: No Privileges Person <question...@answers.launchpad.net>
+    ...
+    Subject: [Itest-one] [Question #...]: A new question
+    X-BeenThere: itest-one@launchpad.dev
+    X-Mailman-Version: ...
+    Reply-To: question...@answers.launchpad.net
+    List-Id: <itest-one.launchpad.dev>
+    List-Unsubscribe: <http://.../mailman/listinfo/itest-one>,
+      <mailto:itest-one-request@launchpad.dev?subject=unsubscribe>
+    List-Archive: <http://.../pipermail/itest-one>
+    List-Post: <mailto:itest-one@launchpad.dev>
+    List-Help: <mailto:itest-one-request@launchpad.dev?subject=help>
+    List-Subscribe: <http://.../mailman/listinfo/itest-one>,
+      <mailto:itest-one-request@launchpad.dev?subject=subscribe>
+    ...
+    <BLANKLINE>
+    New question #... on Mozilla Firefox:
+    http://answers.launchpad.dev/firefox/+question/...
+    <BLANKLINE>
+    More detail.
+    <BLANKLINE>
+    --
+    You received this question notification because you are a member of
+    ITest One, which is an answer contact for Mozilla Firefox.
+    _______________________________________________
+    Itest-one mailing list
+    Itest-one@launchpad.dev
+    http://mission.wooz.org/mailman/listinfo/itest-one
+    <BLANKLINE>
+    <BLANKLINE>
+
+Similarly, if we subscribe our new team to a blueprint, a notification will be
+sent to its mailing list.
+
+    # Reset the smtp server with a fresh mbox.
+    >>> smtpd.reset()
+
+    >>> browser.open(
+    ...     'http://launchpad.dev/firefox/+spec/canvas/+addsubscriber')
+    >>> browser.getControl('Subscriber').value = 'itest-one'
+    >>> browser.getControl('Continue').click()
+
+    >>> smtp_watcher.wait_for_growth()
+    >>> messages = smtpd.getMessages()
+    >>> len(messages)
+    1
+
+    >>> print messages[0].as_string()
+    MIME-Version: 1.0
+    To: itest-one@lists.launchpad.net
+    From: No Privileges Person <no-priv@canonical.com>
+    ...
+    <BLANKLINE>
+    You are now subscribed to the blueprint canvas - Support <canvas>
+    Objects.
+    <BLANKLINE>
+    ...
+
+If we change the team's contact address to something other than the
+launchpad-hosted mailing list, though, the notifications won't be sent to the
+mailing list, they'll be sent to the team members individually.
+
+    >>> browser.open('http://launchpad.dev/~itest-one/+contactaddress')
+    >>> browser.getControl('Each member individually').selected = True
+    >>> browser.getControl('Change').click()
+
+    >>> browser.getLink('Change contact address').click()
+    >>> browser.getControl(name='field.contact_method').displayValue
+    ['\xa0Each member individually']
+
+    # Reset the smtp server with a fresh mbox.
+    >>> smtpd.reset()
+
+    >>> browser.open('http://answers.launchpad.dev/firefox/+addquestion')
+    >>> browser.getControl('Summary').value = 'Another question'
+    >>> browser.getControl('Continue').click()
+    >>> browser.getControl('Description').value = 'More detail.'
+    >>> browser.getControl('Add').click()
+
+    >>> smtp_watcher.wait_for_growth()
+    'Timed out'
+
+There are now two messages in the mailbox.  One message goes to
+no-priv@canonical.com because he added the question.  The other goes to Anne
+as a member of the team, since the team's contact address is not set.
+
+    >>> messages = smtpd.getMessages()
+    >>> len(messages)
+    2
+    >>> messages.sort(key=itemgetter('to'), reverse=True)
+
+This message goes to the submitter of the question.
+
+    >>> print messages[0].as_string()
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    To: no-priv@canonical.com
+    From: No Privileges Person <question...@answers.launchpad.net>
+    Subject: [Question #...]: Another question
+    ...
+    <BLANKLINE>
+    New question #... on Mozilla Firefox:
+    http://answers.launchpad.dev/firefox/+question/...
+    <BLANKLINE>
+    More detail.
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this question notification because you are a direct
+    subscriber of the question.
+    <BLANKLINE>
+    <BLANKLINE>
+
+This message goes to the team members individually, and Anne is the only team
+member.
+
+    >>> print messages[1].as_string()
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    Reply-To: question...@answers.launchpad.net
+    X-Launchpad-Message-Rationale: Answer Contact (firefox) @itest-one
+    To: anne.person@example.com
+    From: No Privileges Person <question...@answers.launchpad.net>
+    Subject: [Question #...]: Another question
+    ...
+    <BLANKLINE>
+    New question #... on Mozilla Firefox:
+    http://answers.launchpad.dev/firefox/+question/...
+    <BLANKLINE>
+    More detail.
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You received this question notification because you are a member of
+    ITest One, which is an answer contact for Mozilla Firefox.
+    <BLANKLINE>
+    <BLANKLINE>
+
+When emails are sent directly to the mailing list address they're still
+delivered since the mailing list is still active.
+
+    # Reset the smtp server with a fresh mbox.
+    >>> smtpd.reset()
+    >>> from Mailman.Post import inject
+    >>> inject('itest-one', """\
+    ... From: %s
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A member post
+    ... Message-ID: <first-injection>
+    ...
+    ... Hi, I am a member of Launchpad.
+    ... """ % anne.preferredemail.email)
+    >>> smtp_watcher.wait_for_growth()
+    >>> messages = smtpd.getMessages()
+
+Anne is the only member of the mailing list, so the message to her is the only
+one in the mailbox.
+
+    >>> len(messages)
+    1
+
+    >>> message = messages[0]
+    >>> print message.as_string()
+    From: anne.person@example.com
+    To: itest-one@lists.launchpad.dev
+    Message-ID: <first-injection>
+    Subject: [Itest-one] A member post
+    ...
+    <BLANKLINE>
+    Hi, I am a member of Launchpad.
+    ...
+
+    >>> smtpd.stop()
