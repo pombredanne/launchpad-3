@@ -31,7 +31,7 @@ from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTrackerType, BugWatchErrorType, CreateBugParams,
     IBugWatchSet, IDistribution, IExternalBugTracker, ILaunchpadCelebrities,
-    IMessageSet, IPersonSet, PersonCreationRationale,
+    IMessageSet, IPersonSet, NotFoundError, PersonCreationRationale,
     UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp.url import urlparse
 
@@ -808,11 +808,15 @@ class DebBugs(ExternalBugTracker):
                 "Launchpad." % bug_watch.remotebug,
                 getUtility(ILaunchpadCelebrities).bug_watch_updater)
 
-            message = getUtility(IMessageSet).fromEmail(comment, owner,
-                parsed_message=parsed_comment)
-
-            bug_message = bug_watch.bug.linkMessage(message, bug_watch)
-            flush_database_updates()
+            message_set = getUtility(IMessageSet)
+            try:
+                existing_messages = message_set.get(
+                    rfc822msgid=parsed_comment['message-id'])
+            except NotFoundError:
+                message = message_set.fromEmail(comment, owner,
+                    parsed_message=parsed_comment)
+                bug_message = bug_watch.bug.linkMessage(message, bug_watch)
+                flush_database_updates()
 
 
 #

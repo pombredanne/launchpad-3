@@ -458,6 +458,25 @@ No notifications will be generated for the imported comments:
     >>> len(pending_notifications)
     0
 
+If a second comment is added and then the comments imported, the
+existing comment will remain unaltered and the new comment will be
+imported into Launchpad as normal. We can demonstrate this by telling
+our test debbugs DB to load sample data for more than one comment
+
+    >>> config.malone.show_imported_comments = True
+    >>> chunks = removeSecurityProxy(bug.getMessageChunks())
+    >>> len(chunks)
+    2
+
+    >>> external_debbugs.debbugs_db._data_file = 'debbugs-2-comments.txt'
+    >>> external_debbugs.importBugComments(bug_watch)
+    INFO:...:Importing comments for remote bug 1234...
+
+    >>> chunks = removeSecurityProxy(bug.getMessageChunks())
+    >>> len(chunks)
+    3
+
+    >>> config.malone.show_imported_comments = False
 
 === Script for importing Debian bugs, linking them to Ubutu ===
 

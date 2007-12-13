@@ -437,13 +437,19 @@ class TestDebBugsDB:
     """A debbugs db object that doesn't require access to the debbugs db."""
 
     def __init__(self):
-        self.data_file = os.path.join(os.path.dirname(__file__),
-            'testfiles', 'debbugs-comments.txt')
+        self._data_path = os.path.join(os.path.dirname(__file__),
+            'testfiles')
+        self._data_file = 'debbugs-1-comment.txt'
+
+    @property
+    def data_file(self):
+        return os.path.join(self._data_path, self._data_file)
 
     def load_log(self, bug):
         """Load the comments for a particular debian bug."""
-        comment = open(self.data_file).read()
-        bug.comments = [comment]
+        comment_data = open(self.data_file).read()
+        bug.comments = [comment.strip() for comment in
+            comment_data.split('--\n')]
 
 
 class TestDebBugs(DebBugs):
