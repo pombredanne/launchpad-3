@@ -52,8 +52,8 @@ class ConfigSchema(object):
 
     def _getRawSchema(self, filename):
         """Return the contents of the schema file as a StringIO.
-        
-        This method veries that the file is ascii encoded and that no
+
+        This method verifies that the file is ascii encoded and that no
         section name is refined.
         """
         schema_file = open(filename, 'r')
