@@ -117,10 +117,38 @@ def set_bugwatch_error_type(bug_watch, error_type):
     bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
     logout()
 
-class TestBrokenExternalBugTracker(ExternalBugTracker):
+
+class TestExternalBugTracker(ExternalBugTracker):
+    """A test version of `ExternalBugTracker`.
+
+    Implements all the methods required of an `IExternalBugTracker`
+    implementation, though it doesn't actually do anything.
+    """
+
+    def __init__(self, bugtracker=None):
+        """Initialise a new `TestExternalBugTracker`.
+
+        This method exists because the tests that use this class don't
+        need to know about `BugTracker` objects or the new_bugtracker
+        function.
+        """
+        if bugtracker is not None:
+            super(TestExternalBugTracker, self).__init__(bugtracker)
+
+    def convertRemoteStatus(self, remote_status):
+        """Always return UNKNOWN_REMOTE_STATUS.
+
+        This method exists to satisfy the implementation requirements of
+        `IExternalBugTracker`.
+        """
+        return UNKNOWN_REMOTE_STATUS
+
+
+class TestBrokenExternalBugTracker(TestExternalBugTracker):
     """A test version of ExternalBugTracker, designed to break."""
 
     def __init__(self, baseurl):
+        super(TestBrokenExternalBugTracker, self).__init__()
         self.baseurl = baseurl
         self.initialize_remote_bugdb_error = None
         self.get_remote_status_error = None
@@ -148,14 +176,6 @@ class TestBrokenExternalBugTracker(ExternalBugTracker):
         """
         if self.get_remote_status_error:
             raise self.get_remote_status_error("Testing")
-
-    def convertRemoteStatus(self, status):
-        """Return UNKNOWN_REMOTE_STATUS.
-
-        This method exists to avoid tests from failing with
-        AttributeErrors.
-        """
-        return UNKNOWN_REMOTE_STATUS
 
 
 class TestBugzilla(Bugzilla):

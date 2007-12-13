@@ -9,6 +9,7 @@ __all__ = [
     'CreateBugParams',
     'CreatedBugWithNoBugTasksError',
     'IBug',
+    'IBugBecameQuestionEvent',
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
@@ -110,6 +111,13 @@ class BugNameField(ContentNameField):
         except NotFoundError:
             return None
 
+class IBugBecameQuestionEvent(Interface):
+    """A bug became a question."""
+
+    bug = Attribute("The bug that was changed into a question.")
+    question = Attribute("The question that the bug became.")
+    user = Attribute("The user that changed the bug into a question.")
+
 
 class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""
@@ -136,7 +144,8 @@ class IBug(IMessageTarget, ICanBeMentored):
     description = Text(
         title=_('Description'), required=True,
         description=_("""A detailed description of the problem,
-        including the steps required to reproduce it."""))
+        including the steps required to reproduce it."""), 
+        max_length=50000)
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = Attribute("The owner's IPerson")
     duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
@@ -184,8 +193,20 @@ class IBug(IMessageTarget, ICanBeMentored):
         "True or False depending on whether this bug is considered "
         "completely addressed. A bug is Launchpad is completely addressed "
         "when there are no tasks that are still open for the bug.")
+    permits_expiration = Bool(
+        title=_("Does the bug's state permit expiration? "
+        "Expiration is permitted when the bug is not valid anywhere, "
+        "a message was sent to the bug reporter, and the bug is associated "
+        "with pillars that have enabled bug expiration."))
+    can_expire = Bool(
+        title=_("Can the Incomplete bug expire if it becomes inactive? "
+        "Expiration may happen when the bug permits expiration, and a "
+        "bugtask cannot be confirmed."))
     date_last_message = Datetime(
         title=_('Date of last bug message'), required=False, readonly=True)
+    number_of_duplicates = Int(
+        title=_('The number of bugs marked as duplicates of this bug'),
+        required=True, readonly=True)
 
 
     def followup_subject():
@@ -312,6 +333,37 @@ class IBug(IMessageTarget, ICanBeMentored):
 
         The user is the one linking to the CVE.
         """
+
+    def canBeAQuestion():
+        """Return True of False if a question can be created from this bug.
+
+        A Question can be created from a bug if:
+        1. There is only one bugtask with a status of New, Incomplete,
+           Confirmed, or Wont Fix. Any other bugtasks must be Invalid.
+        2. The bugtask's target uses Launchpad to track bugs.
+        3. The bug was not made into a question previously.
+        """
+
+    def convertToQuestion(person, comment=None):
+        """Create and return a Question from this Bug.
+
+        Bugs that are also in external bug trackers cannot be converted
+        to questions. This is also true for bugs that are being developed.
+
+        The `IQuestionTarget` is provided by the `IBugTask` that is not
+        Invalid and is not a conjoined slave. Only one question can be
+        made from a bug.
+
+        An AssertionError is raised if the bug has zero or many BugTasks
+        that can provide a QuestionTarget. It will also be raised if a
+        question was previously created from the bug.
+
+        :person: The `IPerson` creating a question from this bug
+        :comment: A string. An explanation of why the bug is a question.
+        """
+
+    def getQuestionCreatedFromBug():
+        """Return the question created from this Bug, or None."""
 
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""

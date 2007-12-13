@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'download_file_url',
     'ProductNavigation',
     'ProductDynMenu',
     'ProductShortLink',
@@ -18,6 +17,7 @@ __all__ = [
     'ProductBranchesMenu',
     'ProductTranslationsMenu',
     'ProductView',
+    'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductAddView',
     'ProductAddViewBase',
@@ -53,12 +53,13 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchListingSort, IBranchSet, ICountry, IDistribution, IHasIcon,
-    ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
+    BranchListingSort, IBranchSet, IBugTracker, ICountry, IDistribution,
+    IHasIcon, ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
     IProductSeries, IProductSet, IProject, ITranslationImportQueue,
     License, NotFoundError, RESOLVED_BUGTASK_STATUSES,
     UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
@@ -88,14 +89,6 @@ from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
-def download_file_url(release, file_):
-    """Construct the download file URL.
-
-    Given a release and file, return the file download URL.
-    """
-    return "%s/+download/%s" % (canonical_url(release),
-                                file_.libraryfile.filename)
-
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
     FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
@@ -123,6 +116,10 @@ class ProductNavigation(
     @stepthrough('+release')
     def traverse_release(self, name):
         return self.context.getRelease(name)
+
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
 
     def traverse(self, name):
         return self.context.getSeries(name)
@@ -210,7 +207,7 @@ class ProductLicenseMixin:
                 license_titles=indent(license_titles),
                 license_info=indent(self.product.license_info))
 
-            reply_to = format_address(user.displayname, 
+            reply_to = format_address(user.displayname,
                                       user.preferredemail.email)
             simple_sendmail(fromaddress,
                             'feedback@launchpad.net',
@@ -288,7 +285,8 @@ class ProductOverviewMenu(ApplicationMenu):
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
-        'series_add', 'administer', 'branch_visibility', 'rdf']
+        'series_add', 'announce', 'announcements', 'administer',
+        'branch_visibility', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -331,9 +329,23 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Download project files'
         return Link('+download', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def series_add(self):
         text = 'Register a series'
         return Link('+addseries', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        enabled = self.isBetaUser
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, enabled=enabled, icon='add')
+
+    def announcements(self):
+        text = 'Show announcements'
+        enabled = bool(self.context.announcements().count()
+                       and self.isBetaUser)
+        return Link('+announcements', text, enabled=enabled)
 
     def branch_add(self):
         text = 'Register branch'
@@ -451,10 +463,12 @@ class ProductTranslationsMenu(ApplicationMenu):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
         text = 'Download translations'
         preferred_series = self.context.primary_translatable
-        enabled = (preferred_series is not None)
+        enabled = (self.context.official_rosetta and
+            preferred_series is not None)
         link = ''
         if enabled:
             link = '%s/+export' % preferred_series.name
@@ -543,12 +557,12 @@ class SortSeriesMixin:
         return series_list
 
 
-class ProductView(LaunchpadView, SortSeriesMixin):
+class ProductView(HasAnnouncementsView, SortSeriesMixin):
 
     __used_for__ = IProduct
 
     def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
+        HasAnnouncementsView.__init__(self, context, request)
         self.form = request.form_ng
 
     def initialize(self):
@@ -669,18 +683,45 @@ class ProductView(LaunchpadView, SortSeriesMixin):
         return self.context.getLatestBranches(visible_by_user=self.user)
 
 
-class ProductDownloadFilesView(LaunchpadView, SortSeriesMixin):
+class ProductDownloadFileMixin:
+    """Provides methods for managing download files."""
 
-    __used_for__ = IProduct
+    def deleteFiles(self, releases):
+        """Delete the selected files from the set of releases.
 
-    def initialize(self):
-        self.form = self.request.form
-        self.product = self.context
+        :param releases: A set of releases in the view.
+        :return: The number of files deleted.
+        """
+        del_count = 0
+        for release in releases:
+            for release_file in release.files:
+                if release_file.libraryfile.id in self.delete_ids:
+                    release.deleteFileAlias(release_file.libraryfile)
+                    self.delete_ids.remove(release_file.libraryfile.id)
+                    del_count += 1
+        return del_count
+
+    def getReleases(self):
+        """Find the releases with download files for view."""
+        raise NotImplementedError
+
+    def fileURL(self, file_, release=None):
+        """Create a download URL for the file."""
+        if release is None:
+            release = self.context
+        return "%s/+download/%s" % (canonical_url(release),
+                                    file_.libraryfile.filename)
+
+    def processDeleteFiles(self):
+        """If the 'delete_files' button was pressed, process the deletions."""
         del_count = None
+        self.delete_ids = [int(value) for key, value in self.form.items()
+                           if key.startswith('checkbox')]
         if 'delete_files' in self.form:
             if self.request.method == 'POST':
                 del(self.form['delete_files'])
-                del_count = self.delete_files(self.form)
+                releases = self.getReleases()
+                del_count = self.deleteFiles(releases)
             else:
                 # If there is a form submission and it is not a POST then
                 # raise an error.  This is to protect against XSS exploits.
@@ -697,22 +738,24 @@ class ProductDownloadFilesView(LaunchpadView, SortSeriesMixin):
                     "%d files have been deleted." %
                     del_count)
 
-    def delete_files(self, data):
-        del_keys = [int(v) for k, v in data.items()
-                    if k.startswith('checkbox')]
-        del_count = 0
-        for series in self.product.serieses:
-            for release in series.releases:
-                for f in release.files:
-                    if f.libraryfile.id in del_keys:
-                        release.deleteFileAlias(f.libraryfile)
-                        del_keys.remove(f.libraryfile.id)
-                        del_count += 1
-        return del_count
 
-    def file_url(self, release, file_):
-        """Create a download URL for the file."""
-        return download_file_url(release, file_)
+class ProductDownloadFilesView(LaunchpadView,
+                               SortSeriesMixin,
+                               ProductDownloadFileMixin):
+    """View class for the product's file downloads page."""
+    __used_for__ = IProduct
+
+    def initialize(self):
+        self.form = self.request.form
+        self.product = self.context
+        self.processDeleteFiles()
+
+    def getReleases(self):
+        """See `ProductDownloadFileMixin`."""
+        releases = set()
+        for series in self.product.serieses:
+            releases.update(series.releases)
+        return releases
 
     @cachedproperty
     def has_download_files(self):
@@ -752,11 +795,12 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     schema = IProduct
     label = "Change project details"
     field_names = [
-        "displayname", "title", "summary", "description", "project",
-        "bugtracker", "official_rosetta", "official_answers",
-        "homepageurl", "sourceforgeproject",
-        "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
-        "programminglang", "development_focus", "licenses", "license_info"]
+        "displayname", "title", "summary", "description",
+        "bug_reporting_guidelines", "project", "bugtracker",
+        "enable_bug_expiration", "official_rosetta", "official_answers",
+        "homepageurl", "sourceforgeproject", "freshmeatproject", "wikiurl",
+        "screenshotsurl", "downloadurl", "programminglang",
+        "development_focus", "licenses", "license_info"]
     custom_widget(
         'licenses', LicenseWidget, column_count=3, orientation='vertical')
     custom_widget('bugtracker', ProductBugTrackerWidget)
@@ -769,6 +813,17 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         if (len(self.context.licenses) == 0 and
             self.widgets.get('licenses') is not None):
             self.widgets['licenses'].allow_pending_license = True
+
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        # enable_bug_expiration is disabled by JavaScript when bugtracker
+        # is not 'In Launchpad'. The contraint is enforced here in case the
+        # JavaScript fails to activate or run. Note that the bugtracker
+        # name : values are {'In Launchpad' : object, 'Somewhere else' : None
+        # 'In a registered bug tracker' : IBugTracker}.
+        bugtracker = data.get('bugtracker', None)
+        if bugtracker is None or IBugTracker.providedBy(bugtracker):
+            data['enable_bug_expiration'] = False
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -1194,6 +1249,10 @@ class ProductBranchesView(BranchListingView):
 
     extra_columns = ('author',)
     no_sort_by = (BranchListingSort.PRODUCT,)
+
+    @cachedproperty
+    def development_focus_branch(self):
+        return self.context.development_focus.series_branch
 
     def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForProduct(

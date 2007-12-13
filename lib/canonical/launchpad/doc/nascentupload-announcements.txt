@@ -134,7 +134,10 @@ Uploading the same package again will result in a rejection email:
   DEBUG: Sending rejection email.
   ...
   DEBUG: Rejected:
-  DEBUG: This sourcepackagerelease is already accepted in hoary.
+  DEBUG: The source bar - 1.0-1 is already accepted in ubuntu/hoary
+         and you cannot upload the same version within the same
+         distribution. You have to modify the source version and
+         re-upload.
   ...
 
   >>> [notification] = pop_notifications()
@@ -440,7 +443,8 @@ distroseries.
   >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
 
   >>> bar_src = NascentUpload(
-  ...     datadir('suite/bar_1.0-5/bar_1.0-5_source.changes'),
+  ...     datadir(
+  ...          'suite/bar_1.0-5_debian_auto_sync/bar_1.0-5_source.changes'),
   ...     sync_policy, mock_logger_quiet)
   >>> bar_src.process()
 
@@ -455,10 +459,39 @@ One email generated:
   >>> notification['Subject']
   'Accepted: bar 1.0-5 (source)'
 
-Reset hoary back to released and remove disk file created during processing:
+
+In contrast, manual sync uploads do generate the announcement:
+
+  >>> bar_src = NascentUpload(
+  ...     datadir(
+  ...          'suite/bar_1.0-6/bar_1.0-6_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src.process()
+
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
+  DEBUG: Creating queue entry
+  ...
+
+Two emails generated:
+
+  >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
+  >>> len(msgs)
+  2
+
+  >>> [message['To'] for message in msgs]
+  ['Celso Providelo <celso.providelo@canonical.com>',
+      'hoary-announce@lists.ubuntu.com']
+
+  >>> [message['Subject'] for message in msgs]
+  ['Accepted: bar 1.0-6 (source)', 'Accepted: bar 1.0-6 (source)']
+
+Reset hoary back to released and remove disk files created during processing:
 
   >>> hoary.status = DistroSeriesStatus.CURRENT
-  >>> os.remove(os.path.join(datadir('suite/bar_1.0-5'),
+  >>> os.remove(os.path.join(datadir('suite/bar_1.0-5_debian_auto_sync'),
+  ...     'bar_1.0.orig.tar.gz'))
+  >>> os.remove(os.path.join(datadir('suite/bar_1.0-6'),
   ...     'bar_1.0.orig.tar.gz'))
 
 
@@ -505,6 +538,64 @@ One email generated:
   'Accepted: bar 1.0-2 (i386)'
 
 
+A mixed mode upload to the SECURITY pocket via the 'security' policy
+will generate a notification to the uploader and an announcement to
+the distroseries changes list.
+
+First, upload and accept foo_1.0-1_mixed to make 'foo' source
+and binary known in hoary, then our operations in post-release
+pockets can work:
+
+  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
+  >>> modified_sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
+  >>> modified_sync_policy.can_upload_mixed = True
+  >>> modified_sync_policy.can_upload_binaries = True
+  >>> modified_sync_policy.can_upload_source = True
+  >>> foo_v1 = NascentUpload(
+  ...     datadir('suite/foo_1.0-1_mixed/foo_1.0-1_i386.changes'),
+  ...     modified_sync_policy, mock_logger_quiet)
+  >>> foo_v1.process()
+  >>> result = foo_v1.do_accept()
+  >>> foo_v1.queue_root.setAccepted()
+  >>> foo_v1.queue_root.realiseUpload()
+  >>> hoary.status = DistroSeriesStatus.CURRENT
+
+Get rid of any emails generated:
+
+  >>> msgs = pop_notifications()
+
+Now we can upload a security fix:
+
+  >>> security_policy = getPolicy(
+  ...     name='security', distro='ubuntu', distroseries=None)
+  >>> security_policy.setDistroSeriesAndPocket('hoary-security')
+  >>> foo_mixed = NascentUpload(
+  ...     datadir('suite/foo_1.0-2.1/foo_1.0-2.1_source.changes'),
+  ...     security_policy, mock_logger_quiet)
+  >>> foo_mixed.process()
+  >>> foo_mixed.logger = mock_logger
+  >>> result = foo_mixed.do_accept()
+  DEBUG: Creating queue entry
+  ...
+
+Two emails generated:
+
+  >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
+  >>> len(msgs)
+  2
+
+  >>> [message['To'] for message in msgs]
+  ['Daniel Silverstone <daniel.silverstone@canonical.com>',
+    'hoary-announce@lists.ubuntu.com']
+
+  >>> [message['Subject'] for message in msgs]
+  ['Accepted: foo 1.0-2.1 (source)', 'Accepted: foo 1.0-2.1 (source)']
+
+  >>> [message['X-Katie'] for message in msgs]
+  ['Launchpad actually', 'Launchpad actually']
+
+
 Dry run uploads should not generate any emails.  Call do_accept with
 notify=False:
 
@@ -540,7 +631,7 @@ dry_run, which when True will not send any emails.  It will also log at
 the INFO level what it /would/ have sent.
 
   >>> from canonical.launchpad.interfaces import PackageUploadStatus
-  >>> random_package_upload = hoary.getQueueItems()[0]
+  >>> random_package_upload = hoary.getQueueItems()[2]
   >>> random_package_upload.notify(dry_run=True, logger=mock_logger)
   DEBUG: Building recipients list.
   ...

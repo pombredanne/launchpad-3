@@ -7,8 +7,8 @@ Get evolution template for Ubuntu Hoary
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet, IPOFile, IPOTemplateSet,
-    ...     ISourcePackageNameSet)
+    ...     IDistributionSet, ILanguageSet, IPersonSet, IPOFile,
+    ...     IPOTemplateSet, ISourcePackageNameSet)
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> sourcepackagename = sourcepackagenameset['evolution']
     >>> distributionset = getUtility(IDistributionSet)
@@ -64,6 +64,38 @@ Get the set of POTMsgSets that are untranslated.
     >>> potmsgsets = list(pofile.getPOTMsgSetUntranslated())
     >>> len(potmsgsets)
     13
+
+
+== path ==
+
+A PO file has a storage path that determines where the file is to be
+stored in a filesystem tree (such as an export tarball).  The path
+ends with the actual file name and should include a language code.
+
+    >>> pofile_xh = potemplate.getPOFileByLang('xh')
+    >>> pofile_xh.path
+    u'xh.po'
+
+To change this path, use setPathIfUnique().
+
+    >>> pofile_xh.setPathIfUnique('xh2.po')
+    >>> pofile_xh.path
+    u'xh2.po'
+
+The path must be unique within its distribution series package or
+product release series, so that a single file system tree can contain
+all translations found there.
+
+If the given path is not locally unique, setPathIfUnique() simply does
+nothing.  There can be no naming conflict in that case because the PO
+file's existing path is already supposed to be unique.
+
+Here we try to copy the path of another translation of the same template
+but the PO file correctly retains its original path.
+
+    >>> pofile_xh.setPathIfUnique(pofile.path)
+    >>> pofile_xh.path
+    u'xh2.po'
 
 
 == updateHeader() ==
@@ -197,7 +229,7 @@ A Launchpad admin must have permission always.
 
 A Rosetta Expert too.
 
-    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> pofile_es.canEditTranslations(rosetta_experts)
     True
 
@@ -383,8 +415,36 @@ handling suggestions because it allows anyone to add suggestions.
 
     Leave the permission back to OPEN.
     >>> product.translationpermission = TranslationPermission.OPEN
-    >>> transaction.commit()
 
+== plural_forms ==
+
+This method returns a number of plural forms for the language of the POFile,
+or a default of 2 when language doesn't specify it: 2 is the most common
+value for number of plural forms, so most likely to be correct for any new
+language.  Even if the default value is incorrect, it is handled gracefully
+by the rest of the system (see doc/poimport.txt for example).
+
+When the language has number of plural forms defined, that value is used.
+
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution_trunk = evolution.getSeries('trunk')
+    >>> evolution_pot = evolution_trunk.getPOTemplate('evolution-2.2')
+    >>> serbian = getUtility(ILanguageSet)['sr']
+    >>> serbian.pluralforms
+    3
+    >>> evolution_sr = evolution_pot.getDummyPOFile(serbian.code)
+    >>> evolution_sr.plural_forms
+    3
+
+And when a language has no plural forms defined, a POFile defaults to 2,
+the most common number of plural forms:
+
+    >>> divehi = getUtility(ILanguageSet)['dv']
+    >>> print divehi.pluralforms
+    None
+    >>> evolution_dv = evolution_pot.getDummyPOFile(divehi.code)
+    >>> evolution_dv.plural_forms
+    2
 
 == uncachedExport ==
 
@@ -852,6 +912,18 @@ Launchpad.
     >>> print pofile_changed.updatesCount()
     1
 
+This message is also counted as translated message (number of translated
+messages is the number of imported/currentCount plus number of newly
+translated in Launchpad/rosettaCount plus number of changed in
+Launchpad/updatesCount):
+
+    >>> print pofile_changed.currentCount()
+    7
+    >>> print pofile_changed.rosettaCount()
+    0
+    >>> print pofile_changed.updatesCount()
+    1
+
 We make sure that submissions on untranslated strings are not considered
 'changed in Launchpad', since this method is mainly designed to help
 translators revert translations to published translations.
@@ -1112,7 +1184,7 @@ And when we submit another translation that is fuzzy...
     %d foo     1     None       True      True
 
 
-== Translations credits ==
+== Translation credits ==
 
 Translation credits are handled automatically, and cannot be
 translated in any other way except through a published upload.
@@ -1153,6 +1225,8 @@ If we submit non-published translation, it's refused.
     ...     alsa_translation, alsa_translation.owner,
     ...     {0: u'Unhappy translator'}, is_fuzzy=False, is_imported=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> print no_credits
+    None
     >>> flush_database_updates()
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     alsa_translation.language)

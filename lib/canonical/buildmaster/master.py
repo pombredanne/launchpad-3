@@ -11,7 +11,6 @@ cronscripts.
 __metaclass__ = type
 
 
-import apt_pkg
 import logging
 import operator
 
@@ -27,36 +26,6 @@ from canonical.config import config
 from canonical.buildd.utils import notes
 from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.buildmaster.buildergroup import BuilderGroup
-
-
-# builddmaster shared lockfile
-builddmaster_lockfilename = 'build-master'
-
-# Constants used in build scoring
-SCORE_SATISFIEDDEP = 5
-SCORE_UNSATISFIEDDEP = 10
-
-# this dict maps the package version relationship syntax in lambda
-# functions which returns boolean according the results of
-# apt_pkg.VersionCompare function (see the order above).
-# For further information about pkg relationship syntax see:
-#
-# http://www.debian.org/doc/debian-policy/ch-relationships.html
-#
-version_relation_map = {
-    # any version is acceptable if no relationship is given
-    '': lambda x: True,
-    # stricly later
-    '>>': lambda x: x == 1,
-    # later or equal
-    '>=': lambda x: x >= 0,
-    # stricly equal
-    '=': lambda x: x == 0,
-    # earlier or equal
-    '<=': lambda x: x <= 0,
-    # strictly ealier
-    '<<': lambda x: x == -1
-}
 
 
 def determineArchitecturesToBuild(pubrec, legal_archserieses,
@@ -125,8 +94,6 @@ class BuilddMaster:
         self._tm = tm
         self.librarian = getUtility(ILibrarianClient)
         self._archserieses = {}
-        # apt_pkg requires InitSystem to get VersionCompare working properly
-        apt_pkg.InitSystem()
         self._logger.info("Buildd Master has been initialised")
 
     def commit(self):
@@ -275,11 +242,13 @@ class BuilddMaster:
             self._logger.debug(
                 header + "Creating %s (%s)"
                 % (archseries.architecturetag, pubrec.pocket.title))
-            pubrec.sourcepackagerelease.createBuild(
+            build = pubrec.sourcepackagerelease.createBuild(
                 distroarchseries=archseries,
                 pocket=pubrec.pocket,
                 processor=archseries.default_processor,
                 archive=pubrec.archive)
+            build_queue = build.createBuildQueueEntry()
+            build_queue.score()
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """
@@ -326,162 +295,24 @@ class BuilddMaster:
             return self._logger
         return logging.getLogger("%s.%s" % (self._logger.name, subname))
 
-    def _scoreAndCheckDependencies(self, dependencies_line, archseries):
-        """Check dependencies line within a distroarchseries.
-
-        Return tuple containing the designed score points related to
-        satisfied/unsatisfied dependencies and a line containing the
-        missing dependencies in the default dependency format.
-        """
-        # parse package build dependencies using apt_pkg
-        try:
-            parsed_deps = apt_pkg.ParseDepends(dependencies_line)
-        except (ValueError, TypeError):
-            self._logger.warn("COULD NOT PARSE DEP: %s" % dependencies_line)
-            # XXX cprov 2005-10-18:
-            # We should remove the job if we could not parse its
-            # dependency, but AFAICS, the integrity checks in
-            # uploader component will be in charge of this. In
-            # short I'm confident this piece of code is never
-            # going to be executed
-            return 0, dependencies_line
-
-        missing_deps = []
-        score = 0
-
-        for token in parsed_deps:
-            # XXX cprov 2006-02-27: it may not work for and'd and or'd
-            # syntaxes.
-            try:
-                name, version, relation = token[0]
-            except ValueError:
-                # XXX cprov 2005-10-18:
-                # We should remove the job if we could not parse its
-                # dependency, but AFAICS, the integrity checks in
-                # uploader component will be in charge of this. In
-                # short I'm confident this piece of code is never
-                # going to be executed
-                self._logger.warn("DEP FORMAT ERROR: '%s'" % token[0])
-                return 0, dependencies_line
-
-            dep_candidate = archseries.findDepCandidateByName(name)
-
-            if dep_candidate:
-                # use apt_pkg function to compare versions
-                # it behaves similar to cmp, i.e. returns negative
-                # if first < second, zero if first == second and
-                # positive if first > second
-                dep_result = apt_pkg.VersionCompare(
-                    dep_candidate.binarypackageversion, version)
-                # use the previously mapped result to identify whether
-                # or not the dependency was satisfied or not
-                if version_relation_map[relation](dep_result):
-                    # continue for satisfied dependency
-                    score -= SCORE_SATISFIEDDEP
-                    continue
-
-            # append missing token
-            self._logger.warn(
-                "MISSING DEP: %r in %s %s"
-                % (token, archseries.distroseries.name,
-                   archseries.architecturetag))
-            missing_deps.append(token)
-            score -= SCORE_UNSATISFIEDDEP
-
-        # rebuild dependencies line
-        remaining_deps = []
-        for token in missing_deps:
-            name, version, relation = token[0]
-            if relation and version:
-                token_str = '%s (%s %s)' % (name, relation, version)
-            else:
-                token_str = '%s' % name
-            remaining_deps.append(token_str)
-
-        return score, ", ".join(remaining_deps)
-
-    def retryDepWaiting(self):
-        """Check 'dependency waiting' builds and see if we can retry them.
-
-        Check 'dependencies' field and update its contents. Retry those with
-        empty dependencies.
-        """
-        # Get the missing dependency fields
-        arch_ids = [arch.id for arch in self._archserieses]
-        status = BuildStatus.MANUALDEPWAIT
-        bqset = getUtility(IBuildSet)
-        candidates = bqset.getBuildsByArchIds(arch_ids, status=status)
-        # XXX cprov 2006-02-27: IBuildSet.getBuildsByArch API is evil,
-        # we should always return an SelectResult, even for empty results
-        if candidates is None:
-            self._logger.debug("No MANUALDEPWAIT record found")
+    def scoreCandidates(self):
+        """Iterate over the pending buildqueue entries and re-score them."""
+        if not self._archserieses:
+            self._logger.info("No architecture found to rescore.")
             return
 
-        self._logger.info(
-            "Found %d builds in MANUALDEPWAIT state. Checking:"
-            % candidates.count())
-
-        for build in candidates:
-            # XXX cprov 2006-06-06: This iteration/check should be provided
-            # by IBuild.
-
-            if not build.distroseries.canUploadToPocket(build.pocket):
-                # skip retries for not allowed in distroseries/pocket
-                self._logger.debug('SKIPPED: %s can not build in %s/%s'
-                                   % (build.title, build.distroseries.name,
-                                      build.pocket.name))
-                continue
-
-            if build.dependencies:
-                dep_score, remaining_deps = self._scoreAndCheckDependencies(
-                    build.dependencies, build.distroarchseries)
-                # store new missing dependencies
-                build.dependencies = remaining_deps
-                if len(build.dependencies):
-                    self._logger.debug(
-                        'WAITING: %s "%s"' % (build.title, build.dependencies))
-                    continue
-
-            # retry build if missing dependencies is empty
-            self._logger.debug('RETRY: "%s"' % build.title)
-            build.retry()
-
-        self.commit()
-
-    def sanitiseAndScoreCandidates(self):
-        """Iter over the buildqueue entries sanitising it."""
-        # Get the current build job candidates
+        # Get the current build job candidates.
+        archseries = self._archserieses.keys()
         bqset = getUtility(IBuildQueueSet)
-        candidates = bqset.calculateCandidates(
-            self._archserieses, state=BuildStatus.NEEDSBUILD)
-        if not candidates:
-            return
+        candidates = bqset.calculateCandidates(archseries)
 
         self._logger.info("Found %d build in NEEDSBUILD state. Rescoring"
                           % candidates.count())
 
-        # 1. Remove any for which there are no files (shouldn't happen but
-        # worth checking for)
-        jobs = []
         for job in candidates:
-            if job.files:
-                jobs.append(job)
-                job.score()
-            else:
-                distro = job.archseries.distroseries.distribution
-                distroseries = job.archseries.distroseries
-                archtag = job.archseries.architecturetag
-                # remove this entry from the database.
-                job.destroySelf()
-                self._logger.debug("Eliminating build of %s/%s/%s/%s/%s due "
-                                   "to lack of source files"
-                                   % (distro.name, distroseries.name,
-                                      archtag, job.name, job.version))
-            # commit every cycle to ensure it won't be lost.
-            self.commit()
+            uptodate_build = getUtility(IBuildSet).getByBuildID(job.build.id)
+            if uptodate_build.buildstate != BuildStatus.NEEDSBUILD:
+                continue
+            job.score()
 
-        self._logger.info("After paring out any builds for which we "
-                           "lack source, %d NEEDSBUILD" % len(jobs))
-
-        # And finally return that list
-        return jobs
+        self.commit()

@@ -2,7 +2,7 @@
 
 Feeds are served over HTTP, and are heavily cached. Pages which are not
 registered on the Feeds layer should not be served from the feeds.lp.n
-subdomain. 
+subdomain.
 XXX: statik bug=150941: When this bug is fixed (in 1.1.11) this test
 should be changed to show that trying to view a page which is not
 registered on the Feeds layer returns a 404.
@@ -36,6 +36,8 @@ has to be refreshed.
 XXX: statik 2007-10-18 bug=154114: We don't yet normalize case in
 query strings.
 
+    >>> from canonical.config import config
+    >>> config.launchpad.is_bug_search_feed_active = True
     >>> browser.open('http://feeds.launchpad.dev/bugs/+bugs.atom?'
     ...     'field.scope=all&search=Search+Bug+Reports&aaa=foo')
     >>> browser.url
@@ -94,3 +96,7 @@ These html feeds should only exist on feeds.launchpad.dev:
     >>> verify_feed_host('/bugs/+bugs.html?'
     ...        'field.searchtext=&search=Search+Bug+Reports&'
     ...        'field.scope=all&field.scope.target=')
+
+Revert configuration change after tests are finished.
+
+    >>> config.launchpad.is_bug_search_feed_active = False

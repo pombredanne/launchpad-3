@@ -16,11 +16,12 @@
                       driver members owner bugcontact
                       security_contact upload_admin upload_sender
                       mirror_admin homepage_content icon logo
-                      mugshot"
+                      mugshot bug_reporting_guidelines"
       />
     <require
       permission="launchpad.Admin"
-      set_attributes="official_malone official_rosetta official_answers"
+      set_attributes="official_malone official_rosetta official_answers
+                      enable_bug_expiration"
       />
     <require
       permission="launchpad.TranslationsAdmin"
@@ -34,7 +35,8 @@
       />
     <require
       permission="launchpad.AnyPerson"
-      attributes="newQuestion addAnswerContact removeAnswerContact"
+      attributes="newQuestion createQuestionFromBug addAnswerContact
+                  removeAnswerContact"
       />
     <!-- IFAQTarget -->
     <allow
@@ -177,6 +179,15 @@
     class="canonical.launchpad.browser.DistributionUnofficialMirrorsView"
     permission="zope.Public"
     name="+unofficialmirrors"
+    template="../templates/distribution-mirrors.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    facet="overview"
+    class="canonical.launchpad.browser.DistributionPendingReviewMirrorsView"
+    permission="zope.Public"
+    name="+pendingreviewmirrors"
     template="../templates/distribution-mirrors.pt"
     />
 

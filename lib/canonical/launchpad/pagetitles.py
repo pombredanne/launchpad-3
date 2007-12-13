@@ -227,6 +227,12 @@ bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
 bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
 
+bug_create_question = LaunchbagBugID(
+    'Bug #%d - Convert this bug to a question')
+
+bug_remove_question = LaunchbagBugID(
+    'Bug #%d - Convert this question back to a bug')
+
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 
 bugbranch_edit = "Edit branch fix status"
@@ -247,6 +253,8 @@ buglisting_default = ContextTitle("Bugs in %s")
 def buglisting_embedded_advanced_search(context, view):
     """Return the view's page heading."""
     return view.getSearchPageHeading()
+
+bug_listing_expirable = ContextTitle("Bugs that can expire in %s")
 
 def bugnomination_edit(context, view):
     """Return the title for the page to manage bug nominations."""
@@ -287,8 +295,10 @@ bugtarget_filebug_search = bugtarget_filebug_advanced
 
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
-bugtask_choose_affected_product = LaunchbagBugID(
+bugtask_affects_new_product = LaunchbagBugID(
     'Bug #%d - Record as affecting another project')
+
+bugtask_choose_affected_product = bugtask_affects_new_product
 
 # This page is used for both projects/distros so we have to say 'software'
 # rather than distro or project here.
@@ -305,6 +315,8 @@ bugtask_requestfix = LaunchbagBugID(
 bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Confirm project')
 
 bugtask_view = BugTaskPageTitle()
+
+bugtask_non_contributor_assignee_confirm = 'Confirm bug assignment'
 
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
@@ -402,9 +414,9 @@ distributionmirror_edit = ContextTitle('Edit mirror %s')
 
 distributionmirror_index = ContextTitle('Mirror %s')
 
-distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
-
 distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
+
+distributionmirror_review = ContextTitle('Review mirror %s')
 
 distribution_add = 'Register a new distribution'
 
@@ -547,6 +559,8 @@ def hasmentoringoffers_mentoring(context, view):
     else:
         return 'Mentoring available in %s' % context.displayname
 
+hasannouncements_index = ContextDisplayName('%s news and announcements')
+
 def hasspecifications_specs(context, view):
     """Return the secifications title for the context."""
     if IPerson.providedBy(context):
@@ -649,6 +663,8 @@ loginservice_resetpassword = 'Reset your password'
 
 logintoken_claimprofile = 'Claim Launchpad profile'
 
+logintoken_claimteam = 'Claim Launchpad team'
+
 logintoken_index = 'Launchpad: redirect to the logintoken page'
 
 logintoken_mergepeople = 'Merge Launchpad accounts'
@@ -725,6 +741,23 @@ milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
+announcement_add = 'Make an announcement'
+
+announcement_delete = 'Permanently delete this announcement'
+
+announcement_edit = 'Modify this announcement'
+
+def announcement_index(context, view):
+    return '%s announcement' % context.target.displayname
+
+announcement_publish = 'Publish this announcement'
+
+announcement_retarget = 'Move this announcement to a different project'
+
+announcement_retract = 'Retract this announcement'
+
+announcements_all = 'Announcements from all projects hosted in Launchpad'
+
 notification_test = 'Notification test'
 
 object_branding = ContextDisplayName('Change the images used to represent '
@@ -751,6 +784,13 @@ openid_index = 'Launchpad OpenID Server'
 def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""
     return 'Invalid OpenID identity %s' % view.openid_request.identity
+
+openidrpconfig_add = 'Add an OpenID Relying Party Configuration'
+
+openidrpconfig_edit = ContextDisplayName(
+    'Edit Relying Party Configuration for %s')
+
+openidrpconfigset_index = 'OpenID Relying Party Configurations'
 
 def package_bugs(context, view):
     """Return the page title bug in a package."""
@@ -788,6 +828,8 @@ person_branch_add = ContextDisplayName('Register a new branch for %s')
 person_changepassword = 'Change your password'
 
 person_claim = 'Claim account'
+
+person_claim_team = 'Claim team'
 
 person_deactivate_account = 'Deactivate your Launchpad account'
 
@@ -1012,6 +1054,8 @@ registry_review = 'Review Launchpad items'
 related_bounties = ContextDisplayName('Bounties for %s')
 
 remotebug_index = ContextTitle('%s')
+
+root_featuredprojects = 'Manage featured projects in Launchpad'
 
 root_index = 'Launchpad'
 

@@ -51,6 +51,13 @@
         template="../templates/buglisting-default.pt"/>
 
     <browser:page
+        for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.BugTaskExpirableListingView"
+        permission="zope.Public"
+        name="+expirable-bugs"
+        template="../templates/bug-listing-expirable.pt"/>
+
+    <browser:page
         for="*"
         name="+filebug-macros"
         permission="zope.Public"

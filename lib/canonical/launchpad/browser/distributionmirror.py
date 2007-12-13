@@ -4,9 +4,12 @@ __metaclass__ = type
 
 __all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
            'DistributionMirrorOverviewMenu', 'DistributionMirrorAddView',
-           'DistributionMirrorView', 'DistributionMirrorOfficialApproveView',
+           'DistributionMirrorView', 'DistributionMirrorReviewView',
            'DistributionMirrorReassignmentView',
            'DistributionMirrorDeleteView']
+
+from datetime import datetime
+import pytz
 
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.event import notify
@@ -21,6 +24,8 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.interfaces import IDistributionMirror
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
+from canonical.launchpad.browser.sourceslist import (
+    SourcesListEntries, SourcesListEntriesView)
 from canonical.cachedproperty import cachedproperty
 
 
@@ -34,7 +39,7 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionMirror
     facet = 'overview'
-    links = ['proberlogs', 'edit', 'admin', 'reassign', 'delete']
+    links = ['proberlogs', 'edit', 'review', 'reassign', 'delete']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -60,12 +65,9 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
         return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
-    def admin(self):
-        if self.context.isOfficial():
-            text = 'Mark as unofficial'
-        else:
-            text = 'Mark as official'
-        return Link('+mark-official', text, icon='edit')
+    def review(self):
+        text = 'Review mirror'
+        return Link('+review', text, icon='edit')
 
 
 class _FlavoursByDistroSeries:
@@ -80,21 +82,38 @@ class _FlavoursByDistroSeries:
 
 class DistributionMirrorView(LaunchpadView):
 
+    def initialize(self):
+        """Set up the sources.list entries for display."""
+        valid_series = []
+        # use an explicit loop to preserve ordering while getting rid of dupes
+        for arch_series in self.summarized_arch_series:
+            series = arch_series.distro_arch_series.distroseries
+            if series not in valid_series:
+                valid_series.append(series)
+        entries = SourcesListEntries(self.context.distribution,
+                                     self.context.http_base_url,
+                                     valid_series)
+        self.sources_list_entries = SourcesListEntriesView(entries,
+                                                           self.request)
+
     @cachedproperty
     def probe_records(self):
         return BatchNavigator(self.context.all_probe_records, self.request)
 
-    def getSummarizedMirroredSourceSerieses(self):
-        mirrors = self.context.getSummarizedMirroredSourceSerieses()
-        return sorted(mirrors, reverse=True,
-                      key=lambda mirror: Version(mirror.distroseries.version))
-
-    def getSummarizedMirroredArchSerieses(self):
+    # Cached because it is used to construct the entries in initialize()
+    @cachedproperty
+    def summarized_arch_series(self):
         mirrors = self.context.getSummarizedMirroredArchSerieses()
         return sorted(
             mirrors, reverse=True,
             key=lambda mirror: Version(
                 mirror.distro_arch_series.distroseries.version))
+
+    @property
+    def summarized_source_series(self):
+        mirrors = self.context.getSummarizedMirroredSourceSerieses()
+        return sorted(mirrors, reverse=True,
+                      key=lambda mirror: Version(mirror.distroseries.version))
 
     def getCDImageMirroredFlavoursBySeries(self):
         """Return a list of _FlavoursByDistroSeries objects ordered
@@ -163,16 +182,20 @@ class DistributionMirrorAddView(LaunchpadFormView):
         notify(ObjectCreatedEvent(mirror))
 
 
-class DistributionMirrorOfficialApproveView(LaunchpadEditFormView):
+class DistributionMirrorReviewView(LaunchpadEditFormView):
 
     schema = IDistributionMirror
-    field_names = ['official_approved', 'whiteboard']
-    label = "Mark as official"
+    field_names = ['status', 'whiteboard']
+    label = "Review mirror"
 
     @action(_("Save"), name="save")
     def action_save(self, action, data):
+        context = self.context
+        if data['status'] != context.status:
+            context.reviewer = self.user
+            context.date_reviewed = datetime.now(pytz.timezone('UTC'))
         self.updateContextFromData(data)
-        self.next_url = canonical_url(self.context)
+        self.next_url = canonical_url(context)
 
 
 class DistributionMirrorEditView(LaunchpadEditFormView):

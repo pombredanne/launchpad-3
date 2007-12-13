@@ -87,6 +87,13 @@
         template="../templates/logintoken-claimprofile.pt" />
 
     <browser:page
+        for="canonical.launchpad.interfaces.ILoginToken"
+        name="+claimteam"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.ClaimTeamView"
+        template="../templates/logintoken-claimteam.pt" />
+
+    <browser:page
         name="+newaccount"
         for="canonical.launchpad.interfaces.ILoginToken"
         class="canonical.launchpad.browser.NewAccountView"

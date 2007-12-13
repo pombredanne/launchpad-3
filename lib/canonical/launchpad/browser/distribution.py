@@ -24,6 +24,7 @@ __all__ = [
     'DistributionSeriesMirrorsRSSView',
     'DistributionArchiveMirrorsRSSView',
     'DistributionDisabledMirrorsView',
+    'DistributionPendingReviewMirrorsView',
     'DistributionUnofficialMirrorsView',
     'DistributionLanguagePackAdminView',
     'DistributionSetFacets',
@@ -45,6 +46,7 @@ from canonical.launchpad.interfaces import (
     DistroSeriesStatus, IDistributionMirrorSet, IDistributionSet, 
     IDistribution, ILaunchBag, ILaunchpadCelebrities, IPublishedPackageSet,
     MirrorContent, MirrorSpeed, NotFoundError)
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -94,6 +96,10 @@ class DistributionNavigation(
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
+
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
 
     @stepthrough('+spec')
     def traverse_spec(self, name):
@@ -190,7 +196,8 @@ class DistributionOverviewMenu(ApplicationMenu):
     links = ['edit', 'branding', 'driver', 'search', 'allpkgs', 'members',
              'mirror_admin', 'reassign', 'addseries', 'top_contributors',
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
-             'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
+             'pending_review_mirrors', 'disabled_mirrors',
+             'unofficial_mirrors', 'newmirror', 'announce', 'announcements',
              'upload_admin', 'ppas']
 
     @enabled_with_permission('launchpad.Edit')
@@ -237,22 +244,27 @@ class DistributionOverviewMenu(ApplicationMenu):
         enabled = self.context.full_functionality
         return Link('+archivemirrors', text, enabled=enabled, icon='info')
 
+    def _userCanSeeNonPublicMirrorListings(self):
+        """Does the user have rights to see non-public mirrors listings?"""
+        user = getUtility(ILaunchBag).user
+        return (self.context.full_functionality
+                and user is not None
+                and user.inTeam(self.context.mirror_admin))
+
     def disabled_mirrors(self):
         text = 'Show disabled mirrors'
-        enabled = False
-        user = getUtility(ILaunchBag).user
-        if (self.context.full_functionality and user is not None and
-            user.inTeam(self.context.mirror_admin)):
-            enabled = True
+        enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+disabledmirrors', text, enabled=enabled, icon='info')
+
+    def pending_review_mirrors(self):
+        text = 'Show pending-review mirrors'
+        enabled = self._userCanSeeNonPublicMirrorListings()
+        return Link(
+            '+pendingreviewmirrors', text, enabled=enabled, icon='info')
 
     def unofficial_mirrors(self):
         text = 'Show unofficial mirrors'
-        enabled = False
-        user = getUtility(ILaunchBag).user
-        if (self.context.full_functionality and user is not None and
-            user.inTeam(self.context.mirror_admin)):
-            enabled = True
+        enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
     def allpkgs(self):
@@ -284,6 +296,19 @@ class DistributionOverviewMenu(ApplicationMenu):
     def addseries(self):
         text = 'Add series'
         return Link('+addseries', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        enabled = self.isBetaUser
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, enabled=enabled, icon='add')
+
+    def announcements(self):
+        text = 'Show announcements'
+        enabled = bool(self.context.announcements().count()
+                       and self.isBetaUser)
+        return Link('+announcements', text, enabled=enabled)
 
     def builds(self):
         text = 'Builds'
@@ -380,7 +405,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+select-language-pack-admin', text, icon='edit')
 
 
-class DistributionView(BuildRecordsView):
+class DistributionView(HasAnnouncementsView, BuildRecordsView):
     """Default Distribution view class."""
 
     def initialize(self):
@@ -521,7 +546,9 @@ class DistributionEditView(LaunchpadEditFormView):
     schema = IDistribution
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
-                   'official_malone', 'official_rosetta', 'official_answers']
+                   'bug_reporting_guidelines', 'official_malone',
+                   'enable_bug_expiration', 'official_rosetta',
+                   'official_answers']
 
     def isAdmin(self):
         return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
@@ -530,7 +557,17 @@ class DistributionEditView(LaunchpadEditFormView):
         LaunchpadFormView.setUpFields(self)
         if not self.isAdmin():
             self.form_fields = self.form_fields.omit(
-                'official_malone', 'official_rosetta', 'official_answers')
+                'official_malone', 'official_rosetta', 'official_answers',
+                'enable_bug_expiration')
+
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        # enable_bug_expiration is disabled by JavaScript when official_malone
+        # is set False. The contraint is enforced here in case the JavaScript
+        # fails to load or activate.
+        official_malone = data.get('official_malone', False)
+        if not official_malone:
+            data['enable_bug_expiration'] = False
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -606,12 +643,18 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
         body = "\n".join(mirror.base_url for mirror in mirrors)
         self.request.response.setHeader(
             'content-type', 'text/plain;charset=utf-8')
+        if country is None:
+            country_name = 'Unknown'
+        else:
+            country_name = country.name
+        self.request.response.setHeader(
+            'X-Generated-For-Country', country_name)
         return body.encode('utf-8')
 
 
 class DistributionMirrorsView(LaunchpadView):
 
-    show_status = True
+    show_freshness = True
 
     @cachedproperty
     def mirror_count(self):
@@ -694,7 +737,7 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
 
     heading = 'Official CD Mirrors'
-    show_status = False
+    show_freshness = False
 
     @cachedproperty
     def mirrors(self):
@@ -758,6 +801,15 @@ class DistributionUnofficialMirrorsView(DistributionMirrorsAdminView):
         return self.context.unofficial_mirrors
 
 
+class DistributionPendingReviewMirrorsView(DistributionMirrorsAdminView):
+
+    heading = 'Pending-review mirrors'
+
+    @cachedproperty
+    def mirrors(self):
+        return self.context.pending_review_mirrors
+
+
 class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
 
     heading = 'Disabled Mirrors'
@@ -773,7 +825,7 @@ class DistributionDynMenu(
     menus = {
         '': 'mainMenu',
         'meetings': 'meetingsMenu',
-        'series': 'seriesesMenu',
+        'series': 'seriesMenu',
         'milestones': 'milestoneMenu',
         }
 

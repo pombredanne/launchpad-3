@@ -24,6 +24,7 @@ __all__ = [
     'DistributionUsingMaloneVocabulary',
     'DistroSeriesVocabulary',
     'FAQVocabulary',
+    'FeaturedProjectVocabulary',
     'FilteredDeltaLanguagePackVocabulary',
     'FilteredDistroArchSeriesVocabulary',
     'FilteredDistroSeriesVocabulary',
@@ -72,22 +73,23 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.launchpad.database import (
-    Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component, Country,
-    Distribution, DistroArchSeries, DistroSeries, KarmaCategory, Language,
-    LanguagePack, MailingList, Milestone, Person, PillarName, Processor,
-    ProcessorFamily, Product, ProductRelease, ProductSeries, Project,
-    SourcePackageRelease, Specification, Sprint, TranslationGroup,
-    TranslationMessage)
+    Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component,
+    Country, Distribution, DistroArchSeries, DistroSeries, FeaturedProject,
+    KarmaCategory, Language, LanguagePack, MailingList, Milestone, Person,
+    PillarName, Processor, ProcessorFamily, Product, ProductRelease,
+    ProductSeries, Project, SourcePackageRelease, Specification, Sprint,
+    TranslationGroup, TranslationMessage)
+
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     DistroSeriesStatus, EmailAddressStatus, IBugTask, IDistribution,
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget, ILanguage,
-    ILaunchBag, IMailingList, IMailingListSet, IMilestoneSet, IPerson,
-    IPersonSet, IPillarName, IProduct, IProject, ISourcePackage,
-    ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
-    MailingListStatus)
+    ILaunchBag, IMailingListSet, IMilestoneSet, IPerson, IPersonSet,
+    IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
+    IUpstreamBugTask, LanguagePackType, MailingListStatus)
+
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
@@ -710,7 +712,7 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
         if not context:
             raise AssertionError('ValidTeamOwnerVocabulary needs a context.')
 
-        if ITeam.providedBy(context):
+        if IPerson.providedBy(context):
             self.extra_clause = """
                 (person.teamowner != %d OR person.teamowner IS NULL) AND
                 person.id != %d""" % (context.id, context.id)
@@ -721,7 +723,7 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
             pass
         else:
             raise AssertionError(
-                "ValidTeamOwnerVocabulary's context must provide ITeam "
+                "ValidTeamOwnerVocabulary's context must provide IPerson "
                 "or IPersonSet.")
         ValidPersonOrTeamVocabulary.__init__(self, context)
 
@@ -1543,6 +1545,21 @@ class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
             return obj.active
         else:
             return IDistribution.providedBy(obj)
+
+
+class FeaturedProjectVocabulary(DistributionOrProductOrProjectVocabulary):
+    """Vocabulary of projects that are featured on the LP Home Page."""
+
+    _filter = AND(PillarName.q.id == FeaturedProject.q.pillar_name,
+                  PillarName.q.active == True)
+    _clauseTables = ['FeaturedProject']
+
+    def __contains__(self, obj):
+        """See `IVocabulary`."""
+        query = """PillarName.id=FeaturedProject.pillar_name
+                   AND PillarName.name = %s""" % sqlvalues(obj.name)
+        return PillarName.selectOne(
+                   query, clauseTables=['FeaturedProject']) is not None
 
 
 class FilteredLanguagePackVocabularyBase(SQLObjectVocabularyBase):
