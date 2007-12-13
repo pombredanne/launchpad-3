@@ -934,7 +934,7 @@ class ProtocolErrorPublication(LaunchpadBrowserPublication):
         :param status: The HTTP status to send
         :param headers: Any HTTP headers that should be sent.
         """
-        super(ProtocolErrorPublication, self).__init__()
+        super(ProtocolErrorPublication, self).__init__(None)
         self.status = status
         self.headers = headers
 
