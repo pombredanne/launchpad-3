@@ -13,6 +13,7 @@ import unittest
 
 from BeautifulSoup import (BeautifulSoup, Comment, Declaration,
     NavigableString, PageElement, ProcessingInstruction, SoupStrainer, Tag)
+from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.testbrowser.testing import Browser
@@ -132,6 +133,23 @@ TABS_AND_SPACES_RE = re.compile(u'[ \t]+')
 NBSP_RE = re.compile(u'&nbsp;|&#160;')
 
 
+def extract_link_from_tag(tag, base=None):
+    """Return a link from <a> `tag`, optionally considered relative to `base`.
+
+    A `tag` should contain a 'href' attribute, and `base` will commonly
+    be extracted from browser.url.
+    """
+    if not isinstance(tag, PageElement):
+        link = BeautifulSoup(tag)
+    else:
+        link = tag
+
+    href = dict(link.attrs).get('href')
+    if base is None:
+        return href
+    else:
+        return urljoin(base, href)
+
 def extract_text(content):
     """Return the text stripped of all tags.
 
@@ -248,6 +266,7 @@ def setUpGlobs(test):
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
     test.globs['get_feedback_messages'] = get_feedback_messages
+    test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links

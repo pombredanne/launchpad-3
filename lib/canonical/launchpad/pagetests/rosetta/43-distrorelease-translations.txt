@@ -149,13 +149,6 @@ a count of untranslated messages, messages with new, unreviewed suggestions,
 and a count of messages which had their imported translations changed in
 Launchpad.
 
-We use a helper method to construct complete links from a base URL and
-a relative URL, which we extract from the page contents.
-
-    >>> from urlparse import urljoin
-    >>> def get_link_for(base, link):
-    ...     return urljoin(base, dict(link.attrs).get('href')).encode('UTF-8')
-
 Looking at the Spanish language overview page, we can see that there are
 15 untranslated, 1 unreviewed and 1 changed in LP Evolution translations
 (all numbers repeated as hidden 'sortkey' values).
@@ -178,8 +171,8 @@ The template title points to the general translate page:
     >>> unfiltered = all_links[0]
     >>> print extract_text(unfiltered)
     evolution-2.2
-    >>> get_link_for(base_href, unfiltered)
-    'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
+    >>> extract_link_from_tag(unfiltered, base_href)
+    u'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
 
 The number of untranslated entries points to the same page, which now show
 only untranslated items. When we follow this link, the filtering combo box
@@ -188,7 +181,7 @@ has the right filter preselected.
     >>> untranslated = all_links[1]
     >>> print extract_text(untranslated)
     15
-    >>> untranslated_link = get_link_for(base_href, untranslated)
+    >>> untranslated_link = extract_link_from_tag(untranslated, base_href)
     >>> browser.open(untranslated_link)
     >>> browser.url
     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated'
@@ -201,7 +194,7 @@ with the 'with new suggestions' filter selected.
     >>> unreviewed = all_links[2]
     >>> print extract_text(unreviewed)
     1
-    >>> unreviewed_link = get_link_for(base_href, unreviewed)
+    >>> unreviewed_link = extract_link_from_tag(unreviewed, base_href)
     >>> browser.open(unreviewed_link)
     >>> browser.url
     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=new_suggestions'
@@ -214,7 +207,7 @@ The number of updated entries points to the translation page with the
     >>> updated = all_links[3]
     >>> print extract_text(updated)
     1
-    >>> updated_link = get_link_for(base_href, updated)
+    >>> updated_link = extract_link_from_tag(updated, base_href)
     >>> browser.open(updated_link)
     >>> browser.url
     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=changed_in_launchpad'
