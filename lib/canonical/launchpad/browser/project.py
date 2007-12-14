@@ -18,6 +18,7 @@ __all__ = [
     'ProjectSOP',
     'ProjectFacets',
     'ProjectOverviewMenu',
+    'ProjectSeriesSpecificationsMenu',
     'ProjectSpecificationsMenu',
     'ProjectBountiesMenu',
     'ProjectAnswersMenu',
@@ -41,7 +42,8 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IBranchSet, IProductSet, IProject, IProjectSet, NotFoundError)
+    IBranchSet, IProductSet, IProject, IProjectSeries, IProjectSet,
+    NotFoundError)
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
@@ -75,6 +77,10 @@ class ProjectNavigation(Navigation):
     @stepthrough('+announcement')
     def traverse_announcement(self, name):
         return self.context.getAnnouncement(name)
+
+    @stepthrough('+series')
+    def traverse_series(self, series_name):
+        return self.context.getSeries(series_name)
 
 
 class ProjectDynMenu(DynMenu):
@@ -607,3 +613,27 @@ class ProjectBranchesView(BranchListingView):
                 'revision control system to improve community participation '
                 'in this project group.')
         return message % self.context.displayname
+
+
+class ProjectSeriesSpecificationsMenu(ApplicationMenu):
+
+    usedfor = IProjectSeries
+    facet = 'specifications'
+    links = ['listall', 'doc', 'roadmap', 'assignments']
+
+    def listall(self):
+        text = 'List all blueprints'
+        return Link('+specs?show=all', text, icon='info')
+
+    def doc(self):
+        text = 'List documentation'
+        summary = 'Show all completed informational specifications'
+        return Link('+documentation', text, summary, icon="info")
+
+    def roadmap(self):
+        text = 'Roadmap'
+        return Link('+roadmap', text, icon='info')
+
+    def assignments(self):
+        text = 'Assignments'
+        return Link('+assignments', text, icon='info')
