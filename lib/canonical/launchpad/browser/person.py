@@ -1,6 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd
 
-
 """Person-related wiew classes."""
 
 __metaclass__ = type
@@ -104,7 +103,6 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Choice, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates

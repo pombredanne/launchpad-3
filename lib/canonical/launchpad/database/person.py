@@ -1096,6 +1096,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             raise AssertionError(
                 "Unknown subscription policy: %s" % team.subscriptionpolicy)
 
+        # XXX Edwin Grubbs 2007-12-14 bug=117980
+        # removeSecurityProxy won't be necessary after addMember()
+        # is configured to call a method on the new member, so the
+        # security configuration will verify that the logged in user
+        # has the right permission to add the specified person to the team.
         naked_team = removeSecurityProxy(team)
         naked_team.addMember(self, reviewer=self, status=status)
 

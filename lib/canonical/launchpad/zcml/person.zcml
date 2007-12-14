@@ -36,20 +36,20 @@
       branches browsername city
       claimedBounties clearInTeamCache country created_specs
       creation_comment creation_rationale currentShipItRequest
-      datecreated defaultRenewalPeriodIsRequiredForSomeTeams 
+      datecreated defaultRenewalPeriodIsRequiredForSomeTeams
       defaultexpirationdate
-      defaultmembershipperiod defaultrenewalperiod 
+      defaultmembershipperiod defaultrenewalperiod
       defaultrenewedexpirationdate
       displayname drafted_specs entitlements
       feedback_specs findPathToTeam getActiveMemberships
       getAdministratedTeams getBranch getBugContactOpenBugCounts
-      getBugContactPackages getDirectAnswerQuestionTargets 
+      getBugContactPackages getDirectAnswerQuestionTargets
       getInactiveMemberships
-      getInvitedMemberships getLatestApprovedMembershipsForPerson 
+      getInvitedMemberships getLatestApprovedMembershipsForPerson
       getLatestMaintainedPackages
-      getLatestUploadedButNotMaintainedPackages getLatestUploadedPPAPackages 
+      getLatestUploadedButNotMaintainedPackages getLatestUploadedPPAPackages
       getOwnedOrDrivenPillars
-      getProjectsAndCategoriesContributedTo getProposedMemberships 
+      getProjectsAndCategoriesContributedTo getProposedMemberships
       getSuperTeams
       getTeamAdminsEmailAddresses getTeamAnswerQuestionTargets gpgkeys
       guessedemails hasParticipationEntryFor hide_email_addresses
@@ -69,7 +69,7 @@
       province registered_branches registrant
       removeLanguage renewal_policy reviewerBounties
       safe_email_or_blank searchTasks setContactAddress
-      setMembershipData setPreferredEmail 
+      setMembershipData setPreferredEmail
       shippedShipItRequestsOfCurrentSeries
       signedcocs sshkeys subscribedBounties
       subscribed_branches subscribed_specs subscriptionpolicy
@@ -79,7 +79,7 @@
       translatable_languages translation_groups translation_history
       ubuntuwiki unique_displayname unvalidatedemails
       validateAndEnsurePreferredEmail validatedemails visibility"
-      /> 
+      />
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IHasSpecifications"/>
     <allow interface="canonical.launchpad.interfaces.IHasMentoringOffers"/>
