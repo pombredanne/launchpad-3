@@ -1774,6 +1774,7 @@ class RequestTracker(ExternalBugTracker):
 
     ticket_url = 'REST/1.0/ticket/%s/show'
     batch_url = 'REST/1.0/search/ticket/'
+    batch_query_threshold = 1
 
     @property
     def credentials(self):
@@ -1923,7 +1924,7 @@ class RequestTracker(ExternalBugTracker):
         status_map = {
             'new': BugTaskStatus.NEW,
             'open': BugTaskStatus.CONFIRMED,
-            'stalled': BugTaskStatus.INPROGRESS,
+            'stalled': BugTaskStatus.CONFIRMED,
             'rejected': BugTaskStatus.INVALID,
             'resolved': BugTaskStatus.FIXRELEASED,
             UNKNOWN_REMOTE_STATUS.lower(): BugTaskStatus.UNKNOWN}

@@ -33,7 +33,7 @@ Launchpad statuses:
     >>> rt.convertRemoteStatus('open').title
     'Confirmed'
     >>> rt.convertRemoteStatus('stalled').title
-    'In Progress'
+    'Confirmed'
     >>> rt.convertRemoteStatus('rejected').title
     'Invalid'
     >>> rt.convertRemoteStatus('resolved').title
@@ -73,23 +73,18 @@ updating is less than a given bug RT instances's batch_query_threshold
 the bugs will be fetched one-at-a-time:
 
     >>> rt.batch_query_threshold
-    10
+    1
 
     >>> rt.trace_calls = True
-    >>> rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
+    >>> rt.initializeRemoteBugDB([1585])
     CALLED urlopen(u'REST/1.0/ticket/1585/show')
-    CALLED urlopen(u'REST/1.0/ticket/1586/show')
-    CALLED urlopen(u'REST/1.0/ticket/1587/show')
-    CALLED urlopen(u'REST/1.0/ticket/1588/show')
-    CALLED urlopen(u'REST/1.0/ticket/1589/show')
 
-    >>> sorted(rt.bugs.keys())
-    [1585, 1586, 1587, 1588, 1589]
+    >>> rt.bugs.keys()
+    [1585]
 
 If there are more than batch_query_threshold bugs to update then they are
 fetched as a batch:
 
-    >>> rt.batch_query_threshold = 4
     >>> rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
     CALLED urlopen(u'REST/1.0/search/ticket/')
 
@@ -172,11 +167,7 @@ tracker with a variety of statuses.
     >>> rt.trace_calls = True
     >>> rt.updateBugWatches(example_bug_tracker.watches)
     INFO:...:Updating 5 watches on http://bugs.some.where
-    CALLED urlopen(u'REST/1.0/ticket/1585/show')
-    CALLED urlopen(u'REST/1.0/ticket/1586/show')
-    CALLED urlopen(u'REST/1.0/ticket/1587/show')
-    CALLED urlopen(u'REST/1.0/ticket/1588/show')
-    CALLED urlopen(u'REST/1.0/ticket/1589/show')
+    CALLED urlopen(u'REST/1.0/search/ticket/')
 
 The bug statuses have now been imported from the Example.com bug
 tracker, so the bug watches should now have valid Launchpad bug
@@ -186,6 +177,6 @@ statuses:
     ...     rt.convertRemoteStatus)
     Remote bug 1585: New
     Remote bug 1586: Confirmed
-    Remote bug 1587: In Progress
+    Remote bug 1587: Confirmed
     Remote bug 1588: Fix Released
     Remote bug 1589: Invalid
