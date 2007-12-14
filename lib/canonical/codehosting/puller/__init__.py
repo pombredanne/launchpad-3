@@ -12,7 +12,8 @@ from twisted.internet import defer
 
 
 def get_lock_id_for_branch_id(branch_id):
-    """XXX."""
+    """Return the lock id that should be used for a branch with the passed id.
+    """
     return 'worker-for-branch-%s@supermirror'%(branch_id,)
 
 

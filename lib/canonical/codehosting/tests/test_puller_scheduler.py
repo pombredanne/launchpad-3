@@ -507,8 +507,14 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
     def makePullerMaster(self, cls=scheduler.PullerMaster, script_text=None):
         """Construct a PullerMaster suited to the test environment.
 
-        :param cls:
-        :param script_text:
+        :param cls: The class of the PullerMaster to construct, defaulting to
+            the base PullerMaster.
+        :param script_text: If passed, set up the master to run a custom
+            script instead of 'scripts/mirror-branch.py'.  The passed text
+            will be passed through textwrap.dedent() and appended to
+            `script_header` (see above) which means the text can refer to the
+            worker command line arguments, the destination branch and an
+            instance of PullerWorkerProtocol.
         """
         puller_master = cls(
             self.db_branch.id, local_path_to_url('src-branch'),
@@ -523,7 +529,8 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         return puller_master
 
     def doDefaultMirroring(self):
-        """XXX."""
+        """Run the subprocess to do the mirroring and check that it succeeded.
+        """
         revision_id = self.bzr_tree.branch.last_revision()
 
         puller_master = self.makePullerMaster()
