@@ -137,7 +137,8 @@ class IBugTracker(Interface):
     aliases = List(
         title=_('Base URL aliases'),
         description=_(
-            'A list of URLs that all lead to the same bug tracker.'),
+            'A list of URLs that all lead to the same bug tracker, '
+            'or commonly seen typos.'),
         value_type=URIField(), required=False)
     owner = Int(title=_('Owner'))
     contactdetails = Text(

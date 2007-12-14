@@ -94,6 +94,7 @@ If no bug tracker can be found None is returned.
     >>> bugtracker_set.queryByBaseURL('http://no/such/bugtracker') is None
     True
 
+
 === Aliases ===
 
 A bug tracker can have a number of alias URLs associated with it.
@@ -149,6 +150,7 @@ aliases attribute now contains the old baseurl and not the new one.
     >>> mozilla_bugzilla.aliases
     [u'http://just.example.com/',
      u'https://bugzilla.mozilla.org/']
+
 
 == checkwatches.py ==
 
