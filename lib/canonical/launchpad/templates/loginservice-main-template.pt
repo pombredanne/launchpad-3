@@ -123,7 +123,10 @@
 
           <tal:signin_reason condition="description">
             <h2>Why do we ask you to sign in?</h2>
-            <p tal:content="description">Reason</p>
+            <tal:description
+                replace="structure description/fmt:text-to-html">
+              Reason
+            </tal:description>
           </tal:signin_reason>
         </metal:block></div>
         <div id="auth"><metal:block define-slot="auth">

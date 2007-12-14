@@ -733,6 +733,34 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
         remaining_time = expiration_date - datetime.now(pytz.timezone('UTC'))
         return remaining_time.days
 
+    @property
+    def expiration_message(self):
+        """Return a message indicating the time to expiration for the bug.
+
+        If the expiration date of the bug has already passed, the
+        message returned will indicate this. This deals with situations
+        where a bug is due to be marked invalid but has not yet been
+        dealt with by the bug expiration script.
+
+        If the bug is not due to be expired None will be returned.
+        """
+        if not self.context.bug.can_expire:
+            return None
+
+        days_to_expiration = self.days_to_expiration
+        if days_to_expiration <= 0:
+            # We should always display a positive number to the user,
+            # whether we're talking about the past or the future.
+            days_to_expiration = -days_to_expiration
+            message = ("This bug report was marked for expiration %i days "
+                "ago.")
+        else:
+            message = ("This bug report will be marked for expiration in %i "
+                "days if no further activity occurs.")
+
+        return message % days_to_expiration
+
+
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""
 
