@@ -772,6 +772,16 @@ class ProductDownloadFilesView(LaunchpadView,
                 if release.files.count() > 0:
                     return True
         return False
+    
+    @cachedproperty
+    def any_download_files_with_signatures(self):
+        """Across series and releases do any download files have signatures?"""
+        for series in self.product.serieses:
+            for release in series.releases:
+                for file in release.files:
+                    if file.signature:
+                        return True
+        return False
 
     @cachedproperty
     def milestones(self):

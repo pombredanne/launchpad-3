@@ -146,11 +146,7 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
         if file_upload and data['description']:
             # Replace slashes in the filename with less problematic dashes.
             contentType, encoding = mimetypes.guess_type(file_upload.filename)
-            # Set the mime-type to be x-gzip if the encoding is gzip. This is
-            # to work around an oddity with Safari where it appends ".tar"
-            # to files with a Content-Type of 'application/x-tar'.
-            #if encoding == 'gzip':
-            #    contentType="application/gzip"
+
             if contentType is None:
                 contentType = "text/plain"
 
@@ -158,20 +154,20 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
 
             # Create the alias for the file.
             alias = getUtility(ILibraryFileAliasSet).create(
-                        name=filename,
-                        size=len(data['filecontent']),
-                        file=StringIO(data['filecontent']),
-                        contentType=contentType)
+                name=filename,
+                size=len(data['filecontent']),
+                file=StringIO(data['filecontent']),
+                contentType=contentType)
 
             # Create the alias for the signature file, if one was uploaded.
             if signature_upload:
                 sig_filename = self.normalizeFilename(
                     signature_upload.filename)
                 sig_alias = getUtility(ILibraryFileAliasSet).create(
-                                name=sig_filename,
-                                size=len(data['signature']),
-                                file=StringIO(data['signature']),
-                                contentType='application/pgp-signature')
+                    name=sig_filename,
+                    size=len(data['signature']),
+                    file=StringIO(data['signature']),
+                    contentType='application/pgp-signature')
             else:
                 sig_alias = None
             self.context.addFileAlias(alias=alias,

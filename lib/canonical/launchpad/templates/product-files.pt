@@ -105,7 +105,7 @@
         value="Delete Files" />
 
   </form>
-  <tal:hasdownloadfiles condition="view/has_download_files">
+  <tal:hasdownloadfiles condition="view/any_download_files_with_signatures">
   <p>
     If a file has a signature associated with it, download both the file and
     the signature file.  You can then verify the file by
