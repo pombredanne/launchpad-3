@@ -1,0 +1,56 @@
+= Comments Imported From a Bug Watch =
+
+We now support importing comments from remote bug trackers. Currently
+this is only available for the DebBugs bug tracker, but it will become
+more widely implemented in the near future.
+
+These comments can be displayed like any other comments on a bug. To
+demonstrate this, we need to import the comments from a bug watch. We
+use a test version of the DebBugs bug tracker which doesn't need access
+to the actual DebBugs database. We add the bug to bug 4 as it doesn't
+have any comments already besides its initial creation comment.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestDebBugs, TestDebianBug)
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IBugTrackerSet, IPersonSet)
+    >>> login('test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+    >>> bug_tracker = getUtility(IBugTrackerSet).getByName('debbugs')
+    >>> bug = getUtility(IBugSet).get(4)
+    >>> debian_bug = TestDebianBug(
+    ...     reporter_email=sample_person.preferredemail.email)
+    >>> bug_watch = bug.addWatch(bug_tracker, '1234', sample_person)
+    >>> external_bugtracker = TestDebBugs(bug_tracker,
+    ...     {'1234': debian_bug})
+    >>> external_bugtracker.importBugComments(bug_watch)
+    >>> logout()
+
+The page is not linked to, so we have to browse directly to it.
+
+    >>> target_url = ('http://launchpad.dev/bugs/4/+watch/%s/+comments'
+    ...     % bug_watch.id)
+    >>> user_browser.open(target_url)
+
+The comments that have been imported are displayed on the page in the
+same way as bug comments are displayed on bugs pages.
+
+    >>> print_comments(user_browser.contents)
+    <p>Things happen.</p>
+    ----------------------------------------
+
+If we navigate to the bug page, we won't be able to see the comment that
+has just been imported. This is because a configuration option,
+malone.show_imported_comments, is set to False. We will, however, see
+the initial comment that was made when the bug was created.
+
+    >>> user_browser.open('http://launchpad.dev/bugs/4')
+    >>> print_comments(user_browser.contents)
+    <p>Malone pages that use more complex layouts with portlets and
+    fancy CSS are sometimes not getting properly reflowed after
+    rendering.</p>
+    ----------------------------------------
+

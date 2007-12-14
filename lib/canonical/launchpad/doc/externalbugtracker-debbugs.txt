@@ -417,23 +417,10 @@ implementation), so we need to pass a bug watch to the function.
     >>> external_debbugs.importBugComments(bug_watch)
     INFO:...:Imported 1 comments for remote bug 1234...
 
-These comments will have been added to the bug, but by default won't be
-displayed. Initially, we only see the message chunk that was added when
-the bug was created.
+These comments will have been added to the bug. If we look at the
+message chunks for the bug we will see the comments that have been
+imported, along with the creation comment of the bug.
 
-    >>> chunks = bug.getMessageChunks()
-    >>> for chunk in chunks:
-    ...     print chunk.content
-    Malone pages that use more complex layouts with portlets and fancy
-    CSS are sometimes not getting properly reflowed after rendering.
-
-There is a config setting, malone.show_imported_comments, which controls
-whether or not we display imported comments. This option is False by
-default. If we set it to True we'll see the message chunks in which the
-imported comments are stored.
-
-    >>> from canonical.config import config
-    >>> config.malone.show_imported_comments = True
     >>> chunks = bug.getMessageChunks()
     >>> for chunk_id, chunk in sorted([(chunk.id, chunk.content)
     ...     for chunk in chunks]):
@@ -525,7 +512,6 @@ having been imported since the comment hasn't been created afresh.
     something else to happen.
     It doesn't necessarily happen in that order, though.
 
-    >>> config.malone.show_imported_comments = False
 
 === Script for importing Debian bugs, linking them to Ubutu ===
 
