@@ -874,8 +874,8 @@ class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
             return bugtarget
 
 
-class FrontPageFileBugAdvancedView(
-    FrontPageFileBugMixin, FileBugAdvancedView):
+class FrontPageFileBugAdvancedView(FrontPageFileBugMixin,
+                                   FileBugAdvancedView):
     """Browser view class for the top-level +filebug-advanced page."""
     schema = IFrontPageBugAddForm
     custom_widget('bugtarget', LaunchpadTargetWidget)

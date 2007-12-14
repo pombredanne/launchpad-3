@@ -1554,10 +1554,14 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         view, but it does not match this view's bug listing when
         any search parameters are passed in.
         """
-        if self.request.get('QUERY_STRING') != '':
-            return []
-        else:
+        if self.request.get('QUERY_STRING', '') == '':
+            # There is no query in this request, so it's okay for this page to
+            # have its feed links.
             return super(BugTaskSearchListingView, self).feed_links
+        else:
+            # The query changes the results so that they would not match the
+            # feed.  In this case, suppress the feed links.
+            return []
 
     def initialize(self):
         """Initialize the view with the request.

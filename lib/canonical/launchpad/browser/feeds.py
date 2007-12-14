@@ -6,11 +6,11 @@ __metaclass__ = type
 
 __all__ = [
     'BugFeedLink',
+    'BugTargetLatestBugsFeedLink',
     'FeedLinkBase',
     'FeedsMixin',
     'FeedsNavigation',
     'FeedsRootUrlData',
-    'BugTargetLatestBugsFeedLink',
     'PersonLatestBugsFeedLink',
     ]
 
@@ -145,13 +145,13 @@ class FeedLinkBase:
 
     def __init__(self, context):
         self.context = context
-        if not self.usedfor.providedBy(self.context):
-            raise AssertionError("Context %r does not provide interface %r"
-                                 % (self.context, self.usedfor))
+        assert self.usedfor.providedBy(context), (
+            "Context %r does not provide interface %r"
+            % (context, self.usedfor))
 
     def render(self):
         return ('<link rel="alternate" type="application/atom+xml"'
-                '      title="%s" href="%s"/>\n' % (self.title, self.href))
+                ' title="%s" href="%s"/>\n' % (self.title, self.href))
 
 
 class BugFeedLink(FeedLinkBase):
@@ -177,13 +177,9 @@ class BugTargetLatestBugsFeedLink(FeedLinkBase):
 
     @property
     def href(self):
-        if IBugTarget.providedBy(self.context):
-            return urlparse.urljoin(
-                self.rooturl,
-                self.context.name + '/latest-bugs.atom')
-        else:
-            raise AssertionError("Invalid context=%r for LatestBugsFeedLink"
-                                 % self.context)
+        return urlparse.urljoin(
+            self.rooturl,
+            self.context.name + '/latest-bugs.atom')
 
 
 class PersonLatestBugsFeedLink(FeedLinkBase):
@@ -195,13 +191,9 @@ class PersonLatestBugsFeedLink(FeedLinkBase):
 
     @property
     def href(self):
-        if IPerson.providedBy(self.context):
-            return urlparse.urljoin(
-                self.rooturl,
-                '~' + self.context.name + '/latest-bugs.atom')
-        else:
-            raise AssertionError("Invalid context=%r for LatestBugsFeedLink"
-                                 % self.context)
+        return urlparse.urljoin(
+            self.rooturl,
+            '~' + self.context.name + '/latest-bugs.atom')
 
 
 class FeedsMixin:
@@ -212,23 +204,15 @@ class FeedsMixin:
 
     feed_links: Returns a list of objects subclassed from FeedLinkBase.
     """
-    feed_types = [
+    feed_types = (
         BugFeedLink,
         BugTargetLatestBugsFeedLink,
         PersonLatestBugsFeedLink,
-        ]
+        )
 
     @property
     def feed_links(self):
-        try:
-            x = [feed_type(self.context)
-                    for feed_type in self.feed_types
-                    if feed_type.usedfor.providedBy(self.context)]
-        except:
-            import traceback
-            traceback.print_exc()
-            raise
-        else:
-            y = 1
-        return x
+        return [feed_type(self.context)
+                for feed_type in self.feed_types
+                if feed_type.usedfor.providedBy(self.context)]
 
