@@ -159,7 +159,7 @@ class BugFeedLink(FeedLinkBase):
 
     @property
     def title(self):
-        return 'Bug %s Feed' % self.context.id
+        return 'Bug %s Feed' % self.context.bug.id
 
     @property
     def href(self):
