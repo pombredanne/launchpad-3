@@ -52,5 +52,5 @@ Date: Tue, 09 Feb 2007 09:34:32 +0100
 Message-Id: <20070209093432.98BF411GB67@launchpad>
 Delivered-To: submit@bugs.debian.org
 
-That which, in happening, causes something else to happen, causes
+Anything that, in happening, causes something else to happen, causes
 something else to happen.

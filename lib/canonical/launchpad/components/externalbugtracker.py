@@ -866,21 +866,8 @@ class DebBugs(ExternalBugTracker):
 
             message_set = getUtility(IMessageSet)
             try:
-                # XXX gmb 2007-12-14:
-                #     This seems a bit hackish, but because of a lack of
-                #     transaction support this far down in the
-                #     checkwatches code it's the only way we can be sure
-                #     we're not importing a comment twice. If we leave
-                #     it to fromEmail we can end up with LookupErrors.
-                #     Although we allow > 1 message with the same
-                #     message id in Launchpad it's highly unlikely that
-                #     two messages with the same ower will have the same
-                #     message id. If we encounter such an instance we
-                #     can reasonably safely assume that this comment has
-                #     been imported already.
-                existing_messages = message_set.getByMessageIdAndOwner(
-                    rfc822msgid=parsed_comment['message-id'],
-                    owner=owner)
+                existing_messages = message_set.get(
+                    rfc822msgid=parsed_comment['message-id'])
             except NotFoundError:
                 message = message_set.fromEmail(comment, owner,
                     parsed_message=parsed_comment)
