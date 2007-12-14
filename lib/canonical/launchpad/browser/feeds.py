@@ -70,9 +70,6 @@ class FeedsNavigation(Navigation):
         If a query string is provided it is normalized.  'bugs' paths and
         persons ('~') are special cased.
         """
-        # XXX: statik 2007-10-09 bug 150941
-        # Need to block pages not registered on the FeedsLayer
-
         # Normalize the query string so caching is more effective.  This is
         # done by simply sorting the entries.
 

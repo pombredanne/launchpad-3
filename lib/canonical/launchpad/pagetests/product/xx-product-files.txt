@@ -209,21 +209,26 @@ To add a download file the +adddownloadfile page is accessed.
     >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0/')
     >>> firefox_owner.getLink('Add download file').click()
 
-Create a file to upload.
+Create a file to upload, and upload it. We'll also upload a dummy signature.
+Uploading file signatures is optional, so we'll just try it this once.
 
     >>> from cStringIO import StringIO
     >>> foo_file = StringIO('Foo installer package...')
+    >>> foo_signature = StringIO('Dummy GPG signature for the Foo installer')
     >>> firefox_owner.getControl(name='field.filecontent').add_file(foo_file,
     ...    'text/plain', 'foo.txt')
+    >>> firefox_owner.getControl(name='field.signature').add_file(
+    ...    foo_signature, 'text/plain', 'foo.txt.asc')
     >>> firefox_owner.getControl('Description').value="Foo installer"
     >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
     ...    ["Installer file"]
-    >>> firefox_owner.getControl("Add file").click()
+    >>> firefox_owner.getControl("Upload").click()
     >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'foo.txt' has been uploaded."]
 
 Let's go back to the page where the files are listed and ensure it
-shows up now.  Just to be sure, do it as the non-owner.
+shows up now.  Just to be sure, do it as the non-owner. We also see
+the md5 digest of the file, and the signature that we uploaded.
 
     >>> non_owner.open('http://launchpad.dev/firefox/+download')
     >>> non_owner.url
@@ -231,7 +236,7 @@ shows up now.  Just to be sure, do it as the non-owner.
     >>> content = find_main_content(non_owner.contents)
     >>> print content
     <...
-    ...foo.txt...Foo installer...
+    ...foo.txt...md5...pgp...Foo installer...
 
 Try to add a file with no description.
 
@@ -245,7 +250,7 @@ Create a file to upload.
     ...    'text/plain', 'foo.txt')
     >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
     ...    ["Installer file"]
-    >>> firefox_owner.getControl("Add file").click()
+    >>> firefox_owner.getControl("Upload").click()
     >>> for msg in get_feedback_messages(firefox_owner.contents):
     ...     print msg
     There is 1 error.
@@ -264,7 +269,7 @@ Create a file to upload.
     >>> firefox_owner.getControl('Description').value="Foo installer"
     >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
     ...    ["Installer file"]
-    >>> firefox_owner.getControl("Add file").click()
+    >>> firefox_owner.getControl("Upload").click()
     >>> for msg in get_feedback_messages(firefox_owner.contents):
     ...     print msg
     There is 1 error.
@@ -280,7 +285,7 @@ Now let's successfully upload two more files.
     >>> firefox_owner.getControl('Description').value="Foo2 installer"
     >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
     ...    ["Installer file"]
-    >>> firefox_owner.getControl("Add file").click()
+    >>> firefox_owner.getControl("Upload").click()
     >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'foo2.txt' has been uploaded."]
 
@@ -292,7 +297,7 @@ Now let's successfully upload two more files.
     >>> firefox_owner.getControl('Description').value="Foo3 installer"
     >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
     ...    ["Installer file"]
-    >>> firefox_owner.getControl("Add file").click()
+    >>> firefox_owner.getControl("Upload").click()
     >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'foo3.txt' has been uploaded."]
 
@@ -306,7 +311,7 @@ Add a file to a different release on the same project.
     >>> firefox_owner.getControl('Description').value="Foo09 installer"
     >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
     ...    ["README File"]
-    >>> firefox_owner.getControl("Add file").click()
+    >>> firefox_owner.getControl("Upload").click()
     >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'foo09.txt' has been uploaded."]
 
