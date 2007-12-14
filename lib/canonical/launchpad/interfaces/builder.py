@@ -10,7 +10,7 @@ __all__ = [
     'BuildJobMismatch',
     'BuildSlaveFailure',
     'CannotBuild',
-    'CannotResetHost',
+    'CannotResumeHost',
     'IBuilder',
     'IBuilderSet',
     'ProtocolVersionMismatch',
@@ -38,8 +38,8 @@ class BuildJobMismatch(BuildDaemonError):
     """The build slave is working with mismatched information, needs rescue."""
 
 
-class CannotResetHost(BuildDaemonError):
-    """The build slave is hosted on a machine that cannot be remotely reset."""
+class CannotResumeHost(BuildDaemonError):
+    """The build slave virtual machine cannot be resumed."""
 
 
 # CannotBuild is intended to be the base class for a family of more specific
@@ -120,6 +120,7 @@ class IBuilder(IHasOwner):
                      description=_('The reason for a builder not being ok')
                      )
 
+    vm_host = Attribute('Address of the machine hosting the virtual builder.')
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
     currentjob = Attribute("Build Job being processed")
     status = Attribute("Generated status information")
@@ -180,13 +181,16 @@ class IBuilder(IHasOwner):
         detect when the abort has taken effect. (Look for status ABORTED).
         """
 
-    def resetSlaveHost(logger):
-        """Reset the slave host to a known good condition.
+    def resumeSlaveHost():
+        """Resume the slave host to a known good condition.
 
-        :param logger: A logger used for providing debug information.
-        :raises CannotResetHost: Currently only virtual machine based builders
-            (those that are used to build untrusted source (not self.trusted)
-            can be reset.
+        Issues 'builddmaster.vm_resume_command' specified in the configuration
+        to resume the slave.
+
+        :raises: CannotResumeHost: if builder is not virtual (untrusted),
+            or if the configuration command has failed.
+
+        :return: command stdout and stderr buffers as a tuple.
         """
 
     def setSlaveForTesting(new_slave):
@@ -292,7 +296,7 @@ class IBuilderSet(Interface):
     def pollBuilders(logger, txn):
         """Poll all the builders and take any immediately available actions.
 
-        Specifically this will request a reset if needed, update log tails in
+        Specifically this will request a resume if needed, update log tails in
         the database, copy and process the result of builds.
 
         :param logger: A logger to use to provide information about the polling

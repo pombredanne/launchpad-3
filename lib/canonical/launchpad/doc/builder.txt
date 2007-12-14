@@ -1,5 +1,4 @@
-Builder Classes
-===============
+= Builder Class =
 
 This test aims to meet the requirements of
 <https://launchpad.canonical.com/BasicTestCoverage> for the Builder class,
@@ -7,114 +6,177 @@ which represents the Buildd Slave entity.
 
 Need auxiliar methods from zope toolchain:
 
- >>> from canonical.launchpad.webapp.testing import verifyObject
- >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from zope.component import getUtility
 
 Importing Builder content class and its interface:
 
- >>> from canonical.launchpad.database import Builder
- >>> from canonical.launchpad.interfaces import IBuilder
+    >>> from canonical.launchpad.database import Builder
+    >>> from canonical.launchpad.interfaces import IBuilder
 
 Get an instance of Builder from the current sampledata:
 
- >>> builder = Builder.get(1)
+    >>> builder = Builder.get(1)
 
 Test some attributes:
 
- >>> builder.id, builder.name
- (1, u'bob')
+    >>> builder.id, builder.name
+    (1, u'bob')
 
 Test 'status' property:
 
- >>> builder.failnotes = 'Could not open Socket'
- >>> builder.status
- u'NOT OK : Could not open Socket (AUTO)'
+    >>> builder.failnotes = 'Could not open Socket'
+    >>> builder.status
+    u'NOT OK : Could not open Socket (AUTO)'
 
- >>> builder.builderok = True
- >>> builder.status
- u'BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (AUTO)'
+    >>> builder.builderok = True
+    >>> builder.status
+    u'BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (AUTO)'
 
- >>> builder.manual = True
- >>> builder.status
- u'BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (MANUAL)'
+    >>> builder.manual = True
+    >>> builder.status
+    u'BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (MANUAL)'
 
 Confirm we can get the slave xmlrpc interface
 
- >>> s = builder.slave
+    >>> s = builder.slave
 
 Confirm that the urlbase is correct in that slave. (If the protocol changes,
 this may change too)
 
- >>> s.urlbase == builder.url
- True
+    >>> s.urlbase == builder.url
+    True
 
-Check if the instace corresponds to the declared interface:
+Check if the instance corresponds to the declared interface:
 
- >>> verifyObject(IBuilder, builder)
- True
+    >>> verifyObject(IBuilder, builder)
+    True
 
+
+== Resuming Slave ==
+
+Virtual slaves are resumed used a command specified in the
+configuration. Production configuration uses a SSH trigger account
+accessed via a private key available in the builddmaster machine
+(which used ftpmaster configuration profile) as in:
+
+{{{
+ssh ~/.ssh/ppa-reset-key ppa@(vm_host)s
+}}}
+
+The test configuration uses a fake command that can be performed in
+development machine and allow us to tests the important features used
+in production, as 'vm_host' variable replacement.
+
+    >>> from canonical.config import config
+    >>> config.builddmaster.vm_resume_command
+    'echo %(vm_host)s'
+
+Before performing the command, it checks if the builder is indeed
+virtual (untrusted) and raises CannotResumeHost is it not.
+
+    >>> builder.resumeSlaveHost()
+    Traceback (most recent call last):
+    ...
+    CannotResumeHost: Builder is trusted.
+
+Let's switch sampledata builder to untrusted mode, so we can resume it
+without errors.
+
+    >>> builder.trusted = False
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(builder)
+
+For testing purposes resumeSlaveHost returns the stdout and stderr
+buffer resulted from the command.
+
+    >>> out, err = builder.resumeSlaveHost()
+    >>> print out.strip()
+    localhost-host.ppa
+
+If the specified command fails, resumeSlaveHost also raises
+CannotResumeHost exception with the results stdout and stderr.
+
+    >>> default_resume_command = config.builddmaster.vm_resume_command
+    >>> config.builddmaster.vm_resume_command = "false"
+    >>> builder.resumeSlaveHost()
+    Traceback (most recent call last):
+    ...
+    CannotResumeHost: Resuming failed:
+    OUT:
+    <BLANKLINE>
+    ERR:
+    <BLANKLINE>
+
+Restore default values for resume command and builder.trusted.
+
+    >>> config.builddmaster.vm_resume_command = default_resume_command
+    >>> builder.trusted = True
+    >>> syncUpdate(builder)
+
+
+== BuilderSet ==
 
 Now perform the tests for the Builder ContentSet class, BuilderSet.
 
 Check if it can be imported:
 
- >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from canonical.launchpad.interfaces import IBuilderSet
 
 Check we can use the set as a utility:
 
- >>> builderset = getUtility(IBuilderSet)
+    >>> builderset = getUtility(IBuilderSet)
 
 Check if the instance returned as utility corresponds to its
 respective interface:
 
- >>> verifyObject(IBuilderSet, builderset)
- True
+    >>> verifyObject(IBuilderSet, builderset)
+    True
 
 Check if the instance is iterable:
 
- >>> for b in builderset:
- ...     b.id
- 1
- 2
+    >>> for b in builderset:
+    ...     b.id
+    1
+    2
 
 Check if the __getitem__ method:
 
- >>> builderset['bob'].name
- u'bob'
+    >>> builderset['bob'].name
+    u'bob'
 
 Check now the specific method in the utility as new():
 
- >>> bnew = builderset.new(1, 'http://dummy.com:8221/', 'dummy',
- ...	                   'Dummy Title', 'eh ?', 1)
- >>> bnew.name
- u'dummy'
+    >>> bnew = builderset.new(1, 'http://dummy.com:8221/', 'dummy',
+    ...	                   'Dummy Title', 'eh ?', 1)
+    >>> bnew.name
+    u'dummy'
 
- Check get() which returns a correspondent Builder instance to a given
- id:
+Check get() which returns a correspondent Builder instance to a given id:
 
- >>> builderset.get(bnew.id).name
- u'dummy'
+    >>> builderset.get(bnew.id).name
+    u'dummy'
 
 Or raises an SQLObjectNotFound exception:
 
- >>> from sqlobject import SQLObjectNotFound
- >>> try:
- ...    builderset.get(100)
- ... except SQLObjectNotFound, info:
- ...    "%s" % info
- 'The object Builder by the ID 100 does not exist'
+    >>> from sqlobject import SQLObjectNotFound
+    >>> try:
+    ...    builderset.get(100)
+    ... except SQLObjectNotFound, info:
+    ...    "%s" % info
+    'The object Builder by the ID 100 does not exist'
 
 count() return the number of builder instance we have stored:
 
- >>> builderset.count()
- 3
+    >>> builderset.count()
+    3
 
 getBuilder() method returns all the builders available. It seems the
 same than the own instance but we have plans to turn it aware of some
 attributes of builder instance as: builderok and trust.
 
- >>> for b in builderset.getBuilders():
- ...     b.name
- u'bob'
- u'dummy'
- u'frog'
+    >>> for b in builderset.getBuilders():
+    ...     b.name
+    u'bob'
+    u'dummy'
+    u'frog'

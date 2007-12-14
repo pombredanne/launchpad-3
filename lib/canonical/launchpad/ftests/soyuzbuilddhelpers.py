@@ -49,8 +49,8 @@ class MockBuilder:
     def requestAbort(self):
         return self.slave.abort()
 
-    def resetSlaveHost(self, logger):
-        pass
+    def resumeSlaveHost(self, logger):
+        return ('out', 'err')
 
     def checkSlaveAlive(self):
         pass

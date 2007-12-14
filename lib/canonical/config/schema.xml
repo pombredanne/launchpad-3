@@ -880,10 +880,18 @@ k            </description>
                 BuilddMaster Datatbase user.
             </description>
         </key>
-        <key name="socket_timeout" datatype="integer" default="600">
+        <key name="socket_timeout" datatype="integer" default="40">
             <description>
                 The time in seconds that the builddmaster will wait for a
                 reply from buildd slave.
+            </description>
+        </key>
+        <key name="vm_resume_command" datatype="string"
+             default="echo %(vm_host)s">
+            <description>
+              Command-line used to reset the virtual builder. 'vm_host'
+              variable will be replaced by the context builder virtual
+              machine host.
             </description>
         </key>
         <key name="uploader" datatype="string" required="yes">
@@ -900,13 +908,6 @@ k            </description>
         <key name="root" datatype="string" required="yes">
             <description>
                 Directory to be created to store build results.
-            </description>
-        </key>
-        <key name="crondaily_lockfile" datatype="string"
-             default="/srv/launchpad.net/ubuntu-archive/cron.daily.lock">
-            <description>
-             cron.daily lockfile path, it's probed in order to suppress
-             buildd-queue-builder runs during the publication process.
             </description>
         </key>
         <key name="send_build_notification" datatype="boolean"

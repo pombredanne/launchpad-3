@@ -33,7 +33,7 @@ from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
-    CannotBuild, CannotResetHost, IBuildQueueSet, IBuildSet,
+    CannotBuild, CannotResumeHost, IBuildQueueSet, IBuildSet,
     IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
     NotFoundError, PackagePublishingPocket, ProtocolVersionMismatch,
     pocketsuffix)
@@ -162,27 +162,37 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.abort()
 
-    def resetSlaveHost(self, logger):
-        """See IBuilder."""
-        if self.trusted:
-            # currently trusted builders cannot reset their host environment.
-            raise CannotResetHost
+    @property
+    def vm_host(self):
         # XXX cprov 2007-05-10: Please FIX ME ASAP !
         # The ssh command line should be in the respective configuration
         # file. The builder XEN-host should be stored in DB (Builder.vmhost)
         # and not be calculated on the fly (this is gross).
-        logger.debug("Resuming %s", self.url)
         hostname = self.url.split(':')[1][2:].split('.')[0]
         host_url = '%s-host.ppa' % hostname
-        key_path = os.path.expanduser('~/.ssh/ppa-reset-builder')
-        resume_argv = [
-            'ssh', '-i' , key_path, 'ppa@%s' % host_url]
+        return host_url
+
+    def resumeSlaveHost(self):
+        """See IBuilder."""
+        logger = self._getSlaveScannerLogger()
+        if self.trusted:
+            raise CannotResumeHost('Builder is trusted.')
+
+        logger.debug("Resuming %s", self.url)
+        resume_command = config.builddmaster.vm_resume_command % {
+            'vm_host': self.vm_host}
+        resume_argv = resume_command.split()
+
         logger.debug('Running: %s', resume_argv)
         resume_process = subprocess.Popen(
             resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # XXX cprov 2007-06-15: If the reset command fails, we should raise
-        # an error rather than assuming it reset ok.
-        resume_process.communicate()
+        stdout, stderr = resume_process.communicate()
+
+        if resume_process.returncode != 0:
+            raise CannotResumeHost(
+                "Resuming failed:\nOUT:\n%s\nERR:\n%s\n" % (stdout, stderr))
+
+        return stdout, stderr
 
     @cachedproperty
     def slave(self):
@@ -377,9 +387,9 @@ class Builder(SQLBase):
         # Make sure the request is valid; an exception is raised if it's not.
         self._verifyBuildRequest(build_queue_item, logger)
 
-        # If we are building untrusted source reset the entire machine.
+        # If we are building untrusted source resume the virtual machine.
         if not self.trusted:
-            self.resetSlaveHost(logger)
+            self.resumeSlaveHost()
 
         # Build extra arguments.
         args = {}
