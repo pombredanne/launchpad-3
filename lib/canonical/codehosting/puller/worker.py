@@ -258,7 +258,11 @@ class PullerWorker:
                 # The destination exists, and is in the same format.  So all
                 # we need to do is pull the new revisions.
 
-                # XXX.
+                # If the branch is locked, try to break it.  Our special UI
+                # factory will allow the breaking of locks that look like they
+                # were left over from previous puller worker runs.  We will
+                # block on other locks and fail if they are not broken before
+                # the timeout expires (currently 5 minutes).
                 if branch.get_physical_lock_status():
                     branch.break_lock()
                 branch.pull(self._source_branch, overwrite=True)
@@ -431,7 +435,13 @@ class PullerWorkerUIFactory(ProgressUIFactory):
 
 
 def install_worker_ui_factory(puller_worker_protocol):
-    """Install an UIFactory that informs a PullerWorkerProtocol of progress.
+    """Install a special UIFactory for puller workers.
+
+    Our factory does two things:
+
+    1) Create progress bars that inform a PullerWorkerProtocol of progress.
+    2) Break locks if and only if they appear to be stale locks
+       created by another puller worker process.
     """
     def factory(*args, **kw):
         r = WorkerProgressBar(*args, **kw)
