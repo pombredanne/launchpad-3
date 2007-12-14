@@ -7,8 +7,8 @@
   <!-- Announcement -->
   <content class="canonical.launchpad.database.Announcement">
     <allow attributes="id date_created registrant target title summary url
-                       date_announced date_last_modified active future
-                       published" />
+                       date_announced date_last_modified date_updated active
+                       future published" />
     <require permission="launchpad.Edit"
              attributes="modify retarget retract set_publication_date
                          destroySelf" />
@@ -17,6 +17,12 @@
   <browser:menus
     module="canonical.launchpad.browser"
     classes="AnnouncementContextMenu"
+    />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IAnnouncement"
+    path_expression="string:+announcement/${id}"
+    attribute_to_parent="target"
     />
 
   <adapter
@@ -28,18 +34,20 @@
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IAnnouncement"
-    name="+edit" />
+    name="+index" />
 
-  <browser:url
+  <browser:page
     for="canonical.launchpad.interfaces.IAnnouncement"
-    path_expression="string:+announcement/${id}"
-    attribute_to_parent="target"
+    facet="overview"
+    permission="launchpad.View"
+    template="../templates/announcement-index.pt"
+    name="+index"
     />
 
   <browser:page
     for="canonical.launchpad.interfaces.IAnnouncement"
     facet="overview"
-    permission="zope.Public"
+    permission="launchpad.View"
     template="../templates/announcement-listing-detailed.pt"
     name="+listing-detailed"
     />

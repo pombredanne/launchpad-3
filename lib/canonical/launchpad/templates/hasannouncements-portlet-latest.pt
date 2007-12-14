@@ -3,7 +3,6 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-<tal:beta-testers-only condition="view/isBetaUser">
 <tal:news define="announcements view/latest_announcements">
 <div
   tal:condition="announcements"
@@ -28,5 +27,4 @@
   </div>
 </div>
 </tal:news>
-</tal:beta-testers-only>
 </tal:root>

@@ -46,6 +46,7 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
     """A new (and simpler) version of the user details XML-RPC API."""
 
     def __init__(self, storage, debug=False):
+        xmlrpc.XMLRPC.__init__(self)
         self.storage = storage
         self.debug = debug
 
@@ -99,11 +100,11 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
         return self.storage.createBranch(
             loginID, personName, productName, branchName)
 
-    def xmlrpc_requestMirror(self, branchID):
+    def xmlrpc_requestMirror(self, loginID, branchID):
         """See IHostedBranchStorage."""
         if self.debug:
-            print 'requestMirror(%r)' % (branchID,)
-        return self.storage.requestMirror(branchID)
+            print 'requestMirror(%r, %r)' % (loginID, branchID)
+        return self.storage.requestMirror(loginID, branchID)
 
     def xmlrpc_getBranchInformation(self, loginID, userName, productName,
                                     branchName):

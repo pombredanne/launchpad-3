@@ -339,7 +339,8 @@ class TestLaunchpadTransport(TestCase):
         # Unlocking a branch requests a mirror.
         self.lockBranch('~testuser/firefox/baz')
         self.unlockBranch('~testuser/firefox/baz')
-        self.assertEqual([1], self.server.authserver._request_mirror_log)
+        self.assertEqual(
+            [(self.user_id, 1)], self.server.authserver._request_mirror_log)
 
 
 class TestLaunchpadTransportReadOnly(TestCase):
