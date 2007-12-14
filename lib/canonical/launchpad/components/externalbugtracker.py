@@ -867,8 +867,9 @@ class DebBugs(ExternalBugTracker):
 
             message_set = getUtility(IMessageSet)
             try:
-                existing_messages = message_set.get(
-                    rfc822msgid=parsed_comment['message-id'])
+                existing_messages = message_set.getByMessageIdAndOwner(
+                    rfc822msgid=parsed_comment['message-id'],
+                    owner=owner)
             except NotFoundError:
                 message = message_set.fromEmail(comment, owner,
                     parsed_message=parsed_comment)
