@@ -139,7 +139,7 @@ class ExternalBugTracker:
 
     batch_query_threshold = config.checkwatches.batch_query_threshold
     batch_size = None
-    import_comments = True #config.checkwatches.import_comments
+    import_comments = config.checkwatches.import_comments
 
     def __init__(self, bugtracker):
         self.bugtracker = bugtracker
