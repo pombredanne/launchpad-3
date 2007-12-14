@@ -1900,14 +1900,16 @@ class SourceForge(ExternalBugTracker):
         else:
             return local_status
 
-<<<<<<< TREE
 
 class RequestTracker(ExternalBugTracker):
     """`ExternalBugTracker` subclass for handling RT imports."""
 
     ticket_url = 'REST/1.0/ticket/%s/show'
     batch_url = 'REST/1.0/search/ticket/'
-    batch_query_threshold = 1
+
+    def __init__(self, txn, bugtracker):
+        super(RequestTracker, self).__init__(txt, bugtracker)
+        batch_query_threshold = 1
 
     @property
     def credentials(self):
