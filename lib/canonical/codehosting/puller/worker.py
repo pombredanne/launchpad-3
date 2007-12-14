@@ -12,7 +12,7 @@ import urllib2
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import (
-    BzrError, LockContention, NotBranchError, ParamikoNotPresent,
+    BzrError, NotBranchError, ParamikoNotPresent,
     UnknownFormatError, UnsupportedFormatError)
 from bzrlib.progress import DummyProgress
 import bzrlib.ui

@@ -13,7 +13,6 @@ import pytz
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import LockBroken
 from bzrlib.urlutils import local_path_to_url
 
 from twisted.internet import defer, error, task
@@ -615,7 +614,7 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
     def test_lock_with_magic_id(self):
         # When the subprocess locks a branch, it is locked with the right ID.
         class PullerMasterProtocolWithLockID(scheduler.PullerMasterProtocol):
-            """A subclass of PullerMasterProtocol that defines a lock_id method.
+            """Subclass of PullerMasterProtocol that defines a lock_id method.
 
             This protocol defines a method that records on the listener the
             lock id reported by the subprocess.
@@ -627,7 +626,8 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
 
 
         class PullerMasterWithLockID(scheduler.PullerMaster):
-            """A subclass of PullerMaster that uses allows recording of lock ids."""
+            """A subclass of PullerMaster that allows recording of lock ids.
+            """
 
             master_protocol_class = PullerMasterProtocolWithLockID
 
@@ -807,7 +807,8 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         """
 
         def mirror_fails_to_unlock():
-            puller_master = self.makePullerMaster(script_text=lower_timeout_script)
+            puller_master = self.makePullerMaster(
+                script_text=lower_timeout_script)
             deferred = puller_master.mirror()
             def check_mirror_failed(ignored):
                 self.assertEqual(len(self.client.calls), 2)
@@ -818,7 +819,8 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
                 self.assertEqual(
                     mirror_failed_call[:2],
                     ('mirrorFailed', self.db_branch.id))
-                self.assertTrue("Could not acquire lock" in mirror_failed_call[2])
+                self.assertTrue(
+                    "Could not acquire lock" in mirror_failed_call[2])
                 return ignored
             deferred.addCallback(check_mirror_failed)
             return deferred
