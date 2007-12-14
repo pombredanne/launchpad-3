@@ -69,7 +69,10 @@ class SaneBuildingSlave:
 
 
 class SaneWaitingSlave:
-    """A mock slave that is currently waiting with build 8 and buildqueue 1."""
+    """A mock slave that is currently waiting.
+
+    Uses build 8 and buildqueue 1.
+    """
 
     def status(self):
         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '8-1')
@@ -169,7 +172,7 @@ class BuildingSlave(OkSlave):
     def getFile(self, sum):
         if sum == "buildlog":
             s = StringIO("This is a build log")
-            s.headers={'content-length':19}
+            s.headers = {'content-length':19}
             return s
 
 
@@ -194,7 +197,7 @@ class WaitingSlave(OkSlave):
     def getFile(self, sum):
         if sum == "buildlog":
             s = StringIO("This is a build log")
-            s.headers={'content-length':19}
+            s.headers = {'content-length':19}
             return s
 
 class AbortingSlave(OkSlave):

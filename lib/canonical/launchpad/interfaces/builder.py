@@ -35,7 +35,10 @@ class ProtocolVersionMismatch(BuildDaemonError):
 
 
 class BuildJobMismatch(BuildDaemonError):
-    """The build slave is working with mismatched information, needs rescue."""
+    """The build slave is working with mismatched information.
+
+    It needs to be rescued.
+    """
 
 
 class CannotResumeHost(BuildDaemonError):
@@ -65,60 +68,53 @@ class IBuilder(IHasOwner):
     builderok, status, failnotes and currentjob.
     """
     id = Attribute("Builder identifier")
-    processor = Choice(title=_('Processor'), required=True,
-                       vocabulary='Processor',
-                       description=_('Build Slave Processor, used to identify '
-                                     'which jobs can be built by this device.')
-                       )
+    processor = Choice(
+        title=_('Processor'), required=True, vocabulary='Processor',
+        description=_('Build Slave Processor, used to identify '
+                      'which jobs can be built by this device.'))
 
-    owner = Choice(title=_('Owner'), required=True,
-                   vocabulary='ValidOwner',
-                   description=_('Builder owner, a Launchpad member which '
-                                 'will be responsible for this device.')
-                   )
+    owner = Choice(
+        title=_('Owner'), required=True, vocabulary='ValidOwner',
+        description=_('Builder owner, a Launchpad member which '
+                      'will be responsible for this device.'))
 
-    url = TextLine(title=_('URL'), required=True,
-                   constraint=builder_url_validator,
-                   description=_('The URL to the build machine, used as a '
-                                 'unique identifier. Includes protocol, '
-                                 'host and port only, '
-                                 'e.g.: http://farm.com:8221/')
-                   )
-    name = TextLine(title=_('Name'), required=True,
-                    constraint=name_validator,
-                    description=_('Builder Slave Name used for reference '
-                                  'proposes')
-                    )
-    title = Title(title=_('Title'), required=True,
-                  description=_('The builder slave title. Should be just '
-                                'a few words.')
-                  )
+    url = TextLine(
+        title=_('URL'), required=True, constraint=builder_url_validator,
+        description=_('The URL to the build machine, used as a unique '
+                      'identifier. Includes protocol, host and port only, '
+                      'e.g.: http://farm.com:8221/'))
 
-    description = Description(title=_('Description'), required=True,
-                              description=_('The builder slave description, '
-                                            'may be several paragraphs of '
-                                            'text, giving the highlights '
-                                            'and details.')
-                              )
+    name = TextLine(
+        title=_('Name'), required=True, constraint=name_validator,
+        description=_('Builder Slave Name used for reference proposes'))
 
-    trusted = Bool(title=_('Trusted'), required=True,
-                   description=_('Whether or not the builder is prepared '
-                                 'to build untrusted packages.')
-                   )
+    title = Title(
+        title=_('Title'), required=True,
+        description=_('The builder slave title. Should be just a few words.'))
 
-    manual = Bool(title=_('Manual Mode'), required=False,
-                   description=_('The auto-build system does not dispatch '
-                                 'jobs automatically for slaves in manual '
-                                 'mode.')
-                   )
+    description = Description(
+        title=_('Description'), required=True,
+        description=_('The builder slave description, may be several '
+                      'paragraphs of text, giving the highlights and '
+                      'details.'))
 
-    builderok = Bool(title=_('Builder State OK'), required=False,
-                     description=_('Whether or not the builder is ok')
-                     )
+    trusted = Bool(
+        title=_('Trusted'), required=True,
+        description=_('Whether or not the builder is prepared to build '
+                      'untrusted packages.'))
 
-    failnotes = Text(title=_('Failure Notes'), required=False,
-                     description=_('The reason for a builder not being ok')
-                     )
+    manual = Bool(
+        title=_('Manual Mode'), required=False,
+        description=_('The auto-build system does not dispatch '
+                      'jobs automatically for slaves in manual mode.'))
+
+    builderok = Bool(
+        title=_('Builder State OK'), required=False,
+        description=_('Whether or not the builder is ok'))
+
+    failnotes = Text(
+        title=_('Failure Notes'), required=False,
+        description=_('The reason for a builder not being ok'))
 
     vm_host = TextLine(
         title=_('Virtual Machine Host'), required=False,
