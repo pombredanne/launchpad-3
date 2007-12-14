@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces and enumeratrions for CodeImportJobs.
 
@@ -6,14 +7,20 @@ CodeImportJobs represent pending and running updates of a code import.
 """
 
 __metaclass__ = type
-__all__ = ['CodeImportJobState', 'ICodeImportJob', 'ICodeImportJobSet']
+__all__ = [
+    'CodeImportJobState',
+    'ICodeImportJob',
+    'ICodeImportJobSet',
+    'ICodeImportJobWorkflow',
+    ]
 
 from zope.interface import Interface
 from zope.schema import Choice, Datetime, Int, Object, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.codeimport import ICodeImport
-from canonical.launchpad.interfaces.codeimportmachine import ICodeImportMachine
+from canonical.launchpad.interfaces.codeimportmachine import (
+    ICodeImportMachine)
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.lazr import (
     DBEnumeratedType, DBItem)
@@ -53,6 +60,7 @@ class ICodeImportJob(Interface):
     # set to be read-only here to force client code to use methods
     # that update the audit trail appropriately.
 
+    id = Int(readonly=True, required=True)
     date_created = Datetime(required=True, readonly=True)
 
     code_import = Object(
@@ -102,3 +110,22 @@ class ICodeImportJob(Interface):
 
 class ICodeImportJobSet(Interface):
     """The set of pending and active code import jobs."""
+
+    def getById(id):
+        """Get a `CodeImportJob` by its database id.
+
+        :return: A `CodeImportJob` or None if this database id is not found.
+        """
+
+
+class ICodeImportJobWorkflow(Interface):
+    """Utility to manage `CodeImportJob` objects through their life cycle."""
+
+    def newJob(code_import):
+        """Create a new `CodeImportJob` associated to a reviewed `CodeImport`.
+
+        :param code_import: `CodeImport` object.
+        :precondition: `code_import` has REVIEWED review_status.
+        :precondition: `code_import` has no associated `CodeImportJob`.
+        :return: A new `CodeImportJob` object associated to `code_import`.
+        """
