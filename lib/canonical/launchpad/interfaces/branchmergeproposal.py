@@ -38,17 +38,18 @@ class IBranchMergeProposal(Interface):
 
     source_branch = Choice(
         title=_('Source Branch'),
-        vocabulary='Branch', required=True, readonly=True,
+        vocabulary='BranchRestrictedOnProduct', required=True, readonly=True,
         description=_("The branch that has code to land."))
 
     target_branch = Choice(
         title=_('Target Branch'),
-        vocabulary='Branch', required=True, readonly=True,
-        description=_("The branch that the source branch will be merged into."))
+        vocabulary='BranchRestrictedOnProduct', required=True, readonly=True,
+        description=_("The branch that the source branch will be merged "
+                      "into."))
 
     dependent_branch = Choice(
         title=_('Dependent Branch'),
-        vocabulary='Branch', required=False, readonly=True,
+        vocabulary='BranchRestrictedOnProduct', required=False, readonly=True,
         description=_("The branch that the source branch branched from. "
                       "If this is the same as the target branch, then leave "
                       "this field blank."))
@@ -73,18 +74,19 @@ class IBranchMergeProposal(Interface):
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
 
-    def markAsMerged(merged_revno=None, date_merged=None, merge_reporter=None):
+    def markAsMerged(merged_revno=None, date_merged=None,
+                     merge_reporter=None):
         """Mark the branch merge proposal as merged.
 
-        If the `merged_revno` is supplied, then the `BranchRevision` is checked
-        to see that revision is available in the target branch.  If it is
-        then the date from that revision is used as the `date_merged`.  If it
-        is not available, then the `date_merged` is set as if the merged_revno
-        was not supplied.
+        If the `merged_revno` is supplied, then the `BranchRevision` is
+        checked to see that revision is available in the target branch.  If it
+        is then the date from that revision is used as the `date_merged`.  If
+        it is not available, then the `date_merged` is set as if the
+        merged_revno was not supplied.
 
-        If no `merged_revno` is supplied, the `date_merged` is set to the value
-        of date_merged, or if the parameter date_merged is None, then UTC_NOW
-        is used.
+        If no `merged_revno` is supplied, the `date_merged` is set to the
+        value of date_merged, or if the parameter date_merged is None, then
+        UTC_NOW is used.
 
         :param merged_revno: The revision number in the target branch that
                              contains the merge of the source branch.

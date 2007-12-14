@@ -1,18 +1,19 @@
 = Feeds Navigation =
 
 Feeds are served over HTTP, and are heavily cached. Pages which are not
-registered on the Feeds layer should not be served from the feeds.lp.n
-subdomain.
-XXX: statik bug=150941: When this bug is fixed (in 1.1.11) this test
-should be changed to show that trying to view a page which is not
-registered on the Feeds layer returns a 404.
+registered on the Feeds layer should not be served from the feeds.lp.net
+subdomain. 
 
 
 == Index of a product ==
 
+Trying to view a page which is not registered on the Feeds layer 
+returns a 404.
+
     >>> browser.open('http://feeds.launchpad.dev/jokosher')
-    >>> browser.url
-    'http://feeds.launchpad.dev/jokosher'
+    Traceback (most recent call last):
+    ...
+    NotFound: ...
 
 
 == Redirection ==
@@ -22,9 +23,23 @@ a predictable pattern. If someone enters a feed URL and it has
 uppercase letters in it, we redirect to the canonical form of the URL
 before serving the page.
 
-   >>> browser.open('http://feeds.launchpad.dev/jOkOshEr')
+   >>> browser.open('http://feeds.launchpad.dev/jOkOshEr/latest-bugs.html')
    >>> browser.url
-   'http://feeds.launchpad.dev/jokosher'
+   'http://feeds.launchpad.dev/jokosher/latest-bugs.html'
+
+The +index view should redirect to https://help.launchpad.net/Feeds
+
+XXX Edwin Grubbs 2007-12-10 bug=98482: zope.testbrowser does not handle 
+redirects to remote sites, but http() can be used instead.
+
+   >>> response = http(r"""
+   ... GET / HTTP/1.0
+   ... Host: feeds.launchpad.dev
+   ... """)
+   >>> print response.getOutput()
+   HTTP/1.0 301 Moved Permanently
+   ...
+   Location: https://help.launchpad.net/Feeds
 
 
 == Query String Normalization ==

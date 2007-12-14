@@ -30,12 +30,12 @@ class CodeImportResult(SQLBase):
         dbName='machine', foreignKey='CodeImportMachine', notNull=True)
 
     requesting_user = ForeignKey(
-        dbName='requesting_user', foreignKey='Person', notNull=False)
+        dbName='requesting_user', foreignKey='Person', default=None)
 
-    log_excerpt = StringCol(notNull=False)
+    log_excerpt = StringCol(default=None)
 
     log_file = ForeignKey(
-        dbName='log_file', foreignKey='LibraryFileAlias', notNull=False)
+        dbName='log_file', foreignKey='LibraryFileAlias', default=None)
 
     status = EnumCol(
         enum=CodeImportResultStatus, notNull=True)

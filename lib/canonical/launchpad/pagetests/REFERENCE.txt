@@ -91,6 +91,13 @@ Manipulating links:
     >>> browser.title
     'Bogus titles R us'
 
+Extracting link pointers:
+
+    >>> extract_link_from_tag(link)
+    u'/foo'
+    >>> extract_link_from_tag(link, 'http://launchpad.dev/blah/blah/')
+    u'http://launchpad.dev/foo'
+
 Form control basics:
 
     >>> control = browser.getControl('Label')
