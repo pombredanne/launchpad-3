@@ -73,8 +73,9 @@ Bug 563 resides in the archive. It is also fetchable:
     >>> len(bug_watches)
     4
 
-Log in and kick off the update. We disable comment imports here because
-we will test them later.
+Log in and kick off the update. The importing of comments, which is
+controlled by a configuration option, is disabled here and will be
+tested later.
 
     >>> external_debbugs.import_comments = False
     >>> external_debbugs.updateBugWatches(bug_watches)
@@ -350,6 +351,7 @@ gets notified about it.
     ...     TestDebBugs, TestDebianBug)
     >>> external_debbugs = TestDebBugs(
     ...     debbugs, {'1234': TestDebianBug(package='no-such-package')})
+    >>> external_debbugs.import_comments = False
     >>> print debian.getSourcePackage('no-such-package')
     None
     >>> bug = external_debbugs.importBug(debian, '1234')
@@ -419,8 +421,7 @@ These comments will have been added to the bug, but by default won't be
 displayed. Initially, we only see the message chunk that was added when
 the bug was created.
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> chunks = removeSecurityProxy(bug.getMessageChunks())
+    >>> chunks = bug.getMessageChunks()
     >>> for chunk in chunks:
     ...     print chunk.content
     Malone pages that use more complex layouts with portlets and fancy
@@ -433,7 +434,7 @@ imported comments are stored.
 
     >>> from canonical.config import config
     >>> config.malone.show_imported_comments = True
-    >>> chunks = removeSecurityProxy(bug.getMessageChunks())
+    >>> chunks = bug.getMessageChunks()
     >>> for chunk_id, chunk in sorted([(chunk.id, chunk.content)
     ...     for chunk in chunks]):
     ...     print chunk
@@ -469,7 +470,7 @@ imported into Launchpad as normal. We can demonstrate this by telling
 our test debbugs DB to load sample data for more than one comment
 
     >>> config.malone.show_imported_comments = True
-    >>> chunks = removeSecurityProxy(bug.getMessageChunks())
+    >>> chunks = bug.getMessageChunks()
     >>> len(chunks)
     2
 
@@ -477,7 +478,7 @@ our test debbugs DB to load sample data for more than one comment
     >>> external_debbugs.importBugComments(bug_watch)
     INFO:...:Imported 1 comments for remote bug 1234...
 
-    >>> chunks = removeSecurityProxy(bug.getMessageChunks())
+    >>> chunks = bug.getMessageChunks()
     >>> len(chunks)
     3
 
@@ -489,6 +490,40 @@ our test debbugs DB to load sample data for more than one comment
     Things happen.
     Anything that, in happening, causes something else to happen, causes
     something else to happen.
+
+If a comment already exists in our database and is then imported from
+the debbugs database, it will be linked to the bug then next time the
+comment import code runs. We can demonstrate this by adding a new
+message:
+
+    >>> import os
+    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> msg_path = os.path.join(external_debbugs.debbugs_db._data_path,
+    ...     'debbugs-existing-comment.txt')
+    >>> msg_string = open(msg_path).read()
+    >>> message = getUtility(IMessageSet).fromEmail(msg_string)
+
+If we run the import against the same data file - thus finding the same
+message - the comment will be linked to the bug, but will not show as
+having been imported since the comment hasn't been created afresh.
+
+    >>> external_debbugs.debbugs_db._data_file = (
+    ...     'debbugs-existing-comment.txt')
+    >>> external_debbugs.importBugComments(bug_watch)
+
+    >>> chunks = bug.getMessageChunks()
+    >>> len(chunks)
+    4
+
+    >>> for chunk_id, chunk in sorted([(chunk.id, chunk.content)
+    ...     for chunk in chunks]):
+    ...     print chunk
+    Malone pages that use more complex layouts with portlets and fancy
+    CSS are sometimes not getting properly reflowed after rendering.
+    Things happen.
+    Anything that, in happening, causes something else to happen, causes
+    something else to happen.
+    It doesn't necessarily happen in that order, though.
 
     >>> config.malone.show_imported_comments = False
 
