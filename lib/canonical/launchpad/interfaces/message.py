@@ -74,12 +74,6 @@ class IMessageSet(Interface):
         If no such messages exist, raise NotFoundError.
         """
 
-    def getByMessageIdAndOwner(rfc822msgid, owner):
-        """Return a list of IMessages with the given rfc822msgid and owner.
-
-        If no such messages exist, raise NotFoundError.
-        """
-
     def fromText(subject, content, owner=None, datecreated=None):
         """Construct a Message from a text string and return it."""
 

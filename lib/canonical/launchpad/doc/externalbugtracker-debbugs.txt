@@ -409,6 +409,8 @@ are also imported. This activity is usually carried out as part of a
 status update (though this is disabled in our Test DebBugs
 implementation), so we need to pass a bug watch to the function.
 
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug = getUtility(IBugSet).get(4)
     >>> bug_watch = bug.addWatch(debbugs, '1234', no_priv)
     >>> external_debbugs.importBugComments(bug_watch)
     INFO:...:Imported 1 comments for remote bug 1234...
@@ -421,7 +423,8 @@ the bug was created.
     >>> chunks = removeSecurityProxy(bug.getMessageChunks())
     >>> for chunk in chunks:
     ...     print chunk.content
-    Test description.
+    Malone pages that use more complex layouts with portlets and fancy
+    CSS are sometimes not getting properly reflowed after rendering.
 
 There is a config setting, malone.show_imported_comments, which controls
 whether or not we display imported comments. This option is False by
@@ -430,10 +433,12 @@ imported comments are stored.
 
     >>> from canonical.config import config
     >>> config.malone.show_imported_comments = True
-    >>> message_chunks = removeSecurityProxy(bug.getMessageChunks())
-    >>> for chunk in sorted([chunk.content for chunk in message_chunks]):
+    >>> chunks = removeSecurityProxy(bug.getMessageChunks())
+    >>> for chunk_id, chunk in sorted([(chunk.id, chunk.content)
+    ...     for chunk in chunks]):
     ...     print chunk
-    Test description.
+    Malone pages that use more complex layouts with portlets and fancy
+    CSS are sometimes not getting properly reflowed after rendering.
     Things happen.
 
     >>> config.malone.show_imported_comments = False
@@ -441,7 +446,7 @@ imported comments are stored.
 The author of the comment will have had a Launchpad Person created for
 them if they didn't exist already:
 
-    >>> message = message_chunks[0].message
+    >>> message = chunks[0].message
     >>> message.owner.displayname
     u'Teun Vink'
 
@@ -475,6 +480,15 @@ our test debbugs DB to load sample data for more than one comment
     >>> chunks = removeSecurityProxy(bug.getMessageChunks())
     >>> len(chunks)
     3
+
+    >>> for chunk_id, chunk in sorted([(chunk.id, chunk.content)
+    ...     for chunk in chunks]):
+    ...     print chunk
+    Malone pages that use more complex layouts with portlets and fancy
+    CSS are sometimes not getting properly reflowed after rendering.
+    Things happen.
+    Anything that, in happening, causes something else to happen, causes
+    something else to happen.
 
     >>> config.malone.show_imported_comments = False
 
