@@ -112,6 +112,24 @@
 	permission="launchpad.AnyPerson"
 	template="../templates/bugtrackers-add.pt" />
 
+    <!-- BugTrackerAlias -->
+    <content class="canonical.launchpad.database.BugTrackerAlias">
+        <allow interface="canonical.launchpad.interfaces.IBugTrackerAlias" />
+        <require permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.IBugTrackerAlias" />
+    </content>
+
+    <!-- BugTrackerAliasSet -->
+    <content class="canonical.launchpad.database.BugTrackerAliasSet">
+        <allow interface="canonical.launchpad.interfaces.IBugTrackerAliasSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.BugTrackerAliasSet"
+        provides="canonical.launchpad.interfaces.IBugTrackerAliasSet">
+        <allow interface="canonical.launchpad.interfaces.IBugTrackerAliasSet"/>
+    </securedutility>
+
     <!-- RemoteBug -->
     <content class="canonical.launchpad.browser.bugtracker.RemoteBug">
         <allow interface="canonical.launchpad.interfaces.IRemoteBug" />

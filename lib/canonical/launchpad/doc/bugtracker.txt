@@ -96,8 +96,7 @@ If no bug tracker can be found None is returned.
 
 === Aliases ===
 
-A bug tracker can have a number of alias URLs associated with
-it.
+A bug tracker can have a number of alias URLs associated with it.
 
     >>> from canonical.launchpad.interfaces import IBugTrackerAliasSet
     >>> bugtrackeralias_set = getUtility(IBugTrackerAliasSet)
@@ -111,7 +110,8 @@ aliases.
     ...     'http://cambridge.example.com/']
 
     >>> mozilla_bugzilla.aliases
-    [u'http://norwich.example.com/', u'http://cambridge.example.com/']
+    [u'http://cambridge.example.com/',
+     u'https://norwich.example.com/']
 
     >>> del mozilla_bugzilla.aliases
     >>> mozilla_bugzilla.aliases
@@ -127,46 +127,28 @@ the main base url is also recorded as an alias.
 
 Query by bug tracker:
 
-    >>> mozilla_aliases = bugtrackeralias_set.queryByBugTracker(
-    ...     mozilla_bugzilla)
-    >>> for alias in mozilla_aliases:
-    ...     print alias.base_url
-    https://bugzilla.mozilla.org/
-    http://just.example.com/
-    http://magic.example.com/
+    >>> sorted(alias.base_url for alias in
+    ...        bugtrackeralias_set.queryByBugTracker(mozilla_bugzilla))
+    [u'http://just.example.com/',
+     u'http://magic.example.com/',
+     u'https://bugzilla.mozilla.org/']
 
 Query by bug tracker ID:
 
-    >>> mozilla_aliases = bugtrackeralias_set.queryByBugTracker(
-    ...     mozilla_bugzilla.id)
-    >>> for alias in mozilla_aliases:
-    ...     print alias.base_url
-    https://bugzilla.mozilla.org/
-    http://just.example.com/
-    http://magic.example.com/
+    >>> sorted(alias.base_url for alias in
+    ...        bugtrackeralias_set.queryByBugTracker(mozilla_bugzilla.id))
+    [u'http://just.example.com/',
+     u'http://magic.example.com/',
+     u'https://bugzilla.mozilla.org/']
 
-If BugTracker.baseurl is changed, the aliases are kept up-to-date. If
-it's changed to an existing alias, nothing needs to be done, but the
+The aliases attribute never contains the current baseurl. For example,
+if BugTracker.baseurl is changed to an existing alias of itself, the
 aliases attribute now contains the old baseurl and not the new one.
 
     >>> mozilla_bugzilla.baseurl = 'http://magic.example.com/'
     >>> mozilla_bugzilla.aliases
-    [u'https://bugzilla.mozilla.org/', u'http://thats.example.com/']
-
-If it's changed to a new URL that's not used anywhere else then the
-old alias remains, and a new one is added.
-
-    >>> mozilla_bugzilla.baseurl = 'http://hyper.example.com/'
-    >>> mozilla_bugzilla.aliases
-    [u'https://bugzilla.mozilla.org/', u'http://hyper.example.com/',
-     u'http://thats.example.com/']
-
-It's an error to change the baseurl to one that is used by or is an
-alias to another bug tracker.
-
-    >>> gnome_bugzilla = bugtracker_set.getByName('gnome-bugzilla')
-    >>> gnome_bugzilla.baseurl = 'http://hyper.example.com/'
-    Traceback
+    [u'http://just.example.com/',
+     u'https://bugzilla.mozilla.org/']
 
 == checkwatches.py ==
 

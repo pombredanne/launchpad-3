@@ -8,15 +8,17 @@ __all__ = ['BugTracker', 'BugTrackerSet',
 import re
 import urllib
 
+from itertools import chain
+
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
+    ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import AND
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote, quote_like, sqlvalues)
+    SQLBase, flush_database_updates, quote, sqlvalues)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.bug import Bug
@@ -126,19 +128,23 @@ class BugTracker(SQLBase):
         return BugWatch.select(query, orderBy=["remotebug", "id"])
 
     _bugtracker_aliases = SQLMultipleJoin(
-        'BugTrackerAlias', joinColumn='bugtracker', orderBy='base_url')
+        'BugTrackerAlias', joinColumn='bugtracker')
 
     def _get_aliases(self):
-        return [alias.base_url for alias in self._bugtracker_aliases]
+        alias_urls = set(alias.base_url for alias in self._bugtracker_aliases)
+        # Although it does no harm if the current baseurl is also an
+        # alias, we hide it here to avoid confusion.
+        alias_urls.discard(self.baseurl)
+        return sorted(alias_urls)
 
-    def _set_aliases(self, alias_urls=None):
+    def _set_aliases(self, alias_urls):
         if alias_urls is None:
-            alias_urls = []
+            alias_urls = set()
+        else:
+            alias_urls = set(alias_urls)
 
         current_aliases_by_url = dict(
             (alias.base_url, alias) for alias in self._bugtracker_aliases)
-
-        alias_urls = set(alias_urls)
         current_alias_urls = set(current_aliases_by_url)
 
         to_add = alias_urls - current_alias_urls
@@ -150,7 +156,10 @@ class BugTracker(SQLBase):
             alias = current_aliases_by_url[url]
             alias.destroySelf()
 
-    aliases = property(_get_aliases, _set_aliases, _set_aliases)
+    def _del_aliases(self):
+        self._set_aliases([])
+
+    aliases = property(_get_aliases, _set_aliases, _del_aliases)
 
 
 class BugTrackerSet:
@@ -189,14 +198,27 @@ class BugTrackerSet:
 
     def queryByBaseURL(self, baseurl):
         """See IBugTrackerSet."""
-        for url in base_url_permutations(baseurl):
-            bugtracker = BugTracker.selectOneBy(baseurl=url)
-            if bugtracker is not None:
-                return bugtracker
-        # If we didn't find the exact URL but there is
-        # a substring match, use that instead.
-        for bugtracker in BugTracker.select(
-            "baseurl LIKE '%%' || %s || '%%'" % quote_like(baseurl), limit=1):
+        permutations = base_url_permutations(baseurl)
+        matching_bugtrackers = chain(
+            # Search for any permutation in BugTracker.
+            BugTracker.select(
+                OR(*(BugTracker.q.baseurl == url
+                     for url in permutations))),
+            # Search for any permutation in BugTrackerAlias.
+            (alias.bugtracker for alias in
+             BugTrackerAlias.select(
+                    OR(*(BugTrackerAlias.q.base_url == url
+                         for url in permutations)))),
+            # Search for a substring match in BugTracker.
+            BugTracker.select(
+                BugTracker.q.baseurl.contains(baseurl),
+                limit=1),
+            # Search for a substring match in BugTrackerAlias.
+            (alias.bugtracker for alias in
+             BugTrackerAlias.select(
+                    BugTrackerAlias.q.base_url.contains(baseurl),
+                    limit=1)))
+        for bugtracker in matching_bugtrackers:
             return bugtracker
         return None
 
@@ -259,22 +281,13 @@ class BugTrackerAliasSet:
 
     table = BugTrackerAlias
 
-    def get(self, bugtrackeralias_id, default=None):
-        """See `IBugTrackerAliasSet`."""
-        try:
-            return BugTrackerAlias.get(bugtrackeralias_id)
-        except SQLObjectNotFound:
-            return default
-
-    def queryByBaseURL(self, base_url):
+    def getByBaseURL(self, base_url):
         """See IBugTrackerSet."""
-        for url in base_url_permutations(base_url):
-            bugtrackeralias = BugTrackerAlias.selectOneBy(base_url=url)
-            if bugtrackeralias is not None:
-                return bugtrackeralias
-        # If we didn't find the exact URL but there is
-        # a substring match, use that instead.
-        query = "base_url LIKE '%%' || %s || '%%'" % quote_like(base_url)
-        for bugtrackeralias in BugTrackerAlias.select(query, limit=1):
-            return bugtrackeralias
-        return None
+        return self.table.selectOneBy(base_url=base_url)
+
+    def queryByBugTracker(self, bugtracker):
+        """See IBugTrackerSet."""
+        if IBugTracker.providedBy(bugtracker):
+            return self.table.selectBy(bugtracker=bugtracker.id)
+        else:
+            return self.table.selectBy(bugtracker=bugtracker)

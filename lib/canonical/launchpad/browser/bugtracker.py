@@ -155,8 +155,34 @@ class BugTrackerEditView(LaunchpadEditFormView):
     custom_widget('summary', TextAreaWidget, width=30, height=5)
     custom_widget('aliases', DelimitedListWidget, height=3)
 
+    def validate(self, data):
+        """See `LaunchpadFormView`."""
+        # Check that none of the new aliases are used elsewhere.
+        current_aliases = set(self.context.aliases)
+        requested_aliases = set(data['aliases'])
+        new_aliases = requested_aliases - current_aliases
+        bugtracker_set = getUtility(IBugTrackerSet)
+        used_alias_errors = []
+        for alias_url in new_aliases - current_aliases:
+            bugtracker = bugtracker_set.queryByBaseURL(alias_url)
+            if bugtracker is not None and bugtracker != self.context:
+                used_alias_errors.append(
+                    "%s already refers to %s" % (
+                        alias_url, bugtracker.title))
+        else:
+            if used_alias_errors:
+                self.setFieldError('aliases', '; '.join(used_alias_errors))
+
     @action('Change', name='change')
     def change_action(self, action, data):
+        # If the baseurl is going to change, save the current baseurl
+        # as an alias. Users attempting to use this URL, which is
+        # presumably incorrect or out-of-date, will be captured.
+        current_baseurl = self.context.baseurl
+        requested_baseurl = data['baseurl']
+        if requested_baseurl != current_baseurl:
+            data['aliases'].append(current_baseurl)
+
         self.updateContextFromData(data)
 
     @property

@@ -14,7 +14,7 @@ __all__ = [
     'IRemoteBug',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Attribute, Interface
 from zope.schema import Int, List, Text, TextLine, Choice
 from zope.component import getUtility
 
@@ -230,18 +230,14 @@ class IBugTrackerAlias(Interface):
 class IBugTrackerAliasSet(Interface):
     """A set of BugTrackerAliases."""
 
-    def get(bugtracker_alias_id, default=None):
-        """Get a BugTrackerAlias by its id, or return default if it doesn't
-           exist."""
+    def getByBaseURL(base_url):
+        """Return a BugTrackerAlias with the specified base_url, or None."""
 
     def queryByBugTracker(bugtracker):
         """Query BugTrackerAliases by BugTracker.
 
         A BugTracker can be passed in, or the ID of a BugTracker.
         """
-
-    def queryByBaseURL(base_url):
-        """Return one or None BugTrackerAliases by baseurl."""
 
 
 class IRemoteBug(Interface):
