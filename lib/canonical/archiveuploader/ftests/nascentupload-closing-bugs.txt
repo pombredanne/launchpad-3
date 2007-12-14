@@ -117,18 +117,21 @@ FIXRELEASED and bug notification are generated:
     ...     print "From %s:\n%s\n" % (
     ...         notification.message.owner.displayname,
     ...         notification.message.text_contents)
-    From Daniel Silverstone:
+    From Launchpad Janitor:
     ** Changed in: bar (Ubuntu)
            Status: New => Fix Released
     <BLANKLINE>
-    From Daniel Silverstone:
+    From Launchpad Janitor:
+    This bug was fixed in the package bar - 1.0-2
+    <BLANKLINE>
+    ---------------
     bar (1.0-2) breezy; urgency=low
     <BLANKLINE>
       * A second upload to ensure that binary overrides of _all work
-    .
+    . 
       * Also closes Launchpad bug #6
     <BLANKLINE>
     <BLANKLINE>
      -- Daniel Silverstone <daniel.silverstone@canonical.com>   Thu, 30 Mar 2006 01:36:14 +0100
-
+    <BLANKLINE>
 
