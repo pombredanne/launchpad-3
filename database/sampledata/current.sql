@@ -1275,6 +1275,7 @@ ALTER TABLE codeimporteventdata ENABLE TRIGGER ALL;
 
 ALTER TABLE codeimportjob DISABLE TRIGGER ALL;
 
+INSERT INTO codeimportjob (id, date_created, code_import, machine, date_due, state, requesting_user, ordering, heartbeat, logtail, date_started) VALUES (1, '2007-12-05 16:07:57.276112', 1, NULL, '2007-12-05 16:07:57.276112', 10, NULL, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE codeimportjob ENABLE TRIGGER ALL;
