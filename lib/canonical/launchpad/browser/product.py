@@ -59,6 +59,7 @@ from canonical.launchpad.interfaces import (
     License, NotFoundError, RESOLVED_BUGTASK_STATUSES,
     UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
@@ -115,6 +116,10 @@ class ProductNavigation(
     @stepthrough('+release')
     def traverse_release(self, name):
         return self.context.getRelease(name)
+
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
 
     def traverse(self, name):
         return self.context.getSeries(name)
@@ -280,7 +285,8 @@ class ProductOverviewMenu(ApplicationMenu):
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
-        'series_add', 'administer', 'branch_visibility', 'rdf']
+        'series_add', 'announce', 'announcements', 'administer',
+        'branch_visibility', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -327,6 +333,17 @@ class ProductOverviewMenu(ApplicationMenu):
     def series_add(self):
         text = 'Register a series'
         return Link('+addseries', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, icon='add')
+
+    def announcements(self):
+        text = 'Show announcements'
+        enabled = bool(self.context.announcements().count())
+        return Link('+announcements', text, enabled=enabled)
 
     def branch_add(self):
         text = 'Register branch'
@@ -538,12 +555,12 @@ class SortSeriesMixin:
         return series_list
 
 
-class ProductView(LaunchpadView, SortSeriesMixin):
+class ProductView(HasAnnouncementsView, SortSeriesMixin):
 
     __used_for__ = IProduct
 
     def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
+        HasAnnouncementsView.__init__(self, context, request)
         self.form = request.form_ng
 
     def initialize(self):
@@ -776,11 +793,12 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     schema = IProduct
     label = "Change project details"
     field_names = [
-        "displayname", "title", "summary", "description", "project",
-        "bugtracker", 'enable_bug_expiration', "official_rosetta",
-        "official_answers", "homepageurl", "sourceforgeproject",
-        "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
-        "programminglang", "development_focus", "licenses", "license_info"]
+        "displayname", "title", "summary", "description",
+        "bug_reporting_guidelines", "project", "bugtracker",
+        "enable_bug_expiration", "official_rosetta", "official_answers",
+        "homepageurl", "sourceforgeproject", "freshmeatproject", "wikiurl",
+        "screenshotsurl", "downloadurl", "programminglang",
+        "development_focus", "licenses", "license_info"]
     custom_widget(
         'licenses', LicenseWidget, column_count=3, orientation='vertical')
     custom_widget('bugtracker', ProductBugTrackerWidget)
@@ -1229,6 +1247,10 @@ class ProductBranchesView(BranchListingView):
 
     extra_columns = ('author',)
     no_sort_by = (BranchListingSort.PRODUCT,)
+
+    @cachedproperty
+    def development_focus_branch(self):
+        return self.context.development_focus.series_branch
 
     def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForProduct(

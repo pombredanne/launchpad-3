@@ -46,7 +46,7 @@ class Archive(SQLBase):
     enabled = BoolCol(dbName='enabled', notNull=False, default=True)
 
     authorized_size = IntCol(
-        dbName='authorized_size', notNull=False, default=104857600)
+        dbName='authorized_size', notNull=False, default=1073741824)
 
     whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
 
@@ -135,7 +135,8 @@ class Archive(SQLBase):
             self, build_state, name, pocket)
 
     def getPublishedSources(self, name=None, version=None, status=None,
-                            distroseries=None, exact_match=False):
+                            distroseries=None, pocket=None,
+                            exact_match=False):
         """See `IArchive`."""
         clauses = ["""
             SourcePackagePublishingHistory.archive = %s AND
@@ -181,6 +182,12 @@ class Archive(SQLBase):
                 SourcePackagePublishingHistory.distroseries = %s
             """ % sqlvalues(distroseries))
 
+        if pocket is not None:
+            clauses.append("""
+                SourcePackagePublishingHistory.pocket = %s
+            """ % sqlvalues(pocket))
+
+
         sources = SourcePackagePublishingHistory.select(
             ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy)
 
@@ -194,24 +201,26 @@ class Archive(SQLBase):
     @property
     def sources_size(self):
         """See `IArchive`."""
+        cur = cursor()
         query = """
-            LibraryFileContent.id=LibraryFileAlias.content AND
-            LibraryFileAlias.id=
-                SourcePackageFilePublishing.libraryfilealias AND
-            SourcePackageFilePublishing.archive=%s
+            SELECT SUM(filesize) FROM LibraryFileContent WHERE id IN (
+               SELECT DISTINCT(lfc.id) FROM
+                   LibraryFileContent lfc, LibraryFileAlias lfa,
+                   SourcePackageFilePublishing spfp
+               WHERE
+                   lfc.id=lfa.content AND
+                   lfa.id=spfp.libraryfilealias AND
+                   spfp.archive=%s);
         """ % sqlvalues(self)
-
-        clauseTables = ['LibraryFileAlias', 'SourcePackageFilePublishing']
-        result = LibraryFileContent.select(query, clauseTables=clauseTables)
-
-        size = result.sum('filesize')
+        cur.execute(query)
+        size = cur.fetchall()[0][0]
         if size is None:
             return 0
-        return size
+        return int(size)
 
     def _getBinaryPublishingBaseClauses (
         self, name=None, version=None, status=None, distroarchseries=None,
-        exact_match=False):
+        pocket=None, exact_match=False):
         """Base clauses and clauseTables for binary publishing queries.
 
         Returns a list of 'clauses' (to be joined in the callsite) and
@@ -266,13 +275,19 @@ class Archive(SQLBase):
                 BinaryPackagePublishingHistory.distroarchseries IN %s
             """ % das_ids)
 
+        if pocket is not None:
+            clauses.append("""
+                BinaryPackagePublishingHistory.pocket = %s
+            """ % sqlvalues(pocket))
+
         return clauses, clauseTables, orderBy
 
     def getAllPublishedBinaries(self, name=None, version=None, status=None,
-                                distroarchseries=None, exact_match=False):
+                                distroarchseries=None, pocket=None,
+                                exact_match=False):
         """See `IArchive`."""
         clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
-            name=name, version=version, status=status,
+            name=name, version=version, status=status, pocket=pocket,
             distroarchseries=distroarchseries, exact_match=exact_match)
 
         all_binaries = BinaryPackagePublishingHistory.select(
@@ -282,10 +297,11 @@ class Archive(SQLBase):
         return all_binaries
 
     def getPublishedOnDiskBinaries(self, name=None, version=None, status=None,
-                                   distroarchseries=None, exact_match=False):
+                                   distroarchseries=None, pocket=None,
+                                   exact_match=False):
         """See `IArchive`."""
         clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
-            name=name, version=version, status=status,
+            name=name, version=version, status=status, pocket=pocket,
             distroarchseries=distroarchseries, exact_match=exact_match)
 
         clauses.append("""

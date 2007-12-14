@@ -221,19 +221,26 @@ def print_comments(page):
         print comment.div.renderContents()
         print "-"*40
 
+
+def setupBrowser(auth=None):
+    """Create a testbrowser object for use in pagetests.
+
+    :param auth: HTTP authentication string. None for the anonymous user, or a
+        string of the form 'Basic email:password' for an authenticated user.
+    :return: A `Browser` object.
+    """
+    # Set up our Browser objects with handleErrors set to False, since
+    # that gives a tracebacks instead of unhelpful error messages.
+    browser = Browser()
+    browser.handleErrors = False
+    if auth is not None:
+        browser.addHeader("Authorization", auth)
+    return browser
+
+
 def setUpGlobs(test):
     # Our tests report being on a different port.
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
-
-    # Set up our Browser objects with handleErrors set to False, since
-    # that gives a tracebacks instead of unhelpful error messages.
-    def setupBrowser(auth=None):
-        browser = Browser()
-        browser.handleErrors = False
-        if auth is not None:
-            browser.addHeader("Authorization", auth)
-        return browser
-
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
@@ -317,7 +324,7 @@ class PageStoryTestCase(unittest.TestCase):
 # but does follow the convention of the other doctest related *Suite()
 # functions.
 
-def PageTestSuite(storydir, package=None):
+def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     """Create a suite of page tests for files found in storydir.
 
     :param storydir: the directory containing the page tests.
@@ -351,14 +358,14 @@ def PageTestSuite(storydir, package=None):
     checker = SpecialOutputChecker()
     suite = PageTestDocFileSuite(
         package=package, checker=checker,
-        layer=PageTestLayer, setUp=setUpGlobs,
+        layer=PageTestLayer, setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in unnumberedfilenames])
 
     # Add numbered tests to the suite as a single story.
     storysuite = PageTestDocFileSuite(
         package=package, checker=checker,
-        layer=PageTestLayer, setUp=setUpGlobs,
+        layer=PageTestLayer, setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in numberedfilenames])
     suite.addTest(PageStoryTestCase(abs_storydir, storysuite))
@@ -384,6 +391,3 @@ def test_suite():
     for storydir in stories:
         suite.addTest(PageTestSuite(storydir))
     return suite
-
-if __name__ == '__main__':
-    r = unittest.TextTestRunner().run(test_suite())

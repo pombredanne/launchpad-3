@@ -859,7 +859,7 @@ class TestCanonicalUrl(unittest.TestCase):
             get_canonical_url_for_branch_name(unique_name))
 
 
-class TestWorkerProgressReporting(TestCaseWithMemoryTransport):
+class TestWorkerProgressReporting(TestCaseWithTransport):
     """Tests for the WorkerProgressBar progress reporting mechanism."""
 
     class StubProtocol:
@@ -870,11 +870,11 @@ class TestWorkerProgressReporting(TestCaseWithMemoryTransport):
             self.call_count += 1
 
     def setUp(self):
-        TestCaseWithMemoryTransport.setUp(self)
+        TestCaseWithTransport.setUp(self)
         self.saved_factory = bzrlib.ui.ui_factory
 
     def tearDown(self):
-        TestCaseWithMemoryTransport.tearDown(self)
+        TestCaseWithTransport.tearDown(self)
         bzrlib.ui.ui_factory = self.saved_factory
         reset_logging()
 
@@ -883,7 +883,9 @@ class TestWorkerProgressReporting(TestCaseWithMemoryTransport):
         p = self.StubProtocol()
         install_worker_ui_factory(p)
         b1 = self.make_branch('some-branch')
-        b2 = self.make_branch('some-other-branch')
+        b2_tree = self.make_branch_and_tree('some-other-branch')
+        b2 = b2_tree.branch
+        b2_tree.commit('rev1', allow_pointless=True)
         b1.pull(b2)
         self.assertPositive(p.call_count)
 

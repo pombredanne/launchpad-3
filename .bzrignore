@@ -38,3 +38,4 @@ thread*.request
 ./TAGS
 lib/mailman
 TAGS
+sourcecode/bzr-loom
