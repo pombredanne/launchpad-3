@@ -21,24 +21,6 @@ externalbugtracker.SourceForge, which implements IExternalBugTracker.
     ...     SourceForge(new_bugtracker(BugTrackerType.SOURCEFORGE)))
     True
 
-At present, the SourceForge support is disabled until the
-ContinuousBugWatchChecking spec is fully implemented. As such,
-get_external_bugtracker() will raise an error if a SourceForge bug
-tracker is passed to it.
-
-    >>> from canonical.launchpad.components.externalbugtracker import (
-    ...     get_external_bugtracker)
-    >>> from canonical.launchpad.interfaces import IPersonSet
-
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-
-    >>> example_bug_tracker = new_bugtracker(BugTrackerType.SOURCEFORGE)
-
-    >>> get_external_bugtracker(example_bug_tracker)
-    Traceback (most recent call last):
-      ...
-    UnknownBugTrackerTypeError: SOURCEFORGE
-
 
 == Status Conversion ==
 
@@ -137,7 +119,11 @@ SourceForge instance which has several bugs that we wish to watch:
 Launchpad.dev bug #10 is the same bug as reported in example.com bug
 #1722250, so we add a watch against the remote bug.
 
+    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> example_bug = getUtility(IBugSet).get(10)
+    >>> example_bug_tracker = new_bugtracker(BugTrackerType.SOURCEFORGE)
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, 1722250, sample_person)
 
@@ -149,6 +135,7 @@ remote status for, the bug watch that we have created.
 
     >>> sourceforge = TestSourceForge(example_bug_tracker)
     >>> sourceforge.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 1 watches on http://bugs.some.where
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1722250: Open:None
 
@@ -179,8 +166,22 @@ tracker with a variety of statuses.
     ...         bugtracker=example_bug_tracker,
     ...         remotebug=str(remote_bug_id))
 
+By default, SourceForge ExternalBugTrackers will only import one bug at
+a time so as to avoid tripping SourceForge's rate limiting filters. So
+even if we pass it 10 bug watches to update only one will actually be
+updated:
+
     >>> sourceforge.trace_calls = True
+    >>> sourceforge.updateBugWatches(sorted(example_bug_tracker.watches))
+    INFO:...:Updating 1 watches on http://bugs.some.where
+    CALLED _getPage(u'support/tracker.php?aid=1722250')
+
+For the sake of this test we can set the bug tracker's batch_size to
+None so that it will process all the updates at once:
+
+    >>> sourceforge.batch_size = None
     >>> sourceforge.updateBugWatches(example_bug_tracker.watches)
+    INFO:...:Updating 10 watches on http://bugs.some.where
     CALLED _getPage(u'support/tracker.php?aid=1722250')
     CALLED _getPage(u'support/tracker.php?aid=1722251')
     CALLED _getPage(u'support/tracker.php?aid=1722252')

@@ -17,10 +17,10 @@
                       downloadurl programminglang
                       sourceforgeproject freshmeatproject
                       translationgroup translationpermission
-                      official_malone official_answers
+                      official_malone official_answers enable_bug_expiration
                       releaseroot development_focus bugtracker
-                      homepage_content icon logo mugshot 
-                      license_info licenses"
+                      homepage_content icon logo mugshot
+                      license_info licenses bug_reporting_guidelines"
       />
 <!-- sabdfl 2006-04-10 I put "name" in the admin group because
       with Bazaar now in place, lots of people can have personal
@@ -428,7 +428,7 @@
     for="canonical.launchpad.interfaces.IProduct"
     class="canonical.launchpad.browser.ProductAddSeriesView"
     facet="overview"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Edit"
     template="../templates/productseries-new.pt"
     />
 

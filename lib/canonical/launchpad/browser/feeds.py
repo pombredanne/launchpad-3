@@ -11,7 +11,9 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBugSet, IBugTaskSet, IFeedsApplication, IPersonSet, IPillarNameSet,
     NotFoundError)
@@ -60,9 +62,6 @@ class FeedsNavigation(Navigation):
         If a query string is provided it is normalized.  'bugs' paths and
         persons ('~') are special cased.
         """
-        # XXX: statik 2007-10-09 bug 150941
-        # Need to block pages not registered on the FeedsLayer
-
         # Normalize the query string so caching is more effective.  This is
         # done by simply sorting the entries.
 
@@ -90,7 +89,10 @@ class FeedsNavigation(Navigation):
             stack = self.request.getTraversalStack()
             bug_id = stack.pop()
             if bug_id.startswith('+'):
-                return getUtility(IBugTaskSet)
+                if config.launchpad.is_bug_search_feed_active:
+                    return getUtility(IBugTaskSet)
+                else:
+                    raise Unauthorized("Bug search feed deactivated")
             else:
                 self.request.stepstogo.consume()
                 return getUtility(IBugSet).getByNameOrID(bug_id)

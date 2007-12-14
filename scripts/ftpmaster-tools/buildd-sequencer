@@ -18,6 +18,7 @@ LP=/srv/launchpad.net/codelines/current/
 LPUSER="lp_buildd"
 LPCONFIG="ftpmaster"
 
+TWISTD="$LP/sourcecode/twisted/bin/twistd"
 TACFILE="$LP/daemons/buildd-sequencer.tac"
 PIDFILE="/var/run/buildd-sequencer/$LPCONFIG.pid"
 LOGFILE="/var/log/buildd-sequencer/$LPCONFIG.log"
@@ -33,11 +34,13 @@ test -e $TACFILE || exit 0
 d_start() {
     # We cd to the launchpad root so we don't hold on to a random working
     # directory forever.
-    CMD="cd $LP && PYTHONPATH=$LP/lib: LPCONFIG=$LPCONFIG twistd --pidfile $PIDFILE --python $TACFILE --logfile $LOGFILE"
+    CMD="cd $LP && PYTHONPATH=$LP/lib: LPCONFIG=$LPCONFIG $TWISTD --pidfile $PIDFILE --python $TACFILE --logfile $LOGFILE"
     if [ `whoami` = "$LPUSER" ]; then
         sh -c "$CMD"
+        chmod +r $PIDFILE
     else
         su - $LPUSER -c "$CMD"
+        su - $LPUSER -c "chmod +r $PIDFILE"
     fi
 }
 

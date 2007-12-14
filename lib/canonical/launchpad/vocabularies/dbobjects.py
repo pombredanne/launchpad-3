@@ -12,6 +12,7 @@ __all__ = [
     'ActiveMailingListVocabulary',
     'BountyVocabulary',
     'BranchVocabulary',
+    'BranchRestrictedOnProductVocabulary',
     'BugNominatableSeriesesVocabulary',
     'BugVocabulary',
     'BugTrackerVocabulary',
@@ -24,6 +25,7 @@ __all__ = [
     'DistributionUsingMaloneVocabulary',
     'DistroSeriesVocabulary',
     'FAQVocabulary',
+    'FeaturedProjectVocabulary',
     'FilteredDeltaLanguagePackVocabulary',
     'FilteredDistroArchSeriesVocabulary',
     'FilteredDistroSeriesVocabulary',
@@ -72,21 +74,23 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.launchpad.database import (
-    Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component, Country,
-    Distribution, DistroArchSeries, DistroSeries, KarmaCategory, Language,
-    LanguagePack, MailingList, Milestone, Person, PillarName, Processor,
-    ProcessorFamily, Product, ProductRelease, ProductSeries, Project,
-    SourcePackageRelease, Specification, Sprint, TranslationGroup,
-    TranslationMessage)
+    Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component,
+    Country, Distribution, DistroArchSeries, DistroSeries, FeaturedProject,
+    KarmaCategory, Language, LanguagePack, MailingList, Milestone, Person,
+    PillarName, Processor, ProcessorFamily, Product, ProductRelease,
+    ProductSeries, Project, SourcePackageRelease, Specification, Sprint,
+    TranslationGroup, TranslationMessage)
+
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, EmailAddressStatus, IBugTask, IDistribution,
+    DistroSeriesStatus, EmailAddressStatus, IBranch, IBugTask, IDistribution,
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget, ILanguage,
     ILaunchBag, IMailingListSet, IMilestoneSet, IPerson, IPersonSet,
     IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
     IUpstreamBugTask, LanguagePackType, MailingListStatus)
+
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
@@ -144,24 +148,21 @@ class CountryNameVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(obj, obj.id, obj.name)
 
 
-class BranchVocabulary(SQLObjectVocabularyBase):
-    """A vocabulary for searching branches.
-
-    If the context is a product or the launchbag contains a product,
-    then the search results are limited to branches associated with
-    that product.
-    """
+class BranchVocabularyBase(SQLObjectVocabularyBase):
+    """A base class for Branch vocabularies."""
 
     implements(IHugeVocabulary)
 
     _table = Branch
-    _orderBy = 'name'
+    _orderBy = ['name', 'id']
     displayname = 'Select a Branch'
 
     def toTerm(self, obj):
+        """The display should include the URL if there is one."""
         return SimpleTerm(obj, obj.unique_name, obj.displayname)
 
     def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
         branch_set = BranchSet()
         branch = branch_set.getByUniqueName(token)
         # fall back to interpreting the token as a branch URL
@@ -172,35 +173,133 @@ class BranchVocabulary(SQLObjectVocabularyBase):
             raise LookupError(token)
         return self.toTerm(branch)
 
+    def __len__(self):
+        """See `IVocabulary`."""
+        return self.search('').count()
+
+    def _constructBranchAttributeQuery(self, quoted_query):
+        """Return a query that will identify branches that match.
+
+        Checks for matches by branch name or URL.
+
+        See `_constructGeneralQuery` for more details.
+        """
+        return """
+            SELECT id FROM Branch
+            WHERE
+               Branch.name LIKE '%%' || %s || '%%'
+            OR Branch.url LIKE '%%' || %s || '%%'
+            """ % (quoted_query, quoted_query)
+
+    def _constructRegistrantNameQuery(self, quoted_query):
+        """Return a query that will identify branches that match.
+
+        Checks for matches by the name of the branch owner (registrant).
+
+        See `_constructGeneralQuery` for more details.
+        """
+        return """
+            SELECT Branch.id FROM Branch, Person
+            WHERE
+                Branch.owner = Person.id
+            AND Person.name LIKE '%%' || %s || '%%'
+            """ % quoted_query
+
+    def _constructProductNameQuery(self, quoted_query):
+        """Return a query that will identify branches that match.
+
+        Checks for matches by the name of the product that the branch is for.
+
+        See `_constructGeneralQuery` for more details.
+        """
+        return """
+            SELECT Branch.id from Branch, Product
+            WHERE
+                Branch.product = Product.id
+            AND Product.name LIKE '%%' || %s || '%%'
+            """ % quoted_query
+
+    def _constructGeneralQuery(self, quoted_query,
+                      check_product=True, check_registrant=True):
+        """Return the naive branch where clause for the given query.
+
+        If the user has not specified any query, then there is nothing to
+        restrict the search on, so the result is an empty string.
+
+        When a non-empty string is passed in a sequence of queries are built
+        up depending on whether check_product or check_registrant are set to
+        true.  These queries are joined using the SQL union clause to restrict
+        the branches in the resulting select.
+        """
+        if len(quoted_query) == 0:
+            return ''
+        # Generate the query for the branch attributes, and optionally the
+        # product name and registrant name.
+        args = [self._constructBranchAttributeQuery(quoted_query)]
+        if check_product:
+            args.append(self._constructProductNameQuery(quoted_query))
+        if check_registrant:
+            args.append(self._constructRegistrantNameQuery(quoted_query))
+        id_query = '\n\nUNION\n\n'.join(args)
+        return 'Branch.id in (%s)' % id_query
+
     def search(self, query):
-        """Return terms where query is a subtring of the name or URL."""
-        launch_bag = getUtility(ILaunchBag)
-        branch_set = BranchSet()
-        logged_in_user = launch_bag.user
-        if not query:
-            query = branch_set._generateBranchClause(
-                query='', visible_by_user=logged_in_user)
-            return Branch.select(query)
+        """Returns branches where the name, owner or product match the query.
 
-        quoted_query = quote_like(query)
-        sql_query = ("""
-            (Branch.name LIKE '%%' || %s || '%%' OR
-             Branch.url LIKE '%%' || %s || '%%')
-            """
-            % (quoted_query, quoted_query))
-
-        # If the context is a product or we have a product in the
-        # LaunchBag, narrow the search appropriately.
-        if IProduct.providedBy(self.context):
-            product = self.context
-        else:
-            product = launch_bag.product
-        if product is not None:
-            sql_query = sql_query + (" AND Branch.product = %s" % product.id)
-
-        sql_query = branch_set._generateBranchClause(
-            sql_query, visible_by_user=logged_in_user)
+        Only branches that the logged in user is able to see are actually
+        returned.
+        """
+        sql_query = BranchSet()._generateBranchClause(
+            self._constructNaiveQueryString(quote_like(query)),
+            visible_by_user=getUtility(ILaunchBag).user)
         return Branch.select(sql_query, orderBy=self._orderBy)
+
+    def _constructNaiveQueryString(self, quoted_query):
+        """Return the naive branch where clause based on the query."""
+        raise NotImplementedError
+
+
+class BranchVocabulary(BranchVocabularyBase):
+    """A vocabulary for searching branches.
+
+    The name and URL of the branch, the name of the product, and the
+    name of the registrant of the branches is checked for the entered
+    value.
+    """
+    def _constructNaiveQueryString(self, quoted_query):
+        """See `BranchVocabularyBase`."""
+        return self._constructGeneralQuery(quoted_query)
+
+
+class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
+    """A vocabulary for searching branches restriced on product.
+
+    The query entered checks the name or URL of the branch, or the
+    name of the registrant of the branch.
+    """
+
+    def _restrictToProduct(self, product):
+        """Return the where clause to restrict to the product."""
+        if product is None:
+            return 'Branch.product is NULL'
+        else:
+            return 'Branch.product = %s' % quote(product)
+
+    def _constructNaiveQueryString(self, quoted_query):
+        """See `BranchVocabularyBase`."""
+        if IProduct.providedBy(self.context):
+            restrict_sql = self._restrictToProduct(self.context)
+        elif IBranch.providedBy(self.context):
+            restrict_sql = self._restrictToProduct(self.context.product)
+        else:
+            # An unexpected type.
+            raise AssertionError('Unexpected context type')
+
+        base_sql = self._constructGeneralQuery(quoted_query, check_product=False)
+        if len(base_sql) > 0:
+            return '%s AND %s' % (base_sql, restrict_sql)
+        else:
+            return restrict_sql
 
 
 class BugVocabulary(SQLObjectVocabularyBase):
@@ -1542,6 +1641,21 @@ class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
             return obj.active
         else:
             return IDistribution.providedBy(obj)
+
+
+class FeaturedProjectVocabulary(DistributionOrProductOrProjectVocabulary):
+    """Vocabulary of projects that are featured on the LP Home Page."""
+
+    _filter = AND(PillarName.q.id == FeaturedProject.q.pillar_name,
+                  PillarName.q.active == True)
+    _clauseTables = ['FeaturedProject']
+
+    def __contains__(self, obj):
+        """See `IVocabulary`."""
+        query = """PillarName.id=FeaturedProject.pillar_name
+                   AND PillarName.name = %s""" % sqlvalues(obj.name)
+        return PillarName.selectOne(
+                   query, clauseTables=['FeaturedProject']) is not None
 
 
 class FilteredLanguagePackVocabularyBase(SQLObjectVocabularyBase):

@@ -18,7 +18,8 @@
   </thead>
 
   <tbody>
-    <tr tal:repeat="pfview view/pofiles">
+    <tr tal:repeat="pfview view/pofiles"
+        tal:attributes="id string:${pfview/context/potemplate/name}_${pfview/context/language/code}">
       <tal:block define="pf pfview/context">
         <td>
           <a tal:attributes="href string:${pf/fmt:url}/+translate"
@@ -31,27 +32,30 @@
         </td>
         <td>
           <span class="sortkey" tal:content="pf/untranslatedCount">0</span>
-          <tal:count
-            tal:condition="pf/untranslatedCount"
-            tal:replace="pf/untranslatedCount">0</tal:count>
+          <a tal:attributes="href string:${pf/fmt:url}/+translate?show=untranslated"
+              tal:condition="pf/untranslatedCount"
+              tal:content="pf/untranslatedCount"
+              >0</a>
           <tal:count condition="not: pf/untranslatedCount">
             &mdash;
           </tal:count>
         </td>
         <td>
           <span class="sortkey" tal:content="pf/unreviewedCount">0</span>
-          <tal:count
-            tal:condition="pf/unreviewedCount"
-            tal:replace="pf/unreviewedCount">0</tal:count>
+          <a tal:attributes="href string:${pf/fmt:url}/+translate?show=new_suggestions"
+              tal:condition="pf/unreviewedCount"
+              tal:content="pf/unreviewedCount"
+              >0</a>
           <tal:count condition="not: pf/unreviewedCount">
             &mdash;
           </tal:count>
         </td>
         <td>
           <span class="sortkey" tal:content="pf/updatesCount">0</span>
-          <tal:count
-            tal:condition="pf/updatesCount"
-            tal:replace="pf/updatesCount">0</tal:count>
+          <a tal:attributes="href string:${pf/fmt:url}/+translate?show=changed_in_launchpad"
+              tal:condition="pf/updatesCount"
+              tal:content="pf/updatesCount"
+              >0</a>
           <tal:count condition="not: pf/updatesCount">
             &mdash;
           </tal:count>

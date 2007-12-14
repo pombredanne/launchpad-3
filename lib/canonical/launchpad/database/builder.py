@@ -28,7 +28,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildmaster.master import BuilddMaster
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
@@ -635,6 +635,20 @@ class BuilderSet(object):
                               'AND processor.family = %d'
                               % arch.processorfamily.id,
                               clauseTables=("Processor",))
+
+    def getBuildQueueDepthByArch(self):
+        """See `IBuilderSet`."""
+        query = """
+            SELECT distroarchseries.architecturetag, COUNT(*) FROM
+                Build INNER JOIN DistroArchSeries
+                  ON Build.distroarchseries=DistroArchSeries.id
+            WHERE Build.buildstate=0
+            GROUP BY distroarchseries.architecturetag
+            ORDER BY distroarchseries.architecturetag
+            """
+        cur = cursor()
+        cur.execute(query)
+        return cur.fetchall()
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""
