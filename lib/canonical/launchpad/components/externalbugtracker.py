@@ -2049,6 +2049,14 @@ class RequestTracker(ExternalBugTracker):
 
         return self.bugs[bug_id]['status']
 
+    def getRemoteImportance(self, bug_id):
+        """See `IExternalBugTracker`."""
+        pass
+
+    def convertRemoteImportance(self, remote_importance):
+        """See `IExternalBugTracker`."""
+        return UNKNOWN_REMOTE_IMPORTANCE
+
     def convertRemoteStatus(self, remote_status):
         """Convert an RT status into a Launchpad BugTaskStatus."""
         status_map = {
