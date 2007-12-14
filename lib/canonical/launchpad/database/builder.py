@@ -98,6 +98,7 @@ class Builder(SQLBase):
     trusted = BoolCol(dbName='trusted', default=False, notNull=True)
     speedindex = IntCol(dbName='speedindex', default=0)
     manual = BoolCol(dbName='manual', default=False)
+    vm_host = StringCol(dbName='vm_host', default=None)
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See IBuilder."""
@@ -162,21 +163,14 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.abort()
 
-    @property
-    def vm_host(self):
-        # XXX cprov 2007-05-10: Please FIX ME ASAP !
-        # The ssh command line should be in the respective configuration
-        # file. The builder XEN-host should be stored in DB (Builder.vmhost)
-        # and not be calculated on the fly (this is gross).
-        hostname = self.url.split(':')[1][2:].split('.')[0]
-        host_url = '%s-host.ppa' % hostname
-        return host_url
-
     def resumeSlaveHost(self):
         """See IBuilder."""
         logger = self._getSlaveScannerLogger()
         if self.trusted:
             raise CannotResumeHost('Builder is trusted.')
+
+        if not self.vm_host:
+            raise CannotResumeHost('Undefined vm_host.')
 
         logger.debug("Resuming %s", self.url)
         resume_command = config.builddmaster.vm_resume_command % {
@@ -191,7 +185,6 @@ class Builder(SQLBase):
         if resume_process.returncode != 0:
             raise CannotResumeHost(
                 "Resuming failed:\nOUT:\n%s\nERR:\n%s\n" % (stdout, stderr))
-
         return stdout, stderr
 
     @cachedproperty
@@ -621,11 +614,11 @@ class BuilderSet(object):
             raise NotFoundError(name)
 
     def new(self, processor, url, name, title, description, owner,
-            builderok=True, failnotes=None, trusted=False):
+            builderok=True, failnotes=None, trusted=False, vm_host=None):
         """See IBuilderSet."""
         return Builder(processor=processor, url=url, name=name, title=title,
                        description=description, owner=owner, trusted=trusted,
-                       builderok=builderok, failnotes=failnotes)
+                       builderok=builderok, failnotes=failnotes, vm_host=None)
 
     def get(self, builder_id):
         """See IBuilderSet."""

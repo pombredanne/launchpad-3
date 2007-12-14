@@ -120,7 +120,11 @@ class IBuilder(IHasOwner):
                      description=_('The reason for a builder not being ok')
                      )
 
-    vm_host = Attribute('Address of the machine hosting the virtual builder.')
+    vm_host = TextLine(
+        title=_('Virtual Machine Host'), required=False,
+        description=_('The machine hostname hosting the virtual '
+                      'buildd-slave, e.g.: foobar-host.ppa'))
+
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
     currentjob = Attribute("Build Job being processed")
     status = Attribute("Generated status information")

@@ -53,68 +53,6 @@ Check if the instance corresponds to the declared interface:
     True
 
 
-== Resuming Slave ==
-
-Virtual slaves are resumed used a command specified in the
-configuration. Production configuration uses a SSH trigger account
-accessed via a private key available in the builddmaster machine
-(which used ftpmaster configuration profile) as in:
-
-{{{
-ssh ~/.ssh/ppa-reset-key ppa@(vm_host)s
-}}}
-
-The test configuration uses a fake command that can be performed in
-development machine and allow us to tests the important features used
-in production, as 'vm_host' variable replacement.
-
-    >>> from canonical.config import config
-    >>> config.builddmaster.vm_resume_command
-    'echo %(vm_host)s'
-
-Before performing the command, it checks if the builder is indeed
-virtual (untrusted) and raises CannotResumeHost is it not.
-
-    >>> builder.resumeSlaveHost()
-    Traceback (most recent call last):
-    ...
-    CannotResumeHost: Builder is trusted.
-
-Let's switch sampledata builder to untrusted mode, so we can resume it
-without errors.
-
-    >>> builder.trusted = False
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(builder)
-
-For testing purposes resumeSlaveHost returns the stdout and stderr
-buffer resulted from the command.
-
-    >>> out, err = builder.resumeSlaveHost()
-    >>> print out.strip()
-    localhost-host.ppa
-
-If the specified command fails, resumeSlaveHost also raises
-CannotResumeHost exception with the results stdout and stderr.
-
-    >>> default_resume_command = config.builddmaster.vm_resume_command
-    >>> config.builddmaster.vm_resume_command = "false"
-    >>> builder.resumeSlaveHost()
-    Traceback (most recent call last):
-    ...
-    CannotResumeHost: Resuming failed:
-    OUT:
-    <BLANKLINE>
-    ERR:
-    <BLANKLINE>
-
-Restore default values for resume command and builder.trusted.
-
-    >>> config.builddmaster.vm_resume_command = default_resume_command
-    >>> builder.trusted = True
-    >>> syncUpdate(builder)
-
-
 == BuilderSet ==
 
 Now perform the tests for the Builder ContentSet class, BuilderSet.
@@ -180,3 +118,59 @@ attributes of builder instance as: builderok and trust.
     u'bob'
     u'dummy'
     u'frog'
+
+
+== Resuming buildd slaves ==
+
+Virtual slaves are resumed using a command specified in the
+configuration profile. Production configuration uses a SSH trigger
+account accessed via a private key available in the builddmaster
+machine (which used ftpmaster configuration profile) as in:
+
+{{{
+ssh ~/.ssh/ppa-reset-key ppa@(vm_host)s
+}}}
+
+The test configuration uses a fake command that can be performed in
+development machine and allow us to tests the important features used
+in production, as 'vm_host' variable replacement.
+
+    >>> from canonical.config import config
+    >>> config.builddmaster.vm_resume_command
+    'echo %(vm_host)s'
+
+Before performing the command, it checks if the builder is indeed
+virtual (untrusted) and raises CannotResumeHost is it not.
+
+    >>> bob = getUtility(IBuilderSet)['bob']
+    >>> bob.resumeSlaveHost()
+    Traceback (most recent call last):
+    ...
+    CannotResumeHost: Builder is trusted.
+
+For testing purposes resumeSlaveHost returns the stdout and stderr
+buffer resulted from the command.
+
+    >>> frog = getUtility(IBuilderSet)['frog']
+    >>> out, err = frog.resumeSlaveHost()
+    >>> print out.strip()
+    localhost-host.ppa
+
+If the specified command fails, resumeSlaveHost also raises
+CannotResumeHost exception with the results stdout and stderr.
+
+    >>> default_resume_command = config.builddmaster.vm_resume_command
+    >>> config.builddmaster.vm_resume_command = "false"
+    >>> frog.resumeSlaveHost()
+    Traceback (most recent call last):
+    ...
+    CannotResumeHost: Resuming failed:
+    OUT:
+    <BLANKLINE>
+    ERR:
+    <BLANKLINE>
+
+Restore default values for resume command and builder.trusted.
+
+    >>> config.builddmaster.vm_resume_command = default_resume_command
+
