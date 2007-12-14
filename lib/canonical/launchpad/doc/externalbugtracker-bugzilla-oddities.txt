@@ -16,8 +16,10 @@ instance here:
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestIssuezilla
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName('mozilla.org')
-    >>> issuezilla = TestIssuezilla(mozilla_bugzilla)
+    >>> issuezilla = TestIssuezilla(txn, mozilla_bugzilla)
     >>> issuezilla._probe_version()
     (2, 11)
     >>> for bug_watch in mozilla_bugzilla.watches:
@@ -45,7 +47,7 @@ Old-style Bugzillas are quite similar to Issuezilla. Again we pretend
 Mozilla.org's using this old version. Here's the scoop:
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestOldBugzilla
-    >>> old_bugzilla = TestOldBugzilla(mozilla_bugzilla)
+    >>> old_bugzilla = TestOldBugzilla(txn, mozilla_bugzilla)
 
   a) The version is way old:
 
@@ -81,7 +83,7 @@ Some Bugzillas have some weird properties that we need to cater for:
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestWeirdBugzilla)
-    >>> weird_bugzilla = TestWeirdBugzilla(mozilla_bugzilla)
+    >>> weird_bugzilla = TestWeirdBugzilla(txn, mozilla_bugzilla)
     >>> weird_bugzilla._probe_version()
     (2, 20)
 
@@ -120,7 +122,7 @@ invalid XML:
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestBrokenBugzilla)
-    >>> broken_bugzilla = TestBrokenBugzilla(mozilla_bugzilla)
+    >>> broken_bugzilla = TestBrokenBugzilla(txn, mozilla_bugzilla)
     >>> broken_bugzilla._probe_version()
     (2, 20)
     >>> "</foobar>" in broken_bugzilla._readBugItemFile()
