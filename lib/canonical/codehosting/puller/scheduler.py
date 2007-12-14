@@ -29,6 +29,7 @@ import canonical
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
+from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 
@@ -306,12 +307,9 @@ class PullerMaster:
             self.destination_url, str(self.branch_id), self.unique_name,
             self.branch_type.name]
         env = os.environ.copy()
-        env['BZR_EMAIL'] = self.getLockID()
+        env['BZR_EMAIL'] = get_lock_id_for_branch_id(self.branch_id)
         reactor.spawnProcess(protocol, sys.executable, command, env=env)
         return deferred
-
-    def getLockID(self):
-        return 'worker-for-branch-%s@supermirror'%(self.branch_id,)
 
     def run(self):
         deferred = self.mirror()

@@ -12,13 +12,14 @@ import urllib2
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import (
-    BzrError, NotBranchError, ParamikoNotPresent,
+    BzrError, LockContention, NotBranchError, ParamikoNotPresent,
     UnknownFormatError, UnsupportedFormatError)
 from bzrlib.progress import DummyProgress
 import bzrlib.ui
 
 from canonical.config import config
 from canonical.codehosting import ProgressUIFactory
+from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
@@ -31,7 +32,7 @@ __all__ = [
     'BranchReferenceForbidden',
     'BranchReferenceValueError',
     'get_canonical_url_for_branch_name',
-    'install_worker_progress_factory',
+    'install_worker_ui_factory',
     'PullerWorker',
     'PullerWorkerProtocol'
     ]
@@ -150,6 +151,7 @@ class PullerWorker:
         self._source_branch = None
         self._dest_branch = None
         self.protocol = protocol
+        self.protocol.branch_id = branch_id
 
     def _checkSourceUrl(self):
         """Check the validity of the source URL.
@@ -254,10 +256,9 @@ class PullerWorker:
             # source.
             if identical_formats(self._source_branch, branch):
                 # The destination exists, and is in the same format.  So all
-                # we need to do is pull the new revisions.  Unless the branch
-                # is locked, but the only thing that locks these branches is
-                # the puller and there is protection against running more than
-                # one puller at once... so break the lock.
+                # we need to do is pull the new revisions.
+
+                # XXX.
                 if branch.get_physical_lock_status():
                     branch.break_lock()
                 branch.pull(self._source_branch, overwrite=True)
@@ -418,14 +419,18 @@ class PullerWorkerUIFactory(ProgressUIFactory):
     """An UIFactory that always says yes to breaking locks."""
 
     def get_boolean(self, prompt):
-        """Assuming that we're been asked if we want to break a lock, say yes.
+        """If we're asked to break a lock like a stale lock of ours, say yes.
         """
         assert prompt.startswith('Break lock'), (
             "Didn't expect prompt %r" % (prompt,))
-        return True
+        branch_id = self.puller_worker_protocol.branch_id
+        if get_lock_id_for_branch_id(branch_id) in prompt:
+            return True
+        else:
+            return False
 
 
-def install_worker_progress_factory(puller_worker_protocol):
+def install_worker_ui_factory(puller_worker_protocol):
     """Install an UIFactory that informs a PullerWorkerProtocol of progress.
     """
     def factory(*args, **kw):
@@ -433,3 +438,4 @@ def install_worker_progress_factory(puller_worker_protocol):
         r.puller_worker_protocol = puller_worker_protocol
         return r
     bzrlib.ui.ui_factory = PullerWorkerUIFactory(factory)
+    bzrlib.ui.ui_factory.puller_worker_protocol = puller_worker_protocol

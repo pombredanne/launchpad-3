@@ -33,7 +33,7 @@ from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
     PullerWorker, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
     BranchReferenceForbidden, BranchReferenceValueError,
-    get_canonical_url_for_branch_name, install_worker_progress_factory,
+    get_canonical_url_for_branch_name, install_worker_ui_factory,
     PullerWorkerProtocol)
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision)
@@ -881,7 +881,7 @@ class TestWorkerProgressReporting(TestCaseWithMemoryTransport):
     def test_simple(self):
         # Even the simplest of pulls should call progressMade at least once.
         p = self.StubProtocol()
-        install_worker_progress_factory(p)
+        install_worker_ui_factory(p)
         b1 = self.make_branch('some-branch')
         b2 = self.make_branch('some-other-branch')
         b1.pull(b2)
