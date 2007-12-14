@@ -419,8 +419,7 @@ These comments will have been added to the bug, but by default won't be
 displayed. Initially, we only see the message chunk that was added when
 the bug was created.
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> chunks = removeSecurityProxy(bug.getMessageChunks())
+    >>> chunks = bug.getMessageChunks()
     >>> for chunk in chunks:
     ...     print chunk.content
     Malone pages that use more complex layouts with portlets and fancy
@@ -433,7 +432,7 @@ imported comments are stored.
 
     >>> from canonical.config import config
     >>> config.malone.show_imported_comments = True
-    >>> chunks = removeSecurityProxy(bug.getMessageChunks())
+    >>> chunks = bug.getMessageChunks()
     >>> for chunk_id, chunk in sorted([(chunk.id, chunk.content)
     ...     for chunk in chunks]):
     ...     print chunk
@@ -469,7 +468,7 @@ imported into Launchpad as normal. We can demonstrate this by telling
 our test debbugs DB to load sample data for more than one comment
 
     >>> config.malone.show_imported_comments = True
-    >>> chunks = removeSecurityProxy(bug.getMessageChunks())
+    >>> chunks = bug.getMessageChunks()
     >>> len(chunks)
     2
 
@@ -477,7 +476,7 @@ our test debbugs DB to load sample data for more than one comment
     >>> external_debbugs.importBugComments(bug_watch)
     INFO:...:Imported 1 comments for remote bug 1234...
 
-    >>> chunks = removeSecurityProxy(bug.getMessageChunks())
+    >>> chunks = bug.getMessageChunks()
     >>> len(chunks)
     3
 
