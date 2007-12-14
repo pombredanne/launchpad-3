@@ -64,10 +64,12 @@ class BugComment:
         self.chunks = []
         self.bugattachments = []
 
+        self.display_if_from_bugwatch = config.malone.show_imported_comments
+
     @property
     def can_be_shown(self):
         """Return whether or not the BugComment can be shown."""
-        if self.bugwatch and not config.malone.show_imported_comments:
+        if self.bugwatch and not self.display_if_from_bugwatch:
             return False
         else:
             return True
