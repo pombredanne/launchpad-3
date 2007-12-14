@@ -2,6 +2,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:define-macro="comment-box"
+  tal:condition="comment/can_be_shown"
   class="boardComment">
 
   <div class="boardCommentDetails">
@@ -19,6 +20,12 @@
               tal:content="comment/title" />
       (permalink)
     </a>
+    <span tal:condition="comment/bugwatch">
+      Imported from
+      <a tal:attributes="href comment/bugwatch/bugtracker/fmt:url">
+        <tal:block replace="comment/bugwatch/bugtracker/title" />
+      </a>
+    </span>
   </div>
 
   <div class="boardCommentBody">

@@ -754,11 +754,6 @@ class Bug(SQLBase):
             BugMessage.bug = %s
             """ % sqlvalues(self)
 
-        # We can exclude comments imported from external bug trackers by
-        # only retrieving those comments without a linked BugWatch.
-        if not config.malone.show_imported_comments:
-            query = query + "AND bugwatch IS NULL"
-
         chunks = MessageChunk.select(query,
             clauseTables=["BugMessage", "Message"],
             # XXX: kiko 2006-09-16 bug=60745:

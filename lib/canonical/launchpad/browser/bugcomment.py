@@ -8,7 +8,8 @@ __all__ = ['BugCommentView', 'BugComment', 'build_comments_from_chunks']
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import ILaunchBag, IBugComment
+from canonical.launchpad.interfaces import (ILaunchBag, IBugComment,
+    IBugMessageSet)
 from canonical.launchpad.webapp import LaunchpadView
 
 from canonical.config import config
@@ -20,9 +21,12 @@ def build_comments_from_chunks(chunks, bugtask, truncate=False):
     index = 0
     for chunk in chunks:
         message_id = chunk.message.id
+        bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
+            bugtask.bug, chunk.message)
         bug_comment = comments.get(message_id)
         if bug_comment is None:
-            bug_comment = BugComment(index, chunk.message, bugtask)
+            bug_comment = BugComment(index, chunk.message, bugtask,
+                bug_message.bugwatch)
             comments[message_id] = bug_comment
             index += 1
         bug_comment.chunks.append(chunk)
@@ -46,9 +50,10 @@ class BugComment:
     """
     implements(IBugComment)
 
-    def __init__(self, index, message, bugtask):
+    def __init__(self, index, message, bugtask, bugwatch=None):
         self.index = index
         self.bugtask = bugtask
+        self.bugwatch = bugwatch
 
         self.title = message.title
         self.display_title = False
@@ -58,6 +63,14 @@ class BugComment:
 
         self.chunks = []
         self.bugattachments = []
+
+    @property
+    def can_be_shown(self):
+        """Return whether or not the BugComment can be shown."""
+        if self.bugwatch and not config.malone.show_imported_comments:
+            return False
+        else:
+            return True
 
     def setupText(self, truncate=False):
         """Set the text for display and truncate it if necessary.
