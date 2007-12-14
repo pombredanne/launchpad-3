@@ -11,7 +11,6 @@ from zope.interface import implements
 from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad import _
 from canonical.launchpad.interfaces import IBugMessage, IBugMessageSet
 from canonical.launchpad.database.message import Message, MessageChunk
 
