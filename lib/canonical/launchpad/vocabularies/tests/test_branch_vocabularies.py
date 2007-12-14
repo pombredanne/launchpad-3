@@ -33,7 +33,31 @@ class TestBranchVocabulary(BranchVocabTestCase):
 
     def setUp(self):
         BranchVocabTestCase.setUp(self)
+        self._createBranches()
         self.vocab = BranchVocabulary(context=None)
+
+    def _createBranches(self):
+        factory = LaunchpadObjectFactory()
+        widget = factory.makeProduct(name='widget')
+        sprocket = factory.makeProduct(name='sprocket')
+        # Scotty's branches.
+        scotty = factory.makePerson(name='scotty')
+        factory.makeBranch(
+            owner=scotty, product=widget, name='fizzbuzz')
+        factory.makeBranch(
+            owner=scotty, product=widget, name='mountain')
+        factory.makeBranch(
+            owner=scotty, product=sprocket, name='fizzbuzz')
+        # Spotty's branches.
+        spotty = factory.makePerson(name='spotty')
+        factory.makeBranch(
+            owner=spotty, product=widget, name='hill')
+        factory.makeBranch(
+            owner=spotty, product=widget, name='sprocket')
+        # Sprocket's branches.
+        sprocket_person = factory.makePerson(name='sprocket')
+        factory.makeBranch(
+            owner=sprocket_person, product=widget, name='foo')
 
     def test_emptySearch(self):
         """An empty search should return an empty query string."""
@@ -41,38 +65,47 @@ class TestBranchVocabulary(BranchVocabTestCase):
         self.assertEqual(
             '', query, "Expected empty query string and got %r" % query)
 
-    def test_mainBranches(self):
-        """Return branches that match the string 'main'."""
-        results = self.vocab.search('main')
+    def test_fizzbuzzBranches(self):
+        """Return branches that match the string 'fizzbuzz'."""
+        results = self.vocab.search('fizzbuzz')
         expected = [
-            u'~justdave/+junk/main',
-            u'~kiko/+junk/main',
-            u'~name12/firefox/main',
-            u'~name12/gnome-terminal/main',
-            u'~stevea/thunderbird/main',
-            u'~vcs-imports/evolution/main']
+            u'~scotty/sprocket/fizzbuzz',
+            u'~scotty/widget/fizzbuzz',
+            ]
         branch_names = sorted([branch.unique_name for branch in results])
         self.assertEqual(expected, branch_names)
 
-    def test_firefoxBranches(self):
+    def test_widgetBranches(self):
         """Searches match the product name too."""
-        results = self.vocab.search('firefox')
+        results = self.vocab.search('widget')
         expected = [
-            u'~name12/firefox/main',
-            u'~sabdfl/firefox/release--0.9.1',
-            u'~sabdfl/firefox/release-0.8',
-            u'~sabdfl/firefox/release-0.9',
-            u'~sabdfl/firefox/release-0.9.2']
+            u'~scotty/widget/fizzbuzz',
+            u'~scotty/widget/mountain',
+            u'~spotty/widget/hill',
+            u'~spotty/widget/sprocket',
+            u'~sprocket/widget/foo',
+            ]
         branch_names = sorted([branch.unique_name for branch in results])
         self.assertEqual(expected, branch_names)
 
-    def test_vcsImportsBranches(self):
+    def test_spottyBranches(self):
         """Searches also match the registrant name."""
-        results = self.vocab.search('spiv')
+        results = self.vocab.search('spotty')
         expected = [
-            u'~spiv/+junk/feature',
-            u'~spiv/+junk/feature2',
-            u'~spiv/+junk/trunk']
+            u'~spotty/widget/hill',
+            u'~spotty/widget/sprocket',
+            ]
+        branch_names = sorted([branch.unique_name for branch in results])
+        self.assertEqual(expected, branch_names)
+
+    def test_crossAttributeBranches(self):
+        """The search checks name, product, and person."""
+        results = self.vocab.search('rocket')
+        expected = [
+            u'~scotty/sprocket/fizzbuzz',
+            u'~spotty/widget/sprocket',
+            u'~sprocket/widget/foo',
+            ]
         branch_names = sorted([branch.unique_name for branch in results])
         self.assertEqual(expected, branch_names)
 
