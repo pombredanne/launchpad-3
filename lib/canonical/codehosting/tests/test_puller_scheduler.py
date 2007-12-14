@@ -6,6 +6,7 @@ __metaclass__ = type
 from datetime import datetime
 import logging
 import os
+import textwrap
 import unittest
 
 import pytz
@@ -490,7 +491,7 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
 
     def makePullerMaster(self, cls=scheduler.PullerMaster):
         """Construct a PullerMaster suited to the test environment."""
-        return cls(
+        puller_master = cls(
             self.db_branch.id, local_path_to_url('src-branch'),
             self.db_branch.unique_name, self.db_branch.branch_type,
             logging.getLogger(), self.client)
@@ -523,14 +524,47 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         deferred.addCallback(check_branch_mirrored)
 
         return deferred
+
     def test_lock_with_magic_id(self):
-        """When the subprocess locks a branch, it is locked with the right ID.
+        # When the subprocess locks a branch, it is locked with the right ID.
+        class PullerMasterProtocolWithLockID(scheduler.PullerMasterProtocol):
+            """A subclass of PullerMasterProtocol that defines a lock_id method.
+
+            This protocol defines a method that records on the listener the
+            lock id reported by the subprocess.
+            """
+
+            def do_lock_id(self, id):
+                """Record the lock id on the listener."""
+                self.listener.lock_ids.append(id)
+
+
+        class PullerMasterWithLockID(scheduler.PullerMaster):
+            """A subclass of PullerMaster that uses allows recording of lock ids."""
+
+            master_protocol_class = PullerMasterProtocolWithLockID
+
+        check_lock_id_script = """
+        from optparse import OptionParser
+        from canonical.codehosting.puller.worker import PullerWorkerProtocol
+        import sys
+        parser = OptionParser()
+        (options, arguments) = parser.parse_args()
+        (source_url, destination_url, branch_id, unique_name,
+         branch_type_name) = arguments
+        from bzrlib import branch
+        b = branch.Branch.open(destination_url)
+        b.lock_write()
+        protocol = PullerWorkerProtocol(sys.stdout)
+        protocol.sendEvent('lock_id', b.control_files._lock.peek()['user'])
+        sys.stdout.flush()
+        b.unlock()
         """
+
         puller_master = self.makePullerMaster(PullerMasterWithLockID)
-        puller_master.destination_url = os.path.abspath('dest-branch')
         puller_master.lock_ids = []
         script = open('script.py', 'w')
-        script.write(check_lock_id_script)
+        script.write(textwrap.dedent(check_lock_id_script))
         script.close()
         puller_master.path_to_script = os.path.abspath('script.py')
 
@@ -543,71 +577,92 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         return deferred.addCallback(checkID)
 
     def test_mirror_with_destination_locked(self):
-        # If the destination branch is locked, the worker should break the
-        # lock and mirror the branch regardless.
-        revision_id = self.bzr_tree.branch.last_revision()
+        # If the destination branch was locked by another worker, the worker
+        # should break the lock and mirror the branch regardless.
 
-        puller_master = self.makePullerMaster()
+        # Lots of moving parts :/
+
+        # We launch two subprocesses, one that locks the branch, tells us that
+        # its done so and waits to be killed (we need to do the locking in a
+        # subprocess to get the lock id to be right, see the above test).
+
+        # When the first process tells us that it has locked the branch, we
+        # launch a second subprocess that runs the usual mirroring code.  When
+        # this finishes, we check that the mirroring succeeded, then send a
+        # signal to kill the first process and wait for it to die.
+
+        class LockingPullerMasterProtocol(scheduler.PullerMasterProtocol):
+            """XXX."""
+
+            def do_branchLocked(self):
+                """XXX."""
+                self.listener.branchLocked()
+
+            def connectionMade(self):
+                """XXX."""
+                self.listener.protocol = self
+
+
+        class LockingPullerMaster(scheduler.PullerMaster):
+            """XXX."""
+
+            master_protocol_class = LockingPullerMasterProtocol
+            process_killed = False
+
+            def branchLocked(self):
+                branch_locked_deferred.callback(None)
+
+        lock_and_wait_script = """
+        from optparse import OptionParser
+        from canonical.codehosting.puller.worker import PullerWorkerProtocol
+        import sys, time
+        parser = OptionParser()
+        (options, arguments) = parser.parse_args()
+        (source_url, destination_url, branch_id, unique_name,
+         branch_type_name) = arguments
+        from bzrlib import branch
+        b = branch.Branch.open(destination_url)
+        b.lock_write()
+        protocol = PullerWorkerProtocol(sys.stdout)
+        protocol.sendEvent('branchLocked')
+        sys.stdout.flush()
+        time.sleep(3600)
+        """
+
+        branch_locked_deferred = defer.Deferred()
+
+        def test_mirroring(ignored):
+            return self.test_mirror()
+        branch_locked_deferred.addCallback(test_mirroring)
+
+        locking_puller_master = self.makePullerMaster(LockingPullerMaster)
+        script = open('script.py', 'w')
+        script.write(textwrap.dedent(lock_and_wait_script))
+        script.close()
+        locking_puller_master.path_to_script = os.path.abspath('script.py')
 
         destination_branch = BzrDir.create_branch_convenience(
-            puller_master.destination_url)
-        destination_branch.lock_write()
+            locking_puller_master.destination_url)
 
-        deferred = puller_master.mirror().addErrback(self._dumpError)
+        locking_process_deferred = locking_puller_master.mirror()
 
-        def check_unlocked(ignored):
-            # Check that the worker unlocked the branch.
-            self.assertFalse(destination_branch.get_physical_lock_status())
-            # We call unlock() here to prevent warnings about the branch not
-            # being unlocked being spewed when the branch is garbage
-            # collected.
-            self.assertRaises(LockBroken, destination_branch.unlock)
-            return ignored
-        deferred.addCallback(check_unlocked)
+        def locking_process_errback(failure):
+            if not locking_puller_master.process_killed:
+                # If the locking subprocess exits abnormally before we send
+                # the signal to kill it, that's bad.
+                branch_locked_deferred.errback(failure)
+            else:
+                # Afterwards, though that's the whole point :)
+                pass
+        locking_process_deferred.addErrback(locking_process_errback)
 
-        def check_branch_mirrored(ignored):
-            self.assertEqual(
-                revision_id,
-                Branch.open(puller_master.destination_url).last_revision())
-            return ignored
-        deferred.addCallback(check_branch_mirrored)
+        def cleanup(ignored):
+            locking_puller_master.process_killed = True
+            locking_puller_master.protocol.transport.signalProcess('INT')
 
-        return deferred
+        branch_locked_deferred.addCallback(cleanup)
 
-
-class PullerMasterProtocolWithLockID(scheduler.PullerMasterProtocol):
-    """A subclass of PullerMasterProtocol that defines a lock_id method.
-
-    This protocol defines a method that records on the listener the
-    lock id reported by the subprocess.
-    """
-
-    def do_lock_id(self, id):
-        """Record the lock id on the listener."""
-        self.listener.lock_ids.append(id)
-
-
-class PullerMasterWithLockID(scheduler.PullerMaster):
-    """A subclass of PullerMaster that uses allows recording of lock ids."""
-
-    master_protocol_class = PullerMasterProtocolWithLockID
-
-
-check_lock_id_script = """
-from optparse import OptionParser
-from canonical.codehosting.puller.worker import PullerWorkerProtocol
-import sys
-parser = OptionParser()
-(options, arguments) = parser.parse_args()
-(source_url, destination_url, branch_id, unique_name,
- branch_type_name) = arguments
-from bzrlib import branch
-b = branch.Branch.open(source_url)
-b.lock_write()
-protocol = PullerWorkerProtocol(sys.stdout)
-protocol.sendEvent('lock_id', b.control_files._lock.peek()['user'])
-b.unlock()
-"""
+        return branch_locked_deferred.addErrback(self._dumpError)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
