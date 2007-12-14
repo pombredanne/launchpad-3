@@ -513,3 +513,11 @@ The team janitor doesn't have an email address at all!
     >>> get_bugmail_from_address(janitor, bug_four)
     'Team Membership Janitor <4@bugs.launchpad.net>'
 
+The Launchpad Janitor celebrity isn't a real user, and shouldn't be
+sending mail. Notifications from the janitor are sent with the address
+of the bug itself.
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> lp_janitor = getUtility(ILaunchpadCelebrities).janitor
+    >>> get_bugmail_from_address(lp_janitor, bug_four)
+    'Launchpad Bug Tracker <4@bugs.launchpad.net>'
