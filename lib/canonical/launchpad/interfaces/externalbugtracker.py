@@ -7,7 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IExternalBugTracker',
-    'ISupportsCommentImports',
+    'ISupportsCommentImport',
     'UNKNOWN_REMOTE_IMPORTANCE',
     'UNKNOWN_REMOTE_STATUS',
     ]
