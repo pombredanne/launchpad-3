@@ -70,10 +70,10 @@ class AnnouncementContextMenu(ContextMenu):
 class AnnouncementSHP(StructuralHeaderPresentation):
 
     def getIntroHeading(self):
-        return "News for %s" % cgi.escape(self.context.target.displayname)
+        return "Announcement for:"
 
     def getMainHeading(self):
-        return self.context.title
+        return self.context.target.displayname
 
 
 class AddAnnouncementForm(Interface):
@@ -93,11 +93,6 @@ class AnnouncementAddView(LaunchpadFormView):
     label = "Make an announcement"
 
     custom_widget('publication_date', AnnouncementDateWidget)
-
-    def validate(self, data):
-        if not self.isBetaUser:
-            self.addError(
-                'This capability is only available to beta testers.')
 
     @action(_('Make announcement'), name='announce')
     def announce_action(self, action, data):
