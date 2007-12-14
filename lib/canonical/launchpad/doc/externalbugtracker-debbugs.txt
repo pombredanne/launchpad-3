@@ -411,7 +411,7 @@ implementation), so we need to pass a bug watch to the function.
 
     >>> bug_watch = bug.addWatch(debbugs, '1234', no_priv)
     >>> external_debbugs.importBugComments(bug_watch)
-    INFO:...:Importing comments for remote bug 1234...
+    INFO:...:Imported 1 comments for remote bug 1234...
 
 These comments will have been added to the bug, but by default won't be
 displayed. Initially, we only see the message chunk that was added when
@@ -470,7 +470,7 @@ our test debbugs DB to load sample data for more than one comment
 
     >>> external_debbugs.debbugs_db._data_file = 'debbugs-2-comments.txt'
     >>> external_debbugs.importBugComments(bug_watch)
-    INFO:...:Importing comments for remote bug 1234...
+    INFO:...:Imported 1 comments for remote bug 1234...
 
     >>> chunks = removeSecurityProxy(bug.getMessageChunks())
     >>> len(chunks)
@@ -503,7 +503,7 @@ tracker.
     0
     >>> print err
     INFO    Updating 1 watches on http://bugs.debian.org
-    INFO    Importing comments for remote bug 237001...
+    INFO    Imported 3 comments for remote bug 237001...
     INFO    Imported debbugs #237001 as Launchpad bug #...
     INFO    Imported debbugs #322535 as Launchpad bug #...
     INFO    Committing the transaction.

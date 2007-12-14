@@ -31,8 +31,9 @@ from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
     CreateBugParams, IBugWatchSet, IDistribution, IExternalBugTracker,
-    ILaunchpadCelebrities, IPersonSet, PersonCreationRationale,
-    UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
+    ILaunchpadCelebrities, IMessageSet, IPersonSet, NotFoundError,
+    PersonCreationRationale, UNKNOWN_REMOTE_IMPORTANCE,
+    UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp.url import urlparse
 
 # The user agent we send in our requests
@@ -138,7 +139,7 @@ class ExternalBugTracker:
 
     batch_query_threshold = config.checkwatches.batch_query_threshold
     batch_size = None
-    import_comments = config.checkwatches.import_comments
+    import_comments = True #config.checkwatches.import_comments
 
     def __init__(self, bugtracker):
         self.bugtracker = bugtracker
@@ -831,12 +832,10 @@ class DebBugs(ExternalBugTracker):
 
     def importBugComments(self, bug_watch):
         """Import the comments from a DebBugs bug."""
-        log.info("Importing comments for remote bug %s (local bug %s) on %s."
-            % (bug_watch.remotebug, bug_watch.bug.id, self.baseurl))
-
         debian_bug = self._findBug(bug_watch.remotebug)
         self.debbugs_db.load_log(debian_bug)
 
+        imported_comments = []
         for comment in debian_bug.comments:
             # Debian comments are all rfc822 compliant, so we can use
             # the email module to parse them. We do this rather than
@@ -867,6 +866,18 @@ class DebBugs(ExternalBugTracker):
 
             message_set = getUtility(IMessageSet)
             try:
+                # XXX gmb 2007-12-14:
+                #     This seems a bit hackish, but because of a lack of
+                #     transaction support this far down in the
+                #     checkwatches code it's the only way we can be sure
+                #     we're not importing a comment twice. If we leave
+                #     it to fromEmail we can end up with LookupErrors.
+                #     Although we allow > 1 message with the same
+                #     message id in Launchpad it's highly unlikely that
+                #     two messages with the same ower will have the same
+                #     message id. If we encounter such an instance we
+                #     can reasonably safely assume that this comment has
+                #     been imported already.
                 existing_messages = message_set.getByMessageIdAndOwner(
                     rfc822msgid=parsed_comment['message-id'],
                     owner=owner)
@@ -874,6 +885,11 @@ class DebBugs(ExternalBugTracker):
                 message = message_set.fromEmail(comment, owner,
                     parsed_message=parsed_comment)
                 bug_message = bug_watch.bug.linkMessage(message, bug_watch)
+                imported_comments.append(bug_message)
+
+        log.info("Imported %i comments for remote bug %s on %s." %
+            (len(imported_comments), bug_watch.remotebug, self.baseurl))
+
 
 
 #
