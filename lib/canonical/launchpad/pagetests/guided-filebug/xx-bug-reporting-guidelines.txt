@@ -1,0 +1,200 @@
+= Bug Reporting Guidelines =
+
+Some helpful explanatory text - guidelines - can be set for
+distributions, product groups and products.
+
+    >>> primary_contexts = [
+    ...     ('Ubuntu', 'ubuntu'), ('Mozilla', 'mozilla'),
+    ...     ('Firefox', 'firefox')]
+
+    >>> for context_name, context_path in primary_contexts:
+    ...     edit_url = 'http://launchpad.dev/%s/+edit' % (context_path,)
+    ...     admin_browser.open(edit_url)
+    ...     admin_browser.getControl('Bug reporting guidelines').value = (
+    ...         "Welcome to %s!" % (context_name,))
+    ...     admin_browser.getControl('Change').click()
+
+The guidelines are displayed on the first bug reporting page:
+
+    >>> def print_guidelines(name, browser):
+    ...     print '* ' + name
+    ...     print '  - ' + user_browser.url
+    ...     print '  - ' + extract_text(find_tag_by_id(
+    ...         user_browser.contents, 'bug-reporting-guidelines'))
+
+    >>> for context_name, context_path in primary_contexts:
+    ...     filebug_url = (
+    ...         'http://launchpad.dev/%s/+filebug' % (context_path,))
+    ...     user_browser.open(filebug_url)
+    ...     print_guidelines(context_name, user_browser)
+    * Ubuntu
+      - http://launchpad.dev/ubuntu/+filebug
+      - Welcome to Ubuntu!
+    * Mozilla
+      - http://launchpad.dev/mozilla/+filebug
+      - Welcome to Mozilla!
+    * Firefox
+      - http://launchpad.dev/firefox/+filebug
+      - Welcome to Firefox!
+
+Bugs can also be reported directly against distribution source
+packages and distribution serieses, but for both of these the
+guidelines are taken from their respective distributions.
+
+    >>> secondary_contexts = [
+    ...     ('Evolution in Ubuntu', 'ubuntu/+source/evolution'),
+    ...     ('Ubuntu Warty', 'ubuntu/warty')]
+
+    >>> for context_name, context_path in secondary_contexts:
+    ...     filebug_url = (
+    ...         'http://launchpad.dev/%s/+filebug' % (context_path,))
+    ...     user_browser.open(filebug_url)
+    ...     print_guidelines(context_name, user_browser)
+    * Evolution in Ubuntu
+      - http://launchpad.dev/ubuntu/+source/evolution/+filebug
+      - Welcome to Ubuntu!
+    * Ubuntu Warty
+      - http://launchpad.dev/ubuntu/+filebug
+      - Welcome to Ubuntu!
+
+Guidelines are also displayed on the advanced bug filing form:
+
+    >>> all_contexts = primary_contexts + secondary_contexts
+
+    >>> for context_name, context_path in all_contexts:
+    ...     filebug_url = (
+    ...         'http://launchpad.dev/%s/+filebug' % (context_path,))
+    ...     user_browser.open(filebug_url)
+    ...     print_guidelines(context_name, user_browser)
+    * Ubuntu
+      - http://launchpad.dev/ubuntu/+filebug
+      - Welcome to Ubuntu!
+    * Mozilla
+      - http://launchpad.dev/mozilla/+filebug
+      - Welcome to Mozilla!
+    * Firefox
+      - http://launchpad.dev/firefox/+filebug
+      - Welcome to Firefox!
+    * Evolution in Ubuntu
+      - http://launchpad.dev/ubuntu/+source/evolution/+filebug
+      - Welcome to Ubuntu!
+    * Ubuntu Warty
+      - http://launchpad.dev/ubuntu/+filebug
+      - Welcome to Ubuntu!
+
+We need to file a bug against Evolution in Ubuntu so we have a similar
+bug later.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/evolution/+filebug')
+    >>> user_browser.getControl('Summary').value = 'Evolution made me cry'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.getControl('Further information').value = (
+    ...     "It deleted all of my email then sent porn to my mum.")
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    Thank you for your bug report.
+
+In the guided bug filing process guidelines are shown whether or not
+similar bugs are found.
+
+    >>> def find_guidelines_guided(name, path, summary):
+    ...     filebug_url = 'http://launchpad.dev/%s/+filebug' % (path,)
+    ...     user_browser.open(filebug_url)
+    ...     user_browser.getControl('Summary').value = summary
+    ...     user_browser.getControl('Continue').click()
+    ...     similar_bugs = find_tag_by_id(
+    ...         user_browser.contents, 'similar-bugs')
+    ...     similar_bugs_found = ((similar_bugs is None)
+    ...         and 'no similar bugs' or 'with similar bugs')
+    ...     print_guidelines(
+    ...         '%s (%s)' % (name, similar_bugs_found), user_browser)
+
+    >>> for context_name, context_path in all_contexts:
+    ...     find_guidelines_guided(
+    ...         context_name, context_path, 'zzz')
+    ...     find_guidelines_guided(
+    ...         context_name, context_path, 'a')
+    * Ubuntu (no similar bugs)
+      - http://launchpad.dev/ubuntu/+filebug
+      - Welcome to Ubuntu!
+    * Ubuntu (with similar bugs)
+      - http://launchpad.dev/ubuntu/+filebug
+      - Welcome to Ubuntu!
+    * Mozilla (no similar bugs)
+      - http://launchpad.dev/mozilla/+filebug
+      - Welcome to Mozilla!
+    * Mozilla (with similar bugs)
+      - http://launchpad.dev/mozilla/+filebug
+      - Welcome to Mozilla!
+    * Firefox (no similar bugs)
+      - http://launchpad.dev/firefox/+filebug
+      - Welcome to Firefox!
+    * Firefox (with similar bugs)
+      - http://launchpad.dev/firefox/+filebug
+      - Welcome to Firefox!
+    * Evolution in Ubuntu (no similar bugs)
+      - http://launchpad.dev/ubuntu/+source/evolution/+filebug
+      - Welcome to Ubuntu!
+    * Evolution in Ubuntu (with similar bugs)
+      - http://launchpad.dev/ubuntu/+source/evolution/+filebug
+      - Welcome to Ubuntu!
+    * Ubuntu Warty (no similar bugs)
+      - http://launchpad.dev/ubuntu/+filebug
+      - Welcome to Ubuntu!
+    * Ubuntu Warty (with similar bugs)
+      - http://launchpad.dev/ubuntu/+filebug
+      - Welcome to Ubuntu!
+
+== Edit Access ==
+
+Unprivileged Launchpad users do not see the link to the page where the
+bug reporting guidelines can be changed, but admins do.
+
+    >>> import sys
+
+    >>> for context_name, context_path in primary_contexts:
+    ...     overview_url = 'http://launchpad.dev/%s' % (context_path,)
+    ...     print '* ' + context_name
+    ...     print '  - User:',
+    ...     user_browser.open(overview_url)
+    ...     try:
+    ...         user_browser.getLink(url='/+edit')
+    ...     except (SystemExit, KeyboardInterrupt):
+    ...         raise
+    ...     except:
+    ...         print sys.exc_info()[0].__name__
+    ...     print '  - Admin:',
+    ...     admin_browser.open(overview_url)
+    ...     print admin_browser.getLink(url='/+edit').text
+    * Ubuntu
+      - User: LinkNotFoundError
+      - Admin: Change distribution details
+    * Mozilla
+      - User: LinkNotFoundError
+      - Admin: Change details
+    * Firefox
+      - User: LinkNotFoundError
+      - Admin: Change details
+
+Unprivileged cannot access the page for changing bug reporting
+guidelines.
+
+    >>> import traceback
+
+    >>> for context_name, context_path in primary_contexts:
+    ...     edit_url = 'http://launchpad.dev/%s/+edit' % (context_path,)
+    ...     print '* ' + context_name
+    ...     try:
+    ...         user_browser.open(edit_url)
+    ...     except (SystemExit, KeyboardInterrupt):
+    ...         raise
+    ...     except:
+    ...         print sys.exc_info()[0].__name__
+    * Ubuntu
+      Unauthorized
+    * Mozilla
+      Unauthorized
+    * Firefox
+      Unauthorized

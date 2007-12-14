@@ -198,9 +198,10 @@ class IHostedBranchStorage(Interface):
             suitable to display to the user.
         """
 
-    def requestMirror(branchID):
+    def requestMirror(loginID, branchID):
         """Mark a branch as needing to be mirrored.
 
+        :param loginID: the person ID of the user requesting the mirror.
         :param branchID: a branch ID.
         """
 

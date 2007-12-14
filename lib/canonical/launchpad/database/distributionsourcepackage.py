@@ -75,6 +75,11 @@ class DistributionSourcePackage(BugTargetBase,
         return 'Source Package "%s" in %s' % (
             self.sourcepackagename.name, self.distribution.title)
 
+    @property
+    def bug_reporting_guidelines(self):
+        """See `IBugTarget`."""
+        return self.distribution.bug_reporting_guidelines
+
     def __getitem__(self, version):
         return self.getVersion(version)
 
@@ -176,7 +181,8 @@ class DistributionSourcePackage(BugTargetBase,
         contact_to_remove = self.isBugContact(person)
 
         if not contact_to_remove:
-            raise DeleteBugContactError("%s is not a bug contact for this package.")
+            raise DeleteBugContactError(
+                "%s is not a bug contact for this package.")
         else:
             contact_to_remove.destroySelf()
 
