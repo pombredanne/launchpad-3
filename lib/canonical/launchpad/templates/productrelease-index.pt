@@ -53,7 +53,6 @@
           <tr>
             <th tal:condition="has_edit" width="10%">Delete</th>
             <th>Download</th>
-            <th>Checksums</th>
             <th>Description</th>
           </tr>
         </thead>
@@ -70,16 +69,10 @@
               <img alt="download icon" src="/@@/download" />
               <a tal:attributes="href python:view.fileURL(file.libraryfile)"
                  tal:content="file/libraryfile/filename">filename</a>
-              <tal:signature condition="file/signature">
-                <br />
-                <img alt="download icon" src="/@@/download" />
-                <a tal:attributes="href python:view.fileURL(file.signature)"
-                   tal:content="file/signature/filename">signature</a>
-              </tal:signature>
-            </td>
-            <td>
-              <div tal:content="string: SHA-1: ${file/libraryfile/content/sha1}">SHA-1</div>
-              <div tal:content="string: MD5: ${file/libraryfile/content/md5}">MD5</div>
+              (<a tal:attributes="href python:view.md5URL(file.libraryfile)"
+              >md5</a><tal:signature condition="file/signature">,
+              <a tal:attributes="href python:view.fileURL(file.signature)">
+              pgp</a></tal:signature>)
             </td>
             <td tal:content="file/description">Installer for i386</td>
           </tr>

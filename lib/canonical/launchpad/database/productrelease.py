@@ -82,7 +82,7 @@ class ProductRelease(SQLBase):
         for file_ in self.files:
             if file_.libraryfile.filename == name:
                 return file_.libraryfile
-            elif file_.signature.filename == name:
+            elif file_.signature and file_.signature.filename == name:
                 return file_.signature
         raise NotFoundError(name)
 

@@ -67,14 +67,11 @@
                 <td>
                   <img alt="download icon" src="/@@/download" />
                   <a tal:attributes="href python:view.fileURL(file.libraryfile, release)"
-                       tal:content="file/libraryfile/filename">filename</a>
-                  (<a tal:attributes="href python:view.md5URL(file.libraryfile, release)">md5</a>
-                  <tal:signature condition="file/signature">
-                    <br />
-                    <img alt="download icon" src="/@@/download" />
-                    <a tal:attributes="href python:view.fileURL(file.signature,release)"
-                       tal:content="file/signature/filename">signature</a>
-                  </tal:signature>)
+                     tal:content="file/libraryfile/filename">filename</a>
+                  (<a tal:attributes="href python:view.md5URL(file.libraryfile, release)"
+                  >md5</a><tal:signature condition="file/signature">
+                  , <a tal:attributes="href python:view.fileURL(file.signature,release)">
+                  pgp</a></tal:signature>)
                 </td>
                 <td>
                    <tal:version content="release/version">version</tal:version>
