@@ -255,11 +255,11 @@
                             <attribute name="type">
                                 <value>measurement</value>
                             </attribute>
-                            <attribute name="unit">
-                                <!-- XXX enumerate allowed values for "unit"
-                                -->
-                                <text/>
-                            </attribute>
+                            <optional>
+                                <attribute name="unit">
+                                    <text/>
+                                </attribute>
+                            </optional>
                             <data type="decimal"/>
                         </element>
                     </choice>

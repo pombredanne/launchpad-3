@@ -380,10 +380,10 @@
                    multiple units for the same dimension. e.g., B/sec, 
                    MB/sec or inch, cm, foot. 
 
-                   For dimensionless values, unit must be set to "None".
+                   For dimensionless values, the attribute unit is omitted.
 
                    "Percentage" and similar "convenience pseudo-units" like
-                   ppm are _not_ an allowed unit; instead a dimensionless
+                   ppm are _not_ allowed; instead a dimensionless
                    value must be used, where 0 is equivalent 0% and 1.0 is
                    equivalent to 100%.
       -->
