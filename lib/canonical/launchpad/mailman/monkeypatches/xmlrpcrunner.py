@@ -142,7 +142,7 @@ class XMLRPCRunner(Runner):
             syslog('xmlrpc', 'Received subscription info for these lists: %s',
                    COMMASPACE.join(info.keys()))
         for list_name in info:
-            mlist = MailList(list_name, lock=True)
+            mlist = MailList(list_name)
             try:
                 # Create a mapping of subscriber address to subscriber real
                 # name.  Note that currently the flags and status are unused.
