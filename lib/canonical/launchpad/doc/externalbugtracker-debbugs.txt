@@ -429,8 +429,6 @@ imported, along with the creation comment of the bug.
     CSS are sometimes not getting properly reflowed after rendering.
     Things happen.
 
-    >>> config.malone.show_imported_comments = False
-
 The author of the comment will have had a Launchpad Person created for
 them if they didn't exist already:
 
@@ -456,7 +454,6 @@ existing comment will remain unaltered and the new comment will be
 imported into Launchpad as normal. We can demonstrate this by telling
 our test debbugs DB to load sample data for more than one comment
 
-    >>> config.malone.show_imported_comments = True
     >>> chunks = bug.getMessageChunks()
     >>> len(chunks)
     2
@@ -511,6 +508,43 @@ having been imported since the comment hasn't been created afresh.
     Anything that, in happening, causes something else to happen, causes
     something else to happen.
     It doesn't necessarily happen in that order, though.
+
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
+
+A config option, malone.show_imported_comments, controls whether or not
+imported comments will be displayed. We can demonstrate these using the
+standard BugTaskView for the bug above.
+
+    >>> from canonical.launchpad.browser import BugTaskView
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     LaunchpadTestRequest)
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
+
+By default, the comments returned which have been imported from a bug
+watch will have a can_be_shown property of False.
+
+    >>> for comment in view.getBugCommentsForDisplay():
+    ...     comment.can_be_shown
+    True
+    False
+    False
+
+However, if we set the show_imported_comments config option to True, the
+imported comments for bug 4 will be displayable.
+
+    >>> from canonical.config import config
+    >>> config.malone.show_imported_comments = True
+    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
+    >>> for comment in view.getBugCommentsForDisplay():
+    ...     comment.can_be_shown
+    True
+    True
+    True
+
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
 
 === Script for importing Debian bugs, linking them to Ubutu ===
