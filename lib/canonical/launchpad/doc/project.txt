@@ -181,9 +181,13 @@ and all valid specifications via the valid_specifications property:
 
 An IProjectSeries object can be retrieved by IProject.getSeries.
 
+    >>> from canonical.launchpad.interfaces import IProjectSeries
     >>> mozilla_series_1_0 = mozilla.getSeries('1.0')
     >>> mozilla_series_1_0
     <canonical.launchpad.database.project.ProjectSeries object at...
+
+    >>> IProjectSeries.providedBy(mozilla_series_1_0)
+    True
 
 If no series with the given name exists, IProject.getSeries returns None.
 

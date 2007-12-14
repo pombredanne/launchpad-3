@@ -18,8 +18,8 @@ We'll be going through usual steps of the PO file lifetime:
     ...     flush_database_updates, flush_database_caches)
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet,
-    ...     IProductSet, ITranslationImportQueue, TranslationFileFormat)
+    ...     ILaunchpadCelebrities, IPersonSet, IProductSet,
+    ...     TranslationFileFormat)
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
     >>> from canonical.launchpad.scripts.po_import import (
@@ -29,56 +29,12 @@ We'll be going through usual steps of the PO file lifetime:
     >>> UTC = pytz.timezone('UTC')
     >>> def ISO_FORMATTED_DATE(): return datetime.datetime.now(UTC).isoformat()
 
-We need this for the Librarian to work properly.
+To ease the pain of importing many files during testing, we use this
+helper function to import either a PO file or a PO template from a
+string with the contents of the file.
 
-    >>> import transaction
-
-We also need the DBEnumeratedType to change the import status.
-
-    >>> from canonical.launchpad.interfaces import RosettaImportStatus
-
-Then, let's get a handle to our mailer. This is the thing we'll examine to show
-what email has been sent, to whom, and what the body of the message contains:
-
-    >>> import email
-    >>> from canonical.launchpad.mail import stub
-
-Here's a fake logger to capture any errors that happen.
-
-    >>> from canonical.launchpad.scripts import FakeLogger
-
-To ease the pain of importing many files during testing, lets introduce
-a helper function to import either a PO file or a PO template from the string
-with the contents of the file.
-
-
-    >>> def import_pofile_or_potemplate(file_contents, person, series,
-    ...                                 pofile=None, potemplate=None,
-    ...                                 is_imported=True):
-    ...     """Import a `POFile` or `POTemplate` from the string.
-    ...
-    ...	    If pofile is None, it imports a potemplate.
-    ...	    Returns `TranslationImportQueueEntry` as added to the import queue.
-    ...	    """
-    ...     translation_import_queue = getUtility(ITranslationImportQueue)
-    ...     if pofile:
-    ...         entry = translation_import_queue.addOrUpdateEntry(
-    ...             pofile.path, file_contents, is_imported, person,
-    ...             productseries=series, pofile=pofile)
-    ...     else:
-    ...         # A POTemplate can only be 'imported', so setting
-    ...         # the is_imported flag makes no difference.
-    ...         entry = translation_import_queue.addOrUpdateEntry(
-    ...             potemplate.path, file_contents, True, person,
-    ...             productseries=series, potemplate=potemplate)
-    ...     transaction.commit()
-    ...     entry.status = RosettaImportStatus.APPROVED
-    ...     syncUpdate(entry)
-    ...     if pofile:
-    ...         pofile.importFromQueue(FakeLogger())
-    ...     else:
-    ...         potemplate.importFromQueue(FakeLogger())
-    ...     return entry
+    >>> from canonical.launchpad.translationformat.tests.helpers import (
+    ...     import_pofile_or_potemplate)
 
 And lets define a nice printout function for PO files.
 
@@ -120,6 +76,18 @@ And lets define a nice printout function for PO files.
     ...             strip_to_length(imported_translation),
     ...             strip_to_length(imported_fuzzy, 4))
 
+We need to print out stats for the pofile as well.
+
+    >>> # We are indenting those counts which are contained in the parent
+    >>> # one.  Thus, 'translated' count is the sum of 'imported' and 'new'.
+    >>> # 'imported' also includes the 'changed' entries.
+    >>> def print_pofile_stats(pofile):
+    ...     pofile.updateStatistics()
+    ...     print "total:", pofile.messageCount()
+    ...     print "translated:", pofile.translatedCount()
+    ...     print "  imported:", pofile.currentCount()
+    ...     print "    changed:", pofile.updatesCount()
+    ...     print "  new:", pofile.rosettaCount()
 
 We'll be doing all our imports into Firefox trunk as
 carlos@canonical.com.
@@ -223,6 +191,16 @@ one, and fuzzy flags are carried over as well.
      5. fifth              None                    None                    *
      6. sixth              None                    None                    *
 
+If we look at the statistics, only non-fuzzy imported messages are counted
+as valid translations.
+
+    >>> print_pofile_stats(firefox_serbian)
+    total: 6
+    translated: 2
+      imported: 2
+        changed: 0
+      new: 0
+
 After initial translation import from the package, it's common for
 translators to work either directly in Launchpad or to upload PO files
 with their updates.  This is a file where the "second" and "fourth"
@@ -281,6 +259,16 @@ imported fuzzy is still on).
      5. fifth              e-from-LP               None                    *
      6. sixth              None                    None                    *
 
+We can notice that we have 4 translations (fuzzy messages are not considered
+translated), with "second" imported one now considered 'changed in LP', and
+two new translations through Launchpad ("d-from-LP" and "e-from-LP"):
+
+    >>> print_pofile_stats(firefox_serbian)
+    total: 6
+    translated: 4
+      imported: 2
+        changed: 1
+      new: 2
 
 Common next step is having a new package upload which provides us with
 updated translations upstream.  The "second" message translation is changed,
@@ -340,6 +328,16 @@ preference to translations done inside Launchpad over imported ones.
      5. fifth              e-from-LP               e                       *
      6. sixth              f                       f                       *
 
+With this latest import, we've got five non-fuzzy messages, which are all
+considered 'translated'. Since we are preferring Launchpad-done translations,
+three of them are marked as 'changed in LP':
+
+    >>> print_pofile_stats(firefox_serbian)
+    total: 6
+    translated: 5
+      imported: 5
+        changed: 3
+      new: 0
 
 A new translation for "second" message through Launchpad is added.  We also
 do another translator (i.e. not from a package) update, where we remove the
@@ -401,6 +399,18 @@ translation.
      5. fifth              e-from-LP-two           e                       *
      6. sixth              f                       f                       *
 
+Removing a fuzzy flag from imported translation for "third" actually makes
+a 'new' translation, which is reflected in the statistics below, and
+reverting a "fourth" translation to the imported one is shown by the decreased
+'changed' count:
+
+    >>> print_pofile_stats(firefox_serbian)
+    total: 6
+    translated: 6
+      imported: 5
+        changed: 2
+      new: 1
+
 Finally, we make sure that adding another suggestion to the "second" message
 works properly, even if it makes us have two non-current and non-imported
 suggestions.
@@ -456,3 +466,13 @@ one ("b-from-LP", "b-from-LP-two").
      4. fourth             d                       d                       *
      5. fifth              e-from-LP-two           e                       *
      6. sixth              f                       f                       *
+
+Statistics have not changed from the previous, since translation for "second"
+was already 'changed':
+
+    >>> print_pofile_stats(firefox_serbian)
+    total: 6
+    translated: 6
+      imported: 5
+        changed: 2
+      new: 1

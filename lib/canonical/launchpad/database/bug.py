@@ -20,7 +20,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 
-from sqlobject import ForeignKey, StringCol, BoolCol
+from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
@@ -198,6 +198,7 @@ class Bug(SQLBase):
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
+    number_of_duplicates = IntCol(notNull=True, default=0)
 
     @property
     def displayname(self):
@@ -258,7 +259,7 @@ class Bug(SQLBase):
                 # We found an unexpirable bugtask; the bug cannot expire.
                 return False
             if (bugtask.status == BugTaskStatus.INCOMPLETE
-                and bugtask.pillar.official_malone):
+                and bugtask.pillar.enable_bug_expiration):
                 # This bugtasks meets the basic conditions to expire.
                 has_an_expirable_bugtask = True
 
@@ -277,7 +278,8 @@ class Bug(SQLBase):
         2. The bug is not a duplicate.
         3. The bug has at least one message (a request for more information).
         4. The bug does not have any other valid bugtasks.
-        5. The bugtask belongs to a project with official_malone is True.
+        5. The bugtask belongs to a project with enable_bug_expiration set
+           to True.
         6. The bugtask has the status Incomplete.
         7. The bugtask is not assigned to anyone.
         8. The bugtask does not have a milestone.
@@ -916,12 +918,14 @@ class Bug(SQLBase):
         if bugtask.conjoined_master is not None:
             bugtask = bugtask.conjoined_master
 
+        if bugtask.status == status:
+            return None
+
         bugtask_before_modification = Snapshot(
             bugtask, providing=providedBy(bugtask))
         bugtask.transitionToStatus(status, user)
-        if bugtask_before_modification.status != bugtask.status:
-            notify(SQLObjectModifiedEvent(
-                bugtask, bugtask_before_modification, ['status'], user=user))
+        notify(SQLObjectModifiedEvent(
+            bugtask, bugtask_before_modification, ['status'], user=user))
 
         return bugtask
 

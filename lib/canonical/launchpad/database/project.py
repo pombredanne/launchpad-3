@@ -20,11 +20,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, ImportStatus, IProduct,
-    IProject, IProjectSet, IProjectSeries, ISearchableByQuestionOwner,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
-    SprintSpecificationStatus, TranslationPermission)
+    IFAQCollection, IHasIcon, IHasLogo, IHasMugshot,
+    IProduct, IProject, IProjectSeries, IProjectSet, ISearchableByQuestionOwner,
+    ImportStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+    SpecificationFilter, SpecificationImplementationStatus,
+    SpecificationSort, SprintSpecificationStatus, TranslationPermission)
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -37,6 +37,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import ProjectMilestone
+from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.projectbounty import ProjectBounty
@@ -48,7 +49,7 @@ from canonical.launchpad.helpers import shortlist
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              HasSprintsMixin, KarmaContextMixin,
+              MakesAnnouncements, HasSprintsMixin, KarmaContextMixin,
               BranchVisibilityPolicyMixin):
     """A Project"""
 
@@ -92,6 +93,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     bugtracker = ForeignKey(
         foreignKey="BugTracker", dbName="bugtracker", notNull=False,
         default=None)
+    bug_reporting_guidelines = StringCol(default=None)
 
     # convenient joins
 
@@ -115,8 +117,15 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return None
 
     @property
+    def drivers(self):
+        """See `IHasDrivers`."""
+        if self.driver is not None:
+            return [self.driver]
+        return []
+
+    @property
     def mentoring_offers(self):
-        """See `IProject`"""
+        """See `IProject`."""
         via_specs = MentoringOffer.select("""
             Product.project = %s AND
             Specification.product = Product.id AND
@@ -173,7 +182,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def specifications(self, sort=None, quantity=None, filter=None,
                        series=None):
-        """See `IProject`."""
+        """See `IHasSpecifications`."""
 
         # Make a new list of the filter, so that we do not mutate what we
         # were passed as a filter
@@ -184,9 +193,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = (
-                ['-priority', 'Specification.definition_status',
-                 'Specification.name'])
+            order = ['-priority', 'Specification.definition_status',
+                     'Specification.name']
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -526,6 +534,7 @@ class ProjectSet:
 
         query = " AND ".join(queries)
         return Project.select(query, distinct=True, clauseTables=clauseTables)
+
 
 class ProjectSeries(HasSpecificationsMixin):
     """See `IprojectSeries`."""

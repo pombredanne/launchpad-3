@@ -1,0 +1,30 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+<tal:news define="announcements view/latest_announcements">
+<div
+  tal:condition="announcements"
+  class="portlet"
+  id="portlet-latest-announcements">
+  <h2>Latest news</h2>
+  <div class="portletBody portletContent">
+    <ul class="news">
+      <li tal:repeat="announcement announcements" class="news">
+        <img src="/@@/warning" alt="[Not published]"
+             title="This is not yet a public announcement"
+             tal:condition="not: announcement/published" />
+        <strong tal:content="announcement/title">Title here</strong><br />
+        <tal:summary replace="announcement/summary/fmt:shorten/80" />
+      </li>
+    </ul>
+  <a href="+announcements">&raquo; See all announcements...</a>
+  <a title="Atom 1.0 feed"
+     tal:attributes="href view/feed_url"><img src="/@@/rss" /></a><br />
+  <a tal:condition="context/required:launchpad.Edit"
+     href="+announce">&raquo; Make a new announcement...</a>
+  </div>
+</div>
+</tal:news>
+</tal:root>

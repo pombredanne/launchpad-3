@@ -228,7 +228,7 @@ blueprint targets:
     'http://blueprints.launchpad.dev/mozilla/+specs?show=all'
     >>> specs = find_tag_by_id(browser.contents, 'speclisting')
     >>> print extract_text(specs)
-    Priority Specification Design Delivery Assignee Project Series
+    Priority Blueprint Design Delivery Assignee Project Series
     ...High svg-support ... Approved ... Beta Available Carlos ... firefox
     ...Medium canvas ... New ... Unknown firefox
     ...Medium extension-manager-upgrades ... New ... Informational Carlos ... 
@@ -251,5 +251,5 @@ blueprint targets:
     >>> browser.open('http://blueprints.launchpad.dev/mozilla/+series/1.0')
     >>> specs = find_tag_by_id(browser.contents, 'speclisting')
     >>> print extract_text(specs)
-    Priority Specification Design Delivery Assignee Project Series
+    Priority Blueprint Design Delivery Assignee Project Series
     ...High svg-support ... Approved ... Beta Available Carlos ... firefox 1.0

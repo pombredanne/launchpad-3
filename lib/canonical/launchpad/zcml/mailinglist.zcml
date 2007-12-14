@@ -10,6 +10,11 @@
                  set_attributes="welcome_message"/>
     </content>
 
+    <content class="canonical.launchpad.database.MailingListSubscription">
+        <allow
+         interface="canonical.launchpad.interfaces.IMailingListSubscription"/>
+    </content>
+
     <securedutility
         class="canonical.launchpad.database.MailingListSet"
         provides="canonical.launchpad.interfaces.IMailingListSet">

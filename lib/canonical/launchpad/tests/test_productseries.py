@@ -106,7 +106,7 @@ class TestImportUpdated(ImportdTestCase):
 
     def testLastMirroredIsNone(self):
         # If import_branch.last_mirrored is None, importUpdated sets
-        # datelastsynced and import_branch.mirror_request_time to UTC_NOW.
+        # datelastsynced and import_branch.next_mirror_time to UTC_NOW.
         series = self.series()
         series.import_branch.last_mirrored = None
         series.datelastsynced = None
@@ -115,7 +115,7 @@ class TestImportUpdated(ImportdTestCase):
         self.assertEqual(str(series.datepublishedsync), str(None))
         self.assertEqual(str(series.datelastsynced), str(UTC_NOW))
         self.assertEqual(
-            str(series.import_branch.mirror_request_time), str(UTC_NOW))
+            str(series.import_branch.next_mirror_time), str(UTC_NOW))
 
     def testLastSyncedIsNone(self):
         # Make sure that importUpdated() still work when encountering the

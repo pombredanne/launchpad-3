@@ -8,22 +8,25 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
-    IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
-    IBuilder, IBuilderSet, ICodeImport, ICodeImportMachine,
-    ICodeImportMachineSet, ICodeImportSet, IDistribution, IDistributionMirror,
-    IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
-    IHasBug, IHasDrivers, IHasOwner, IHWSubmission, ILanguage, ILanguagePack,
+    IAnnouncement, IBazaarApplication, IBranch, IBranchMergeProposal,
+    IBranchSubscription, IBug, IBugAttachment, IBugBranch, IBugNomination,
+    IBugTracker, IBuild, IBuilder, IBuilderSet, ICodeImport,
+    ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
+    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet,
+    IDistribution, IDistributionMirror, IDistroSeries,
+    IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHasBug,
+    IHasDrivers, IHasOwner, IHWSubmission, ILanguage, ILanguagePack,
     ILanguageSet, ILaunchpadCelebrities, IMilestone, IPackageUpload,
     IPackageUploadQueue, IPerson, IPOFile, IPoll, IPollSubset, IPollOption,
-    IPOTemplate, IPOTemplateSubset, IProduct, IProductRelease, IProductSeries,
-    IQuestion, IQuestionTarget, IRequestedCDs, IShipItApplication,
-    IShippingRequest, IShippingRequestSet, IShippingRun, ISpecification,
-    ISpecificationSubscription, ISprint, ISprintSpecification,
-    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
-    ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
-    ITranslationImportQueueEntry, ITranslator, PackageUploadStatus,
-    IPackaging, IProductReleaseFile)
+    IPOTemplate, IPOTemplateSubset, IProduct, IProductRelease,
+    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
+    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
+    ISpecification, ISpecificationSubscription, ISprint,
+    ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
+    ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
+    ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
+    PackageUploadStatus, IPackaging, IProductReleaseFile)
+
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -37,12 +40,16 @@ class AuthorizationBase:
         self.obj = obj
 
     def checkUnauthenticated(self):
-        """Must return True or False.  See IAuthorization.checkUnauthenticated.
+        """See `IAuthorization.checkUnauthenticated`.
+
+        :return: True or False.
         """
         return False
 
     def checkAuthenticated(self, user):
-        """Must return True or False.  See IAuthorization.checkAuthenticated.
+        """See `IAuthorization.checkAuthenticated`.
+
+        :return: True or False.
         """
         return False
 
@@ -332,7 +339,8 @@ class AdminShipItApplicationByShipItAdmins(
     usedfor = IShipItApplication
 
 
-class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
+class AdminShippingRequestSetByShipItAdmins(
+        AdminShippingRequestByShipItAdmins):
     permission = 'launchpad.Admin'
     usedfor = IShippingRequestSet
 
@@ -393,7 +401,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = ITeam
 
     def checkAuthenticated(self, user):
-        """The team owner and all team admins have launchpad.Edit on that team.
+        """The team owner and team admins have launchpad.Edit on that team.
 
         The Launchpad admins also have launchpad.Edit on all teams.
         """
@@ -531,7 +539,8 @@ class EditProductSeries(EditByRegistryExpertsOrOwnersOrAdmins):
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
         if user.inTeam(rosetta_experts):
             return True
-        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(self, user)
+        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(
+            self, user)
 
 
 class EditBugTask(AuthorizationBase):
@@ -688,6 +697,57 @@ class EditBugAttachment(
         self.obj = bugattachment.bug
 
 
+class ViewAnnouncement(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IAnnouncement
+
+    def checkUnauthenticated(self):
+        """Let anonymous users see published announcements."""
+        if self.obj.published:
+            return True
+        return False
+
+    def checkAuthenticated(self, user):
+        """Keep project news invisible to end-users unless they are project
+        admins, until the announcements are published."""
+
+        # Every user can view published announcements.
+        if self.obj.published:
+            return True
+
+        # Project drivers can view any project announcements.
+        assert self.obj.target
+        if self.obj.target.drivers:
+            for driver in self.obj.target.drivers:
+                if user.inTeam(driver):
+                    return True
+        if user.inTeam(self.obj.target.owner):
+            return True
+
+        # Launchpad admins can view any announcement.
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+
+class EditAnnouncement(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IAnnouncement
+
+    def checkAuthenticated(self, user):
+        """Allow the project owner and drivers to edit any project news."""
+
+        assert self.obj.target
+        if self.obj.target.drivers:
+            for driver in self.obj.target.drivers:
+                if user.inTeam(driver):
+                    return True
+        if user.inTeam(self.obj.target.owner):
+            return True
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+
 class UseApiDoc(AuthorizationBase):
     permission = 'zope.app.apidoc.UseAPIDoc'
     usedfor = Interface
@@ -750,6 +810,36 @@ class EditCodeImports(OnlyVcsImportsAndAdmins):
     """
     permission = 'launchpad.Edit'
     usedfor = ICodeImport
+
+
+class SeeCodeImportJobs(OnlyVcsImportsAndAdmins):
+    """Control who can see the object view of a CodeImportJob.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImportJob
+
+
+class SeeCodeImportJobSet(OnlyVcsImportsAndAdmins):
+    """Control who can see the CodeImportJobSet utility.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImportJobSet
+
+
+class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
+    """Control who can use the CodeImportJobWorkflow utility.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = ICodeImportJobWorkflow
 
 
 class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
@@ -856,7 +946,8 @@ class EditProductRelease(EditByRegistryExpertsOrOwnersOrAdmins):
         if (user.inTeam(self.obj.productseries.owner) or
             user.inTeam(self.obj.productseries.product.owner)):
             return True
-        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(self, user)
+        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(
+            self, user)
 
 
 class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):

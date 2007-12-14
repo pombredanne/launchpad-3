@@ -22,9 +22,9 @@ from sqlobject import (
     )
 from zope.interface import implements
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
@@ -32,8 +32,6 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.potmsgset import POTMsgSet
-from canonical.launchpad.database.translationimportqueue import (
-    TranslationImportQueueEntry)
 from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)
 from canonical.launchpad.interfaces import (
@@ -44,8 +42,6 @@ from canonical.launchpad.interfaces import (
     RosettaImportStatus, TranslationFormatSyntaxError,
     TranslationFormatInvalidInputError, TranslationPermission,
     TranslationValidationStatus, ZeroLengthPOExportError)
-from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.translationformat import TranslationMessageData
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import (
@@ -515,7 +511,8 @@ class POFile(SQLBase, POFileMixIn):
             JOIN TranslationMessage AS imported ON
                 POTMsgSet.id = imported.potmsgset AND
                 imported.pofile = %s AND
-                imported.is_imported IS TRUE
+                imported.is_imported IS TRUE AND
+                NOT imported.was_fuzzy_in_last_import
             JOIN TranslationMessage AS current ON
                 POTMsgSet.id = current.potmsgset AND
                 imported.id <> current.id AND
@@ -651,6 +648,7 @@ class POFile(SQLBase, POFileMixIn):
                 imported.potmsgset = TranslationMessage.potmsgset AND
                 imported.pofile = TranslationMessage.pofile AND
                 imported.is_imported IS TRUE AND
+                NOT imported.was_fuzzy_in_last_import AND
                 (imported.msgstr0 IS NOT NULL OR
                  imported.msgstr1 IS NOT NULL OR
                  imported.msgstr2 IS NOT NULL OR
@@ -694,25 +692,27 @@ class POFile(SQLBase, POFileMixIn):
         # Check whether the date is older.
         return old_date > new_date
 
-    def getNextToImport(self):
+    def setPathIfUnique(self, path):
         """See `IPOFile`."""
-        flush_database_updates()
-        return TranslationImportQueueEntry.selectFirstBy(
-                pofile=self,
-                status=RosettaImportStatus.APPROVED,
-                orderBy='dateimported')
+        if path != self.path and self.potemplate.isPOFilePathAvailable(path):
+            self.path = path
 
-    def importFromQueue(self, logger=None):
+    def importFromQueue(self, entry_to_import, logger=None):
         """See `IPOFile`."""
+        assert entry_to_import is not None, "Attempt to import None entry."
+        assert entry_to_import.import_into.id == self.id, (
+            "Attempt to import entry to POFile it doesn't belong to.")
+        assert entry_to_import.status == RosettaImportStatus.APPROVED, (
+            "Attempt to import non-approved entry.")
+
+        # XXX: JeroenVermeulen 2007-11-29: This method is called from the
+        # import script, which can provide the right object but can only
+        # obtain it in security-proxied form.  We need full, unguarded access
+        # to complete the import.
+        entry_to_import = removeSecurityProxy(entry_to_import)
 
         translation_importer = getUtility(ITranslationImporter)
         librarian_client = getUtility(ILibrarianClient)
-
-        entry_to_import = self.getNextToImport()
-
-        if entry_to_import is None:
-            # There is no new import waiting for being imported.
-            return
 
         import_file = librarian_client.getFileByAlias(
             entry_to_import.content.id)
@@ -755,8 +755,6 @@ class POFile(SQLBase, POFileMixIn):
                 logger.warning('Got an old version for %s' % self.title)
             template_mail = 'poimport-got-old-version.txt'
             import_rejected = True
-
-        flush_database_updates()
 
         # Prepare the mail notification.
         msgsets_imported = TranslationMessage.select(
@@ -808,42 +806,35 @@ class POFile(SQLBase, POFileMixIn):
             subject = 'Translation import - %s - %s' % (
                 self.language.displayname, self.potemplate.displayname)
 
-        # Send the email.
-        template = helpers.get_email_template(template_mail)
-        message = template % replacements
-
-        fromaddress = config.rosetta.rosettaadmin.email
-
-        toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
-
-        simple_sendmail(fromaddress,
-            toaddress,
-            subject,
-            MailWrapper().format(message))
-
         if import_rejected:
             # There were no imports at all and the user needs to review that
             # file, we tag it as FAILED.
             entry_to_import.status = RosettaImportStatus.FAILED
-            return
+        else:
+            entry_to_import.status = RosettaImportStatus.IMPORTED
+            # Assign karma to the importer if this is not an automatic import
+            # (all automatic imports come from the rosetta expert user) and
+            # comes from upstream.
+            celebs = getUtility(ILaunchpadCelebrities)
+            rosetta_experts = celebs.rosetta_experts
+            if (entry_to_import.is_published and
+                entry_to_import.importer.id != rosetta_experts.id):
+                entry_to_import.importer.assignKarma(
+                    'translationimportupstream',
+                    product=self.potemplate.product,
+                    distribution=self.potemplate.distribution,
+                    sourcepackagename=self.potemplate.sourcepackagename)
 
-        # The import has been done, we mark it that way.
-        entry_to_import.status = RosettaImportStatus.IMPORTED
-        # And add karma to the importer if it's not imported automatically
-        # (all automatic imports come from the rosetta expert user) and comes
-        # from upstream.
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-        if (entry_to_import.is_published and
-            entry_to_import.importer.id != rosetta_experts.id):
-            # The Rosetta Experts team should not get karma.
-            entry_to_import.importer.assignKarma(
-                'translationimportupstream',
-                product=self.potemplate.product,
-                distribution=self.potemplate.distribution,
-                sourcepackagename=self.potemplate.sourcepackagename)
+            # Synchronize to database so we can calculate fresh statistics on
+            # the server side.
+            flush_database_updates()
 
-        # Now we update the statistics after this new import
-        self.updateStatistics()
+            # Now we update the statistics after this new import
+            self.updateStatistics()
+
+        template = helpers.get_email_template(template_mail)
+        message = template % replacements
+        return (subject, message)
 
     def updateExportCache(self, contents):
         """See `IPOFile`."""
@@ -1189,11 +1180,16 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
+    def setPathIfUnique(self, path):
+        """See `IPOFile`."""
+        # Any path will do for a DummyPOFile.
+        self.path = path
+
     def getNextToImport(self):
         """See `IPOFile`."""
         raise NotImplementedError
 
-    def importFromQueue(self, logger=None):
+    def importFromQueue(self, entry_to_import, logger=None):
         """See `IPOFile`."""
         raise NotImplementedError
 

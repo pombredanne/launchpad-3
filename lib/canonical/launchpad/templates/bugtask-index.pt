@@ -75,11 +75,8 @@
   <p class="informational message"
      id="can-expire"
      tal:condition="context/bug/can_expire"
-    >This bug report will expire in
-    <tal:days_to_expiration replace="view/days_to_expiration">
-      59
-    </tal:days_to_expiration>
-    days if no further activity occurs.
+    >
+    <tal:expiration_message replace="view/expiration_message" />
     (<a href="https://help.launchpad.net/BugStatuses">find out why</a>)
   </p>
 
@@ -143,10 +140,6 @@
         </form>
 
   <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
-
-  <script tal:condition="view/auto_toggle_task_js"
-	  tal:content= "view/auto_toggle_task_js"
-	  type="text/javascript" />
 
   <tal:branches define="bug_branches view/bug_branches"
                 condition="bug_branches">

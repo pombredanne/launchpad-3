@@ -3,55 +3,5 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-
-<div class="portlet" id="portlet-details">
-  <div class="portletBody portletContent">
-    <table class="summary"
-           tal:define="project context/project">
-      <tbody>
-        <tr>
-          <th>Project group status:</th>
-          <td>
-            <tal:block condition="project/active">Active</tal:block>
-            <tal:block condition="not: project/active">Disabled</tal:block>
-            <tal:block condition="project/reviewed"><br />Reviewed</tal:block>
-            <tal:block condition="project/icon"><br />Branded
-              <tal:icon replace="structure project/image:icon" />
-            </tal:block>
-          </td>
-        </tr>
-        <tr>
-          <th>Maintainer:</th>
-          <td>
-            <a
-              tal:content="project/owner/browsername"
-              tal:attributes="href project/owner/fmt:url"
-            >ownername</a>
-          </td>
-        </tr>
-        <tr>
-          <th>Driver:</th>
-          <td tal:condition="not:project/driver">Not yet appointed</td>
-          <td tal:condition="project/driver">
-            <a
-              tal:content="project/driver/browsername"
-              tal:attributes="href project/driver/fmt:url"
-            >Carlos Perello</a>
-          </td>
-        </tr>
-        <tr>
-          <th>Bug tracker:</th>
-          <td>
-            <a
-              tal:condition="project/bugtracker"
-              tal:content="project/bugtracker/title"
-              tal:attributes="href project/bugtracker/fmt:url"
-            >tracker title</a>
-            <tal:none condition="not:project/bugtracker">None specified</tal:none>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+<tal:portlet replace="structure context/project/@@+portlet-details" />
 </tal:root>

@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Text, TextLine
+from zope.schema import Bool, Choice, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, URIField
@@ -21,9 +21,11 @@ from canonical.launchpad.interfaces.branchvisibilitypolicy import (
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasIcon, IHasLogo, IHasMugshot, IHasOwner)
+    IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
+    IHasOwner)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.sprint import IHasSprints
@@ -41,10 +43,12 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
-               IHasIcon, IHasLogo, IHasMentoringOffers, IHasMilestones,
-               IHasMugshot, IHasOwner, IHasSpecifications, IHasSprints,
-               IHasTranslationGroup, IKarmaContext):
+class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
+               IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
+               IHasMentoringOffers, IHasMilestones, IHasMugshot,
+               IHasOwner, IHasSpecifications, IHasSprints,
+               IHasTranslationGroup, IMakesAnnouncements,
+               IKarmaContext):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -270,13 +274,20 @@ class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
     """Interface for ProjectSeries.
 
     This class provides the specifications related to a "virtual project
-    series", i.e., to those speicifactions that are assigned to a series
+    series", i.e., to those specifactions that are assigned to a series
     of a product which is part of this project.
     """
-    name = Attribute('The name of this series')
+    name = TextLine(title=u'The name of the product series.',
+                    required=True, readonly=True,
+                    constraint=name_validator)
 
-    displayname = Attribute('Display Name')
+    displayname = TextLine(title=u'Alias for name.',
+                           required=True, readonly=True,
+                           constraint=name_validator)
 
-    title = Attribute('The full name of the project group.')
+    title = TextLine(title=u'The title for this project series.', required=True,
+                     readonly=True)
 
-    project = Attribute('The project this series belongs to')
+    project = Object(schema=IProject, 
+                     title=u"The project this series belongs to",
+                     required=True, readonly=True)

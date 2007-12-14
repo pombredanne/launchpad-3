@@ -160,7 +160,7 @@ class LaunchpadServer(Server):
         """Request that the branch that owns 'virtual_path' be mirrored."""
         branch_id, ignored, path = self._translate_path(virtual_path)
         self.logger.info('Requesting mirror for: %r', branch_id)
-        self.authserver.requestMirror(branch_id)
+        self.authserver.requestMirror(self.user_id, branch_id)
 
     def make_branch_dir(self, virtual_path):
         """Make a new directory for the given virtual path.

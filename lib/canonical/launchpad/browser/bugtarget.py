@@ -35,7 +35,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IProduct,
+    IBug, IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IProduct,
     IProject, IDistributionSourcePackage, NotFoundError,
     CreateBugParams, IBugAddForm, ILaunchpadCelebrities,
     IProductSeries, ITemporaryStorageManager, IMaloneApplication,
@@ -202,7 +202,13 @@ class FileBugViewBase(LaunchpadFormView):
 
         # The comment field is only required if filing a new bug.
         if self.submit_bug_action.submitted():
-            if not data.get('comment'):
+            comment = data.get('comment')
+            if comment:
+                if len(comment) > IBug['description'].max_length:
+                    self.setFieldError('comment',
+                        'The description is too long. If you have lots '
+                        'text to add, attach a file to the bug instead.')
+            else:
                 self.setFieldError('comment', "Required input is missing.")
         # Check a bug has been selected when the user wants to
         # subscribe to an existing bug.

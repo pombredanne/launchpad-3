@@ -12,6 +12,7 @@ __all__ = [
     'ProductReleaseView',
     ]
 
+import mimetypes
 from StringIO import StringIO
 
 # zope3
@@ -24,8 +25,8 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 # launchpad
 from canonical.launchpad.interfaces import (
-    IProductRelease, IProductReleaseSet,
-    ILaunchBag, ILibraryFileAliasSet, IProductReleaseFileAddForm)
+    ILaunchBag, ILibraryFileAliasSet, IProductRelease,
+    IProductReleaseFileAddForm, IProductReleaseSet)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.product import ProductDownloadFileMixin
@@ -126,25 +127,53 @@ class ProductReleaseRdfView(object):
 
 
 class ProductReleaseAddDownloadFileView(LaunchpadFormView):
+    """A view for adding a file to an `IProductRelease`."""
     schema = IProductReleaseFileAddForm
 
     custom_widget('description', TextWidget, width=62)
 
-    @action('Add file', name='add')
-    def add_action(self, action, data):
-        file_upload = self.request.form.get(self.widgets['filecontent'].name)
-        # XXX BradCrittenden 2007-04-26: Write a proper upload widget.
-        if file_upload and data['description']:
-            # replace slashes in the filename with less problematic dashes.
-            filename = file_upload.filename.replace('/', '-')
+    def normalizeFilename(self, filename):
+        return filename.replace('/', '-')
 
-            # create the alias for the file
+    @action('Upload', name='add')
+    def add_action(self, action, data):
+        form = self.request.form
+        file_upload = form.get(self.widgets['filecontent'].name)
+        signature_upload = form.get(self.widgets['signature'].name)
+        filetype = data['contenttype']
+        # XXX: BradCrittenden 2007-04-26 bug=115215 Write a proper upload
+        # widget.
+        if file_upload and data['description']:
+            # Replace slashes in the filename with less problematic dashes.
+            contentType, encoding = mimetypes.guess_type(file_upload.filename)
+
+            if contentType is None:
+                contentType = "text/plain"
+
+            filename = self.normalizeFilename(file_upload.filename)
+
+            # Create the alias for the file.
             alias = getUtility(ILibraryFileAliasSet).create(
-                        filename, len(data['filecontent']),
-                        StringIO(data['filecontent']),
-                        data['contenttype'])
+                name=filename,
+                size=len(data['filecontent']),
+                file=StringIO(data['filecontent']),
+                contentType=contentType)
+
+            # Create the alias for the signature file, if one was uploaded.
+            if signature_upload:
+                sig_filename = self.normalizeFilename(
+                    signature_upload.filename)
+                sig_alias = getUtility(ILibraryFileAliasSet).create(
+                    name=sig_filename,
+                    size=len(data['signature']),
+                    file=StringIO(data['signature']),
+                    contentType='application/pgp-signature')
+            else:
+                sig_alias = None
             self.context.addFileAlias(alias=alias,
+                                      signature=sig_alias,
                                       uploader=self.user,
+                                      file_type=filetype,
                                       description=data['description'])
             self.request.response.addNotification(
                 "Your file '%s' has been uploaded." % filename)

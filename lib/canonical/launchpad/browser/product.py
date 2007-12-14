@@ -53,12 +53,13 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchListingSort, IBranchSet, ICountry, IDistribution, IHasIcon,
-    ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
+    BranchListingSort, IBranchSet, IBugTracker, ICountry, IDistribution,
+    IHasIcon, ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
     IProductSeries, IProductSet, IProject, ITranslationImportQueue,
     License, NotFoundError, RESOLVED_BUGTASK_STATUSES,
     UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
@@ -115,6 +116,10 @@ class ProductNavigation(
     @stepthrough('+release')
     def traverse_release(self, name):
         return self.context.getRelease(name)
+
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
 
     def traverse(self, name):
         return self.context.getSeries(name)
@@ -280,7 +285,8 @@ class ProductOverviewMenu(ApplicationMenu):
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
-        'series_add', 'administer', 'branch_visibility', 'rdf']
+        'series_add', 'announce', 'announcements', 'administer',
+        'branch_visibility', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -323,9 +329,21 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Download project files'
         return Link('+download', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def series_add(self):
         text = 'Register a series'
         return Link('+addseries', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, icon='add')
+
+    def announcements(self):
+        text = 'Show announcements'
+        enabled = bool(self.context.announcements().count())
+        return Link('+announcements', text, enabled=enabled)
 
     def branch_add(self):
         text = 'Register branch'
@@ -537,12 +555,12 @@ class SortSeriesMixin:
         return series_list
 
 
-class ProductView(LaunchpadView, SortSeriesMixin):
+class ProductView(HasAnnouncementsView, SortSeriesMixin):
 
     __used_for__ = IProduct
 
     def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
+        HasAnnouncementsView.__init__(self, context, request)
         self.form = request.form_ng
 
     def initialize(self):
@@ -686,11 +704,18 @@ class ProductDownloadFileMixin:
         raise NotImplementedError
 
     def fileURL(self, file_, release=None):
-        """Create a download URL for the file."""
+        """Create a download URL for the `LibraryFileAlias`."""
         if release is None:
             release = self.context
         return "%s/+download/%s" % (canonical_url(release),
-                                    file_.libraryfile.filename)
+                                    file_.filename)
+
+    def md5URL(self, file_, release=None):
+        """Create a URL for the MD5 digest."""
+        if release is None:
+            release = self.context
+        return "%s/+download/%s/+md5" % (canonical_url(release),
+                                         file_.filename)
 
     def processDeleteFiles(self):
         """If the 'delete_files' button was pressed, process the deletions."""
@@ -745,6 +770,16 @@ class ProductDownloadFilesView(LaunchpadView,
                 if release.files.count() > 0:
                     return True
         return False
+    
+    @cachedproperty
+    def any_download_files_with_signatures(self):
+        """Across series and releases do any download files have signatures?"""
+        for series in self.product.serieses:
+            for release in series.releases:
+                for file in release.files:
+                    if file.signature:
+                        return True
+        return False
 
     @cachedproperty
     def milestones(self):
@@ -775,11 +810,12 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     schema = IProduct
     label = "Change project details"
     field_names = [
-        "displayname", "title", "summary", "description", "project",
-        "bugtracker", "official_rosetta", "official_answers",
-        "homepageurl", "sourceforgeproject",
-        "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
-        "programminglang", "development_focus", "licenses", "license_info"]
+        "displayname", "title", "summary", "description",
+        "bug_reporting_guidelines", "project", "bugtracker",
+        "enable_bug_expiration", "official_rosetta", "official_answers",
+        "homepageurl", "sourceforgeproject", "freshmeatproject", "wikiurl",
+        "screenshotsurl", "downloadurl", "programminglang",
+        "development_focus", "licenses", "license_info"]
     custom_widget(
         'licenses', LicenseWidget, column_count=3, orientation='vertical')
     custom_widget('bugtracker', ProductBugTrackerWidget)
@@ -792,6 +828,17 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         if (len(self.context.licenses) == 0 and
             self.widgets.get('licenses') is not None):
             self.widgets['licenses'].allow_pending_license = True
+
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        # enable_bug_expiration is disabled by JavaScript when bugtracker
+        # is not 'In Launchpad'. The contraint is enforced here in case the
+        # JavaScript fails to activate or run. Note that the bugtracker
+        # name : values are {'In Launchpad' : object, 'Somewhere else' : None
+        # 'In a registered bug tracker' : IBugTracker}.
+        bugtracker = data.get('bugtracker', None)
+        if bugtracker is None or IBugTracker.providedBy(bugtracker):
+            data['enable_bug_expiration'] = False
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -1217,6 +1264,10 @@ class ProductBranchesView(BranchListingView):
 
     extra_columns = ('author',)
     no_sort_by = (BranchListingSort.PRODUCT,)
+
+    @cachedproperty
+    def development_focus_branch(self):
+        return self.context.development_focus.series_branch
 
     def _branches(self, lifecycle_status):
         return getUtility(IBranchSet).getBranchesForProduct(

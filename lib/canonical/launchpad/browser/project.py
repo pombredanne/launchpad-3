@@ -24,6 +24,7 @@ __all__ = [
     'ProjectAnswersMenu',
     'ProjectTranslationsMenu',
     'ProjectSetContextMenu',
+    'ProjectView',
     'ProjectEditView',
     'ProjectAddProductView',
     'ProjectSetView',
@@ -43,6 +44,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBranchSet, IProductSet, IProject, IProjectSeries, IProjectSet,
     NotFoundError)
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -71,6 +73,10 @@ class ProjectNavigation(Navigation):
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
+
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
 
     @stepthrough('+series')
     def traverse_series(self, series_name):
@@ -221,7 +227,8 @@ class ProjectOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'administer', 'branch_visibility', 'rdf']
+        'mentorship', 'announce', 'announcements', 'administer',
+        'branch_visibility', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -256,6 +263,17 @@ class ProjectOverviewMenu(ApplicationMenu):
         # circumstances.
         return Link('+mentoring', text, icon='info',
                     enabled=self.context.hasProducts())
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, icon='add')
+
+    def announcements(self):
+        text = 'Show announcements'
+        enabled = bool(self.context.announcements().count())
+        return Link('+announcements', text, enabled=enabled)
 
     def rdf(self):
         text = structured(
@@ -341,6 +359,10 @@ class ProjectTranslationsMenu(ApplicationMenu):
         return Link('+changetranslators', text, icon='edit')
 
 
+class ProjectView(HasAnnouncementsView):
+    pass
+
+
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
@@ -348,8 +370,8 @@ class ProjectEditView(LaunchpadEditFormView):
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
-        'homepageurl', 'bugtracker', 'sourceforgeproject',
-        'freshmeatproject', 'wikiurl']
+        'bug_reporting_guidelines', 'homepageurl', 'bugtracker',
+        'sourceforgeproject', 'freshmeatproject', 'wikiurl']
 
 
     @action('Change Details', name='change')

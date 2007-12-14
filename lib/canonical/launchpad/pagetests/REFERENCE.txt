@@ -36,8 +36,8 @@ Parsing specific sections of pages:
     XXX
     >>> find_main_content()
     XXX
-    >>> get_feedback_messages()
-    XXX
+    >>> get_feedback_messages(browser.contents)
+    [u"There's no person with the name or email address 'invalid-assignee'."]
 
 Printing tabs, action items and comments:
 
@@ -91,6 +91,13 @@ Manipulating links:
     >>> browser.title
     'Bogus titles R us'
 
+Extracting link pointers:
+
+    >>> extract_link_from_tag(link)
+    u'/foo'
+    >>> extract_link_from_tag(link, 'http://launchpad.dev/blah/blah/')
+    u'http://launchpad.dev/foo'
+
 Form control basics:
 
     >>> control = browser.getControl('Label')
@@ -117,4 +124,6 @@ Form controls:
 
     >>> browser.getControl(name='field.select_control').displayValue
     ['Option one']
+
+    >>> browser.getControl(name='field.radiobuttons').value = ['BSD']
 
