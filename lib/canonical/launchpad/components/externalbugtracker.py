@@ -95,27 +95,6 @@ class InvalidBugId(Exception):
 class BugNotFound(Exception):
     """The bug was not found in the external bug tracker."""
 
-#
-# Helper function
-#
-def get_external_bugtracker(bugtracker, version=None):
-    """Return an `ExternalBugTracker` for bugtracker."""
-    bugtrackertype = bugtracker.bugtrackertype
-    if bugtrackertype == BugTrackerType.BUGZILLA:
-        return Bugzilla(bugtracker, version)
-    elif bugtrackertype == BugTrackerType.DEBBUGS:
-        return DebBugs(bugtracker)
-    elif bugtrackertype == BugTrackerType.MANTIS:
-        return Mantis(bugtracker)
-    elif bugtrackertype == BugTrackerType.TRAC:
-        return Trac(bugtracker)
-    elif bugtrackertype == BugTrackerType.ROUNDUP:
-        return Roundup(bugtracker)
-    elif bugtrackertype == BugTrackerType.SOURCEFORGE:
-        return SourceForge(bugtracker)
-    else:
-        raise UnknownBugTrackerTypeError(bugtrackertype.name,
-            bugtracker.name)
 
 _exception_to_bugwatcherrortype = [
    (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
@@ -137,13 +116,13 @@ class ExternalBugTracker:
 
     implements(IExternalBugTracker)
 
-    def __init__(self, bugtracker):
+    def __init__(self, txn, bugtracker):
         self.batch_query_threshold = config.checkwatches.batch_query_threshold
         self.batch_size = None
         self.import_comments = config.checkwatches.import_comments
-
         self.bugtracker = bugtracker
         self.baseurl = bugtracker.baseurl.rstrip('/')
+        self.txn = txn
 
     def urlopen(self, request, data=None):
         return urllib2.urlopen(request, data)
@@ -238,12 +217,34 @@ class ExternalBugTracker:
         page_contents = url.read()
         return page_contents
 
+    def _getBugWatch(self, bug_watch_id):
+        """Return the bug watch with id `bug_watch_id`."""
+        return getUtility(IBugWatchSet).get(bug_watch_id)
+
+    def _getBugWatchesByRemoteBug(self, bug_watch_ids):
+        """Returns a dictionary of bug watches mapped to remote bugs.
+
+        For each bug watch id fetches the corresponding bug watch and
+        appends it to a list of bug watches pointing to one remote
+        bug - the key of the returned mapping."""
+        bug_watches_by_remote_bug = {}
+        for bug_watch_id in bug_watch_ids:
+            bug_watch = self._getBugWatch(bug_watch_id)
+            remote_bug = bug_watch.remotebug
+            # There can be multiple bug watches pointing to the same
+            # remote bug; because of that, we need to store lists of bug
+            # watches related to the remote bug, and later update the
+            # status of each one of them.
+            if remote_bug not in bug_watches_by_remote_bug:
+                bug_watches_by_remote_bug[remote_bug] = []
+            bug_watches_by_remote_bug[remote_bug].append(bug_watch)
+        return bug_watches_by_remote_bug
+
     def updateBugWatches(self, bug_watches):
         """Update the given bug watches."""
         # Save the url for later, since we might need it to report an
         # error after a transaction has been aborted.
         bug_tracker_url = self.baseurl
-        bug_watches_by_remote_bug = {}
 
         # Some tests pass a list of bug watches whilst checkwatches.py
         # will pass a SelectResults instance. We convert bug_watches to a
@@ -268,15 +269,9 @@ class ExternalBugTracker:
         log.info("Updating %i watches on %s" %
             (len(bug_watches), bug_tracker_url))
 
-        for bug_watch in bug_watches:
-            remote_bug = bug_watch.remotebug
-            # There can be multiple bug watches pointing to the same
-            # remote bug; because of that, we need to store lists of bug
-            # watches related to the remote bug, and later update the
-            # status of each one of them.
-            if remote_bug not in bug_watches_by_remote_bug:
-                bug_watches_by_remote_bug[remote_bug] = []
-            bug_watches_by_remote_bug[remote_bug].append(bug_watch)
+        bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
+        bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
+            bug_watch_ids)
 
         # Do things in a fixed order, mainly to help with testing.
         bug_ids_to_update = sorted(bug_watches_by_remote_bug)
@@ -294,7 +289,9 @@ class ExternalBugTracker:
             raise
 
         # Again, fixed order here to help with testing.
-        for bug_id, bug_watches in sorted(bug_watches_by_remote_bug.items()):
+        bug_ids = sorted(bug_watches_by_remote_bug.keys())
+        for bug_id in bug_ids:
+            bug_watches = bug_watches_by_remote_bug[bug_id]
             local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
             try:
                 new_remote_status = None
@@ -344,6 +341,12 @@ class ExternalBugTracker:
                 # If something unexpected goes wrong, we shouldn't break the
                 # updating of the other bugs.
 
+                # Restart the transaction so that subsequent
+                # bug watches will get recorded.
+                self.txn.abort()
+                self.txn.begin()
+                bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(bug_watch_ids)
+
                 # We record errors against the bug watches where
                 # possible.
                 errortype = get_bugwatcherrortype_for_error(error)
@@ -355,6 +358,7 @@ class ExternalBugTracker:
                             (bug_id, bug_tracker_url, local_ids),
                           exc_info=True)
 
+
 #
 # Bugzilla
 #
@@ -364,8 +368,8 @@ class Bugzilla(ExternalBugTracker):
 
     implements(IExternalBugTracker)
 
-    def __init__(self, bugtracker, version=None):
-        super(Bugzilla, self).__init__(bugtracker)
+    def __init__(self, txn, bugtracker, version=None):
+        super(Bugzilla, self).__init__(txn, bugtracker)
         self.batch_query_threshold = 0 # Always use the batch method.
         self.version = self._parseVersion(version)
         self.is_issuezilla = False
@@ -663,8 +667,8 @@ class DebBugs(ExternalBugTracker):
     debbugs_pl = os.path.join(
         os.path.dirname(debbugs.__file__), 'debbugs-log.pl')
 
-    def __init__(self, bugtracker, db_location=None):
-        super(DebBugs, self).__init__(bugtracker)
+    def __init__(self, txn, bugtracker, db_location=None):
+        super(DebBugs, self).__init__(txn, bugtracker)
         if db_location is None:
             self.db_location = config.malone.debbugs_db_location
         else:
@@ -1369,8 +1373,8 @@ class Trac(ExternalBugTracker):
     ticket_url = 'ticket/%i?format=csv'
     batch_url = 'query?%s&order=resolution&format=csv'
 
-    def __init__(self, bugtracker):
-        super(Trac, self).__init__(bugtracker)
+    def __init__(self, txn, bugtracker):
+        super(Trac, self).__init__(txn, bugtracker)
         self.batch_query_threshold = 10
 
     def supportsSingleExports(self, bug_ids):
@@ -1543,7 +1547,7 @@ class Trac(ExternalBugTracker):
 class Roundup(ExternalBugTracker):
     """An ExternalBugTracker descendant for handling Roundup bug trackers."""
 
-    def __init__(self, bugtracker):
+    def __init__(self, txn, bugtracker):
         """Create a new Roundup instance.
 
         :bugtracker: The Roundup bugtracker.
@@ -1555,7 +1559,7 @@ class Roundup(ExternalBugTracker):
         Python and in fact behaves rather more like SourceForge than
         Roundup.
         """
-        super(Roundup, self).__init__(bugtracker)
+        super(Roundup, self).__init__(txn, bugtracker)
 
         if self.isPython():
             # The bug export URLs differ only from the base Roundup ones
@@ -1974,3 +1978,23 @@ class SourceForge(ExternalBugTracker):
         else:
             return local_status
 
+
+BUG_TRACKER_CLASSES = {
+    BugTrackerType.BUGZILLA: Bugzilla,
+    BugTrackerType.DEBBUGS: DebBugs,
+    BugTrackerType.MANTIS: Mantis,
+    BugTrackerType.TRAC: Trac,
+    BugTrackerType.ROUNDUP: Roundup,
+    BugTrackerType.SOURCEFORGE: SourceForge
+    }
+
+
+def get_external_bugtracker(txn, bugtracker):
+    """Return an `ExternalBugTracker` for bugtracker."""
+    bugtrackertype = bugtracker.bugtrackertype
+    bugtracker_class = BUG_TRACKER_CLASSES.get(bugtracker.bugtrackertype)    
+    if bugtracker_class is not None:
+        return bugtracker_class(txn, bugtracker)
+    else:
+        raise UnknownBugTrackerTypeError(bugtrackertype.name,
+            bugtracker.name)

@@ -125,7 +125,7 @@ class TestExternalBugTracker(ExternalBugTracker):
     implementation, though it doesn't actually do anything.
     """
 
-    def __init__(self, bugtracker=None):
+    def __init__(self, txn, bugtracker=None):
         """Initialise a new `TestExternalBugTracker`.
 
         This method exists because the tests that use this class don't
@@ -133,7 +133,16 @@ class TestExternalBugTracker(ExternalBugTracker):
         function.
         """
         if bugtracker is not None:
-            super(TestExternalBugTracker, self).__init__(bugtracker)
+            # If bugtracker is present, we call the superclass
+            # initializer which uses members of the bugtracker object
+            # to set some local parameters. The superclass initializer
+            # will also set the reference to `txn`.
+            super(TestExternalBugTracker, self).__init__(txn, bugtracker)
+        else:
+            # If the bugtracker is None, we don't want to call the
+            # superclass initializer, since it will choke, but we still
+            # want to set the transaction.
+            self.txn = txn
 
     def convertRemoteStatus(self, remote_status):
         """Always return UNKNOWN_REMOTE_STATUS.
@@ -147,8 +156,8 @@ class TestExternalBugTracker(ExternalBugTracker):
 class TestBrokenExternalBugTracker(TestExternalBugTracker):
     """A test version of ExternalBugTracker, designed to break."""
 
-    def __init__(self, baseurl):
-        super(TestBrokenExternalBugTracker, self).__init__()
+    def __init__(self, txn, baseurl):
+        super(TestBrokenExternalBugTracker, self).__init__(txn)
         self.baseurl = baseurl
         self.initialize_remote_bugdb_error = None
         self.get_remote_status_error = None
@@ -197,8 +206,8 @@ class TestBugzilla(Bugzilla):
     buglist_page = 'buglist.cgi'
     bug_id_form_element = 'bug_id'
 
-    def __init__(self, baseurl, version=None):
-        Bugzilla.__init__(self, baseurl, version=version)
+    def __init__(self, txn, baseurl, version=None):
+        Bugzilla.__init__(self, txn, baseurl, version=version)
         self.bugzilla_bugs = self._getBugsToTest()
 
     def _getBugsToTest(self):
@@ -458,7 +467,7 @@ class TestDebBugs(DebBugs):
     It allows you to pass in bugs to be used, instead of relying on an
     existing debbugs db.
     """
-    def __init__(self, bugtracker, bugs):
+    def __init__(self, txn, bugtracker, bugs):
         super(TestDebBugs, self).__init__(bugtracker)
         self.bugs = bugs
         self.debbugs_db = TestDebBugsDB()

@@ -11,6 +11,7 @@ from canonical.launchpad.interfaces import (
     IAnnouncement, IBazaarApplication, IBranch, IBranchMergeProposal,
     IBranchSubscription, IBug, IBugAttachment, IBugBranch, IBugNomination,
     IBugTracker, IBuild, IBuilder, IBuilderSet, ICodeImport,
+    ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
     ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet,
     IDistribution, IDistributionMirror, IDistroSeries,
     IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHasBug,
@@ -39,12 +40,16 @@ class AuthorizationBase:
         self.obj = obj
 
     def checkUnauthenticated(self):
-        """Must return True or False.  See IAuthorization.checkUnauthenticated.
+        """See `IAuthorization.checkUnauthenticated`.
+
+        :return: True or False.
         """
         return False
 
     def checkAuthenticated(self, user):
-        """Must return True or False.  See IAuthorization.checkAuthenticated.
+        """See `IAuthorization.checkAuthenticated`.
+
+        :return: True or False.
         """
         return False
 
@@ -334,7 +339,8 @@ class AdminShipItApplicationByShipItAdmins(
     usedfor = IShipItApplication
 
 
-class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
+class AdminShippingRequestSetByShipItAdmins(
+        AdminShippingRequestByShipItAdmins):
     permission = 'launchpad.Admin'
     usedfor = IShippingRequestSet
 
@@ -395,7 +401,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = ITeam
 
     def checkAuthenticated(self, user):
-        """The team owner and all team admins have launchpad.Edit on that team.
+        """The team owner and team admins have launchpad.Edit on that team.
 
         The Launchpad admins also have launchpad.Edit on all teams.
         """
@@ -533,7 +539,8 @@ class EditProductSeries(EditByRegistryExpertsOrOwnersOrAdmins):
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
         if user.inTeam(rosetta_experts):
             return True
-        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(self, user)
+        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(
+            self, user)
 
 
 class EditBugTask(AuthorizationBase):
@@ -805,6 +812,36 @@ class EditCodeImports(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImport
 
 
+class SeeCodeImportJobs(OnlyVcsImportsAndAdmins):
+    """Control who can see the object view of a CodeImportJob.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImportJob
+
+
+class SeeCodeImportJobSet(OnlyVcsImportsAndAdmins):
+    """Control who can see the CodeImportJobSet utility.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImportJobSet
+
+
+class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
+    """Control who can use the CodeImportJobWorkflow utility.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = ICodeImportJobWorkflow
+
+
 class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
     """Control who can see the CodeImportMachine listing page.
 
@@ -909,7 +946,8 @@ class EditProductRelease(EditByRegistryExpertsOrOwnersOrAdmins):
         if (user.inTeam(self.obj.productseries.owner) or
             user.inTeam(self.obj.productseries.product.owner)):
             return True
-        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(self, user)
+        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(
+            self, user)
 
 
 class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
