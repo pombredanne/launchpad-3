@@ -295,9 +295,18 @@ class Builder(SQLBase):
          * Ensure that the build pocket allows builds for the current
            distroseries state.
         """
-        if self.trusted:
-            assert build_queue_item.is_trusted, (
+        if self.trusted and not build_queue_item.is_trusted:
+            raise AssertionError(
                 "Attempt to build untrusted item on a trusted-only builder.")
+
+        # Assert that we are not silently building SECURITY jobs.
+        # See findBuildCandidates. Once we start building SECURITY
+        # correctly from EMBARGOED archive this assertion can be removed.
+        target_pocket = build_queue_item.build.pocket
+        if target_pocket == PackagePublishingPocket.SECURITY:
+            raise AssertionError(
+                "Soyuz is not yet capable of building SECURITY uploads.")
+
         # Ensure build has the needed chroot
         chroot = build_queue_item.archseries.getChroot()
         if chroot is None:
@@ -306,13 +315,6 @@ class Builder(SQLBase):
                 build_queue_item.build.distroseries.distribution.name,
                 build_queue_item.build.distroseries.name,
                 build_queue_item.build.distroarchseries.architecturetag)
-
-        # XXX cprov 20071025: We silently ignore SECURITY builds until we
-        # have a proper infrastructure to build (EMBARGO archive) and
-        # reviewed the UI to hide their information until public disclosure.
-        if build_queue_item.build.pocket == PackagePublishingPocket.SECURITY:
-            raise CannotBuild(
-                'Soyuz is not yet capable of building SECURITY uploads.')
 
         # The main distribution has policies to prevent uploads to some
         # pockets (e.g. security) during different parts of the distribution
@@ -530,6 +532,8 @@ class Builder(SQLBase):
         processorfamily with the highest lastscore or None if there
         is no one available.
         """
+        # XXX cprov 20071126: exclude build candidates for SECURITY pocket.
+        # We can't build them yet.
         clauses = ["""
             buildqueue.build = build.id AND
             build.distroarchseries = distroarchseries.id AND
@@ -575,7 +579,12 @@ class Builder(SQLBase):
         if not candidate:
             return None
 
-        while candidate and candidate.is_last_version is False:
+        # Mark build records target to old source versions or SECURITY pocket
+        # as SUPERSEDED, they should not be built.
+        must_ignore = (
+            candidate.is_last_version is False or
+            candidate.build.pocket == PackagePublishingPocket.SECURITY)
+        while (candidate and must_ignore):
             logger.debug(
                 "Build %s SUPERSEDED, queue item %s REMOVED"
                 % (candidate.build.id, candidate.id))

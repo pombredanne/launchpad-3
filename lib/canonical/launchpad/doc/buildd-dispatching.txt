@@ -34,7 +34,8 @@ Setup a suitable chroot for Hoary i386:
   ...     IDistributionSet, ILibraryFileAliasSet)
   >>> from canonical.launchpad.interfaces import PackagePublishingPocket
 
-  >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
+  >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
+  >>> hoary_i386 = hoary['i386']
 
   >>> chroot = getUtility(ILibraryFileAliasSet)[alias_id]
   >>> pc = hoary_i386.addOrUpdateChroot(chroot=chroot)
@@ -95,6 +96,9 @@ Verify how the nonexistent builder was excluded, marked as failed:
   >>> frog_builder.is_available
   False
 
+
+== Builder dispatching API ==
+
 Now let's check the build candidates which will be considered for the
 builder 'bob':
 
@@ -149,9 +153,8 @@ buildqueue record, so the build was eliminated:
   >>> job.destroySelf()
   >>> flush_database_updates()
 
-Restart buildd-slave:
 
-  >>> BuilddSlaveTestSetup().setUp()
+== PPA build dispatching ==
 
 Create new Build record of the same source targeted for a PPA archive:
 
@@ -173,6 +176,9 @@ Create BuildQueue record and inspect some parameters:
   >>> ppa_job.is_trusted
   False
 
+In order to enable 'bob' to find and build the PPA job, we have to
+change it to 'untrusted' mode.
+
   >>> bob_builder.trusted = False
   >>> flush_database_updates()
 
@@ -180,11 +186,31 @@ Create BuildQueue record and inspect some parameters:
   >>> ppa_job.id == job.id
   True
 
+Start buildd-slave to be able to dispatch jobs.
+
+  >>> BuilddSlaveTestSetup().setUp()
+
+Before dispatching we can check if the builder is protected against
+mistakes in code that results in a attempt to build a untrusted job in
+a trusted build.
+
+  >>> bob_builder.trusted = True
+  >>> flush_database_updates()
+  >>> bob_builder.dispatchBuildCandidate(ppa_job)
+  Traceback (most recent call last):
+  ...
+  AssertionError: Attempt to build untrusted item on a trusted-only builder.
+
+Mark the builder as untrusted again, so we can dispatch the ppa job
+successfully.
+
+  >>> bob_builder.trusted = False
+  >>> flush_database_updates()
+
   >>> bob_builder.dispatchBuildCandidate(ppa_job)
   >>> flush_database_updates()
 
-Anyway, after making 'bob' builder available to build *untrusted*
-code, and dispatching pending jobs, we can see that ppa_job is building:
+PPA job is building.
 
   >>> ppa_job.builder.name
   u'bob'
@@ -193,3 +219,65 @@ code, and dispatching pending jobs, we can see that ppa_job is building:
   >>> ppa_job.buildstart
   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
+Shutdown builder slave, mark the ppa build record as failed, remove the
+buildqueue record and make 'bob' builder trusted again,  so the
+environment is back to the initial state.
+
+  >>> BuilddSlaveTestSetup().tearDown()
+
+  >>> ppa_job.build.buildstate = BuildStatus.FAILEDTOBUILD
+  >>> ppa_job.destroySelf()
+  >>> bob_builder.trusted = True
+  >>> flush_database_updates()
+
+
+== Security build dispatching ==
+
+Create a new Build record for test source targeted to SECURITY pocket:
+
+  >>> sec_build = sprf.sourcepackagerelease.createBuild(
+  ...     hoary_i386, PackagePublishingPocket.SECURITY, hoary.main_archive)
+
+Create BuildQueue record and inspect some parameters:
+
+  >>> sec_job = sec_build.createBuildQueueEntry()
+  >>> sec_job.id
+  4L
+  >>> sec_job.builder == None
+  True
+  >>> sec_job.buildstart == None
+  True
+  >>> sec_job.is_trusted
+  True
+
+In normal conditions the next available candidate would be the job
+targeted to SECURITY pocket. However, the builders are forbidden to
+accept such jobs until we have finished the EMBARGOED archive
+implementation.
+
+  >>> BuilddSlaveTestSetup().setUp()
+  >>> bob_builder.dispatchBuildCandidate(sec_job)
+  Traceback (most recent call last):
+  ...
+  AssertionError: Soyuz is not yet capable of building SECURITY uploads.
+  >>> BuilddSlaveTestSetup().tearDown()
+
+To solve this problem, temporarily, until we start building security
+uploads, we will mark build targeted to SECURITY pocket as SUPERSEDED
+during the findBuildCandidate look-up.
+
+  >>> bob_builder.findBuildCandidate() is None
+  True
+  >>> flush_database_updates()
+
+As expected, the security job was marked as SUPERSEDED and the
+corresponding BuildQueue record was removed.
+
+  >>> sec_build.buildstate.name
+  'SUPERSEDED'
+  >>> sec_build.buildqueue_record is None
+  True
+
+This way the security builds, created due to missing binary uploads
+from dak, will be silently consumed until we can build them
+appropriately.
