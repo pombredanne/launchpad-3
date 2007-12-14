@@ -20,7 +20,8 @@ fulfill the implementation requirements of IExternalBugTracker.
     >>> from canonical.config import config
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestExternalBugTracker)
-    >>> tracker = TestExternalBugTracker()
+    >>> import transaction
+    >>> tracker = TestExternalBugTracker(transaction)
     >>> (tracker.batch_query_threshold ==
     ...     config.checkwatches.batch_query_threshold)
     True
@@ -36,7 +37,7 @@ ExternalBugTracker.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestBrokenExternalBugTracker)
     >>> external_bugtracker = TestBrokenExternalBugTracker(
-    ...     'http://example.com')
+    ...     transaction, 'http://example.com')
 
 We'll create an example bug watch with which to test this. This will
 be passed to external_bugtracker's updateBugWatches() method and should
