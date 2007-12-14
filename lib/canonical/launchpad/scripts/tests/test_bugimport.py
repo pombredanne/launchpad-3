@@ -19,7 +19,7 @@ from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskImportance, BugTaskStatus, CreateBugParams,
     IBugSet, IEmailAddressSet, IPersonSet, IProductSet,
-    PersonCreationRationale)
+    PersonCreationRationale, UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.scripts import bugimport
 from canonical.launchpad.scripts.bugimport import ET
 from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
@@ -722,6 +722,12 @@ class TestBugWatch:
             """ % self.bug.bugtasks[0].id)
             cur.close()
 
+    def updateImportance(self,
+                         new_remote_importance,
+                         new_malone_importance):
+        """Do nothing, just to provide the interface."""
+        pass
+
 
 class TestResultSequence(list):
     """A mock `SelectResults` object.
@@ -794,6 +800,26 @@ class TestExternalBugTracker(ExternalBugTracker):
         """
         return self.bugtracker.getBugWatchesNeedingUpdate(0)[bug_watch_id - 1]
 
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
+        """
+        return UNKNOWN_REMOTE_IMPORTANCE
+
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        BugTaskImportance.UNKNOWN will always be returned.
+        """
+        return BugTaskImportance.UNKNOWN
+
+
+
 class TestBugWatchUpdater(BugWatchUpdater):
     """A mock `BugWatchUpdater` object."""
     
@@ -821,7 +847,7 @@ class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
         params.setBugTarget(product=firefox)
         test_bug_two = getUtility(IBugSet).createBug(params)
         self.layer.txn.commit()
-        
+
         # We use a test bug tracker, which is guaranteed to
         # try and update two bug watches - the first will
         # trigger a DB error, the second updates successfully.
