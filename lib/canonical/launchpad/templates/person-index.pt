@@ -109,23 +109,20 @@
       </tal:is-team>
       <div tal:condition="not:context/isTeam" class="section">
       <div class="portlet"
-           tal:define="memberships context/getLatestApprovedMembershipsForPerson">
+           tal:define="memberships view/secure_person/getLatestApprovedMembershipsForPerson">
         <h2>Latest memberships</h2>
         <table id="participation">
-          <tal:loop repeat="membership memberships">
-            <tr tal:replace="structure membership/@@+listing-simple"
-                tal:condition="python: view.userCanViewMembership(membership.team)"
-                />
-          </tal:loop>
+          <tr tal:repeat="membership memberships"
+              tal:replace="structure membership/@@+listing-simple" />
         </table>
 
-        <p tal:condition="memberships/count">
+        <p tal:condition="memberships">
           <a href="+participation">
             &raquo; See all teams in which
             <span tal:replace="context/title">Foo Bar</span> participates
           </a>
         </p>
-        <p tal:condition="not: memberships/count">
+        <p tal:condition="not: memberships">
           <span tal:replace="context/browsername">Foo Bar</span> is not an
           active member of any Launchpad teams.
         </p>

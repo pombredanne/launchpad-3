@@ -74,6 +74,7 @@ __all__ = [
     'SearchCreatedQuestionsView',
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
+    'SecurePerson',
     'SubscribedBugTaskSearchListingView',
     'TeamJoinView',
     'TeamLeaveView',
@@ -156,6 +157,31 @@ from canonical.launchpad.webapp import (
     custom_widget, enabled_with_permission, smartquote, stepthrough, stepto)
 
 from canonical.launchpad import _
+
+
+class SecurePerson:
+    """Secure access to team membership information for a person.
+
+    This class checks that the logged-in user has access to view
+    a team that the specified person belongs to.
+    """
+
+    def __init__(self, person):
+        self.person = person
+
+    @property
+    def user(self):
+        return getUtility(ILaunchBag).user
+
+    def getLatestApprovedMembershipsForPerson(self):
+        membership_list = self.person.getLatestApprovedMembershipsForPerson()
+        return [membership for membership in membership_list
+                if check_permission('launchpad.View', membership.team)]
+
+    @property
+    def teams_with_icons(self):
+        return [team for team in self.person.teams_with_icons
+                if check_permission('launchpad.View', team)]
 
 
 class BranchTraversalMixin:
@@ -1769,6 +1795,10 @@ class PersonLanguagesView(LaunchpadView):
 
 class PersonView(LaunchpadView):
     """A View class used in almost all Person's pages."""
+
+    @property
+    def secure_person(self):
+        return SecurePerson(self.context)
 
     @cachedproperty
     def recently_approved_members(self):

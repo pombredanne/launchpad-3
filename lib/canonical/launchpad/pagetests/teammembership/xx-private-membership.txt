@@ -141,6 +141,24 @@ MyTeam as an option in the +answer-contact form.
     &nbsp;Other Team
 
 
+== Restrict Mentorship ==
+
+To prevent leaking information about a team's private membership, 
+no user can select that team when offering mentorship for a bug
+or a blueprint.
+
+Even the owner of the team with private membership should not see
+MyTeam as an option in the +mentor form.
+
+    >>> owner_browser = setupBrowser(auth='Basic owner@canonical.com:test')
+    >>> owner_browser.open(
+    ...     'http://answers.launchpad.dev/firefox/+bug/1/+mentor')
+    >>> team_select = find_tag_by_id(owner_browser.contents, 'field.team')
+    >>> for option in team_select.findAll('option'):
+    ...     print option['value']
+    otherteam
+
+
 == Restrict Private Membership Team as SubTeam ==
 
 To prevent leaking information about a team's private membership,

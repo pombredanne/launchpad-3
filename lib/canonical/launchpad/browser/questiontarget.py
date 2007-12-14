@@ -604,7 +604,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         """Create a list of teams the user is an administrator of."""
         sort_key = attrgetter('displayname')
         terms = []
-        for team in sorted(self.administrated_teams, key=sort_key):
+        for team in sorted(self.targetable_teams, key=sort_key):
             terms.append(SimpleTerm(team, team.name, team.displayname))
 
         return form.FormField(
@@ -618,8 +618,15 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             custom_widget=self.custom_widgets['answer_contact_teams'])
 
     @cachedproperty
-    def administrated_teams(self):
-        """Return the list of teams for which the user is an administrator."""
+    def targetable_teams(self):
+        """Return the list of teams which can be quesiton targets.
+
+        The user must be an administrator of the team and the team must
+        be public in order to make the team a question target.
+        """
+        # XXX Edwin Grubbs 2007-12-14 bug=175758
+        # Checking if the team.visibility is None can be removed
+        # after a notnull constraint has been added.
         return [team for team in self.user.getAdministratedTeams()
                 if team.visibility is None
                 or team.visibility == PersonVisibility.PUBLIC]
@@ -630,7 +637,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         user = self.user
         answer_contacts = self.context.direct_answer_contacts
         answer_contact_teams = set(
-            answer_contacts).intersection(self.administrated_teams)
+            answer_contacts).intersection(self.targetable_teams)
         return {
             'want_to_be_answer_contact': user in answer_contacts,
             'answer_contact_teams': list(answer_contact_teams)
@@ -655,7 +662,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                     _('You have been removed as an answer contact for '
                       '$context.', mapping=replacements))
 
-        for team in self.administrated_teams:
+        for team in self.targetable_teams:
             replacements['teamname'] = team.displayname
             if team in answer_contact_teams:
                 self._updatePreferredLanguages(team)

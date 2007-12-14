@@ -35,14 +35,12 @@
       tal:content="context/datecreated/fmt:date" /><br />
 
       <div id="teams_with_icons"
-           tal:condition="context/teams_with_icons/count">
-        <tal:loop repeat="team context/teams_with_icons">
-          <a tal:attributes="href team/fmt:url"
-            tal:condition="python: view.userCanViewMembership(team)"
-            ><img tal:attributes="src team/icon/getURL;
-                                  title string:Icon of ${team/name}" />
-          </a>
-        </tal:loop>
+           tal:condition="view/secure_person/teams_with_icons">
+        <a tal:repeat="team view/secure_person/teams_with_icons"
+           tal:attributes="href team/fmt:url"
+          ><img tal:attributes="src team/icon/getURL;
+                                title string:Icon of ${team/name}"
+        /></a>
       </div>
 
       <table tal:condition="context/sshkeys" class="slimpadding">

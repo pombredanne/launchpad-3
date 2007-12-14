@@ -33,6 +33,7 @@ from canonical.launchpad.interfaces import (
     IProject,
     ISpecification,
     ITeam,
+    PersonVisibility,
     )
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation,
@@ -104,11 +105,13 @@ class MentoringOfferAddView(LaunchpadFormView):
 
     def validate(self, data):
         team = data.get('team')
-        if not self.user.inTeam(team):
+        if (not self.user.inTeam(team)
+            or not (team.visibility is None
+                    or team.visibility == PersonVisibility.PUBLIC)):
             # person must be a participant in team
             self.setFieldError('team',
-                'You can only offer mentorship for teams in which you are '
-                'a member.')
+                'You can only offer mentorship for public teams in '
+                'which you are a member.')
 
     @action(_('Offer Mentoring'), name='add')
     def add_action(self, action, data):
