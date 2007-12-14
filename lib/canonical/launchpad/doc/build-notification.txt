@@ -53,22 +53,39 @@ The maintainer is notified:
   >>> build_notification['To']
   'mark@hbd.com'
 
-Checking subject and extra headers:
+Checking subject and extra headers. Build notifications have a set of
+special headers to help filtering on users' mailboxes, they are:
 
-  >>> build_notification['Subject']
-  '[Build #17] i386 build of pmount 0.1-1 in ubuntu breezy-autotest\n\tRELEASE'
+ * X-Creator-Recipient: the creator email address which can be
+   notified or not according a configuration parameter.
+ * X-Launchpad-Build-{State, Component, Arch}: build record attributes
+ * X-Launchpad-PPA: omitted if it's not a PPA build-notification,
+   contains the PPA owner.name otherwise.
 
-  >>> build_notification['X-Launchpad-Build-State']
-  'FAILEDTOBUILD'
+  >>> def dump_build_notification(notification):
+  ...     clean_subject = notification['Subject'].replace(
+  ...         '\n','').replace('\t', ' ')
+  ...     build_state = notification['X-Launchpad-Build-State']
+  ...     build_component = notification['X-Launchpad-Build-Component']
+  ...     build_arch = notification['X-Launchpad-Build-Arch']
+  ...     ppa_header = 'X-Launchpad-PPA' in notification.keys()
+  ...     print 'Subject:', clean_subject
+  ...     print 'X-Creator-Recipient:', notification['X-Creator-Recipient']
+  ...     print 'X-Launchpad-Build-State:', build_state
+  ...     print 'X-Launchpad-Build-Component:', build_component
+  ...     print 'X-Launchpad-Build-Arch:', build_arch
+  ...     if ppa_header:
+  ...         print 'X-Launchpad-PPA:', notification['X-Launchpad-PPA']
+  ...     else:
+  ...         print 'X-Launchpad-PPA: omitted'
 
-  >>> build_notification['X-Creator-Recipient']
-  'mark@hbd.com'
-
-  >>> build_notification['X-Launchpad-Build-Component']
-  'main'
-
-  >>> build_notification['X-Launchpad-Build-Arch']
-  'i386'
+  >>> dump_build_notification(build_notification)
+  Subject: [Build #17] i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
+  X-Creator-Recipient: mark@hbd.com
+  X-Launchpad-Build-State: FAILEDTOBUILD
+  X-Launchpad-Build-Component: main
+  X-Launchpad-Build-Arch: i386
+  X-Launchpad-PPA: omitted
 
 Let's check the notification content.  It should contain:
 
@@ -141,20 +158,13 @@ The maintainer is notified:
 
 Checking subject and extra headers:
 
-  >>> build_notification['Subject']
-  '[Build #11] i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary\n\tRELEASE'
-
-  >>> build_notification['X-Launchpad-Build-State']
-  'NEEDSBUILD'
-
-  >>> build_notification['X-Creator-Recipient']
-  'mark@hbd.com'
-
-  >>> build_notification['X-Launchpad-Build-Component']
-  'main'
-
-  >>> build_notification['X-Launchpad-Build-Arch']
-  'i386'
+  >>> dump_build_notification(build_notification)
+  Subject: [Build #11] i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
+  X-Creator-Recipient: mark@hbd.com
+  X-Launchpad-Build-State: NEEDSBUILD
+  X-Launchpad-Build-Component: main
+  X-Launchpad-Build-Arch: i386
+  X-Launchpad-PPA: omitted
 
 Check the notification content:
 
@@ -216,20 +226,13 @@ The maintainer is notified:
 
 Checking subject and extra headers:
 
-  >>> build_notification['Subject']
-  '[Build #8] i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE'
-
-  >>> build_notification['X-Launchpad-Build-State']
-  'BUILDING'
-
-  >>> build_notification['X-Creator-Recipient']
-  'mark@hbd.com'
-
-  >>> build_notification['X-Launchpad-Build-Component']
-  'main'
-
-  >>> build_notification['X-Launchpad-Build-Arch']
-  'i386'
+  >>> dump_build_notification(build_notification)
+  Subject: [Build #8] i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
+  X-Creator-Recipient: mark@hbd.com
+  X-Launchpad-Build-State: BUILDING
+  X-Launchpad-Build-Component: main
+  X-Launchpad-Build-Arch: i386
+  X-Launchpad-PPA: omitted
 
 Check the notification content:
 
@@ -291,20 +294,13 @@ The maintainer is notified:
 
 Checking subject and extra headers:
 
-  >>> build_notification['Subject']
-  '[Build #15] i386 build of at 0.00 in ubuntu warty RELEASE'
-
-  >>> build_notification['X-Launchpad-Build-State']
-  'SUPERSEDED'
-
-  >>> build_notification['X-Creator-Recipient']
-  'mark@hbd.com'
-
-  >>> build_notification['X-Launchpad-Build-Component']
-  'main'
-
-  >>> build_notification['X-Launchpad-Build-Arch']
-  'i386'
+  >>> dump_build_notification(build_notification)
+  Subject: [Build #15] i386 build of at 0.00 in ubuntu warty RELEASE
+  X-Creator-Recipient: mark@hbd.com
+  X-Launchpad-Build-State: SUPERSEDED
+  X-Launchpad-Build-Component: main
+  X-Launchpad-Build-Arch: i386
+  X-Launchpad-PPA: omitted
 
 Check the notification content:
 
@@ -369,20 +365,13 @@ Only the members of launchpad-buildd-admins are notified:
 
 Checking subject and extra headers:
 
-  >>> build_notification['Subject']
-  '[Build #15] i386 build of at 0.00 in ubuntu warty RELEASE'
-
-  >>> build_notification['X-Launchpad-Build-State']
-  'SUPERSEDED'
-
-  >>> build_notification['X-Creator-Recipient']
-  'mark@hbd.com'
-
-  >>> build_notification['X-Launchpad-Build-Component']
-  'main'
-
-  >>> build_notification['X-Launchpad-Build-Arch']
-  'i386'
+  >>> dump_build_notification(build_notification)
+  Subject: [Build #15] i386 build of at 0.00 in ubuntu warty RELEASE
+  X-Creator-Recipient: mark@hbd.com
+  X-Launchpad-Build-State: SUPERSEDED
+  X-Launchpad-Build-Component: main
+  X-Launchpad-Build-Arch: i386
+  X-Launchpad-PPA: omitted
 
 Just to keep the config sane, as it was before:
 
@@ -435,20 +424,13 @@ Checking if the second recipient:
 
 Checking subject and extra headers:
 
-  >>> build_notification['Subject']
-  '[Build #17] i386 build of pmount 0.1-1 in ubuntu breezy-autotest\n\tRELEASE (cprov PPA)'
-
-  >>> build_notification['X-Launchpad-Build-State']
-  'FAILEDTOBUILD'
-
-  >>> build_notification['X-Creator-Recipient']
-  'mark@hbd.com'
-
-  >>> build_notification['X-Launchpad-Build-Component']
-  'main'
-
-  >>> build_notification['X-Launchpad-Build-Arch']
-  'i386'
+  >>> dump_build_notification(build_notification)
+  Subject: [Build #17] i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE (cprov PPA)
+  X-Creator-Recipient: mark@hbd.com
+  X-Launchpad-Build-State: FAILEDTOBUILD
+  X-Launchpad-Build-Component: main
+  X-Launchpad-Build-Arch: i386
+  X-Launchpad-PPA: cprov
 
 PPA build notifications should be as much as possible similar to those
 in the main archive, the important differences are:
