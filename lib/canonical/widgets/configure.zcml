@@ -18,7 +18,7 @@
         permission="zope.Public"
         name="popup-window"
         template="templates/popup-window.pt"
-        /> 
+        />
 
     <browser:page
         for="*"
@@ -27,7 +27,7 @@
         permission="zope.Public"
         name="popup-search-upstream"
         template="templates/popup-window.pt"
-        /> 
+        />
 
     <!--
         XXX: anonymous 2004-08-14: Feed back into Zope3.
@@ -42,4 +42,21 @@
         factory=".exception.WidgetInputErrorView"
         permission="zope.Public"
         />
+
+    <!-- Date and DateTime based on PopCalXP -->
+    <browser:page
+        name="+datepicker"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        class="canonical.widgets.date.PopCalDateFolder"
+        attribute="__call__"
+        permission="zope.Public"
+        />
+    <browser:page
+        name="+datetimepicker"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+        class="canonical.widgets.date.PopCalDateTimeFolder"
+        attribute="__call__"
+        permission="zope.Public"
+        />
+
 </configure>

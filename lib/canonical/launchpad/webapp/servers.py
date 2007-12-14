@@ -347,6 +347,8 @@ class BasicLaunchpadRequest:
         self.breadcrumbs = []
         self.traversed_objects = []
         self._wsgi_keys = set()
+        self.needs_datepicker_iframe = False
+        self.needs_datetimepicker_iframe = False
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 

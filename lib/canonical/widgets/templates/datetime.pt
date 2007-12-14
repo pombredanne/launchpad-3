@@ -2,8 +2,8 @@
   <input size="16" type="text"
          tal:attributes="name view/name; id view/name; value val" />
   <a href="javascript:void(0)"
-     tal:attributes="onclick string:pickDate('${view/name}');"
+     tal:attributes="onclick string:pickDateTime('${view/name}');"
      ><span class="PopcalTrigger"
-      ><img name="popcal" align="absmiddle" src="/+datepicker/calbtn.gif"
+      ><img name="popcal" align="absmiddle" src="/+datetimepicker/calbtn.gif"
            width="34" height="22" border="0" alt=""></span></a>
 </div>

@@ -350,6 +350,60 @@
         <li class="item"><a href="/sprints">Meetings</a></li>
       </ul>
     </div>
+    <tal:datetimepicker condition="request/needs_datetimepicker_iframe">
+      <script language="Javascript" type="text/javascript">
+          function pickDateTime(field) {
+              e = document.getElementById(field);
+              if (e == null) {
+                  alert(field);
+              }
+              if(self.gfPop) {
+                  gfPop.fPopCalendar(e);
+                  return false;
+              }
+          }
+      </script>
+      <iframe
+          width="174" height="189"
+          name="gToday:datetimepicker:agenda.js"
+          id="gToday:datetimepicker:agenda.js"
+          src="/+datetimepicker/ipopeng.htm"
+          scrolling="no"
+          frameborder="0"
+          style="visibility:visible; z-index:999; position:absolute;
+                 top:-500px; left:-500px;">
+        <LAYER name="gToday:datetimepicker:agenda.js"
+               src="/+datetimepicker/npopeng.htm"
+               background="/+datetimepicker/npopeng.htm">     </LAYER>
+      </iframe>
+    </tal:datetimepicker>
+    <tal:datepicker condition="request/needs_datepicker_iframe">
+      <script language="Javascript" type="text/javascript">
+          function pickDate(field) {
+              e = document.getElementById(field);
+              if (e == null) {
+                  alert(field);
+              }
+              if(self.gfPop) {
+                  gfPop.fPopCalendar(e);
+                  return false;
+              }
+          }
+      </script>
+      <iframe
+          width="174" height="189"
+          name="gToday:datepicker:agenda.js"
+          id="gToday:datepicker:agenda.js"
+          src="/+datepicker/ipopeng.htm"
+          scrolling="no"
+          frameborder="0"
+          style="visibility:visible; z-index:999; position:absolute;
+                 top:-500px; left:-500px;">
+       <LAYER name="gToday:datepicker:agenda.js"
+              src="/+datepicker/npopeng.htm"
+              background="/+datepicker/npopeng.htm">     </LAYER>
+      </iframe>
+    </tal:datepicker>
   </body>
 </html>
 <tal:requestlog

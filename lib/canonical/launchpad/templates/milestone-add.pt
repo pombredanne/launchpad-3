@@ -9,30 +9,25 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
-  <body>
-
-<metal:heading fill-slot="pageheading">
-  <h1>Add a milestone</h1>
-</metal:heading>
+<body>
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-milestones" />
 </metal:rightportlets>
 
-    <div metal:fill-slot="main">
+<div metal:fill-slot="main">
 
-      <div metal:use-macro="context/@@launchpad_addform/addform">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
-        <p metal:fill-slot="extra_info">
-          A milestone is a simple way of scheduling features and bug fixes
-          you want to take care of at different milestones during your
-          development cycle.
-        </p>
+    <p metal:fill-slot="extra_info">
+      A milestone is a simple way of scheduling features and bug fixes
+      you want to take care of at different milestones during your
+      development cycle.
+    </p>
 
-      </div>
+  </div>
 
-    </div>
-  </body>
+</div>
+</body>
 </html>
-

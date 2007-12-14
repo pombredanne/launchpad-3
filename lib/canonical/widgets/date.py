@@ -1,59 +1,72 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""This was experimentation and example code. I don't think it is being
-used anywhere. If we want a real date/time input widget we should investigate
-zc.datewidget available from the Z3 SVN repository"""
+"""These widgets use the proprietary PopCalXP JavaScript widget to allow for
+date and datetime selection.
+
+We should investigate zc.datewidget available from the Z3 SVN repository.
+"""
 
 __metaclass__ = type
 
+import os
 from datetime import date
-from zope.app import zapi
-from zope.interface import implements
-from zope.schema.interfaces import ValidationError
-from zope.app.form.interfaces import IDisplayWidget, IInputWidget
-# Use custom error for custom view
-#from zope.app.form.interfaces import WidgetInputError
-from exception import WidgetInputError
-from zope.app.form.interfaces import InputErrors
-from zope.app.form.browser import BrowserWidget
-from zope.app.form.browser.interfaces import IBrowserWidget
+
 from zope.app.form.browser.interfaces import IWidgetInputErrorView
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.schema import Int
-from zope.app.form.browser.widget import DisplayWidget
 from zope.app.form.browser.textwidgets import escape
+from zope.app.form.browser.widget import DisplayWidget
+from zope.app.form.browser.widget import ISimpleInputWidget, SimpleInputWidget
 from zope.app.form.browser.widget import renderElement
+from zope.app.form.interfaces import IDisplayWidget, IInputWidget
+from zope.app.form.interfaces import InputErrors, WidgetInputError
+from zope.app import zapi
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
+from zope.interface import implements
+from zope.schema import Int
+from zope.schema.interfaces import ValidationError
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import ILaunchBag
-
-# XXX daniels 2004-12-14:
-# Abstract out common functionality to simplify widget definition.
-
-class IDateWidget(IDisplayWidget, IInputWidget, IBrowserWidget):
-    """A date selection widget
-
-    Date with no time or timezone information
-
-    """
-    minyear = Int(title=_('Minimum Year'), required=True, default=1900)
-    maxyear = Int(title=_('Maximum Year'), required=True, default=2038)
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp import ExportedFolder
+from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 
 
-class DateWidget(BrowserWidget):
-    implements(IDateWidget)
+class PopCalDateFolder(ExportedFolder):
+    """Export the PopCalXP Date picker resources."""
+
+    folder = './popcaldate/'
+    here = os.path.dirname(os.path.realpath(__file__))
+
+
+class PopCalDateTimeFolder(ExportedFolder):
+    """Export the PopCalXP DateTime picker resources."""
+
+    folder = './popcaldatetime/'
+    here = os.path.dirname(os.path.realpath(__file__))
+
+
+class DateWidget(SimpleInputWidget):
+    """A date selection widget with popup selector."""
+
+    implements(IAlwaysSubmittedWidget)
 
     # ZPT that renders our widget
     __call__ = ViewPageTemplateFile('templates/date.pt')
 
-    minyear = 1900
-    maxyear = 2038
+    def __init__(self, context, request):
+        # Unfortunate limitation of PopCalXP is that we may have EITHER a
+        # datepicker OR a datetimepicker, but not both.
+        assert not request.needs_datetimepicker_iframe
+        request.needs_datepicker_iframe = True
+        super(DateWidget, self).__init__(context, request)
 
-    def validate(self):
-        """See zope.app.form.interfaces.IInputWidget"""
-        # Just use the default provided by InputWidget
-        return super(DateWidget, self).validate()
+    def _getRequestValue(self):
+        """Return the raw input from request in a format suitable for
+        formvalue and getInputValue to use
+
+        """
+        return self.request.get(self.name, '')
 
     def getInputValue(self):
         """See zope.app.form.interfaces.IInputWidget"""
@@ -61,71 +74,47 @@ class DateWidget(BrowserWidget):
         # it so that error() can find it.
         self._error = None
         r = self._getRequestValue()
-        errors = []
-        try:
-            y = int(r['year'])
-        except (TypeError, ValueError):
-            errors.append('Invalid year')
-        try:
-            m = int(r['month'])
-        except (TypeError, ValueError):
-            errors.append('Invalid month')
-        try:
-            d = int(r['day'])
-        except (TypeError, ValueError):
-            errors.append('Invalid day')
-        if errors:
-            errors = [ValidationError(_(msg)) for msg in errors]
-            self._error = WidgetInputError(self.name, self.label, errors)
+        r = r.split('-')
+        msg = 'Please specify the date in yyyy-mm-dd format.'
+        if len(r) != 3:
+            self._error = WidgetInputError(
+                self.name, self.label, LaunchpadValidationError(msg))
+            raise self._error
+        if len(r[0]) != 4:
+            self._error = WidgetInputError(
+                self.name, self.label,
+                LaunchpadValidationError(
+                    _('Please use 4 digits to specify the year.')))
+            raise self._error
+        if len(r[1]) > 2:
+            self._error = WidgetInputError(
+                self.name, self.label,
+                LaunchpadValidationError(
+                    _('Please use 2 digits to specify the month.')))
+            raise self._error
+        if len(r[2]) > 2:
+            self._error = WidgetInputError(
+                self.name, self.label,
+                LaunchpadValidationError(
+                    _('Please use 2 digits to specify the day.')))
             raise self._error
         try:
-            return date(y, m, d)
+            year = int(r[0])
+            month = int(r[1])
+            day = int(r[2])
+        except ValueError:
+            self._error = _error
+            raise self._error
+        try:
+            return date(year, month, day)
         except ValueError, x:
             self._error = WidgetInputError(
-                    self.name, self.label, ValidationError(x)
+                    self.name, self.label, LaunchpadValidationError(x)
                     )
             raise self._error
 
-    def applyChanges(self, content):
-        """See zope.app.form.interfaces.IInputWidget"""
-        field = self.context
-        value = self.getInputValue()
-        if field.query(content, self) != value:
-            field.set(content, value)
-            return True
-        else:
-            return False
-
-    def hasInput(self):
-        """See zope.app.form.interfaces.IInputWidget"""
-        if '%s.day'%self.name in self.request.form:
-            return True
-        else:
-            return False
-
-    def hasValidInput(self):
-        """See zope.app.form.interfaces.IInputWidget"""
-        # Just use the default provided by InputWidget
-        return super(DateWidget, self).hasValidInput()
-
-    def hidden(self):
-        """See zope.app.form.browser.interfaces.IBrowserWidget"""
-        l = []
-        for name, value in zip(('year', 'month', 'day'), self._getFormInput()):
-            l.append(renderElement(
-                self.tag, type='hidden', name=name, id=name,
-                value=value, cssClass=self.cssClass, extra=self.extra
-                ))
-
-    def error(self):
-        """See zope.app.form.browser.interfaces.IBrowserWidget"""
-        if self._error:
-            return zapi.getViewProviding(
-                    self._error, IWidgetInputErrorView, self.request
-                    ).snippet()
-        return ""
-
-    def _getFormValue(self):
+    @property
+    def formvalue(self):
         """Return the value for the form to render, accessed via the
         formvalue property.
 
@@ -146,30 +135,74 @@ class DateWidget(BrowserWidget):
             value = self._data
         return value
 
-    formvalue = property(_getFormValue)
+    def hasInput(self):
+        """See zope.app.form.interfaces.IInputWidget"""
+        if self.name in self.request.form:
+            return True
+        else:
+            return False
 
-    def _getRequestValue(self):
-        """Return the raw input from request in a format suitable for
-        _getFormValue and getInputValue to use
 
-        """
-        # We return this as a mapping, as the TALES is then identical
-        # to when we are using a date object.
-        rv = {
-            'year': self.request.get('%s.year' % self.name, ''),
-            'month': self.request.get('%s.month' % self.name, ''),
-            'day': self.request.get('%s.day' % self.name, ''),
-            }
-        return rv
+class DateTimeWidget(DateWidget):
+    """A date and time selection widget with popup selector."""
 
-    def _getDefault(self):
-        """Return the default value *to render* for this field if not set.
+    implements(IAlwaysSubmittedWidget)
 
-        Normally no need to override, as the default just returns
-        self.context.default. However, for this widget we don't want that.
+    # ZPT that renders our widget
+    __call__ = ViewPageTemplateFile('templates/datetime.pt')
 
-        """
-        return {'year':'','month':'','day':''}
+    def __init__(self, context, request):
+        # Unfortunate limitation of PopCalXP is that we may have EITHER a
+        # datepicker OR a datetimepicker, but not both.
+        assert not request.needs_datepicker_iframe
+        request.needs_datetimepicker_iframe = True
+        super(DateWidget, self).__init__(context, request)
+
+    def getInputValue(self):
+        """See zope.app.form.interfaces.IInputWidget"""
+        # If validation fails, set this to the exception before raising
+        # it so that error() can find it.
+        self._error = None
+        r = self._getRequestValue()
+        r = r.split('-')
+        msg = 'Please specify the date in yyyy-mm-dd format.'
+        if len(r) != 3:
+            self._error = WidgetInputError(
+                self.name, self.label, LaunchpadValidationError(msg))
+            raise self._error
+        if len(r[0]) != 4:
+            self._error = WidgetInputError(
+                self.name, self.label,
+                LaunchpadValidationError(
+                    _('Please use 4 digits to specify the year.')))
+            raise self._error
+        if len(r[1]) > 2:
+            self._error = WidgetInputError(
+                self.name, self.label,
+                LaunchpadValidationError(
+                    _('Please use 2 digits to specify the month.')))
+            raise self._error
+        if len(r[2]) > 2:
+            self._error = WidgetInputError(
+                self.name, self.label,
+                LaunchpadValidationError(
+                    _('Please use 2 digits to specify the day.')))
+            raise self._error
+        try:
+            year = int(r[0])
+            month = int(r[1])
+            day = int(r[2])
+        except ValueError:
+            self._error = _error
+            raise self._error
+        try:
+            return date(year, month, day)
+        except ValueError, x:
+            self._error = WidgetInputError(
+                    self.name, self.label, LaunchpadValidationError(x)
+                    )
+            raise self._error
+
 
 
 class DatetimeDisplayWidget(DisplayWidget):

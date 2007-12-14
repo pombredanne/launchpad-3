@@ -1,2 +1,8 @@
 # Put your TODOs for this branch here, then make sure it is empty before
 # landing. There is a test to ensure it is empty in trunk.
+
+ - remove pdb in widgets/date.py
+ - support passing a timezone to the widgets
+ - figure out if we need to implement the hidden method
+ - figure out webapp/publisher.py:LaunchpadView.hasDateWidget
+ - make the iframe display based on request.response

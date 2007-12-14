@@ -20,6 +20,7 @@ from canonical.launchpad.interfaces import (
     IAnnouncement, ILaunchBag)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
+from canonical.widgets.date import DateTimeWidget
 from canonical.launchpad import _
 
 
@@ -41,6 +42,8 @@ class AnnouncementDateWidget(SimpleInputWidget):
                      required=False, default=None))
         fields['action'].custom_widget = CustomWidgetFactory(
             LaunchpadRadioWidget)
+        fields['announcement_date'].custom_widget = CustomWidgetFactory(
+            DateTimeWidget)
         if IAnnouncement.providedBy(self.context.context):
             # we are editing an existing announcement
             data = {}

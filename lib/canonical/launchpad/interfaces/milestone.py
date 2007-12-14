@@ -13,12 +13,14 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Date, Int, Text
+from zope.schema import Bool, Choice, Date, Int
 
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.fields import (
+    ContentNameField, Summary
+    )
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -77,7 +79,7 @@ class IMilestone(Interface):
         description=_("Example: 2005-11-24"))
     visible = Bool(title=_("Active"), description=_("Whether or not this "
         "milestone should be shown in web forms for bug targeting."))
-    description = Text(
+    description = Summary(
         title=_("Description"), required=False,
         description=_(
             "A detailed description of the features and status of this "

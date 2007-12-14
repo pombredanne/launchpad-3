@@ -15,16 +15,20 @@ __all__ = [
 
 from zope.component import getUtility
 
+from canonical.launchpad import _
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad.interfaces import (ILaunchBag, IMilestone,
     IMilestoneSet, IBugTaskSet, BugTaskSearchParams, IProjectMilestone)
-
-from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
+    action, canonical_url, custom_widget, StandardLaunchpadFacets,
+    ContextMenu, Link, LaunchpadFormView, LaunchpadView,
     enabled_with_permission, GetitemNavigation, Navigation)
+
+from canonical.widgets import DateWidget
 
 
 class MilestoneSetNavigation(GetitemNavigation):
@@ -128,20 +132,27 @@ class MilestoneView(LaunchpadView):
         return self.bugtasks or self.specifications
 
 
-class MilestoneAddView:
-    def create(self, name, dateexpected=None, description=None):
-        """We will use the newMilestone method on the ProductSeries or
-        DistroSeries context to make the milestone."""
-        return self.context.newMilestone(
-            name, dateexpected=dateexpected, description=description)
+class MilestoneAddView(LaunchpadFormView):
+    """A view for creating a new Milestone."""
 
-    def add(self, content):
-        """Skipping 'adding' this content to a container, because
-        this is a placeless system."""
-        return content
+    schema = IMilestone
+    field_names = ['name', 'dateexpected', 'description']
+    label = "Register a new milestone"
 
-    def nextURL(self):
-        return '.'
+    custom_widget('dateexpected', DateWidget)
+
+    @action(_('Register milestone'), name='register')
+    def register_action(self, action, data):
+        """Use the newMilestone method on the context to make a milestone."""
+        milestone = self.context.newMilestone(
+            name = data.get('name'),
+            dateexpected = data.get('dateexpected'),
+            description = data.get('description'))
+        self.next_url = canonical_url(self.context)
+
+    @property
+    def action_url(self):
+        return "%s/+addmilestone" % canonical_url(self.context)
 
 
 class MilestoneEditView(SQLObjectEditView):

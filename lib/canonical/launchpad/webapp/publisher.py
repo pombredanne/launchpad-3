@@ -228,6 +228,10 @@ class LaunchpadView(UserAttributeCache):
         else:
             return self.render()
 
+    def hasDateWidget(self):
+        """Indicates whether or not to include the date picker iframe."""
+        # XXX need to make this better
+        return True
 
 class LaunchpadXMLRPCView(UserAttributeCache):
     """Base class for writing XMLRPC view code."""

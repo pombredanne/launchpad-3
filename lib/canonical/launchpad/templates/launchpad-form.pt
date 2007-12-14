@@ -10,8 +10,9 @@
 
   <div metal:define-macro="form">
 
-    <form action="." 
+    <form action="."
           tal:attributes="action view/action_url"
+          name="launchpadform"
           method="post"
           enctype="multipart/form-data"
           accept-charset="UTF-8">
@@ -92,13 +93,13 @@
       <tr tal:condition="python: view.isSingleLineLayout(field_name)">
         <th tal:condition="display_label|python:True">
           <label tal:attributes="for widget/name"
-                 tal:content="string:${widget/label}:">Label</label>
+                 tal:content="string:${widget/label}:">Label</label><br />
+          <span tal:condition="show_optional"
+                class="fieldRequired">(Optional)</span>
         </th>
         <td tal:attributes="class error_class" width="100%">
           <div>
             <input tal:replace="structure widget" />
-            <span tal:condition="show_optional"
-                  class="fieldRequired">(Optional)</span>
           </div>
           <div class="message" tal:condition="error"
                tal:content="structure error">Error message</div>
