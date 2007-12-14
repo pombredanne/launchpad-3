@@ -140,6 +140,17 @@ correctly redirect to the new branch page.
     >>> browser.url
     'http://code.launchpad.dev/~name12/tomcat/junk'
 
+Branch names are less strictly constrained than most others in Launchpad
+-- they are not restricted to lower case, and can contain underscores in
+addition to the plus signs, dots and hyphens allowed by the default name
+validator.
+
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Name').value = 'USELESS_junk'
+    >>> browser.getControl('Change Branch').click()
+    >>> browser.url
+    'http://code.launchpad.dev/~name12/tomcat/USELESS_junk'
+
 We can also detach a branch from a product, making it a junk branch. While we
 are it, we also reset the branch name to its original value, and check that the
 branch was moved back to its original location.
@@ -273,3 +284,57 @@ Check that when editing a hosted branch the URL field is not shown.
     ...
     LookupError: label 'Branch URL'
 
+
+== Editing the whiteboard ==
+
+The whiteboard is now editable by any logged in user.
+
+    >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> nopriv_browser.open('http://launchpad.dev'
+    ...     '/~name12/gnome-terminal/main')
+    >>> whiteboard_tag = find_tag_by_id(
+    ...     nopriv_browser.contents, 'branch-whiteboard-value')
+
+There is no whiteboard section shown if there is no whiteboard value
+set.
+
+    >>> print whiteboard_tag
+    None
+
+    >>> # Reset the stub emails.
+    >>> stub.test_emails = []
+    >>> nopriv_browser.getLink('Edit whiteboard').click()
+
+    >>> nopriv_browser.getControl('Whiteboard').value = (
+    ...     'New whiteboard value')
+    >>> nopriv_browser.getControl('Change Branch').click()
+
+    >>> whiteboard_tag = find_tag_by_id(
+    ...     nopriv_browser.contents, 'branch-whiteboard-value')
+    >>> print extract_text(whiteboard_tag)
+    New whiteboard value
+
+Even though there are no subscribers, the owner of the branch is notified
+that someone else has modified the details of the branch.
+
+    >>> len(stub.test_emails)
+    1
+    >>> print stub.test_emails[0][2]
+    Content-Type: ...
+    ...
+    X-Launchpad-Branch: ~name12/gnome-terminal/main
+    X-Launchpad-Message-Rationale: Owner
+    To: test@canonical.com
+    From: No Privileges Person <no-priv@canonical.com>
+    Subject: [Branch ~name12/gnome-terminal/main] GNOME Terminal Mainline
+    ...
+    Whiteboard changed to:
+    <BLANKLINE>
+    New whiteboard value
+    <BLANKLINE>
+    --
+    GNOME Terminal Mainline
+    http://code.launchpad.dev/~name12/gnome-terminal/main
+    <BLANKLINE>
+    You are getting this email as you are the owner of the branch and someone h=
+    as edited the details.

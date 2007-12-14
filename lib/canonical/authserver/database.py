@@ -46,7 +46,7 @@ def utf8(x):
 
 
 def read_only_transaction(function):
-    """Decorate 'function' by wrapping it in a transaction and Zope session."""
+    """Wrap 'function' in a transaction and Zope session."""
     def transacted(*args, **kwargs):
         transaction.begin()
         clear_current_connection_cache()
@@ -60,7 +60,7 @@ def read_only_transaction(function):
 
 
 def writing_transaction(function):
-    """Decorate 'function' by wrapping it in a transaction and Zope session."""
+    """Wrap 'function' in a transaction and Zope session."""
     def transacted(*args, **kwargs):
         transaction.begin()
         clear_current_connection_cache()
@@ -192,7 +192,8 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     """Launchpad-database backed implementation of IUserDetailsStorage"""
     # Note that loginID always refers to any name you can login with (an email
     # address, or a nickname, or a numeric ID), whereas personID always refers
-    # to the numeric ID, which is the value found in Person.id in the database.
+    # to the numeric ID, which is the value found in Person.id in the
+    # database.
     implements(IUserDetailsStorage)
 
     def __init__(self, connectionPool):
@@ -238,8 +239,8 @@ def saltFromDigest(digest):
     """
     if isinstance(digest, unicode):
         # Make sure digest is a str, because unicode objects don't have a
-        # decode method in python 2.3.  Base64 should always be representable in
-        # ASCII.
+        # decode method in python 2.3. Base64 should always be representable
+        # in ASCII.
         digest = digest.encode('ascii')
     return digest.decode('base64')[20:].encode('base64')
 
@@ -368,7 +369,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             if product is None:
                 raise Fault(
                     NOT_FOUND_FAULT_CODE,
-                    "Product %r does not exist." % productName)
+                    "Project %r does not exist." % productName)
 
         try:
             branch = getUtility(IBranchSet).new(
@@ -379,21 +380,25 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         else:
             return branch.id
 
-    def requestMirror(self, branchID):
+    def requestMirror(self, requester, branchID):
         """See `IHostedBranchStorage`."""
-        return deferToThread(self._requestMirrorInteraction, branchID)
+        return deferToThread(
+            self._requestMirrorInteraction, requester, branchID)
 
     @writing_transaction
-    def _requestMirrorInteraction(self, branchID):
+    @run_as_requester
+    def _requestMirrorInteraction(self, requester, branchID):
         """The synchronous implementation of `requestMirror`.
 
         See `IHostedBranchStorage`.
         """
         branch = getUtility(IBranchSet).get(branchID)
+        # We don't really care who requests a mirror of a branch.
         branch.requestMirror()
         return True
 
-    def getBranchInformation(self, loginID, userName, productName, branchName):
+    def getBranchInformation(self, loginID, userName, productName,
+                             branchName):
         """See `IHostedBranchStorage`."""
         return deferToThread(
             self._getBranchInformationInteraction, loginID, userName,

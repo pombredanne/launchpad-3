@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702,W0222
 
 __metaclass__ = type
 
@@ -47,6 +48,17 @@ class FakeBranchStatusClient:
     def mirrorFailed(self, branch_id, revision_id):
         self.calls.append(('mirrorFailed', branch_id, revision_id))
         return defer.succeed(None)
+
+
+def makeFailure(exception_factory, *args, **kwargs):
+    """Make a Failure object from the given exception factory.
+
+    Any other arguments are passed straight on to the factory.
+    """
+    try:
+        raise exception_factory(*args, **kwargs)
+    except:
+        return failure.Failure()
 
 
 class TestJobScheduler(unittest.TestCase):
@@ -130,7 +142,11 @@ class TestPullerMasterProtocol(TrialTestCase):
         transport.
         """
 
-        def __init__(self):
+        only_sigkill_kills = False
+
+        def __init__(self, protocol, clock):
+            self.protocol = protocol
+            self.clock = clock
             self.calls = []
 
         def loseConnection(self):
@@ -138,6 +154,9 @@ class TestPullerMasterProtocol(TrialTestCase):
 
         def signalProcess(self, signal_name):
             self.calls.append(('signalProcess', signal_name))
+            if not self.only_sigkill_kills or signal_name == 'KILL':
+                reason = failure.Failure(error.ProcessTerminated())
+                self.clock.callLater(0, self.protocol.processEnded, reason)
 
 
     def setUp(self):
@@ -147,11 +166,13 @@ class TestPullerMasterProtocol(TrialTestCase):
         self.clock = task.Clock()
         self.protocol = scheduler.PullerMasterProtocol(
             self.termination_deferred, self.listener, self.clock)
-        self.protocol.transport = self.StubTransport()
+        self.protocol.transport = self.StubTransport(
+            self.protocol, self.clock)
         self.protocol.connectionMade()
 
     def assertProtocolSuccess(self):
-        self.assertEqual(False, self.protocol.unexpected_error_received)
+        """Assert that the protocol saw no unexpected errors."""
+        self.assertEqual(None, self.protocol._termination_failure)
 
     def convertToNetstring(self, string):
         return '%d:%s,' % (len(string), string)
@@ -290,9 +311,12 @@ class TestPullerMasterProtocol(TrialTestCase):
         """
         self.protocol.outReceived(self.convertToNetstring('foo'))
 
+        # Give the process time to die.
+        self.clock.advance(1)
+
         def check_failure(exception):
             self.assertEqual(
-                [('signalProcess', 'KILL')], self.protocol.transport.calls)
+                [('signalProcess', 'INT')], self.protocol.transport.calls)
             self.assertTrue('foo' in str(exception))
 
         deferred = self.assertFailure(
@@ -306,14 +330,47 @@ class TestPullerMasterProtocol(TrialTestCase):
         """
         self.protocol.outReceived('foo')
 
+        # Give the process time to die.
+        self.clock.advance(1)
+
         def check_failure(exception):
             self.assertEqual(
-                ['loseConnection', ('signalProcess', 'KILL')],
+                ['loseConnection', ('signalProcess', 'INT')],
                 self.protocol.transport.calls)
             self.assertTrue('foo' in str(exception))
 
         deferred = self.assertFailure(
             self.termination_deferred, NetstringParseError)
+
+        return deferred.addCallback(check_failure)
+
+    def test_interruptThenKill(self):
+        """If SIGINT doesn't kill the process, we SIGKILL after 5 seconds."""
+        fail = makeFailure(RuntimeError, 'error message')
+        self.protocol.transport.only_sigkill_kills = True
+
+        # When the error happens, we SIGINT the process.
+        self.protocol.unexpectedError(fail)
+        self.assertEqual(
+            [('signalProcess', 'INT')],
+            self.protocol.transport.calls)
+
+        # After 5 seconds, we send SIGKILL.
+        self.clock.advance(6)
+        self.assertEqual(
+            [('signalProcess', 'INT'), ('signalProcess', 'KILL')],
+            self.protocol.transport.calls)
+
+        # SIGKILL is assumed to kill the process.  We check that the
+        # failure passed to the termination_deferred is the failure we
+        # created above, not the ProcessTerminated that results from
+        # the process dying.
+
+        def check_failure(exception):
+            self.assertEqual('error message', str(exception))
+
+        deferred = self.assertFailure(
+            self.termination_deferred, RuntimeError)
 
         return deferred.addCallback(check_failure)
 
@@ -325,45 +382,17 @@ class TestPullerMaster(TrialTestCase):
         self.arbitrary_branch_id = 1
         self.eventHandler = scheduler.PullerMaster(
             self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
-            BranchType.HOSTED, logging.getLogger(), self.status_client)
-
-    def makeFailure(self, exception_factory, *args, **kwargs):
-        """Make a Failure object from the given exception factory.
-
-        Any other arguments are passed straight on to the factory.
-        """
-        try:
-            raise exception_factory(*args, **kwargs)
-        except:
-            return failure.Failure()
-
-    def _getLastOOPSFilename(self, time):
-        """Find the filename for the OOPS logged at 'time'."""
-        utility = errorlog.globalErrorUtility
-        error_dir = utility.errordir(time)
-        oops_id = utility._findLastOopsId(error_dir)
-        second_in_day = time.hour * 3600 + time.minute * 60 + time.second
-        oops_prefix = config.launchpad.errorreports.oops_prefix
-        return os.path.join(
-            error_dir, '%05d.%s%s' % (second_in_day, oops_prefix, oops_id))
-
-    def getLastOOPS(self, time):
-        """Return the OOPS report logged at the given time."""
-        oops_filename = self._getLastOOPSFilename(time)
-        oops_report = open(oops_filename, 'r')
-        try:
-            return errorlog.ErrorReport.read(oops_report)
-        finally:
-            oops_report.close()
+            BranchType.HOSTED, logging.getLogger(), self.status_client,
+            set(['oops-prefix']))
 
     def test_unexpectedError(self):
         """The puller master logs an OOPS when it receives an unexpected
         error.
         """
         now = datetime.now(pytz.timezone('UTC'))
-        fail = self.makeFailure(RuntimeError, 'error message')
+        fail = makeFailure(RuntimeError, 'error message')
         self.eventHandler.unexpectedError(fail, now)
-        oops = self.getLastOOPS(now)
+        oops = errorlog.globalErrorUtility.getOopsReport(now)
         self.assertEqual(fail.getTraceback(), oops.tb_text)
         self.assertEqual('error message', oops.value)
         self.assertEqual('RuntimeError', oops.type)
@@ -416,6 +445,74 @@ class TestPullerMaster(TrialTestCase):
         return deferred.addCallback(checkMirrorFailed)
 
 
+class TestPullerMasterSpawning(TrialTestCase):
+
+    def setUp(self):
+        from twisted.internet import reactor
+        self.status_client = FakeBranchStatusClient()
+        self.arbitrary_branch_id = 1
+        self.available_oops_prefixes = set(['foo'])
+        self.eventHandler = scheduler.PullerMaster(
+            self.arbitrary_branch_id, 'arbitrary-source', 'arbitrary-dest',
+            BranchType.HOSTED, logging.getLogger(), self.status_client,
+            self.available_oops_prefixes)
+        self._realSpawnProcess = reactor.spawnProcess
+        reactor.spawnProcess = self.spawnProcess
+        self.oops_prefixes = []
+
+    def tearDown(self):
+        from twisted.internet import reactor
+        reactor.spawnProcess = self._realSpawnProcess
+
+    def spawnProcess(self, protocol, executable, arguments, env):
+        self.oops_prefixes.append(arguments[-1])
+
+    def test_getsOopsPrefixFromSet(self):
+        # Different workers should have different OOPS prefixes. They get
+        # those prefixes from a limited set of possible prefixes.
+        self.eventHandler.run()
+        self.assertEqual(self.available_oops_prefixes, set())
+        self.assertEqual(self.oops_prefixes, ['foo'])
+
+    def test_restoresOopsPrefixToSetOnSuccess(self):
+        # When a worker finishes running, they restore the OOPS prefix to the
+        # set of available prefixes.
+        deferred = self.eventHandler.run()
+        # Fake a successful run.
+        deferred.callback(None)
+        def check_available_prefixes(ignored):
+            self.assertEqual(self.available_oops_prefixes, set(['foo']))
+        return deferred.addCallback(check_available_prefixes)
+
+    def test_restoresOopsPrefixToSetOnFailure(self):
+        # When a worker finishes running, they restore the OOPS prefix to the
+        # set of available prefixes, even if the worker failed.
+        deferred = self.eventHandler.run()
+        # Fake a failed run.
+        try:
+            raise RuntimeError("Spurious error")
+        except RuntimeError:
+            fail = failure.Failure()
+        deferred.errback(fail)
+        def check_available_prefixes(ignored):
+            self.assertEqual(self.available_oops_prefixes, set(['foo']))
+        return deferred.addErrback(check_available_prefixes)
+
+    def test_logOopsWhenNoAvailablePrefix(self):
+        # If there are no available prefixes then we log an OOPS and re-raise
+        # the error, aborting the rest of the run.
+
+        # Empty the set of available OOPS prefixes
+        self.available_oops_prefixes.clear()
+
+        unexpected_errors = []
+        def unexpectedError(failure, now=None):
+            unexpected_errors.append(failure)
+        self.eventHandler.unexpectedError = unexpectedError
+        self.assertRaises(KeyError, self.eventHandler.run)
+        self.assertEqual(unexpected_errors[0].type, KeyError)
+
+
 class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
     """Tests for the puller master that launch sub-processes."""
 
@@ -449,9 +546,11 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         puller_master = scheduler.PullerMaster(
             self.db_branch.id, local_path_to_url('src-branch'),
             self.db_branch.unique_name, self.db_branch.branch_type,
-            logging.getLogger(), self.client)
+            logging.getLogger(), self.client,
+            set([config.launchpad.errorreports.oops_prefix]))
         puller_master.destination_url = os.path.abspath('dest-branch')
-        deferred = puller_master.mirror().addErrback(self._dumpError)
+        deferred = puller_master.mirror()
+        deferred.addErrback(self._dumpError)
 
         def check_authserver_called(ignored):
             self.assertEqual(

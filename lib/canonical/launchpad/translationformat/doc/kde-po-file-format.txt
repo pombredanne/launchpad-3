@@ -12,8 +12,8 @@ Such features include plural forms support and context support.
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet,
-    ...     IProductSet, ITranslationImportQueue, TranslationFileFormat)
+    ...     ILaunchpadCelebrities, IPersonSet, IProductSet,
+    ...     TranslationFileFormat)
     >>> from canonical.launchpad.database import (
     ...     POTemplateSubset, SourcePackageName)
     >>> from canonical.launchpad.scripts.po_import import (
@@ -23,55 +23,12 @@ Such features include plural forms support and context support.
     >>> UTC = pytz.timezone('UTC')
     >>> ISO_FORMATTED_DATE = datetime.datetime.now(UTC).isoformat()
 
-We need this for the Librarian to work properly.
+To ease the pain of importing many files during testing, we use this
+helper function to import either a PO file or a PO template from the
+string with the contents of the file.
 
-    >>> import transaction
-
-And also, the DBSchema to change the imports status
-
-    >>> from canonical.launchpad.interfaces import RosettaImportStatus
-
-Then, let's get a handle to our mailer. This is the thing we'll examine to show
-what email has been sent, to whom, and what the body of the message contains:
-
-    >>> import email
-    >>> from canonical.launchpad.mail import stub
-
-Here's a fake logger to capture any errors that happen.
-
-    >>> from canonical.launchpad.scripts import FakeLogger
-
-To ease the pain of importing many files during testing, lets introduce
-a helper function to import either a PO file or a PO template from the string
-with the contents of the file.
-
-    >>> def import_pofile_or_potemplate(file_contents, person, series,
-    ...                                 pofile=None, potemplate=None,
-    ...                                 published=True):
-    ...     """Import a `POFile` or `POTemplate` from the string.
-    ...
-    ...	    If pofile is None, it imports a potemplate.
-    ...	    Returns `TranslationImportQueueEntry` as added to the import queue.
-    ...	    """
-    ...     translation_import_queue = getUtility(ITranslationImportQueue)
-    ...     if pofile:
-    ...         entry = translation_import_queue.addOrUpdateEntry(
-    ...             pofile.path, file_contents, published, person,
-    ...             productseries=series, pofile=pofile)
-    ...     else:
-    ...         # A POTemplate can only be published, so setting
-    ...         # the published flag makes no difference.
-    ...         entry = translation_import_queue.addOrUpdateEntry(
-    ...             potemplate.path, file_contents, True, person,
-    ...             productseries=series, potemplate=potemplate)
-    ...     transaction.commit()
-    ...     entry.status = RosettaImportStatus.APPROVED
-    ...     syncUpdate(entry)
-    ...     if pofile:
-    ...         pofile.importFromQueue(FakeLogger())
-    ...     else:
-    ...         potemplate.importFromQueue(FakeLogger())
-    ...     return entry
+    >>> from canonical.launchpad.translationformat.tests.helpers import (
+    ...     import_pofile_or_potemplate)
 
 We'll be doing all our imports into Firefox trunk as
 carlos@canonical.com.
@@ -145,6 +102,9 @@ message is preceded with '_n: ' (space at the end of the string is important).
     ... #, c-format
     ... msgid "_n: %%d foo\n%%d foos"
     ... msgstr ""
+    ...
+    ... msgid "_n: entry\nentries"
+    ... msgstr ""
     ... ''' % ISO_FORMATTED_DATE
 
 And strangely, importing this file actually works, and format is changed
@@ -204,6 +164,12 @@ forms. They are simply newline-separated strings.
     ... #, c-format
     ... msgid "_n: %%d foo\n%%d foos"
     ... msgstr "%%d translation\n%%d translationes\n%%d translations"
+    ...
+    ... # This translation is incomplete, since it fails to provide
+    ... # translations for the second plural form.
+    ... msgid "_n: entry\nentries"
+    ... msgstr "singular entry\n\nplural entries"
+    ...
     ... ''' % ISO_FORMATTED_DATE
 
 Importing this file succeeds, even if the number of %d printf specifications
@@ -290,6 +256,11 @@ Template export turns it back into a KDE-style PO file:
     "_n: %d foo\n"
     "%d foos"
     msgstr ""
+    <BLANKLINE>
+    msgid ""
+    "_n: entry\n"
+    "entries"
+    msgstr ""
 
 But, we can also export it as a regular gettext PO file:
 
@@ -319,6 +290,11 @@ But, we can also export it as a regular gettext PO file:
     #, c-format
     msgid "%d foo"
     msgid_plural "%d foos"
+    msgstr[0] ""
+    msgstr[1] ""
+    <BLANKLINE>
+    msgid "entry"
+    msgid_plural "entries"
     msgstr[0] ""
     msgstr[1] ""
 
@@ -354,6 +330,15 @@ Exporting a translation is possible in a very similar way.
     "%d translation\n"
     "%d translationes\n"
     "%d translations"
+    # This translation is incomplete, since it fails to provide
+    # translations for the second plural form.
+    msgid ""
+    "_n: entry\n"
+    "entries"
+    msgstr ""
+    "singular entry\n"
+    "\n"
+    "plural entries"
 
 
 == Context support ==

@@ -146,6 +146,10 @@ class POTMsgSet(SQLBase):
         A message is used if it's either imported or current, and unused
         otherwise.
         """
+        # Return empty list (no suggestions) for translation credit strings
+        # because they are automatically translated.
+        if self.is_translation_credit:
+            return []
         # Watch out when changing this condition: make sure it's done in
         # a way so that indexes are indeed hit when the query is executed.
         # Also note that there is a NOT(in_use_clause) index.
@@ -398,19 +402,14 @@ class POTMsgSet(SQLBase):
             raise AssertionError(
                 'Only an editor can submit is_imported translations.')
 
-        assert pofile.language.pluralforms is not None, (
-            "Don't know the number of plural forms for %s language." % (
-                pofile.language.englishname))
-
         # If the update is on the translation credits message, yet
         # update is not is_imported, silently return.
-        # XXX 2007-06-26 Danilo: Do we want to raise an exception here?
         if self.is_translation_credit and not is_imported:
-            return
+            return None
 
         # Sanitize translations
         sanitized_translations = self._sanitizeTranslations(
-            new_translations, pofile.language.pluralforms)
+            new_translations, pofile.plural_forms)
         # Check that the translations are correct.
         validation_status = self._validate_translations(
             sanitized_translations, is_fuzzy, ignore_errors)
@@ -433,7 +432,7 @@ class POTMsgSet(SQLBase):
         # of translations.  None if there is no such message and needs to be
         # created.
         matching_message = self._findTranslationMessage(
-            pofile, potranslations, pofile.language.pluralforms)
+            pofile, potranslations, pofile.plural_forms)
 
         if matching_message is None:
             # Creating a new message.

@@ -10,7 +10,7 @@
       attributes="distribution sourcepackagename name displayname title
                   distro get_distroseries_packages subscribers currentrelease
                   releases publishing_history binary_package_names
-                  current_publishing_records
+                  current_publishing_records bug_reporting_guidelines
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
                   searchTasks isBugContact open_bugtasks closed_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
@@ -27,8 +27,11 @@
       getSupportedLanguages getQuestionLanguages getAnswerContactsForLanguage
       getAnswerContactRecipients"
       />
-    <require permission="launchpad.AnyPerson"
-      attributes="newQuestion addAnswerContact removeAnswerContact" />
+    <require
+      permission="launchpad.AnyPerson"
+      attributes="newQuestion createQuestionFromBug addAnswerContact
+                  removeAnswerContact"
+      />
   </content>
   <adapter
     provides="canonical.launchpad.interfaces.IFAQTarget"
@@ -73,14 +76,18 @@
              DistributionSourcePackageOverviewMenu
              DistributionSourcePackageBugsMenu " />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    name="+index"
+    permission="zope.Public"
+    facet="overview"
+    class="canonical.launchpad.browser.DistributionSourcePackageView"
+    template="../templates/distributionsourcepackage-index.pt" />
+  
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
-    class="canonical.launchpad.browser.DistributionSourcePackageView"
+    class="canonical.launchpad.webapp.publisher.LaunchpadView"
     permission="zope.Public">
-    <browser:page
-      name="+index"
-      facet="overview"
-      template="../templates/distributionsourcepackage-index.pt" />
     <browser:page
       name="+publishinghistory"
       facet="overview"

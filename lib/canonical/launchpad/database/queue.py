@@ -35,13 +35,13 @@ from canonical.launchpad.database.publishing import (
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IPackageUpload, IPackageUploadBuild, IPackageUploadSource,
-    IPackageUploadCustom, IPackageUploadQueue, IPackageUploadSet, IPersonSet,
-    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus, PackageUploadCustomFormat, pocketsuffix,
-    QueueBuildAcceptError, QueueInconsistentStateError,
-    QueueStateWriteProtectedError, QueueSourceAcceptError,
-    SourcePackageFileType)
+    ArchivePurpose, ILaunchpadCelebrities, IPackageUpload,
+    IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
+    IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
+    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
+    PackageUploadCustomFormat, pocketsuffix, QueueBuildAcceptError,
+    QueueInconsistentStateError, QueueStateWriteProtectedError,
+    QueueSourceAcceptError, SourcePackageFileType)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
@@ -213,14 +213,18 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         return self.builds
 
-    @cachedproperty
-    def _is_sync_upload(self):
-        """Return True if this is a (Debian) sync upload.
+    def _is_auto_sync_upload(self, changed_by_email):
+        """Return True if this is a (Debian) auto sync upload.
 
         Sync uploads are source-only, unsigned and not targeted to
-        the security pocket."""
+        the security pocket.  The Changed-By field is also the Katie
+        user (archive@ubuntu.com).
+        """
+        katie = getUtility(ILaunchpadCelebrities).katie
+        changed_by = self._emailToPerson(changed_by_email)
         return (not self.signing_key
                 and self.contains_source and not self.contains_build
+                and changed_by == katie
                 and self.pocket != PackagePublishingPocket.SECURITY)
 
     @cachedproperty
@@ -381,7 +385,8 @@ class PackageUpload(SQLBase):
         if self.contains_source:
             [source] = self.sources
             spr = source.sourcepackagerelease
-            # Bail out early if this is an upload for the translations section.
+            # Bail out early if this is an upload for the translations
+            # section.
             if spr.section.name == 'translations':
                 debug(self.logger,
                     "Skipping acceptance and announcement, it is a "
@@ -537,10 +542,11 @@ class PackageUpload(SQLBase):
             do_sendmail(AcceptedMessage)
             return
 
-        # Auto-approved binary uploads to security skips the announcement,
-        # they are usually processed with the security policy.
+        # Auto-approved binary-only uploads to security skip the
+        # announcement, they are usually processed with the security policy.
         if (self.pocket == PackagePublishingPocket.SECURITY
-            and self.contains_build):
+            and not self.contains_source):
+            # We only send announcements if there is any source in the upload.
             debug(self.logger,
                 "Skipping announcement, it is a binary upload to SECURITY.")
             do_sendmail(AcceptedMessage)
@@ -550,8 +556,8 @@ class PackageUpload(SQLBase):
         # policies should send an acceptance and an announcement message.
         do_sendmail(AcceptedMessage)
 
-        # Don't send announcements for Debian sync uploads.
-        if self._is_sync_upload:
+        # Don't send announcements for Debian auto sync uploads.
+        if self._is_auto_sync_upload(changed_by_email=changes['changed-by']):
             return
 
         if announce_list:
@@ -564,7 +570,8 @@ class PackageUpload(SQLBase):
                 AnnouncementMessage,
                 recipients=[str(announce_list)],
                 from_addr=from_addr,
-                bcc="%s_derivatives@packages.qa.debian.org" % self.displayname)
+                bcc="%s_derivatives@packages.qa.debian.org" %
+                    self.displayname)
 
     def notify(self, announce_list=None, summary_text=None,
                changes_file_object=None, logger=None, dry_run=False):
@@ -682,7 +689,7 @@ class PackageUpload(SQLBase):
         return person
 
     def _isPersonUploader(self, person):
-        """Return True if the person is an uploader to the package's distro."""
+        """Return True if person is an uploader to the package's distro."""
         debug(self.logger, "Attempting to decide if %s is an uploader." % (
             person.displayname))
         uploader = person.isUploader(self.distroseries.distribution)
@@ -704,6 +711,19 @@ class PackageUpload(SQLBase):
         :bcc: Optional email Blind Carbon Copy address(es).
         """
         extra_headers = { 'X-Katie' : 'Launchpad actually' }
+
+        # XXX cprov 20071212: ideally we only need to check archive.purpose,
+        # however the current code in uploadprocessor.py (around line 259)
+        # temporarily transforms the primary-archive into a PPA one (w/o
+        # setting a proper owner) in order to allow processing of a upload
+        # to unknown PPA and subsequent rejection notification.
+
+        # Include the 'X-Launchpad-PPA' header for PPA upload notfications
+        # containing the PPA owner name.
+        if (self.archive.purpose == ArchivePurpose.PPA and
+            self.archive.owner):
+            extra_headers['X-Launchpad-PPA'] = self.archive.owner.name
+
         if from_addr is None:
             from_addr = format_address(
                 config.uploader.default_sender_name,
@@ -777,8 +797,9 @@ class PackageUploadBuild(SQLBase):
                     % (binary.component.name, distroseries.name))
             if binary.section not in distroseries.sections:
                 raise QueueBuildAcceptError(
-                    'Section "%s" is not allowed in %s' % (binary.section.name,
-                                                           distroseries.name))
+                    'Section "%s" is not allowed in %s' %
+                        (binary.section.name,
+                         distroseries.name))
 
     def publish(self, logger=None):
         """See `IPackageUploadBuild`."""
@@ -846,16 +867,22 @@ class PackageUploadSource(SQLBase):
         """See `IPackageUploadSource`."""
         # Check for duplicate source version across all distroseries.
         for distroseries in self.packageupload.distroseries.distribution:
-            if distroseries.getQueueItems(
+            uploads = distroseries.getQueueItems(
                 status=[PackageUploadStatus.ACCEPTED,
                         PackageUploadStatus.DONE],
                 name=self.sourcepackagerelease.name,
                 version=self.sourcepackagerelease.version,
                 archive=self.packageupload.archive,
-                exact_match=True).count() > 0:
+                exact_match=True)
+            if uploads.count() > 0:
                 raise QueueInconsistentStateError(
-                    'This sourcepackagerelease is already accepted in %s.'
-                    % self.packageupload.distroseries.name)
+                    "The source %s is already accepted in %s/%s and you "
+                    "cannot upload the same version within the same "
+                    "distribution. You have to modify the source version "
+                    "and re-upload." % (
+                    self.sourcepackagerelease.title,
+                    distroseries.distribution.name,
+                    distroseries.name))
 
     def verifyBeforePublish(self):
         """See `IPackageUploadSource`."""
@@ -879,8 +906,8 @@ class PackageUploadSource(SQLBase):
                 if proposed_sha1 == published_sha1:
                     continue
                 raise QueueInconsistentStateError(
-                    '%s is already published in archive for %s with a different '
-                    'SHA1 hash (%s != %s)' % (
+                    '%s is already published in archive for %s with a '
+                    'different SHA1 hash (%s != %s)' % (
                     filename, self.packageupload.distroseries.name,
                     proposed_sha1, published_sha1))
 
@@ -971,7 +998,8 @@ class PackageUploadCustom(SQLBase):
     def temp_filename(self):
         """See `IPackageUploadCustom`."""
         temp_dir = tempfile.mkdtemp()
-        temp_file_name = os.path.join(temp_dir, self.libraryfilealias.filename)
+        temp_file_name = os.path.join(
+            temp_dir, self.libraryfilealias.filename)
         temp_file = file(temp_file_name, "wb")
         self.libraryfilealias.open()
         copy_and_close(self.libraryfilealias, temp_file)

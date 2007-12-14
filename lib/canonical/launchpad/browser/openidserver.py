@@ -17,30 +17,27 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
-from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.proxy import isinstance as zisinstance
 
+from openid.message import registerNamespaceAlias
 from openid.server.server import CheckIDRequest, ENCODE_URL, Server
 from openid.server.trustroot import TrustRoot
+from openid.extensions.sreg import (
+    SRegRequest, SRegResponse, data_fields as sreg_data_fields)
 from openid import oidutil
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
-    ILoginServiceLoginForm, ILoginTokenSet, IOpenIdApplication,
-    IOpenIdAuthorizationSet, IOpenIDRPConfigSet, IPersonSet,
-    LoginTokenType, NotFoundError, PersonCreationRationale,
-    UnexpectedFormData)
+    ILoginServiceLoginForm, ILoginTokenSet, IOpenIdAuthorizationSet,
+    IOpenIDRPConfigSet, IPersonSet, LoginTokenType, UnexpectedFormData)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
+    action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp.login import logInPerson
-from canonical.launchpad.webapp.publisher import (
-    Navigation, RedirectionView, stepthrough, stepto)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -48,8 +45,8 @@ from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
 OPENID_REQUEST_TIMEOUT = 3600
 SESSION_PKG_KEY = 'OpenID'
-IDENTIFIER_SELECT_URI = 'http://specs.openid.net/auth/2.0/identifier_select'
-
+LAUNCHPAD_TEAMS_NS = 'http://ns.launchpad.net/2007/openid-teams'
+registerNamespaceAlias(LAUNCHPAD_TEAMS_NS, 'lp')
 
 # Shut up noisy OpenID library
 def null_log(message, level=0):
@@ -57,20 +54,22 @@ def null_log(message, level=0):
 oidutil.log = null_log
 
 
-SREG_FIELDS = [
-    ('fullname', 'Full name'),
-    ('nickname', 'Launchpad ID'),
-    ('email', 'Email address'),
-    ('timezone', 'Time Zone'),
-    ('x_address1', 'Address line 1'),
-    ('x_address2', 'Address line 2'),
-    ('x_city', 'City'),
-    ('x_province', 'State/Province'),
-    ('country', 'Country'),
-    ('postcode', 'Postcode'),
-    ('x_phone', 'Phone number'),
-    ('x_organization', 'Organization'),
+sreg_data_fields.update({
+    'x_address1': 'Address line 1',
+    'x_address2': 'Address line 2',
+    'x_city': 'City',
+    'x_province': 'Province',
+    'x_phone': 'Phone number',
+    'x_organization': 'Organization',
+    })
+
+
+sreg_data_fields_order = [
+    'fullname', 'nickname', 'email', 'timezone',
+    'x_address1', 'x_address2', 'x_city', 'x_province',
+    'country', 'postcode', 'x_phone', 'x_organization',
     ]
+
 
 class OpenIdMixin:
 
@@ -79,19 +78,20 @@ class OpenIdMixin:
     def __init__(self, context, request):
         super(OpenIdMixin, self).__init__(context, request)
         store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
-        self.openid_server = Server(store_factory())
         self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
-        self.identity_url_prefix = allvhosts.configs['openid'].rooturl + '+id/'
+        self.openid_server = Server(store_factory(), self.server_url)
+        self.identity_url_prefix = (
+            allvhosts.configs['openid'].rooturl + '+id/')
 
     @property
     def user_identity_url(self):
         return self.identity_url_prefix + self.user.openid_identifier
 
     def isIdentityOwner(self):
-        """Return True if the user can authenticate as the given identifier."""
+        """Return True if the user can authenticate as the given ID."""
         assert self.user is not None, "user should be logged in by now."
-        return self.openid_request.identity in (
-            IDENTIFIER_SELECT_URI, self.user_identity_url)
+        return (self.openid_request.idSelect() or
+                self.openid_request.identity == self.user_identity_url)
 
     @cachedproperty('_openid_parameters')
     def openid_parameters(self):
@@ -168,15 +168,9 @@ class OpenIdMixin:
     @property
     def sreg_field_names(self):
         """Return the list of sreg keys that will be provided to the RP."""
-        field_names = set()
-        # Collect the field names requested.  We treat required and
-        # optional parameters the same.
-        if 'openid.sreg.required' in self.openid_parameters:
-            field_names.update(
-                self.openid_parameters['openid.sreg.required'].split(','))
-        if 'openid.sreg.optional' in self.openid_parameters:
-            field_names.update(
-                self.openid_parameters['openid.sreg.optional'].split(','))
+        sreg_request = SRegRequest.fromOpenIDRequest(self.openid_request)
+
+        field_names = set(sreg_request.required + sreg_request.optional)
         # Now subset them based on what keys are allowed from the
         # RP config:
         rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
@@ -185,13 +179,14 @@ class OpenIdMixin:
             field_names.clear()
         else:
             field_names.intersection_update(rpconfig.allowed_sreg)
-        # Sort the list according to SREG_FIELDS
-        return [name for (name, description) in SREG_FIELDS
+
+        # Sort the set of names according to our field order
+        return [name for name in sreg_data_fields_order
                 if name in field_names]
 
     @property
     def sreg_fields(self):
-        """Return a list of the sreg (field, value) pairs to be sent to the RP.
+        """Return a list of the sreg (field, value) pairs for the RP.
 
         As this function returns user details, the user must be logged
         in before accessing this property.
@@ -225,6 +220,36 @@ class OpenIdMixin:
         return [(field, values[field])
                 for field in self.sreg_field_names if field in values]
 
+    def checkTeamMembership(self, openid_response):
+        """Perform team membership checks.
+
+        If any team membership checks have been requested as part of
+        the OpenID request, annotate the response with the list of
+        teams the user is actually a member of.
+        """
+        assert self.user is not None, (
+            'Must be logged in to calculate team membership')
+        args = self.openid_request.message.getArgs(LAUNCHPAD_TEAMS_NS)
+        team_names = args.get('query_membership')
+        if not team_names:
+            return
+        team_names = team_names.split(',')
+        memberships = []
+        person_set = getUtility(IPersonSet)
+        for team_name in team_names:
+            team = person_set.getByName(team_name)
+            if team is None or not team.isTeam():
+                continue
+            # XXX jamesh 2007-12-05 bug=174076:
+            # When private membership teams are added, this method
+            # needs to be updated to not disclose membership of such
+            # teams.
+            if self.user.inTeam(team):
+                memberships.append(team_name)
+        openid_response.fields.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
+        openid_response.fields.setArg(
+            LAUNCHPAD_TEAMS_NS, 'is_member', ','.join(memberships))
+
     def renderOpenIdResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)
         response = self.request.response
@@ -251,16 +276,22 @@ class OpenIdMixin:
         if not self.isIdentityOwner():
             return self.createFailedResponse()
 
-        response = self.openid_request.answer(True)
-
-        # If we are in identifier select mode, then we need to
-        # override the claimed identifier.  For regular checks it does
-        # not hurt, so we set it here unconditionally.
-        response.addField(None, 'identity', self.user_identity_url)
+        if self.openid_request.idSelect():
+            response = self.openid_request.answer(
+                True, identity=self.user_identity_url)
+        else:
+            response = self.openid_request.answer(True)
 
         # Add sreg result data
-        for (field_name, value) in self.sreg_fields:
-            response.addField('sreg', field_name, value, signed=True)
+        sreg_fields = self.sreg_fields
+        if sreg_fields:
+            sreg_request = SRegRequest.fromOpenIDRequest(self.openid_request)
+            sreg_response = SRegResponse.extractResponse(
+                sreg_request, dict(sreg_fields))
+            response.addExtension(sreg_response)
+
+        self.checkTeamMembership(response)
+
         return response
 
     def createFailedResponse(self):
@@ -372,7 +403,7 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
     def canHandleIdentity(self):
         """Returns True if the identity URL is supported by the server."""
         identity = self.openid_request.identity
-        return (identity == IDENTIFIER_SELECT_URI or
+        return (self.openid_request.idSelect() or
                 identity.startswith(self.identity_url_prefix))
 
     def isAuthorized(self):
@@ -401,7 +432,7 @@ class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
         return {'nonce': self.nonce}
 
     def setUpWidgets(self):
-        """Set up the widgets, and grab the OpenID request from the session."""
+        """Set up the widgets, and restore the OpenID request."""
         super(LoginServiceBaseView, self).setUpWidgets()
 
         # Restore the OpenID request.
@@ -475,10 +506,10 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
         session = ISession(self.request)
         authdata = session['launchpad.authenticateduser']
         previous_login = authdata.get('personid')
-        assert previous_login is not None, "User is not logged in."
-        authdata['personid'] = None
-        authdata['logintime'] = datetime.utcnow()
-        notify(LoggedOutEvent(self.request))
+        if previous_login is not None:
+            authdata['personid'] = None
+            authdata['logintime'] = datetime.utcnow()
+            notify(LoggedOutEvent(self.request))
         # Display the unauthenticated form
         return LoginServiceLoginView(
             self.context, self.request, self.nonce)()
@@ -613,37 +644,6 @@ class LoginServiceLoginView(LoginServiceBaseView):
         return self.email_sent_template()
 
 
-class OpenIdApplicationNavigation(Navigation):
-    usedfor = IOpenIdApplication
-
-    @stepthrough('+id')
-    def traverse_id(self, name):
-        person = getUtility(IPersonSet).getByOpenIdIdentifier(name)
-        if person is not None and person.is_openid_enabled:
-            return OpenIdIdentityView(person, self.request)
-        else:
-            return None
-
-    @stepto('token')
-    def token(self):
-        # We need to traverse the 'token' namespace in order to allow people
-        # to create new accounts and reset their passwords. This can't clash
-        # with a person's name because it's a blacklisted name.
-        return getUtility(ILoginTokenSet)
-
-    def traverse(self, name):
-        # Provide a permanent OpenID identity for use by the Ubuntu shop
-        # or other services that cannot cope with name changes.
-        person = getUtility(IPersonSet).getByName(name)
-        if person is not None and person.is_openid_enabled:
-            target = '%s+id/%s' % (
-                    allvhosts.configs['openid'].rooturl,
-                    person.openid_identifier)
-            return RedirectionView(target, self.request, 303)
-        else:
-            raise NotFoundError(name)
-
-
 class ProtocolErrorView(LaunchpadView):
     """Render a ProtocolError raised by the openid library."""
     def render(self):
@@ -655,29 +655,3 @@ class ProtocolErrorView(LaunchpadView):
             response.setStatus(200)
         response.setHeader('Content-Type', 'text/plain;charset=utf-8')
         return self.context.encodeToKVForm()
-
-
-class OpenIdIdentityView:
-    """Render the OpenID identity page."""
-
-    implements(IBrowserPublisher)
-
-    identity_template = ViewPageTemplateFile("../templates/openid-identity.pt")
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        # Setup variables to pass to the template
-        self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
-        self.identity_url = '%s+id/%s' % (
-                self.server_url, self.context.openid_identifier)
-        self.person_url = canonical_url(self.context, rootsite='mainsite')
-        self.meta_refresh_content = "1; URL=%s" % self.person_url
-
-        return self.identity_template()
-
-    def browserDefault(self, request):
-        return self, ()
-
