@@ -64,7 +64,8 @@ class IBugMessageAddForm(Interface):
     filecontent = Bytes(
         title=u"Attachment", required=False,
         constraint=bug_attachment_size_constraint)
-    patch = Bool(title=u"This attachment is a patch", required=False, default=False)
+    patch = Bool(title=u"This attachment is a patch", required=False,
+        default=False)
     attachment_description = Title(title=u'Description', required=False)
     email_me = Bool(
         title=u"E-mail me about changes to this bug report",
