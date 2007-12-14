@@ -97,7 +97,7 @@ class ICodeImport(Interface):
     rcs_type = Choice(title=_("Type of RCS"),
         required=True, vocabulary=RevisionControlSystems,
         description=_(
-            "The version control system used by the import source. "
+            "The version control system to import from. "
             "Can be CVS or Subversion."))
 
     svn_branch_url = URIField(title=_("Branch"), required=False,
@@ -135,7 +135,13 @@ class ICodeImport(Interface):
         description=_(
         "The effective time between automatic updates of this import. "
         "If the user did not specify an update interval, this is a default "
-        "value selected by Launchpad adminstrators."))
+        "value selected by Launchpad administrators."))
+
+    import_job = Choice(
+        title=_("Current job"),
+        readonly=True, vocabulary='CodeImportJob',
+        description=_(
+            "The current job for this import, either pending or running."))
 
     def updateFromData(data, user):
         """Modify attributes of the `CodeImport`.
