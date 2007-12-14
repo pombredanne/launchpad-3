@@ -37,8 +37,10 @@ d_start() {
     CMD="cd $LP && PYTHONPATH=$LP/lib: LPCONFIG=$LPCONFIG $TWISTD --pidfile $PIDFILE --python $TACFILE --logfile $LOGFILE"
     if [ `whoami` = "$LPUSER" ]; then
         sh -c "$CMD"
+        chmod +r $PIDFILE
     else
         su - $LPUSER -c "$CMD"
+        su - $LPUSER -c "chmod +r $PIDFILE"
     fi
 }
 
