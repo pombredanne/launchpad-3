@@ -579,16 +579,24 @@ class Builder(SQLBase):
         if not candidate:
             return None
 
-        # Mark build records target to old source versions or SECURITY pocket
-        # as SUPERSEDED, they should not be built.
-        must_ignore = (
-            candidate.is_last_version is False or
-            candidate.build.pocket == PackagePublishingPocket.SECURITY)
-        while (candidate and must_ignore):
-            logger.debug(
-                "Build %s SUPERSEDED, queue item %s REMOVED"
-                % (candidate.build.id, candidate.id))
-            candidate.build.buildstate = BuildStatus.SUPERSEDED
+        # Mark build records target to old source versions as SUPERSEDED
+        # and build records target to SECURITY pocket as FAILEDTOBUILD.
+        # Builds in those situation should not be built because they will
+        # be wasting build-time, the former case already has a newer source
+        # and the latter could not be built in DAK.
+        must_ignore = candidate.is_last_version is False
+        must_fail = candidate.build.pocket == PackagePublishingPocket.SECURITY
+        while (candidate and (must_ignore or must_fail)):
+            if must_fail:
+                logger.debug(
+                    "Build %s FAILEDTOBUILD, queue item %s REMOVED"
+                    % (candidate.build.id, candidate.id))
+                candidate.build.buildstate = BuildStatus.FAILEDTOBUILD
+            else:
+                logger.debug(
+                    "Build %s SUPERSEDED, queue item %s REMOVED"
+                    % (candidate.build.id, candidate.id))
+                candidate.build.buildstate = BuildStatus.SUPERSEDED
             candidate.destroySelf()
             candidate = self._findBuildCandidate()
 

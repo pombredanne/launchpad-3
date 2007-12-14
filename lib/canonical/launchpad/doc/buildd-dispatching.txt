@@ -263,7 +263,7 @@ implementation.
   >>> BuilddSlaveTestSetup().tearDown()
 
 To solve this problem, temporarily, until we start building security
-uploads, we will mark build targeted to SECURITY pocket as SUPERSEDED
+uploads, we will mark build targeted to SECURITY pocket as FAILEDTOBUILD
 during the findBuildCandidate look-up.
 
   >>> bob_builder.findBuildCandidate() is None
@@ -274,10 +274,9 @@ As expected, the security job was marked as SUPERSEDED and the
 corresponding BuildQueue record was removed.
 
   >>> sec_build.buildstate.name
-  'SUPERSEDED'
+  'FAILEDTOBUILD'
   >>> sec_build.buildqueue_record is None
   True
 
 This way the security builds, created due to missing binary uploads
-from dak, will be silently consumed until we can build them
-appropriately.
+from DAK will be appropriately registered as FAILEDTOBUILD.

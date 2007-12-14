@@ -781,10 +781,9 @@ permissive database user.
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
-Now, if we try to get a new build candidate, we will see that it changed.
+Now, there is no new build candidate.
 
-  >>> new_candidate = a_builder.findBuildCandidate()
-  >>> new_candidate.id != old_candidate.id
+  >>> a_builder.findBuildCandidate() is None
   True
 
 Because the 'previous' candidate was marked as superseded, so it's not
@@ -1013,18 +1012,19 @@ A build in the security pocket:
   ...     PackagePublishingPocket.SECURITY)
   >>> setupBuildQueue(bqItem3, a_builder)
   >>> last_stub_mail_count = len(stub.test_emails)
+
+The pocket-dependency infrastructure is ready to deal with SECURITY
+pocket, however we explicitly skip security builds when dispatching
+because Embargoed-Archives and Restricted-UI implementations are not
+yet ready.
+
   >>> a_builder.dispatchBuildCandidate(bqItem3)
-  WARNING:slave-scanner:Could not build: Soyuz is not yet capable of building SECURITY uploads.
+  Traceback (most recent call last):
+  ...
+  AssertionError: Soyuz is not yet capable of building SECURITY uploads.
 
-XXX cprov 20071025: The pocket-dependency infrastructure is ready to
-deal with SECURITY pocket, however we explicitly skip security builds
-when dispatching because Embargoed-Archives and Restricted-UI
-implementations are not yet ready.
-
-Builds for security pocket will remain pending for now:
-
-  >>> bqItem3.build.buildstate.name
-  'NEEDSBUILD'
+Builds for security pocket are marked as FAILEDTOBUILD inside
+findBuildCandidate method, see doc/buildd-dispatching.txt
 
 
 == Builder Status Handler ==
