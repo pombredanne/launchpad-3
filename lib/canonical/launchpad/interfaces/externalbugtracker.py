@@ -36,7 +36,7 @@ class IExternalBugTracker(Interface):
         """Convert a remote importance to a BugTaskImportance item."""
 
 
-class ISupportsCommentImports(IExternalBugTracker):
+class ISupportsCommentImport(IExternalBugTracker):
     """A an external bug tracker that supports comment imports."""
 
     def importBugComments(bug_watch):

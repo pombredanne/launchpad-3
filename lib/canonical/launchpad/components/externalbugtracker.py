@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
     CreateBugParams, IBugWatchSet, IDistribution, IExternalBugTracker,
     ILaunchpadCelebrities, IMessageSet, IPersonSet, NotFoundError,
-    PersonCreationRationale, ISupportsCommentImports,
+    PersonCreationRationale, ISupportsCommentImport,
     UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp.url import urlparse
 
@@ -333,7 +333,7 @@ class ExternalBugTracker:
                     if new_malone_importance is not None:
                         bug_watch.updateImportance(new_remote_importance,
                             new_malone_importance)
-                    if (ISupportsCommentImports.providedBy(self) and
+                    if (ISupportsCommentImport.providedBy(self) and
                         self.import_comments):
                         self.importBugComments(bug_watch)
 
@@ -656,7 +656,7 @@ debbugsstatusmap = {'open':      BugTaskStatus.NEW,
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
 
-    implements(ISupportsCommentImports)
+    implements(ISupportsCommentImport)
 
     # We don't support different versions of debbugs.
     version = None
