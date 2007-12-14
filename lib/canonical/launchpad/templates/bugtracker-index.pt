@@ -64,6 +64,17 @@
     highlights.
   </p>
 
+  <h2>
+    URLs
+  </h2>
+
+  <ul id="bugtracker-urls">
+    <li><strong tal:content="context/baseurl" /> (Base URL)</li>
+    <li tal:repeat="alias context/aliases">
+      <strong tal:content="alias" /> (Alias)
+    </li>
+  </ul>
+
   <h2 tal:condition="context/contactdetails">
     Contact details
   </h2>
