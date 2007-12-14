@@ -458,12 +458,11 @@ class TestDebBugs(DebBugs):
     It allows you to pass in bugs to be used, instead of relying on an
     existing debbugs db.
     """
-    import_comments = False
-
     def __init__(self, bugtracker, bugs):
-        DebBugs.__init__(self, bugtracker)
+        super(TestDebBugs, self).__init__(bugtracker)
         self.bugs = bugs
         self.debbugs_db = TestDebBugsDB()
+        self.import_comments = False
 
     def _findBug(self, bug_id):
         if bug_id not in self.bugs:
