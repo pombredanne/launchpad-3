@@ -187,7 +187,7 @@ default values for '[section-3.app-a]' and '[section-3.app-b]'.
 
 == ConfigSchema is self-validating ==
 
-Config schema will raise an error if the schema file cannot be opened.
+ConfigSchema will raise an error if the schema file cannot be opened.
 
     >>> ConfigSchema("no-such-file")
     Traceback (most recent call last):

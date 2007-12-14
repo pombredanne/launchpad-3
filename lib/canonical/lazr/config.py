@@ -57,8 +57,10 @@ class ConfigSchema(object):
         section name is refined.
         """
         schema_file = open(filename, 'r')
-        raw_schema = schema_file.read()
-        schema_file.close()
+        try:
+            raw_schema = schema_file.read()
+        finally:
+            schema_file.close()
         # Verify that the string is ascii.
         raw_schema.encode('ascii', 'ignore')
         # Verify that no sections are redefined.
