@@ -7,38 +7,6 @@ Create a test team with private membership and a test member. Even
 though no-priv is a proposed member by requesting to join this moderated
 team, he still does not get access to the membership list.
 
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> login('foo.bar@canonical.com')
-    >>> from BeautifulSoup import BeautifulSoup as Soup
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, PersonCreationRationale, PersonVisibility)
-    >>> person_set = getUtility(IPersonSet)
-    >>> member, email = person_set.createPersonAndEmail(
-    ...     'member@canonical.com', PersonCreationRationale.UNKNOWN,
-    ...     name='member', displayname="Gold Member", password='test')
-    >>> member.setPreferredEmail(email)
-    >>> team_owner, email = person_set.createPersonAndEmail(
-    ...     'owner@canonical.com', PersonCreationRationale.UNKNOWN,
-    ...     name='owner', displayname="Owner", password='test')
-    >>> team_owner.setPreferredEmail(email)
-    >>> team_owner = person_set.getByName('owner')
-    >>> nopriv = person_set.getByName('no-priv')
-    >>> team = person_set.newTeam(team_owner, 'myteam', 'My Team')
-    >>> team.addMember(member, team_owner)
-    >>> other_team = person_set.newTeam(team_owner, 'otherteam', 'Other Team')
-    >>> other_team.addMember(team_owner, team_owner)
-    >>> member in team.activemembers
-    True
-    >>> nopriv.join(team)
-    >>> nopriv in team.proposedmembers
-    True
-    >>> team.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-    >>> logout()
-
-
     >>> def print_members(contents, type):
     ...     table = find_tag_by_id(contents, type)
     ...     for link in table.findAll('a'):
@@ -48,7 +16,8 @@ team, he still does not get access to the membership list.
 
 == Membership Page ==
 
-This +members page will raise an exception for unauthorized users.
+Users who are not team members should not be able to view the +members
+page.
 
     >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> nopriv_browser.open('http://launchpad.dev/~myteam/+members')
@@ -56,7 +25,7 @@ This +members page will raise an exception for unauthorized users.
     ...
     Unauthorized: ...
 
-The +members page is visible for someone on the team.
+A team member should be able to view the +members page.
 
     >>> browser = setupBrowser(auth='Basic member@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~myteam/+members')
@@ -68,50 +37,49 @@ The +members page is visible for someone on the team.
 
 == Team Page ==
 
-An unauthorized user cannot see the recently approved members,
+Users who are not team members cannot see the recently approved members,
 recently applied members, or the membership summary on the ~myteam page.
 
     >>> nopriv_browser.open('http://launchpad.dev/~myteam')
-    >>> soup = Soup(nopriv_browser.contents)
-    >>> soup.find('div', id='recently-approved')
-    >>> soup.find('div', id='recently-applied')
-    >>> soup.find('table', id='membership-summary')
+    >>> find_tag_by_id(nopriv_browser.contents, 'recently-approved')
+    >>> find_tag_by_id(nopriv_browser.contents, 'recently-applied')
+    >>> find_tag_by_id(nopriv_browser.contents, 'membership-summary')
     <...You are not allowed to view this team's membership...
 
 A team member will be able to see these parts of the team page.
 
     >>> browser.open('http://launchpad.dev/~myteam')
-    >>> soup = Soup(browser.contents)
-    >>> soup.find('div', id='recently-approved')
+    >>> find_tag_by_id(browser.contents, 'recently-approved')
     <...<a href="/~member">Gold Member (member)</a>...
 
 
-    >>> soup.find('div', id='recently-applied')
+    >>> find_tag_by_id(browser.contents, 'recently-applied')
     <...<a href="/~no-priv">No Privileges Person (no-priv)</a>...
 
-    >>> soup.find('table', id='membership-summary')
+    >>> find_tag_by_id(browser.contents, 'membership-summary')
     <...2 active members...1 proposed members...
 
 == Team Participation ==
 
-On the person page, it will show which teams they belong to. Although, it
-would be time consuming to gather the entire team membership, we don't want
-to leak this information, so MyTeam which has a private membership won't
-show up below.
+The person page shows which teams that person participates in. Although, it
+would be time consuming to gather the entire team membership by viewing
+all the members' person pages, we don't want to leak this information, 
+so MyTeam won't show up on the person page, because it has a private
+membership.
 
     >>> nopriv_browser.open('http://launchpad.dev/~owner')
-    >>> soup = Soup(nopriv_browser.contents)
-    >>> a_tags = soup.find('table', id='participation').findAll('a')
+    >>> div = find_tag_by_id(nopriv_browser.contents, 'participation')
+    >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
     [u'Other Team']
 
-Another member of MyTeam can see that name16 (Foo Bar) participates in
-MyTeam.
+A member of a team with private membership (MyTeam) can see that team
+on other members' person pages.
 
     >>> browser.open('http://launchpad.dev/~owner')
-    >>> soup = Soup(browser.contents)
-    >>> a_tags = soup.find('table', id='participation').findAll('a')
+    >>> div = find_tag_by_id(browser.contents, 'participation')
+    >>> a_tags = div.findAll('a')
     >>> for a_tag in a_tags:
     ...     print a_tag.contents
     [u'My Team']
@@ -120,9 +88,9 @@ MyTeam.
 
 == Teams with Icons ==
 
-The person page also shows a list of icons for all the teams that have
-custom icons that the person belongs to. We need to filter out teams
-with private membership.
+The person page also shows a list of icons for all the teams that
+person participates in, if the team has a custom icon. Only team
+members should be able to see their team's icon in this list.
 
 First, we will add a custom icon to two teams.
 
@@ -139,17 +107,17 @@ First, we will add a custom icon to two teams.
 The user which is not on myteam will only see otherteam listed.
 
     >>> nopriv_browser.open('http://launchpad.dev/~owner')
-    >>> soup = Soup(nopriv_browser.contents)
-    >>> for a_tag in soup.find('div', id='teams_with_icons').findAll('a'):
+    >>> div = find_tag_by_id(nopriv_browser.contents, 'teams_with_icons')
+    >>> for a_tag in div.findAll('a'):
     ...     print a_tag['href']
     /~otherteam
 
 
-Another team member will see both the icons for otherteam and myteam.
+Another team member will see both the icons (otherteam and myteam).
 
     >>> browser.open('http://launchpad.dev/~owner')
-    >>> soup = Soup(browser.contents)
-    >>> for a_tag in soup.find('div', id='teams_with_icons').findAll('a'):
+    >>> div = find_tag_by_id(browser.contents, 'teams_with_icons')
+    >>> for a_tag in div.findAll('a'):
     ...     print a_tag['href']
     /~myteam
     /~otherteam
@@ -157,17 +125,17 @@ Another team member will see both the icons for otherteam and myteam.
 
 == Restrict Answer Contact ==
 
-To prevent leaking information about a team's private membership, do not
-let that team be added as an answer contact for a project.
+To prevent leaking information about a team's private membership, 
+no user can add that team as an answer contact for a project.
 
 Even the owner of the team with private membership should not see
-MyTeam as an option in the form.
+MyTeam as an option in the +answer-contact form.
 
     >>> owner_browser = setupBrowser(auth='Basic owner@canonical.com:test')
     >>> owner_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/+answer-contact')
-    >>> soup = Soup(owner_browser.contents)
-    >>> team_div = soup.find('div', id='answer-contact-teams')
+    >>> team_div = find_tag_by_id(owner_browser.contents, 
+    ...                            'answer-contact-teams')
     >>> for label in team_div.findAll('label'):
     ...     print label.contents[1]
     &nbsp;Other Team
@@ -175,21 +143,21 @@ MyTeam as an option in the form.
 
 == Restrict Private Membership Team as SubTeam ==
 
-To prevent leaking information about a team's private membership, do not
-let that team be added as a member of a public team.
+To prevent leaking information about a team's private membership,
+no user can add that team as a member of a public team.
 
     >>> admin_browser.open('http://launchpad.dev/~simple-team/+addmember')
     >>> admin_browser.getControl('New member').value = 'myteam'
     >>> admin_browser.getControl('Add Member').click()
     >>> admin_browser.url
     'http://launchpad.dev/%7Esimple-team/+addmember'
-    >>> admin_browser.contents
-    '...Constraint not satisfied...'
+    >>> get_feedback_messages(admin_browser.contents)
+    [...Constraint not satisfied...
 
 == Restrict Subscribing to Bugs ==
 
-To prevent leaking information about a team's private membership, do not
-let that team be subscribed to a bug.
+To prevent leaking information about a team's private membership,
+no user can subscribe that team to a bug.
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
@@ -197,13 +165,13 @@ let that team be subscribed to a bug.
     >>> admin_browser.getControl('Add').click()
     >>> admin_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber'
-    >>> admin_browser.contents
-    '...Constraint not satisfied...'
+    >>> get_feedback_messages(admin_browser.contents)
+    [...Constraint not satisfied...
 
 == Restrict Subscribing to Blueprints ==
 
-To prevent leaking information about a team's private membership, do not
-let that team be subscribed to a blueprint.
+To prevent leaking information about a team's private membership,
+no user can subscribe that team to a blueprint.
 
     >>> admin_browser.open('http://blueprints.launchpad.dev'
     ...                    '/firefox/+spec/canvas/+addsubscriber')
@@ -211,13 +179,13 @@ let that team be subscribed to a blueprint.
     >>> admin_browser.getControl('Continue').click()
     >>> admin_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/canvas/+addsubscriber'
-    >>> admin_browser.contents
-    '...Constraint not satisfied...'
+    >>> get_feedback_messages(admin_browser.contents)
+    [...Constraint not satisfied...
 
 == Restrict Appointing a Translator ==
 
-To prevent leaking information about a team's private membership, do not
-let that team become a translator.
+To prevent leaking information about a team's private membership,
+no user can specify that team as a translator.
 
     >>> admin_browser.open('http://translations.launchpad.dev'
     ...                    '/+groups/testing-translation-team/+appoint')
@@ -226,44 +194,44 @@ let that team become a translator.
     >>> admin_browser.getControl('Add').click()
     >>> admin_browser.url
     'http://translations.launchpad.dev/+groups/testing-translation-team/+appoint'
-    >>> admin_browser.contents
-    '...Constraint not satisfied...'
+    >>> get_feedback_messages(admin_browser.contents)
+    [...Constraint not satisfied...
 
 == Restrict Project Owner ==
 
-To prevent leaking information about a team's private membership, do not
-let that team be the owner of a project.
+To prevent leaking information about a team's private membership,
+no user can set that team as the owner of a project.
 
     >>> admin_browser.open('http://launchpad.dev/mozilla/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'myteam'
     >>> admin_browser.getControl('Change Registrant').click()
     >>> admin_browser.url
     'http://launchpad.dev/mozilla/+reassign'
-    >>> admin_browser.contents
-    '...The person/team named \'myteam\' is not a valid owner for...'
+    >>> get_feedback_messages(admin_browser.contents)
+    [...The person/team named 'myteam' is not a valid owner for...
 
 == Restrict Product Maintainer ==
 
-To prevent leaking information about a team's private membership, do not
-let that team be the maintainer of a product.
+To prevent leaking information about a team's private membership,
+no user can set that team as the maintainer of a product.
 
     >>> admin_browser.open('http://launchpad.dev/jokosher/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'myteam'
     >>> admin_browser.getControl('Change Registrant').click()
     >>> admin_browser.url
     'http://launchpad.dev/jokosher/+reassign'
-    >>> admin_browser.contents
-    '...The person/team named \'myteam\' is not a valid owner for...'
+    >>> get_feedback_messages(admin_browser.contents)
+    [...The person/team named 'myteam' is not a valid owner for...
 
 == Restrict Distro Registrant ==
 
-To prevent leaking information about a team's private membership, do not
-let that team be the registrant of a distribution.
+To prevent leaking information about a team's private membership,
+no user can set that team as the registrant of a distribution.
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu/+reassign')
     >>> admin_browser.getControl(name='field.owner').value = 'myteam'
     >>> admin_browser.getControl('Change Registrant').click()
     >>> admin_browser.url
     'http://launchpad.dev/ubuntu/+reassign'
-    >>> admin_browser.contents
-    '...The person/team named \'myteam\' is not a valid owner for...'
+    >>> get_feedback_messages(admin_browser.contents)
+    [...The person/team named 'myteam' is not a valid owner for...

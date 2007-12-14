@@ -1,5 +1,4 @@
 # Copyright 2004-2007 Canonical Ltd
-# pylint: disable-msg=E0602
 
 
 """Person-related wiew classes."""
@@ -1291,8 +1290,9 @@ def userIsActiveTeamMember(team):
     user = getUtility(ILaunchBag).user
     if user is None:
         return False
-    naked_team = removeSecurityProxy(team)
-    return user in naked_team.activemembers
+    if not check_permission('launchpad.View', team):
+        return False
+    return user in team.activemembers
 
 
 class PersonSpecWorkLoadView(LaunchpadView):
