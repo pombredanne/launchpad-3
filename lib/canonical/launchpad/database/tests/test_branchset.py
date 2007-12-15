@@ -393,7 +393,7 @@ class BranchVisibilityPolicyTestCase(TestCase):
         self.albert.join(self.zulu)
         self.bob.join(self.yankee)
         self.charlie.join(self.zulu)
-        logout()
+        login(ANONYMOUS)
 
     def defineTeamPolicies(self, team_policies):
         """Shortcut to help define team policies."""
@@ -861,7 +861,7 @@ class TeamsWithinTeamsPolicies(BranchVisibilityPolicyTestCase):
             (self.yankee, BranchVisibilityRule.PUBLIC),
             (self.zulu, BranchVisibilityRule.PRIVATE),
             ))
-        logout()
+        login(ANONYMOUS)
 
     def test_team_memberships(self):
         albert, bob, charlie, doug = self.people
