@@ -532,8 +532,6 @@ class Builder(SQLBase):
         processorfamily with the highest lastscore or None if there
         is no one available.
         """
-        # XXX cprov 20071126: exclude build candidates for SECURITY pocket.
-        # We can't build them yet.
         clauses = ["""
             buildqueue.build = build.id AND
             build.distroarchseries = distroarchseries.id AND
