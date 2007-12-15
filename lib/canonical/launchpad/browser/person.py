@@ -165,12 +165,11 @@ class RestrictedMembershipsPersonView(LaunchpadView):
     all the teams that these attributes and functions return.
     """
 
-    @property
-    def user(self):
-        return getUtility(ILaunchBag).user
-
     def getLatestApprovedMembershipsForPerson(self):
-        """Returns a list of teams the person has recently joined."""
+        """Returns a list of teams the person has recently joined.
+
+        Private teams are filtered out if the user is not a member of them.
+        """
         # This method returns a list as opposed to the database object's
         # getLatestApprovedMembershipsForPerson which returns a sqlobject
         # result set.
@@ -183,6 +182,7 @@ class RestrictedMembershipsPersonView(LaunchpadView):
         """Returns list of teams with custom icons.
 
         These are teams that the person is an active member of.
+        Private teams are filtered out if the user is not a member of them.
         """
         # This method returns a list as opposed to the database object's
         # teams_with_icons which returns a sqlobject

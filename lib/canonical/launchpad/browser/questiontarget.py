@@ -36,7 +36,7 @@ from canonical.launchpad.helpers import (
     browserLanguages, is_english_variant, preferred_or_request_languages)
 from canonical.launchpad.browser.faqcollection import FAQCollectionMenu
 from canonical.launchpad.interfaces import (
-    IDistribution, IFAQCollection, ILanguageSet, ILaunchBag, IProject,
+    IDistribution, IFAQCollection, ILanguageSet, IProject,
     IQuestionCollection, IQuestionSet, IQuestionTarget,
     ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError,
     QuestionStatus)
@@ -668,8 +668,8 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
     def administrated_teams(self):
         from canonical.launchpad.browser.person import (
             RestrictedMembershipsPersonView)
-        user = getUtility(ILaunchBag).user
-        restricted_view = RestrictedMembershipsPersonView(user, self.request)
+        restricted_view = RestrictedMembershipsPersonView(self.user,
+                                                          self.request)
         return restricted_view.administrated_teams
 
     def _updatePreferredLanguages(self, person_or_team):

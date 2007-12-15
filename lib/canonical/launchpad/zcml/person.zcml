@@ -241,10 +241,6 @@
     class="canonical.launchpad.browser.PersonView">
 
     <browser:page
-      name="+members"
-      template="../templates/team-members.pt"
-      />
-    <browser:page
       name="+ask-a-question-button"
       template="../templates/null.pt"
       />
@@ -700,6 +696,13 @@
     label="Create a new poll"
     permission="launchpad.Edit"
     template="../templates/team-newpoll.pt"
+    />
+
+  <browser:page
+    name="+members"
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    template="../templates/team-members.pt"
     />
 
   <browser:page

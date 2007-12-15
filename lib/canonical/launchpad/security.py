@@ -428,6 +428,7 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
         admins = getUtility(ILaunchpadCelebrities).admin
         return self.obj.id == user.id or user.inTeam(admins)
 
+
 class EditPersonBySelf(AuthorizationBase):
     permission = 'launchpad.Special'
     usedfor = IPerson
@@ -436,12 +437,18 @@ class EditPersonBySelf(AuthorizationBase):
         """A user can edit the Person who is herself."""
         return self.obj.id == user.id
 
+
 class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
+    """Restrict viewing of private memberships of teams.
+
+    Only members of a team with a private membership can view the
+    membership list.
+    """
     permission = 'launchpad.View'
     usedfor = IPerson
 
     def checkUnauthenticated(self):
-        """An admin or a team member can view the Team's membership."""
+        """Unauthenticated users can only view public memberships."""
         # XXX Edwin Grubbs 2007-12-11 bug=175758
         # Checking if visibility is None is only necessary until next cycle.
         if (self.obj.visibility is None
@@ -450,7 +457,12 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
         return False
 
     def checkAuthenticated(self, user):
-        """An admin or a team member can view the Team's membership."""
+        """Verify that the user can view the team's membership.
+
+        Anyone can see a public team's membership.
+        Only a team member or a Launchpad admin can view a
+        private membership.
+        """
         # XXX Edwin Grubbs 2007-12-11 bug=175758
         # Checking if visibility is None is only necessary until next cycle.
         if (self.obj.visibility is None
@@ -913,7 +925,7 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     usedfor = IPOTemplate
 
 
-# XXX: Carlos Perello Marin 2005-05-24 bug=753: 
+# XXX: Carlos Perello Marin 2005-05-24 bug=753:
 # This should be using SuperSpecialPermissions when implemented.
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Append'
