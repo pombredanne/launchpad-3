@@ -21,12 +21,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (ILaunchBag, IMilestone,
     IMilestoneSet, IBugTaskSet, BugTaskSearchParams, IProjectMilestone)
 
-from canonical.launchpad.browser.editview import SQLObjectEditView
-
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, StandardLaunchpadFacets,
-    ContextMenu, Link, LaunchpadFormView, LaunchpadView,
-    enabled_with_permission, GetitemNavigation, Navigation)
+    ContextMenu, Link, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, enabled_with_permission, GetitemNavigation, Navigation)
 
 from canonical.widgets import DateWidget
 
@@ -155,8 +153,17 @@ class MilestoneAddView(LaunchpadFormView):
         return "%s/+addmilestone" % canonical_url(self.context)
 
 
-class MilestoneEditView(SQLObjectEditView):
+class MilestoneEditView(LaunchpadEditFormView):
 
-    def changed(self):
-        self.request.response.redirect('../..')
+    schema = IMilestone
+    field_names = ['name', 'dateexpected', 'description']
+    label = "Modify milestone details"
+
+    custom_widget('dateexpected', DateWidget)
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
+
 

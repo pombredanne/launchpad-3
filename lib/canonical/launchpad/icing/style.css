@@ -952,8 +952,8 @@ a conditional comment in main-template.pt to work around the above rule. */
   text-decoration: none;
 }
 #portlets .portletBody {
-  border-left: 4px solid #ebebeb;
-  border-right: 4px solid #ebebeb;
+  border-left: 2px solid #ebebeb;
+  border-right: 2px solid #ebebeb;
   background-color: #EBEBEB;
   padding: 3px 12px 3px 8px !important;
   color: #717171;

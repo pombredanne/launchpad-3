@@ -3,17 +3,20 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-milestones"
-  tal:condition="context/milestones">
+  tal:condition="context/milestones"
+  tal:define="milestones context/milestones">
   <h2>Active milestones</h2>
   <div class="portletBody portletContent">
-    <ul tal:condition="context/milestones">
-      <li class="milestone" tal:repeat="milestone context/milestones">
-        <a tal:content="milestone/name"
-           tal:attributes="href milestone/fmt:url">
-           milestone name
-        </a>
-      </li>
-    </ul>
+    <table tal:condition="milestones">
+      <tr tal:repeat="milestone context/milestones">
+        <td><img src="/@@/milestone" alt="" /></td>
+        <td tal:content="milestone/dateexpected/fmt:date" />
+        <td><a tal:content="milestone/name"
+               tal:attributes="href milestone/fmt:url">
+               milestone name
+            </a></td>
+      </tr>
+    </table>
     <p>
       <a tal:attributes="href string:${context/fmt:url}/+milestones">
       &raquo; See all milestones...</a>

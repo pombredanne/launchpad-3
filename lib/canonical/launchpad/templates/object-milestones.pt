@@ -12,44 +12,47 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
+<metal:portlets fill-slot="portlets">
+</metal:portlets>
 
 <div metal:fill-slot="main">
 
   <h1>Milestones</h1>
-    <tal:has-milestones condition="context/all_milestones">
-    <ul>
-      <li class="milestone"
-          tal:repeat="milestone context/all_milestones"
-          tal:attributes="id string:milestone-${milestone/name}">
-        <a tal:content="milestone/name"
-           tal:attributes="href milestone/fmt:url">
-           milestone name
-        </a>
-        <strong tal:condition="not: milestone/visible">(Inactive)</strong>
-        <div tal:condition="milestone/dateexpected">
-          Expected for <span tal:replace="milestone/dateexpected/fmt:date" />
-        </div>
-        <div tal:condition="milestone/series_target">
-          For <a tal:attributes="href milestone/series_target/fmt:url"
-                 tal:replace="milestone/series_target/title">Feisty</a>
-        </div>
-	<div class="description"
-	     tal:condition="milestone/description"
-	     tal:content="structure milestone/description/fmt:text-to-html">
-	  Milestone description.
-	</div>
-      </li>
-    </ul>
-    </tal:has-milestones>
 
-    <tal:no-milestones condition="not: context/all_milestones">
-    <p>There are no milestones associated with
-      <span tal:replace="context/title" />
-    </p>
+  <p><a tal:attributes="href context/fmt:url">&laquo; Back</a></p>
+  <tal:milestones define="milestones context/all_milestones">
+    <table tal:condition="milestones">
+      <tr tal:attributes="id string:milestone-${milestone/name}"
+          tal:repeat="milestone context/all_milestones">
+        <td><img src="/@@/milestone" alt="" /></td>
+        <td>
+          <strong>
+            <a tal:content="milestone/name"
+               tal:attributes="href milestone/fmt:url">
+               milestone name
+            </a>
+          </strong>
+        </td>
+        <td tal:content="milestone/dateexpected/fmt:date" />
+        <td><strong tal:condition="not: milestone/visible"
+               >(Inactive)</strong>
+        </td>
+        <td>
+          <a tal:attributes="href milestone/series_target/fmt:url"
+             tal:replace="milestone/series_target/displayname">Feisty</a>
+        </td>
+        <td tal:content="structure milestone/description/fmt:shorten/40"
+            />
+      </tr>
+    </table>
+
+    <tal:no-milestones condition="not: milestones">
+      <p>There are no milestones associated with
+        <span tal:replace="context/title" />
+      </p>
     </tal:no-milestones>
+  </tal:milestones>
+  <p><a tal:attributes="href context/fmt:url">&laquo; Back</a></p>
 </div>
 </body>
 </html>

@@ -9,34 +9,25 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
-<tal:tag condition="view/update"/>
+
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/target/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/target/@@+portlet-milestones" />
-</metal:rightportlets>
+</metal:portlets>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Change milestone details</h1>
-</metal:heading>
+<div metal:fill-slot="main">
 
-    <div metal:fill-slot="main">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
-      <div metal:use-macro="context/@@launchpad_editform/editform">
-
-          <p metal:fill-slot="extra_info">
-            If you set a milestone expected date,
-            it may show up in your calendar.
-          </p>
-
-      </div>
-    
+    <div metal:fill-slot="extra_info" class="documentDescription">
+      You should keep the expected date of delivery of the milestone
+      accurate, so that it can be exported to other projects which depend
+      on this one.
     </div>
 
-  </body>
+  </div>
+
+</div>
+</body>
 </html>

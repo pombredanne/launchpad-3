@@ -243,13 +243,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def all_milestones(self):
         """See `IProduct`."""
         return Milestone.selectBy(
-            product=self, orderBy=['dateexpected', 'name'])
+            product=self, orderBy=['-dateexpected', 'name'])
 
     @property
     def milestones(self):
         """See `IProduct`."""
         return Milestone.selectBy(
-            product=self, visible=True, orderBy=['dateexpected', 'name'])
+            product=self, visible=True, orderBy=['-dateexpected', 'name'])
 
     @property
     def sourcepackages(self):

@@ -47,25 +47,25 @@ class PopCalDateTimeFolder(ExportedFolder):
     here = os.path.dirname(os.path.realpath(__file__))
 
 
-class DateWidget(TextWidget):
-    """A date selection widget with popup selector."""
+class DateTimeWidget(TextWidget):
+    """A date and time selection widget with popup selector."""
+
+    timeZoneName = 'UTC'
+    timeformat = '%Y-%m-%d %H:%M:%S'
 
     # ZPT that renders our widget
-    __call__ = ViewPageTemplateFile('templates/date.pt')
+    __call__ = ViewPageTemplateFile('templates/datetime.pt')
 
     def __init__(self, context, request):
         # Unfortunate limitation of PopCalXP is that we may have EITHER a
         # datepicker OR a datetimepicker, but not both.
-        assert not request.needs_datetimepicker_iframe
-        request.needs_datepicker_iframe = True
-        super(DateWidget, self).__init__(context, request)
-
-    timeZoneName = 'UTC'
-    timeformat = '%Y-%m-%d'
+        assert not request.needs_datepicker_iframe
+        request.needs_datetimepicker_iframe = True
+        super(DateTimeWidget, self).__init__(context, request)
 
     def _toFieldValue(self, input):
         """Return parsed input (datetime) as a date."""
-        return self._parseInput(input).date()
+        return self._parseInput(input)
 
     def _parseInput(self, input):
         """Convert a string to a datetime value.
@@ -141,7 +141,7 @@ class DateWidget(TextWidget):
         if value == self.context.missing_value:
             return self._missing
         tz = pytz.timezone(self.timeZoneName)
-        return value.astimezone(tz).strftime(timeformat)
+        return value.astimezone(tz).strftime(self.timeformat)
 
     def formvalue(self):
         """Return the value for the form to render, accessed via the
@@ -165,23 +165,32 @@ class DateWidget(TextWidget):
         return value
 
 
-class DateTimeWidget(DateWidget):
-    """A date and time selection widget with popup selector."""
+class DateWidget(DateTimeWidget):
+    """A date selection widget with popup selector.
+
+    The assumed underlying storage is a datetime (in the database) so this
+    class modifies that datetime into a date for presentation purposes.
+    """
+
+    timeformat = '%Y-%m-%d'
 
     # ZPT that renders our widget
-    __call__ = ViewPageTemplateFile('templates/datetime.pt')
-    timeformat = '%Y-%m-%d %H:%M:%S'
+    __call__ = ViewPageTemplateFile('templates/date.pt')
 
     def __init__(self, context, request):
         # Unfortunate limitation of PopCalXP is that we may have EITHER a
         # datepicker OR a datetimepicker, but not both.
-        assert not request.needs_datepicker_iframe
-        request.needs_datetimepicker_iframe = True
-        super(DateWidget, self).__init__(context, request)
+        assert not request.needs_datetimepicker_iframe
+        request.needs_datepicker_iframe = True
+        super(DateTimeWidget, self).__init__(context, request)
 
     def _toFieldValue(self, input):
         """Return parsed input (datetime) as a date."""
-        return self._parseInput(input)
+        return self._parseInput(input).date()
+
+    def setRenderedValue(self, value):
+        """Render a date from the underlying datetime."""
+        self._data = value.date()
 
 
 class DatetimeDisplayWidget(DisplayWidget):
