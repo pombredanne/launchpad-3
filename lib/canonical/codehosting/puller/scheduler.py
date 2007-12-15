@@ -324,6 +324,7 @@ class PullerMaster:
         return pass_through
 
     def mirror(self):
+        """Spawn a worker process to mirror a branch."""
         deferred = defer.Deferred()
         protocol = self.master_protocol_class(deferred, self)
         command = [
