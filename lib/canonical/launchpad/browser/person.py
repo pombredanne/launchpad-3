@@ -131,6 +131,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
 from canonical.launchpad.browser.branchlisting import BranchListingView
+from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
@@ -1604,7 +1605,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return self.getBugContactPackageSearchURL()
 
 
-class PersonRelatedBugsView(BugTaskSearchListingView):
+class PersonRelatedBugsView(BugTaskSearchListingView, FeedsMixin):
     """All bugs related to someone."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
@@ -1822,7 +1823,7 @@ class PersonLanguagesView(LaunchpadView):
             self.request.response.redirect(redirection_url)
 
 
-class PersonView(LaunchpadView):
+class PersonView(LaunchpadView, FeedsMixin):
     """A View class used in almost all Person's pages."""
 
     @cachedproperty

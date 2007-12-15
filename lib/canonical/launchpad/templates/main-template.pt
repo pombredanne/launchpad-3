@@ -25,6 +25,12 @@
 >
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
+    <tal:atomfeeds condition="view/feed_links | nothing">
+      <tal:loop repeat="link view/feed_links">
+        <tal:feed content="structure link/render"/>
+      </tal:loop>
+    </tal:atomfeeds>
+
     <!-- Launchpad style sheet -->
     <style
       type="text/css"
