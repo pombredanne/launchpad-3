@@ -181,7 +181,7 @@ allow duplications.
     >>> admin_browser.getControl("PPA support available").selected = True
 
 XXX cprov 20071213: we should return a proper error page on attempts
-to open and already installed architecture instead of a
+to open an already installed architecture instead of a
 traceback. Although It's not a big problem because this form is very
 restricted and rarely used.
 
