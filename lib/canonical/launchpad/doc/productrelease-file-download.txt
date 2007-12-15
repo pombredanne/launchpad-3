@@ -60,7 +60,8 @@ Add a file alias to the productrelease.
     ...     name='foo.txt', size=len(file_content),
     ...     file=StringIO(file_content), contentType='text/plain')
     >>> product_release_file = rel.addFileAlias(file_alias,
-    ...     current_user(),
+    ...     signature=None,
+    ...     uploader=current_user(),
     ...     description="Foo file")
 
 Ensure the description is as we set it.
