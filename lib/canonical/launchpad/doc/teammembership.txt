@@ -121,7 +121,7 @@ to a team.
     ...     print "No exception raised"
     zope.security.interfaces.Unauthorized (..., 'addMember', 'launchpad.Edit')
 
-Login the team owner.
+Log in as the team owner.
 
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(t3.teamowner.preferredemail.email)

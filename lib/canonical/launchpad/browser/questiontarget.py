@@ -39,7 +39,7 @@ from canonical.launchpad.interfaces import (
     IDistribution, IFAQCollection, ILanguageSet, ILaunchBag, IProject,
     IQuestionCollection, IQuestionSet, IQuestionTarget,
     ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError,
-    PersonVisibility, QuestionStatus)
+    QuestionStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, Link,
     safe_action, stepto, stepthrough, urlappend)

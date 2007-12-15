@@ -1,13 +1,14 @@
 = Teams with Private Membership =
 
 If a team's visibility attribute is set to Private Membership, only
-launchpad admins and members of that team can see the membership.
+Launchpad admins and members of that team can see the membership.
 
 Create a test team with private membership and a test member. Even
 though no-priv is a proposed member by requesting to join this moderated
 team, he still does not get access to the membership list.
 
     >>> def print_members(contents, type):
+    ...     """Extract members of a team from the html output."""
     ...     table = find_tag_by_id(contents, type)
     ...     for link in table.findAll('a'):
     ...         if link.renderContents() != 'Edit' and not link.find('img'):
