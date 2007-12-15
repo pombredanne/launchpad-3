@@ -161,7 +161,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     architecturecount = Attribute("The number of architectures in this "
         "series.")
-    architectures = Attribute("The architectures in this series.")
+    architectures = Attribute("All architectures in this series.")
+    ppa_architectures = Attribute(
+        "All architectures in this series where PPA is supported.")
     nominatedarchindep = Attribute(
         "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")
@@ -262,7 +264,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "or obsolete.")
 
     def isUnstable():
-        """Return True if in unstable (or "development") phase.
+        """Whether or not a distroseries is unstable.
 
         The distribution is "unstable" until it is released; after that
         point, all development on the Release pocket is stopped and
@@ -528,7 +530,8 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         the changesfile is unsigned.
         """
 
-    def newArch(architecturetag, processorfamily, official, owner):
+    def newArch(architecturetag, processorfamily, official, owner,
+                ppa_supported=False):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
     def newMilestone(name, dateexpected=None, description=None):
