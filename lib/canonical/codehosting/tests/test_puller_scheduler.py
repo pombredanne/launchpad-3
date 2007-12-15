@@ -526,7 +526,7 @@ parser = OptionParser()
 (source_url, destination_url, branch_id, unique_name,
  branch_type_name, oops_prefix) = arguments
 from bzrlib import branch
-b = branch.Branch.open(destination_url)
+branch = branch.Branch.open(destination_url)
 protocol = PullerWorkerProtocol(sys.stdout)
 """
 
@@ -632,10 +632,11 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
             master_protocol_class = PullerMasterProtocolWithLockID
 
         check_lock_id_script = """
-        b.lock_write()
-        protocol.sendEvent('lock_id', b.control_files._lock.peek()['user'])
+        branch.lock_write()
+        protocol.sendEvent(
+            'lock_id', bracnh.control_files._lock.peek()['user'])
         sys.stdout.flush()
-        b.unlock()
+        branch.unlock()
         """
 
         puller_master = self.makePullerMaster(
@@ -717,7 +718,7 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
                 branch_locked_deferred.callback(None)
 
         lock_and_wait_script = """
-        b.lock_write()
+        branch.lock_write()
         protocol.sendEvent('branchLocked')
         sys.stdout.flush()
         time.sleep(3600)
