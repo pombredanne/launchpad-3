@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import os
 import re
+import urlparse
 
 from zope.component import getUtility
 
@@ -13,7 +14,7 @@ from canonical.config import config
 from canonical.database.sqlbase import commit, ZopelessTransactionManager
 from canonical.launchpad.components.externalbugtracker import (
     Bugzilla, BugNotFound, BugTrackerConnectError, ExternalBugTracker,
-    DebBugs, Mantis, Trac, Roundup, SourceForge)
+    DebBugs, Mantis, Trac, Roundup, RequestTracker, SourceForge)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     BugTaskStatus, UNKNOWN_REMOTE_STATUS)
@@ -354,6 +355,7 @@ class TestMantis(Mantis):
         except AttributeError:
             pass
 
+
 class TestTrac(Trac):
     """Trac ExternalBugTracker for testing purposes.
 
@@ -401,6 +403,35 @@ class TestRoundup(Roundup):
         else:
             return open(
                 file_path + '/' + 'roundup_example_ticket_export.csv', 'r')
+
+
+class TestRequestTracker(RequestTracker):
+    """A Test-oriented `RequestTracker` implementation.
+
+    Overrides _getPage() and _postPage() so that access to an RT
+    instance is not needed.
+    """
+    trace_calls = False
+    simulate_bad_response = False
+
+    def urlopen(self, page, data=None):
+        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
+        path = urlparse.urlparse(page)[2].lstrip('/')
+        if self.trace_calls:
+            print "CALLED urlopen(%r)" % path
+
+        if self.simulate_bad_response:
+            return open(file_path + '/' + 'rt-sample-bug-bad.txt')
+
+        if path == self.batch_url:
+            return open(file_path + '/' + 'rt-sample-bug-batch.txt')
+        else:
+            # We extract the ticket ID from the url and use that to find
+            # the test file we want.
+            page_re = re.compile('REST/1.0/ticket/([0-9]+)/show')
+            bug_id = page_re.match(path).groups()[0]
+
+            return open(file_path + '/' + 'rt-sample-bug-%s.txt' % bug_id)
 
 
 class TestSourceForge(SourceForge):
