@@ -499,7 +499,7 @@ class TestDebBugs(DebBugs):
     existing debbugs db.
     """
     def __init__(self, txn, bugtracker, bugs):
-        super(TestDebBugs, self).__init__(bugtracker)
+        super(TestDebBugs, self).__init__(txn, bugtracker)
         self.bugs = bugs
         self.debbugs_db = TestDebBugsDB()
         self.import_comments = False
