@@ -254,20 +254,20 @@ via the 'architectures' property.
     >>> warty = ubuntu['warty']
     >>> hoary = ubuntu['hoary']
 
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest(form={})
     >>> def print_architectures(architectures):
     ...     for arch in architectures:
-    ...         if arch.details:
-    ...            print arch.title, arch.details
+    ...         details = getMultiAdapter((arch, request), name="+details")()
+    ...         if details:
+    ...             print arch.title, details
     ...         else:
     ...             print arch.title
 
     >>> print_architectures(warty.architectures)
     The Warty Warthog Release for hppa (hppa)
     The Warty Warthog Release for i386 (x86) (official, ppa)
-
-    >>> print_architectures(hoary.architectures)
-    The Hoary Hedgehog Release for hppa (hppa)
-    The Hoary Hedgehog Release for i386 (x86) (official, ppa)
 
 DistroArchSeries for which we support PPA building can be obtained via
 another distroseries method called 'ppa_architectures'.

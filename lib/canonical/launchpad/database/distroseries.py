@@ -1028,7 +1028,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             binarypackagename=drpc.binarypackagename) for drpc in drpcaches]
 
     def newArch(self, architecturetag, processorfamily, official, owner,
-                ppa_supported):
+                ppa_supported=False):
         """See IDistroSeries."""
         distroarchseries = DistroArchSeries(
             architecturetag=architecturetag, processorfamily=processorfamily,

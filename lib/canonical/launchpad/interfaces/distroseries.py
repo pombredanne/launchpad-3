@@ -531,7 +531,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """
 
     def newArch(architecturetag, processorfamily, official, owner,
-                ppa_supported):
+                ppa_supported=False):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
     def newMilestone(name, dateexpected=None, description=None):
