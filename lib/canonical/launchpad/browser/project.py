@@ -48,6 +48,7 @@ from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
+from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
 from canonical.launchpad.browser.questiontarget import (
@@ -359,7 +360,7 @@ class ProjectTranslationsMenu(ApplicationMenu):
         return Link('+changetranslators', text, icon='edit')
 
 
-class ProjectView(HasAnnouncementsView):
+class ProjectView(HasAnnouncementsView, FeedsMixin):
     pass
 
 
