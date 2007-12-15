@@ -11,6 +11,7 @@ from canonical.launchpad.interfaces import (
     IAnnouncement, IBazaarApplication, IBranch, IBranchMergeProposal,
     IBranchSubscription, IBug, IBugAttachment, IBugBranch, IBugNomination,
     IBugTracker, IBuild, IBuilder, IBuilderSet, ICodeImport,
+    ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
     ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet,
     IDistribution, IDistributionMirror, IDistroSeries,
     IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHasBug,
@@ -39,16 +40,16 @@ class AuthorizationBase:
         self.obj = obj
 
     def checkUnauthenticated(self):
-        """Must return True or False.
+        """See `IAuthorization.checkUnauthenticated`.
 
-        See IAuthorization.checkUnauthenticated.
+        :return: True or False.
         """
         return False
 
     def checkAuthenticated(self, user):
-        """Must return True or False.
+        """See `IAuthorization.checkAuthenticated`.
 
-        See IAuthorization.checkAuthenticated.
+        :return: True or False.
         """
         return False
 
@@ -727,14 +728,22 @@ class ViewAnnouncement(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IAnnouncement
 
+    def checkUnauthenticated(self):
+        """Let anonymous users see published announcements."""
+        if self.obj.published:
+            return True
+        return False
+
     def checkAuthenticated(self, user):
         """Keep project news invisible to end-users unless they are project
         admins, until the announcements are published."""
 
+        # Every user can view published announcements.
+        if self.obj.published:
+            return True
+
+        # Project drivers can view any project announcements.
         assert self.obj.target
-        if not user.inTeam(
-            getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
-            return False
         if self.obj.target.drivers:
             for driver in self.obj.target.drivers:
                 if user.inTeam(driver):
@@ -742,12 +751,9 @@ class ViewAnnouncement(AuthorizationBase):
         if user.inTeam(self.obj.target.owner):
             return True
 
+        # Launchpad admins can view any announcement.
         admins = getUtility(ILaunchpadCelebrities).admin
-        if user.inTeam(admins):
-            return True
-
-        # Every user can view published announcements.
-        return self.obj.published
+        return user.inTeam(admins)
 
 
 class EditAnnouncement(AuthorizationBase):
@@ -758,9 +764,6 @@ class EditAnnouncement(AuthorizationBase):
         """Allow the project owner and drivers to edit any project news."""
 
         assert self.obj.target
-        if not user.inTeam(
-            getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
-            return False
         if self.obj.target.drivers:
             for driver in self.obj.target.drivers:
                 if user.inTeam(driver):
@@ -834,6 +837,36 @@ class EditCodeImports(OnlyVcsImportsAndAdmins):
     """
     permission = 'launchpad.Edit'
     usedfor = ICodeImport
+
+
+class SeeCodeImportJobs(OnlyVcsImportsAndAdmins):
+    """Control who can see the object view of a CodeImportJob.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImportJob
+
+
+class SeeCodeImportJobSet(OnlyVcsImportsAndAdmins):
+    """Control who can see the CodeImportJobSet utility.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImportJobSet
+
+
+class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
+    """Control who can use the CodeImportJobWorkflow utility.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = ICodeImportJobWorkflow
 
 
 class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):

@@ -201,6 +201,13 @@ k            </description>
                 of 0 means no limit.
             </description>
         </key>
+        <key name="max_productrelease_signature_size" datatype="integer" required="no"
+            default="0">
+            <description>
+                Maximum size of a product release download file signature in bytes.
+                A value of 0 means no limit.
+            </description>
+        </key>
         <key name="browser_notification_level" required="no"
             datatype="canonical.config.loglevel" default="info" />
         <key name="max_feed_cache_minutes" required="no"
@@ -565,7 +572,7 @@ k            </description>
               page.
           </description>
         </key>
-        <key name="expiration_dbuser" datatype="string" 
+        <key name="expiration_dbuser" datatype="string"
             default="bugnotification">
             <description>
                 The database user that will be used to expire bugtask.
@@ -639,7 +646,7 @@ k            </description>
         </description>
         <key name="dbuser" datatype="string" default="processmail">
             <description>
-                The database user which will be used to process incoming 
+                The database user which will be used to process incoming
                 emails.
             </description>
         </key>
@@ -1176,7 +1183,7 @@ k            </description>
         <section name="*" type="personalpackagearchive"
             attribute="personalpackagearchive" />
         <section name="*" type="mailman" attribute="mailman" />
-        <section name="*" type="archivepublisher" 
+        <section name="*" type="archivepublisher"
             attribute="archivepublisher" />
         <section name="*" type="checkwatches" attribute="checkwatches" />
     </sectiontype>

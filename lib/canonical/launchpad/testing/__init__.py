@@ -73,11 +73,13 @@ class LaunchpadObjectFactory:
         return getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
 
-    def makeProduct(self):
+    def makeProduct(self, name=None):
         """Create and return a new, arbitrary Product."""
         owner = self.makePerson()
+        if name is None:
+            name = self.getUniqueString('product-name')
         return getUtility(IProductSet).createProduct(
-            owner, self.getUniqueString('product-name'),
+            owner, name,
             self.getUniqueString('displayname'),
             self.getUniqueString('title'),
             self.getUniqueString('summary'),

@@ -22,7 +22,8 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.validators.productrelease import (
-    productrelease_file_size_constraint)
+    productrelease_file_size_constraint,
+    productrelease_signature_size_constraint)
 
 from canonical.launchpad.fields import ContentNameField
 
@@ -133,7 +134,8 @@ class IProductRelease(Interface):
     product = Attribute(_('The upstream project of this release.'))
     files = Attribute(_('Iterable of product release files.'))
 
-    def addFileAlias(alias, uploader,
+    def addFileAlias(alias, signature,
+                     uploader,
                      file_type=UpstreamFileType.CODETARBALL,
                      description=None):
         """Add a link between this product and a library file alias."""
@@ -152,10 +154,12 @@ class IProductReleaseFile(Interface):
     libraryfile = Object(schema=ILibraryFileAlias, title=_("File"),
                          description=_("The attached file."),
                          required=True)
+    signature = Object(schema=ILibraryFileAlias, title=_("Signature"),
+                       description=_("The signature of the attached file."),
+                       required=False)
     filetype = Choice(title=_("Upstream file type"), required=True,
                       vocabulary=UpstreamFileType,
                       default=UpstreamFileType.CODETARBALL)
-
     description = Text(title=_("Description"), required=False,
         description=_('A detailed description of the file contents'))
 
@@ -169,10 +173,13 @@ class IProductReleaseFileAddForm(Interface):
         title=u"File", required=True,
         constraint=productrelease_file_size_constraint)
 
+    signature = Bytes(
+        title=u"GPG signature (recommended)", required=False,
+        constraint=productrelease_signature_size_constraint)
+
     contenttype = Choice(title=_("File content type"), required=True,
                          vocabulary=UpstreamFileType,
                          default=UpstreamFileType.CODETARBALL)
-
 
 class IProductReleaseSet(Interface):
     """Auxiliary class for ProductRelease handling."""
