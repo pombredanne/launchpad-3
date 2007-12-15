@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import cgi
 import csv
+import email
 import os.path
 import re
 import socket
@@ -92,7 +93,6 @@ class InvalidBugId(Exception):
 
 class BugNotFound(Exception):
     """The bug was not found in the external bug tracker."""
-
 
 _exception_to_bugwatcherrortype = [
    (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
@@ -1901,12 +1901,192 @@ class SourceForge(ExternalBugTracker):
             return local_status
 
 
+class RequestTracker(ExternalBugTracker):
+    """`ExternalBugTracker` subclass for handling RT imports."""
+
+    ticket_url = 'REST/1.0/ticket/%s/show'
+    batch_url = 'REST/1.0/search/ticket/'
+
+    def __init__(self, txn, bugtracker):
+        super(RequestTracker, self).__init__(txn, bugtracker)
+        self.batch_query_threshold = 1
+
+    @property
+    def credentials(self):
+        """Return the authentication credentials needed to log in.
+
+        If there are specific credentials for the current RT instance,
+        these will be returned. Otherwise the RT default guest
+        credentials (username and password of 'guest') will be returned.
+        """
+        credentials_map = {
+            'rt.cpan.org': {'user': 'launchpad@launchpad.net',
+                            'pass': 'th4t3'}}
+
+        hostname = urlparse(self.baseurl)[1]
+        try:
+            return credentials_map[hostname]
+        except KeyError:
+            return {'user': 'guest', 'pass': 'guest'}
+
+    @cachedproperty
+    def _opener(self):
+        """Return a urllib2.OpenerDirector for the remote RT instance.
+
+        An attempt will be made to log in to the remote instance before
+        the opener is returned. If logging in is not successful a
+        BugTrackerConnectError will be raised
+        """
+        # To log in to an RT instance we must pass a username and
+        # password to its login form, as a user would from the web.
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
+        try:
+            opener.open('%s/' % self.baseurl, urllib.urlencode(
+                self.credentials))
+        except (urrlib2.HTTPError, urllib2.URLError), error:
+            raise BugTrackerConnectError('%s/' % self.baseurl,
+                "Unable to authenticate with remote RT service: "
+                "Could not submit login form: " +
+                error.message)
+
+    def urlopen(self, request, data=None):
+        """Return a handle to a remote resource.
+
+        This method overrides that of `ExternalBugTracker` so that the
+        custom URL opener for RequestTracker instances can be used.
+        """
+        # We create our own opener so as to handle the RT authentication
+        # cookies that need to be passed around.
+        return self._opener.open(request, data)
+
+    def getRemoteBug(self, bug_id):
+        """See `ExternalBugTracker`."""
+        ticket_url = self.ticket_url % str(bug_id)
+        query_url = '%s/%s' % (self.baseurl, ticket_url)
+        try:
+            bug_data = self.urlopen(query_url)
+        except urllib2.HTTPError, error:
+            raise BugTrackerConnectError(ticket_url, error.message)
+
+        # We use the first line of the response to ensure that we've
+        # made a successful request.
+        firstline = bug_data.readline().strip().split(' ')
+        if firstline[1] != '200':
+            # If anything goes wrong we raise a BugTrackerConnectError.
+            # We included in the error message the status code and error
+            # message returned by the server.
+            raise BugTrackerConnectError(
+                query_url,
+                "Unable to retrieve bug %s. The remote server returned the "
+                "following error: %s." %
+                (str(bug_id), " ".join(firstline[1:])))
+
+        # RT's REST interface returns tickets in RFC822 format, so we
+        # can use the email module to parse them.
+        bug = email.message_from_string(bug_data.read().strip())
+        if bug.get('id') is None:
+            return None, None
+        else:
+            bug_id = bug['id'].replace('ticket/', '')
+            return int(bug_id), bug
+
+    def getRemoteBugBatch(self, bug_ids):
+        """See `ExternalBugTracker`."""
+        # We need to ensure that all the IDs are strings first.
+        id_list = [str(id) for id in bug_ids]
+        query = "id = " + "OR id = ".join(id_list)
+
+        query_url = '%s/%s' % (self.baseurl, self.batch_url)
+        request_params = {'query': query, 'format': 'l'}
+        try:
+            bug_data = self.urlopen(query_url, urllib.urlencode(
+                request_params))
+        except urllib2.HTTPError, error:
+            raise BugTrackerConnectError(ticket_url, error.message)
+
+        # We use the first line of the response to ensure that we've
+        # made a successful request.
+        firstline = bug_data.readline().strip().split(' ')
+        if firstline[1] != '200':
+            # If anything goes wrong we raise a BugTrackerConnectError.
+            # We included in the error message the status code and error
+            # message returned by the server.
+            bug_id_string = ", ".join([str(bug_id) for bug_id in bug_ids])
+            raise BugTrackerConnectError(
+                query_url,
+                "Unable to retrieve bugs %s. The remote server returned the "
+                "following error:  %s." %
+                (bug_id_string, " ".join(firstline[1:])))
+
+        # Tickets returned in RT multiline format are separated by lines
+        # containing only --\n.
+        tickets = bug_data.read().split("--\n")
+        bugs = {}
+        for ticket in tickets:
+            ticket = ticket.strip()
+
+            # RT's REST interface returns tickets in RFC822 format, so we
+            # can use the email module to parse them.
+            bug = email.message_from_string(ticket)
+
+            # We only bother adding the bug to the bugs dict if we
+            # actually have some data worth adding.
+            if bug.get('id') is not None:
+                bug_id = bug['id'].replace('ticket/', '')
+                bugs[int(bug_id)] = bug
+
+        return bugs
+
+    def getRemoteStatus(self, bug_id):
+        """Return the remote status of a given bug.
+
+        See `ExternalBugTracker`.
+        """
+        try:
+            bug_id = int(bug_id)
+        except ValueError:
+            raise InvalidBugId(
+                "RequestTracker bug ids must be integers (was passed %r)"
+                % bug_id)
+
+        if bug_id not in self.bugs:
+            raise BugNotFound(bug_id)
+
+        return self.bugs[bug_id]['status']
+
+    def getRemoteImportance(self, bug_id):
+        """See `IExternalBugTracker`."""
+        pass
+
+    def convertRemoteImportance(self, remote_importance):
+        """See `IExternalBugTracker`."""
+        return UNKNOWN_REMOTE_IMPORTANCE
+
+    def convertRemoteStatus(self, remote_status):
+        """Convert an RT status into a Launchpad BugTaskStatus."""
+        status_map = {
+            'new': BugTaskStatus.NEW,
+            'open': BugTaskStatus.CONFIRMED,
+            'stalled': BugTaskStatus.CONFIRMED,
+            'rejected': BugTaskStatus.INVALID,
+            'resolved': BugTaskStatus.FIXRELEASED,
+            UNKNOWN_REMOTE_STATUS.lower(): BugTaskStatus.UNKNOWN}
+
+        try:
+            remote_status = remote_status.lower()
+            return status_map[remote_status]
+        except KeyError:
+            log.warn("Unknown status '%s'." % remote_status)
+            return BugTaskStatus.UNKNOWN
+
+
 BUG_TRACKER_CLASSES = {
     BugTrackerType.BUGZILLA: Bugzilla,
     BugTrackerType.DEBBUGS: DebBugs,
     BugTrackerType.MANTIS: Mantis,
     BugTrackerType.TRAC: Trac,
     BugTrackerType.ROUNDUP: Roundup,
+    BugTrackerType.RT: RequestTracker,
     BugTrackerType.SOURCEFORGE: SourceForge
     }
 
@@ -1914,7 +2094,7 @@ BUG_TRACKER_CLASSES = {
 def get_external_bugtracker(txn, bugtracker):
     """Return an `ExternalBugTracker` for bugtracker."""
     bugtrackertype = bugtracker.bugtrackertype
-    bugtracker_class = BUG_TRACKER_CLASSES.get(bugtracker.bugtrackertype)    
+    bugtracker_class = BUG_TRACKER_CLASSES.get(bugtracker.bugtrackertype)
     if bugtracker_class is not None:
         return bugtracker_class(txn, bugtracker)
     else:
