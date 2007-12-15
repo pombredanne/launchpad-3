@@ -68,13 +68,13 @@ __all__ = [
     'PersonIndexView',
     'RedirectToEditLanguagesView',
     'ReportedBugTaskSearchListingView',
+    'RestrictedMembershipsPersonView',
     'SearchAnsweredQuestionsView',
     'SearchAssignedQuestionsView',
     'SearchCommentedQuestionsView',
     'SearchCreatedQuestionsView',
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
-    'SecurePerson',
     'SubscribedBugTaskSearchListingView',
     'TeamJoinView',
     'TeamLeaveView',
@@ -122,7 +122,7 @@ from canonical.launchpad.interfaces import (
     IPersonClaim, IPersonSet, IPollSet, IPollSubset,
     IRequestPreferredLanguages, ISSHKeySet, ISignedCodeOfConductSet, ITeam,
     ITeamMembership, ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
-    LoginTokenType, NotFoundError, PersonCreationRationale,
+    LoginTokenType, NotFoundError, PersonCreationRationale, PersonVisibility,
     QuestionParticipation, SSHKeyType, SpecificationFilter,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
@@ -158,30 +158,59 @@ from canonical.launchpad.webapp import (
 
 from canonical.launchpad import _
 
-
-class SecurePerson:
+class RestrictedMembershipsPersonView(LaunchpadView):
     """Secure access to team membership information for a person.
 
     This class checks that the logged-in user has access to view
-    a team that the specified person belongs to.
+    all the teams that these attributes and functions return.
     """
-
-    def __init__(self, person):
-        self.person = person
 
     @property
     def user(self):
         return getUtility(ILaunchBag).user
 
     def getLatestApprovedMembershipsForPerson(self):
-        membership_list = self.person.getLatestApprovedMembershipsForPerson()
+        """Returns a list of teams the person has recently joined."""
+        # This method returns a list as opposed to the database object's
+        # getLatestApprovedMembershipsForPerson which returns a sqlobject
+        # result set.
+        membership_list = self.context.getLatestApprovedMembershipsForPerson()
         return [membership for membership in membership_list
                 if check_permission('launchpad.View', membership.team)]
 
     @property
     def teams_with_icons(self):
-        return [team for team in self.person.teams_with_icons
+        """Returns list of teams with custom icons.
+
+        These are teams that the person is an active member of.
+        """
+        # This method returns a list as opposed to the database object's
+        # teams_with_icons which returns a sqlobject
+        # result set.
+        return [team for team in self.context.teams_with_icons
                 if check_permission('launchpad.View', team)]
+
+    @property
+    def administrated_teams(self):
+        """Return the list of teams administrated by the person.
+
+        The user must be an administrator of the team, and the team must
+        be public.
+        """
+        # XXX Edwin Grubbs 2007-12-14 bug=175758
+        # Checking if the team.visibility is None can be removed
+        # after a notnull constraint has been added.
+        return [team for team in self.context.getAdministratedTeams()
+                if team.visibility is None
+                or team.visibility == PersonVisibility.PUBLIC]
+
+    def userCanViewMembership(self):
+        """Return true if the user can view a team's membership.
+
+        Only launchpad admins and team members can view the private
+        membership. Anyone can view a public team's membership.
+        """
+        return check_permission('launchpad.View', self.context)
 
 
 class BranchTraversalMixin:
@@ -1796,10 +1825,6 @@ class PersonLanguagesView(LaunchpadView):
 class PersonView(LaunchpadView):
     """A View class used in almost all Person's pages."""
 
-    @property
-    def secure_person(self):
-        return SecurePerson(self.context)
-
     @cachedproperty
     def recently_approved_members(self):
         members = self.context.getMembersByStatus(
@@ -1958,19 +1983,6 @@ class PersonView(LaunchpadView):
             return False
         return self.user in self.context.proposedmembers
 
-    def userCanViewMembership(self, team=None):
-        """Return true if the user can view a team's membership.
-
-        Only launchpad admins and team members can view the private
-        membership. Anyone can view a public team's membership.
-        """
-        if team is None:
-            return check_permission('launchpad.View', self.context)
-        elif ITeam.providedBy(team):
-            return check_permission('launchpad.View', team)
-        else:
-            raise AssertionError("Non-team argument: %r" % team)
-
     def userCanRequestToLeave(self):
         """Return true if the user can request to leave this team.
 
@@ -1990,6 +2002,17 @@ class PersonView(LaunchpadView):
 
     def joinAllowed(self):
         """Return True if this is not a restricted team."""
+        # Joining a moderated team will put you on the proposed_members
+        # list. If it is a private membership team, you are not allowed
+        # to view the proposed_members attribute until you are an
+        # active member; therefore, it would look like the join button
+        # is broken. Either private membership teams should always have a
+        # restricted subscription policy, or we need a more complicated
+        # permission model.
+        if not (self.context.visibility is None
+                or self.context.visibility == PersonVisibility.PUBLIC):
+            return False
+
         restricted = TeamSubscriptionPolicy.RESTRICTED
         return self.context.subscriptionpolicy != restricted
 

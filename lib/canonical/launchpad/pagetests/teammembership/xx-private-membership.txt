@@ -241,6 +241,19 @@ no user can set that team as the maintainer of a product.
     >>> get_feedback_messages(admin_browser.contents)
     [...The person/team named 'myteam' is not a valid owner for...
 
+== Restrict Product Bug Contact ==
+
+To prevent leaking information about a team's private membership,
+no user can set that team as the bug contact of a product.
+
+    >>> admin_browser.open('http://launchpad.dev/jokosher/+bugcontact')
+    >>> admin_browser.getControl(name='field.bugcontact').value = 'myteam'
+    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/jokosher/+bugcontact'
+    >>> get_feedback_messages(admin_browser.contents)
+    [...You must choose a valid person or team to be the bug contact for...
+
 == Restrict Distro Registrant ==
 
 To prevent leaking information about a team's private membership,
@@ -253,3 +266,16 @@ no user can set that team as the registrant of a distribution.
     'http://launchpad.dev/ubuntu/+reassign'
     >>> get_feedback_messages(admin_browser.contents)
     [...The person/team named 'myteam' is not a valid owner for...
+
+== Restrict Distro Bug Contact ==
+
+To prevent leaking information about a team's private membership,
+no user can set that team as the bug contact of a distribution.
+
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/+bugcontact')
+    >>> admin_browser.getControl(name='field.bugcontact').value = 'myteam'
+    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/ubuntu/+bugcontact'
+    >>> get_feedback_messages(admin_browser.contents)
+    [...Constraint not satisfied...

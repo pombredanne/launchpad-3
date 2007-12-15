@@ -36,7 +36,7 @@ from canonical.launchpad.helpers import (
     browserLanguages, is_english_variant, preferred_or_request_languages)
 from canonical.launchpad.browser.faqcollection import FAQCollectionMenu
 from canonical.launchpad.interfaces import (
-    IDistribution, IFAQCollection, ILanguageSet, IProject,
+    IDistribution, IFAQCollection, ILanguageSet, ILaunchBag, IProject,
     IQuestionCollection, IQuestionSet, IQuestionTarget,
     ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError,
     PersonVisibility, QuestionStatus)
@@ -604,7 +604,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         """Create a list of teams the user is an administrator of."""
         sort_key = attrgetter('displayname')
         terms = []
-        for team in sorted(self.targetable_teams, key=sort_key):
+        for team in sorted(self.administrated_teams, key=sort_key):
             terms.append(SimpleTerm(team, team.name, team.displayname))
 
         return form.FormField(
@@ -617,27 +617,13 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                 required=False),
             custom_widget=self.custom_widgets['answer_contact_teams'])
 
-    @cachedproperty
-    def targetable_teams(self):
-        """Return the list of teams which can be quesiton targets.
-
-        The user must be an administrator of the team and the team must
-        be public in order to make the team a question target.
-        """
-        # XXX Edwin Grubbs 2007-12-14 bug=175758
-        # Checking if the team.visibility is None can be removed
-        # after a notnull constraint has been added.
-        return [team for team in self.user.getAdministratedTeams()
-                if team.visibility is None
-                or team.visibility == PersonVisibility.PUBLIC]
-
     @property
     def initial_values(self):
         """Return a dictionary of the default values for the form_fields."""
         user = self.user
         answer_contacts = self.context.direct_answer_contacts
         answer_contact_teams = set(
-            answer_contacts).intersection(self.targetable_teams)
+            answer_contacts).intersection(self.administrated_teams)
         return {
             'want_to_be_answer_contact': user in answer_contacts,
             'answer_contact_teams': list(answer_contact_teams)
@@ -662,7 +648,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                     _('You have been removed as an answer contact for '
                       '$context.', mapping=replacements))
 
-        for team in self.targetable_teams:
+        for team in self.administrated_teams:
             replacements['teamname'] = team.displayname
             if team in answer_contact_teams:
                 self._updatePreferredLanguages(team)
@@ -677,6 +663,14 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                           'for $context.', mapping=replacements))
 
         self.next_url = canonical_url(self.context, rootsite='answers')
+
+    @property
+    def administrated_teams(self):
+        from canonical.launchpad.browser.person import (
+            RestrictedMembershipsPersonView)
+        user = getUtility(ILaunchBag).user
+        restricted_view = RestrictedMembershipsPersonView(user, self.request)
+        return restricted_view.administrated_teams
 
     def _updatePreferredLanguages(self, person_or_team):
         """Check or update the Person's preferred languages as needed.

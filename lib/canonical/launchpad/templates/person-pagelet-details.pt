@@ -35,8 +35,8 @@
       tal:content="context/datecreated/fmt:date" /><br />
 
       <div id="teams_with_icons"
-           tal:condition="view/secure_person/teams_with_icons">
-        <a tal:repeat="team view/secure_person/teams_with_icons"
+           tal:condition="context/@@+restricted-membership/teams_with_icons">
+        <a tal:repeat="team context/@@+restricted-membership/teams_with_icons"
            tal:attributes="href team/fmt:url"
           ><img tal:attributes="src team/icon/getURL;
                                 title string:Icon of ${team/name}"
@@ -80,14 +80,16 @@
       </strong>:
       <tal:description replace="context/subscriptionpolicy/description" />
 
-      <table class="slimpadding" id="membership-summary" style="margin-top: 1em">
-        <tal:private_membership condition="not: view/userCanViewMembership">
+      <table class="slimpadding" id="membership-summary" style="margin-top: 1em"
+             tal:define="can_view_membership context/@@+restricted-membership/userCanViewMembership"
+        >
+        <tal:private_membership condition="not: can_view_membership">
           <tr>
             <th>Membership:</th>
             <td>You are not allowed to view this team's membership.</td>
           </tr>
         </tal:private_membership>
-        <tal:private_membership condition="view/userCanViewMembership">
+        <tal:private_membership condition="can_view_membership">
           <tr>
             <th>Membership:</th>
             <td tal:content="string: ${context/all_member_count} active members" />

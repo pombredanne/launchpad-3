@@ -14,7 +14,7 @@
   <tal:block metal:fill-slot="head_epilogue">
     <tal:valid_person_or_team condition="context/is_valid_person_or_team">
       <link
-          tal:condition="not:context/hide_email_addresses" 
+          tal:condition="not:context/hide_email_addresses"
           rel="meta" type="application/rdf+xml"
           title="FOAF" href="+rdf"
           />
@@ -109,7 +109,7 @@
       </tal:is-team>
       <div tal:condition="not:context/isTeam" class="section">
       <div class="portlet"
-           tal:define="memberships view/secure_person/getLatestApprovedMembershipsForPerson">
+           tal:define="memberships context/@@+restricted-membership/getLatestApprovedMembershipsForPerson">
         <h2>Latest memberships</h2>
         <table id="participation">
           <tr tal:repeat="membership memberships"
@@ -176,9 +176,10 @@
         </tal:block>
       </div>
       </div>
-      <div tal:condition="python: view.userCanViewMembership() and view.recently_approved_members" 
+      <div tal:condition="context/@@+restricted-membership/userCanViewMembership"
            class="section">
-      <div class="portlet" id="recently-approved">
+      <div class="portlet" id="recently-approved"
+           tal:condition="view/recently_approved_members">
         <h2>Recently approved</h2>
         <ul>
           <li class="person"
@@ -190,9 +191,10 @@
         </ul>
       </div>
       </div>
-      <div tal:condition="python: view.userCanViewMembership() and view.recently_proposed_members" 
+      <div tal:condition="context/@@+restricted-membership/userCanViewMembership"
            class="section">
-      <div class="portlet" id="recently-applied">
+      <div class="portlet" id="recently-applied"
+           tal:condition="view/recently_proposed_members">
         <h2>Recently applied</h2>
         <ul>
           <li class="person"

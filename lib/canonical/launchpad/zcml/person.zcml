@@ -987,6 +987,12 @@
     module="canonical.launchpad.browser"
     classes="PersonAnswersMenu"
     />
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.RestrictedMembershipsPersonView"
+    name="+restricted-membership"
+    permission="zope.Public"
+    />
 </facet>
 
 <adapter
