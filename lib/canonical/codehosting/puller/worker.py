@@ -151,7 +151,8 @@ class PullerWorker:
         self._source_branch = None
         self._dest_branch = None
         self.protocol = protocol
-        self.protocol.branch_id = branch_id
+        if protocol is not None:
+            self.protocol.branch_id = branch_id
 
     def _checkSourceUrl(self):
         """Check the validity of the source URL.

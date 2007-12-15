@@ -634,7 +634,7 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         check_lock_id_script = """
         branch.lock_write()
         protocol.sendEvent(
-            'lock_id', bracnh.control_files._lock.peek()['user'])
+            'lock_id', branch.control_files._lock.peek()['user'])
         sys.stdout.flush()
         branch.unlock()
         """
