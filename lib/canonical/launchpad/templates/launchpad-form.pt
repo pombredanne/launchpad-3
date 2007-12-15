@@ -111,9 +111,11 @@
       </tr>
       <tal:block condition="python: view.isMultiLineLayout(field_name)">
         <tr>
-          <th colspan="2" style="text-align: left"><label
+          <th style="text-align: right"><label
               tal:attributes="for widget/name"
               tal:content="string:${widget/label}:">Label:</label>
+          </th>
+          <th style="text-align: left">
             <span tal:condition="show_optional"
                   class="fieldRequired">(Optional)</span>
           </th>

@@ -357,24 +357,24 @@
               if (e == null) {
                   alert(field);
               }
-              if(self.gfPop) {
-                  gfPop.fPopCalendar(e);
+              if(self.DateTimePicker) {
+                  DateTimePicker.fPopCalendar(e);
                   return false;
               }
           }
       </script>
       <iframe
           width="174" height="189"
-          name="gToday:datetimepicker:agenda.js"
-          id="gToday:datetimepicker:agenda.js"
-          src="/+datetimepicker/ipopeng.htm"
+          name="gToday:datetimepicker:agenda.js:DateTimePicker:plugins_time.js"
+          id="gToday:datetimepicker:agenda.js:DateTimePicker:plugins_time.js"
+          src="/+popcalxp/ipopeng.htm"
           scrolling="no"
           frameborder="0"
           style="visibility:visible; z-index:999; position:absolute;
                  top:-500px; left:-500px;">
         <LAYER name="gToday:datetimepicker:agenda.js"
-               src="/+datetimepicker/npopeng.htm"
-               background="/+datetimepicker/npopeng.htm">     </LAYER>
+               src="/+popcalxp/npopeng.htm"
+               background="/+popcalxp/npopeng.htm">     </LAYER>
       </iframe>
     </tal:datetimepicker>
     <tal:datepicker condition="request/needs_datepicker_iframe">
@@ -384,24 +384,24 @@
               if (e == null) {
                   alert(field);
               }
-              if(self.gfPop) {
-                  gfPop.fPopCalendar(e);
+              if(self.DatePicker) {
+                  DatePicker.fPopCalendar(e);
                   return false;
               }
           }
       </script>
       <iframe
           width="174" height="189"
-          name="gToday:datepicker:agenda.js"
-          id="gToday:datepicker:agenda.js"
-          src="/+datepicker/ipopeng.htm"
+          name="gToday:datepicker:agenda.js:DatePicker:plugins.js"
+          id="gToday:datepicker:agenda.js:DatePicker:plugins.js"
+          src="/+popcalxp/ipopeng.htm"
           scrolling="no"
           frameborder="0"
           style="visibility:visible; z-index:999; position:absolute;
                  top:-500px; left:-500px;">
        <LAYER name="gToday:datepicker:agenda.js"
-              src="/+datepicker/npopeng.htm"
-              background="/+datepicker/npopeng.htm">     </LAYER>
+              src="/+popcalxp/npopeng.htm"
+              background="/+popcalxp/npopeng.htm">     </LAYER>
       </iframe>
     </tal:datepicker>
   </body>

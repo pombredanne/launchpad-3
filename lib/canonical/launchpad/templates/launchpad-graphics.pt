@@ -141,6 +141,16 @@
         <td>Inside the header for a column sorted descending.</td>
       </tr>
       <tr>
+        <td>arrowStart</td>
+        <td><img src="/@@/arrowStart" /></td>
+        <td>Arrow start. Not used.</td>
+      </tr>
+      <tr>
+        <td>arrowEnd</td>
+        <td><img src="/@@/arrowEnd" /></td>
+        <td>Arrow end. Not used.</td>
+      </tr>
+      <tr>
         <td>arrowTop</td>
         <td><img src="/@@/arrowTop" /></td>
         <td>Arrow top. Not used.</td>
@@ -149,6 +159,16 @@
         <td>arrowBottom</td>
         <td><img src="/@@/arrowBottom" /></td>
         <td>Arrow bottom. Not used.</td>
+      </tr>
+      <tr>
+        <td>arrowLeft</td>
+        <td><img src="/@@/arrowLeft" /></td>
+        <td>Arrow left.</td>
+      </tr>
+      <tr>
+        <td>arrowRight</td>
+        <td><img src="/@@/arrowRight" /></td>
+        <td>Arrow right.</td>
       </tr>
       <tr>
         <td>bullet</td>

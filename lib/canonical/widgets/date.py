@@ -33,35 +33,32 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import ExportedFolder
 
 
-class PopCalDateFolder(ExportedFolder):
+class PopCalXPFolder(ExportedFolder):
     """Export the PopCalXP Date picker resources."""
 
-    folder = './popcaldate/'
-    here = os.path.dirname(os.path.realpath(__file__))
-
-
-class PopCalDateTimeFolder(ExportedFolder):
-    """Export the PopCalXP DateTime picker resources."""
-
-    folder = './popcaldatetime/'
+    folder = './popcalxp/'
     here = os.path.dirname(os.path.realpath(__file__))
 
 
 class DateTimeWidget(TextWidget):
     """A date and time selection widget with popup selector."""
 
-    timeZoneName = 'UTC'
     timeformat = '%Y-%m-%d %H:%M:%S'
+    required_timezone = None
 
     # ZPT that renders our widget
     __call__ = ViewPageTemplateFile('templates/datetime.pt')
 
     def __init__(self, context, request):
-        # Unfortunate limitation of PopCalXP is that we may have EITHER a
-        # datepicker OR a datetimepicker, but not both.
-        assert not request.needs_datepicker_iframe
         request.needs_datetimepicker_iframe = True
         super(DateTimeWidget, self).__init__(context, request)
+        self.user_timezone = getUtility(ILaunchBag).timezone
+
+    @property
+    def timezone(self):
+        if self.required_timezone is not None:
+            return self.required_timezone
+        return self.user_timezone
 
     def _toFieldValue(self, input):
         """Return parsed input (datetime) as a date."""
@@ -108,8 +105,7 @@ class DateTimeWidget(TextWidget):
                           hour, minute, int(second), int(micro))
         except (DateTimeError, ValueError, IndexError), v:
             raise ConversionError('Invalid date value', v)
-        tz = pytz.timezone(self.timeZoneName)
-        return tz.localize(dt)
+        return self.timezone.localize(dt)
 
     def _toFormValue(self, value):
         """Convert a date to its string representation.
@@ -140,8 +136,7 @@ class DateTimeWidget(TextWidget):
         """
         if value == self.context.missing_value:
             return self._missing
-        tz = pytz.timezone(self.timeZoneName)
-        return value.astimezone(tz).strftime(self.timeformat)
+        return value.astimezone(self.timezone).strftime(self.timeformat)
 
     def formvalue(self):
         """Return the value for the form to render, accessed via the
@@ -162,7 +157,9 @@ class DateTimeWidget(TextWidget):
                 value = self._getDefault()
         else:
             value = self._data
-        return value
+        if value is None:
+            return None
+        return value.strftime(self.timeformat)
 
 
 class DateWidget(DateTimeWidget):
@@ -173,14 +170,12 @@ class DateWidget(DateTimeWidget):
     """
 
     timeformat = '%Y-%m-%d'
+    timezone = pytz.timezone('UTC')
 
     # ZPT that renders our widget
     __call__ = ViewPageTemplateFile('templates/date.pt')
 
     def __init__(self, context, request):
-        # Unfortunate limitation of PopCalXP is that we may have EITHER a
-        # datepicker OR a datetimepicker, but not both.
-        assert not request.needs_datetimepicker_iframe
         request.needs_datepicker_iframe = True
         super(DateTimeWidget, self).__init__(context, request)
 
@@ -190,6 +185,9 @@ class DateWidget(DateTimeWidget):
 
     def setRenderedValue(self, value):
         """Render a date from the underlying datetime."""
+        if value is None:
+            self._date = None
+            return
         self._data = value.date()
 
 

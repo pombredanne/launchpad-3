@@ -45,16 +45,9 @@
 
     <!-- Date and DateTime based on PopCalXP -->
     <browser:page
-        name="+datepicker"
+        name="+popcalxp"
         for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        class="canonical.widgets.date.PopCalDateFolder"
-        attribute="__call__"
-        permission="zope.Public"
-        />
-    <browser:page
-        name="+datetimepicker"
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-        class="canonical.widgets.date.PopCalDateTimeFolder"
+        class="canonical.widgets.date.PopCalXPFolder"
         attribute="__call__"
         permission="zope.Public"
         />

@@ -174,7 +174,7 @@ input[type="submit"], input[type="text"], select, textarea {
   margin-right: 0.5em;
 }
 input.urlTextType {width: 100%;}
-.fieldRequired, .fieldOptional {color: #999;}
+.fieldRequired, .fieldOptional {color: #999; font-weight: normal;}
 .formHelp {margin-top: 0.2em; margin-bottom: 0.5em; color: #777;}
 /* Hack to add breathing room to bug status forms: */
 table.listing div.field>table {margin-top: 0.5em;}
@@ -183,7 +183,7 @@ table.listing div.actions {
   display: block; margin-top: 1em;
 }
 textarea {width: 100%;}
-table.form {margin-top: 1em; width: 100%;}
+table.form {margin-top: 1em; margin-bottom: 1em; width: 100%;}
 /* XXX: this is just to make tables look more consistent when used in a
  * summary pagelet; the concrete use case is in
  * person-pagelet-details.pt. We should move to use tables everywhere

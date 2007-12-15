@@ -52,7 +52,9 @@
       </p>
     </tal:no-milestones>
   </tal:milestones>
+
   <p><a tal:attributes="href context/fmt:url">&laquo; Back</a></p>
+
 </div>
 </body>
 </html>
