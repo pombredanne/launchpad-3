@@ -8,30 +8,16 @@ __all__ = [
     'ConfigSchema',
     'SectionSchema',]
 
-from ConfigParser import SafeConfigParser, NoSectionError
+from ConfigParser import NoSectionError, SafeConfigParser
 import os
 import re
 import StringIO
 
 from zope.interface import implements
 
-from canonical.lazr.interfaces import ISectionSchema, IConfigSchema
-
-
-class RedefinedKeyError(SyntaxError):
-    """A key in a section cannot be redefined."""
-
-
-class RedefinedSectionError(SyntaxError):
-    """A section in a config file cannot be redefined."""
-
-
-class MultipleCategoriesError(SyntaxError):
-    """The section name contains more than one category."""
-
-
-class NoCategoryError(LookupError):
-    """No SchemaSections belong to the category name."""
+from canonical.lazr.interfaces import (
+    ConfigSchemaError, IConfigSchema, InvalidSectionNameError, ISectionSchema,
+    NoCategoryError, RedefinedKeyError, RedefinedSectionError)
 
 
 class ConfigSchema(object):
@@ -39,7 +25,12 @@ class ConfigSchema(object):
     implements(IConfigSchema)
 
     def __init__(self, filename):
-        """See `IConfigSchema`."""
+        """Load a configuration schema from the provided filename.
+
+        :raises UnicodeDecodeError: if the string contains non-ascii
+            characters.
+        :raises RedefinedSectionError: if a SectionSchema name is redefined.
+        """
         # XXX sinzui 2007-12-13:
         # SafeConfigParser permits redefinition and non-ascii characters.
         # The raw schema data is examined before creating a config.
@@ -54,7 +45,7 @@ class ConfigSchema(object):
         """Return the contents of the schema file as a StringIO.
 
         This method verifies that the file is ascii encoded and that no
-        section name is refined.
+        section name is redefined.
         """
         schema_file = open(filename, 'r')
         try:
@@ -67,7 +58,7 @@ class ConfigSchema(object):
         section_names = []
         for section_name in re.findall(r'^\s*\[[^\]]+\]', raw_schema, re.M):
             if section_name in section_names:
-                raise RedefinedSectionError, section_name
+                raise RedefinedSectionError(section_name)
             else:
                 section_names.append(section_name)
         return StringIO.StringIO(raw_schema)
@@ -80,7 +71,7 @@ class ConfigSchema(object):
         for name in config.sections():
             (section_name, category_name,
              is_template, is_optional) = self._parseSectionName(name)
-            options = templates.get(category_name, {})
+            options = dict(templates.get(category_name, {}))
             options.update(config.items(name))
             if is_template:
                 templates[category_name] = options
@@ -89,8 +80,17 @@ class ConfigSchema(object):
                     section_name, options, is_optional)
             if category_name is not None:
                 category_names.add(category_name)
-        self._category_name = list(category_names)
+        self._category_names = list(category_names)
         self._section_schemas = section_schemas
+
+    _section_name_pattern = re.compile(r"""
+        (?:
+            (?P<category>[\w-]+)
+            (?P<dot>\.)
+            (?P<template>template)?
+        )?
+        (?P<section>[\w-]+)?
+        (?P<optional>\.optional)?$""", re.VERBOSE)
 
     def _parseSectionName(self, name):
         """Return a 4-tuple of names and kinds embedded in the name.
@@ -101,30 +101,22 @@ class ConfigSchema(object):
             are False by default, but will be true if the name's suffix
             ends in '.template' or '.optional'.
         """
-        section_name = name
-        category_name = None
-        is_template = False
-        is_optional = False
-        if name.endswith('.optional'):
-            is_optional = True
-            section_name = name[0:-len('.optional')]
-        # After the removal of the 'optional' suffix, the section name
-        # may have a category prefix or a 'template' suffix.
-        dots = section_name.count('.')
-        if dots > 1:
-            message = 'The section [%s] belongs to more than one category.'
-            raise MultipleCategoriesError, (message % name)
-        if dots == 1:
-            category_name, process_name = section_name.split('.')
-            if process_name == 'template':
-                is_template = True
-                section_name = category_name
+        match = self._section_name_pattern.match(name)
+        if match is None:
+            raise InvalidSectionNameError(name)
+        is_template = match.group('template') is not None
+        is_optional = match.group('optional') is not None
+        category_name = match.group('category')
+        if category_name is not None:
+            section_name = "%s.%s" % (category_name, match.group('section'))
+        else:
+            section_name = match.group('section')
         return (section_name, category_name,  is_template, is_optional)
 
     @property
     def category_names(self):
         """See `IConfigSchema`."""
-        return self._category_name
+        return self._category_names
 
     def __iter__(self):
         """See `IConfigSchema`."""
@@ -139,7 +131,7 @@ class ConfigSchema(object):
         try:
             return self._section_schemas[name]
         except KeyError:
-            raise NoSectionError, name
+            raise NoSectionError(name)
 
     def getByCategory(self, name):
         """See `IConfigSchema`."""
@@ -148,7 +140,7 @@ class ConfigSchema(object):
             if key.startswith(name):
                 section_schemas.append(self._section_schemas[key])
         if len(section_schemas) == 0:
-            raise NoCategoryError, name
+            raise NoCategoryError(name)
         return section_schemas
 
 
@@ -157,7 +149,13 @@ class SectionSchema(object):
     implements(ISectionSchema)
 
     def __init__(self, name, options, is_optional=False):
-        """See `ISectionSchema`"""
+        """Create an ISectionSchema from the name and options.
+
+        :param name: A string. The name of the ISectionSchema.
+        :param options: A dict of the key-value pairs in the ISectionSchema.
+        :param is_optional: A boolean. Is this section schema optional?
+        :raises RedefinedKeyError: if a keys is redefined in SectionSchema.
+        """
         # This method should raise RedefinedKeyError if the schema file
         # redefines a key, but SafeConfigParser swallows redefined keys.
         self.name = name
@@ -170,7 +168,7 @@ class SectionSchema(object):
 
     def __contains__(self, name):
         """See `ISectionSchema`"""
-        return name in self._options.keys()
+        return name in self._options
 
     def __getitem__(self, key):
         """See `ISectionSchema`"""

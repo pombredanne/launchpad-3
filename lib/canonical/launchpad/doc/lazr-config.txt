@@ -23,14 +23,13 @@ the information in the configuration file.
     >>> base_conf = path.normpath(path.join(
     ...     path.dirname(__file__), '..', 'ftests', 'testfiles', 'base.conf'))
 
-The config file contains sections defined by square bracket ([]).
+The config file contains sections enclosed in square brackets ([]).
 The section name may be divided into major and minor categories using a
 dot (.). Beneath each section is a list of key-value pairs, separated
 by a colon (:). Multiple sections with the same major category may have
-their keys defined in a section that declares it is the '.template'
-minor category. A section with '.optional' minor category is used to
-define a process that is not required. Lines that start with a hash (#)
-are comments.
+their keys defined in another section that appends the '.template'
+suffix to the category name. A section with '.optional' suffix is not
+required. Lines that start with a hash (#) are comments.
 
     >>> schema_file = open(base_conf, 'r')
     >>> raw_schema = schema_file.read()
@@ -53,8 +52,11 @@ are comments.
     # This section is optional; it uses the keys defined
     # by section-3.template.
     [section-3.app-a.optional]
-    # This is a required section whose keys are defined by section-3.template.
+    # This is a required section whose keys are defined by section-3.template
+    # and it defines a new key.
     [section-3.app-b]
+    key2: changed
+    key3: unique
 
     >>> schema = ConfigSchema(base_conf)
     >>> verifyObject(IConfigSchema, schema)
@@ -68,12 +70,13 @@ are comments.
 A schema is made up of multiple SchemaSections. They can be iterated
 over in a loop as needed.
 
-    >>> for section_schema in schema:
+    >>> from operator import attrgetter
+    >>> for section_schema in sorted(schema, key=attrgetter('name')):
     ...     print section_schema.name
-    section-3.app-b
-    section-2.app-b
     section-1
+    section-2.app-b
     section-3.app-a
+    section-3.app-b
 
 You can check if the schema contains a section name, and that can be
 used to access the SchemaSection as a subscript.
@@ -82,6 +85,13 @@ used to access the SchemaSection as a subscript.
     True
     >>> 'section-4' in schema
     False
+
+A SectionSchema can be retrieved from the schema using the []
+operator
+
+    >>> section_schema_1 = schema['section-1']
+    >>> section_schema_1.name
+    'section-1'
 
 A SectionNotFound error is raised if the name does not match any of the
 SectionSchemas.
@@ -93,19 +103,20 @@ SectionSchemas.
     NoSectionError: ...
 
 Processes often require resources like databases or vhosts that have a
-common category of keys. The list of all category names can be retried
+common category of keys. The list of all category names can be retrieved
 via the categories attribute.
 
     >>> schema.category_names
     ['section-3', 'section-2']
 
 The list of SchemaSections that share common category can be retrieved
-using getByCategory(). An empty list is returned when the category name
-does not match any SectionSchemas in the schema.
-    >>> for section_schema in schema.getByCategory('section-3'):
+using getByCategory().
+
+    >>> all_section_3 = schema.getByCategory('section-3')
+    >>> for section_schema in sorted(all_section_3, key=attrgetter('name')):
     ...     print section_schema.name
-    section-3.app-b
     section-3.app-a
+    section-3.app-b
 
 An error is raised when accessing a category does not exist.
 
@@ -157,35 +168,36 @@ An error is raised if a non-existent key is accessed.
       ...
     KeyError: ...
 
-In the conf file, '[section-1]' is a default section that
-defines keys and values. The values are the default values to return in
-the section instance does not redefine the key. In the case of key5,
-the key had no explicit value, so the value is an empty string.
+In the conf file, '[section-1]' is a default section that defines keys
+and values. The values specified in the section schema will be used as
+default values if not overriden in the configuration. In the case of
+key5, the key had no explicit value, so the value is an empty string.
 
-    >>> for key in section_schema_1:
+    >>> for key in sorted(section_schema_1):
     ...     print key, ':', section_schema_1[key]
-    key3 : Launchpad&nbsp;rocks
-    key2 : bar and baz
     key1 : foo
-    key5 :
+    key2 : bar and baz
+    key3 : Launchpad&nbsp;rocks
     key4 : F&#028c;k yeah!
+    key5 :
 
 In the conf file '[section-3.template]' defines a common set of keys and
 default values for '[section-3.app-a]' and '[section-3.app-b]'.
 
-    >>> for section_schema in schema.getByCategory('section-3'):
+    >>> for section_schema in sorted(all_section_3, key=attrgetter('name')):
     ...     print section_schema.name
-    ...     for key in section_schema:
+    ...     for key in sorted(section_schema):
     ...         print key, ':', section_schema[key]
-    section-3.app-b
-    key2 : 3.1415
-    key1 : 17
     section-3.app-a
-    key2 : 3.1415
     key1 : 17
+    key2 : 3.1415
+    section-3.app-b
+    key1 : 17
+    key2 : changed
+    key3 : unique
 
 
-== ConfigSchema is self-validating ==
+== ConfigSchema validation ==
 
 ConfigSchema will raise an error if the schema file cannot be opened.
 
@@ -230,7 +242,7 @@ Defining a section that belongs to many categories will raise
 a MultipleCategoriesError.
 
     >>> ConfigSchema('%s/%s' % (
-    ...     testfiles_dir, 'bad-multiple-categories.conf'))
+    ...     testfiles_dir, 'bad-invalid-name.conf'))
     Traceback (most recent call last):
       ...
-    MultipleCategoriesError: ...
+    InvalidSectionNameError: category.other_category.name.optional
