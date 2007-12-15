@@ -9,7 +9,7 @@ The config file supports inheritance to minimize duplication of
 information across files. The format supports schema validation.
 
 
-== ConfigSchema and ConfigSchemaParser ==
+== ConfigSchema ==
 
 A schema is loaded by instantiating the ConfigSchema class with
 the path to a configuration file. The schema is explicitly derived from
@@ -234,3 +234,263 @@ a MultipleCategoriesError.
     Traceback (most recent call last):
       ...
     MultipleCategoriesError: ...
+
+
+== Config ==
+
+The config represents the local configuration of the process on system.
+It is validated with a schema. It extends the schema, or other conf
+files to define the specific differences from the extended files that
+are required to run the local processes. A Config is created with one
+argument, the conf path.
+
+    >>> from canonical.lazr.config import Config
+    >>> from canonical.lazr.interfaces import IConfig
+
+    >>> local_conf = '%s/%s' % (testfiles_dir,  'local.conf')
+
+Like the schema file, the conf file is made up of sections with keys.
+The sections may belong to a category. Unlike the schema file, it does
+not have template or optional sections.
+
+    >>> local_file = open(local_conf, 'r')
+    >>> raw_conf = local_file.read()
+    >>> local_file.close()
+    >>> print raw_conf
+    [meta]
+    extends: base.conf
+    [section-1]
+    key5: local value
+
+    >>> conf = ConfigSchema(local_conf)
+    >>> verifyObject(IConfig, conf)
+    True
+
+    >>> conf.name
+    'local.conf'
+    >>> conf.filename
+    '...ftests/testfiles/local.conf'
+
+A conf file always contains a meta section that is used by the config
+system. The 'extends' key explicitly declares that local.conf inherits
+all the information from base.conf--the schema in this case. The config
+can access the schema via the schema property.
+
+    >>> conf.extends
+    'base.conf'
+    >>> config.schema.name
+    'base.conf'
+    >>> config.schema == schema
+    True
+
+A config is made up of multiple Sections like the schema. They can be
+iterated over in a loop as needed. This config inherited several
+sections defined in schema. Note that the meta section is not present
+because it pertains to the config system, not to the processes being
+configured.
+
+    >>> for section in config:
+    ...     print section.name
+    section-3.app-b
+    section-2.app-b
+    section-1
+
+You can check if a section name is in a config.
+
+    >>> 'section-1' in config
+    True
+    >>> 'bad-section' in config
+    False
+
+Optional SchemaSections are not inherited by the config. A config file
+must declare all optional sections. Including the section heading is
+enough to inherit the section and its keys. The config file may localize
+the keys by declaring them too.
+
+    >>> 'section-3.app-a' in config
+    False
+    >>> 'section-3.app-a' in config.schema
+    True
+    >>> 'section-3.app-a' in config.schema.optional
+    True
+
+    >>> 'section-5' in config
+    True
+    >>> 'section-5' in config.schema
+    True
+    >>> 'section-5' in config.schema.optional
+    True
+
+A Section can be accessed using subscript notation. Accessing a section
+that does not exist will raise a NoSectionError.
+
+    >>> section_1 = config['section-1']
+    >>> config['section-4']
+    Traceback (most recent call last):
+      ...
+    NoSectionError: ...
+
+Config supports category access like Schema does. The list of
+categories are returned by the category_names property.
+
+    >>> config.category_names
+    ['section-3', 'section-2']
+
+All the sections that belong to a category be retrieve using the
+getByCategory() method.
+
+    >>> for section in config.getByCategory('section-3'):
+    ...     print section_schema.name
+    section-3.app-b
+
+Passing a non-existent category_name to the method will raise a
+NoCategoryError.
+
+    >>> config.getByCategory('non-section')
+    Traceback (most recent call last):
+      ...
+    NoCategoryError: ...
+
+
+== Section ==
+
+A Section behaves similar to a dictionary. It has keys and values.
+It supports from specialize access methods and properties for working
+with the values. Each Section has a name. Continuing with section_1
+from above....
+
+    >>> from canonical.lazr.interfaces import ISection
+    >>> verifyObject(ISection, section_1)
+    True
+
+    >>> section_1.name
+    'section-1'
+
+A key can be verified to be in a Section.
+
+    >>> 'key1' in section_1
+    True
+    >>> 'nonkey' in section_1
+    False
+
+A key can be accessed directly using as a subscript of the Section.
+The value is always a string.
+
+    >>> section_1['key3']
+    'Launchpad&nbsp;rocks'
+    >>> section_1['key5']
+    ''
+
+An error is raised if a non-existent key is accessed via a subscript.
+
+    >>> section_1['not-exist']
+    Traceback (most recent call last):
+      ...
+    KeyError: ...
+
+But the get() method will return None or the default keyword argument
+if the key is not present.
+# XXX sinzui 2007-12-14: I don't like the default behaviour. We
+# know what is in the config. We are making the config sane so that
+# we do not need to write the config into the code.
+
+    >>>  print section_1.get('not-section')
+    None
+    >>> section_1.get('not-section', default='failover')
+    'failover'
+
+Values are always string in a Section. Three convenience methods
+are available to convert the value into an int, bool, or list. Like
+the get() method, they support the optional default keyword argument.
+# XXX sinzui 2007-12-14: I don't like th default behaviour for the
+# reasons stated above. I don't care for the list either, because it
+# must assume everything in it is a string.
+
+    >>> config['section-2.app-b'].bool('key1')
+    True
+    >>> config['section-3.app-b'].int('key1')
+    17
+    >>> section_1.list('missing-key', default="one, two, three]")
+
+The Section keys can be iterated. The section has all the keys from
+the SectionSchema, and its localized values from th config file
+took precedence over the schema values.
+
+    >>> for key in section_1:
+    ...     print key, ':', section_1[key]
+    key3 : Launchpad&nbsp;rocks
+    key2 : bar and baz
+    key1 : foo
+    key5 : local value
+    key4 : F&#028c;k yeah!
+
+    >>> section_1.schema[key5]
+    ''
+
+Sections that were not defined in the config file are present because
+the schema defined them. And in the case of section-3.app-b, its keys
+were defined in a template section.
+
+    >>> for key in config['section-3.app-b']:
+    ...     print key, ':', config['section-3.app-b'][key]
+    key2 : 3.1415
+    key1 : 17
+
+
+== Config supports testing ==
+
+Raw config data can be merged with an existing config for testing.
+The push() method accepts a string of config data, and returns a
+new config with section data parsed and merged into the original
+sections.
+
+    >>> test_data = """[section-1]
+    ...     key1: test1
+    ...     key5:
+    ...     """
+    >>> test_config = config.push('test config', test_data)
+    >>> test_config.name
+    'test config'
+    >>> test_config.filename
+    'test config'
+
+    >>> for section in test_config:
+    ...     print section.name
+    section-3.app-b
+    section-2.app-b
+    section-1
+
+    >>> for key in test_config['section-1']:
+    ...     print key, ':', test_config['section-1'][key]
+    key3 : Launchpad&nbsp;rocks
+    key2 : bar and baz
+    key1 : test1
+    key5 :
+    key4 : F&#028c;k yeah!
+
+
+== Configs are validated by their Schemas ==
+
+Config provided two methods to verify that an instance is valid: 
+listValidationErrors() and validate().
+
+The listValidationErrors() method will return a list of errors in the
+config file
+
+    >>> config.listValidationErrors()
+    []
+
+    >>> bad_config = config('%s/%s' % (testfiles_dir,  'local-bad.conf'))
+    >>> bad_config.listValidationErrors()
+    []
+
+The validate() method raises an error if the config is not valid. 
+
+    >>> config.validate()
+    >>> bad_config.validate()
+    >>> section_1['not-exist']
+    Traceback (most recent call last):
+      ...
+    KeyError: ...
+
+
