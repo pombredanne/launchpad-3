@@ -1908,8 +1908,8 @@ class RequestTracker(ExternalBugTracker):
     batch_url = 'REST/1.0/search/ticket/'
 
     def __init__(self, txn, bugtracker):
-        super(RequestTracker, self).__init__(txt, bugtracker)
-        batch_query_threshold = 1
+        super(RequestTracker, self).__init__(txn, bugtracker)
+        self.batch_query_threshold = 1
 
     @property
     def credentials(self):
