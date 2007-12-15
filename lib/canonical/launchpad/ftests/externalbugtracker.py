@@ -143,6 +143,8 @@ class TestExternalBugTracker(ExternalBugTracker):
             # If the bugtracker is None, we don't want to call the
             # superclass initializer, since it will choke, but we still
             # want to set the transaction.
+            self.batch_query_threshold = (
+                config.checkwatches.batch_query_threshold)
             self.txn = txn
 
     def convertRemoteStatus(self, remote_status):
