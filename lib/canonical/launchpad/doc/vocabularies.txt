@@ -915,67 +915,36 @@ non-visible language. Chinese (zh) is one such language.
 
 The list of bzr branches registered in Launchpad.
 
-Searchable by branch name or URL, and searched within the context of a
-product.
+Searchable by branch name or URL, registrant name, and project name.
+Results are not restricted in any way by the context, but the results
+are restricted based on who is asking (as far as private branches is
+concerned).
 
     >>> from canonical.launchpad.interfaces import IBranchSet
 
-    >>> firefox = product_set["firefox"]
-    >>> gnome_terminal = product_set["gnome-terminal"]
-
-    >>> branch_vocabulary = vocabulary_registry.get(firefox, "Branch")
-
-    >>> branches = branch_vocabulary.search(
-    ...     "http://bazaar.example.com/mozilla@arch.ubuntu.com/"
-    ...     "mozilla--release--0.9.2")
-
-    >>> [branch.unique_name for branch in branches]
-    [u'~sabdfl/firefox/release-0.9.2']
-
-    >>> branches = branch_vocabulary.search(
-    ...     "release-0.9.2")
-
-    >>> [branch.unique_name for branch in branches]
-    [u'~sabdfl/firefox/release-0.9.2']
-
-The search will not match branches in another product:
-
-    >>> branches = branch_vocabulary.search("slowness")
-    >>> [branch for branch in branches]
-    []
-
-Now, when we search in gnome-terminal, we'll find the "slowness"
-branch:
-
-    >>> branch_vocabulary = vocabulary_registry.get(
-    ...     gnome_terminal, "Branch")
-    >>> branches = branch_vocabulary.search("slowness")
-    >>> [branch.name for branch in branches]
-    [u'slowness']
-
-If the context is None or not a product, then the LaunchBag is checked
-for a product.
-
-    >>> launchbag.add(firefox)
+    # Just use None as the context.
     >>> branch_vocabulary = vocabulary_registry.get(None, "Branch")
-    >>> branches = branch_vocabulary.search("slowness")
-    >>> [branch for branch in branches]
-    []
+    >>> def print_vocab_branches(vocab, search):
+    ...     for branch in vocab.search(search):
+    ...         print branch.unique_name
 
-If the context is not a product and the launchbag has no product, the
-search covers all branches:
+    >>> print_vocab_branches(branch_vocabulary, 'main')
+    ~name12/firefox/main
+    ~stevea/thunderbird/main
+    ~justdave/+junk/main
+    ~kiko/+junk/main
+    ~vcs-imports/evolution/main
+    ~name12/gnome-terminal/main
 
-    >>> launchbag.clear()
-    >>> branches = branch_vocabulary.search("slowness")
-    >>> [branch.name for branch in branches]
-    [u'slowness']
+    >>> print_vocab_branches(branch_vocabulary, 'vcs-imports')
+    ~vcs-imports/gnome-terminal/import
+    ~vcs-imports/evolution/import
+    ~vcs-imports/evolution/main
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
-    >>> bugtask = getUtility(IBugTaskSet).get(2)
-    >>> branch_vocabulary = vocabulary_registry.get(bugtask, "Branch")
-    >>> branches = branch_vocabulary.search("slowness")
-    >>> [branch.name for branch in branches]
-    [u'slowness']
+    >>> print_vocab_branches(branch_vocabulary, 'evolution')
+    ~carlos/evolution/2.0
+    ~vcs-imports/evolution/import
+    ~vcs-imports/evolution/main
 
 The tokens used by terms retrieved from BranchVocabulary use the
 branch unique name as an ID:
@@ -1005,21 +974,37 @@ The searches that the BranchVocabulary does are private branch aware.
 The results are effectively filtered on what the logged in user is
 able to see.
 
-    >>> branches = branch_vocabulary.search("trunk")
-    >>> for name in sorted([branch.unique_name for branch in branches]):
-    ...     print name
-    ~landscape-developers/landscape/trunk
-    ~limi/+junk/trunk
+    >>> print_vocab_branches(branch_vocabulary, 'trunk')
     ~spiv/+junk/trunk
+    ~limi/+junk/trunk
+    ~landscape-developers/landscape/trunk
 
     >>> login('no-priv@canonical.com')
-    >>> branches = branch_vocabulary.search("trunk")
-    >>> for name in sorted([branch.unique_name for branch in branches]):
-    ...     print name
-    ~limi/+junk/trunk
+    >>> print_vocab_branches(branch_vocabulary, 'trunk')
     ~spiv/+junk/trunk
+    ~limi/+junk/trunk
 
     >>> login('foo.bar@canonical.com')
+
+
+=== BranchRestrictedOnProduct ===
+
+The BranchRestrictedOnProduct vocabulary restricts the result set to
+those of the product of the context.  Currently only two types of
+context are supported: Product; and Branch.  If a branch is the context,
+then the product of the branch is used to restrict the query.
+
+    >>> gnome_terminal = getUtility(IProductSet)["gnome-terminal"]
+    >>> branch_vocabulary = vocabulary_registry.get(
+    ...     gnome_terminal, "BranchRestrictedOnProduct")
+    >>> print_vocab_branches(branch_vocabulary, 'main')
+    ~name12/gnome-terminal/main
+
+    >>> print_vocab_branches(branch_vocabulary, 'vcs-imports')
+    ~vcs-imports/gnome-terminal/import
+
+The BranchRestrictedOnProduct behaves the same way as the more generic
+BranchVocabulary with respect to the tokens and privacy awareness.
 
 
 === ProjectVocabulary ===
@@ -1572,6 +1557,39 @@ Inactive projects and project groups are not available.
     ...     if 'Tomcat' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
     Tomcat (Product) - class Product
+
+
+== FeaturedProjectVocabulary ==
+
+The featured project vocabulary contains all the projects that are
+featured on Launchpad. It is a subset of the
+DistributionOrProductOrProjectVocabulary (defined using the
+_clauseTables).
+
+    >>> featured_project_vocabulary = vocabulary_registry.get(
+    ...     None, 'FeaturedProject')
+    >>> len(featured_project_vocabulary)
+    9
+
+    >>> for term in featured_project_vocabulary:
+    ...     print term.token, term.value.displayname, term.title
+    applets         Gnome Applets        The Gnome Panel Applets (Product)
+    bazaar          Bazaar               Bazaar (Product)
+    firefox         Mozilla Firefox      Mozilla Firefox (Product)
+    gentoo          Gentoo               The Gentoo Linux (Distribution)
+    gnome           GNOME                The GNOME Project (Project)
+    gnome-terminal  GNOME Terminal       The GNOME Terminal Emulator (Product)
+    mozilla the     Mozilla Project      The Mozilla Project (Project)
+    thunderbird     Mozilla Thunderbird  Mozilla Thunderbird (Product)
+    ubuntu          Ubuntu               Ubuntu Linux (Distribution)
+
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> ubuntu in featured_project_vocabulary
+    True
+
+    >>> debian = getUtility(ILaunchpadCelebrities).debian
+    >>> debian in featured_project_vocabulary
+    False
 
 
 === FAQ ===
