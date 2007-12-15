@@ -1,0 +1,29 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-architectures"
+  tal:define="architectures context/architectures">
+  <h2>Architectures for <tal:series replace="context/displayname" /></h2>
+  <div class="portletBody portletContent">
+    <p tal:condition="not: architectures">
+      <tal:name replace="context/displayname" /> has no architectures
+      managed in Launchpad.
+    </p>
+    <ul tal:condition="architectures" class="architecture">
+      <tal:official repeat="architecture architectures">
+        <li tal:condition="architecture/official">
+          <a tal:attributes="href architecture/fmt:url"
+             tal:content="architecture/architecturetag" />
+        </li>
+      </tal:official>
+      <tal:unofficial repeat="architecture architectures">
+        <li tal:condition="not: architecture/official">
+          <a tal:attributes="href architecture/fmt:url"
+             tal:content="architecture/architecturetag" />
+            (unofficial)
+        </li>
+      </tal:unofficial>
+    </ul>
+  </div>
+</div>

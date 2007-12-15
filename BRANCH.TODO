@@ -6,3 +6,9 @@
  - figure out if we need to implement the hidden method
  - figure out webapp/publisher.py:LaunchpadView.hasDateWidget
  - make the iframe display based on request.response
+ - make sure the date widget handles a custom time zone or uses the launchbag
+ - hook up in-code tests for widgets
+
+ (20:32:25) statik: sabdfl: there is a trivial doctest for canonical_name in lib/canonical/webapp/publisher.py
+ (20:32:50) statik: you can see how the doctests are tied into our testing machinery by looking in lib/canonical/launchpad/webapp/tests/test_publisher.py
+

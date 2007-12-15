@@ -14,8 +14,9 @@
         </a>
       </li>
     </ul>
-    <p><a tal:attributes="href string:${context/fmt:url}/+milestones">
-      All milestones</a>
+    <p>
+      <a tal:attributes="href string:${context/fmt:url}/+milestones">
+      &raquo; See all milestones...</a>
     </p>
   </div>
 </div>

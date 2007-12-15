@@ -175,6 +175,10 @@
       template="../templates/portlet-aboutcve.pt"
       />
     <browser:page
+      name="+portlet-architectures"
+      template="../templates/distroseries-portlet-architectures.pt"
+      />
+    <browser:page
       name="+portlet-details"
       facet="overview"
       template="../templates/distroseries-portlet-details.pt"

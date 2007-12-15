@@ -9,15 +9,17 @@ We should investigate zc.datewidget available from the Z3 SVN repository.
 __metaclass__ = type
 
 import os
-from datetime import date
+from datetime import date, datetime
+import pytz
 
+from zope.app.datetimeutils import parse, DateTimeError
 from zope.app.form.browser.interfaces import IWidgetInputErrorView
-from zope.app.form.browser.textwidgets import escape
+from zope.app.form.browser.textwidgets import escape, TextWidget
 from zope.app.form.browser.widget import DisplayWidget
-from zope.app.form.browser.widget import ISimpleInputWidget, SimpleInputWidget
 from zope.app.form.browser.widget import renderElement
 from zope.app.form.interfaces import IDisplayWidget, IInputWidget
 from zope.app.form.interfaces import InputErrors, WidgetInputError
+from zope.app.form.interfaces import ConversionError
 from zope.app import zapi
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
@@ -29,7 +31,6 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import ExportedFolder
-from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 
 
 class PopCalDateFolder(ExportedFolder):
@@ -46,10 +47,8 @@ class PopCalDateTimeFolder(ExportedFolder):
     here = os.path.dirname(os.path.realpath(__file__))
 
 
-class DateWidget(SimpleInputWidget):
+class DateWidget(TextWidget):
     """A date selection widget with popup selector."""
-
-    implements(IAlwaysSubmittedWidget)
 
     # ZPT that renders our widget
     __call__ = ViewPageTemplateFile('templates/date.pt')
@@ -61,59 +60,89 @@ class DateWidget(SimpleInputWidget):
         request.needs_datepicker_iframe = True
         super(DateWidget, self).__init__(context, request)
 
-    def _getRequestValue(self):
-        """Return the raw input from request in a format suitable for
-        formvalue and getInputValue to use
+    timeZoneName = 'UTC'
+    timeformat = '%Y-%m-%d'
 
+    def _toFieldValue(self, input):
+        """Return parsed input (datetime) as a date."""
+        return self._parseInput(input).date()
+
+    def _parseInput(self, input):
+        """Convert a string to a datetime value.
+
+          >>> from zope.publisher.browser import TestRequest
+          >>> from zope.schema import Field
+          >>> field = Field(__name__='foo', title=u'Foo')
+          >>> widget = DateWidget(field, TestRequest())
+
+        The widget converts an empty string to the missing value:
+
+          >>> widget._parseInput('') == field.missing_value
+          True
+
+        By default, the date is interpreted as UTC:
+
+          >>> print widget._parseInput('2006-01-01 12:00:00')
+          2006-01-01 12:00:00+00:00
+
+        But it will handle other time zones:
+
+          >>> widget.timeZoneName = 'Australia/Perth'
+          >>> print widget._parseInput('2006-01-01 12:00:00')
+          2006-01-01 12:00:00+08:00
+
+        Invalid dates result in a ConversionError:
+
+          >>> print widget._parseInput('not a date')  #doctest: +ELLIPSIS
+          Traceback (most recent call last):
+            ...
+          ConversionError: ('Invalid date value', ...)
         """
-        return self.request.get(self.name, '')
-
-    def getInputValue(self):
-        """See zope.app.form.interfaces.IInputWidget"""
-        # If validation fails, set this to the exception before raising
-        # it so that error() can find it.
-        self._error = None
-        r = self._getRequestValue()
-        r = r.split('-')
-        msg = 'Please specify the date in yyyy-mm-dd format.'
-        if len(r) != 3:
-            self._error = WidgetInputError(
-                self.name, self.label, LaunchpadValidationError(msg))
-            raise self._error
-        if len(r[0]) != 4:
-            self._error = WidgetInputError(
-                self.name, self.label,
-                LaunchpadValidationError(
-                    _('Please use 4 digits to specify the year.')))
-            raise self._error
-        if len(r[1]) > 2:
-            self._error = WidgetInputError(
-                self.name, self.label,
-                LaunchpadValidationError(
-                    _('Please use 2 digits to specify the month.')))
-            raise self._error
-        if len(r[2]) > 2:
-            self._error = WidgetInputError(
-                self.name, self.label,
-                LaunchpadValidationError(
-                    _('Please use 2 digits to specify the day.')))
-            raise self._error
+        if input == self._missing:
+            return self.context.missing_value
         try:
-            year = int(r[0])
-            month = int(r[1])
-            day = int(r[2])
-        except ValueError:
-            self._error = _error
-            raise self._error
-        try:
-            return date(year, month, day)
-        except ValueError, x:
-            self._error = WidgetInputError(
-                    self.name, self.label, LaunchpadValidationError(x)
-                    )
-            raise self._error
+            year, month, day, hour, minute, second, dummy_tz = parse(input)
+            second, micro = divmod(second, 1.0)
+            micro = round(micro * 1000000)
+            dt = datetime(year, month, day,
+                          hour, minute, int(second), int(micro))
+        except (DateTimeError, ValueError, IndexError), v:
+            raise ConversionError('Invalid date value', v)
+        tz = pytz.timezone(self.timeZoneName)
+        return tz.localize(dt)
 
-    @property
+    def _toFormValue(self, value):
+        """Convert a date to its string representation.
+
+          >>> from zope.publisher.browser import TestRequest
+          >>> from zope.schema import Field
+          >>> field = Field(__name__='foo', title=u'Foo')
+          >>> widget = DateWidget(field, TestRequest())
+
+        The 'missing' value is converted to an empty string:
+
+          >>> widget._toFormValue(field.missing_value)
+          u''
+
+        Dates are displayed without an associated time zone:
+
+          >>> dt = datetime(2006, 1, 1, 12, 0, 0,
+          ...                        tzinfo=pytz.timezone('UTC'))
+          >>> widget._toFormValue(dt)
+          '2006-01-01'
+
+        The date value will be converted to the widget's time zone
+        before being displayed:
+
+          >>> widget.timeZoneName = 'Americas/New_York'
+          >>> widget._toFormValue(dt)
+          '2006-01-01'
+        """
+        if value == self.context.missing_value:
+            return self._missing
+        tz = pytz.timezone(self.timeZoneName)
+        return value.astimezone(tz).strftime(timeformat)
+
     def formvalue(self):
         """Return the value for the form to render, accessed via the
         formvalue property.
@@ -135,21 +164,13 @@ class DateWidget(SimpleInputWidget):
             value = self._data
         return value
 
-    def hasInput(self):
-        """See zope.app.form.interfaces.IInputWidget"""
-        if self.name in self.request.form:
-            return True
-        else:
-            return False
-
 
 class DateTimeWidget(DateWidget):
     """A date and time selection widget with popup selector."""
 
-    implements(IAlwaysSubmittedWidget)
-
     # ZPT that renders our widget
     __call__ = ViewPageTemplateFile('templates/datetime.pt')
+    timeformat = '%Y-%m-%d %H:%M:%S'
 
     def __init__(self, context, request):
         # Unfortunate limitation of PopCalXP is that we may have EITHER a
@@ -158,51 +179,9 @@ class DateTimeWidget(DateWidget):
         request.needs_datetimepicker_iframe = True
         super(DateWidget, self).__init__(context, request)
 
-    def getInputValue(self):
-        """See zope.app.form.interfaces.IInputWidget"""
-        # If validation fails, set this to the exception before raising
-        # it so that error() can find it.
-        self._error = None
-        r = self._getRequestValue()
-        r = r.split('-')
-        msg = 'Please specify the date in yyyy-mm-dd format.'
-        if len(r) != 3:
-            self._error = WidgetInputError(
-                self.name, self.label, LaunchpadValidationError(msg))
-            raise self._error
-        if len(r[0]) != 4:
-            self._error = WidgetInputError(
-                self.name, self.label,
-                LaunchpadValidationError(
-                    _('Please use 4 digits to specify the year.')))
-            raise self._error
-        if len(r[1]) > 2:
-            self._error = WidgetInputError(
-                self.name, self.label,
-                LaunchpadValidationError(
-                    _('Please use 2 digits to specify the month.')))
-            raise self._error
-        if len(r[2]) > 2:
-            self._error = WidgetInputError(
-                self.name, self.label,
-                LaunchpadValidationError(
-                    _('Please use 2 digits to specify the day.')))
-            raise self._error
-        try:
-            year = int(r[0])
-            month = int(r[1])
-            day = int(r[2])
-        except ValueError:
-            self._error = _error
-            raise self._error
-        try:
-            return date(year, month, day)
-        except ValueError, x:
-            self._error = WidgetInputError(
-                    self.name, self.label, LaunchpadValidationError(x)
-                    )
-            raise self._error
-
+    def _toFieldValue(self, input):
+        """Return parsed input (datetime) as a date."""
+        return self._parseInput(input)
 
 
 class DatetimeDisplayWidget(DisplayWidget):
