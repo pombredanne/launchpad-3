@@ -30,11 +30,11 @@
 
   <content class="canonical.launchpad.database.Person">
     <allow attributes="account_status account_status_comment activesignatures
-      addressline1 addressline2 allwikis
+      addLanguage addressline1 addressline2 allwikis
       approver_specs archive assignKarma
       assigned_specs assigned_specs_in_progress authored_branches
       branches browsername city
-      claimedBounties clearInTeamCache country created_specs
+      claimedBounties clearInTeamCache convertToTeam country created_specs
       creation_comment creation_rationale currentShipItRequest
       datecreated defaultRenewalPeriodIsRequiredForSomeTeams
       defaultexpirationdate
@@ -54,7 +54,8 @@
       getTeamAdminsEmailAddresses getTeamAnswerQuestionTargets gpgkeys
       guessedemails hasParticipationEntryFor hide_email_addresses
       homepage_content id inTeam
-      inactivegpgkeys inactivesignatures ircnicknames
+      inactivegpgkeys inactivesignatures ircnicknames isBugContributor
+      isBugContributorInTarget
       isTeam isUploader is_openid_enabled
       is_trusted_on_shipit is_ubuntero is_valid_person
       is_valid_person_or_team iterTopProjectsContributedTo jabberids
@@ -101,7 +102,7 @@
       />
     <require
       permission="launchpad.Edit"
-      attributes="addLanguage addMember"
+      attributes="addMember"
       />
     <require
       permission="launchpad.Edit"

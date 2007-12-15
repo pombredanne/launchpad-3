@@ -50,7 +50,7 @@
       <table id="participation">
         <tal:loop repeat="membership context/myactivememberships">
           <tr tal:replace="structure membership/@@+listing-simple"
-              tal:condition="python: view.userCanViewMembership(membership.team)"
+              tal:condition="membership/team/@@+restricted-membership/userCanViewMembership"
               />
         </tal:loop>
       </table>

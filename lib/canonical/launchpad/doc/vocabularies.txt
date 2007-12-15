@@ -1243,7 +1243,7 @@ Almost all teams have the word 'team' as part of their names, so a search
 for 'team' should give us some of them.
 
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'name18', u'name19', u'name20', u'name21', u'no-team-memberships', u'simple-team', u'testing-spanish-team', u'ubuntu-team']
+    [u'name18', u'name19', u'name20', u'name21', u'no-team-memberships', u'otherteam', u'simple-team', u'testing-spanish-team', u'ubuntu-team']
 
 A search for 'support' will give us only the persons which have support
 as part of their name or displayname, or the beginning of
@@ -1286,7 +1286,7 @@ Almost all teams have the word 'team' as part of their names, so a
 search for 'team' should give us some of them:
 
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'name18', u'name19', u'name20', u'name21', u'no-team-memberships', u'simple-team', u'testing-spanish-team', u'ubuntu-team']
+    [u'name18', u'name19', u'name20', u'name21', u'no-team-memberships', u'otherteam', u'simple-team', u'testing-spanish-team', u'ubuntu-team']
 
 
 === ValidTeam ===
@@ -1313,6 +1313,7 @@ returned.
      (u'Launchpad Developers', u'Foo Bar'),
      (u'Mailing List Experts', u'Launchpad Administrators'),
      (u'Mirror Administrators', u'Mark Shuttleworth'),
+     (u'Other Team', u'Owner'),
      (u'Registry Administrators', u'Mark Shuttleworth'),
      (u'Rosetta Administrators', u'Launchpad Administrators'),
      (u'ShipIt Administrators', u'Mark Shuttleworth'),
@@ -1341,6 +1342,7 @@ text to match against the team name.  Still, you only get teams back.
     >>> sorted((team.displayname, team.teamowner.displayname)
     ...        for team in vocab.search('team'))
     [(u'Hoary Gnome Team', u'Mark Shuttleworth'),
+     (u'Other Team', u'Owner'),
      (u'Simple Team', u'One Membership'),
      (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
      (u'Ubuntu Team', u'Mark Shuttleworth'),
