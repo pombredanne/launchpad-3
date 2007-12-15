@@ -14,7 +14,7 @@
        <li tal:repeat="architecture context/architectures">
            <a tal:attributes="href architecture/fmt:url">
               <tal:title replace="architecture/displayname" />
-              <tal:details replace="architecture/details" />
+              <tal:details replace="architecture/@@+details" />
            </a>
        </li>
    </ul>

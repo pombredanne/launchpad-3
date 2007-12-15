@@ -47,9 +47,6 @@ class IDistroArchSeries(IHasOwner):
     # Page layouts helpers.
     title = Attribute('Title')
     displayname = Attribute('Display name')
-    details = Attribute(
-        'Architecture details string, e.g.: "(official, ppa)", "(official)" '
-        'or None.')
 
     # Other usefult bits.
     isNominatedArchIndep = Attribute(

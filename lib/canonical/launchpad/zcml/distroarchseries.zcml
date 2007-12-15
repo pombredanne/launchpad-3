@@ -60,6 +60,13 @@
 
     <browser:page
       for="canonical.launchpad.database.DistroArchSeries"
+      class="canonical.launchpad.browser.DistroArchSeriesDetailsView"
+      permission="zope.Public"
+      name="+details"
+      />
+
+    <browser:page
+      for="canonical.launchpad.database.DistroArchSeries"
       permission="zope.Public"
       name="+search"
       class="canonical.launchpad.browser.DistroArchSeriesBinariesView"

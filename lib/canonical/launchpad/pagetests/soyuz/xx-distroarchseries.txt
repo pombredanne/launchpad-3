@@ -53,7 +53,7 @@ More details are available by clicking on the binary package name.
     mozilla-firefox: ff from iceweasel
 
 A search may yield no result. In this case, we describe the search
-that was done, and explain that no match was found.
+that was done, and explain that no matches were found.
 
     >>> anon_browser.getControl(name="text", index=1).value = "biscoito"
     >>> anon_browser.getControl("Search").click()

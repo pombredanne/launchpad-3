@@ -11,16 +11,14 @@
   >
 <body>
 
-    <metal:heading fill-slot="pageheading">
-      <h2 style="margin-top: 0">URL: <a tal:attributes="href context/archive_url"
-       tal:content="context/archive_url">url</a></h2>
-    </metal:heading>
-
-    <metal:leftportlets fill-slot="portlets_one">
+    <metal:portlets fill-slot="portlets">
        <tal:portlet replace="structure context/distribution/@@+portlet-ppa-architectures" />
-    </metal:leftportlets>
+    </metal:portlets>
 
     <div metal:fill-slot="main">
+
+      <h2 style="margin-top: 0">URL: <a tal:attributes="href context/archive_url"
+       tal:content="context/archive_url">url</a></h2>
 
       <tal:whiteboard condition="context/required:launchpad.Edit">
          <div id="whiteboard" class="informational"

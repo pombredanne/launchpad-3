@@ -85,22 +85,6 @@ class DistroArchSeries(SQLBase):
         """See IDistroArchSeries."""
         return '%s %s' % (self.distroseries.name, self.architecturetag)
 
-    @property
-    def details(self):
-        """See IDistroArchSeries."""
-        details = []
-
-        if self.official:
-            details.append('official')
-
-        if self.ppa_supported:
-            details.append('ppa')
-
-        if details:
-            return "(%s)" % ', '.join(details)
-
-        return None
-
     def updatePackageCount(self):
         """See IDistroArchSeries """
         query = """

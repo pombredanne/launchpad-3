@@ -15,12 +15,9 @@
     <tal:portlet replace="structure context/@@+portlet-ppa-architectures" />
   </metal:portlets>
 
-  <metal:heading fill-slot="pageheading">
-    <h1>Personal Package Archives for
-        <span tal:replace="context/title" /></h1>
-  </metal:heading>
-
   <div metal:fill-slot="main">
+
+    <h1>Personal Package Archives for <span tal:replace="context/title" /></h1>
 
     <p>Personal Package Archives (PPA) allow you to upload Ubuntu source
        packages to be built and published as an apt repository by

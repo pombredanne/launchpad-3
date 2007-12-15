@@ -22,7 +22,7 @@
             <li tal:repeat="arch archs">
               <a tal:attributes="href arch/fmt:url">
                 <tal:title replace="arch/displayname" />
-                <tal:details replace="arch/details" />
+                <tal:details replace="arch/@@+details" />
               </a>
             </li>
           </ul>

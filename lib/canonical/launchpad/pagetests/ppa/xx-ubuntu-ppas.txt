@@ -106,7 +106,7 @@ clickable link to his PPA page:
     >>> browser.title
     'PPA for Celso Providelo'
 
-The PPA page contiains a portlet listing all series and architectures
+The PPA page contains a portlet listing all series and architectures
 which supports PPA building in ubuntu.
 
     >>> print extract_text(
