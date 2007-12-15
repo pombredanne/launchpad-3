@@ -44,7 +44,8 @@ class SoyuzTestPublisher:
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
         self.person = getUtility(IPersonSet).getByName('sabdfl')
         self.breezy_autotest_i386 = self.breezy_autotest.newArch(
-            'i386', ProcessorFamily.get(1), False, self.person)
+            'i386', ProcessorFamily.get(1), False, self.person,
+            ppa_supported=True)
         self.breezy_autotest_hppa = self.breezy_autotest.newArch(
             'hppa', ProcessorFamily.get(4), False, self.person)
         self.breezy_autotest.nominatedarchindep = self.breezy_autotest_i386
