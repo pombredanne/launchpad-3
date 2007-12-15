@@ -1747,12 +1747,13 @@ ALTER TABLE distributionsourcepackagecache ENABLE TRIGGER ALL;
 
 ALTER TABLE distroarchseries DISABLE TRIGGER ALL;
 
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (1, 1, 1, 'i386', 1, true, 5, '2006-10-16 18:31:43.454475', false);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (6, 3, 1, 'i386', 1, true, 1, '2006-10-16 18:31:43.456532', false);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (7, 6, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457028', false);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (8, 10, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457484', false);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (9, 13, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457938', false);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (10, 13, 3, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434', false);
+
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (1, 1, 1, 'i386', 1, true, 5, '2006-10-16 18:31:43.454475', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (6, 3, 1, 'i386', 1, true, 1, '2006-10-16 18:31:43.456532', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (7, 6, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457028', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (8, 10, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457484', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (9, 13, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457938', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (10, 13, 3, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434', true);
 INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (11, 3, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.458892', false);
 INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (12, 1, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.459349', false);
 

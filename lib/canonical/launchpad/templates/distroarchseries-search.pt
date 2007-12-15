@@ -47,6 +47,8 @@
     </div>
   </form>
 
+  <div id="search-results">
+
   <tal:searching condition="view/searchrequested">
 
     <tal:has_matches condition="view/searchresults">
@@ -76,7 +78,7 @@
 
     </tal:no_matches>
   </tal:searching>
-
+  </div>
 
   <tal:disabled condition="nothing">
     <!-- sabdfl 2005-10-24 this is the old searching, largely disabled in
