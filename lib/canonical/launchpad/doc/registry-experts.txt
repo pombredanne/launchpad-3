@@ -44,7 +44,9 @@ classes if you don't own them:
 
 But if we add you to the team:
 
+    >>> login('foo.bar@canonical.com')
     >>> registry_experts.addMember(no_priv, foobar)
+    >>> login('no-priv@canonical.com')
     >>> no_priv.inTeam(registry_experts)
     True
     >>> check_permissions()

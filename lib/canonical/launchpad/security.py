@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import (
     ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
     ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
     ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
-    PackageUploadStatus, IPackaging, IProductReleaseFile)
+    PackageUploadStatus, IPackaging, IProductReleaseFile, PersonVisibility)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -438,6 +438,42 @@ class EditPersonBySelf(AuthorizationBase):
         return self.obj.id == user.id
 
 
+class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
+    """Restrict viewing of private memberships of teams.
+
+    Only members of a team with a private membership can view the
+    membership list.
+    """
+    permission = 'launchpad.View'
+    usedfor = IPerson
+
+    def checkUnauthenticated(self):
+        """Unauthenticated users can only view public memberships."""
+        # XXX Edwin Grubbs 2007-12-11 bug=175758
+        # Checking if visibility is None is only necessary until next cycle.
+        if (self.obj.visibility is None
+            or self.obj.visibility == PersonVisibility.PUBLIC):
+            return True
+        return False
+
+    def checkAuthenticated(self, user):
+        """Verify that the user can view the team's membership.
+
+        Anyone can see a public team's membership.
+        Only a team member or a Launchpad admin can view a
+        private membership.
+        """
+        # XXX Edwin Grubbs 2007-12-11 bug=175758
+        # Checking if visibility is None is only necessary until next cycle.
+        if (self.obj.visibility is None
+            or self.obj.visibility == PersonVisibility.PUBLIC):
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(admins) or user.inTeam(self.obj):
+            return True
+        return False
+
+
 class EditPollByTeamOwnerOrTeamAdminsOrAdmins(
         EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):
     permission = 'launchpad.Edit'
@@ -667,7 +703,8 @@ class EditBugBranch(EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
     def __init__(self, bug_branch):
         # The same permissions as for the BugBranch's bug should apply
         # to the BugBranch itself.
-        self.obj = bug_branch.bug
+        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
+            self, bug_branch.bug)
 
 
 class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
@@ -680,7 +717,8 @@ class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
     usedfor = IBugAttachment
 
     def __init__(self, bugattachment):
-        self.obj = bugattachment.bug
+        PublicToAllOrPrivateToExplicitSubscribersForBug.__init__(
+            self, bugattachment.bug)
 
 
 class EditBugAttachment(
@@ -694,7 +732,8 @@ class EditBugAttachment(
     usedfor = IBugAttachment
 
     def __init__(self, bugattachment):
-        self.obj = bugattachment.bug
+        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
+            self, bugattachment.bug)
 
 
 class ViewAnnouncement(AuthorizationBase):
@@ -886,7 +925,7 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     usedfor = IPOTemplate
 
 
-# XXX: Carlos Perello Marin 2005-05-24 bug=753: 
+# XXX: Carlos Perello Marin 2005-05-24 bug=753:
 # This should be using SuperSpecialPermissions when implemented.
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Append'
