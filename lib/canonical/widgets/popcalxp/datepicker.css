@@ -6,7 +6,8 @@
 
 /* Calendar Day Header - the cells showing "Sunday", "Monday" .... */
 .CalHead {
-  cursor:default; text-align:center;
+  cursor:default;
+  text-align:center;
   background-color: #ededed;
   }
 /* Day of Week - the Anchor inside CalHead showing the day of week */
@@ -40,10 +41,8 @@
 /* Month navigators - the "<" or ">" used to move to previous or next month */
 .MonthNav {
   vertical-align:middle;
-  height:14px;
-  width:14px;
-  font-weight:bold
-  color:black;
+  font-weight:bold;
+  color: black;
   }
 A.MonthNav:hover {}
 A.MonthNav:active {}
@@ -99,6 +98,7 @@ A.MonthNav:active {}
   font-size: 80%;
   color: white;
   }
+/*
 A.BottomAnchor:hover {color: #039;}
 A.BottomAnchor:active {color: #36c;}
-
+*/

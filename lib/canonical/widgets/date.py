@@ -179,9 +179,17 @@ class DateWidget(DateTimeWidget):
         request.needs_datepicker_iframe = True
         super(DateTimeWidget, self).__init__(context, request)
 
+    @property
+    def pickscript(self):
+        """Return the javascript that triggers the calendar popup."""
+        return "pickDate('%s');" % self.name
+
     def _toFieldValue(self, input):
         """Return parsed input (datetime) as a date."""
-        return self._parseInput(input).date()
+        parsed = self._parseInput(input)
+        if parsed is None:
+            return parsed
+        return parsed.date()
 
     def setRenderedValue(self, value):
         """Render a date from the underlying datetime."""

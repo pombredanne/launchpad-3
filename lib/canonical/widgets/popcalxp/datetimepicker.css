@@ -1,104 +1,27 @@
 /*===== CSS theme file for CalendarXP 9.0 (Totally configurable) =====*/
 /* NOTE: Better use numbered color values instead of literal ones, because opera has problem with the latter in certain cases. */
 
-:link:hover {color:#039;}
-:link:active {color:#36c;}
+@import url('datepicker.css');
 
-/* Calendar Day Header - the cells showing "Sunday", "Monday" .... */
-.CalHead {
-  cursor:default; text-align:center;
-  background-color: #ededed;
-  }
-/* Day of Week - the Anchor inside CalHead showing the day of week */
-.DoWAnchor {
+.PopAnchor {
   text-decoration:none;
-  font-weight: bold;
-  font-size: 80%;
+  color:white;
   }
-/* Day Column Cell - the TD cell of each day */
-.CalCol {
-  background-color: white;
-  }
-/* Day Cell - the DIV cell inside TD */
-.CalCell {
-  cursor:pointer;
+A.PopAnchor:hover { color: white; }
+A.PopAnchor:active { color: white; }
+.PopMenu {
+  background:white;
   text-align:center;
-  padding: 2 0 0 0;
+  cursor:pointer;
   }
-/* Day Number - the Anchor inside DIV showing the day number  */
-.CellAnchor {
+.PopMenuItem {
   text-decoration:none;
-  }
-
-/* WeekNo Header - the top header cell of the week number column */
-.WeekHead {cursor:default; text-align:center; font-weight:bold; color:white;}
-/* WeekNo Column Cell - the cells of the week number column */
-.WeekCol {cursor:default; text-align:center;}
-/* WeekNo Anchor style */
-.WeekAnchor {text-decoration:none; font-weight:bold; color:white;}
-
-/* Month navigators - the "<" or ">" used to move to previous or next month */
-.MonthNav {
-  vertical-align:middle;
-  height:14px;
-  width:14px;
-  font-weight:bold
+  text-align:center;
+  font-size: 80%;
   color:black;
   }
-A.MonthNav:hover {}
-A.MonthNav:active {}
 
-/* styles for the 3 calendar sections (actually 3 table TDs) */
-.CalTop {
-  text-align: center;
-  background-color: #afdb1f;
+.TimeBox {
+  text-align:center;
+  cursor:pointer;
   }
-.CalMiddle {
-  background-color: #afdb1f;
-  }
-.CalBottom {
-  padding: 3;
-  padding-top: 5;
-  text-align: center;
-  background-color: #afdb1f;
-  }
-
-/* Calendar title - showing year and month. when giDCStyle=0, it's the style of the year/month dropdowns; giDCStyle>0, it's the style to show gsCalTitle.  */
-.CalTitle {
-  padding: 2 0 2 0;
-  vertical-align: middle;
-  text-align: center;
-  font-size: 90%;
-  font-weight: bold;
-  color: white;
-  }
-
-/* The style of internal floating div/layer tags, which are usually used to create the artificial dropdown selectors. */
-.FreeDiv {background-color: white;}
-
-/* The style of the outer TABLE tag which is the outer calendar panel. */
-#outerTable {
-  border-width: 1px;
-  border-style: solid;
-  border-color: #000000;
-  font-family: sans-serif;
-  font-size: 10pt;
-  color: #333;
-  }
-/* The style of the inner DIV tag that holds the inner panel of all calendar cells. */
-#innerDiv {
-  background-color: #ededed;
-  font-size: 10pt;
-  }
-/*===== Above CSS styles are commonly used in the script engine =====*/
-
-/*====== Following are additional per-theme styles, e.g. the inner dropdown selectors and today etc. You may have your own defined. ======*/
-.BottomAnchor {
-  text-decoration:none;
-  font-weight:bold;
-  font-size: 80%;
-  color: white;
-  }
-A.BottomAnchor:hover {color: #039;}
-A.BottomAnchor:active {color: #36c;}
-

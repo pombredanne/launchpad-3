@@ -1,6 +1,6 @@
 <div tal:define="val view/formvalue">
   <input size="8" type="text"
-         tal:attributes="name view/name; id view/name; value val" />
+         tal:attributes="name view/name; id view/name; value val;" />
   <a href="javascript:void(0)"
      tal:attributes="onclick string:pickDate('${view/name}');"
      ><span class="PopcalTrigger"
