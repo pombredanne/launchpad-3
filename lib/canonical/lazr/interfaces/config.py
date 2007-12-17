@@ -5,24 +5,40 @@
 __metaclass__ = type
 
 __all__ = [
+    'ConfigSchemaError',
     'IConfigSchema',
-    'ISectionSchema',]
+    'InvalidSectionNameError',
+    'ISectionSchema',
+    'NoCategoryError',
+    'RedefinedKeyError',
+    'RedefinedSectionError']
 
 from zope.interface import Interface, Attribute
 
 
+class ConfigSchemaError(Exception):
+    """A base class of all ConfigSchema errors."""
+
+
+class RedefinedKeyError(ConfigSchemaError):
+    """A key in a section cannot be redefined."""
+
+
+class RedefinedSectionError(ConfigSchemaError):
+    """A section in a config file cannot be redefined."""
+
+
+class InvalidSectionNameError(ConfigSchemaError):
+    """The section name contains more than one category."""
+
+
+class NoCategoryError(LookupError):
+    """No SchemaSections belong to the category name."""
+
+
 class ISectionSchema(Interface):
-    """A group of key-value pairs that configure a process."""
+    """Defines the valid keys and default values for a configuration group."""
     name = Attribute("The section schema name.")
-
-    def __init__(name, options, is_optional=False):
-        """Create an ISectionSchema from the name and options.
-
-        :param name: A string. The name of the ISectionSchema.
-        :param options: A dict of the key-value pairs in the ISectionSchema.
-        :param is_optional: A boolean. Is this section schema optional?
-        :raises RedefinedKeyError: if a keys is redefined in SectionSchema.
-        """
 
     def __iter__():
         """Iterate over the keys."""
@@ -31,7 +47,7 @@ class ISectionSchema(Interface):
         """Return True or False if name is a key."""
 
     def __getitem__(key):
-        """Return the value of the key.
+        """Return the default value of the key.
 
         :raises KeyError: if the key does not exist.
         """
@@ -40,26 +56,17 @@ class ISectionSchema(Interface):
 class IConfigSchema(Interface):
     """A process configuration schema.
 
-    The config file contains sections defined by square bracket ([]).
+    The config file contains sections enclosed in square brackets ([]).
     The section name may be divided into major and minor categories using a
     dot (.). Beneath each section is a list of key-value pairs, separated
     by a colon (:). Multiple sections with the same major category may have
-    their keys defined in a section that declares it is the '.template'
-    minor category. A section with '.optional' minor category is used to
-    define a process that is not required. Lines that start with a hash (#)
-    are comments.
+    their keys defined in another section that appends the '.template'
+    suffix to the category name. A section with '.optional' suffix is not
+    required. Lines that start with a hash (#) are comments.
     """
     name = Attribute('The basename of the config filename.')
     filename = Attribute('The path to config file')
     category_names = Attribute('The list of section category names.')
-
-    def __init__(filename):
-        """Load a configuration schema from the provided filename.
-
-        :raises UnicodeDecodeError: if the string contains non-ascii
-            characters.
-        :raises RedefinedSectionError: if a SectionSchema name is redefined.
-        """
 
     def __iter__():
         """Iterate over the SectionSchema."""
@@ -79,7 +86,7 @@ class IConfigSchema(Interface):
         Section names may be made from a category name and a process name,
         separated by a dot (.). The category is synonymous with a arbitrary
         resource such as a database or a vhost. Thus database.bugs and
-        database.answers are two processes that both use the database
+        database.answers are two sections that both use the database
         resource.
 
         :raises CategoryNotFound: if no sections have a name that starts
