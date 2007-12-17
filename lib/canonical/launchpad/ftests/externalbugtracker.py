@@ -140,11 +140,13 @@ class TestExternalBugTracker(ExternalBugTracker):
             # will also set the reference to `txn`.
             super(TestExternalBugTracker, self).__init__(txn, bugtracker)
         else:
+            self.batch_query_threshold = (
+                config.checkwatches.batch_query_threshold)
+            self.batch_size = None
+            self.import_comments = config.checkwatches.import_comments
             # If the bugtracker is None, we don't want to call the
             # superclass initializer, since it will choke, but we still
             # want to set the transaction.
-            self.batch_query_threshold = (
-                config.checkwatches.batch_query_threshold)
             self.txn = txn
 
     def convertRemoteStatus(self, remote_status):
