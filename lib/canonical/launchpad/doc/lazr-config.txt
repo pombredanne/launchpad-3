@@ -293,7 +293,7 @@ not have template or optional sections.
     # Accept the default values for the optional section-5.
     [section-5]
 
-    >>> conf = ConfigSchema(local_conf)
+    >>> conf = schema.load(local_conf)
     >>> verifyObject(IConfig, conf)
     True
 
@@ -345,14 +345,14 @@ the keys by declaring them too.
     False
     >>> 'section-3.app-a' in config.schema
     True
-    >>> 'section-3.app-a' in config.schema.optional
+    >>> config.schema['section-3.app-a'].optional
     True
 
     >>> 'section-5' in config
     True
     >>> 'section-5' in config.schema
     True
-    >>> 'section-5' in config.schema.optional
+    >>> config.schema['section-5'].optional
     True
 
 A Section can be accessed using subscript notation. Accessing a section
@@ -367,13 +367,26 @@ that does not exist will raise a NoSectionError.
       ...
     NoSectionError: ...
 
+NoSectionError is raised for a undeclared optional sections too.
+
+    >>> config['section-3.app-a']
+    Traceback (most recent call last):
+      ...
+    NoSectionError: ...
+
+# Config and Schema provide attribute-based access to their members.
+# XXX sinzui 2007-12-17:
+# This is delayed to lazrconfig-3. The issue is somewhat awkward in
+# that section names are not python-identifier friendly because they
+# may contain dot, dash, and start with a number.
+
 Config supports category access like Schema does. The list of
 categories are returned by the category_names property.
 
-    >>> config.category_names
-    ['section-3', 'section-2']
+    >>> sorted(config.category_names)
+    ['section-2', 'section-3']
 
-All the sections that belong to a category be retrieve using the
+All the sections that belong to a category can be retrieved using the
 getByCategory() method.
 
     >>> for section in config.getByCategory('section-3'):
@@ -433,18 +446,6 @@ if the key is not present.
     >>> section_1.get('not-exist', default='failover')
     'failover'
 
-Values are always string in a Section. Three convenience methods
-are available to convert the value into an int, bool, or list. Like
-the get() method, they support the optional default keyword argument.
-# XXX sinzui 2007-12-14: I don't care for the list because it
-# must assume everything in it is a string.
-
-    >>> config['section-2.app-b'].bool('key1')
-    True
-    >>> config['section-3.app-b'].int('key1')
-    17
-    >>> section_1.list('missing-key', default="one, two, three]")
-
 The Section keys can be iterated. The section has all the keys from
 the SectionSchema, and its localized values from th config file
 took precedence over the schema values.
@@ -470,12 +471,57 @@ were defined in a template section.
     key2 : 3.1415
 
 
+== Validating configs ==
+
+Config provided two methods to verify that an instance is valid:
+listValidationErrors() and validate().
+
+The listValidationErrors() method will return a list of errors in the
+config file
+
+    >>> config.validate()
+    True
+
+    >>> bad_data = """orphaned: key
+    ...     [unknown-section]
+    ...     key1 = value1
+    ...     [section-1]
+    ...     keyn: unknown key
+    ...     key1: bad character in café
+    ...     """
+    >>> config.push('unknown section', bad_data)
+    >>> try:
+    ...     config.validate()
+    ... except ConfigSchemaError, validation_error:
+    ...     for error in validation_error.errors:
+    ...         print error
+    UnknownSectionError: ...
+    UnknownKeyError: ...
+
+XXX UnicodeDecodeError would prevent the parsing of the whole file.
+
+
+        Process                     Schema
+
+IConfig:
+IOverlayedConfig                    IConfigSchema
+        push()                      load(), loadFromPath()
+        pop()
+
+IConfigSchema 
+IConfigLoader
+ConfigSchema: implements IConfigSchema, IConfigLoader
+ISectionSchema
+
+IConfig(IConfigSchema, IOverlayedConfig)
+
+ISection(ISectionSchema)
+
+
 == Config overlays ==
 
 # XXX sinzui 2007-12-17:
-# The overlay feature diverges from the spec's API. There is
-# few challenges here, namely: parsing a config string, and
-# the linked list of overlaid config.
+# This feature will be introduced in lazrconfig-3
 
 As Config supports inheritance through the extends key, each conf
 file produces an overlay of file that was extended. The overlays
@@ -553,34 +599,3 @@ bottom to top.
     ...     print overlay.name
     'base.conf'
     'local.conf'
-
-
-== Validating configs ==
-
-Config provided two methods to verify that an instance is valid:
-listValidationErrors() and validate().
-
-The listValidationErrors() method will return a list of errors in the
-config file
-
-    >>> config.listValidationErrors()
-    []
-
-    >>> bad_data = """orphaned: key
-    ...     [unknown-section]
-    ...     key1 = value1
-    ...     [section-1]
-    ...     keyn: unknown key
-    ...     key1: bad character in café
-    ...     """
-    >>> config.push('unknown section', bad_data)
-    >>> config.listValidationErrors()
-    ['UnknownSectionError', 'UnknownKeyError', 'UnicodeDecodeError']
-
-The validate() method raises an error if the config is not valid.
-
-    >>> config.validate()
-    Traceback (most recent call last):
-      ...
-    UnknownSectionError: ...
-
