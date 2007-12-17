@@ -12,6 +12,7 @@ __all__ = [
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditView',
+    'BranchEditWhiteboardView',
     'BranchReassignmentView',
     'BranchMirrorStatusView',
     'BranchNavigation',
@@ -158,9 +159,14 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'delete_branch', 'browse_code', 'browse_revisions',
+    links = ['whiteboard', 'edit', 'delete_branch', 'browse_code',
+             'browse_revisions',
              'reassign', 'subscription', 'addsubscriber', 'associations',
              'registermerge', 'landingcandidates', 'linkbug']
+
+    def whiteboard(self):
+        text = 'Edit whiteboard'
+        return Link('+whiteboard', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -450,9 +456,19 @@ class BranchEditFormView(LaunchpadEditFormView):
             # was in fact a change.
             self.context.date_last_modified = UTC_NOW
 
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the branch page."""
+
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+
+class BranchEditWhiteboardView(BranchEditFormView):
+    """A view for editing the whiteboard only."""
+
+    field_names = ['whiteboard']
 
 
 class BranchMirrorStatusView(LaunchpadFormView):
@@ -537,8 +553,8 @@ class BranchDeletionView(LaunchpadFormView):
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
+    """The main branch view for editing the branch attributes."""
 
-    schema = IBranch
     field_names = ['product', 'private', 'url', 'name', 'title', 'summary',
                    'lifecycle_status', 'whiteboard', 'home_page', 'author']
 
@@ -619,7 +635,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     @property
     def initial_values(self):
-        return {'branch_type': UICreatableBranchType.MIRRORED}
+        return {'author': self.user,
+                'branch_type': UICreatableBranchType.MIRRORED}
 
     @action('Add Branch', name='add')
     def add_action(self, action, data):
@@ -723,13 +740,9 @@ class PersonBranchAddView(BranchAddView):
     """See `BranchAddView`."""
 
     @property
-    def field_names(self):
-        fields = list(BranchAddView.field_names)
-        fields.remove('author')
-        return fields
-
-    def getAuthor(self, data):
-        return self.context
+    def initial_values(self):
+        return {'author': self.context,
+                'branch_type': UICreatableBranchType.MIRRORED}
 
 
 class ProductBranchAddView(BranchAddView):
@@ -746,11 +759,6 @@ class ProductBranchAddView(BranchAddView):
 
     def getProduct(self, data):
         return self.context
-
-    @property
-    def initial_values(self):
-        return {'author': self.user,
-                'branch_type': UICreatableBranchType.MIRRORED}
 
     def setForbiddenError(self, product):
         """There is no product widget, so set a form wide error."""

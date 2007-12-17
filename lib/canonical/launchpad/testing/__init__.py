@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+ # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Testing infrastructure for the Launchpad application.
 
@@ -16,8 +16,9 @@ import pytz
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
-    IRevisionSet, License, PersonCreationRationale, UnknownBranchTypeError)
+    BranchType, CreateBugParams, IBranchSet, IBugSet, ILaunchpadCelebrities,
+    IPersonSet, IProductSet, IRevisionSet, License, PersonCreationRationale,
+    UnknownBranchTypeError)
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -48,12 +49,6 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
 # is by no means complete for Launchpad objects.  If you need to create
 # anonymous objects for your tests then add methods to the factory.
 #
-# All factory methods should be callable with no parameters.  If you
-# add a keyword argument to a method, please be considerate of the other
-# users of the factory and make it behave at least as good as it was
-# before.
-
-
 class LaunchpadObjectFactory:
     """Factory methods for creating Launchpad objects.
 
@@ -99,11 +94,13 @@ class LaunchpadObjectFactory:
         return getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
 
-    def makeProduct(self):
+    def makeProduct(self, name=None):
         """Create and return a new, arbitrary Product."""
         owner = self.makePerson()
+        if name is None:
+            name = self.getUniqueString('product-name')
         return getUtility(IProductSet).createProduct(
-            owner, self.getUniqueString('product-name'),
+            owner, name,
             self.getUniqueString('displayname'),
             self.getUniqueString('title'),
             self.getUniqueString('summary'),
@@ -178,3 +175,16 @@ class LaunchpadObjectFactory:
             parent = revision
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent.revision_id, sequence)
+
+    def makeBug(self):
+        """Create and return a new, arbitrary Bug.
+
+        The bug returned uses default values where possible. See
+        `IBugSet.new` for more information.
+        """
+        owner = self.makePerson()
+        title = self.getUniqueString()
+        create_bug_params = CreateBugParams(
+            owner, title, comment=self.getUniqueString())
+        create_bug_params.setBugTarget(product=self.makeProduct())
+        return getUtility(IBugSet).createBug(create_bug_params)

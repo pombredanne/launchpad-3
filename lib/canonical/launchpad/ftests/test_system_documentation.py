@@ -622,6 +622,13 @@ special = {
                 tearDown=tearDown,
                 optionflags=default_optionflags, layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-rt.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-rt.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-sourceforge.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-sourceforge.txt',
@@ -675,6 +682,10 @@ special = {
             setUp=zopelessLaunchpadSecuritySetUp,
             tearDown=zopelessLaunchpadSecurityTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
+            ),
+    'soyuz-set-of-uploads.txt': LayeredDocFileSuite(
+            '../doc/soyuz-set-of-uploads.txt',
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
             ),
     }
 

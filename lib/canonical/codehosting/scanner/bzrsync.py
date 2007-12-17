@@ -12,6 +12,7 @@ __all__ = [
 import logging
 from datetime import datetime, timedelta
 from StringIO import StringIO
+import urlparse
 
 import pytz
 from zope.component import getUtility
@@ -23,17 +24,42 @@ from bzrlib.revision import NULL_REVISION
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel, ILaunchpadCelebrities,
-    IBranchRevisionSet, IRevisionSet)
+    BranchSubscriptionNotificationLevel, BugBranchStatus,
+    ILaunchpadCelebrities, IBranchRevisionSet, IBugBranchSet, IBugSet,
+    IRevisionSet, NotFoundError)
 from canonical.launchpad.mailnotification import (
     send_branch_revision_notifications)
 
 UTC = pytz.timezone('UTC')
+# Use at most the first 100 characters of the commit message.
+SUBJECT_COMMIT_MESSAGE_LENGTH = 100
+
+
+class BadLineInBugsProperty(Exception):
+    """Raised when the scanner encounters a bad line in a bug property."""
 
 
 class RevisionModifiedError(Exception):
     """An error indicating that a revision has been modified."""
     pass
+
+
+def set_bug_branch_status(bug, branch, status):
+    """Ensure there's a BugBranch for 'bug' and 'branch' set to 'status'.
+
+    This creates a BugBranch if one doesn't exist, and changes the status if
+    it does. If a BugBranch is created, the registrant is the branch owner.
+
+    :return: The updated BugBranch.
+    """
+    bug_branch_set = getUtility(IBugBranchSet)
+    bug_branch = bug_branch_set.getBugBranch(bug, branch)
+    if bug_branch is None:
+        return bug_branch_set.new(
+            bug=bug, branch=branch, status=status, registrant=branch.owner)
+    if bug_branch.status != BugBranchStatus.BESTFIX:
+        bug_branch.status = status
+    return bug_branch
 
 
 class BzrSync:
@@ -90,11 +116,74 @@ class BzrSync:
         self.db_branch = None
         self.bzr_history = None
 
-    def syncBranchAndClose(self):
-        """Synchronize the database with a Bazaar branch and release resources.
+    def _parseBugLine(self, line):
+        """Parse a line from a bug property.
 
-        Convenience method that implements the proper idiom for the common case
-        of calling `syncBranch` and `close`.
+        :param line: A line from a Bazaar bug property.
+        :raise BadLineInBugsProperty: if the line is invalid.
+        :return: (bug_url, bug_id) if the line is good, None if the line
+            should be skipped.
+        """
+        valid_statuses = {'fixed': BugBranchStatus.FIXAVAILABLE}
+        line = line.strip()
+
+        # Skip blank lines.
+        if len(line) == 0:
+            return None
+
+        # Lines must be <url> <status>.
+        try:
+            url, status = line.split(None, 2)
+        except ValueError:
+            raise BadLineInBugsProperty('Invalid line: %r' % line)
+        protocol, host, path, ignored, ignored = urlparse.urlsplit(url)
+
+        # Skip URLs that don't point to Launchpad.
+        if host != 'launchpad.net':
+            return None
+
+        # Don't allow Launchpad URLs that aren't /bugs/<integer>.
+        try:
+            # Remove empty path segments.
+            bug_segment, bug_id = [
+                segment for segment in path.split('/') if len(segment) > 0]
+            if bug_segment != 'bugs':
+                raise ValueError('Bad path segment')
+            bug = int(path.split('/')[-1])
+        except ValueError:
+            raise BadLineInBugsProperty('Invalid bug reference: %s' % url)
+
+        # Make sure the status is acceptable.
+        try:
+            status = valid_statuses[status.lower()]
+        except KeyError:
+            raise BadLineInBugsProperty('Invalid bug status: %r' % status)
+        return bug, status
+
+    def extractBugInfo(self, bug_property):
+        """Parse bug information out of the given revision property.
+
+        :param bug_status_prop: A string containing lines of
+            '<bug_url> <status>'.
+        :return: dict mapping bug IDs to BugBranchStatuses.
+        """
+        bug_statuses = {}
+        for line in bug_property.splitlines():
+            try:
+                parsed_line = self._parseBugLine(line)
+                if parsed_line is None:
+                    continue
+                bug, status = parsed_line
+            except BadLineInBugsProperty, e:
+                continue
+            bug_statuses[bug] = status
+        return bug_statuses
+
+    def syncBranchAndClose(self):
+        """Synchronize the database with a Bazaar branch and close resources.
+
+        Convenience method that implements the proper idiom for the common
+        case of calling `syncBranch` and `close`.
         """
         try:
             self.syncBranch()
@@ -117,7 +206,7 @@ class BzrSync:
         * Branch: the branch-scanner status information must be updated when
           the sync is complete.
         """
-        self.logger.info("Scanning branch: %s",self.db_branch.unique_name)
+        self.logger.info("Scanning branch: %s", self.db_branch.unique_name)
         self.logger.info("    from %s", self.bzr_branch.base)
         # Get the history and ancestry from the branch first, to fail early
         # if something is wrong with the branch.
@@ -142,8 +231,8 @@ class BzrSync:
         # timeouts in the webapp. This opens a small race window where the
         # revision data is updated in the database, but the Branch table has
         # not been updated. Since this has no ill-effect, and can only err on
-        # the pessimistic side (tell the user the data has not yet been updated
-        # although it has), the race is acceptable.
+        # the pessimistic side (tell the user the data has not yet been
+        # updated although it has), the race is acceptable.
         self.trans_manager.begin()
         self.updateBranchStatus()
         self.trans_manager.commit()
@@ -217,7 +306,7 @@ class BzrSync:
                     contents = ('%d revisions were removed from the branch.'
                                 % number_removed)
                 # No diff is associated with the removed email.
-                self.pending_emails.append((contents, ''))
+                self.pending_emails.append((contents, '', None))
 
         # Merged (non-history) revisions in the database and the bzr branch.
         old_merged = db_ancestry.difference(db_history)
@@ -233,8 +322,8 @@ class BzrSync:
             db_branch_revision_map[revid]
             for revid in removed_merged.union(removed_history))
 
-        # We must insert BranchRevision rows for all revisions which were added
-        # to the ancestry or whose sequence value has changed.
+        # We must insert BranchRevision rows for all revisions which were
+        # added to the ancestry or whose sequence value has changed.
         branchrevisions_to_insert = list(
             self.getRevisions(added_merged.union(added_history)))
 
@@ -253,7 +342,8 @@ class BzrSync:
         for revision_id in revisions_to_insert_or_check:
             # If the revision is a ghost, it won't appear in the repository.
             try:
-                revision = self.bzr_branch.repository.get_revision(revision_id)
+                revision = self.bzr_branch.repository.get_revision(
+                    revision_id)
             except NoSuchRevision:
                 self.logger.debug("%d of %d: %s is a ghost",
                                   self.curr, self.last, revision_id)
@@ -290,7 +380,8 @@ class BzrSync:
                         'parent %s was added since last scan' % parent_id)
                 elif len(matching_parents) > 1:
                     raise RevisionModifiedError(
-                        'parent %s is listed multiple times in db' % parent_id)
+                        'parent %s is listed multiple times in db'
+                        % parent_id)
                 if matching_parents[0].sequence != sequence:
                     raise RevisionModifiedError(
                         'parent %s reordered (old index %d, new index %d)'
@@ -371,7 +462,7 @@ class BzrSync:
             # Generate an email if the revision is in the revision_history
             # for the branch.  If the sequence is None then the revision
             # is just in the ancestry so no email is generated.
-            if sequence is not None and not self.initial_scan:
+            if sequence is not None:
                 try:
                     revision = self.bzr_branch.repository.get_revision(
                         revision_id)
@@ -379,10 +470,41 @@ class BzrSync:
                     self.logger.debug("%d of %d: %s is a ghost",
                                       self.curr, self.last, revision_id)
                     continue
-                if self.subscribers_want_notification:
+                if (not self.initial_scan
+                    and self.subscribers_want_notification):
                     message = self.getRevisionMessage(revision)
                     revision_diff = self.getDiff(revision)
-                    self.pending_emails.append((message, revision_diff))
+                    # Use the first (non blank) line of the commit message
+                    # as part of the subject, limiting it to 100 characters
+                    # if it is longer.
+                    message_lines = [
+                        line.strip() for line in revision.message.split('\n')
+                        if len(line.strip()) > 0]
+                    if len(message_lines) == 0:
+                        first_line = 'no commit message given'
+                    else:
+                        first_line = message_lines[0]
+                        if len(first_line) > SUBJECT_COMMIT_MESSAGE_LENGTH:
+                            offset = SUBJECT_COMMIT_MESSAGE_LENGTH - 3
+                            first_line = first_line[:offset] + '...'
+                    subject = '[Branch %s] Rev %s: %s' % (
+                        self.db_branch.unique_name, sequence, first_line)
+                    self.pending_emails.append(
+                        (message, revision_diff, subject))
+                self.createBugBranchLinksForRevision(db_revision, revision)
+
+    def createBugBranchLinksForRevision(self, db_revision, bzr_revision):
+        bug_property = bzr_revision.properties.get('bugs', None)
+        if bug_property is None:
+            return
+        bug_set = getUtility(IBugSet)
+        for bug_id, status in self.extractBugInfo(bug_property).iteritems():
+            try:
+                bug = bug_set.get(bug_id)
+            except NotFoundError:
+                pass
+            else:
+                set_bug_branch_status(bug, self.db_branch, status)
 
     def updateBranchStatus(self):
         """Update the branch-scanner status in the database Branch table."""
@@ -461,10 +583,11 @@ class BzrSync:
                        ' in the revision history of the branch.' %
                        revisions)
             send_branch_revision_notifications(
-                self.db_branch, self.email_from, message, '')
+                self.db_branch, self.email_from, message, '', None)
         else:
-            for message, diff in self.pending_emails:
+            for message, diff, subject in self.pending_emails:
                 send_branch_revision_notifications(
-                    self.db_branch, self.email_from, message, diff)
+                    self.db_branch, self.email_from, message, diff,
+                    subject)
 
         self.trans_manager.commit()

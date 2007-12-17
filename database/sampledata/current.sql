@@ -596,6 +596,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE announcement DISABLE TRIGGER ALL;
 
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (1, '2007-11-25 00:44:32.186178', '2007-11-20 03:00:00', 1, NULL, 1, NULL, 'Every Macedonian Student to Use Ubuntu-Powered Computer Workstations', 'The Macedonia Ministry of Education and Science will deploy more than 180,000 workstations running Canonical’s Edubuntu 7.04 as part of its "Computer for Every Child" project.', 'http://www.ubuntu.com/news/macedonia-school-computers', true, NULL);
@@ -1275,6 +1278,7 @@ ALTER TABLE codeimporteventdata ENABLE TRIGGER ALL;
 
 ALTER TABLE codeimportjob DISABLE TRIGGER ALL;
 
+INSERT INTO codeimportjob (id, date_created, code_import, machine, date_due, state, requesting_user, ordering, heartbeat, logtail, date_started) VALUES (1, '2007-12-05 16:07:57.276112', 1, NULL, '2007-12-05 16:07:57.276112', 10, NULL, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE codeimportjob ENABLE TRIGGER ALL;
@@ -1746,12 +1750,13 @@ ALTER TABLE distributionsourcepackagecache ENABLE TRIGGER ALL;
 
 ALTER TABLE distroarchseries DISABLE TRIGGER ALL;
 
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (1, 1, 1, 'i386', 1, true, 5, '2006-10-16 18:31:43.454475', false);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (6, 3, 1, 'i386', 1, true, 1, '2006-10-16 18:31:43.456532', false);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (7, 6, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457028', false);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (8, 10, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457484', false);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (9, 13, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457938', false);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (10, 13, 3, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434', false);
+
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (1, 1, 1, 'i386', 1, true, 5, '2006-10-16 18:31:43.454475', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (6, 3, 1, 'i386', 1, true, 1, '2006-10-16 18:31:43.456532', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (7, 6, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457028', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (8, 10, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457484', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (9, 13, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457938', true);
+INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (10, 13, 3, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434', true);
 INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (11, 3, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.458892', false);
 INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, "owner", official, package_count, date_created, ppa_supported) VALUES (12, 1, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.459349', false);
 
@@ -1905,6 +1910,8 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (66, '
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (67, 'doc@lists.ubuntu.com', 243608, 1, '2007-11-12 15:23:19.847132');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (68, 'carlos@test.com', 13, 2, '2006-10-16 18:31:43.548591');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (69, 'archive@ubuntu.com', 243609, 4, '2007-12-07 13:43:20.393704');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (70, 'member@canonical.com', 243610, 4, '2007-12-14 16:52:15.403833');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (71, 'owner@canonical.com', 243611, 4, '2007-12-14 16:52:15.403833');
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -1985,6 +1992,21 @@ INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_
 
 
 ALTER TABLE faq ENABLE TRIGGER ALL;
+
+
+ALTER TABLE featuredproject DISABLE TRIGGER ALL;
+
+INSERT INTO featuredproject (id, pillar_name) VALUES (1, 1);  -- ubuntu
+INSERT INTO featuredproject (id, pillar_name) VALUES (2, 4);  -- gentoo
+INSERT INTO featuredproject (id, pillar_name) VALUES (3, 11); -- firefox
+INSERT INTO featuredproject (id, pillar_name) VALUES (4, 27); -- mozilla
+INSERT INTO featuredproject (id, pillar_name) VALUES (5, 15); -- thunderbird
+INSERT INTO featuredproject (id, pillar_name) VALUES (6, 28); -- gnome
+INSERT INTO featuredproject (id, pillar_name) VALUES (7, 13); -- gnome-terminal
+INSERT INTO featuredproject (id, pillar_name) VALUES (8, 16); -- applets
+INSERT INTO featuredproject (id, pillar_name) VALUES (9, 21); -- bazaar
+
+ALTER TABLE featuredproject ENABLE TRIGGER ALL;
 
 
 
@@ -3669,7 +3691,11 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243606, 'Julian Edwards', NULL, NULL, NULL, 'launchpad-julian-edwards', NULL, NULL, NULL, NULL, 1, NULL, '2007-08-09 21:25:37.832976', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 7, 'when the commercialpackage_1.0-1 package was uploaded to breezy-autotest/RELEASE', NULL, NULL, 10, 'neMCQNd', NULL, 10, 9, NULL, NULL, 1, true, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243607, 'Mailing List Experts', NULL, 25, 'This team is responsible for the management of Launchpad-hosted mailing lists.', 'mailing-list-experts', NULL, NULL, NULL, NULL, 3, NULL, '2007-10-04 19:59:03.615674', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'CQGNewe', NULL, 10, 0, NULL, NULL, 1, true, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243608, 'Ubuntu Doc Team', NULL, NULL, NULL, 'doc', NULL, NULL, NULL, NULL, 1, NULL, '2007-11-12 15:23:19.847132', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 3, NULL, NULL, NULL, 10, 'WQPMHdf', NULL, 10, 0, NULL, NULL, 1, true, NULL);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates) VALUES (243609, 'Katie', NULL, NULL, NULL, 'katie', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-07 13:43:20.393704', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, '6w7kmzC', NULL, 20, 0, NULL, NULL, 1, true);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243609, 'Katie', NULL, NULL, NULL, 'katie', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-07 13:43:20.393704', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, '6w7kmzC', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243610, 'Gold Member', '9I7bMpJUcBH+edfXjswjdo7nC6iuoTU6YAqolznT59Q1h9v+z9pdVQ==', NULL, NULL, 'member', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-14 16:52:15.403833', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'cCGE3LA', NULL, 20, 0, NULL, NULL, 1, true, 1);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243611, 'Owner', 'zpAkRDpNGKvwvoPeBHuuwK4RFNCrwUnEMglcuWfzV1FCZ0M9nskK8w==', NULL, NULL, 'owner', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-14 16:52:15.403833', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'MGWJnTL', NULL, 20, 0, NULL, NULL, 1, true, 1);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243612, 'My Team', NULL, 243611, NULL, 'myteam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-14 16:52:15.403833', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'ewxwdWA', NULL, 10, 0, NULL, NULL, 1, true, 20);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243613, 'Other Team', NULL, 243611, NULL, 'otherteam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-14 16:52:15.403833', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'XPJeTcA', NULL, 10, 0, NULL, NULL, 1, true, 1);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -3784,7 +3810,7 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Report-Msgid-Bugs-To: serrador@hispalinux.es
 Plural-Forms: nplurals=2; plural=(n != 1);
-', true, 13, NULL, 6, 0, 1, NULL, 12, NULL, 'es.po', 60, '2007-01-03 17:26:27.288968', '2005-06-06 08:59:54.24073', NULL, 2, '2007-01-04 11:02:02.844658');
+', true, 13, NULL, 6, 0, 2, NULL, 12, NULL, 'es.po', 60, '2007-01-03 17:26:27.288968', '2005-06-06 08:59:54.24073', NULL, 2, '2007-01-04 11:02:02.844658');
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (3, 2, 387, NULL, ' Spanish (Spain) translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the mount removable devices as normal user package.
@@ -7945,6 +7971,10 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (68, 12, 17, 1, '2007-05-16 15:03:47.748238', NULL, 12, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (69, 69, 17, 2, '2007-06-20 14:18:41.185147', NULL, 16, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (70, 25, 243607, 3, '2007-10-04 19:59:03.615674', NULL, 25, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (71, 243611, 243612, 3, '2007-12-14 16:52:15.403833', NULL, 243611, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (72, 243610, 243612, 2, '2007-12-14 16:52:15.403833', NULL, 243611, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (73, 243611, 243613, 2, '2007-12-14 16:52:15.403833', NULL, 243611, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (74, 52, 243612, 1, '2007-12-14 16:52:15.403833', NULL, 52, NULL);
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -8094,6 +8124,13 @@ INSERT INTO teamparticipation (id, team, person) VALUES (152, 243607, 11);
 INSERT INTO teamparticipation (id, team, person) VALUES (153, 243607, 22);
 INSERT INTO teamparticipation (id, team, person) VALUES (154, 243608, 243608);
 INSERT INTO teamparticipation (id, team, person) VALUES (155, 243609, 243609);
+INSERT INTO teamparticipation (id, team, person) VALUES (156, 243610, 243610);
+INSERT INTO teamparticipation (id, team, person) VALUES (157, 243611, 243611);
+INSERT INTO teamparticipation (id, team, person) VALUES (158, 243612, 243612);
+INSERT INTO teamparticipation (id, team, person) VALUES (159, 243612, 243611);
+INSERT INTO teamparticipation (id, team, person) VALUES (160, 243612, 243610);
+INSERT INTO teamparticipation (id, team, person) VALUES (161, 243613, 243613);
+INSERT INTO teamparticipation (id, team, person) VALUES (162, 243613, 243611);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -8891,6 +8928,10 @@ INSERT INTO validpersonorteamcache (id) VALUES (243602);
 INSERT INTO validpersonorteamcache (id) VALUES (243603);
 INSERT INTO validpersonorteamcache (id) VALUES (243604);
 INSERT INTO validpersonorteamcache (id) VALUES (243607);
+INSERT INTO validpersonorteamcache (id) VALUES (243610);
+INSERT INTO validpersonorteamcache (id) VALUES (243611);
+INSERT INTO validpersonorteamcache (id) VALUES (243612);
+INSERT INTO validpersonorteamcache (id) VALUES (243613);
 
 
 ALTER TABLE validpersonorteamcache ENABLE TRIGGER ALL;
@@ -9009,6 +9050,8 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (56, 243603, 'https://w
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (58, 243606, 'https://wiki.ubuntu.com/', 'JulianEdwards');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (59, 243608, 'https://wiki.ubuntu.com/', 'UbuntuDocTeam');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (60, 243609, 'https://wiki.ubuntu.com/', 'Katie');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (61, 243610, 'https://wiki.ubuntu.com/', 'GoldMember');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (62, 243611, 'https://wiki.ubuntu.com/', 'Owner');
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;

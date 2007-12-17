@@ -38,8 +38,9 @@
     <browser:menus
         module="canonical.launchpad.browser.project"
         classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu
-                 ProjectSpecificationsMenu ProjectSetContextMenu
-                 ProjectAnswersMenu ProjectTranslationsMenu"
+                 ProjectSeriesSpecificationsMenu ProjectSpecificationsMenu
+                 ProjectSetContextMenu ProjectAnswersMenu
+                 ProjectTranslationsMenu"
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
@@ -317,7 +318,6 @@
         facet="bugs"
         permission="launchpad.AnyPerson" />
 
-
     <!-- ProjectSet-->
     <content class="canonical.launchpad.database.ProjectSet">
         <allow interface="canonical.launchpad.interfaces.IProjectSet" />
@@ -378,5 +378,30 @@
             template="../templates/registry-review.pt"
             />
     </browser:pages>
+
+    <!-- ProjectSeries -->
+    <content class="canonical.launchpad.database.ProjectSeries">
+        <allow interface="canonical.launchpad.interfaces.IProjectSeries" />
+    </content>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IProjectSeries"
+        path_expression="string:+series/${name}"
+        attribute_to_parent="project"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProjectSeries"
+        name="+specs"
+        layer="canonical.launchpad.layers.BlueprintLayer"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProjectSeries"
+        permission="zope.Public"
+        name="+portlet-details"
+        facet="overview"
+        template="../templates/project-series-portlet-details.pt"
+        />
 
 </configure>

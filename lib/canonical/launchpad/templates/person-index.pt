@@ -14,7 +14,7 @@
   <tal:block metal:fill-slot="head_epilogue">
     <tal:valid_person_or_team condition="context/is_valid_person_or_team">
       <link
-          tal:condition="not:context/hide_email_addresses" 
+          tal:condition="not:context/hide_email_addresses"
           rel="meta" type="application/rdf+xml"
           title="FOAF" href="+rdf"
           />
@@ -109,20 +109,20 @@
       </tal:is-team>
       <div tal:condition="not:context/isTeam" class="section">
       <div class="portlet"
-           tal:define="memberships context/getLatestApprovedMembershipsForPerson">
+           tal:define="memberships context/@@+restricted-membership/getLatestApprovedMembershipsForPerson">
         <h2>Latest memberships</h2>
-        <table>
+        <table id="participation">
           <tr tal:repeat="membership memberships"
               tal:replace="structure membership/@@+listing-simple" />
         </table>
 
-        <p tal:condition="memberships/count">
+        <p tal:condition="memberships">
           <a href="+participation">
             &raquo; See all teams in which
             <span tal:replace="context/title">Foo Bar</span> participates
           </a>
         </p>
-        <p tal:condition="not: memberships/count">
+        <p tal:condition="not: memberships">
           <span tal:replace="context/browsername">Foo Bar</span> is not an
           active member of any Launchpad teams.
         </p>
@@ -176,21 +176,25 @@
         </tal:block>
       </div>
       </div>
-      <div tal:condition="view/recently_approved_members" class="section">
-      <div class="portlet" id="recently-approved">
+      <div tal:condition="context/@@+restricted-membership/userCanViewMembership"
+           class="section">
+      <div class="portlet" id="recently-approved"
+           tal:condition="view/recently_approved_members">
         <h2>Recently approved</h2>
         <ul>
           <li class="person"
               tal:repeat="person view/recently_approved_members">
             <a tal:attributes="href person/fmt:url"
-               tal:content="person/unique_displayname"
+              tal:content="person/unique_displayname"
             >Foo Bar (name16)</a>
           </li>
         </ul>
       </div>
       </div>
-      <div tal:condition="view/recently_proposed_members" class="section">
-      <div class="portlet" id="recently-applied">
+      <div tal:condition="context/@@+restricted-membership/userCanViewMembership"
+           class="section">
+      <div class="portlet" id="recently-applied"
+           tal:condition="view/recently_proposed_members">
         <h2>Recently applied</h2>
         <ul>
           <li class="person"

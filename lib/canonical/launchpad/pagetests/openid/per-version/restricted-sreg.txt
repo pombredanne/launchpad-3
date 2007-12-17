@@ -19,7 +19,7 @@ details:
 
     >>> from openid.consumer.consumer import Consumer
     >>> from openid.fetchers import setDefaultFetcher
-    >>> from openid.sreg import SRegRequest, SRegResponse
+    >>> from openid.extensions.sreg import SRegRequest, SRegResponse
     >>> from openid.store.memstore import MemoryStore
     >>> from canonical.launchpad.ftests.openidhelpers import (
     ...     complete_from_browser, install_consumer, make_endpoint,

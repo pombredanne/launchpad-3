@@ -24,7 +24,7 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchive, IArchiveSet, IHasOwner, IHasBuildRecords,
-    IBuildSet, IDistributionSet)
+    IBuildSet, ILaunchpadCelebrities)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -135,7 +135,8 @@ class Archive(SQLBase):
             self, build_state, name, pocket)
 
     def getPublishedSources(self, name=None, version=None, status=None,
-                            distroseries=None, exact_match=False):
+                            distroseries=None, pocket=None,
+                            exact_match=False):
         """See `IArchive`."""
         clauses = ["""
             SourcePackagePublishingHistory.archive = %s AND
@@ -181,6 +182,12 @@ class Archive(SQLBase):
                 SourcePackagePublishingHistory.distroseries = %s
             """ % sqlvalues(distroseries))
 
+        if pocket is not None:
+            clauses.append("""
+                SourcePackagePublishingHistory.pocket = %s
+            """ % sqlvalues(pocket))
+
+
         sources = SourcePackagePublishingHistory.select(
             ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy)
 
@@ -213,7 +220,7 @@ class Archive(SQLBase):
 
     def _getBinaryPublishingBaseClauses (
         self, name=None, version=None, status=None, distroarchseries=None,
-        exact_match=False):
+        pocket=None, exact_match=False):
         """Base clauses and clauseTables for binary publishing queries.
 
         Returns a list of 'clauses' (to be joined in the callsite) and
@@ -268,13 +275,19 @@ class Archive(SQLBase):
                 BinaryPackagePublishingHistory.distroarchseries IN %s
             """ % das_ids)
 
+        if pocket is not None:
+            clauses.append("""
+                BinaryPackagePublishingHistory.pocket = %s
+            """ % sqlvalues(pocket))
+
         return clauses, clauseTables, orderBy
 
     def getAllPublishedBinaries(self, name=None, version=None, status=None,
-                                distroarchseries=None, exact_match=False):
+                                distroarchseries=None, pocket=None,
+                                exact_match=False):
         """See `IArchive`."""
         clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
-            name=name, version=version, status=status,
+            name=name, version=version, status=status, pocket=pocket,
             distroarchseries=distroarchseries, exact_match=exact_match)
 
         all_binaries = BinaryPackagePublishingHistory.select(
@@ -284,10 +297,11 @@ class Archive(SQLBase):
         return all_binaries
 
     def getPublishedOnDiskBinaries(self, name=None, version=None, status=None,
-                                   distroarchseries=None, exact_match=False):
+                                   distroarchseries=None, pocket=None,
+                                   exact_match=False):
         """See `IArchive`."""
         clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
-            name=name, version=version, status=status,
+            name=name, version=version, status=status, pocket=pocket,
             distroarchseries=distroarchseries, exact_match=exact_match)
 
         clauses.append("""
@@ -412,7 +426,7 @@ class ArchiveSet:
             assert owner, "Owner required when purpose is PPA."
 
         if distribution is None:
-            distribution = getUtility(IDistributionSet)['ubuntu']
+            distribution = getUtility(ILaunchpadCelebrities).ubuntu
 
         return Archive(owner=owner, distribution=distribution,
                        description=description, purpose=purpose)
