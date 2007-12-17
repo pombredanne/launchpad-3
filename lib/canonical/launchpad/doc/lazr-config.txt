@@ -57,6 +57,9 @@ required. Lines that start with a hash (#) are comments.
     [section-3.app-b]
     key2: changed
     key3: unique
+    # This section is optional.
+    [section-5.optional]
+    key1: something
 
     >>> schema = ConfigSchema(base_conf)
     >>> verifyObject(IConfigSchema, schema)
@@ -77,6 +80,7 @@ over in a loop as needed.
     section-2.app-b
     section-3.app-a
     section-3.app-b
+    section-5
 
 You can check if the schema contains a section name, and that can be
 used to access the SchemaSection as a subscript.
@@ -292,7 +296,9 @@ can access the schema via the schema property.
     'base.conf'
     >>> config.schema.name
     'base.conf'
-    >>> config.schema == schema
+    >>> config.schema.filname
+    '...ftests/testfiles/base.conf'
+    >>> config.schema.filname == schema.filename
     True
 
 A config is made up of multiple Sections like the schema. They can be
@@ -301,11 +307,12 @@ sections defined in schema. Note that the meta section is not present
 because it pertains to the config system, not to the processes being
 configured.
 
-    >>> for section in config:
+    >>> for section in sorted(config, key=attrgetter('name')):
     ...     print section.name
-    section-3.app-b
-    section-2.app-b
     section-1
+    section-2.app-b
+    section-3.app-b
+    section-5
 
 You can check if a section name is in a config.
 
@@ -367,7 +374,7 @@ NoCategoryError.
 == Section ==
 
 A Section behaves similar to a dictionary. It has keys and values.
-It supports from specialize access methods and properties for working
+It supports some specialize access methods and properties for working
 with the values. Each Section has a name. Continuing with section_1
 from above....
 
@@ -402,20 +409,16 @@ An error is raised if a non-existent key is accessed via a subscript.
 
 But the get() method will return None or the default keyword argument
 if the key is not present.
-# XXX sinzui 2007-12-14: I don't like the default behaviour. We
-# know what is in the config. We are making the config sane so that
-# we do not need to write the config into the code.
 
-    >>>  print section_1.get('not-section')
+    >>>  print section_1.get('not-exist')
     None
-    >>> section_1.get('not-section', default='failover')
+    >>> section_1.get('not-exist', default='failover')
     'failover'
 
 Values are always string in a Section. Three convenience methods
 are available to convert the value into an int, bool, or list. Like
 the get() method, they support the optional default keyword argument.
-# XXX sinzui 2007-12-14: I don't like th default behaviour for the
-# reasons stated above. I don't care for the list either, because it
+# XXX sinzui 2007-12-14: I don't care for the list because it
 # must assume everything in it is a string.
 
     >>> config['section-2.app-b'].bool('key1')
