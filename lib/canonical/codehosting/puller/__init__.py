@@ -1,7 +1,7 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['configure_oops_reporting', 'mirror']
+__all__ = ['configure_oops_reporting', 'get_lock_id_for_branch_id', 'mirror']
 
 
 import datetime
@@ -9,6 +9,13 @@ import datetime
 import pytz
 
 from twisted.internet import defer
+
+
+def get_lock_id_for_branch_id(branch_id):
+    """Return the lock id that should be used for a branch with the passed id.
+    """
+    return 'worker-for-branch-%s@supermirror' % (branch_id,)
+
 
 from canonical.codehosting.puller.scheduler import LockError
 from canonical.config import config
