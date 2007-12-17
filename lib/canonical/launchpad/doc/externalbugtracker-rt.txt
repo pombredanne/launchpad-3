@@ -9,6 +9,9 @@ instances.
 When importing bugs from remote RT instances, we use an RT-specific
 implementation of ExternalBugTracker, RequestTracker.
 
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
+
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     RequestTracker)
     >>> from canonical.launchpad.interfaces import (
@@ -18,7 +21,7 @@ implementation of ExternalBugTracker, RequestTracker.
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(
     ...     IExternalBugTracker,
-    ...     RequestTracker(new_bugtracker(BugTrackerType.RT)))
+    ...     RequestTracker(txn, new_bugtracker(BugTrackerType.RT)))
     True
 
 
@@ -27,7 +30,7 @@ implementation of ExternalBugTracker, RequestTracker.
 The RequestTracker class can convert the default RT ticket statuses into
 Launchpad statuses:
 
-    >>> rt = RequestTracker(new_bugtracker(BugTrackerType.RT))
+    >>> rt = RequestTracker(txn, new_bugtracker(BugTrackerType.RT))
     >>> rt.convertRemoteStatus('new').title
     'New'
     >>> rt.convertRemoteStatus('open').title
@@ -59,7 +62,7 @@ connection.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestRequestTracker)
-    >>> rt = TestRequestTracker(new_bugtracker(BugTrackerType.RT))
+    >>> rt = TestRequestTracker(txn, new_bugtracker(BugTrackerType.RT))
     >>> rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
     >>> sorted(rt.bugs.keys())
     [1585, 1586, 1587, 1588, 1589]
@@ -135,7 +138,7 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
 Our RequestTracker ExternalBugTracker can now process, and retrieve a
 remote status for, the bug watch that we have created.
 
-    >>> rt = TestRequestTracker(example_bug_tracker)
+    >>> rt = TestRequestTracker(txn, example_bug_tracker)
     >>> rt.updateBugWatches(example_bug_tracker.watches)
     INFO:...:Updating 1 watches on http://bugs.some.where
 
