@@ -200,10 +200,6 @@
       name="+portlet-latestuploads"
       template="../templates/distroseries-portlet-latestuploads.pt"
       />
-    <browser:page
-      name="+pagelet-architectures"
-      template="../templates/distroseries-pagelet-architectures.pt"
-      />
   </browser:pages>
 
   <browser:page

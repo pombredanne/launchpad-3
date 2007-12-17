@@ -1,19 +1,6 @@
 # Put your TODOs for this branch here, then make sure it is empty before
 # landing. There is a test to ensure it is empty in trunk.
 
- - support the following use cases:
-   - plain ol' date picker
-      => underlying datetime-in-utc, just display and capture the date
-      => no timezone relevant
-   - pick a datetime in the users local time zone
-   - pick a datetime in a specified time zone
-
- - remove pdb in widgets/date.py
- - support passing a timezone to the widgets
- - figure out if we need to implement the hidden method
- - figure out webapp/publisher.py:LaunchpadView.hasDateWidget
- - make the iframe display based on request.response
- - make sure the date widget handles a custom time zone or uses the launchbag
  - hook up in-code tests for widgets
  - fix in-code tests to dela with user timezone and required timezone
  - add test to show that the "change zone" link on the datetimewidget takes

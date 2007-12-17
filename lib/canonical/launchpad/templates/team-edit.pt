@@ -16,12 +16,12 @@
       <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
 
-  <h1>
-    Edit &#8220;<span tal:replace="context/browsername">
-    Foo</span>&#8221; team
-  </h1>
-
   <div metal:fill-slot="main">
+
+    <h1>
+      Edit &#8220;<span tal:replace="context/browsername">
+      Foo</span>&#8221; team
+    </h1>
 
     <div metal:use-macro="context/@@launchpad_form/form" />
 

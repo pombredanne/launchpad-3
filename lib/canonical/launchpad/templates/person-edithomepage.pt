@@ -9,23 +9,20 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Description</h1>
-    </metal:heading>
+<body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-  </metal:leftportlets>
+<div metal:fill-slot="main">
 
-  <metal:rightportlets fill-slot="portlets_two">
-  </metal:rightportlets>
+  <h1>Change home page</h1>
 
-  <div metal:fill-slot="main">
-
-    <div metal:use-macro="context/@@launchpad_form/form">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
     <p metal:fill-slot="extra_info">
-      Describe yourself &mdash; your current activities, interests and so on.
+      Describe
+        <tal:person condition="not: context/teamowner">yourself</tal:person>
+        <tal:team condition="context/teamowner"
+                  replace="context/displayname" /> &mdash;
+      current activities, interests and so on.
       Use plain text; URLs will be linkified.
     </p>
 
