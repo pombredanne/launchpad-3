@@ -384,6 +384,7 @@ class Build(SQLBase):
             subject = "[Build #%d] %s (%s)" % (
                 self.id, self.title, archive_tag)
             source_url = 'not available'
+            extra_headers['X-Launchpad-PPA'] = self.archive.owner.name
 
         # XXX cprov 2006-08-02: pending security recipients for SECURITY
         # pocket build. We don't build SECURITY yet :(

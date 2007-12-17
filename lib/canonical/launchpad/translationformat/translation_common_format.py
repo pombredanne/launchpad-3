@@ -55,19 +55,21 @@ class TranslationMessageData:
         # but not 1. This means we need to add empty values if plural_form >
         # len(self._translations).
         #
-        # We raise an error if plural_form < len(self.translations).
+        # We raise an error if plural_form < len(self.translations) and
+        # self.translations[plural_form] is not None.
         assert plural_form is not None, 'plural_form cannot be None!'
-        assert plural_form >= len(self._translations), (
+        assert (plural_form >= len(self._translations) or
+                self._translations[plural_form] is None), (
             'This message already has a translation for plural form %d' %
                 plural_form)
 
-        if plural_form > len(self.translations):
+        if plural_form >= len(self.translations):
             # There is a hole in the list of translations so we fill it with
             # None.
             self._translations.extend(
-                [None] * (plural_form - len(self._translations)))
+                [None] * (1 + plural_form - len(self._translations)))
 
-        self._translations.append(translation)
+        self._translations[plural_form] = translation
 
     def resetAllTranslations(self):
         """See `ITranslationMessageData`."""

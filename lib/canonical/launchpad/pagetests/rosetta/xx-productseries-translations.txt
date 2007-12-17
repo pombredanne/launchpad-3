@@ -27,7 +27,7 @@ series is working.
   >>> print anon_browser.contents
   <...
   ...
-      <tr>
+      <tr id="evolution-2.2_af">
   <BLANKLINE>
           <td>
             <a href="/evolution/trunk/+pots/evolution-2.2/af/+translate">Afrikaans</a>

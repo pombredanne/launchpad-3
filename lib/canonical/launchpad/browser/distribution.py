@@ -52,6 +52,7 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
+from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.request_country import request_country
 from canonical.launchpad.browser.questiontarget import (
@@ -300,14 +301,12 @@ class DistributionOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def announce(self):
         text = 'Make announcement'
-        enabled = self.isBetaUser
         summary = 'Publish an item of news for this project'
-        return Link('+announce', text, summary, enabled=enabled, icon='add')
+        return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
         text = 'Show announcements'
-        enabled = bool(self.context.announcements().count()
-                       and self.isBetaUser)
+        enabled = bool(self.context.announcements().count())
         return Link('+announcements', text, enabled=enabled)
 
     def builds(self):
@@ -405,7 +404,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+select-language-pack-admin', text, icon='edit')
 
 
-class DistributionView(HasAnnouncementsView, BuildRecordsView):
+class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
     """Default Distribution view class."""
 
     def initialize(self):
@@ -546,8 +545,9 @@ class DistributionEditView(LaunchpadEditFormView):
     schema = IDistribution
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
-                   'official_malone', 'enable_bug_expiration',
-                   'official_rosetta', 'official_answers']
+                   'bug_reporting_guidelines', 'official_malone',
+                   'enable_bug_expiration', 'official_rosetta',
+                   'official_answers']
 
     def isAdmin(self):
         return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)

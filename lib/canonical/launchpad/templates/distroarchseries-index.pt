@@ -11,33 +11,30 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1
-        tal:define="distroseries context/distroseries; distro distroseries/distribution"
-      >
-        <tal:distro replace="distro/displayname">Fooix</tal:distro>
-        <tal:series replace="distroseries/displayname">3.1</tal:series> for
-        <tal:arch replace="context/architecturetag">i386</tal:arch>
-      </h1>
     </metal:heading>
 
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" /> 
+<metal:portlets fill-slot="portlets">
+  <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/distroseries/distribution/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/distroseries/@@+portlet-details" />
-</metal:rightportlets>
+</metal:portlets>
 
 <div metal:fill-slot="main"
      tal:define="distroseries context/distroseries;
                  distro distroseries/distribution">
 
+  <h1 tal:define="distroseries context/distroseries;
+                  distro distroseries/distribution">
+      <tal:distro replace="distro/displayname">Fooix</tal:distro>
+      <tal:series replace="distroseries/displayname">3.1</tal:series> for
+      <tal:arch replace="context/architecturetag">i386</tal:arch>
+  </h1>
+
   <h2>Search binary packages</h2>
 
   <form name="search" action="+search" method="GET">
-  
+
     <input type="text"
       name="text"
       size="35"
@@ -48,7 +45,7 @@
   </form>
 
   <p class="discreet">
-    This archive currently contains
+    This archive contains
     <tal:count replace="context/package_count">bazillions of</tal:count> software packages.
   </p>
 

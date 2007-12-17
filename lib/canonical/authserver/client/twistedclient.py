@@ -15,7 +15,8 @@ class TwistedAuthServer:
         return self.proxy.callRemote('getUser', loginID)
 
     def authUser(self, loginID, sshaDigestedPassword):
-        return self.proxy.callRemote('authUser', loginID, sshaDigestedPassword)
+        return self.proxy.callRemote(
+            'authUser', loginID, sshaDigestedPassword)
 
     def changePassword(self, loginID, sshaDigestedPassword,
                        newSshaDigestedPassword):
@@ -43,6 +44,6 @@ class TwistedAuthServer:
         return self.proxy.callRemote(
             'createBranch', loginID, personName, productName, branchName)
 
-    def requestMirror(self, branchID):
-        return self.proxy.callRemote('requestMirror', branchID)
+    def requestMirror(self, loginID, branchID):
+        return self.proxy.callRemote('requestMirror', loginID, branchID)
 
