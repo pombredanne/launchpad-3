@@ -57,6 +57,9 @@ required. Lines that start with a hash (#) are comments.
     [section-3.app-b]
     key2: changed
     key3: unique
+    # This section is optional.
+    [section-5.optional]
+    key1: something
 
     >>> schema = ConfigSchema(base_conf)
     >>> verifyObject(IConfigSchema, schema)
@@ -77,6 +80,7 @@ over in a loop as needed.
     section-2.app-b
     section-3.app-a
     section-3.app-b
+    section-5
 
 You can check if the schema contains a section name, and that can be
 used to access the SchemaSection as a subscript.
@@ -182,7 +186,10 @@ key5, the key had no explicit value, so the value is an empty string.
     key5 :
 
 In the conf file '[section-3.template]' defines a common set of keys and
-default values for '[section-3.app-a]' and '[section-3.app-b]'.
+default values for '[section-3.app-a]' and '[section-3.app-b]'. When a
+section defines different keys and default values s from the template,
+the new data overlays the template data. This is the case for section
+'[section-3.app-b]'.
 
     >>> for section_schema in sorted(all_section_3, key=attrgetter('name')):
     ...     print section_schema.name
@@ -239,10 +246,19 @@ Redefining a section in a config file will raise a RedefinedSectionError.
 # a key.
 
 Defining a section that belongs to many categories will raise
-a MultipleCategoriesError.
+a InvalidSectionNameError.
 
     >>> ConfigSchema('%s/%s' % (
     ...     testfiles_dir, 'bad-invalid-name.conf'))
     Traceback (most recent call last):
       ...
-    InvalidSectionNameError: category.other_category.name.optional
+    InvalidSectionNameError: [category.other_category.name.optional] ...
+
+As does using non word characters other than a dot or dash in the
+section name.
+
+    >>> ConfigSchema('%s/%s' % (
+    ...     testfiles_dir, 'bad-invalid-name-chars.conf'))
+    Traceback (most recent call last):
+      ...
+    InvalidSectionNameError: [$category.name_part.optional] ...

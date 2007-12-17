@@ -16,8 +16,8 @@ import StringIO
 from zope.interface import implements
 
 from canonical.lazr.interfaces import (
-    ConfigSchemaError, IConfigSchema, InvalidSectionNameError, ISectionSchema,
-    NoCategoryError, RedefinedKeyError, RedefinedSectionError)
+    IConfigSchema, InvalidSectionNameError, ISectionSchema,
+    NoCategoryError, RedefinedSectionError)
 
 
 class ConfigSchema(object):
@@ -83,14 +83,7 @@ class ConfigSchema(object):
         self._category_names = list(category_names)
         self._section_schemas = section_schemas
 
-    _section_name_pattern = re.compile(r"""
-        (?:
-            (?P<category>[\w-]+)
-            (?P<dot>\.)
-            (?P<template>template)?
-        )?
-        (?P<section>[\w-]+)?
-        (?P<optional>\.optional)?$""", re.VERBOSE)
+    _section_name_pattern = re.compile(r'[\w.-]+')
 
     def _parseSectionName(self, name):
         """Return a 4-tuple of names and kinds embedded in the name.
@@ -101,16 +94,27 @@ class ConfigSchema(object):
             are False by default, but will be true if the name's suffix
             ends in '.template' or '.optional'.
         """
-        match = self._section_name_pattern.match(name)
-        if match is None:
-            raise InvalidSectionNameError(name)
-        is_template = match.group('template') is not None
-        is_optional = match.group('optional') is not None
-        category_name = match.group('category')
-        if category_name is not None:
-            section_name = "%s.%s" % (category_name, match.group('section'))
+        name_parts = name.split('.')
+        is_template = name_parts[-1] == 'template'
+        is_optional = name_parts[-1] == 'optional'
+        if is_template or is_optional:
+            # The suffix is not a part of the section name.
+            del name_parts[-1]
+        count = len(name_parts)
+        if count == 1 and is_template:
+            category_name = name_parts[0]
+            section_name = name_parts[0]
+        elif count == 1:
+            category_name = None
+            section_name = name_parts[0]
+        elif count == 2:
+            category_name = name_parts[0]
+            section_name = '.'.join(name_parts)
         else:
-            section_name = match.group('section')
+            raise InvalidSectionNameError('[%s] has too many parts.' % name)
+        if self._section_name_pattern.match(section_name) is None:
+            raise InvalidSectionNameError(
+                '[%s] name does not match [\w.-]+.' % name)
         return (section_name, category_name,  is_template, is_optional)
 
     @property
