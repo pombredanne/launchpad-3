@@ -186,7 +186,10 @@ key5, the key had no explicit value, so the value is an empty string.
     key5 :
 
 In the conf file '[section-3.template]' defines a common set of keys and
-default values for '[section-3.app-a]' and '[section-3.app-b]'.
+default values for '[section-3.app-a]' and '[section-3.app-b]'. When a
+section defines different keys and default values s from the template,
+the new data overlays the template data. This is the case for section
+'[section-3.app-b]'.
 
     >>> for section_schema in sorted(all_section_3, key=attrgetter('name')):
     ...     print section_schema.name
@@ -243,13 +246,22 @@ Redefining a section in a config file will raise a RedefinedSectionError.
 # a key.
 
 Defining a section that belongs to many categories will raise
-a MultipleCategoriesError.
+a InvalidSectionNameError.
 
     >>> ConfigSchema('%s/%s' % (
     ...     testfiles_dir, 'bad-invalid-name.conf'))
     Traceback (most recent call last):
       ...
-    InvalidSectionNameError: category.other_category.name.optional
+    InvalidSectionNameError: [category.other_category.name.optional] ...
+
+As does using non word characters other than a dot or dash in the
+section name.
+
+    >>> ConfigSchema('%s/%s' % (
+    ...     testfiles_dir, 'bad-invalid-name-chars.conf'))
+    Traceback (most recent call last):
+      ...
+    InvalidSectionNameError: [$category.name_part.optional] ...
 
 
 == Config ==
@@ -275,8 +287,11 @@ not have template or optional sections.
     >>> print raw_conf
     [meta]
     extends: base.conf
+    # Localize a key for section-1.
     [section-1]
     key5: local value
+    # Accept the default values for the optional section-5.
+    [section-5]
 
     >>> conf = ConfigSchema(local_conf)
     >>> verifyObject(IConfig, conf)
@@ -344,6 +359,9 @@ A Section can be accessed using subscript notation. Accessing a section
 that does not exist will raise a NoSectionError.
 
     >>> section_1 = config['section-1']
+    >>> section_1.name in config
+    True
+
     >>> config['section-4']
     Traceback (most recent call last):
       ...
@@ -431,25 +449,25 @@ The Section keys can be iterated. The section has all the keys from
 the SectionSchema, and its localized values from th config file
 took precedence over the schema values.
 
-    >>> for key in section_1:
+    >>> for key in sorted(section_1):
     ...     print key, ':', section_1[key]
-    key3 : Launchpad&nbsp;rocks
-    key2 : bar and baz
     key1 : foo
-    key5 : local value
+    key2 : bar and baz
+    key3 : Launchpad&nbsp;rocks
     key4 : F&#028c;k yeah!
+    key5 : local value
 
     >>> section_1.schema[key5]
     ''
 
 Sections that were not defined in the config file are present because
-the schema defined them. And in the case of section-3.app-b, its keys
+the schema defined them. In the case of section-3.app-b, its keys
 were defined in a template section.
 
-    >>> for key in config['section-3.app-b']:
+    >>> for key in sorted(config['section-3.app-b']):
     ...     print key, ':', config['section-3.app-b'][key]
-    key2 : 3.1415
     key1 : 17
+    key2 : 3.1415
 
 
 == Config supports testing ==
