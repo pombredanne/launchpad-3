@@ -1815,8 +1815,11 @@ class SourceForge(ExternalBugTracker):
 
     # We only allow ourselves to update one SourceForge bug at a time to
     # avoid getting clobbered by SourceForge's rate limiting code.
-    batch_size = 1
     export_url = 'support/tracker.php?aid=%s'
+
+    def __init__(self, txn, bugtracker):
+        super(SourceForge, self).__init__(txn, bugtracker)
+        self.batch_size = 1
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
