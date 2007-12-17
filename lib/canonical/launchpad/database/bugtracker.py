@@ -281,10 +281,6 @@ class BugTrackerAliasSet:
 
     table = BugTrackerAlias
 
-    def getByBaseURL(self, base_url):
-        """See IBugTrackerSet."""
-        return self.table.selectOneBy(base_url=base_url)
-
     def queryByBugTracker(self, bugtracker):
         """See IBugTrackerSet."""
         if IBugTracker.providedBy(bugtracker):

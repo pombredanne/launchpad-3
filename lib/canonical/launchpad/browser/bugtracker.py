@@ -157,7 +157,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
-        # Set aliases to an empty list if it's None.
+        # Normalise aliases to an empty list if it's None.
         if data['aliases'] is None:
             data['aliases'] = []
 
