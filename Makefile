@@ -171,11 +171,20 @@ start: inplace stop bzr_version_info
 		 nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
 		 > ${LPCONFIG}-nohup.out 2>&1 &
 
+start_mailman: inplace stop bzr_version_info
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+		 nohup $(PYTHON) -t $(STARTSCRIPT) -r mailman -C $(CONFFILE) \
+		 > ${LPCONFIG}-mailman-nohup.out 2>&1 &
+
 # Kill launchpad last - other services will probably shutdown with it,
 # so killing them after is a race condition.
 stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
 	    utilities/killservice.py librarian buildsequencer launchpad
+
+stop_mailman: build
+	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
+	    utilities/killservice.py mailman launchpad
 
 harness:
 	PYTHONPATH=lib $(PYTHON) -i lib/canonical/database/harness.py
