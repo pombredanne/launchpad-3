@@ -39,6 +39,7 @@ class NoCategoryError(LookupError):
 class ISectionSchema(Interface):
     """Defines the valid keys and default values for a configuration group."""
     name = Attribute("The section schema name.")
+    optional = Attribute("Is the section optional in the config?")
 
     def __iter__():
         """Iterate over the keys."""
