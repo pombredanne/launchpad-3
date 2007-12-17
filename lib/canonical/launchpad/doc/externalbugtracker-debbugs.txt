@@ -75,8 +75,11 @@ Bug 563 resides in the archive. It is also fetchable:
     >>> len(bug_watches)
     4
 
-Log in and kick off the update:
+Log in and kick off the update. The importing of comments, which is
+controlled by a configuration option, is disabled here and will be
+tested later.
 
+    >>> external_debbugs.import_comments = False
     >>> external_debbugs.updateBugWatches(bug_watches)
     INFO:...:Updating 4 watches on http://bugs.some.where
 
@@ -401,6 +404,132 @@ valid e-mail address), he still won't be subscribed to the imported bug.
     >>> [person.name for person in bug.getDirectSubscribers()]
     []
 
+
+== Importing Comments ==
+
+Along with importing debian bug reports, comments on those bug reports
+are also imported. This activity is usually carried out as part of a
+status update (though this is disabled in our Test DebBugs
+implementation), so we need to pass a bug watch to the function.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug = getUtility(IBugSet).get(4)
+    >>> bug_watch = bug.addWatch(debbugs, '1234', no_priv)
+    >>> external_debbugs.importBugComments(bug_watch)
+    INFO:...:Imported 1 comments for remote bug 1234...
+
+These comments will have been added to the bug, but by default won't be
+displayed. Initially, we only see the message chunk that was added when
+the bug was created.
+
+    >>> chunks = bug.getMessageChunks()
+    >>> for chunk in chunks:
+    ...     print chunk.content
+    Malone pages that use more complex layouts with portlets and fancy
+    CSS are sometimes not getting properly reflowed after rendering.
+
+There is a config setting, malone.show_imported_comments, which controls
+whether or not we display imported comments. This option is False by
+default. If we set it to True we'll see the message chunks in which the
+imported comments are stored.
+
+    >>> from canonical.config import config
+    >>> config.malone.show_imported_comments = True
+    >>> chunks = bug.getMessageChunks()
+    >>> for chunk_id, chunk in sorted([(chunk.id, chunk.content)
+    ...     for chunk in chunks]):
+    ...     print chunk
+    Malone pages that use more complex layouts with portlets and fancy
+    CSS are sometimes not getting properly reflowed after rendering.
+    Things happen.
+
+    >>> config.malone.show_imported_comments = False
+
+The author of the comment will have had a Launchpad Person created for
+them if they didn't exist already:
+
+    >>> message = chunks[0].message
+    >>> message.owner.displayname
+    u'Teun Vink'
+
+    >>> print message.owner.creation_comment
+    when the comments for debbugs #1234 were imported into Launchpad.
+
+No notifications will be generated for the imported comments:
+
+    >>> from canonical.launchpad.interfaces import IBugNotificationSet
+    >>> from canonical.launchpad.scripts.bugnotification import (
+    ...     get_email_notifications)
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(pending_notifications)
+    0
+
+If a second comment is added and then the comments imported, the
+existing comment will remain unaltered and the new comment will be
+imported into Launchpad as normal. We can demonstrate this by telling
+our test debbugs DB to load sample data for more than one comment
+
+    >>> config.malone.show_imported_comments = True
+    >>> chunks = bug.getMessageChunks()
+    >>> len(chunks)
+    2
+
+    >>> external_debbugs.debbugs_db._data_file = 'debbugs-2-comments.txt'
+    >>> external_debbugs.importBugComments(bug_watch)
+    INFO:...:Imported 1 comments for remote bug 1234...
+
+    >>> chunks = bug.getMessageChunks()
+    >>> len(chunks)
+    3
+
+    >>> for chunk_id, chunk in sorted([(chunk.id, chunk.content)
+    ...     for chunk in chunks]):
+    ...     print chunk
+    Malone pages that use more complex layouts with portlets and fancy
+    CSS are sometimes not getting properly reflowed after rendering.
+    Things happen.
+    Anything that, in happening, causes something else to happen, causes
+    something else to happen.
+
+If a comment already exists in our database and is then imported from
+the debbugs database, it will be linked to the bug then next time the
+comment import code runs. We can demonstrate this by adding a new
+message:
+
+    >>> import os
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> msg_path = os.path.join(external_debbugs.debbugs_db._data_path,
+    ...     'debbugs-existing-comment.txt')
+    >>> msg_string = open(msg_path).read()
+    >>> message = getUtility(IMessageSet).fromEmail(msg_string)
+    >>> commit()
+
+If we run the import against the same data file - thus finding the same
+message - the comment will be linked to the bug.
+
+    >>> external_debbugs.debbugs_db._data_file = (
+    ...     'debbugs-existing-comment.txt')
+    >>> external_debbugs.importBugComments(bug_watch)
+    INFO:...:Imported 1 comments for remote bug 1234...
+
+    >>> chunks = bug.getMessageChunks()
+    >>> len(chunks)
+    4
+
+    >>> for chunk_id, chunk in sorted([(chunk.id, chunk.content)
+    ...     for chunk in chunks]):
+    ...     print chunk
+    Malone pages that use more complex layouts with portlets and fancy
+    CSS are sometimes not getting properly reflowed after rendering.
+    Things happen.
+    Anything that, in happening, causes something else to happen, causes
+    something else to happen.
+    It doesn't necessarily happen in that order, though.
+
+    >>> config.malone.show_imported_comments = False
+
 === Script for importing Debian bugs, linking them to Ubutu ===
 
 There's a script called `import-debian-bugs.py`, which accepts a list of
@@ -408,7 +537,6 @@ bug numbers to be imported. It will link the bugs to the debbugs bug
 tracker.
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.database.sqlbase import commit
     >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs
     >>> [bug.title for bug in debbugs.getBugsWatching('237001')]
     []
@@ -426,6 +554,7 @@ tracker.
     0
     >>> print err
     INFO    Updating 1 watches on http://bugs.debian.org
+    INFO    Imported 4 comments for remote bug 237001...
     INFO    Imported debbugs #237001 as Launchpad bug #...
     INFO    Imported debbugs #322535 as Launchpad bug #...
     INFO    Committing the transaction.
