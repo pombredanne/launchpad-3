@@ -1,13 +1,125 @@
 = Code Import Jobs =
 
 A CodeImportJob is a record of a pending or running code import job.
-They are accessed via a utility registered for the
-ICodeImportResultSet interface.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ICodeImportJob, ICodeImportJobSet)
+CodeImports are hidden from regular users currently. David Allouche is a
+member of the vcs-imports team and can access the objects freely.
 
-    >>> job_set = getUtility(ICodeImportJobSet)
+    >>> login('david.allouche@canonical.com')
+
+They can be accessed via a utility registered for the ICodeImportJobSet
+interface.
+
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import ICodeImportJobSet
+    >>> job_set = getUtility(ICodeImportJobSet)
     >>> verifyObject(ICodeImportJobSet, job_set)
     True
+
+The code-import-worker scripts are attached to specific job objects and
+retrieve jobs by database id using the CodeImportJobSet.getById method.
+
+    >>> from canonical.launchpad.interfaces import ICodeImportJob
+    >>> verifyObject(ICodeImportJob, job_set.getById(1))
+    True
+
+The webapp gets the current job for display using the
+CodeImport.import_job property.
+
+CodeImportJob objects can also be retrieved using the import_job
+property of a CodeImport object. It is useful for the webapp to display
+the current job of a given CodeImport.
+
+    >>> from canonical.launchpad.interfaces import ICodeImportSet
+    >>> code_import = getUtility(ICodeImportSet).get(1)
+    >>> verifyObject(ICodeImportJob, code_import.import_job)
+    True
+
+The life cycle of a CodeImportJob involves the creation of other objects
+at various points. To enforce this, CodeImportJob objects are only
+modified using the CodeImportJobWorkflow utility.
+
+    >>> from canonical.launchpad.interfaces import ICodeImportJobWorkflow
+    >>> workflow = getUtility(ICodeImportJobWorkflow)
+    >>> verifyObject(ICodeImportJobWorkflow, workflow)
+    True
+
+
+== Sample data of interest ==
+
+There are two CodeImport objects of interest in the sample data.
+
+    >>> from canonical.launchpad.interfaces import IBranchSet, ICodeImportSet
+    >>> branch_set = getUtility(IBranchSet)
+    >>> code_import_set = getUtility(ICodeImportSet)
+
+One has review_status set to NEW.
+
+    >>> new_import_branch = branch_set.getByUniqueName(
+    ...     '~vcs-imports/evolution/import')
+    >>> new_import = code_import_set.getByBranch(new_import_branch)
+    >>> print new_import.review_status.name
+    NEW
+
+The other one has review_status set to REVIEWED.
+
+    >>> reviewed_import_branch = branch_set.getByUniqueName(
+    ...     '~vcs-imports/gnome-terminal/import')
+    >>> reviewed_import = code_import_set.getByBranch(reviewed_import_branch)
+    >>> print reviewed_import.review_status.name
+    REVIEWED
+
+
+== Test helpers ==
+
+The print_date_due function display the date_due attribute of
+CodeImportJob. If it is equal to the "UTC_NOW" time of the current
+transaction, it prints the string "UTC_NOW" instead of the actual time
+value.
+
+    >>> from canonical.database.constants import UTC_NOW
+    >>> from canonical.database.sqlbase import sqlvalues
+    >>> from canonical.launchpad.database import CodeImportJob
+    >>> def print_date_due(job):
+    ...     found_job = CodeImportJob.selectOne(
+    ...         'id=%s AND date_due=%s' % sqlvalues(job.id, UTC_NOW))
+    ...     if found_job is None:
+    ...         print job.date_due
+    ...     else:
+    ...         print 'UTC_NOW'
+
+
+== Creating a new job ==
+
+CodeImportJob objects are created using the CodeImportJobWorkflow.newJob
+method.
+
+In normal use, the only case where a job object is created explicitly is
+when the review status of a code import is modified. This case is
+handled by the CodeImport.updateFromData method.
+
+When the review status an import changes to REVIEWED, an associated job
+is created.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
+    >>> unproxied_new_import = removeSecurityProxy(new_import)
+    >>> unproxied_new_import.review_status = CodeImportReviewStatus.REVIEWED
+    >>> new_job = workflow.newJob(new_import)
+    >>> print new_import.import_job
+    <security proxied ...CodeImportJob instance at 0x...>
+
+Jobs are always created in PENDING state.
+
+    >>> print new_job.state.name
+    PENDING
+
+If the associated code import has never been run, its date due is set to
+UTC_NOW, so it will be run as soon as possible.
+
+    >>> print_date_due(new_job)
+    UTC_NOW
+
+When the code import is associated to existing CodeImportResult objects,
+the date due may be UTC_NOW or a timestamp in the future. This is
+covered in detail in the test_codeimportjob.py file.

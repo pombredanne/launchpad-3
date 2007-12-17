@@ -58,7 +58,8 @@
           <label>Let the following teams be an answer contact for
           <span tal:replace="context/displayname">Mozilla
           Firefox</span>:</label>
-          <div tal:content="structure view/widgets/answer_contact_teams" />
+          <div id="answer-contact-teams"
+               tal:content="structure view/widgets/answer_contact_teams" />
         </div>
 
       </div>

@@ -11,6 +11,7 @@ from canonical.launchpad.interfaces import (
     IAnnouncement, IBazaarApplication, IBranch, IBranchMergeProposal,
     IBranchSubscription, IBug, IBugAttachment, IBugBranch, IBugNomination,
     IBugTracker, IBuild, IBuilder, IBuilderSet, ICodeImport,
+    ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
     ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet,
     IDistribution, IDistributionMirror, IDistroSeries,
     IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHasBug,
@@ -24,7 +25,7 @@ from canonical.launchpad.interfaces import (
     ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
     ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
     ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
-    PackageUploadStatus, IPackaging, IProductReleaseFile)
+    PackageUploadStatus, IPackaging, IProductReleaseFile, PersonVisibility)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -39,12 +40,16 @@ class AuthorizationBase:
         self.obj = obj
 
     def checkUnauthenticated(self):
-        """Must return True or False.  See IAuthorization.checkUnauthenticated.
+        """See `IAuthorization.checkUnauthenticated`.
+
+        :return: True or False.
         """
         return False
 
     def checkAuthenticated(self, user):
-        """Must return True or False.  See IAuthorization.checkAuthenticated.
+        """See `IAuthorization.checkAuthenticated`.
+
+        :return: True or False.
         """
         return False
 
@@ -334,7 +339,8 @@ class AdminShipItApplicationByShipItAdmins(
     usedfor = IShipItApplication
 
 
-class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
+class AdminShippingRequestSetByShipItAdmins(
+        AdminShippingRequestByShipItAdmins):
     permission = 'launchpad.Admin'
     usedfor = IShippingRequestSet
 
@@ -395,7 +401,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = ITeam
 
     def checkAuthenticated(self, user):
-        """The team owner and all team admins have launchpad.Edit on that team.
+        """The team owner and team admins have launchpad.Edit on that team.
 
         The Launchpad admins also have launchpad.Edit on all teams.
         """
@@ -430,6 +436,42 @@ class EditPersonBySelf(AuthorizationBase):
     def checkAuthenticated(self, user):
         """A user can edit the Person who is herself."""
         return self.obj.id == user.id
+
+
+class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
+    """Restrict viewing of private memberships of teams.
+
+    Only members of a team with a private membership can view the
+    membership list.
+    """
+    permission = 'launchpad.View'
+    usedfor = IPerson
+
+    def checkUnauthenticated(self):
+        """Unauthenticated users can only view public memberships."""
+        # XXX Edwin Grubbs 2007-12-11 bug=175758
+        # Checking if visibility is None is only necessary until next cycle.
+        if (self.obj.visibility is None
+            or self.obj.visibility == PersonVisibility.PUBLIC):
+            return True
+        return False
+
+    def checkAuthenticated(self, user):
+        """Verify that the user can view the team's membership.
+
+        Anyone can see a public team's membership.
+        Only a team member or a Launchpad admin can view a
+        private membership.
+        """
+        # XXX Edwin Grubbs 2007-12-11 bug=175758
+        # Checking if visibility is None is only necessary until next cycle.
+        if (self.obj.visibility is None
+            or self.obj.visibility == PersonVisibility.PUBLIC):
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(admins) or user.inTeam(self.obj):
+            return True
+        return False
 
 
 class EditPollByTeamOwnerOrTeamAdminsOrAdmins(
@@ -533,7 +575,8 @@ class EditProductSeries(EditByRegistryExpertsOrOwnersOrAdmins):
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
         if user.inTeam(rosetta_experts):
             return True
-        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(self, user)
+        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(
+            self, user)
 
 
 class EditBugTask(AuthorizationBase):
@@ -660,7 +703,8 @@ class EditBugBranch(EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
     def __init__(self, bug_branch):
         # The same permissions as for the BugBranch's bug should apply
         # to the BugBranch itself.
-        self.obj = bug_branch.bug
+        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
+            self, bug_branch.bug)
 
 
 class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
@@ -673,7 +717,8 @@ class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
     usedfor = IBugAttachment
 
     def __init__(self, bugattachment):
-        self.obj = bugattachment.bug
+        PublicToAllOrPrivateToExplicitSubscribersForBug.__init__(
+            self, bugattachment.bug)
 
 
 class EditBugAttachment(
@@ -687,7 +732,8 @@ class EditBugAttachment(
     usedfor = IBugAttachment
 
     def __init__(self, bugattachment):
-        self.obj = bugattachment.bug
+        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
+            self, bugattachment.bug)
 
 
 class ViewAnnouncement(AuthorizationBase):
@@ -805,6 +851,36 @@ class EditCodeImports(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImport
 
 
+class SeeCodeImportJobs(OnlyVcsImportsAndAdmins):
+    """Control who can see the object view of a CodeImportJob.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImportJob
+
+
+class SeeCodeImportJobSet(OnlyVcsImportsAndAdmins):
+    """Control who can see the CodeImportJobSet utility.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImportJobSet
+
+
+class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
+    """Control who can use the CodeImportJobWorkflow utility.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = ICodeImportJobWorkflow
+
+
 class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
     """Control who can see the CodeImportMachine listing page.
 
@@ -849,7 +925,7 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     usedfor = IPOTemplate
 
 
-# XXX: Carlos Perello Marin 2005-05-24 bug=753: 
+# XXX: Carlos Perello Marin 2005-05-24 bug=753:
 # This should be using SuperSpecialPermissions when implemented.
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Append'
@@ -909,7 +985,8 @@ class EditProductRelease(EditByRegistryExpertsOrOwnersOrAdmins):
         if (user.inTeam(self.obj.productseries.owner) or
             user.inTeam(self.obj.productseries.product.owner)):
             return True
-        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(self, user)
+        return EditByRegistryExpertsOrOwnersOrAdmins.checkAuthenticated(
+            self, user)
 
 
 class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):

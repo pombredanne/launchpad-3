@@ -1,17 +1,18 @@
 = Personal Package Archive pages and work-flow =
 
 
-== Activated Personal Package Archives ==
+== Activating Personal Package Archives for Users ==
 
-Setup a browser for 'cprov' :
-
-    >>> cprov_browser = setupBrowser(
-    ...     auth="Basic celso.providelo@canonical.com:cprov")
+Personal Package Archives have to be activated before they can be
+accessed, in this section we will cover the activation procedure for
+an user-PPA by its own user.
 
 Since cprov's Personal Package Archive is already activated in
 sampledata, 'Activate Personal Package Archive' action is not
 presented in cprov's page:
 
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
     >>> cprov_browser.open("http://launchpad.dev/~cprov")
     >>> cprov_browser.getLink("Activate Personal Package Archive")
     Traceback (most recent call last):
@@ -35,15 +36,9 @@ URLs) it will get redirected to the PPA page automatically:
     >>> cprov_browser.url
     'http://launchpad.dev/~cprov/+archive'
 
-
-== Activating Personal Package Archives for Users ==
-
-Personal Package Archives have to be activated before they can be
-accessed, in this section we will cover the activation procedure for
-an user-PPA by its own user:
-
 Checking if the Person action-menu is sane, by not presenting links to
-a Personal Package Archive that doesn't exist yet:
+a Personal Package Archive that doesn't exist yet, let's use the
+'test' user account.
 
     >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> sample_browser.open("http://launchpad.dev/~name12")
@@ -73,11 +68,21 @@ This page presents the current PPA-ToS (terms of service) with a
 mandatory checkbox ('accepted') indicating that the user has read and
 accepted the conditions and an optional 'description' text-area.
 
+It also contains a portlet with all the distroseries and corresponding
+architectures supported for PPA.
+
+    >>> print extract_text(
+    ...    find_portlet(sample_browser.contents, 'PPA supported series'))
+    PPA supported series
+    5.04 "Hoary" - development
+    hoary i386 (official, ppa)
+    4.10 "Warty" - current
+    warty i386 (official, ppa)
+
 The 'accepted' checkbox is unchecked by default:
 
     >>> sample_browser.getControl(name="field.accepted").value
     False
-
 
 By submitting the form without checking the check-box results in a
 error with a proper message:
@@ -119,7 +124,7 @@ administrator messages about operations done in this Personal Package Archive.
 
 Note that the 'whiteboard' section is presented as an informational
 box. Only users with 'launchpad.Edit' permission on the PPA in
-question will be able to see it, see below. 
+question will be able to see it, see below.
 
 The PPA owner is able to edit PPA 'description' and 'whiteboard':
 

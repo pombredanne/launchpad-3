@@ -30,21 +30,50 @@ from canonical.buildmaster.buildergroup import BuilderGroup
 
 def determineArchitecturesToBuild(pubrec, legal_archserieses,
                                   distroseries, pas_verify=None):
-    """Return a list of DistroArchSeries for which this publication
-    should build.
+    """Return a list of architectures for which this publication should build.
 
     This function answers the question: given a publication, what
     architectures should we build it for? It takes a set of legal
     distroarchserieses and the distribution series for which we are
-    buiilding, and optionally a BuildDaemonPackagesArchSpecific
-    instance.
+    building, and optionally a BuildDaemonPackagesArchSpecific
+    (informally known as 'P-a-s') instance.
+
+    The P-a-s component contains a list of forbidden architectures for
+    each source package, which should be respected regardless of which
+    architectures have been requested in the source package metadata,
+    for instance:
+
+      * 'aboot' should only build on powerpc
+      * 'mozilla-firefox' should not build on sparc
+
+    This black/white list is an optimization to suppress temporarily
+    known-failures build attempts and thus saving build-farm time.
+
+    For PPA publications we only consider architectures supported by PPA
+    subsystem (`DistroArchSeries`.ppa_supported flag) and P-a-s is turned
+    off to give the users the chance to test their fixes for upstream
+    problems.
+
+    :param: pubrec: `ISourcePackagePublishingHistory` representing the
+        source publication.
+    :param: legal_archserieses: a list of all initialized `DistroArchSeries`
+        to be considered.
+    :param: distroseries: the context `DistroSeries`.
+    :param: pas_verify: optional P-a-s verifier object/component.
+    :return: a list of `DistroArchSeries` for which the source publication in
+        question should be built.
     """
     hint_string = pubrec.sourcepackagerelease.architecturehintlist
 
     assert hint_string, 'Missing arch_hint_list'
 
-    legal_arch_tags = set(arch.architecturetag
-                          for arch in legal_archserieses)
+    # For PPA publications exclude non-PPA architectures and ignore P-a-s.
+    if pubrec.archive.purpose == ArchivePurpose.PPA:
+        legal_archserieses = [
+            arch for arch in legal_archserieses if arch.ppa_supported]
+        pas_verify = None
+
+    legal_arch_tags = set(arch.architecturetag for arch in legal_archserieses)
 
     if hint_string == 'any':
         package_tags = legal_arch_tags
@@ -196,18 +225,8 @@ class BuilddMaster:
             "Found %d source(s) published." % sources_published.count())
 
         for pubrec in sources_published:
-            # XXX cprov 2007-07-11 bug=129491: Fix me please, 'ppa_archtags'
-            # should be modeled as DistroArchSeries.ppa_supported.
-            if pubrec.archive.purpose == ArchivePurpose.PPA:
-                ppa_archtags = ('i386', 'amd64', 'lpia')
-                local_archs = [
-                    distro_arch_series for distro_arch_series in legal_archs
-                    if distro_arch_series.architecturetag in ppa_archtags]
-            else:
-                local_archs = legal_archs
-
             build_archs = determineArchitecturesToBuild(
-                pubrec, local_archs, distroseries, pas_verify)
+                pubrec, legal_archs, distroseries, pas_verify)
 
             self._createMissingBuildsForPublication(pubrec, build_archs)
 
