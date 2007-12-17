@@ -48,7 +48,7 @@ from canonical.launchpad.webapp.dynmenu import neverempty
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation)
-from canonical.widgets.textwidgets import LocalDateTimeWidget
+from canonical.widgets.date import DateTimeWidget
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -253,7 +253,7 @@ class SprintView(HasSpecificationsView, LaunchpadView):
     def formatDateTime(self, dt):
         """Format a datetime value according to the sprint's time zone"""
         dt = dt.astimezone(self.tzinfo)
-        return dt.strftime('%Y-%m-%d %H:%M:%S %Z')
+        return dt.strftime('%Y-%m-%d %H:%M %Z')
 
     def formatDate(self, dt):
         """Format a date value according to the sprint's time zone"""
@@ -270,8 +270,8 @@ class SprintAddView(LaunchpadFormView):
                    'time_zone', 'time_starts', 'time_ends', 'address',
                    ]
     custom_widget('summary', TextAreaWidget, height=5)
-    custom_widget('time_starts', LocalDateTimeWidget)
-    custom_widget('time_ends', LocalDateTimeWidget)
+    custom_widget('time_starts', DateTimeWidget, display_zone=False)
+    custom_widget('time_ends', DateTimeWidget, display_zone=False)
     custom_widget('address', TextAreaWidget, height=3)
 
     sprint = None
@@ -280,9 +280,9 @@ class SprintAddView(LaunchpadFormView):
         LaunchpadFormView.setUpWidgets(self)
         time_zone_widget = self.widgets['time_zone']
         if time_zone_widget.hasValidInput():
-            tz = time_zone_widget.getInputValue()
-            self.widgets['time_starts'].timeZoneName = tz
-            self.widgets['time_ends'].timeZoneName = tz
+            tz = pytz.timezone(time_zone_widget.getInputValue())
+            self.widgets['time_starts'].required_timezone = tz
+            self.widgets['time_ends'].required_timezone = tz
 
     def validate(self, data):
         time_starts = data.get('time_starts')
@@ -330,8 +330,8 @@ class SprintEditView(LaunchpadEditFormView):
                    'time_zone', 'time_starts', 'time_ends', 'address',
                    ]
     custom_widget('summary', TextAreaWidget, height=5)
-    custom_widget('time_starts', LocalDateTimeWidget)
-    custom_widget('time_ends', LocalDateTimeWidget)
+    custom_widget('time_starts', DateTimeWidget, display_zone=False)
+    custom_widget('time_ends', DateTimeWidget, display_zone=False)
     custom_widget('address', TextAreaWidget, height=3)
 
     def setUpWidgets(self):
@@ -339,11 +339,11 @@ class SprintEditView(LaunchpadEditFormView):
         time_zone_widget = self.widgets['time_zone']
         # What time zone are the start and end values relative to?
         if time_zone_widget.hasValidInput():
-            tz = time_zone_widget.getInputValue()
+            tz = pytz.timezone(time_zone_widget.getInputValue())
         else:
-            tz = self.context.time_zone
-        self.widgets['time_starts'].timeZoneName = tz
-        self.widgets['time_ends'].timeZoneName = tz
+            tz = pytz.timezone(self.context.time_zone)
+        self.widgets['time_starts'].required_timezone = tz
+        self.widgets['time_ends'].required_timezone = tz
 
     def validate(self, data):
         time_starts = data.get('time_starts')

@@ -12,13 +12,10 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-attendees" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
+  <div tal:replace="structure context/@@+portlet-attendees" />
+</metal:portlets>
 
 <div metal:fill-slot="main">
 
@@ -28,7 +25,10 @@
 
     <div metal:fill-slot="extra_info" class="documentDescription">
       Indicate the times during which you will be available for meetings at
-      the sprint.  Use the sprint's local time.
+      the sprint. The sprint runs from
+      <tal:start replace="context/local_start" />, till
+      <tal:end replace="context/local_end" /> in the time zone:
+      <tal:tz replace="context/time_zone">UTC</tal:tz>.
     </div>
 
   </div>
@@ -36,15 +36,14 @@
 </div>
 
 <div metal:fill-slot="help">
-<p>If you are attending the sprint, please register your attendance
-dates.  This allows the sprint organisers to schedule the sessions to
-maximise the number of sessions you can attend.</p>
-
-<p>The times should be entered in the local time for the location of
-the sprint, which is
-<kbd tal:content="context/time_zone">UTC</kbd>.</p>
+<p>
+  Please be as accurate as possible with the time that you will arrive and
+  depart from the conference or sprint venue. This allows the event organisers
+  to schedule the sessions knowing who can attend at various times on the
+  opening and closing day.
+</p>
 </div>
-    
+
 </body>
 </html>
 

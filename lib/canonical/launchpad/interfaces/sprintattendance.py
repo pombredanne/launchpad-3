@@ -22,11 +22,12 @@ class ISprintAttendance(Interface):
     sprint = Choice(title=_('The Sprint'), required=True,
         vocabulary='Sprint',
         description=_("Select the meeting from the list presented above."))
-    time_starts = Datetime(title=_('Starting At'), required=True,
+    time_starts = Datetime(title=_('From'), required=True,
         description=_("The date and time of arrival and "
-        "availability for sessions during the sprint. The time is "
-        "interpreted according to the sprint's local time"))
-    time_ends = Datetime(title=_('Finishing At'), required=True,
-        description=_("The date and time of departure. Again, use "
-        "the sprint's local time"))
+        "availability for sessions during the sprint."))
+    time_ends = Datetime(title=_('To'), required=True,
+        description=_("The date and time of your departure. "
+        "Please ensure the time reflects accurately "
+        "when you will no longer be available for sessions at this event, to "
+        "assist those planning the schedule."))
 

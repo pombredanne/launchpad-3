@@ -12,22 +12,24 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-attendees" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <tal:mugshot replace="structure context/image:mugshot" />
-  <h1>Meeting overview</h1>
-</metal:heading>
+  <div tal:replace="structure context/@@+portlet-attendees" />
+</metal:portlets>
 
 <div metal:fill-slot="main"
      tal:define="specs view/specs;
                  has_any_specs view/has_any_specifications">
+
+  <tal:mugshot replace="structure context/image:mugshot" />
+  <h1>Meeting overview</h1>
+
+  <p>
+    <strong>
+      <tal:start replace="context/local_start" /> till
+      <tal:end replace="context/local_end" />
+    </strong>
+  </p>
 
   <p>
     <span tal:replace="context/summary">

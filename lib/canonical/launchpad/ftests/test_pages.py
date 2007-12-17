@@ -93,13 +93,14 @@ def find_tags_by_class(content, class_, only_first=False):
 def find_portlet(content, name):
     """Find and return the portlet with the given title. Sequences of
     whitespace are considered equivalent to one space, and beginning and
-    ending whitespace is also ignored.
+    ending whitespace is also ignored, as are non-text elements such as
+    images.
     """
     whitespace_re = re.compile('\s+')
     name = whitespace_re.sub(' ', name.strip())
     for portlet in find_tags_by_class(content, 'portlet'):
         if portlet.find('h2'):
-            portlet_title = portlet.find('h2').renderContents()
+            portlet_title = extract_text(portlet.find('h2'))
             if name == whitespace_re.sub(' ', portlet_title.strip()):
                 return portlet
     return None

@@ -45,6 +45,9 @@ class DateTimeWidget(TextWidget):
 
     timeformat = '%Y-%m-%d %H:%M:%S'
     required_timezone = None
+    display_zone = True
+    from_date = None
+    to_date = None
 
     # ZPT that renders our widget
     __call__ = ViewPageTemplateFile('templates/datetime.pt')
@@ -56,6 +59,13 @@ class DateTimeWidget(TextWidget):
 
     @property
     def timezone(self):
+        """The widget time zone based.
+
+        This will either give you the user's time zone, or a specified
+        timezone in case this widget is being used to pick a time in a very
+        specific time zone, for example the time a person will join a
+        conference in the time zone in which the conference is being held.
+        """
         if self.required_timezone is not None:
             return self.required_timezone
         if self.user_timezone is None:
@@ -64,7 +74,24 @@ class DateTimeWidget(TextWidget):
 
     @property
     def timezone_name(self):
+        """The name of the widget time zone for display in the widget."""
         return self.timezone.zone
+
+    @property
+    def daterange(self):
+        """The javascript variable giving the allowed date range to pick."""
+        if not (self.from_date or self.to_date):
+            return 'null'
+        daterange = '['
+        if self.from_date is None:
+            daterange += '[],'
+        else:
+            daterange += self.from_date.strftime('[%Y,%m,%d],')
+        if self.to_date is None:
+            daterange += ']'
+        else:
+            daterange += self.to_date.strftime('[%Y,%m,%d]]')
+        return daterange
 
     def _toFieldValue(self, input):
         """Return parsed input (datetime) as a date."""
@@ -166,7 +193,7 @@ class DateTimeWidget(TextWidget):
             value = self._data
         if value is None:
             return None
-        return value.strftime(self.timeformat)
+        return value.astimezone(self.timezone).strftime(self.timeformat)
 
 
 class DateWidget(DateTimeWidget):

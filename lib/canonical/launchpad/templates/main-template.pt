@@ -352,13 +352,13 @@
     </div>
     <tal:datetimepicker condition="request/needs_datetimepicker_iframe">
       <script language="Javascript" type="text/javascript">
-          function pickDateTime(field) {
+          function pickDateTime(field, range) {
               e = document.getElementById(field);
               if (e == null) {
                   alert(field);
               }
               if(self.DateTimePicker) {
-                  DateTimePicker.fPopCalendar(e);
+                  DateTimePicker.fPopCalendar(e, range);
                   return false;
               }
           }
@@ -379,13 +379,13 @@
     </tal:datetimepicker>
     <tal:datepicker condition="request/needs_datepicker_iframe">
       <script language="Javascript" type="text/javascript">
-          function pickDate(field) {
+          function pickDate(field, range) {
               e = document.getElementById(field);
               if (e == null) {
                   alert(field);
               }
               if(self.DatePicker) {
-                  DatePicker.fPopCalendar(e);
+                  DatePicker.fPopCalendar(e, range);
                   return false;
               }
           }

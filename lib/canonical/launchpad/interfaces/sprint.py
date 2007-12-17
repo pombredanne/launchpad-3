@@ -108,6 +108,10 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
 
+    # Localised versions of the starting and ending dates, as text.
+    local_start = Attribute('The local start time')
+    local_end = Attribute('The local end time')
+
     # joins
     attendees = Attribute('The set of attendees at this sprint.')
     attendances = Attribute('The set of SprintAttendance records.')

@@ -1,8 +1,15 @@
 <div tal:define="val view/formvalue">
+  <script language="Javascript" type="text/javascript"
+          tal:condition="view/from_date" tal:content="view/from_date_script"
+          />
+  <script language="Javascript" type="text/javascript"
+          tal:condition="view/to_date" tal:content="view/to_date_script"
+          />
   <input size="8" type="text"
          tal:attributes="name view/name; id view/name; value val;" />
   <a href="javascript:void(0)"
-     tal:attributes="onclick string:pickDate('${view/name}');"
+     tal:attributes="
+       onclick string:pickDate('${view/name}', ${view/daterange});"
      ><span class="PopcalTrigger"
       ><img name="popcal" align="absmiddle" src="/+popcalxp/calbtn.gif"
            width="34" height="22" border="0" alt="(choose)"></span></a>

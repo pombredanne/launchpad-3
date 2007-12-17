@@ -2,14 +2,17 @@
   <input size="15" type="text"
          tal:attributes="name view/name; id view/name; value val" />
   <a href="javascript:void(0)"
-     tal:attributes="onclick string:pickDateTime('${view/name}');"
+     tal:attributes="
+       onclick string:pickDateTime('${view/name}', ${view/daterange});"
      ><span class="PopcalTrigger"
       ><img name="popcal" align="absmiddle" src="/+popcalxp/calbtn.gif"
            width="34" height="22" border="0" alt="(choose)"></span></a>
-  in time zone:
-  <tal:tz replace="view/timezone_name" /><tal:can_change
-          condition="not:view/required_timezone">
-       [<a tal:attributes="
-           href string:${request/lp:person/fmt:url}/+edit">change
-  zone</a>]</tal:can_change>.
+  <tal:display_zone condition="view/display_zone">
+    in time zone:
+    <tal:tz replace="view/timezone_name" /><tal:can_change
+            condition="not:view/required_timezone">
+         [<a tal:attributes="
+             href string:${request/lp:person/fmt:url}/+edit">change
+    zone</a>]</tal:can_change>.
+  </tal:display_zone>
 </div>
