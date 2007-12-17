@@ -470,41 +470,94 @@ were defined in a template section.
     key2 : 3.1415
 
 
-== Config supports testing ==
+== Config overlays ==
 
-Raw config data can be merged with an existing config for testing.
-The push() method accepts a string of config data, and returns a
-new config with section data parsed and merged into the original
-sections.
+# XXX sinzui 2007-12-17:
+# The overlay feature diverges from the spec's API. There is
+# few challenges here, namely: parsing a config string, and
+# the linked list of overlaid config.
+
+As Config supports inheritance through the extends key, each conf
+file produces an overlay of file that was extended. The overlays
+property lists the configs as it was constructed from bottom to top.
+The bottom is always parsed schema.
+
+    >>> for overlay in config.overlays:
+    ...     print overlay.name
+    'base.conf'
+    'local.conf'
+
+Raw config data can be merged with the config to create a new overlay
+for testing. The push() method accepts a string of config data. The
+data must conform to the schema. Besides updating section keys, optional
+sections can be enabled too.
 
     >>> test_data = """[section-1]
     ...     key1: test1
     ...     key5:
     ...     """
-    >>> test_config = config.push('test config', test_data)
-    >>> test_config.name
-    'test config'
-    >>> test_config.filename
-    'test config'
+    >>> config.push('test config', test_data)
 
-    >>> for section in test_config:
+    >>> app_a_data = "[section-3.app-a]"
+    >>> config.push('test app-a', app_a_data)
+
+The config's name and overlays are updated by push().
+
+    >>> config.name
+    'test-app-a'
+    >>> config.filename
+    'test-app-a'
+    >>> for overlay in config.overlays:
+    ...     print overlay.name
+    'base.conf'
+    'local.conf'
+    'test config'
+    'test app-a'
+
+The data is merged into the config's sections. 'section-3.app-a' was
+enabled with the default keys from the schema. 'section-1''s keys were
+updated.
+
+    >>> for section in sorted(config, key=attrgetter('name')):
     ...     print section.name
-    section-3.app-b
-    section-2.app-b
     section-1
+    section-2.app-b
+    section-3.app-a
+    section-3.app-b
+    section-5
 
-    >>> for key in test_config['section-1']:
-    ...     print key, ':', test_config['section-1'][key]
-    key3 : Launchpad&nbsp;rocks
-    key2 : bar and baz
+    >>> for key in sorted(config['section-1']):
+    ...     print key, ':', config['section-1'][key]
     key1 : test1
-    key5 :
+    key2 : bar and baz
+    key3 : Launchpad&nbsp;rocks
     key4 : F&#028c;k yeah!
+    key5 :
+
+    >>> for key in sorted(config['section-3.app-a']):
+    ...     print key, ':', config['section-3.app-a'][key]
+    key1: 17
+    key2: 3.1415
+
+An overlay, and its descendants, can be removed from the config using
+the pop() method. The methods returns a list of the overlays from
+bottom to top.
+
+    >>> overlays = config.pop('test-config')
+    >>> for overlay in overlays:
+    ...     overlay.name
+    'test config'
+    'test app-a'
+
+    >>> for overlay in config.overlays:
+    ...     print overlay.name
+    'base.conf'
+    'local.conf'
 
 
-== Configs are validated by their Schemas ==
+== Validating configs ==
 
-Config provided two methods to verify that an instance is valid: 
+Config provided two methods to verify that an instance is valid:
 listValidationErrors() and validate().
 
 The listValidationErrors() method will return a list of errors in the
@@ -513,16 +566,21 @@ config file
     >>> config.listValidationErrors()
     []
 
-    >>> bad_config = config('%s/%s' % (testfiles_dir,  'local-bad.conf'))
-    >>> bad_config.listValidationErrors()
-    []
+    >>> bad_data = """orphaned: key
+    ...     [unknown-section]
+    ...     key1 = value1
+    ...     [section-1]
+    ...     keyn: unknown key
+    ...     key1: bad character in café
+    ...     """
+    >>> config.push('unknown section', bad_data)
+    >>> config.listValidationErrors()
+    ['UnknownSectionError', 'UnknownKeyError', 'UnicodeDecodeError']
 
-The validate() method raises an error if the config is not valid. 
+The validate() method raises an error if the config is not valid.
 
     >>> config.validate()
-    >>> bad_config.validate()
-    >>> section_1['not-exist']
     Traceback (most recent call last):
       ...
-    KeyError: ...
+    UnknownSectionError: ...
 
