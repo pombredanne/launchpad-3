@@ -17,7 +17,7 @@ from zope.interface import Interface, Attribute
 
 
 class ConfigSchemaError(Exception):
-    """A base class of all ConfigSchema errors."""
+    """A base class of all `IConfigSchema` errors."""
 
 
 class RedefinedKeyError(ConfigSchemaError):
@@ -33,7 +33,7 @@ class InvalidSectionNameError(ConfigSchemaError):
 
 
 class NoCategoryError(LookupError):
-    """No SchemaSections belong to the category name."""
+    """No `ISectionSchema`s belong to the category name."""
 
 
 class ISectionSchema(Interface):
@@ -49,7 +49,7 @@ class ISectionSchema(Interface):
     def __getitem__(key):
         """Return the default value of the key.
 
-        :raises KeyError: if the key does not exist.
+        :raise `KeyError`: if the key does not exist.
         """
 
 
@@ -69,26 +69,26 @@ class IConfigSchema(Interface):
     category_names = Attribute('The list of section category names.')
 
     def __iter__():
-        """Iterate over the SectionSchema."""
+        """Iterate over the `ISectionSchema`."""
 
     def __contains__(name):
-        """Return True or False if the name matches a SectionSchema."""
+        """Return True or False if the name matches a `ISectionSchema`."""
 
     def __getitem__(name):
-        """Return the SectionSchema with the matching name.
+        """Return the `ISectionSchema` with the matching name.
 
-        :raises NoSectionError: if the no SectionSchema has the name.
+        :raise `NoSectionError`: if the no ISectionSchema has the name.
         """
 
     def getByCategory(name):
-        """Return a list of SectionSchemas that belong to the category name.
+        """Return a list of ISectionSchemas that belong to the category name.
 
-        Section names may be made from a category name and a process name,
-        separated by a dot (.). The category is synonymous with a arbitrary
-        resource such as a database or a vhost. Thus database.bugs and
-        database.answers are two sections that both use the database
+        ISectionSchema names may be made from a category name and a group
+        name, separated by a dot (.). The category is synonymous with a
+        arbitrary resource such as a database or a vhost. Thus database.bugs
+        and database.answers are two sections that both use the database
         resource.
 
-        :raises CategoryNotFound: if no sections have a name that starts
+        :raise `CategoryNotFound`: if no sections have a name that starts
             with the category name.
         """
