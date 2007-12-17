@@ -60,8 +60,6 @@ class AnnouncementDateWidget(SimpleInputWidget):
             data=data)
         self.action_widget = widgets['action']
         self.announcement_date_widget = widgets['announcement_date']
-        self.timezone = getUtility(ILaunchBag).timezone
-        self.announcement_date_widget.timeZoneName = self.timezone
 
     def __call__(self):
         html = '<div>Publish this announcement:</div>\n'

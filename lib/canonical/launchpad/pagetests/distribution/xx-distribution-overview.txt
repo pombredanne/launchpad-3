@@ -1,0 +1,36 @@
+= Distributions =
+
+Launchpad can be used by both upstream projects and distributions - the
+system understands the intrinsic differences between those kinds of
+organisation. This test just ensures we can view the distributions in the
+system.
+
+== Distribution listings ==
+
+There is a listing of all distributions at /distributions/:
+
+    >>> anon_browser.open('http://launchpad.dev/distros/')
+    >>> print anon_browser.title
+    Distributions registered in Launchpad
+
+== Distribution home pages ==
+
+Each distribution has a home page in the system. This test ensures that we
+can view that page for distributions that have series, and also those that
+do not have series.
+
+Some distributions have listings of major versions, for example Ubuntu:
+
+    >>> anon_browser.open('http://launchpad.dev/ubuntu')
+    >>> print extract_text(find_portlet(
+    ...         anon_browser.contents, 'Major current versions'))
+    Major current versions
+    ...Hoary...
+    ...Warty...
+
+Others do not have series:
+
+    >>> anon_browser.open('http://launchpad.dev/gentoo')
+    >>> print find_portlet(anon_browser.contents, 'Major current versions')
+    None
+

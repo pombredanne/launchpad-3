@@ -13,7 +13,7 @@
   <metal:portlets fill-slot="portlets">
     <tal:portlet replace="structure context/@@+portlet-lifecycle" />
     <tal:portlet replace="structure context/@@+portlet-milestones" />
-    <tal:portlet
+    <tal:portlet tal:condition="context/currentseries"
          replace="structure context/currentseries/@@+portlet-architectures" />
   </metal:portlets>
 
@@ -72,11 +72,11 @@
         <div class="section"
              tal:content="structure context/@@+portlet-series" />
         <div class="section"
-             tal:content="structure context/@@+portlet-latestbugs" />
-        <div class="section"
           tal:condition="context/currentseries"
           tal:content="structure context/currentseries/@@+portlet-latestuploads"
         />
+        <div class="section"
+             tal:content="structure context/@@+portlet-latestbugs" />
       </div>
       <div class="right">
         <div

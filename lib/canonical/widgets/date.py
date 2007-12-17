@@ -58,7 +58,13 @@ class DateTimeWidget(TextWidget):
     def timezone(self):
         if self.required_timezone is not None:
             return self.required_timezone
+        if self.user_timezone is None:
+            raise AssertionError, 'DateTime widget needs a time zone.'
         return self.user_timezone
+
+    @property
+    def timezone_name(self):
+        return self.timezone.zone
 
     def _toFieldValue(self, input):
         """Return parsed input (datetime) as a date."""
@@ -71,20 +77,21 @@ class DateTimeWidget(TextWidget):
           >>> from zope.schema import Field
           >>> field = Field(__name__='foo', title=u'Foo')
           >>> widget = DateWidget(field, TestRequest())
+          >>> widget.required_timezone = pytz.timezone('UTC')
 
         The widget converts an empty string to the missing value:
 
           >>> widget._parseInput('') == field.missing_value
           True
 
-        By default, the date is interpreted as UTC:
+        The widget prints out times in UTC:
 
           >>> print widget._parseInput('2006-01-01 12:00:00')
           2006-01-01 12:00:00+00:00
 
         But it will handle other time zones:
 
-          >>> widget.timeZoneName = 'Australia/Perth'
+          >>> widget.required_timezone = pytz.timezone('Australia/Perth')
           >>> print widget._parseInput('2006-01-01 12:00:00')
           2006-01-01 12:00:00+08:00
 
@@ -132,7 +139,7 @@ class DateTimeWidget(TextWidget):
 
           >>> widget.timeZoneName = 'Americas/New_York'
           >>> widget._toFormValue(dt)
-          '2006-01-01'
+          '2006-01-01 xx yy zz'
         """
         if value == self.context.missing_value:
             return self._missing
@@ -166,7 +173,8 @@ class DateWidget(DateTimeWidget):
     """A date selection widget with popup selector.
 
     The assumed underlying storage is a datetime (in the database) so this
-    class modifies that datetime into a date for presentation purposes.
+    class modifies that datetime into a date for presentation purposes. That
+    date is always in UTC.
     """
 
     timeformat = '%Y-%m-%d'
@@ -178,11 +186,6 @@ class DateWidget(DateTimeWidget):
     def __init__(self, context, request):
         request.needs_datepicker_iframe = True
         super(DateTimeWidget, self).__init__(context, request)
-
-    @property
-    def pickscript(self):
-        """Return the javascript that triggers the calendar popup."""
-        return "pickDate('%s');" % self.name
 
     def _toFieldValue(self, input):
         """Return parsed input (datetime) as a date."""
