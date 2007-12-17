@@ -874,23 +874,20 @@ class DebBugs(ExternalBugTracker):
             getUtility(ILaunchpadCelebrities).bug_watch_updater)
 
         message_set = getUtility(IMessageSet)
-        try:
-            existing_messages = message_set.get(
-                rfc822msgid=parsed_comment['message-id'])
+        message = message_set.fromEmail(comment, owner,
+            parsed_message=parsed_comment)
 
-            # We link existing messages to the bug, just to be sure,
-            # but we don't list them as having been imported since
-            # that would make it look like we were always importing
-            # the same number of comments.
-            for message in existing_messages:
-                bug_watch.bug.linkMessage(message, bug_watch)
-
-            return None
-        except NotFoundError:
-            message = message_set.fromEmail(comment, owner,
-                parsed_message=parsed_comment)
+        # We only link those messages which aren't already linked to to
+        # the bug.
+        bug_messages = [bug_message.rfc822msgid for bug_message
+            in bug_watch.bug.messages]
+        if message.rfc822msgid not in bug_messages:
             bug_message = bug_watch.bug.linkMessage(message, bug_watch)
-            return bug_message
+            self.txn.commit()
+        else:
+            bug_message = None
+
+        return bug_message
 
 
 #
