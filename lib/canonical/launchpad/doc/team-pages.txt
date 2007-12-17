@@ -37,6 +37,7 @@ If new members are added/proposed, they'll show up at the top of the lists.
     >>> sample_person.join(ubuntu_team)
     >>> salgado = personset.getByName('salgado')
     >>> sabdfl = personset.getByName('sabdfl')
+    >>> login('foo.bar@canonical.com')
     >>> ubuntu_team.addMember(salgado, reviewer=sabdfl)
 
     >>> team_home = create_view(ubuntu_team, '+index')

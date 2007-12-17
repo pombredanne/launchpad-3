@@ -202,6 +202,8 @@ class IPrivateApplication(ILaunchpadApplication):
 
     authserver = Attribute("""Old Authserver API end point.""")
 
+    codeimportscheduler = Attribute("""Code import scheduler end point.""")
+
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
 
 

@@ -338,6 +338,11 @@ COMMENT ON COLUMN EmailAddress.email IS 'An email address used by a Person. The 
 COMMENT ON INDEX emailaddress_person_key IS 'Ensures that a person only has one preferred email address';
 
 
+-- FeaturedProject
+
+COMMENT ON TABLE FeaturedProject IS 'A list of featured projects. This table is really just a list of pillarname IDs, if a project\'s pillar name is in this list then it is a featured project and will be listed on the Launchpad home page.';
+COMMENT ON COLUMN FeaturedProject.pillar_name IS 'A reference to PillarName.id';
+
 -- KarmaCategory
 
 COMMENT ON TABLE KarmaCategory IS 'A category of karma. This allows us to
@@ -961,6 +966,7 @@ COMMENT ON COLUMN Person.personal_standing_reason_text IS 'The reason a person\'
 COMMENT ON COLUMN Person.mail_resumption_date IS 'A NULL resumption date or a date in the past indicates that there is no vacation in effect.  Vacations are granular to the day, so a datetime is not necessary.';
 COMMENT ON COLUMN Person.mailing_list_auto_subscribe_policy IS 'The auto-subscription policy for the person, i.e. whether and how the user is automatically subscribed to mailing lists for teams they join.  Values are described in dbschema.MailingListAutoSubscribePolicy.';
 COMMENT ON COLUMN Person.mailing_list_receive_duplicates IS 'True means the user wants to receive list copies of messages on which they are explicitly named as a recipient.';
+COMMENT ON COLUMN Person.visibility IS 'person.PersonVisibility enumeration which can be set to Public, Public with Private Membership, or Private.';
 
 COMMENT ON TABLE ValidPersonOrTeamCache IS 'A materialized view listing the Person.ids of all valid people and teams.';
 

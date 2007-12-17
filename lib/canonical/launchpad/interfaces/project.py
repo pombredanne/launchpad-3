@@ -7,11 +7,12 @@ __metaclass__ = type
 
 __all__ = [
     'IProject',
+    'IProjectSeries',
     'IProjectSet',
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Text, TextLine
+from zope.schema import Bool, Choice, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, URIField
@@ -81,7 +82,8 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
 
     summary = Summary(
         title=_('Project Group Summary'),
-        description=_("""A brief (one-paragraph) summary of the project group."""))
+        description=_(
+            """A brief (one-paragraph) summary of the project group."""))
 
     description = Text(
         title=_('Description'),
@@ -92,7 +94,8 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
 
     datecreated = TextLine(
         title=_('Date Created'),
-        description=_("""The date this project group was created in Launchpad."""))
+        description=_(
+            """The date this project group was created in Launchpad."""))
 
     driver = Choice(
         title=_("Driver"),
@@ -110,7 +113,8 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
         title=_('Homepage URL'),
         required=False,
         allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
-        description=_("""The project group home page. Please include the http://"""))
+        description=_(
+            """The project group home page. Please include the http://"""))
 
     wikiurl = URIField(
         title=_('Wiki URL'),
@@ -150,8 +154,8 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
         default_image_resource='/@@/project',
         description=_(
             "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this project group. The icon will be "
-            "displayed in Launchpad everywhere that we link to this "
+            "that can be used to identify this project group. The icon will "
+            "be displayed in Launchpad everywhere that we link to this "
             "project group. For example in listings or tables of active "
 	    "project groups."))
 
@@ -160,8 +164,8 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
         default_image_resource='/@@/project-logo',
         description=_(
             "An image of exactly 64x64 pixels that will be displayed in "
-            "the heading of all pages related to this project group. It should "
-            "be no bigger than 50kb in size."))
+            "the heading of all pages related to this project group. It "
+            "should be no bigger than 50kb in size."))
 
     mugshot = MugshotImageUpload(
         title=_("Brand"), required=False,
@@ -193,7 +197,9 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
         """Get a product with name `name`."""
 
     def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this project group. Return None.
+        """Ensure that the bounty is linked to this project group.
+
+        Return None.
         """
 
     def translatables():
@@ -206,6 +212,9 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
         """Returns True if a project has products associated with it, False
         otherwise.
         """
+
+    def getSeries(series_name):
+        """Return a ProjectSeries object with name `series_name`."""
 
 
 # Interfaces for set
@@ -259,3 +268,26 @@ class IProjectSet(Interface):
     def forSyncReview():
         """Return a list of projects that have productseries ready to
         import which need review."""
+
+class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
+                     IHasOwner):
+    """Interface for ProjectSeries.
+
+    This class provides the specifications related to a "virtual project
+    series", i.e., to those specifactions that are assigned to a series
+    of a product which is part of this project.
+    """
+    name = TextLine(title=u'The name of the product series.',
+                    required=True, readonly=True,
+                    constraint=name_validator)
+
+    displayname = TextLine(title=u'Alias for name.',
+                           required=True, readonly=True,
+                           constraint=name_validator)
+
+    title = TextLine(title=u'The title for this project series.', required=True,
+                     readonly=True)
+
+    project = Object(schema=IProject, 
+                     title=u"The project this series belongs to",
+                     required=True, readonly=True)

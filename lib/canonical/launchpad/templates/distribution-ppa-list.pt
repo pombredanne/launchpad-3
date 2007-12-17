@@ -11,14 +11,13 @@
 >
 <body>
 
-  <metal:portlets fill-slot="portlets" />
-
-  <metal:heading fill-slot="pageheading">
-    <h1>Personal Package Archives for
-        <span tal:replace="context/title" /></h1>
-  </metal:heading>
+  <metal:portlets fill-slot="portlets">
+    <tal:portlet replace="structure context/@@+portlet-ppa-architectures" />
+  </metal:portlets>
 
   <div metal:fill-slot="main">
+
+    <h1>Personal Package Archives for <span tal:replace="context/title" /></h1>
 
     <p>Personal Package Archives (PPA) allow you to upload Ubuntu source
        packages to be built and published as an apt repository by
@@ -59,17 +58,17 @@
           <tr tal:repeat="ppa batch" tal:replace="structure ppa/@@+ppa-row" />
         </tbody>
       </table>
- 
+
       <tal:navigation_bottom
            replace="structure view/batchnav/@@+navigation-links-lower" />
- 
+
       <div id="empty-result" tal:condition="not: batch">
         <tal:has_filter condition="view/name_filter">
            No matching Personal Package Archive
            for '<span tal:replace="view/name_filter" />'.
         </tal:has_filter>
       </div>
- 
+
     </tal:batch>
 
   </div>

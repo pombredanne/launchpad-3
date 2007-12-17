@@ -9,14 +9,20 @@ import tempfile
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.sqlbase import cursor
+from canonical.launchpad.components.externalbugtracker import (
+    ExternalBugTracker)
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugTaskImportance, BugTaskStatus, IBugSet,
-    IEmailAddressSet, IPersonSet, IProductSet, PersonCreationRationale)
+    BugAttachmentType, BugTaskImportance, BugTaskStatus, CreateBugParams,
+    IBugSet, IEmailAddressSet, IPersonSet, IProductSet,
+    PersonCreationRationale, UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.scripts import bugimport
 from canonical.launchpad.scripts.bugimport import ET
+from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
 
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests import login, logout
@@ -686,6 +692,174 @@ class BugImportScriptTestCase(unittest.TestCase):
         bug = getUtility(IBugSet).get(bug_id)
         self.assertEqual(bug.title, 'A test bug')
         self.assertEqual(bug.bugtasks[0].product.name, 'netapplet')
+
+
+class TestBugWatch:
+    """A mock bug watch object for testing `ExternalBugTracker.updateWatches`.
+
+    This bug watch is guaranteed to trigger a DB failure when `updaateStatus`
+    is called if its `failing` attribute is True."""
+    def __init__(self, id, bug, failing):
+        """Initialize the object."""
+        self.id = id
+        self.remotebug = str(self.id)
+        self.bug = bug
+        self.failing = failing
+
+    def updateStatus(self, new_remote_status, new_malone_status):
+        """See `IBugWatch`."""
+        for bugtask in self.bug.bugtasks:
+            if bugtask.conjoined_master is not None:
+                continue
+            bugtask = removeSecurityProxy(bugtask)
+            bugtask.status = new_malone_status
+        if self.failing:
+            cur = cursor()
+            cur.execute("""
+            UPDATE BugTask
+            SET assignee = -1
+            WHERE id = %s
+            """ % self.bug.bugtasks[0].id)
+            cur.close()
+
+    def updateImportance(self,
+                         new_remote_importance,
+                         new_malone_importance):
+        """Do nothing, just to provide the interface."""
+        pass
+
+
+class TestResultSequence(list):
+    """A mock `SelectResults` object.
+
+    Returns a list with a `count` method.
+    """
+
+    def count(self):
+        """See `SelectResults`."""
+        return len(self)
+
+
+class TestBugTracker:
+    """A mock `BugTracker` object.
+
+    This bug tracker is used for testing `ExternalBugTracker.updateWatches`.
+    It exposes two bug watches, one of them is guaranteed to trigger an error.
+    """
+    baseurl = 'http://example.com/'
+
+    def __init__(self, test_bug_one, test_bug_two):
+        self.test_bug_one = test_bug_one
+        self.test_bug_two = test_bug_two
+    
+    def getBugWatchesNeedingUpdate(self, hours):
+        """Returns a sequence of teo bug watches for testing."""
+        return TestResultSequence([
+            TestBugWatch(1, self.test_bug_one, failing=True),
+            TestBugWatch(2, self.test_bug_two, failing=False)])
+
+
+class TestExternalBugTracker(ExternalBugTracker):
+    """A mock `ExternalBugTracker` object.
+
+    This external bug tracker is used for testing
+    `ExternalBugTracker.updateWatches`. It overrides several methods
+    in order to simulate the syncing of two bug watches, one of which
+    is guaranteed to trigger a database error.
+    """
+    def getRemoteBug(self, bug_id):
+        """Return the bug_id and an empty dictionary for data.
+
+        The result will be ignored, since we force a specific status
+        in `getRemoteStatus` and `convertRemoteStatus`.
+        """
+        return bug_id, {}
+    
+    def getRemoteStatus(self, bug_id):
+        """Returns a remote status as a string.
+
+        The result will be ignored, since we force a specific malone
+        status in `convertRemoteStatus`.
+        """
+        return 'TEST_STATUS'
+
+    def convertRemoteStatus(self, remote_status):
+        """Returns a hard-coded malone status - `FIXRELEASED`.
+
+        We rely on the result for comparison in
+        `test_checkbugwatches_error_recovery`.
+        """
+        return BugTaskStatus.FIXRELEASED
+
+    def _getBugWatch(self, bug_watch_id):
+        """Returns a mock bug watch object.
+
+        We override this method to force one of our two bug watches
+        to be returned. The first is guaranteed to trigger a db error,
+        the second should update successfuly.
+        """
+        return self.bugtracker.getBugWatchesNeedingUpdate(0)[bug_watch_id - 1]
+
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
+        """
+        return UNKNOWN_REMOTE_IMPORTANCE
+
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        BugTaskImportance.UNKNOWN will always be returned.
+        """
+        return BugTaskImportance.UNKNOWN
+
+
+
+class TestBugWatchUpdater(BugWatchUpdater):
+    """A mock `BugWatchUpdater` object."""
+    
+    def _getExternalBugTracker(self, bug_tracker):
+        """See `BugWatchUpdater`."""
+        return TestExternalBugTracker(self.txn, bug_tracker)
+
+
+class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
+    """Test that errors in the bugwatch import process don't
+    invalidate the entire run.
+    """
+    layer = LaunchpadZopelessLayer
+
+    def test_checkbugwatches_error_recovery(self):
+
+        firefox = getUtility(IProductSet).get(4)
+        foobar = getUtility(IPersonSet).get(16)
+        params = CreateBugParams(
+            title="test bug one", comment="test bug one", owner=foobar)
+        params.setBugTarget(product=firefox)
+        test_bug_one = getUtility(IBugSet).createBug(params)
+        params = CreateBugParams(
+            title="test bug two", comment="test bug two", owner=foobar)
+        params.setBugTarget(product=firefox)
+        test_bug_two = getUtility(IBugSet).createBug(params)
+        self.layer.txn.commit()
+
+        # We use a test bug tracker, which is guaranteed to
+        # try and update two bug watches - the first will
+        # trigger a DB error, the second updates successfully.
+        bug_tracker = TestBugTracker(test_bug_one, test_bug_two)
+        bug_watch_updater = TestBugWatchUpdater(self.layer.txn)
+        bug_watch_updater.updateBugTracker(bug_tracker)
+        # We verify that the first bug watch didn't update the status,
+        # and the second did.
+        for bugtask in test_bug_one.bugtasks:
+            self.assertNotEqual(bugtask.status, BugTaskStatus.FIXRELEASED)
+        for bugtask in test_bug_two.bugtasks:
+            self.assertEqual(bugtask.status, BugTaskStatus.FIXRELEASED)
 
 
 def test_suite():

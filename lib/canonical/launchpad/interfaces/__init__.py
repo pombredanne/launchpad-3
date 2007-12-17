@@ -50,6 +50,7 @@ from canonical.launchpad.interfaces.codeimportevent import *
 from canonical.launchpad.interfaces.codeimportjob import *
 from canonical.launchpad.interfaces.codeimportmachine import *
 from canonical.launchpad.interfaces.codeimportresult import *
+from canonical.launchpad.interfaces.codeimportscheduler import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
@@ -75,6 +76,7 @@ from canonical.launchpad.interfaces.externalbugtracker import *
 from canonical.launchpad.interfaces.faq import *
 from canonical.launchpad.interfaces.faqcollection import *
 from canonical.launchpad.interfaces.faqtarget import *
+from canonical.launchpad.interfaces.featuredproject import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.gpg import *

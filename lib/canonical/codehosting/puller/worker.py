@@ -19,6 +19,7 @@ import bzrlib.ui
 
 from canonical.config import config
 from canonical.codehosting import ProgressUIFactory
+from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
@@ -31,7 +32,7 @@ __all__ = [
     'BranchReferenceForbidden',
     'BranchReferenceValueError',
     'get_canonical_url_for_branch_name',
-    'install_worker_progress_factory',
+    'install_worker_ui_factory',
     'PullerWorker',
     'PullerWorkerProtocol'
     ]
@@ -118,7 +119,8 @@ class PullerWorkerProtocol:
 
 
 def identical_formats(branch_one, branch_two):
-    """Check if two branches have the same bzrdir, repo, and branch formats."""
+    """Check if two branches have the same bzrdir, repo, and branch formats.
+    """
     # XXX AndrewBennetts 2006-05-18 bug=45277:
     # comparing format objects is ugly.
     b1, b2 = branch_one, branch_two
@@ -142,13 +144,15 @@ class PullerWorker:
         self.dest = dest
         self.branch_id = branch_id
         self.unique_name = unique_name
-        # The branch_type argument should always be set to a BranchType enum in
-        # production use, but it is expected that tests that do not depend on
-        # its value will pass None.
+        # The branch_type argument should always be set to a BranchType enum
+        # in production use, but it is expected that tests that do not depend
+        # on its value will pass None.
         self.branch_type = branch_type
         self._source_branch = None
         self._dest_branch = None
         self.protocol = protocol
+        if protocol is not None:
+            self.protocol.branch_id = branch_id
 
     def _checkSourceUrl(self):
         """Check the validity of the source URL.
@@ -249,10 +253,19 @@ class PullerWorker:
             # Make a new branch in the same format as the source branch.
             branch = self._createDestBranch()
         else:
-            # Check that destination branch is in the same format as the source.
+            # Check that destination branch is in the same format as the
+            # source.
             if identical_formats(self._source_branch, branch):
-                # The destination exists, and is in the same format.  So all we
-                # need to do is pull the new revisions.
+                # The destination exists, and is in the same format.  So all
+                # we need to do is pull the new revisions.
+
+                # If the branch is locked, try to break it.  Our special UI
+                # factory will allow the breaking of locks that look like they
+                # were left over from previous puller worker runs.  We will
+                # block on other locks and fail if they are not broken before
+                # the timeout expires (currently 5 minutes).
+                if branch.get_physical_lock_status():
+                    branch.break_lock()
                 branch.pull(self._source_branch, overwrite=True)
             else:
                 # The destination is in a different format to the source, so
@@ -351,8 +364,8 @@ class PullerWorker:
             self._mirrorFailed(msg)
 
         except BranchReferenceForbidden, e:
-            msg = ("Branch references are not allowed for branches of type %s."
-                   % (self.branch_type.title,))
+            msg = ("Branch references are not allowed for branches of type "
+                   "%s." % (self.branch_type.title,))
             self._mirrorFailed(msg)
 
         except BranchReferenceValueError, e:
@@ -407,11 +420,33 @@ class WorkerProgressBar(DummyProgress):
         return self
 
 
-def install_worker_progress_factory(puller_worker_protocol):
-    """Install an UIFactory that informs a PullerWorkerProtocol of progress.
+class PullerWorkerUIFactory(ProgressUIFactory):
+    """An UIFactory that always says yes to breaking locks."""
+
+    def get_boolean(self, prompt):
+        """If we're asked to break a lock like a stale lock of ours, say yes.
+        """
+        assert prompt.startswith('Break lock'), (
+            "Didn't expect prompt %r" % (prompt,))
+        branch_id = self.puller_worker_protocol.branch_id
+        if get_lock_id_for_branch_id(branch_id) in prompt:
+            return True
+        else:
+            return False
+
+
+def install_worker_ui_factory(puller_worker_protocol):
+    """Install a special UIFactory for puller workers.
+
+    Our factory does two things:
+
+    1) Create progress bars that inform a PullerWorkerProtocol of progress.
+    2) Break locks if and only if they appear to be stale locks
+       created by another puller worker process.
     """
     def factory(*args, **kw):
         r = WorkerProgressBar(*args, **kw)
         r.puller_worker_protocol = puller_worker_protocol
         return r
-    bzrlib.ui.ui_factory = ProgressUIFactory(factory)
+    bzrlib.ui.ui_factory = PullerWorkerUIFactory(factory)
+    bzrlib.ui.ui_factory.puller_worker_protocol = puller_worker_protocol
