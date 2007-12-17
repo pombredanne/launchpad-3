@@ -114,11 +114,11 @@ class ExternalBugTracker:
     """Base class for an external bug tracker."""
 
     implements(IExternalBugTracker)
+    batch_size = None
+    batch_query_threshold = config.checkwatches.batch_query_threshold
+    import_comments = config.checkwatches.import_comments
 
     def __init__(self, txn, bugtracker):
-        self.batch_query_threshold = config.checkwatches.batch_query_threshold
-        self.batch_size = None
-        self.import_comments = config.checkwatches.import_comments
         self.bugtracker = bugtracker
         self.baseurl = bugtracker.baseurl.rstrip('/')
         self.txn = txn
@@ -366,10 +366,10 @@ class Bugzilla(ExternalBugTracker):
     """An ExternalBugTrack for dealing with remote Bugzilla systems."""
 
     implements(IExternalBugTracker)
+    batch_query_threshold = 0 # Always use the batch method.
 
     def __init__(self, txn, bugtracker, version=None):
         super(Bugzilla, self).__init__(txn, bugtracker)
-        self.batch_query_threshold = 0 # Always use the batch method.
         self.version = self._parseVersion(version)
         self.is_issuezilla = False
         self.remote_bug_status = {}
@@ -853,37 +853,36 @@ class DebBugs(ExternalBugTracker):
         # any new Persons that we create.
         parsed_comment = email.message_from_string(comment)
 
-        # We need to assign this comment to an owner, so we look for
-        # a From header to the email or, failing that, a Reply-to
-        # header.
-        if 'from' in parsed_comment:
-            owner_email = parsed_comment['from']
-        else:
-            # If we can't find an owner for the comment we can't
-            # carry on.
-            log.warn("Unable to parse comment %s on Debian bug %s: "
-                "No valid sender address found." %
-                (parsed_comment.get('message_id', ''), debian_bug.id))
-            return None
-
-        display_name, email_addr = parseaddr(owner_email)
-        owner = getUtility(IPersonSet).ensurePerson(email_addr.lower(),
-            display_name, PersonCreationRationale.BUGWATCH,
-            "when the comments for debbugs #%s were imported into "
-            "Launchpad." % bug_watch.remotebug,
-            getUtility(ILaunchpadCelebrities).bug_watch_updater)
-
-        message_set = getUtility(IMessageSet)
-        message = message_set.fromEmail(comment, owner,
-            parsed_message=parsed_comment)
-
         # We only link those messages which aren't already linked to to
         # the bug.
         bug_messages = [bug_message.rfc822msgid for bug_message
             in bug_watch.bug.messages]
-        if message.rfc822msgid not in bug_messages:
+        if parsed_comment['message-id'] not in bug_messages:
+            # We need to assign this comment to an owner, so we look for
+            # a From header to the email or, failing that, a Reply-to
+            # header.
+            if 'from' in parsed_comment:
+                owner_email = parsed_comment['from']
+            else:
+                # If we can't find an owner for the comment we can't
+                # carry on.
+                log.warn("Unable to parse comment %s on Debian bug %s: "
+                    "No valid sender address found." %
+                    (parsed_comment.get('message-id', ''), debian_bug.id))
+                return None
+
+            display_name, email_addr = parseaddr(owner_email)
+
+            owner = getUtility(IPersonSet).ensurePerson(email_addr.lower(),
+                display_name, PersonCreationRationale.BUGWATCH,
+                "when the comments for debbugs #%s were imported into "
+                "Launchpad." % bug_watch.remotebug,
+                getUtility(ILaunchpadCelebrities).bug_watch_updater)
+
+            message = getUtility(IMessageSet).fromEmail(comment, owner,
+                parsed_message=parsed_comment)
+
             bug_message = bug_watch.bug.linkMessage(message, bug_watch)
-            self.txn.commit()
         else:
             bug_message = None
 
@@ -1816,10 +1815,10 @@ class SourceForge(ExternalBugTracker):
     # We only allow ourselves to update one SourceForge bug at a time to
     # avoid getting clobbered by SourceForge's rate limiting code.
     export_url = 'support/tracker.php?aid=%s'
+    batch_size = 1
 
     def __init__(self, txn, bugtracker):
         super(SourceForge, self).__init__(txn, bugtracker)
-        self.batch_size = 1
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
@@ -1983,10 +1982,7 @@ class RequestTracker(ExternalBugTracker):
 
     ticket_url = 'REST/1.0/ticket/%s/show'
     batch_url = 'REST/1.0/search/ticket/'
-
-    def __init__(self, txn, bugtracker):
-        super(RequestTracker, self).__init__(txn, bugtracker)
-        self.batch_query_threshold = 1
+    batch_query_threshold = 1
 
     @property
     def credentials(self):
