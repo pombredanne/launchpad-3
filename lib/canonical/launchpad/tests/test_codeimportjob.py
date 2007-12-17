@@ -261,6 +261,5 @@ class TestCodeImportJobWorkflowWebappDeletesPendingJob(unittest.TestCase,
             reviewed_import)
 
 
-
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
