@@ -27,9 +27,11 @@ class ConfigSchema(object):
     def __init__(self, filename):
         """Load a configuration schema from the provided filename.
 
-        :raises UnicodeDecodeError: if the string contains non-ascii
+        :raise `UnicodeDecodeError`: if the string contains non-ascii
             characters.
-        :raises RedefinedSectionError: if a SectionSchema name is redefined.
+        :raise `RedefinedSectionError`: if a SectionSchema name is redefined.
+        :raise `InvalidSectionNameError`: if a SectionSchema name is
+            ill-formed.
         """
         # XXX sinzui 2007-12-13:
         # SafeConfigParser permits redefinition and non-ascii characters.
@@ -83,7 +85,7 @@ class ConfigSchema(object):
         self._category_names = list(category_names)
         self._section_schemas = section_schemas
 
-    _section_name_pattern = re.compile(r'[\w.-]+')
+    _section_name_pattern = re.compile(r'\w[\w.-]+\w')
 
     def _parseSectionName(self, name):
         """Return a 4-tuple of names and kinds embedded in the name.
@@ -99,15 +101,19 @@ class ConfigSchema(object):
         is_optional = name_parts[-1] == 'optional'
         if is_template or is_optional:
             # The suffix is not a part of the section name.
+            # Example: [name.optional] or [category.template]
             del name_parts[-1]
         count = len(name_parts)
         if count == 1 and is_template:
+            # Example: [category.template]
             category_name = name_parts[0]
             section_name = name_parts[0]
         elif count == 1:
+            # Example: [name]
             category_name = None
             section_name = name_parts[0]
         elif count == 2:
+            # Example: [category.name]
             category_name = name_parts[0]
             section_name = '.'.join(name_parts)
         else:
@@ -153,12 +159,12 @@ class SectionSchema(object):
     implements(ISectionSchema)
 
     def __init__(self, name, options, is_optional=False):
-        """Create an ISectionSchema from the name and options.
+        """Create an `ISectionSchema` from the name and options.
 
         :param name: A string. The name of the ISectionSchema.
         :param options: A dict of the key-value pairs in the ISectionSchema.
         :param is_optional: A boolean. Is this section schema optional?
-        :raises RedefinedKeyError: if a keys is redefined in SectionSchema.
+        :raise `RedefinedKeyError`: if a keys is redefined in SectionSchema.
         """
         # This method should raise RedefinedKeyError if the schema file
         # redefines a key, but SafeConfigParser swallows redefined keys.
