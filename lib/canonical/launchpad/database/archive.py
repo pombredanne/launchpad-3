@@ -24,7 +24,7 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchive, IArchiveSet, IHasOwner, IHasBuildRecords,
-    IBuildSet, IDistributionSet)
+    IBuildSet, ILaunchpadCelebrities)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -426,7 +426,7 @@ class ArchiveSet:
             assert owner, "Owner required when purpose is PPA."
 
         if distribution is None:
-            distribution = getUtility(IDistributionSet)['ubuntu']
+            distribution = getUtility(ILaunchpadCelebrities).ubuntu
 
         return Archive(owner=owner, distribution=distribution,
                        description=description, purpose=purpose)

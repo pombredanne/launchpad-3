@@ -19,8 +19,9 @@
 
 <div metal:fill-slot="main">
 
-   <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
-         tal:attributes="href view/feed_url" />
+   <link rel="alternate" type="application/atom+xml" 
+         tal:attributes="title string:Announcements for ${context/displayname};
+                         href view/feed_url" />
 
       <span tal:replace="structure context/image:mugshot" />
       <h1 tal:content="context/title">Ubuntu Linux</h1>
@@ -71,13 +72,16 @@
              />
         <div class="section"
              tal:content="structure context/@@+portlet-series" />
-        <div class="section"
+        <div
+          class="section"
           tal:condition="context/currentseries"
           tal:content="structure context/currentseries/@@+portlet-latestuploads"
-        />
-        <div class="section"
-             tal:content="structure context/@@+portlet-latestbugs" />
+          />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestbugs" />
       </div>
+
       <div class="right">
         <div
           class="two column section"
@@ -92,7 +96,7 @@
           tal:content="structure context/@@+portlet-latestspecs"
         />
         <div
-          class="section"
+          class="two column section"
           tal:content="structure context/@@+portlet-latestquestions"
         />
       </div>

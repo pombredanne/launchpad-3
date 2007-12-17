@@ -24,8 +24,10 @@
 
   <h1>News and announcements</h1>
 
-  <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
-        tal:attributes="href view/feed_url" />
+  <link rel="alternate" type="application/atom+xml" tal:attributes="
+             href view/feed_url;
+             title string:Announcements for ${context/displayname}" />
+
   <p tal:condition="view/announcement_nav/batch/listlength">
     These announcements are available as an 
     <a tal:attributes="href view/feed_url">

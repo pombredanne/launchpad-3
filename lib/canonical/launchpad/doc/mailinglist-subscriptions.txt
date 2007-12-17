@@ -102,6 +102,7 @@ we first create team-two as a subteam of team-one.
     # reviewer for adding team-two to team-one.
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> login('foo.bar@canonical.com')
     >>> team_one.addMember(team_two, salgado, force_team_add=True)
     >>> sorted(member.displayname for member in team_one.allmembers)
     [u'Anne Person', u'Bart Person', u'No Privileges Person', u'Team Two']

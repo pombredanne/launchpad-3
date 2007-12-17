@@ -200,6 +200,10 @@
       name="+portlet-latestuploads"
       template="../templates/distroseries-portlet-latestuploads.pt"
       />
+    <browser:page
+      name="+pagelet-architectures"
+      template="../templates/distroseries-pagelet-architectures.pt"
+      />
   </browser:pages>
 
   <browser:page
@@ -329,8 +333,9 @@
     name="+addport"
     for="canonical.launchpad.interfaces.IDistroSeries"
     schema="canonical.launchpad.interfaces.IDistroArchSeries"
-    fields="architecturetag processorfamily official owner"
+    fields="architecturetag processorfamily official owner ppa_supported"
     arguments="architecturetag processorfamily official owner"
+    keyword_arguments="ppa_supported"
     class="canonical.launchpad.browser.DistroArchSeriesAddView"
     facet="overview"
     permission="launchpad.Admin"

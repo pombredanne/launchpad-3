@@ -93,7 +93,9 @@ mailing list.
 
     >>> from canonical.launchpad.interfaces import TeamMembershipStatus
     >>> bart = new_person('Bart')
+    >>> login('foo.bar@canonical.com')
     >>> team_two.addMember(anne, bart, status=TeamMembershipStatus.ADMIN)
+    >>> login(ANONYMOUS)
     >>> flush_database_updates()
     >>> list_two = list_set.new(team_two, anne)
     >>> list_two
@@ -196,7 +198,9 @@ A mailing list expert is required to approve the registration.
 If Dirk becomes a member of the Mailing List Experts, he'll be able to approve
 a list.
 
+    >>> login('foo.bar@canonical.com')
     >>> mailing_list_experts.addMember(dirk, lpadmin)
+    >>> login(ANONYMOUS)
     >>> list_four.review(dirk, MailingListStatus.APPROVED)
     >>> syncUpdate(list_four)
     >>> list_four.status.name
