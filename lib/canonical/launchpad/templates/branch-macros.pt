@@ -40,10 +40,15 @@
                >Experimental</span>)
       </tal:show-lifecycle>
 
+      <tal:comment condition="nothing">
       <a tal:condition="mergeproposal/required:launchpad.Edit"
          tal:attributes="href mergeproposal/fmt:url">
         <img alt="" src="/@@/edit"/>
       </a>
+      </tal:comment>
+      -
+      <a tal:attributes="href mergeproposal/fmt:url">
+        view proposal details</a>
     </dt>
     <dd>
       <tal:whiteboard content="structure mergeproposal/whiteboard/fmt:text-to-html">

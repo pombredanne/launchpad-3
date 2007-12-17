@@ -25,11 +25,11 @@
     <div metal:fill-slot="extra_info" class="documentDescription">
       <p>
       Requesting a review will indicate that the changes in the source
-      branch (<tal:source-branch replace="structure context/source_branch/fmt:link"/>)
+      branch
       are ready to be merged and should be reviewed by someone
-      with the authority to accept changes into the target branch
-      (<tal:source-branch replace="structure context/target_branch/fmt:link"/>).
+      with the authority to accept changes into the target branch.
       </p>
+      <div style="clear: both"></div>
     </div>
 
   </div>

@@ -24,14 +24,10 @@
 
     <div metal:fill-slot="extra_info" class="documentDescription">
       <p>
-        MAKE ME WIP
-
-      Requesting a review will indicate that the changes in the source
-      branch (<tal:source-branch replace="structure context/source_branch/fmt:link"/>)
-      are ready to be merged and should be reviewed by someone
-      with the authority to accept changes into the target branch
-      (<tal:source-branch replace="structure context/target_branch/fmt:link"/>).
+        Setting to "Work in progress" indicates that the source
+        branch is not yet ready for merging into the target branch.
       </p>
+      <div style="clear: both"></div>
     </div>
 
   </div>

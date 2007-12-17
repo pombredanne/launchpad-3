@@ -21,6 +21,12 @@
   <tal:summary replace="structure context/@@+pagelet-summary" />
 
   <div metal:use-macro="context/@@launchpad_form/form">
+    <div metal:fill-slot="extra_info" style="clear: both">
+      <tal:comment condition="nothing">
+        Here is where we'd like to walk the users through the code
+        review process once it is in place.
+      </tal:comment>
+    </div>
   </div>
 
   <div id="source-revisions">

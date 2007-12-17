@@ -25,7 +25,7 @@
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
-      name="+edit" />
+      name="+index" />
 
   <browser:page
     name="+index"

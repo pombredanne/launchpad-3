@@ -23,6 +23,7 @@ from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.fields import Whiteboard
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus, BranchType, IBranchMergeProposal,
     ILaunchpadCelebrities, IStructuralObjectPresentation)
@@ -54,7 +55,13 @@ class BranchMergeProposalContextMenu(ContextMenu):
     """Context menu for branches."""
 
     usedfor = IBranchMergeProposal
-    links = ['set_work_in_progress', 'request_review', 'review', 'merge']
+    links = ['edit', 'set_work_in_progress', 'request_review', 'review',
+             'merge']
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        text = 'Edit details'
+        return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def set_work_in_progress(self):
@@ -119,17 +126,18 @@ class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
     """The view used to set a proposal back to 'work in progress'."""
 
     schema = IBranchMergeProposal
-    field_names = []
+    field_names = ["whiteboard"]
     label = "Set proposal as work in progress"
 
     @property
     def next_url(self):
-        return canonical_url(self.context.source_branch)
+        return canonical_url(self.context)
 
     @action('Set as work in progress', name='wip')
     def wip_action(self, action, data):
         """Set the status to 'Needs review'."""
         self.context.setAsWorkInProgress()
+        self.updateContextFromData(data)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
@@ -146,17 +154,18 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
     """The view used to request a review of the merge proposal."""
 
     schema = IBranchMergeProposal
-    field_names = []
+    field_names = ["whiteboard"]
     label = "Request review"
 
     @property
     def next_url(self):
-        return canonical_url(self.context.source_branch)
+        return canonical_url(self.context)
 
     @action('Request review', name='review')
     def review_action(self, action, data):
         """Set the status to 'Needs review'."""
         self.context.requestReview()
+        self.updateContextFromData(data)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
@@ -176,6 +185,10 @@ class ReviewForm(Interface):
         title=_("Reviewed Revision"), required=True,
         description=_("The revision number on the target branch which "
                       "has been reviewed."))
+
+    whiteboard = Whiteboard(
+        title=_('Whiteboard'), required=False,
+        description=_('Notes about the merge.'))
 
 
 class MergeProposalEditView(LaunchpadEditFormView):
@@ -224,7 +237,7 @@ class ReviewBranchMergeProposalView(MergeProposalEditView,
 
     @property
     def next_url(self):
-        return canonical_url(self.context.source_branch)
+        return canonical_url(self.context)
 
     def _getRevisionId(self, data):
         """Translate the revision number that was entered into a revision id.
@@ -233,22 +246,25 @@ class ReviewBranchMergeProposalView(MergeProposalEditView,
         against, so store the raw integer revision number as the revision id.
         """
         source_branch = self.context.source_branch
+        # Get the revision number out of the data.
         if source_branch.branch_type == BranchType.REMOTE:
-            return data['revision_number']
+            return data.pop('revision_number')
         else:
             branch_revision = source_branch.getBranchRevision(
-                data['revision_number'])
+                data.pop('revision_number'))
             return branch_revision.revision.revision_id
 
     @action('Approve', name='approve')
     def approve_action(self, action, data):
         """Set the status to approved."""
         self.context.approveBranch(self.user, self._getRevisionId(data))
+        self.updateContextFromData(data)
 
     @action('Reject', name='reject')
     def reject_action(self, action, data):
         """Set the status to rejected."""
         self.context.rejectBranch(self.user, self._getRevisionId(data))
+        self.updateContextFromData(data)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
@@ -298,7 +314,7 @@ class BranchMergeProposalEditView(MergeProposalEditView):
 
     @property
     def next_url(self):
-        return canonical_url(self.source_branch)
+        return canonical_url(self.context)
 
     @action('Update', name='update')
     def update_action(self, action, data):
@@ -309,6 +325,8 @@ class BranchMergeProposalEditView(MergeProposalEditView):
     def delete_action(self, action, data):
         """Delete the merge proposal and go back to the source branch."""
         self.context.destroySelf()
+        # Override the next url to be the source branch.
+        self.next_url = canonical_url(self.source_branch)
 
     @action('Cancel', name='cancel')
     def cancel_action(self, action, data):
@@ -321,18 +339,19 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
     label = "Edit branch merge proposal"
     field_names = ["merged_revno"]
 
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
     @action('Mark as Merged', name='mark_merged')
     def mark_merged_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
         revno = data['merged_revno']
         self.context.markAsMerged(revno, merge_reporter=self.user)
-        # Now go back to the source branch.
-        self.next_url = canonical_url(self.context.source_branch)
 
     @action('Cancel', name='cancel')
     def cancel_action(self, action, data):
         """Do nothing and go back to the merge proposal."""
-        self.next_url = canonical_url(self.context)
 
     def validate(self, data):
         # Ensure a positive integer value.
