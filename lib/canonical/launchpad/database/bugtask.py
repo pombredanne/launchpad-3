@@ -1001,6 +1001,25 @@ class BugTaskSet:
                                 str(task_id))
         return bugtask
 
+    def getMultiple(self, task_ids):
+        # Ensure we can iterate through the given sequence of bug task IDs:
+        try:
+            task_ids = iter(task_ids)
+        except:
+            raise TypeError("Sequence of bug task IDs expected.")
+        if len(task_ids) > 0:
+            # Ensure we can coerce each bug task ID to an integer value:
+            try:
+                task_ids = [int(task_id) for task_id in task_ids]
+            except:
+                raise TypeError("Sequence of bug task IDs expected.")
+            # Query the database, returning the results in a dictionary:
+            task_ids_joined = ', '.join([str(task_id) for task_id in task_ids])
+            tasks = BugTask.select('id in (' + task_ids_joined + ')')
+            return dict([(task.id, task) for task in tasks])
+        else:
+            return {}
+
     def findSimilar(self, user, summary, product=None, distribution=None,
                     sourcepackagename=None):
         """See `IBugTaskSet`."""
