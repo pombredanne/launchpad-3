@@ -91,7 +91,7 @@ class BaseLayer:
     resources in a mess.
 
     XXX: StuartBishop 2006-07-12: Unit tests (tests with no layer) will not
-    get this checks. The Z3 test runner should be updated so that a layer
+    get these checks. The Z3 test runner should be updated so that a layer
     can be specified to use for unit tests.
     """
     # Set to True when we are running tests in this layer.
