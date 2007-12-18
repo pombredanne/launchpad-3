@@ -57,6 +57,7 @@ disable-msg-cat=R
 
 # Disable the message(s) with the given id(s).
 # :I0011: *Locally disabling %s*
+# :E0101: *Explicit return in __init__*
 # :W0142: *Used * or ** magic*
 # :W0201: *Attribute %r defined outside __init__*
 # :W0223: *Method %r is abstract in class %r but is not overridden* (StructuralObjectPresentation and  SQLObjectVocabularyBase)
@@ -65,7 +66,7 @@ disable-msg-cat=R
 # :W0621: *Redefining name %r from outer scope (line %s)* (pylint does a poor evaluation)
 # :W0704: *Except does not do anything* (Does not check for comment explaining fall-through)
 # :E0611: *No name %r in module 'sqlobject'* (Pylint shipped with gutsy does not understand SQLObject. Pyflakes checks the imports too anyway.)
-disable-msg=I0011,C0302,E0202,W0142,W0201,W0221,W0223,W0232,W0511,W0613,W0621,W0622,W0704,E0611
+disable-msg=I0011,C0302,E0101,E0202,W0142,W0201,W0221,W0223,W0232,W0511,W0613,W0621,W0622,W0704,E0611
 
 
 [REPORTS]
@@ -157,7 +158,7 @@ required-attributes=
 
 # Regular expression which should only match functions or classes name which do
 # not require a docstring
-no-docstring-rgx=__.*__
+no-docstring-rgx=(__.*__|setUp|tearDown)
 
 # Regular expression which should only match correct module names
 module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
@@ -196,7 +197,7 @@ good-names=_,a,b,c,i,j,k,v,d,f,s,t,l,ex,_,orderBy,getByName,clauseTables
 bad-names=foo,bar,baz,toto,tutu,tata
 
 # List of builtins function names that should not be used, separated by a comma
-bad-functions=map,filter,apply,input,reduce
+bad-functions=apply,input,reduce
 
 
 # checks for :
