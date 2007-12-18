@@ -18,10 +18,19 @@ The page is not linked to, so we have to browse directly to it.
     >>> user_browser.url
     'http://launchpad.dev/bugs/4/+watch/11/+comments'
 
-The comments that have been imported are displayed on the page in the
-same way as bug comments are displayed on bugs pages.
+The ordinary user can't see these comments:
 
     >>> print_comments(user_browser.contents)
+
+But members of the Launchpad development team can see them. The comments
+that have been imported are displayed on the page in the same way as bug
+comments are displayed on bugs pages.
+
+    >>> admin_browser.open('http://launchpad.dev/bugs/4/+watch/11/+comments')
+    >>> admin_browser.url
+    'http://launchpad.dev/bugs/4/+watch/11/+comments'
+
+    >>> print_comments(admin_browser.contents)
     <p>Package: gnome-volume...manager...
     ----------------------------------------
     <p>reassign 308994 pmount...

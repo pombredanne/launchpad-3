@@ -12,7 +12,8 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.browser import get_comments_for_bugtask
-from canonical.launchpad.interfaces import IBugWatch, IBugWatchSet, ILaunchBag
+from canonical.launchpad.interfaces import (IBugWatch, IBugWatchSet,
+    ILaunchBag, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadView)
@@ -30,7 +31,16 @@ class BugWatchView(LaunchpadView):
 
     @property
     def comments(self):
-        """Return the comments to be displayed for a bug watch."""
+        """Return the comments to be displayed for a bug watch.
+
+        If the current user is not a member of the Launchpad developers
+        team, no comments will be returned.
+        """
+        user = getUtility(ILaunchBag).user
+        lp_developers = getUtility(ILaunchpadCelebrities).launchpad_developers
+        if not user.inTeam(lp_developers):
+            return []
+
         bug_comments = get_comments_for_bugtask(self.context.bug.bugtasks[0],
             truncate=True)
 
