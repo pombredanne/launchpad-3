@@ -1002,6 +1002,7 @@ class BugTaskSet:
         return bugtask
 
     def getMultiple(self, task_ids):
+        """See `IBugTaskSet`."""
         # Ensure we can iterate through the given sequence of bug task IDs:
         try:
             task_ids = iter(task_ids)
