@@ -295,17 +295,18 @@ class Builder(SQLBase):
          * Ensure that the build pocket allows builds for the current
            distroseries state.
         """
-        if self.trusted and not build_queue_item.is_trusted:
-            raise AssertionError(
-                "Attempt to build untrusted item on a trusted-only builder.")
+        assert not (self.trusted and not build_queue_item.is_trusted), (
+            "Attempt to build untrusted item on a trusted-only builder.")
 
         # Assert that we are not silently building SECURITY jobs.
         # See findBuildCandidates. Once we start building SECURITY
         # correctly from EMBARGOED archive this assertion can be removed.
+        # XXX 2007-18-12 Julian. This is being addressed in the work on the
+        # blueprint:
+        # https://blueprints.launchpad.net/soyuz/+spec/security-in-soyuz
         target_pocket = build_queue_item.build.pocket
-        if target_pocket == PackagePublishingPocket.SECURITY:
-            raise AssertionError(
-                "Soyuz is not yet capable of building SECURITY uploads.")
+        assert target_pocket != PackagePublishingPocket.SECURITY, (
+            "Soyuz is not yet capable of building SECURITY uploads.")
 
         # Ensure build has the needed chroot
         chroot = build_queue_item.archseries.getChroot()
@@ -577,15 +578,18 @@ class Builder(SQLBase):
         if not candidate:
             return None
 
-        # Mark build records target to old source versions as SUPERSEDED
+        # Mark build records targeted to old source versions as SUPERSEDED
         # and build records target to SECURITY pocket as FAILEDTOBUILD.
         # Builds in those situation should not be built because they will
         # be wasting build-time, the former case already has a newer source
         # and the latter could not be built in DAK.
-        must_ignore = candidate.is_last_version is False
-        must_fail = candidate.build.pocket == PackagePublishingPocket.SECURITY
-        while (candidate and (must_ignore or must_fail)):
-            if must_fail:
+        if (candidate.is_last_version and
+            candidate.build.pocket != PackagePublishingPocket.SECURITY):
+            # We already have the candidate we need.
+            return candidate
+
+        while candidate is not None:
+            if candidate.build.pocket == PackagePublishingPocket.SECURITY:
                 logger.debug(
                     "Build %s FAILEDTOBUILD, queue item %s REMOVED"
                     % (candidate.build.id, candidate.id))

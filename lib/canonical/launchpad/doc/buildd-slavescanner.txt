@@ -783,8 +783,8 @@ permissive database user.
 
 Now, there is no new build candidate.
 
-  >>> a_builder.findBuildCandidate() is None
-  True
+  >>> print a_builder.findBuildCandidate()
+  None
 
 Because the 'previous' candidate was marked as superseded, so it's not
 part of the candidates list anymore.

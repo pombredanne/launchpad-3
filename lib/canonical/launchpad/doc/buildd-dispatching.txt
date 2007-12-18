@@ -177,7 +177,8 @@ Create BuildQueue record and inspect some parameters:
   False
 
 In order to enable 'bob' to find and build the PPA job, we have to
-change it to 'untrusted' mode.
+change it to 'untrusted' mode.  This is because PPA builds will only build
+on untrusted builders.
 
   >>> bob_builder.trusted = False
   >>> flush_database_updates()
@@ -243,10 +244,10 @@ Create BuildQueue record and inspect some parameters:
   >>> sec_job = sec_build.createBuildQueueEntry()
   >>> sec_job.id
   4L
-  >>> sec_job.builder == None
-  True
-  >>> sec_job.buildstart == None
-  True
+  >>> print sec_job.builder
+  None
+  >>> print sec_job.buildstart
+  None
   >>> sec_job.is_trusted
   True
 
@@ -262,21 +263,21 @@ implementation.
   AssertionError: Soyuz is not yet capable of building SECURITY uploads.
   >>> BuilddSlaveTestSetup().tearDown()
 
-To solve this problem, temporarily, until we start building security
-uploads, we will mark build targeted to SECURITY pocket as FAILEDTOBUILD
-during the findBuildCandidate look-up.
+To solve this problem temporarily until we start building security
+uploads, we will mark builds targeted to the SECURITY pocket as
+FAILEDTOBUILD during the findBuildCandidate look-up.
 
-  >>> bob_builder.findBuildCandidate() is None
-  True
+  >>> print bob_builder.findBuildCandidate()
+  None
   >>> flush_database_updates()
 
 As expected, the security job was marked as SUPERSEDED and the
-corresponding BuildQueue record was removed.
+corresponding BuildQueue record was removed.  This way the security
+builds, created due to missing binary uploads from DAK, will be
+appropriately registered as FAILEDTOBUILD.
 
   >>> sec_build.buildstate.name
   'FAILEDTOBUILD'
-  >>> sec_build.buildqueue_record is None
-  True
+  >>> print sec_build.buildqueue_record
+  None
 
-This way the security builds, created due to missing binary uploads
-from DAK will be appropriately registered as FAILEDTOBUILD.
