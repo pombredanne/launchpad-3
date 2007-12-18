@@ -221,6 +221,16 @@ class ErrorReportingUtility:
                 lastid = int(oopsid)
         return lastid
 
+    def getOopsReport(self, time):
+        """Return the contents of the OOPS report logged at 'time'."""
+        oops_filename = self.getOopsFilename(
+            self._findLastOopsId(self.errordir(time)), time)
+        oops_report = open(oops_filename, 'r')
+        try:
+            return ErrorReport.read(oops_report)
+        finally:
+            oops_report.close()
+
     def errordir(self, now=None):
         """Find the directory to write error reports to.
 
@@ -248,6 +258,14 @@ class ErrorReportingUtility:
                 self.lastid_lock.release()
         return errordir
 
+    def getOopsFilename(self, oops_id, time):
+        """Get the filename for a given OOPS id and time."""
+        oops_prefix = config.launchpad.errorreports.oops_prefix
+        error_dir = self.errordir(time)
+        second_in_day = time.hour * 3600 + time.minute * 60 + time.second
+        return os.path.join(
+            error_dir, '%05d.%s%s' % (second_in_day, oops_prefix, oops_id))
+
     def newOopsId(self, now=None):
         """Returns an (oopsid, filename) pair for the next Oops ID
 
@@ -273,13 +291,10 @@ class ErrorReportingUtility:
             newid = self.lastid
         finally:
             self.lastid_lock.release()
-        day_number = (now - epoch).days + 1
-        second_in_day = now.hour * 3600 + now.minute * 60 + now.second
         oops_prefix = config.launchpad.errorreports.oops_prefix
+        day_number = (now - epoch).days + 1
         oops = 'OOPS-%d%s%d' % (day_number, oops_prefix, newid)
-        filename = os.path.join(errordir, '%05d.%s%s' % (second_in_day,
-                                                         oops_prefix,
-                                                         newid))
+        filename = self.getOopsFilename(newid, now)
         return oops, filename
 
     def raising(self, info, request=None, now=None):

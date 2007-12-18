@@ -26,10 +26,11 @@ from canonical.launchpad.components.branch import BranchDelta
 from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    IBranch, IBugTask, IEmailAddressSet, INotificationRecipientSet, IPerson,
-    IPersonSet, ISpecification, ITeamMembershipSet, IUpstreamBugTask,
-    QuestionAction, TeamMembershipStatus, UnknownRecipientError)
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel, IBranch,
+    IBugTask, IEmailAddressSet, ILaunchpadCelebrities,
+    INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
+    ITeamMembershipSet, IUpstreamBugTask, QuestionAction,
+    TeamMembershipStatus, UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -436,6 +437,11 @@ def update_security_contact_subscriptions(modified_bugtask, event):
 
 def get_bugmail_from_address(person, bug):
     """Returns the right From: address to use for a bug notification."""
+    if person == getUtility(ILaunchpadCelebrities).janitor:
+        return format_address(
+            'Launchpad Bug Tracker',
+            "%s@%s" % (bug.id, config.launchpad.bugs_domain))
+
     if person.preferredemail is not None:
         return format_address(person.displayname, person.preferredemail.email)
 
@@ -871,7 +877,6 @@ def notify_bug_modified(modified_bug, event):
         new_bug=event.object, user=event.user)
 
     assert bug_delta is not None
-
     add_bug_change_notifications(bug_delta)
 
 

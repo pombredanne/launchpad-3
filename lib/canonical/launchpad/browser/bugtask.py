@@ -88,6 +88,7 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 
 from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
+from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
@@ -395,7 +396,7 @@ class BugTaskTextView(LaunchpadView):
         return view.render()
 
 
-class BugTaskView(LaunchpadView, CanBeMentoredView):
+class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
     def __init__(self, context, request):
@@ -1524,7 +1525,7 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
         return bugtask_listing_item
 
 
-class BugTaskSearchListingView(LaunchpadFormView):
+class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
     """View that renders a list of bugs for a given set of search criteria."""
 
     # These widgets are customised so as to keep the presentation of this view
@@ -1544,6 +1545,23 @@ class BugTaskSearchListingView(LaunchpadFormView):
             return IUpstreamProductBugTaskSearch
         else:
             return IBugTaskSearch
+
+    @property
+    def feed_links(self):
+        """Prevent conflicts between the page and the atom feed.
+
+        The latest-bugs atom feed matches the default output of this
+        view, but it does not match this view's bug listing when
+        any search parameters are passed in.
+        """
+        if self.request.get('QUERY_STRING', '') == '':
+            # There is no query in this request, so it's okay for this page to
+            # have its feed links.
+            return super(BugTaskSearchListingView, self).feed_links
+        else:
+            # The query changes the results so that they would not match the
+            # feed.  In this case, suppress the feed links.
+            return []
 
     def initialize(self):
         """Initialize the view with the request.

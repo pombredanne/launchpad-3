@@ -527,6 +527,12 @@ special = {
             tearDown=uploaderTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
+    'bugmessage.txt-checkwatches': LayeredDocFileSuite(
+            '../doc/bugmessage.txt',
+            setUp=checkwatchesSetUp,
+            tearDown=uploaderTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
     'bug-private-by-default.txt': LayeredDocFileSuite(
             '../doc/bug-private-by-default.txt',
             setUp=setUp,
@@ -618,6 +624,13 @@ special = {
     'externalbugtracker-roundup.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-roundup.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-rt.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-rt.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
                 optionflags=default_optionflags, layer=LaunchpadZopelessLayer

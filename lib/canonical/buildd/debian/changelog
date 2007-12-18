@@ -1,3 +1,11 @@
+launchpad-buildd (38) unstable; urgency=high
+
+  * unpack-chroot: set $PATH rather than hardcoding paths to binaries
+    since bzip2 moved from /usr/bin to /bin in edgy and didn't bother with
+    compatability symlinks.
+
+ -- James Troup <james.troup@canonical.com>  Wed, 21 Nov 2007 17:08:36 +0000
+
 launchpad-buildd (37) dapper; urgency=high
 
   * update-debian-chroot: Adam's LPIA support (i.e. overriding

@@ -60,6 +60,13 @@
 
     <browser:page
       for="canonical.launchpad.database.DistroArchSeries"
+      class="canonical.launchpad.browser.DistroArchSeriesDetailsView"
+      permission="zope.Public"
+      name="+details"
+      />
+
+    <browser:page
+      for="canonical.launchpad.database.DistroArchSeries"
       permission="zope.Public"
       name="+search"
       class="canonical.launchpad.browser.DistroArchSeriesBinariesView"
@@ -72,7 +79,7 @@
       name="+admin"
       schema="canonical.launchpad.interfaces.IDistroArchSeries"
       facet="overview"
-      fields="architecturetag official"
+      fields="architecturetag official ppa_supported"
       template="../templates/distroarchseries-admin.pt"
       />
 

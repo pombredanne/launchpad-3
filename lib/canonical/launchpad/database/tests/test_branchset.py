@@ -353,7 +353,7 @@ class BranchVisibilityPolicyTestCase(TestCase):
           * "doug", who is a member of no teams.
         """
         TestCase.setUp(self)
-        login(ANONYMOUS)
+        login("foo.bar@canonical.com")
         # Our test product.
         person_set = getUtility(IPersonSet)
 
@@ -393,6 +393,7 @@ class BranchVisibilityPolicyTestCase(TestCase):
         self.albert.join(self.zulu)
         self.bob.join(self.yankee)
         self.charlie.join(self.zulu)
+        login(ANONYMOUS)
 
     def defineTeamPolicies(self, team_policies):
         """Shortcut to help define team policies."""
@@ -851,6 +852,7 @@ class TeamsWithinTeamsPolicies(BranchVisibilityPolicyTestCase):
     def setUp(self):
         """Join up the teams so zulu is in yankee, and yankee is in xray."""
         BranchVisibilityPolicyTestCase.setUp(self)
+        login("foo.bar@canonical.com")
         self.yankee.addMember(self.zulu, self.albert, force_team_add=True)
         self.xray.addMember(self.yankee, self.albert, force_team_add=True)
         self.defineTeamPolicies((
@@ -859,6 +861,7 @@ class TeamsWithinTeamsPolicies(BranchVisibilityPolicyTestCase):
             (self.yankee, BranchVisibilityRule.PUBLIC),
             (self.zulu, BranchVisibilityRule.PRIVATE),
             ))
+        login(ANONYMOUS)
 
     def test_team_memberships(self):
         albert, bob, charlie, doug = self.people

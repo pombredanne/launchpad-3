@@ -12,10 +12,12 @@
 # BUNZIP2 must un-bzip2
 # FILE must implement the -b and -i arguments (so a Debianish file)
 
-TAR=/bin/tar
-SUDO=/usr/bin/sudo
-BUNZIP2=/usr/bin/bunzip2
-FILE=/usr/bin/file
+export PATH=/usr/bin:/bin:${PATH}
+
+TAR=tar
+SUDO=sudo
+BUNZIP2=bunzip2
+FILE=file
 
 BUILDID="$1"
 TARBALL="$2"

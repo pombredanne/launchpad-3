@@ -12,9 +12,11 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Bytes, Int, Text
+from zope.schema import Bool, Bytes, Int, Text, Object
 
 from canonical.launchpad.fields import Title
+from canonical.launchpad.interfaces.bug import IBug
+from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.validators.bugattachment import (
@@ -24,8 +26,10 @@ from canonical.launchpad.validators.bugattachment import (
 class IBugMessage(IHasBug):
     """A link between a bug and a message."""
 
-    bug = Attribute("The bug.")
-    message = Attribute("The message.")
+    bug = Object(schema=IBug, title=u"The bug.")
+    message = Object(schema=IMessage, title=u"The message.")
+    bugwatch = Object(schema=IBugWatch,
+        title=u"A bugwatch to which the message pertains.")
 
 
 class IBugMessageSet(Interface):
@@ -63,7 +67,8 @@ class IBugMessageAddForm(Interface):
     filecontent = Bytes(
         title=u"Attachment", required=False,
         constraint=bug_attachment_size_constraint)
-    patch = Bool(title=u"This attachment is a patch", required=False, default=False)
+    patch = Bool(title=u"This attachment is a patch", required=False,
+        default=False)
     attachment_description = Title(title=u'Description', required=False)
     email_me = Bool(
         title=u"E-mail me about changes to this bug report",
