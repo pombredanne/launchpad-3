@@ -31,7 +31,8 @@ from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
     CreateBugParams, IBugWatchSet, IDistribution, IExternalBugTracker,
-    ILaunchpadCelebrities, IPersonSet, PersonCreationRationale,
+    ILaunchpadCelebrities, IMessageSet, IPersonSet, NotFoundError,
+    PersonCreationRationale, ISupportsCommentImport,
     UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp.url import urlparse
 
@@ -113,8 +114,9 @@ class ExternalBugTracker:
     """Base class for an external bug tracker."""
 
     implements(IExternalBugTracker)
-    batch_query_threshold = config.checkwatches.batch_query_threshold
     batch_size = None
+    batch_query_threshold = config.checkwatches.batch_query_threshold
+    import_comments = config.checkwatches.import_comments
 
     def __init__(self, txn, bugtracker):
         self.bugtracker = bugtracker
@@ -327,6 +329,9 @@ class ExternalBugTracker:
                     if new_malone_importance is not None:
                         bug_watch.updateImportance(new_remote_importance,
                             new_malone_importance)
+                    if (ISupportsCommentImport.providedBy(self) and
+                        self.import_comments):
+                        self.importBugComments(bug_watch)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -654,7 +659,7 @@ debbugsstatusmap = {'open':      BugTaskStatus.NEW,
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
 
-    implements(IExternalBugTracker)
+    implements(ISupportsCommentImport)
 
     # We don't support different versions of debbugs.
     version = None
@@ -818,6 +823,71 @@ class DebBugs(ExternalBugTracker):
         self.updateBugWatches([bug_watch])
 
         return bug
+
+    def importBugComments(self, bug_watch):
+        """Import the comments from a DebBugs bug."""
+        debian_bug = self._findBug(bug_watch.remotebug)
+        self.debbugs_db.load_log(debian_bug)
+
+        imported_comments = []
+        for comment in debian_bug.comments:
+            bug_message = self._importDebBugsComment(comment, bug_watch)
+
+            if bug_message is not None:
+                imported_comments.append(bug_message)
+
+        if len(imported_comments) > 0:
+            log.info("Imported %i comments for remote bug %s on %s." %
+                (len(imported_comments), bug_watch.remotebug, self.baseurl))
+
+    def _importDebBugsComment(self, comment, bug_watch):
+        """Import a debbugs comment and link it to a bug watch.
+
+        Return the BugMessage produced by the link or None if a comment
+        wasn't imported.
+        """
+        # Debian comments are all rfc822 compliant, so we can use
+        # the email module to parse them. We do this rather than
+        # simply passing the raw message to MessageSet.fromEmail()
+        # so that we can have finer control over the rationale for
+        # any new Persons that we create.
+        parsed_comment = email.message_from_string(comment)
+
+        # We only link those messages which aren't already linked to to
+        # the bug.
+        bug_messages = [bug_message.rfc822msgid for bug_message
+            in bug_watch.bug.messages]
+        if parsed_comment['message-id'] not in bug_messages:
+            # We need to assign this comment to an owner, so we look for
+            # a From header to the email or, failing that, a Reply-to
+            # header.
+            if 'from' in parsed_comment:
+                owner_email = parsed_comment['from']
+            else:
+                # If we can't find an owner for the comment we can't
+                # carry on.
+                log.warn("Unable to parse comment %s on Debian bug %s: "
+                    "No valid sender address found." %
+                    (parsed_comment.get('message-id', ''), debian_bug.id))
+                return None
+
+            display_name, email_addr = parseaddr(owner_email)
+
+            owner = getUtility(IPersonSet).ensurePerson(email_addr.lower(),
+                display_name, PersonCreationRationale.BUGWATCH,
+                "when the comments for debbugs #%s were imported into "
+                "Launchpad." % bug_watch.remotebug,
+                getUtility(ILaunchpadCelebrities).bug_watch_updater)
+
+            message = getUtility(IMessageSet).fromEmail(comment, owner,
+                parsed_message=parsed_comment)
+
+            bug_message = bug_watch.bug.linkMessage(message, bug_watch)
+        else:
+            bug_message = None
+
+        return bug_message
+
 
 #
 # Mantis
@@ -1297,7 +1367,10 @@ class Trac(ExternalBugTracker):
 
     ticket_url = 'ticket/%i?format=csv'
     batch_url = 'query?%s&order=resolution&format=csv'
-    batch_query_threshold = 10
+
+    def __init__(self, txn, bugtracker):
+        super(Trac, self).__init__(txn, bugtracker)
+        self.batch_query_threshold = 10
 
     def supportsSingleExports(self, bug_ids):
         """Return True if the Trac instance provides CSV exports for single
@@ -1741,8 +1814,11 @@ class SourceForge(ExternalBugTracker):
 
     # We only allow ourselves to update one SourceForge bug at a time to
     # avoid getting clobbered by SourceForge's rate limiting code.
-    batch_size = 1
     export_url = 'support/tracker.php?aid=%s'
+    batch_size = 1
+
+    def __init__(self, txn, bugtracker):
+        super(SourceForge, self).__init__(txn, bugtracker)
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
@@ -1906,10 +1982,7 @@ class RequestTracker(ExternalBugTracker):
 
     ticket_url = 'REST/1.0/ticket/%s/show'
     batch_url = 'REST/1.0/search/ticket/'
-
-    def __init__(self, txn, bugtracker):
-        super(RequestTracker, self).__init__(txn, bugtracker)
-        self.batch_query_threshold = 1
+    batch_query_threshold = 1
 
     @property
     def credentials(self):
