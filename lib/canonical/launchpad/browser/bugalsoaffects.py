@@ -431,6 +431,7 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
 
     @property
     def initial_values(self):
+        """Return the initial values for the view's fields."""
         return {'distribution': getUtility(ILaunchpadCelebrities).ubuntu}
 
     def getTarget(self, data=None):
