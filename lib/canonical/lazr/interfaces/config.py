@@ -78,8 +78,8 @@ class ISection(ISectionSchema):
 class IConfigLoader(Interface):
     """A configuration file loader."""
 
-    def load(file_path):
-        """Load a configuration from the file at file_path."""
+    def load(filename):
+        """Load a configuration from the file at filename."""
 
     def loadFile(source_file, filename=None):
         """Load a configuration from the open source_file.

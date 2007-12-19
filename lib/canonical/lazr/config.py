@@ -23,9 +23,9 @@ from canonical.lazr.interfaces import (
     RedefinedSectionError, UnknownKeyError, UnknownSectionError)
 
 
-def read_from_file_path(file_path):
-    """Return the content of a file at file_path as a string."""
-    source_file = open(file_path, 'r')
+def read_from_filename(filename):
+    """Return the content of a file at filename as a string."""
+    source_file = open(filename, 'r')
     try:
         raw_data = source_file.read()
     finally:
@@ -59,13 +59,13 @@ class ConfigSchema(object):
         self._setSectionSchemasAndCategoryNames(parser)
 
 
-    def _getRawSchema(self, file_path):
-        """Return the contents of the schema at file_path as a StringIO.
+    def _getRawSchema(self, filename):
+        """Return the contents of the schema at filename as a StringIO.
 
         This method verifies that the file is ascii encoded and that no
         section name is redefined.
         """
-        raw_schema = read_from_file_path(file_path)
+        raw_schema = read_from_filename(filename)
         # Verify that the string is ascii.
         raw_schema.encode('ascii', 'ignore')
         # Verify that no sections are redefined.
@@ -163,10 +163,10 @@ class ConfigSchema(object):
             raise NoCategoryError(name)
         return section_schemas
 
-    def load(self, file_path):
+    def load(self, filename):
         """See `IConfigLoader`."""
-        config_data = read_from_file_path(file_path)
-        return Config(file_path, config_data, self)
+        config_data = read_from_filename(filename)
+        return Config(filename, config_data, self)
 
     def loadFile(self, source_file, filename=None):
         """See `IConfigLoader`."""
@@ -230,7 +230,7 @@ class Config(object):
                 # Retrieve the optional section from the schema.
                 section_schema = self.schema[section_name]
                 self._sections[section_name] = Section(section_schema)
-            # Update the section with the parser options
+            # Update the section with the parser options.
             self._errors.extend(
                 self._sections[section_name].update(
                     parser.items(section_name)))
@@ -351,8 +351,8 @@ class Section(object):
     def update(self, items):
         """Update the keys with new values.
 
-        :return: A list of `UnknownKeyError`s if the section does not have the
-            key. An empty list is returned if there are not errors.
+        :return: A list of `UnknownKeyError`s if the section does not have
+            the key. An empty list is returned if there are not errors.
         """
         errors = []
         for key, value in items:
