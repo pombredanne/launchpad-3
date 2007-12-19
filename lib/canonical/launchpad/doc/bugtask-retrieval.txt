@@ -69,19 +69,17 @@ When given an empty sequence, the method returns an empty dictionary:
 
 When given a sequence containing some bug task IDs not present in the
 database, the method returns a dictionary containing entries only for
-those bug task IDs that are present in the database. The dictionary
-does not contain entries for bug task IDs not present in the database:
+those bug task IDs that are present in the database:
 
     >>> task_set.getMultiple([1, 2])
     {2: <BugTask at ...>}
-    >>> task_set.get(1)
 
     >>> task_set.get(1)
     Traceback (most recent call last):
     ...
     NotFoundError: ...
     >>> task_set.get(2)
-    {2: <BugTask at ...>}
+    <BugTask at ...>
 
 When given an argument that isn't a valid sequence, or a sequence
 containing one or more entries that aren't valid bug task IDs, the
