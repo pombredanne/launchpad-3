@@ -135,6 +135,6 @@ When the review status of an import changes from REVIEWED, and the
 associated job is not running, the job is deleted.
 
     >>> unproxied_new_import.review_status = CodeImportReviewStatus.INVALID
-    >>> workflow.webappDeletesPendingJob(new_import)
+    >>> workflow.deletePendingJob(new_import)
     >>> print new_import.import_job
     None

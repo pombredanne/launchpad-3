@@ -200,9 +200,9 @@ class TestCodeImportJobWorkflowNewJob(unittest.TestCase,
         self.assertSqlAttributeEqualsNow(removeSecurityProxy(job), 'date_due')
 
 
-class TestCodeImportJobWorkflowWebappDeletesPendingJob(unittest.TestCase,
+class TestCodeImportJobWorkflowDeletePendingJob(unittest.TestCase,
         AssertFailureMixin):
-    """Unit tests for CodeImportJobWorkflow.webappDeletesPendingJob."""
+    """Unit tests for CodeImportJobWorkflow.deletePendingJob."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -210,7 +210,7 @@ class TestCodeImportJobWorkflowWebappDeletesPendingJob(unittest.TestCase,
         login_for_code_imports()
 
     def test_wrongReviewStatus(self):
-        # CodeImportJobWorkflow.webappDeletesPendingJob fails if the
+        # CodeImportJobWorkflow.deletePendingJob fails if the
         # CodeImport review_status is equal to REVIEWED.
         reviewed_import = getUtility(ICodeImportSet).get(1)
         # Checking sampledata expectations.
@@ -218,15 +218,15 @@ class TestCodeImportJobWorkflowWebappDeletesPendingJob(unittest.TestCase,
                          '~vcs-imports/gnome-terminal/import')
         REVIEWED = CodeImportReviewStatus.REVIEWED
         self.assertEqual(reviewed_import.review_status, REVIEWED)
-        # Testing webappDeletesPendingJob failure.
+        # Testing deletePendingJob failure.
         self.assertFailure(
             "Review status of ~vcs-imports/gnome-terminal/import "
             "is REVIEWED",
-            getUtility(ICodeImportJobWorkflow).webappDeletesPendingJob,
+            getUtility(ICodeImportJobWorkflow).deletePendingJob,
             reviewed_import)
 
     def test_noJob(self):
-        # CodeImportJobWorkflow.webappDeletesPendingJob fails if the
+        # CodeImportJobWorkflow.deletePendingJob fails if the
         # CodeImport is not associated to a CodeImportJob.
         new_import = getUtility(ICodeImportSet).get(2)
         # Checking sampledata expectations.
@@ -235,15 +235,15 @@ class TestCodeImportJobWorkflowWebappDeletesPendingJob(unittest.TestCase,
         NEW = CodeImportReviewStatus.NEW
         self.assertEqual(new_import.review_status, NEW)
         self.assertEqual(new_import.import_job, None)
-        # Testing webappDeletesPendingJob failure.
+        # Testing deletePendingJob failure.
         self.assertFailure(
             "Not associated to a CodeImportJob: "
             "~vcs-imports/evolution/import",
-            getUtility(ICodeImportJobWorkflow).webappDeletesPendingJob,
+            getUtility(ICodeImportJobWorkflow).deletePendingJob,
             new_import)
 
     def test_wrongJobState(self):
-        # CodeImportJobWorkflow.webappDeletesPendingJob fails if the state of
+        # CodeImportJobWorkflow.deletePendingJob fails if the state of
         # the CodeImportJob is different from PENDING.
         reviewed_import = getUtility(ICodeImportSet).get(1)
         # Checking sampledata expectations.
@@ -254,10 +254,10 @@ class TestCodeImportJobWorkflowWebappDeletesPendingJob(unittest.TestCase,
         self.assertNotEqual(reviewed_import.import_job, None)
         RUNNING = CodeImportJobState.RUNNING
         removeSecurityProxy(reviewed_import.import_job).state = RUNNING
-        # Testing webappDeletesPendingJob failure.
+        # Testing deletePendingJob failure.
         self.assertFailure(
             "Job associated to ~vcs-imports/gnome-terminal/import is RUNNING",
-            getUtility(ICodeImportJobWorkflow).webappDeletesPendingJob,
+            getUtility(ICodeImportJobWorkflow).deletePendingJob,
             reviewed_import)
 
 

@@ -104,7 +104,7 @@ class CodeImportJobWorkflow:
 
         return job
 
-    def webappDeletesPendingJob(self, code_import):
+    def deletePendingJob(self, code_import):
         """See `ICodeImportJobWorkflow`."""
         assert code_import.review_status != CodeImportReviewStatus.REVIEWED, (
             "Review status of %s is %s" % (

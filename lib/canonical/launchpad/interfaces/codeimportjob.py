@@ -133,7 +133,7 @@ class ICodeImportJobWorkflow(Interface):
         :return: A new `CodeImportJob` object associated to `code_import`.
         """
 
-    def webappDeletesPendingJob(code_import):
+    def deletePendingJob(code_import):
         """Delete a pending `CodeImportJob` associated to a `CodeImport`.
 
         Call this method from `CodeImport.updateFromData` when the
