@@ -115,7 +115,8 @@ class IBugWatch(IHasBug):
     # required for launchpad pages
     title = Text(title=_('Bug watch title'), readonly=True)
 
-    url = Text(title=_('The URL at which to view the remote bug.'), readonly=True)
+    url = Text(title=_('The URL at which to view the remote bug.'),
+        readonly=True)
 
     def updateImportance(remote_importance, malone_importance):
         """Update the importance of the bug watch and any linked bug task.
