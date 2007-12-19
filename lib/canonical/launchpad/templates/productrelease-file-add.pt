@@ -7,8 +7,7 @@
   lang="en"
   dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
->
+  i18n:domain="launchpad">
 
 <body>
 
@@ -17,6 +16,14 @@
   <div metal:use-macro="context/@@launchpad_form/form">
   Template for adding files to a product release.
   </div>
+  <tal:uploadsize
+     define="
+         max_file_size modules/canonical.config/config/launchpad/max_productrelease_file_size;">
+    <p tal:condition="max_file_size">
+      You may upload files up to
+      <tal:maxsize replace="max_file_size/fmt:bytes" />.
+    </p>
+  </tal:uploadsize>
   <p>
     A digital signature associates a verifiable identity to the files you
     upload, allowing end-users to know you signed and approved this file for
