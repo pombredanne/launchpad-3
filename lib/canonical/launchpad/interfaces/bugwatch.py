@@ -24,6 +24,13 @@ from canonical.lazr import DBEnumeratedType, DBItem
 class BugWatchErrorType(DBEnumeratedType):
     """An enumeration of possible BugWatch errors."""
 
+    UNKNOWN = DBItem(999, """
+        Unknown
+
+        Launchpad encountered an unexpected error when trying to
+        retrieve the bug from the remote server.
+        """)
+
     BUG_NOT_FOUND = DBItem(1, """
         Bug Not Found
 

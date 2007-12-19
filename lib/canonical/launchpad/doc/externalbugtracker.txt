@@ -78,7 +78,8 @@ correctly.
 
 We start with those errors that may be raised by
 ExternalBugTracker.initializeRemoteBugDB(). We supress exceptions
-because the bug watch's last error field will contain the data we need.
+because the bug watch's last error field will contain the data we need
+for this test.
 
 The bug watch's lastchecked field will also be updated, since not doing
 so would mean that error-prone bug watches would be checked every time
@@ -86,7 +87,7 @@ checkwatches ran instead of just once every 24 hours like any other bug
 watch.
 
     >>> for error in [BugTrackerConnectError, UnparseableBugData,
-    ...     UnparseableBugTrackerVersion]:
+    ...     UnparseableBugTrackerVersion, Exception]:
     ...     example_bugwatch.lastchecked = None
     ...     external_bugtracker.initialize_remote_bugdb_error = error
     ...     try:
@@ -98,6 +99,7 @@ watch.
     Connection Error: True
     Unparsable Bug: True
     Unparsable Bug Tracker Version: True
+    Unknown: True
 
 We can run the same test on getRemoteStatus(), which can raise different
 errors. We temporarily silence the logging from this function because
@@ -109,7 +111,8 @@ updated.
     >>> external_bugtracker.initialize_remote_bugdb_error = None
     >>> try:
     ...     log._log.setLevel(100)
-    ...     for error in [BugNotFound, InvalidBugId, UnparseableBugData]:
+    ...     for error in [BugNotFound, InvalidBugId, UnparseableBugData,
+    ...         Exception]:
     ...         example_bugwatch.lastchecked = None
     ...         external_bugtracker.get_remote_status_error = error
     ...         try:
@@ -123,3 +126,4 @@ updated.
     Bug Not Found: True
     Invalid Bug ID: True
     Unparsable Bug: True
+    Unknown: True

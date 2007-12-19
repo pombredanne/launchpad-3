@@ -108,7 +108,7 @@ def get_bugwatcherrortype_for_error(error):
         if isinstance(error, exc_type):
             return bugwatcherrortype
     else:
-        return None
+        return BugWatchErrorType.UNKNOWN
 
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
