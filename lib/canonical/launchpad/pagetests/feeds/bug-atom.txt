@@ -18,12 +18,22 @@ Define a helper function for parsing the entries:
     ...                parseOnlyThese=SoupStrainer('entry'))]
     ...     return entries
 
+Define a helper function for parsing alternate links:
+
+    >>> def parse_alternate_links(contents):
+    ...     strainer = SoupStrainer('link', rel='alternate')
+    ...     entries = [tag for tag in BSS(browser.contents,
+    ...                parseOnlyThese=strainer,
+    ...                selfClosingTags=['link'])]
+    ...     return entries
 
 == Latest bugs for a product ==
 
-This feed gets the latest bugs reported against a product. The feed includes
-summary information about the bugs such as ID, title, author, and a link to
-the bug itself.
+This feed gets the latest bugs reported against a product. The feed
+includes summary information about the bugs such as ID, title, author,
+and a link to the bug itself. The alternate link for the feed points to
+the bugs page for the product, while the alternate link for entries
+point to the bugs themselves.
 
     >>> browser.open('http://feeds.launchpad.dev/jokosher/latest-bugs.atom')
     >>> browser.title
@@ -34,6 +44,13 @@ the bug itself.
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
     http://feeds.launchpad.dev/jokosher/latest-bugs.atom
+    >>> alternate_links = parse_alternate_links(browser.contents)
+    >>> for link in alternate_links:
+    ...     print link
+    <link rel="alternate" href="http://bugs.launchpad.dev/jokosher" />
+    <link rel="alternate" href="http://bugs.launchpad.dev/jokosher/+bug/12" />
+    <link rel="alternate" href="http://bugs.launchpad.dev/jokosher/+bug/11" />
+
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     2
