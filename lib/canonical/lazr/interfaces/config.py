@@ -6,8 +6,11 @@ __metaclass__ = type
 
 __all__ = [
     'ConfigSchemaError',
+    'IConfig',
+    'IConfigLoader',
     'IConfigSchema',
     'InvalidSectionNameError',
+    'ISection',
     'ISectionSchema',
     'NoCategoryError',
     'RedefinedKeyError',
@@ -38,7 +41,7 @@ class NoCategoryError(LookupError):
 
 class ISectionSchema(Interface):
     """Defines the valid keys and default values for a configuration group."""
-    name = Attribute("The section schema name.")
+    name = Attribute("The section name.")
     optional = Attribute("Is the section optional in the config?")
 
     def __iter__():
@@ -52,6 +55,24 @@ class ISectionSchema(Interface):
 
         :raise `KeyError`: if the key does not exist.
         """
+
+
+class ISection(ISectionSchema):
+    """Defines the values for a configuration group."""
+    schema = Attribute("The ISectionSchema that defines this ISection.")
+
+    def get(key, default=None):
+        """Return the value of the key, or default if key does not exist."""
+
+
+class IConfigLoader(Interface):
+    """A configuration file loader."""
+
+    def load():
+        """Load a configuration file from file handle."""
+
+    def loadFromPath():
+        """Load a configuration form a file path."""
 
 
 class IConfigSchema(Interface):
@@ -70,7 +91,7 @@ class IConfigSchema(Interface):
     category_names = Attribute('The list of section category names.')
 
     def __iter__():
-        """Iterate over the `ISectionSchema`."""
+        """Iterate over the `ISectionSchema`s."""
 
     def __contains__(name):
         """Return True or False if the name matches a `ISectionSchema`."""
@@ -92,4 +113,19 @@ class IConfigSchema(Interface):
 
         :raise `CategoryNotFound`: if no sections have a name that starts
             with the category name.
+        """
+
+
+class IConfig(IConfigSchema):
+    """A process configuration.
+
+    See `IConfigSchema` for more information about the config file format.
+    """
+    extends = Attribute("The configuration that this extends")
+
+    def validate():
+        """Return True if the config is valid for the schema.
+
+        :raise ConfigSchemaError: if the are errors. All errors are returned
+            with the primary error.
         """
