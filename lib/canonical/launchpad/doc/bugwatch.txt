@@ -360,10 +360,12 @@ The Bug Watch Updater can transition a bug to any status or importance:
 
 == BugWatches against BugTasks with conjoined masters ==
 
-If a BugWatch is linked to a BugTask with a conjoined master, that bug
-task will not be updated when the BugWatch's status or importance are
-updated. We can demonstrate this by creating a bug task with a conjoined
-master.
+A conjoined bugtask involves a master and slave in in a conjoined
+relationship. The slave is a generic product or distribution task; the
+master is a series-specific task. If a BugWatch is linked to a BugTask
+with a conjoined master, that bug task will not be updated when the
+BugWatch's status or importance are updated. We can demonstrate this by
+creating a bug task with a conjoined master.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -387,6 +389,9 @@ master.
 
     >>> targeted_bugtask.conjoined_slave == bug.bugtasks[0]
     True
+
+We use ensureBugTracker() to populate in the parameters that we don't
+specifiy, such as the bug tracker's name.
 
     >>> bug_tracker = getUtility(IBugTrackerSet).ensureBugTracker(
     ...     bugtrackertype=BugTrackerType.ROUNDUP,
