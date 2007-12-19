@@ -473,18 +473,40 @@ class TestDebianBug:
         self.tags = tags
 
 
+class TestDebBugsDB:
+    """A debbugs db object that doesn't require access to the debbugs db."""
+
+    def __init__(self):
+        self._data_path = os.path.join(os.path.dirname(__file__),
+            'testfiles')
+        self._data_file = 'debbugs-1-comment.txt'
+
+    @property
+    def data_file(self):
+        return os.path.join(self._data_path, self._data_file)
+
+    def load_log(self, bug):
+        """Load the comments for a particular debian bug."""
+        comment_data = open(self.data_file).read()
+        bug.comments = [comment.strip() for comment in
+            comment_data.split('--\n')]
+
+
 class TestDebBugs(DebBugs):
     """A Test-oriented Debbugs ExternalBugTracker.
 
     It allows you to pass in bugs to be used, instead of relying on an
     existing debbugs db.
     """
+    import_comments = False
 
     def __init__(self, txn, bugtracker, bugs):
-        DebBugs.__init__(self, txn, bugtracker)
+        super(TestDebBugs, self).__init__(txn, bugtracker)
         self.bugs = bugs
+        self.debbugs_db = TestDebBugsDB()
 
     def _findBug(self, bug_id):
         if bug_id not in self.bugs:
             raise BugNotFound(bug_id)
         return self.bugs[bug_id]
+
