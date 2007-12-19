@@ -42,7 +42,7 @@ class NoCategoryError(LookupError):
 
 
 class UnknownSectionError(ConfigSchemaError):
-    """A config has a section that is not in the schema."""
+    """The config has a section that is not in the schema."""
 
 
 class UnknownKeyError(ConfigSchemaError):
@@ -137,11 +137,11 @@ class IConfig(IConfigSchema):
 
     See `IConfigSchema` for more information about the config file format.
     """
-    extends = Attribute("The configuration that this extends")
+    extends = Attribute("The configuration that this extends.")
 
     def validate():
         """Return True if the config is valid for the schema.
 
-        :raise ConfigSchemaError: if the are errors. All errors are returned
-            with the primary error.
+        :raise `ConfigSchemaError`: if the are errors. A list of all schema
+            problems can be retrieved via the errors property.
         """

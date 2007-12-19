@@ -288,7 +288,7 @@ not have template or optional sections.
     # Accept the default values for the optional section-5.
     [section-5]
 
-A Config is created by a schema using either the load() or LoadFile()
+A Config is created by a schema using either the load() or loadFile()
 methods to return a Config instance.
 
     >>> from canonical.lazr.config import Config
@@ -477,14 +477,15 @@ were defined in a template section.
 
 == Validating configs ==
 
-Config provided two methods to verify that an instance is valid:
-listValidationErrors() and validate().
-
-The listValidationErrors() method will return a list of errors in the
-config file
+Config provides the validate() method to verify that the config is valid
+according to the schema. The method returns True if the config is valid.
 
     >>> config.validate()
     True
+
+When the config is not valid, a ConfigSchemaError is raised. The
+exception has an errors property that contains a list of all the
+errors in the config.
 
     >>> import StringIO
     >>> from canonical.lazr.interfaces import ConfigSchemaError

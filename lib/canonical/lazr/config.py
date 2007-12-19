@@ -49,14 +49,14 @@ class ConfigSchema(object):
         # XXX sinzui 2007-12-13:
         # SafeConfigParser permits redefinition and non-ascii characters.
         # The raw schema data is examined before creating a config.
+        self.filename = filename
+        self.name = os.path.basename(filename)
         self._section_schemas = {}
         self._category_names = []
         raw_schema = self._getRawSchema(filename)
-        config = SafeConfigParser()
-        config.readfp(raw_schema, filename)
-        self._setSectionSchemasAndCategoryNames(config)
-        self.filename = filename
-        self.name = os.path.basename(filename)
+        parser = SafeConfigParser()
+        parser.readfp(raw_schema, filename)
+        self._setSectionSchemasAndCategoryNames(parser)
 
 
     def _getRawSchema(self, file_path):
@@ -77,15 +77,15 @@ class ConfigSchema(object):
                 section_names.append(section_name)
         return StringIO.StringIO(raw_schema)
 
-    def _setSectionSchemasAndCategoryNames(self, config):
+    def _setSectionSchemasAndCategoryNames(self, parser):
         """Set the SectionSchemas and category_names from the config."""
         category_names = set()
         templates = {}
-        for name in config.sections():
+        for name in parser.sections():
             (section_name, category_name,
              is_template, is_optional) = self._parseSectionName(name)
             options = dict(templates.get(category_name, {}))
-            options.update(config.items(name))
+            options.update(parser.items(name))
             if is_template:
                 templates[category_name] = options
             else:
@@ -351,8 +351,8 @@ class Section(object):
     def update(self, items):
         """Update the keys with new values.
 
-        :return: A list of UnknownKeyErrors if the section does not have the
-            key.
+        :return: A list of `UnknownKeyError`s if the section does not have the
+            key. An empty list is returned if there are not errors.
         """
         errors = []
         for key, value in items:
