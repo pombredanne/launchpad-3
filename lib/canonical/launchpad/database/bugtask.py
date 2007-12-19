@@ -994,6 +994,9 @@ class BugTaskSet:
 
     def get(self, task_id):
         """See `IBugTaskSet`."""
+        # XXX: JSK: 2007-12-19:
+        # This method should probably return None when task_id is not present.
+        # See: https://bugs.edge.launchpad.net/launchpad/+bug/123592
         try:
             bugtask = BugTask.get(task_id)
         except SQLObjectNotFound:
