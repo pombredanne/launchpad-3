@@ -87,7 +87,7 @@ checkwatches ran instead of just once every 24 hours like any other bug
 watch.
 
     >>> for error in [BugTrackerConnectError, UnparseableBugData,
-    ...     UnparseableBugTrackerVersion, Exception]:
+    ...               UnparseableBugTrackerVersion, Exception]:
     ...     example_bugwatch.lastchecked = None
     ...     external_bugtracker.initialize_remote_bugdb_error = error
     ...     try:
@@ -112,7 +112,7 @@ updated.
     >>> try:
     ...     log._log.setLevel(100)
     ...     for error in [BugNotFound, InvalidBugId, UnparseableBugData,
-    ...         Exception]:
+    ...                   Exception]:
     ...         example_bugwatch.lastchecked = None
     ...         external_bugtracker.get_remote_status_error = error
     ...         try:
