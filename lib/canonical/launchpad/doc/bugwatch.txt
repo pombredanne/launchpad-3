@@ -356,3 +356,25 @@ The Bug Watch Updater can transition a bug to any status or importance:
 
     >>> for importance in BugTaskImportance.items:
     ...     debian_bugwatch.updateImportance(u'nothing', importance)
+
+
+== BugWatches against BugTasks with conjoined masters ==
+
+If a BugWatch is linked to a BugTask with a conjoined master, that bug
+task will not be updated when the BugWatch's status or importance are
+updated. We can demonstrate this by adding a conjoined master for the
+bug task being updated above.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IBugTaskSet, IDistributionSet, IProductSet)
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> bug = debian_bugwatch.bug
+    >>> conjoined_master = getUtility(IBugTaskSet).createTask(
+    ...     bug=bug, owner=sample_person,
+    ...     product=getUtility(IProductSet).getByName('thunderbird'),
+    ...     distroseries=ubuntu.currentseries)
+
