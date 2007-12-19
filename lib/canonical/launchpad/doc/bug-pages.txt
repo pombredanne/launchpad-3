@@ -1,8 +1,6 @@
-Bug Filing Pages
-================
+= Bug Filing Pages =
 
-Filing a Bug
-------------
+== Filing a Bug ==
 
 There are three objects on which you can file a bug. An
 SQLObjectCreatedEvent is published when the bug is filed. Let's register
@@ -114,8 +112,7 @@ You can also access the +filebug page from a sourcepackage.
 
     >>> launchbag.clear()
 
-Adding Comments
----------------
+== Adding Comments ==
 
 Let's flush all changes so far to ensure we're looking at a consistent view of
 the database.
@@ -157,8 +154,7 @@ grab a new view to actually see them:
      (1, u'name16', u'I can reproduce this bug.'),
      (2, u'name16', u'I can reproduce this bug.')]
 
-Description and Comment Display
--------------------------------
+== Description and Comment Display ==
 
 When a user posts a new bug, the first comment and the description are
 identical. Take as an example the first bug posted above:
@@ -207,11 +203,10 @@ indentical to the second, we really only display one comment:
 
     >>> on_created_listener.unregister()
 
-Bug Portlets
-============
 
-Duplicates Portlet
-------------------
+= Bug Portlets =
+
+== Duplicates Portlet ==
 
 The duplicate bugs portlet lists duplicates of the current bug. If the
 duplicate bug affects the current context, the link to the dupe will
@@ -255,8 +250,7 @@ and see how the returned link changes.
     >>> print bug_page_view.getDupeBugLink(bug_two)
     http://.../bugs/2
 
-Bug Navigation
---------------
+== Bug Navigation ==
 
 The +subscribe link has different text depending on if the user is
 subscribed to the bug, or if a team the user of a member of is
@@ -410,8 +404,8 @@ we can't know if the user is subscribed or not.
         >>> bug_menu.subscription().text
         'Subscribe/Unsubscribe'
 
-BugTasks and Nominations Table
-------------------------------
+
+== BugTasks and Nominations Table ==
 
 A table is rendered at the top of the bug page which shows both bugtasks
 and nominations. This table is rendered with the
@@ -668,3 +662,51 @@ should exist.
     True
     >>> bn_set[-1].message.text_contents
     u'** Tags added: new-tag'
+
+
+= Visibility of Imported DebBugs Comments =
+
+Comments imported from the DebBugs bug tracker are not displayed in the
+user interface by default.
+
+A config option, malone.show_imported_comments, controls whether or not
+imported comments will be displayed. We can demonstrate these using the
+standard BugTaskView for bug 15, which has a debian bug watch and
+imported comments.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.browser import BugTaskView
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     LaunchpadTestRequest)
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> bug = getUtility(IBugSet).get(15)
+    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
+
+By default, the comments returned which have been imported from a bug
+watch will have a can_be_shown property of False.
+
+    >>> for comment in view.getBugCommentsForDisplay():
+    ...     comment.can_be_shown
+    False
+    False
+    False
+    False
+    False
+    False
+
+However, if we set the show_imported_comments config option to True, the
+imported comments for bug 4 will be displayable.
+
+    >>> from canonical.config import config
+    >>> config.malone.show_imported_comments = True
+    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
+    >>> for comment in view.getBugCommentsForDisplay():
+    ...     comment.can_be_shown
+    True
+    True
+    True
+    True
+    True
+    True
+
