@@ -13,6 +13,7 @@ import unittest
 
 from BeautifulSoup import (BeautifulSoup, Comment, Declaration,
     NavigableString, PageElement, ProcessingInstruction, SoupStrainer, Tag)
+from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.testbrowser.testing import Browser
@@ -132,6 +133,23 @@ TABS_AND_SPACES_RE = re.compile(u'[ \t]+')
 NBSP_RE = re.compile(u'&nbsp;|&#160;')
 
 
+def extract_link_from_tag(tag, base=None):
+    """Return a link from <a> `tag`, optionally considered relative to `base`.
+
+    A `tag` should contain a 'href' attribute, and `base` will commonly
+    be extracted from browser.url.
+    """
+    if not isinstance(tag, PageElement):
+        link = BeautifulSoup(tag)
+    else:
+        link = tag
+
+    href = dict(link.attrs).get('href')
+    if base is None:
+        return href
+    else:
+        return urljoin(base, href)
+
 def extract_text(content):
     """Return the text stripped of all tags.
 
@@ -221,19 +239,26 @@ def print_comments(page):
         print comment.div.renderContents()
         print "-"*40
 
+
+def setupBrowser(auth=None):
+    """Create a testbrowser object for use in pagetests.
+
+    :param auth: HTTP authentication string. None for the anonymous user, or a
+        string of the form 'Basic email:password' for an authenticated user.
+    :return: A `Browser` object.
+    """
+    # Set up our Browser objects with handleErrors set to False, since
+    # that gives a tracebacks instead of unhelpful error messages.
+    browser = Browser()
+    browser.handleErrors = False
+    if auth is not None:
+        browser.addHeader("Authorization", auth)
+    return browser
+
+
 def setUpGlobs(test):
     # Our tests report being on a different port.
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
-
-    # Set up our Browser objects with handleErrors set to False, since
-    # that gives a tracebacks instead of unhelpful error messages.
-    def setupBrowser(auth=None):
-        browser = Browser()
-        browser.handleErrors = False
-        if auth is not None:
-            browser.addHeader("Authorization", auth)
-        return browser
-
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
@@ -248,6 +273,7 @@ def setUpGlobs(test):
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
     test.globs['get_feedback_messages'] = get_feedback_messages
+    test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links

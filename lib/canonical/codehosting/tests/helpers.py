@@ -384,8 +384,8 @@ class FakeLaunchpad:
                     (product, self._product_set[product]['name'], branches))
         return result
 
-    def requestMirror(self, branchID):
-        self._request_mirror_log.append(branchID)
+    def requestMirror(self, loginID, branchID):
+        self._request_mirror_log.append((loginID, branchID))
 
 
 def clone_test(test, new_id):

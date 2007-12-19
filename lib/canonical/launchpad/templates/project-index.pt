@@ -18,8 +18,9 @@
 
     <div metal:fill-slot="main">
 
-      <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
-            tal:attributes="href view/feed_url" />
+      <link rel="alternate" type="application/atom+xml"
+            tal:attributes="title string:Announcements for ${context/displayname};
+                            href view/feed_url" />
     <p id="project-inactive" tal:condition="not: context/active" class="warning message"> 
       This project is currently inactive <a href="+review">(change this)</a>
     </p>

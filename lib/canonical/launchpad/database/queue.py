@@ -711,6 +711,19 @@ class PackageUpload(SQLBase):
         :bcc: Optional email Blind Carbon Copy address(es).
         """
         extra_headers = { 'X-Katie' : 'Launchpad actually' }
+
+        # XXX cprov 20071212: ideally we only need to check archive.purpose,
+        # however the current code in uploadprocessor.py (around line 259)
+        # temporarily transforms the primary-archive into a PPA one (w/o
+        # setting a proper owner) in order to allow processing of a upload
+        # to unknown PPA and subsequent rejection notification.
+
+        # Include the 'X-Launchpad-PPA' header for PPA upload notfications
+        # containing the PPA owner name.
+        if (self.archive.purpose == ArchivePurpose.PPA and
+            self.archive.owner):
+            extra_headers['X-Launchpad-PPA'] = self.archive.owner.name
+
         if from_addr is None:
             from_addr = format_address(
                 config.uploader.default_sender_name,

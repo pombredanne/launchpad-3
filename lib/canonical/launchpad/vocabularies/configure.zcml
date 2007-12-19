@@ -6,6 +6,16 @@
     />
 
   <vocabulary
+    name="Branch"
+    factory="canonical.launchpad.vocabularies.BranchVocabulary"
+    />
+
+  <vocabulary
+    name="BranchRestrictedOnProduct"
+    factory="canonical.launchpad.vocabularies.BranchRestrictedOnProductVocabulary"
+    />
+
+  <vocabulary
     name="Bug"
     factory="canonical.launchpad.vocabularies.BugVocabulary"
     />
@@ -143,11 +153,6 @@
   <vocabulary
     name="Product"
     factory="canonical.launchpad.vocabularies.ProductVocabulary"
-    />
-
-  <vocabulary
-    name="Branch"
-    factory="canonical.launchpad.vocabularies.BranchVocabulary"
     />
 
   <vocabulary

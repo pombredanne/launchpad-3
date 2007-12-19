@@ -42,42 +42,47 @@
     </p>
 
     <form method="POST"
-        tal:define="has_edit context/required:launchpad.Edit"
-        tal:condition="context/files"
-        tal:attributes="action request/URL">
+          tal:define="has_edit context/required:launchpad.Edit"
+          tal:condition="context/files"
+          tal:attributes="action request/URL">
 
       <h2>Download files for this release</h2>
 
-        <table class="listing">
-          <thead>
-            <tr>
-              <th tal:condition="has_edit" width="10%">Delete</th>
-              <th>Download</th>
-              <th width="50%">Description</th>
-            </tr>
-          </thead>
-          <tbody>
-              <tr tal:repeat="file context/files">
-                <td tal:condition="has_edit"
-                    align="center">
-                  <input type="checkbox"
-                         tal:define="cbnum string:${repeat/file/index}"
-                         tal:attributes="value file/libraryfile/id;
-                         name string:checkbox_${cbnum}" />
-                </td>
-                <td>
-                  <img alt="download icon" src="/@@/download" />
-                  <a tal:attributes="href python:view.fileURL(file)"
-                       tal:content="file/libraryfile/filename">filename</a></td>
-                <td tal:content="file/description">Installer for i386</td>
-              </tr>
-          </tbody>
-        </table>
+      <table class="listing">
+        <thead>
+          <tr>
+            <th tal:condition="has_edit" width="10%">Delete</th>
+            <th>Download</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="file context/files">
+            <td tal:condition="has_edit"
+                align="center">
+              <input type="checkbox"
+                     tal:define="cbnum string:${repeat/file/index}"
+                     tal:attributes="value file/libraryfile/id;
+                                     name string:checkbox_${cbnum}" />
+            </td>
+            <td>
+              <img alt="download icon" src="/@@/download" />
+              <a tal:attributes="href python:view.fileURL(file.libraryfile)"
+                 tal:content="file/libraryfile/filename">filename</a>
+              (<a tal:attributes="href python:view.md5URL(file.libraryfile)"
+              >md5</a><tal:signature condition="file/signature">,
+              <a tal:attributes="href python:view.fileURL(file.signature)">
+              pgp</a></tal:signature>)
+            </td>
+            <td tal:content="file/description">Installer for i386</td>
+          </tr>
+        </tbody>
+      </table>
 
       <input tal:condition="has_edit"
-          type="submit"
-          name="delete_files"
-          value="Delete Files" />
+             type="submit"
+             name="delete_files"
+             value="Delete Files" />
     </form>
 
 </div>
@@ -94,7 +99,7 @@
   for a release by <a href="+adddownloadfile">adding files for download</a>.
   </p>
   <p>
-  Files are downloadable at <a tal:attributes="href
+  All files for this project are downloadable at <a tal:attributes="href
   string:${context/productseries/product/fmt:url}/+download">the project download area</a>.
   </p>
 </div>

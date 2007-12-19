@@ -16,9 +16,11 @@ implements IExternalBugTracker.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
     >>> verifyObject(
     ...     IExternalBugTracker,
-    ...     Roundup(new_bugtracker(BugTrackerType.ROUNDUP)))
+    ...     Roundup(txn, new_bugtracker(BugTrackerType.ROUNDUP)))
     True
 
 
@@ -26,7 +28,7 @@ implements IExternalBugTracker.
 
 The basic Roundup bug statuses (i.e. those available by default in new Roundup instances) map to Launchpad bug statuses. Roundup.convertRemoteStatus() handles the conversion.
 
-    >>> roundup = Roundup(new_bugtracker(BugTrackerType.ROUNDUP))
+    >>> roundup = Roundup(txn, new_bugtracker(BugTrackerType.ROUNDUP))
     >>> roundup.convertRemoteStatus(1).title
     'New'
     >>> roundup.convertRemoteStatus(2).title
@@ -72,7 +74,7 @@ working network connection.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestRoundup, print_bugwatches)
-    >>> roundup = TestRoundup(new_bugtracker(
+    >>> roundup = TestRoundup(txn, new_bugtracker(
     ...     BugTrackerType.ROUNDUP, base_url=u'http://test.roundup/'))
     >>> roundup.initializeRemoteBugDB([1])
     >>> sorted(roundup.bugs.keys())
@@ -126,7 +128,7 @@ Collect the Example.com watches:
 
 And have a Roundup instance process them:
 
-    >>> roundup = TestRoundup(example_bug_tracker)
+    >>> roundup = TestRoundup(txn, example_bug_tracker)
     >>> roundup.updateBugWatches(example_bug_tracker.watches)
     INFO:...:Updating 1 watches on http://bugs.some.where
     >>> print_bugwatches(example_bug_tracker.watches)

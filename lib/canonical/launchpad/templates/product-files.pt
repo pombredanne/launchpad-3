@@ -66,8 +66,13 @@
                 </td>
                 <td>
                   <img alt="download icon" src="/@@/download" />
-                  <a tal:attributes="href python:view.fileURL(file, release)"
-                       tal:content="file/libraryfile/filename">filename</a></td>
+                  <a tal:attributes="href python:view.fileURL(file.libraryfile, release)"
+                     tal:content="file/libraryfile/filename">filename</a>
+                  (<a tal:attributes="href python:view.md5URL(file.libraryfile, release)"
+                  >md5</a><tal:signature condition="file/signature">
+                  , <a tal:attributes="href python:view.fileURL(file.signature,release)">
+                  pgp</a></tal:signature>)
+                </td>
                 <td>
                    <tal:version content="release/version">version</tal:version>
                    <img tal:condition="python: view.is_milestone(series, release)"
@@ -100,7 +105,16 @@
         value="Delete Files" />
 
   </form>
-
+  <tal:hasdownloadfiles condition="view/any_download_files_with_signatures">
+  <p>
+    If a file has a signature associated with it, download both the file and
+    the signature file.  You can then verify the file by
+    doing the following:
+  </p>
+  <p>
+    <code> % gpg --verify &lt;filename.asc&gt;</code>
+  </p>
+  </tal:hasdownloadfiles>
 </div>
 </body>
 </html>
