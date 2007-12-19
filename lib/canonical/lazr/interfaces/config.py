@@ -14,7 +14,9 @@ __all__ = [
     'ISectionSchema',
     'NoCategoryError',
     'RedefinedKeyError',
-    'RedefinedSectionError']
+    'RedefinedSectionError',
+    'UnknownKeyError',
+    'UnknownSectionError']
 
 from zope.interface import Interface, Attribute
 
@@ -37,6 +39,14 @@ class InvalidSectionNameError(ConfigSchemaError):
 
 class NoCategoryError(LookupError):
     """No `ISectionSchema`s belong to the category name."""
+
+
+class UnknownSectionError(ConfigSchemaError):
+    """A config has a section that is not in the schema."""
+
+
+class UnknownKeyError(ConfigSchemaError):
+    """The section has a key that is not in the schema."""
 
 
 class ISectionSchema(Interface):
@@ -68,11 +78,17 @@ class ISection(ISectionSchema):
 class IConfigLoader(Interface):
     """A configuration file loader."""
 
-    def load():
-        """Load a configuration file from file handle."""
+    def load(file_path):
+        """Load a configuration from the file at file_path."""
 
-    def loadFromPath():
-        """Load a configuration form a file path."""
+    def loadFile(source_file, filename=None):
+        """Load a configuration from the open source_file.
+
+        :param source_file: A file-like object that supports read() and
+            readline()
+        :param filename: The name of the configuration. If filename is None,
+            The name will be taken from source_file.name.
+        """
 
 
 class IConfigSchema(Interface):

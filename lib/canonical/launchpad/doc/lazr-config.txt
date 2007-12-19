@@ -269,18 +269,13 @@ section name.
 The config represents the local configuration of the process on system.
 It is validated with a schema. It extends the schema, or other conf
 files to define the specific differences from the extended files that
-are required to run the local processes. A Config is created with one
-argument, the conf path.
-
-    >>> from canonical.lazr.config import Config
-    >>> from canonical.lazr.interfaces import IConfig
-
-    >>> local_conf = '%s/%s' % (testfiles_dir,  'local.conf')
+are required to run the local processes.
 
 Like the schema file, the conf file is made up of sections with keys.
 The sections may belong to a category. Unlike the schema file, it does
 not have template or optional sections.
 
+    >>> local_conf = '%s/%s' % (testfiles_dir,  'local.conf')
     >>> local_file = open(local_conf, 'r')
     >>> raw_conf = local_file.read()
     >>> local_file.close()
@@ -292,6 +287,14 @@ not have template or optional sections.
     key5: local value
     # Accept the default values for the optional section-5.
     [section-5]
+
+A Config is created by a schema using either the load() or LoadFile()
+methods to return a Config instance.
+
+    >>> from canonical.lazr.config import Config
+    >>> from canonical.lazr.interfaces import IConfig, IConfigLoader
+    >>> verifyObject(IConfigLoader, schema)
+    True
 
     >>> config = schema.load(local_conf)
     >>> verifyObject(IConfig, config)
@@ -486,6 +489,9 @@ config file
     >>> import StringIO
     >>> from canonical.lazr.interfaces import ConfigSchemaError
     >>> bad_data = '\n'.join([
+    ...     "[meta]",
+    ...     "extends: base.conf",
+    ...     "metakey: unsupported",
     ...     "[unknown-section]",
     ...     "key1 = value1",
     ...     "[section-1]",
@@ -498,7 +504,8 @@ config file
     ... except ConfigSchemaError, validation_error:
     ...     for error in validation_error.errors:
     ...         print error
-    'ascii' codec can't decode byte 0xc3 in position 88: ordinal not in ...
-    UnknownSectionError: ...
-    UnknownKeyError: ...
+    'ascii' codec can't decode byte 0xc3 in position ...
+    The meta section does not have a metakey key.
+    section-1 does not have a keyn key
+    base.conf does not have a unknown-section section.
 
