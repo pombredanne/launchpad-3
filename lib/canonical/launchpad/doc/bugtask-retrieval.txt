@@ -76,7 +76,7 @@ those bug task IDs that are present in the database:
 
     >>> retrieved_tasks = task_set.getMultiple([0, sample_task_id])
     >>> assert retrieved_tasks[sample_task_id].id == sample_task_id
-    
+
 The dictionary does not contain entries for bug task IDs not present
 in the database:
 
@@ -85,28 +85,15 @@ in the database:
     ...
     KeyError: 0
 
-When given an argument that isn't a valid sequence, the method raises
-a TypeError:
-
-    >>> task_set.getMultiple('This is not a bug task ID.')
-    Traceback (most recent call last):
-    ...
-    TypeError: Sequence of bug task IDs expected.
+When given an argument that isn't a valid sequence, or a sequence
+containing one or more entries that aren't valid bug task IDs, the
+method raises a TypeError:
 
     >>> task_set.getMultiple(None)
     Traceback (most recent call last):
     ...
     TypeError: Sequence of bug task IDs expected.
-
-When given a sequence containing one or more entries that are not valid
-bug task IDs, the method also raises a TypeError:
-
-    >>> print task_set.getMultiple(['This is not a bug task ID.'])
-    Traceback (most recent call last):
-    ...
-    TypeError: Sequence of bug task IDs expected.
-
-    >>> print task_set.getMultiple([None])
+    >>> print task_set.getMultiple(['1; DROP TABLE person'])
     Traceback (most recent call last):
     ...
     TypeError: Sequence of bug task IDs expected.
