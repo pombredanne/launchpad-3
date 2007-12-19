@@ -366,15 +366,52 @@ updated. We can demonstrate this by adding a conjoined master for the
 bug task being updated above.
 
     >>> from zope.component import getUtility
-    >>> from canonical.config import config
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugTaskSet, IDistributionSet, IProductSet)
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    ...     CreateBugParams, BugTrackerType, IBugSet, IBugTaskSet,
+    ...     IBugTrackerSet, IDistributionSet, IProductSet)
 
     >>> ubuntu = getUtility(IDistributionSet).get(1)
-    >>> bug = debian_bugwatch.bug
-    >>> conjoined_master = getUtility(IBugTaskSet).createTask(
+    >>> firefox = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> bug = firefox.createBug(CreateBugParams(
+    ...     owner=sample_person, title='Yet another test bug',
+    ...     comment="A sample bug for conjoined master tests."))
+
+    >>> targeted_bugtask = getUtility(IBugTaskSet).createTask(
     ...     bug=bug, owner=sample_person,
-    ...     product=getUtility(IProductSet).getByName('thunderbird'),
-    ...     distroseries=ubuntu.currentseries)
+    ...     distroseries=ubuntu.currentseries,
+    ...     sourcepackagename=firefox.sourcepackagename)
+
+    >>> bug_tracker = getUtility(IBugTrackerSet).ensureBugTracker(
+    ...     bugtrackertype=BugTrackerType.ROUNDUP,
+    ...     owner=sample_person, baseurl='http://some.where')
+    >>> bug_watch = bug.addWatch(
+    ...     bugtracker=bug_tracker, remotebug='1', owner=sample_person)
+
+    >>> targeted_bugtask.conjoined_master is None
+    True
+
+    >>> targeted_bugtask.conjoined_slave == bug.bugtasks[0]
+    True
+
+    >>> bug.bugtasks[0].bugwatch = bug_watch
+    >>> flush_database_updates()
+
+Now that we have our conjoined bug tasks we can use a test
+implementation of the Roundup ExternalBugTracker to try and update
+them. In fact, updating the bug watch will do nothing to the bug task to
+which it is linked since that bug task is a conjoined slave. Conjoined
+slaves must be updated through their conjoined master.
+
+    >>> bug.bugtasks[0].status.title
+    'New'
+
+    >>> import transaction
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestRoundup)
+    >>> external_bugtracker = TestRoundup(transaction, bug_tracker)
+    >>> external_bugtracker.updateBugWatches([bug_watch])
+
+    >>> bug.bugtasks[0].status.title
+    'New'
 
