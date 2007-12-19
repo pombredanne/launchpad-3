@@ -32,7 +32,6 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
     redirection)
 from canonical.launchpad.webapp.batching import BatchNavigator
-
 from canonical.widgets import DelimitedListWidget
 
 
@@ -105,28 +104,6 @@ class BugTrackerAddView(LaunchpadFormView):
             owner=getUtility(ILaunchBag).user)
         self.next_url = canonical_url(bugtracker)
 
-#     def create(self, name, bugtrackertype, title, summary, baseurl,
-#                contactdetails):
-#         """Create the IBugTracker."""
-#         btset = getUtility(IBugTrackerSet)
-#         bugtracker = btset.ensureBugTracker(
-#             name=name,
-#             bugtrackertype=bugtrackertype,
-#             title=title,
-#             summary=summary,
-#             baseurl=baseurl,
-#             contactdetails=contactdetails,
-#             owner=getUtility(ILaunchBag).user)
-#         # keep track of the new one
-#         self._newtracker_ = bugtracker
-#         return bugtracker
-
-#     def add(self, content):
-#         return content
-
-#     def nextURL(self):
-#         return canonical_url(self._newtracker_)
-
 
 class BugTrackerView(LaunchpadView):
 
@@ -158,7 +135,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
     def validate(self, data):
         """See `LaunchpadFormView`."""
         # Normalise aliases to an empty list if it's None.
-        if data['aliases'] is None:
+        if data.get('aliases') is None:
             data['aliases'] = []
 
         # Check that none of the new aliases are used elsewhere.
@@ -167,15 +144,14 @@ class BugTrackerEditView(LaunchpadEditFormView):
         new_aliases = requested_aliases - current_aliases
         bugtracker_set = getUtility(IBugTrackerSet)
         used_alias_errors = []
-        for alias_url in new_aliases - current_aliases:
+        for alias_url in new_aliases:
             bugtracker = bugtracker_set.queryByBaseURL(alias_url)
             if bugtracker is not None and bugtracker != self.context:
                 used_alias_errors.append(
                     "%s already refers to %s" % (
                         alias_url, bugtracker.title))
-        else:
-            if used_alias_errors:
-                self.setFieldError('aliases', '; '.join(used_alias_errors))
+        if used_alias_errors:
+            self.setFieldError('aliases', '; '.join(used_alias_errors))
 
     @action('Change', name='change')
     def change_action(self, action, data):

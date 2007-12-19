@@ -2,13 +2,19 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['BugTracker', 'BugTrackerSet',
-           'BugTrackerAlias', 'BugTrackerAliasSet']
+__all__ = [
+    'BugTracker',
+    'BugTrackerAlias',
+    'BugTrackerAliasSet',
+    'BugTrackerSet']
 
 import re
-import urllib
 
 from itertools import chain
+# splithost and splittype are not formally documented, but are in
+# urllib.__all__, are simple, and are heavily used by the rest of
+# urllib, hence are unlikely to change or go away.
+from urllib import splithost, splittype
 
 from zope.interface import implements
 
@@ -36,7 +42,7 @@ def normalise_leading_slashes(rest):
 
 def normalise_base_url(base_url):
     """Convert https to http, and normalise scheme for others."""
-    schema, rest = urllib.splittype(base_url)
+    schema, rest = splittype(base_url)
     if schema == 'https':
         return 'http:' + rest
     elif schema is None:
@@ -58,7 +64,7 @@ def base_url_permutations(base_url):
      'https://foo/bar', 'https://foo/bar/']
     """
     http_schemas = ['http', 'https']
-    url_schema, rest = urllib.splittype(base_url)
+    url_schema, rest = splittype(base_url)
     if url_schema in http_schemas or url_schema is None:
         possible_schemas = http_schemas
         rest = normalise_leading_slashes(rest)
@@ -131,6 +137,7 @@ class BugTracker(SQLBase):
         'BugTrackerAlias', joinColumn='bugtracker')
 
     def _get_aliases(self):
+        """See `IBugTracker.aliases`."""
         alias_urls = set(alias.base_url for alias in self._bugtracker_aliases)
         # Although it does no harm if the current baseurl is also an
         # alias, we hide it here to avoid confusion.
@@ -138,6 +145,7 @@ class BugTracker(SQLBase):
         return sorted(alias_urls)
 
     def _set_aliases(self, alias_urls):
+        """See `IBugTracker.aliases`."""
         if alias_urls is None:
             alias_urls = set()
         else:
@@ -145,9 +153,12 @@ class BugTracker(SQLBase):
 
         current_aliases_by_url = dict(
             (alias.base_url, alias) for alias in self._bugtracker_aliases)
+        # Make a set of the keys, i.e. a set of current URLs.
         current_alias_urls = set(current_aliases_by_url)
 
+        # URLs we need to add as aliases.
         to_add = alias_urls - current_alias_urls
+        # URL aliases we need to delete.
         to_del = current_alias_urls - alias_urls
 
         for url in to_add:
@@ -156,10 +167,13 @@ class BugTracker(SQLBase):
             alias = current_aliases_by_url[url]
             alias.destroySelf()
 
-    def _del_aliases(self):
-        self._set_aliases([])
+    aliases = property(
+        _get_aliases, _set_aliases, None,
+        """A list of the alias URLs. See `IBugTracker`.
 
-    aliases = property(_get_aliases, _set_aliases, _del_aliases)
+        The aliases are found by querying BugTrackerAlias. Assign an
+        iterable of URLs or None to set or remove aliases.
+        """)
 
 
 class BugTrackerSet:
@@ -175,14 +189,14 @@ class BugTrackerSet:
         self.title = 'Bug trackers registered in Malone'
 
     def get(self, bugtracker_id, default=None):
-        """See IBugTrackerSet"""
+        """See `IBugTrackerSet`."""
         try:
             return BugTracker.get(bugtracker_id)
         except SQLObjectNotFound:
             return default
 
     def getByName(self, name, default=None):
-        """See IBugTrackerSet"""
+        """See `IBugTrackerSet`."""
         return self.table.selectOne(self.table.q.name == name)
 
     def __getitem__(self, name):
@@ -197,8 +211,12 @@ class BugTrackerSet:
             yield row
 
     def queryByBaseURL(self, baseurl):
-        """See IBugTrackerSet."""
+        """See `IBugTrackerSet`."""
         permutations = base_url_permutations(baseurl)
+        # All the important parts in the next expression are lazily
+        # evaluated. SQLObject queries do not execute any SQL until
+        # results are pulled, so the first query to return a match
+        # will be the last query executed.
         matching_bugtrackers = chain(
             # Search for any permutation in BugTracker.
             BugTracker.select(
@@ -218,16 +236,18 @@ class BugTrackerSet:
              BugTrackerAlias.select(
                     BugTrackerAlias.q.base_url.contains(baseurl),
                     limit=1)))
+        # Return the first match.
         for bugtracker in matching_bugtrackers:
             return bugtracker
         return None
 
     def search(self):
-        """See canonical.launchpad.interfaces.IBugTrackerSet."""
+        """See `IBugTrackerSet`."""
         return BugTracker.select()
 
     def ensureBugTracker(self, baseurl, owner, bugtrackertype,
         title=None, summary=None, contactdetails=None, name=None):
+        """See `IBugTrackerSet`."""
         # first try and find one without normalisation
         bugtracker = self.queryByBaseURL(baseurl)
         if bugtracker is not None:
@@ -240,8 +260,8 @@ class BugTrackerSet:
         # create the bugtracker, we don't know about it. we'll use the
         # normalised base url
         if name is None:
-            scheme, host = urllib.splittype(baseurl)
-            host, path = urllib.splithost(host)
+            scheme, host = splittype(baseurl)
+            host, path = splithost(host)
             name = 'auto-%s' % host
         if title is None:
             title = quote('Bug tracker at %s' % baseurl)
@@ -257,7 +277,7 @@ class BugTrackerSet:
         return BugTracker.select().count()
 
     def getMostActiveBugTrackers(self, limit=None):
-        """See canonical.launchpad.interfaces.IBugTrackerSet."""
+        """See `IBugTrackerSet`."""
         result = shortlist(self.search(), longest_expected=20)
         result.sort(key=lambda bugtracker: -bugtracker.watches.count())
         if limit and limit > 0:

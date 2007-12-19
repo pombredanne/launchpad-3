@@ -8,14 +8,14 @@ __metaclass__ = type
 __all__ = [
     'BugTrackerType',
     'IBugTracker',
-    'IBugTrackerSet',
     'IBugTrackerAlias',
     'IBugTrackerAliasSet',
-    'IRemoteBug',
-    ]
+    'IBugTrackerSet',
+    'IRemoteBug']
 
 from zope.interface import Attribute, Interface
-from zope.schema import Int, List, Text, TextLine, Choice
+from zope.schema import (
+    Choice, Int, List, Object, Text, TextLine)
 from zope.component import getUtility
 
 from canonical.launchpad import _
@@ -183,12 +183,15 @@ class IBugTrackerSet(Interface):
     bugtracker_count = Attribute("The number of registered bug trackers.")
 
     def get(bugtracker_id, default=None):
-        """Get a BugTracker by its id, or return default if it doesn't
-           exist."""
+        """Get a BugTracker by its id.
+
+        If no tracker with the given id exists, return default.
+        """
 
     def getByName(name, default=None):
-        """Get a BugTracker by its name, or return default if it doesn't
-        exist.
+        """Get a BugTracker by its name.
+
+        If no tracker with the given name exists, return default.
         """
 
     def __getitem__(name):
@@ -206,8 +209,9 @@ class IBugTrackerSet(Interface):
 
     def ensureBugTracker(baseurl, owner, bugtrackertype,
         title=None, summary=None, contactdetails=None, name=None):
-        """Make sure that there is a bugtracker for the given base url, and
-        if not, then create one using the given attributes.
+        """Make sure that there is a bugtracker for the given base url.
+
+        If not, create one using the given attributes.
         """
 
     def search():
@@ -224,21 +228,24 @@ class IBugTrackerSet(Interface):
 class IBugTrackerAlias(Interface):
     """Another URL for a remote bug system.
 
-       Used to prevent accidental duplication of bugtrackers and so
-       reduce the gardening burden."""
+    Used to prevent accidental duplication of bugtrackers and so
+    reduce the gardening burden.
+    """
 
     id = Int(title=_('ID'))
-    bugtracker = Int(title=_('The bugtracker for which this is an alias.'))
+    bugtracker = Object(
+        title=_('The bugtracker for which this is an alias.'),
+        schema=IBugTracker)
     base_url = BugTrackerBaseURL(
         title=_('Base URL'),
         description=_('Another top-level URL for the bug tracker.'))
 
 
 class IBugTrackerAliasSet(Interface):
-    """A set of BugTrackerAliases."""
+    """A set of IBugTrackerAliases."""
 
     def queryByBugTracker(bugtracker):
-        """Query BugTrackerAliases by BugTracker.
+        """Query IBugTrackerAliases by BugTracker.
 
         A BugTracker can be passed in, or the ID of a BugTracker.
         """
@@ -256,7 +263,7 @@ class IRemoteBug(Interface):
         "remote bug system."))
 
     bugs = Attribute(
-        _("A list of the Launchpad bugs watching the remote bug"))
+        _("A list of the Launchpad bugs watching the remote bug."))
 
     title = TextLine(
         title=_('Title'),

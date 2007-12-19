@@ -103,7 +103,7 @@ A bug tracker can have a number of alias URLs associated with it.
     >>> bugtrackeralias_set = getUtility(IBugTrackerAliasSet)
 
 The most natural way to work with aliases is via the aliases attribute
-present on IBugTracker. This can be used to query, set or delete
+present on IBugTracker. This can be used to query, set or remove
 aliases.
 
     >>> mozilla_bugzilla.aliases = [
@@ -114,9 +114,32 @@ aliases.
     [u'http://cambridge.example.com/',
      u'https://norwich.example.com/']
 
-    >>> del mozilla_bugzilla.aliases
+    >>> mozilla_bugzilla.aliases = []
     >>> mozilla_bugzilla.aliases
     []
+
+You can actually assign any iterable (of URL strings) to the aliases
+attribute, but aliases is always a regular list.
+
+    >>> mozilla_bugzilla.aliases = set(['http://set.example.com/'])
+    >>> mozilla_bugzilla.aliases
+    [u'http://set.example.com/']
+
+    >>> mozilla_bugzilla.aliases = (u'http://tuple.example.com/',)
+    >>> mozilla_bugzilla.aliases
+    [u'http://tuple.example.com/']
+
+Your ordering is not preserved; aliases are sorted using Python's
+standard unicode ordering.
+
+    >>> mozilla_bugzilla.aliases = (
+    ...     'http://%s.example.com/' % domain
+    ...     for domain in '111 zzz ccc ZZZ'.split())
+    >>> mozilla_bugzilla.aliases
+    [u'http://111.example.com/',
+     u'http://ZZZ.example.com/',
+     u'http://ccc.example.com/',
+     u'http://zzz.example.com/']
 
 BugTrackerAliases can also be looked up by bug tracker or by bug
 tracker ID.

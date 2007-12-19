@@ -151,16 +151,24 @@ class URIWidget(TextWidget):
 
 
 class DelimitedListWidget(TextAreaWidget):
-    """A widget that represents a list as whitespace-delimited text."""
+    """A widget that represents a list as whitespace-delimited text.
+
+    The delimiting methods can be easily overridden to work with
+    comma, semi-colon, or other delimiters.
+    """
 
     def __init__(self, field, value_type, request):
         # We don't use value_type.
         super(DelimitedListWidget, self).__init__(field, request)
 
-    # The default splitting function.
+    # The default splitting function, which splits on
+    # white-space. Subclasses can override this if different
+    # delimiting rules are needed.
     split = staticmethod(unicode.split)
 
-    # The default joining function.
+    # The default joining function, which simply separates each list
+    # item with a newline. Subclasses can override this if different
+    # delimiters are needed.
     join = staticmethod(u'\n'.join)
 
     def _toFormValue(self, value):
@@ -183,9 +191,9 @@ class DelimitedListWidget(TextAreaWidget):
           u'fred\\r\\nbob\\r\\nharry'
         """
         if value == self.context.missing_value:
-            value = u''
+            value = self._missing
         elif value is None:
-            value = u''
+            value = self._missing
         else:
             value = self.join(value)
         return super(DelimitedListWidget, self)._toFormValue(value)
@@ -210,7 +218,7 @@ class DelimitedListWidget(TextAreaWidget):
         """
         value = super(
             DelimitedListWidget, self)._toFieldValue(value)
-        if value:
-            return self.split(value)
+        if value == self.context.missing_value:
+            return value
         else:
-            return self.context.missing_value
+            return self.split(value)
