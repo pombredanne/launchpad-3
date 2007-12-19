@@ -741,11 +741,17 @@ the total number of current translations that matters.
     >>> def count_current_translations(pofile):
     ...     """Count how many messages in pofile have current translations.
     ...     """
+    ...     query = """
+    ...         pofile = %s AND
+    ...         POTMsgSet.id = potmsgset AND
+    ...         POTMsgSet.sequence > 0 AND
+    ...         is_current
+    ...         """ % quote(pofile)
     ...     return TranslationMessage.select(
-    ...         "pofile = %s AND is_current" % quote(pofile)).count()
+    ...         query, clauseTables=['POTMsgSet']).count()
 
     >>> count_current_translations(pofile_es_hoary)
-    14
+    13
     >>> count_current_translations(pofile_es_humpy)
     12
 

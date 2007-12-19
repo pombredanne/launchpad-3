@@ -259,7 +259,6 @@ class PrepareTranslationMessagePouring:
         allow_sequential_scans(cur, False)
 
 
-
 def _prepare_translationmessage_batch(
     holding_table, source_table, batch_size, start_id, end_id):
     """Prepare pouring of a batch of `TranslationMessage`s.
@@ -289,17 +288,26 @@ def _prepare_translationmessage_batch(
             COALESCE(holding.msgstr3, -1) = COALESCE(tm.msgstr3, -1)
         """ % (holding_table, batch_clause))
 
-    # Deactivate translation messages we're about to replace with better ones
-    # from the parent.
+    # Deactivate current/imported translation messages we're about to replace
+    # with better ones from the parent.
     cur.execute("""
         UPDATE TranslationMessage AS tm
         SET is_current = FALSE
         FROM %s holding
         WHERE %s AND
             holding.potmsgset = tm.potmsgset AND
-            holding.pofile = tm.pofile AND
-            tm.is_current IS TRUE
+            holding.pofile = tm.pofile
         """ % (holding_table, batch_clause))
+    cur.execute("""
+        UPDATE TranslationMessage AS tm
+        SET is_imported = FALSE
+        FROM %s holding
+        WHERE %s AND
+            holding.potmsgset = tm.potmsgset AND
+            holding.pofile = tm.pofile AND
+            holding.is_imported IS TRUE
+        """ % (holding_table, batch_clause))
+
 
 
 def _prepare_translationmessage_merge(
@@ -355,6 +363,7 @@ def _prepare_translationmessage_merge(
         pofile = POFile.id AND
         POFile.language = Language.id AND
         potmsgset = POTMsgSet.id AND
+        potmsgset = temp_equiv_potmsgset.id AND
         msgstr0 IS NOT NULL AND
         (potmsgset.msgid_plural IS NULL OR (
          (msgstr1 IS NOT NULL OR COALESCE(Language.pluralforms,2) <= 1) AND
@@ -364,7 +373,8 @@ def _prepare_translationmessage_merge(
     copier.extract(
         'TranslationMessage', joins=['POFile'],
         where_clause=where_clause, inert_where=have_better,
-        external_joins=['POTMsgSet', 'POFile', 'Language'],
+        external_joins=[
+            'temp_equiv_potmsgset', 'POTMsgSet', 'POFile', 'Language'],
         pre_pouring_callback=prepare_translationmessage_pouring,
         batch_pouring_callback=_prepare_translationmessage_batch)
     transaction.commit()
@@ -470,7 +480,9 @@ def _copy_active_translations_as_update(child, transaction, logger):
             pt1.translation_domain = pt2.translation_domain AND
             pt1.sourcepackagename = pt2.sourcepackagename AND
             pt1.distroseries = %s AND
-            pt2.distroseries = %s
+            pt2.distroseries = %s AND
+            pt1.iscurrent AND
+            pt2.iscurrent
         """ % sqlvalues(child.parent_series, child))
     cur.execute(
         "CREATE UNIQUE INDEX temp_equiv_template_pkey "
