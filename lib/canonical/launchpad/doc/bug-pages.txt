@@ -679,7 +679,6 @@ imported comments.
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.webapp.servers import (
     ...     LaunchpadTestRequest)
-    >>> from canonical.testing import LaunchpadZopelessLayer
     >>> bug = getUtility(IBugSet).get(15)
     >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
 

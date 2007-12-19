@@ -2,7 +2,6 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:define-macro="comment-box"
-  tal:condition="comment/can_be_shown"
   class="boardComment">
 
   <div class="boardCommentDetails">

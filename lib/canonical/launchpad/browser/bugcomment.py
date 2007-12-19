@@ -8,8 +8,8 @@ __all__ = ['BugCommentView', 'BugComment', 'build_comments_from_chunks']
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (ILaunchBag, IBugComment,
-    IBugMessageSet)
+from canonical.launchpad.interfaces import (IBugComment,
+    IBugMessageSet, ILaunchBag, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import LaunchpadView
 
 from canonical.config import config
@@ -129,4 +129,10 @@ class BugCommentView(LaunchpadView):
         bugtask = getUtility(ILaunchBag).bugtask
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
+
+    @property
+    def display_comment(self):
+        """Return True if the comment can be shown, False otherwise."""
+        return self.comment.can_be_shown or self.user.inTeam(
+            getUtility(ILaunchpadCelebrities).launchpad_developers)
 
