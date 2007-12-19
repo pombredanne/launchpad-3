@@ -41,18 +41,9 @@ The IBugTaskSet getMultiple method can retrieve multiple bug tasks in a
 single operation. To demonstrate, we'll begin by generating a list of
 sample bug tasks:
 
-    >>> def find_sample_tasks(number_to_find):
-    ...     task_id = 1
-    ...     while number_to_find > 0:
-    ...         try:
-    ...             yield task_set.get(task_id)
-    ...             number_to_find -= 1
-    ...         except NotFoundError:
-    ...             pass
-    ...         task_id += 1
-
+    >>> from canonical.launchpad.database import BugTask
     >>> sample_task_count = 10
-    >>> sample_tasks = list(find_sample_tasks(number_to_find=sample_task_count))
+    >>> sample_tasks = BugTask.select(limit=sample_task_count)
     >>> sample_task_ids = [task.id for task in sample_tasks]
 
 When given a sequence of bug task IDs, the method returns a dictionary
