@@ -31,7 +31,7 @@ from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
     CreateBugParams, IBugWatchSet, IDistribution, IExternalBugTracker,
-    ILaunchpadCelebrities, IMessageSet, IPersonSet, NotFoundError,
+    ILaunchpadCelebrities, IMessageSet, IPersonSet,
     PersonCreationRationale, ISupportsCommentImport,
     UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp.url import urlparse
@@ -868,7 +868,8 @@ class DebBugs(ExternalBugTracker):
                 # carry on.
                 log.warn("Unable to parse comment %s on Debian bug %s: "
                     "No valid sender address found." %
-                    (parsed_comment.get('message-id', ''), debian_bug.id))
+                    (parsed_comment.get('message-id', ''),
+                    bug_watch.remotebug))
                 return None
 
             display_name, email_addr = parseaddr(owner_email)
@@ -2016,7 +2017,7 @@ class RequestTracker(ExternalBugTracker):
         try:
             opener.open('%s/' % self.baseurl, urllib.urlencode(
                 self.credentials))
-        except (urrlib2.HTTPError, urllib2.URLError), error:
+        except (urllib2.HTTPError, urllib2.URLError), error:
             raise BugTrackerConnectError('%s/' % self.baseurl,
                 "Unable to authenticate with remote RT service: "
                 "Could not submit login form: " +
@@ -2075,7 +2076,7 @@ class RequestTracker(ExternalBugTracker):
             bug_data = self.urlopen(query_url, urllib.urlencode(
                 request_params))
         except urllib2.HTTPError, error:
-            raise BugTrackerConnectError(ticket_url, error.message)
+            raise BugTrackerConnectError(query_url, error.message)
 
         # We use the first line of the response to ensure that we've
         # made a successful request.
