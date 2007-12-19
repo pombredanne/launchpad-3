@@ -362,14 +362,14 @@ The Bug Watch Updater can transition a bug to any status or importance:
 
 If a BugWatch is linked to a BugTask with a conjoined master, that bug
 task will not be updated when the BugWatch's status or importance are
-updated. We can demonstrate this by adding a conjoined master for the
-bug task being updated above.
+updated. We can demonstrate this by creating a bug task with a conjoined
+master.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, BugTrackerType, IBugSet, IBugTaskSet,
-    ...     IBugTrackerSet, IDistributionSet, IProductSet)
+    ...     CreateBugParams, BugTrackerType, IBugTaskSet,
+    ...     IBugTrackerSet, IDistributionSet)
 
     >>> ubuntu = getUtility(IDistributionSet).get(1)
     >>> firefox = ubuntu.getSourcePackage('mozilla-firefox')
@@ -382,17 +382,17 @@ bug task being updated above.
     ...     distroseries=ubuntu.currentseries,
     ...     sourcepackagename=firefox.sourcepackagename)
 
-    >>> bug_tracker = getUtility(IBugTrackerSet).ensureBugTracker(
-    ...     bugtrackertype=BugTrackerType.ROUNDUP,
-    ...     owner=sample_person, baseurl='http://some.where')
-    >>> bug_watch = bug.addWatch(
-    ...     bugtracker=bug_tracker, remotebug='1', owner=sample_person)
-
     >>> targeted_bugtask.conjoined_master is None
     True
 
     >>> targeted_bugtask.conjoined_slave == bug.bugtasks[0]
     True
+
+    >>> bug_tracker = getUtility(IBugTrackerSet).ensureBugTracker(
+    ...     bugtrackertype=BugTrackerType.ROUNDUP,
+    ...     owner=sample_person, baseurl='http://some.where')
+    >>> bug_watch = bug.addWatch(
+    ...     bugtracker=bug_tracker, remotebug='1', owner=sample_person)
 
     >>> bug.bugtasks[0].bugwatch = bug_watch
     >>> flush_database_updates()
