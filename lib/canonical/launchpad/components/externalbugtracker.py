@@ -282,9 +282,9 @@ class ExternalBugTracker:
             # record it against all the bugwatches that should have been
             # updated before re-raising it.
             errortype = get_bugwatcherrortype_for_error(error)
-            if errortype:
-                for bugwatch in bug_watches:
-                    bugwatch.last_error_type = errortype
+            for bugwatch in bug_watches:
+                bugwatch.lastchecked = UTC_NOW
+                bugwatch.last_error_type = errortype
             raise
 
         # Again, fixed order here to help with testing.
@@ -344,14 +344,15 @@ class ExternalBugTracker:
                 # bug watches will get recorded.
                 self.txn.abort()
                 self.txn.begin()
-                bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(bug_watch_ids)
+                bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
+                    bug_watch_ids)
 
                 # We record errors against the bug watches where
                 # possible.
                 errortype = get_bugwatcherrortype_for_error(error)
-                if errortype:
-                    for bugwatch in bug_watches:
-                        bugwatch.last_error_type = errortype
+                for bugwatch in bug_watches:
+                    bugwatch.lastchecked = UTC_NOW
+                    bugwatch.last_error_type = errortype
 
                 log.error("Failure updating bug %r on %s (local bugs: %s)." %
                             (bug_id, bug_tracker_url, local_ids),
