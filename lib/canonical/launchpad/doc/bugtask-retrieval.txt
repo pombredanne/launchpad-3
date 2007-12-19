@@ -16,13 +16,14 @@ The IBugTaskSet get method retrieves a single bug task matching a given
 ID:
 
     >>> retrieved_task = task_set.get(2)
-    >>> print retrieved_task
-    <...BugTask instance at ...>
+    >>> retrieved_task
+    <BugTask at ...>
 
-    >>> print IBugTask.providedBy(retrieved_task)
+    >>> from canonical.launchpad.webapp.testing import verifyObject 
+    >>> verifyObject(IBugTask, retrieved_task)
     True
 
-    <<< print retrieved_task.id
+    <<< retrieved_task.id
     2
 
 When given a bug task ID that doesn't exist in the database, the method
