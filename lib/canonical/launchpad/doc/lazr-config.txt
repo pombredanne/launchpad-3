@@ -1,0 +1,512 @@
+= LAZR config =
+
+The LAZR config system is used to manage process configuration.
+Process configuration is for saying how things change when we run
+Launchpad on different machines, or under different circumstances.
+
+This system uses ini-like file format of section, keys, and values.
+The config file supports inheritance to minimize duplication of
+information across files. The format supports schema validation.
+
+
+== ConfigSchema ==
+
+A schema is loaded by instantiating the ConfigSchema class with
+the path to a configuration file. The schema is explicitly derived from
+the information in the configuration file.
+
+    >>> from os import path
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.lazr.config import ConfigSchema
+    >>> from canonical.lazr.interfaces import IConfigSchema
+
+    >>> base_conf = path.normpath(path.join(
+    ...     path.dirname(__file__), '..', 'ftests', 'testfiles', 'base.conf'))
+
+The config file contains sections enclosed in square brackets ([]).
+The section name may be divided into major and minor categories using a
+dot (.). Beneath each section is a list of key-value pairs, separated
+by a colon (:). Multiple sections with the same major category may have
+their keys defined in another section that appends the '.template'
+suffix to the category name. A section with '.optional' suffix is not
+required. Lines that start with a hash (#) are comments.
+
+    >>> schema_file = open(base_conf, 'r')
+    >>> raw_schema = schema_file.read()
+    >>> schema_file.close()
+    >>> print raw_schema
+    # This section defines required keys and default values.
+    [section-1]
+    key1: foo
+    key2: bar and baz
+    key3: Launchpad&nbsp;rocks
+    key4: F&#028c;k yeah!
+    key5:
+    # This section is required, and it defines all the keys for its category.
+    [section-2.app-b]
+    key1: True
+    # These sections define a common set of required keys and default values.
+    [section-3.template]
+    key1: 17
+    key2: 3.1415
+    # This section is optional; it uses the keys defined
+    # by section-3.template.
+    [section-3.app-a.optional]
+    # This is a required section whose keys are defined by section-3.template
+    # and it defines a new key.
+    [section-3.app-b]
+    key2: changed
+    key3: unique
+    # This section is optional.
+    [section-5.optional]
+    key1: something
+
+    >>> schema = ConfigSchema(base_conf)
+    >>> verifyObject(IConfigSchema, schema)
+    True
+
+    >>> schema.name
+    'base.conf'
+    >>> schema.filename
+    '...ftests/testfiles/base.conf'
+
+A schema is made up of multiple SchemaSections. They can be iterated
+over in a loop as needed.
+
+    >>> from operator import attrgetter
+    >>> for section_schema in sorted(schema, key=attrgetter('name')):
+    ...     print section_schema.name
+    section-1
+    section-2.app-b
+    section-3.app-a
+    section-3.app-b
+    section-5
+
+You can check if the schema contains a section name, and that can be
+used to access the SchemaSection as a subscript.
+
+    >>> 'section-1' in schema
+    True
+    >>> 'section-4' in schema
+    False
+
+A SectionSchema can be retrieved from the schema using the []
+operator
+
+    >>> section_schema_1 = schema['section-1']
+    >>> section_schema_1.name
+    'section-1'
+
+A SectionNotFound error is raised if the name does not match any of the
+SectionSchemas.
+
+    >>> section_schema_app_a = schema['section-3.app-a']
+    >>> schema['section-4']
+    Traceback (most recent call last):
+      ...
+    NoSectionError: ...
+
+Processes often require resources like databases or vhosts that have a
+common category of keys. The list of all category names can be retrieved
+via the categories attribute.
+
+    >>> schema.category_names
+    ['section-3', 'section-2']
+
+The list of SchemaSections that share common category can be retrieved
+using getByCategory().
+
+    >>> all_section_3 = schema.getByCategory('section-3')
+    >>> for section_schema in sorted(all_section_3, key=attrgetter('name')):
+    ...     print section_schema.name
+    section-3.app-a
+    section-3.app-b
+
+An error is raised when accessing a category does not exist.
+
+    >>> schema.getByCategory('non-section')
+    Traceback (most recent call last):
+      ...
+    NoCategoryError: ...
+
+
+== SchemaSection ==
+
+A SchemaSection behaves similar to a dictionary. It has keys and
+values. Each SchemaSection has a name.
+
+    >>> from canonical.lazr.interfaces import ISectionSchema
+    >>> section_schema_1 = schema['section-1']
+    >>> verifyObject(ISectionSchema, section_schema_1)
+    True
+
+    >>> section_schema_1.name
+    'section-1'
+
+Optional sections have the optional attribute set to True:
+
+    >>> section_schema_1.optional
+    False
+    >>> schema['section-3.app-a'].optional
+    True
+
+A key can be verified to be in a section.
+
+    >>> 'key1' in section_schema_1
+    True
+    >>> 'nonkey' in section_schema_1
+    False
+
+A key can be accessed directly using as a subscript of the SchemaSection.
+The value is always a string.
+
+    >>> section_schema_1['key3']
+    'Launchpad&nbsp;rocks'
+    >>> section_schema_1['key5']
+    ''
+
+An error is raised if a non-existent key is accessed.
+
+    >>> section_schema_1['not-exist']
+    Traceback (most recent call last):
+      ...
+    KeyError: ...
+
+In the conf file, '[section-1]' is a default section that defines keys
+and values. The values specified in the section schema will be used as
+default values if not overriden in the configuration. In the case of
+key5, the key had no explicit value, so the value is an empty string.
+
+    >>> for key in sorted(section_schema_1):
+    ...     print key, ':', section_schema_1[key]
+    key1 : foo
+    key2 : bar and baz
+    key3 : Launchpad&nbsp;rocks
+    key4 : F&#028c;k yeah!
+    key5 :
+
+In the conf file '[section-3.template]' defines a common set of keys and
+default values for '[section-3.app-a]' and '[section-3.app-b]'. When a
+section defines different keys and default values s from the template,
+the new data overlays the template data. This is the case for section
+'[section-3.app-b]'.
+
+    >>> for section_schema in sorted(all_section_3, key=attrgetter('name')):
+    ...     print section_schema.name
+    ...     for key in sorted(section_schema):
+    ...         print key, ':', section_schema[key]
+    section-3.app-a
+    key1 : 17
+    key2 : 3.1415
+    section-3.app-b
+    key1 : 17
+    key2 : changed
+    key3 : unique
+
+
+== ConfigSchema validation ==
+
+ConfigSchema will raise an error if the schema file cannot be opened.
+
+    >>> ConfigSchema("no-such-file")
+    Traceback (most recent call last):
+      ...
+    IOError: [Errno 2] No such file or directory: ...
+
+The schema parser is self-validating. It will check that the character
+encoding is ascii. It will check that the data is not ambiguous or
+self-contradicting.
+
+Schema files that contain non-ASCII characters raise a
+UnicodeDecodeError.
+
+    >>> testfiles_dir = path.normpath(path.join(
+    ...     path.dirname(__file__), '..', 'ftests', 'testfiles'))
+    >>> ConfigSchema('%s/%s' % (testfiles_dir, 'bad-nonascii.conf'))
+    Traceback (most recent call last):
+      ...
+    UnicodeDecodeError: ...
+
+Keys without sections raise MissingSectionHeaderError.
+
+    >>> ConfigSchema('%s/%s' % (testfiles_dir, 'bad-sectionless.conf'))
+    Traceback (most recent call last):
+      ...
+    MissingSectionHeaderError: File contains no section headers. ...
+
+Redefining a section in a config file will raise a RedefinedSectionError.
+
+    >>> ConfigSchema('%s/%s' % (testfiles_dir, 'bad-redefined-section.conf'))
+    Traceback (most recent call last):
+      ...
+    RedefinedSectionError: ...
+
+# XXX sinzui 2007-12-13:
+# ConfigSchema should raise RedefinedKeyError when a section redefines
+# a key.
+
+Defining a section that belongs to many categories will raise
+a InvalidSectionNameError.
+
+    >>> ConfigSchema('%s/%s' % (
+    ...     testfiles_dir, 'bad-invalid-name.conf'))
+    Traceback (most recent call last):
+      ...
+    InvalidSectionNameError: [category.other_category.name.optional] ...
+
+As does using non word characters other than a dot or dash in the
+section name.
+
+    >>> ConfigSchema('%s/%s' % (
+    ...     testfiles_dir, 'bad-invalid-name-chars.conf'))
+    Traceback (most recent call last):
+      ...
+    InvalidSectionNameError: [$category.name_part.optional] ...
+
+
+== Config ==
+
+The config represents the local configuration of the process on system.
+It is validated with a schema. It extends the schema, or other conf
+files to define the specific differences from the extended files that
+are required to run the local processes.
+
+Like the schema file, the conf file is made up of sections with keys.
+The sections may belong to a category. Unlike the schema file, it does
+not have template or optional sections.
+
+    >>> local_conf = '%s/%s' % (testfiles_dir,  'local.conf')
+    >>> local_file = open(local_conf, 'r')
+    >>> raw_conf = local_file.read()
+    >>> local_file.close()
+    >>> print raw_conf
+    [meta]
+    extends: base.conf
+    # Localize a key for section-1.
+    [section-1]
+    key5: local value
+    # Accept the default values for the optional section-5.
+    [section-5]
+
+A Config is created by a schema using either the load() or loadFile()
+methods to return a Config instance.
+
+    >>> from canonical.lazr.config import Config
+    >>> from canonical.lazr.interfaces import IConfig, IConfigLoader
+    >>> verifyObject(IConfigLoader, schema)
+    True
+
+    >>> config = schema.load(local_conf)
+    >>> verifyObject(IConfig, config)
+    True
+
+    >>> config.name
+    'local.conf'
+    >>> config.filename
+    '...ftests/testfiles/local.conf'
+
+A conf file always contains a meta section that is used by the config
+system. The 'extends' key explicitly declares that local.conf inherits
+all the information from base.conf--the schema in this case. The config
+can access the schema via the schema property.
+
+    >>> config.extends
+    'base.conf'
+    >>> config.schema.name
+    'base.conf'
+    >>> config.schema.filename
+    '...ftests/testfiles/base.conf'
+    >>> config.schema.filename == schema.filename
+    True
+
+A config is made up of multiple Sections like the schema. They can be
+iterated over in a loop as needed. This config inherited several
+sections defined in schema. Note that the meta section is not present
+because it pertains to the config system, not to the processes being
+configured.
+
+    >>> for section in sorted(config, key=attrgetter('name')):
+    ...     print section.name
+    section-1
+    section-2.app-b
+    section-3.app-b
+    section-5
+
+You can check if a section name is in a config.
+
+    >>> 'section-1' in config
+    True
+    >>> 'bad-section' in config
+    False
+
+Optional SchemaSections are not inherited by the config. A config file
+must declare all optional sections. Including the section heading is
+enough to inherit the section and its keys. The config file may localize
+the keys by declaring them too.
+
+    >>> 'section-3.app-a' in config
+    False
+    >>> 'section-3.app-a' in config.schema
+    True
+    >>> config.schema['section-3.app-a'].optional
+    True
+
+    >>> 'section-5' in config
+    True
+    >>> 'section-5' in config.schema
+    True
+    >>> config.schema['section-5'].optional
+    True
+
+A Section can be accessed using subscript notation. Accessing a section
+that does not exist will raise a NoSectionError.
+
+    >>> section_1 = config['section-1']
+    >>> section_1.name in config
+    True
+
+    >>> config['section-4']
+    Traceback (most recent call last):
+      ...
+    NoSectionError: ...
+
+NoSectionError is raised for a undeclared optional sections too.
+
+    >>> config['section-3.app-a']
+    Traceback (most recent call last):
+      ...
+    NoSectionError: ...
+
+Config and Schema provide attribute-based access to their members.
+# XXX sinzui 2007-12-17:
+# This is delayed to lazrconfig-4. The issue is somewhat awkward in
+# that section names are not python-identifier friendly because they
+# may contain dot, dash, and start with a number.
+
+Config supports category access like Schema does. The list of
+categories are returned by the category_names property.
+
+    >>> sorted(config.category_names)
+    ['section-2', 'section-3']
+
+All the sections that belong to a category can be retrieved using the
+getByCategory() method.
+
+    >>> for section in config.getByCategory('section-3'):
+    ...     print section_schema.name
+    section-3.app-b
+
+Passing a non-existent category_name to the method will raise a
+NoCategoryError.
+
+    >>> config.getByCategory('non-section')
+    Traceback (most recent call last):
+      ...
+    NoCategoryError: ...
+
+
+== Section ==
+
+A Section behaves similar to a dictionary. It has keys and values.
+It supports some specialize access methods and properties for working
+with the values. Each Section has a name. Continuing with section_1
+from above....
+
+    >>> from canonical.lazr.interfaces import ISection
+    >>> verifyObject(ISection, section_1)
+    True
+
+    >>> section_1.name
+    'section-1'
+
+A key can be verified to be in a Section.
+
+    >>> 'key1' in section_1
+    True
+    >>> 'nonkey' in section_1
+    False
+
+A key can be accessed directly using as a subscript of the Section.
+The value is always a string.
+
+    >>> section_1['key3']
+    'Launchpad&nbsp;rocks'
+    >>> section_1['key5']
+    'local value'
+
+An error is raised if a non-existent key is accessed via a subscript.
+
+    >>> section_1['not-exist']
+    Traceback (most recent call last):
+      ...
+    KeyError: ...
+
+But the get() method will return None or the default keyword argument
+if the key is not present.
+
+    >>> print section_1.get('not-exist')
+    None
+    >>> section_1.get('not-exist', default='failover')
+    'failover'
+
+The Section keys can be iterated. The section has all the keys from
+the SectionSchema, and its localized values from th config file
+took precedence over the schema values.
+
+    >>> for key in sorted(section_1):
+    ...     print key, ':', section_1[key]
+    key1 : foo
+    key2 : bar and baz
+    key3 : Launchpad&nbsp;rocks
+    key4 : F&#028c;k yeah!
+    key5 : local value
+
+    >>> section_1.schema['key5']
+    ''
+
+Sections that were not defined in the config file are present because
+the schema defined them. In the case of section-3.app-b, its keys
+were defined in a template section.
+
+    >>> for key in sorted(config['section-3.app-b']):
+    ...     print key, ':', config['section-3.app-b'][key]
+    key1 : 17
+    key2 : changed
+    key3 : unique
+
+
+== Validating configs ==
+
+Config provides the validate() method to verify that the config is valid
+according to the schema. The method returns True if the config is valid.
+
+    >>> config.validate()
+    True
+
+When the config is not valid, a ConfigSchemaError is raised. The
+exception has an errors property that contains a list of all the
+errors in the config.
+
+    >>> import StringIO
+    >>> from canonical.lazr.interfaces import ConfigSchemaError
+    >>> bad_data = '\n'.join([
+    ...     "[meta]",
+    ...     "extends: base.conf",
+    ...     "metakey: unsupported",
+    ...     "[unknown-section]",
+    ...     "key1 = value1",
+    ...     "[section-1]",
+    ...     "keyn: unknown key",
+    ...     "key1: bad character in café)"])
+    >>> bad_config = schema.loadFile(
+    ...     StringIO.StringIO(bad_data), 'unknown section')
+    >>> try:
+    ...     bad_config.validate()
+    ... except ConfigSchemaError, validation_error:
+    ...     for error in validation_error.errors:
+    ...         print error
+    'ascii' codec can't decode byte 0xc3 in position ...
+    The meta section does not have a metakey key.
+    section-1 does not have a keyn key
+    base.conf does not have a unknown-section section.
+
