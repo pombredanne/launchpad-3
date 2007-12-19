@@ -205,16 +205,26 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
     def assertErrorMessage(self, submission, result, message, test):
         """Search for `message` in the log entry for `submission`."""
         self.assertEqual(result, None, 'test %s failed' % test)
+        last_log_messages = []
         for r in self.handler.records:
             if r.levelno != logging.ERROR:
                 continue
             candidate = r.getMessage()
-            if (candidate.startswith('Parsing submission %s:' % submission)
-                and candidate.find(message) > 0):
-                return
-        self.fail(
-            "No error log message for submission %s (testing %s) contained %s"
-                % (submission, test, message))
+            if candidate.startswith('Parsing submission %s:' % submission):
+                if candidate.find(message) > 0:
+                    return
+                else:
+                    last_log_messages.append(candidate)
+        failmsg = (
+            "No error log message for submission %s (testing %s) contained %s")
+        failmsg = failmsg % (submission, test, message)
+        if last_log_messages:
+            failmsg = failmsg + '\nLog messages for the submission:\n'
+            failmsg = failmsg + '\n'.join(last_log_messages)
+        else:
+            failmsg = failmsg + '\nNo messages logged for this submission'
+
+        self.fail(failmsg)
 
     def testSubtagsOfSystem(self):
         """The root node <system> requires a fixed set of sub-tags."""
@@ -441,7 +451,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
         # Two leap seconds are rejected by the Relax NG validator.
         self.assertDateErrorIsDetected('2007-09-28T23:59:61')
-        
 
     def assertDateErrorIsDetected(self, invalid_datetime):
         """Run a single test for an invalid datetime."""
@@ -947,6 +956,1504 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         """Validation of dbus.Double and float properties."""
         for property_type in ('dbus.Double', 'float'):
             self._testDecimalProperty(property_type)
+
+    def _testListAndDictPropertyCDataContent(self, property_type):
+        """List and dict properties may not have CDATA content."""
+        tag = '<property name="foo" type="%s">X</property>' % property_type
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text=tag,
+            where='</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                'Element property has extra content: text',
+            'testing CDATA content of <property type="%s">' % property_type)
+
+    def _testEmptyListAndDictProperty(self, property_type):
+        """Validation of empty list properties."""
+        tag = '<property name="foo" type="%s"></property>' % property_type
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text=tag,
+            where='</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'Valid submission with empty <property type="%s"> rejected'
+                % property_type)
+
+    def _testInvalidSubtagOfListAndDictProperty(self, property_type):
+        """Other sub-tags than <value> are not allowed in lists and dicts."""
+        tag = '<property name="foo" type="%s"><nonsense/></property>'
+        tag = tag % property_type
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text=tag,
+            where='</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
+                'Expecting element value, got nonsense\n',
+            'invalid subtag of <property type="%s">' % property_type)
+
+    def _wrapValue(self, value_tag, property_type):
+        """Wrap a <value> tag into a <property> tag."""
+        return ('<property name="bar" type="%s">%s</property>'
+                % (property_type, value_tag))
+
+    def _testBooleanValueTagValues(self, property_type, tag_template):
+        """Validation of the CDATA values of a <value> tag."""
+        # The only allowed values are True and False.
+        for cdata_value in ('True', 'False'):
+            tag = tag_template % cdata_value
+            tag = self._wrapValue(tag, property_type)
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text=tag,
+                where='</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertNotEqual(result, None)
+        # Any other text in the <value> tag is invalid.
+        tag = tag_template % 'nonsense'
+        tag = self._wrapValue(tag, property_type)
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text=tag,
+            where='</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(result, None)
+        self.assertErrorMessage(
+            submission_id,
+            'Error validating value ')
+        # An empty <value> tag is invalid.
+        tag = tag_template % ''
+        tag = self._wrapValue(tag, property_type)
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text=tag,
+            where='</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(result, None)
+        self.assertErrorMessage(
+            submission_id,
+            'ERROR:RELAXNGV:ERR_UNSUPPORTED_ENCODING: '
+                'Error validating value ')
+
+    def _setupValueTagTemplates(self, value_type):
+        """Return templates for value tags with/without a name attribute."""
+        tag_with_name = '<value name="foo" type="%s">' % value_type
+        tag_with_name = tag_with_name + '%s</value>'
+        tag_without_name = '<value type="%s">' % value_type
+        tag_without_name = tag_without_name + '%s</value>'
+        return tag_with_name, tag_without_name
+
+    def _testValueTagWithCData(self, value_type, needs_name_attribute,
+                               valid_content, invalid_content,
+                               property_template):
+        """Validation of tags with CData values"""
+        tag_with_name, tag_without_name = self._setupValueTagTemplates(
+            value_type)
+        if needs_name_attribute:
+            tag = tag_without_name % valid_content[0]
+            tag = property_template % tag
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text=tag,
+                where='</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertErrorMessage(
+                submission_id, result,
+                'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                    'Element device has extra content: property',
+                'missing name attribute in value tag %s' % tag)
+        else:
+            tag = tag_with_name % valid_content[0]
+            tag = property_template % tag
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text=tag,
+                where='</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertErrorMessage(
+                submission_id, result,
+                'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                    'Element device has extra content: property',
+                'invalid name attribute in value tag %s' % tag)
+
+        if needs_name_attribute:
+            template = tag_with_name
+        else:
+            template = tag_without_name
+        template = property_template % template
+        for value in valid_content:
+            tag = template % value
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text=tag,
+                where='</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertNotEqual(
+                result, None,
+                'Valid submission with tag %s rejected' % tag)
+        for value, expected_error in invalid_content:
+            tag = template % value
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text=tag,
+                where='</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertErrorMessage(
+                submission_id, result, expected_error,
+                'invalid content of value tag %s' % tag)
+
+    def _setupContainerTag(self, tag, name, container_type):
+        """Setup a template for a property or value tag with sub-tags.
+
+        tag must be either 'property' or 'value'
+
+        name is the value of the name attribute of the template, or
+        None, if the template shall not have the attribute name.
+
+        container_type must be one of 'list', 'dbus.List', 'dict',
+        'dbus.Dictionary'.
+
+        Return: A tag template for this property/value type and a flag,
+        if value tags within this tag need a name attribute.
+        """
+        if name is not None:
+            container_template = (
+                '<%s name="%s" type="%s">' % (tag, name, container_type))
+        else:
+            container_template = '<%s type="%s">' % (tag, container_type)
+        container_template = container_template + '%s' + '</%s>' % tag
+        if container_type in ('dbus.Dictionary', 'dict'):
+            needs_name_attribute = True
+        elif container_type in ('dbus.Array', 'list'):
+            needs_name_attribute = False
+        else:
+            raise AssertionError(
+                '_setupPropertyTag called for invalid property type:'
+                % container_type)
+        return container_template, needs_name_attribute
+
+    def _testBooleanValueTags(self, property_type):
+        """Validation of boolean-like <value> tags."""
+        property_template, needs_name_attribute = (
+            self._setupContainerTag('property', 'foor', property_type))
+        valid_content = ('True', 'False')
+        invalid_content = (
+            ('nonsense', 'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                         'Element property has extra content: value'),
+            ('', 'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                 'Element property has extra content: value'),
+            ('<nonsense/>', 'ERROR:RELAXNGV:ERR_ENTITY_IS_EXTERNAL: '
+                            'Value element value has child elements'))
+        for value_type in ('dbus.Boolean', 'bool'):
+            self._testValueTagWithCData(value_type, needs_name_attribute,
+                                        valid_content, invalid_content,
+                                        property_template)
+
+    def _testStringValueTags(self, property_type):
+        """Validation of string-like <value> tags."""
+        property_template, needs_name_attribute = (
+            self._setupContainerTag('property', 'foo', property_type))
+        valid_content = ('any text', '')
+        invalid_content = (
+            ('<nonsense/>', 'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                            'Element value has extra content: nonsense'),)
+        for value_type in ('dbus.String', 'str'):
+            self._testValueTagWithCData(value_type, needs_name_attribute,
+                                        valid_content, invalid_content,
+                                        property_template)
+
+    def _makeSampleDataForValueTag(self, property_type, value_type, value):
+        property_template, needs_name_attribute = (
+            self._setupContainerTag('property', 'foo', property_type))
+        value_template_with_name, value_template_without_name = (
+            self._setupValueTagTemplates(value_type))
+        if needs_name_attribute:
+            value_tag = value_template_with_name % value
+        else:
+            value_tag = value_template_without_name % value
+        property_tag = property_template % value_tag
+        return self.insertSampledata(
+            data=self.sample_data,
+            insert_text=property_tag,
+            where='</device>')
+
+    def _testIntegerLimit(self, property_type, value_type, relax_ng_type,
+                          allowed, disallowed):
+        """Validation of the smallest or largest value of an int type."""
+        sample_data = self._makeSampleDataForValueTag(
+            property_type, value_type, allowed)
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'Testing integer limits: Valid submission for property type %s '
+                'value type %s, value %s rejected'
+                % (property_type, value_type, allowed))
+
+        sample_data = self._makeSampleDataForValueTag(
+            property_type, value_type, disallowed)
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
+                "Type %s doesn't allow value '%s'" % (relax_ng_type,
+                                                      disallowed),
+            'invalid value %s of value type %s in property type %s'
+                % (disallowed, value_type, property_type))
+
+    def _testIntegerValueTag(self, property_type, value_type, relax_ng_type,
+                             min_allowed, max_allowed):
+        """Valudation of a <value> tag wwith integral content."""
+        property_template, needs_name_attribute = (
+            self._setupContainerTag('property', 'foo', property_type))
+        valid_content = ('0', '1')
+        invalid_content = (('', 'ERROR:RELAXNGV:ERR_UNKNOWN_ENCODING: '
+                                    'Error validating datatype %s'
+                                    % relax_ng_type),
+                           ('1.1', "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
+                                       "Type %s doesn't allow "
+                                       "value '1.1'"
+                                       % relax_ng_type),
+                           ('nonsense', "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
+                                            "Type %s doesn't allow "
+                                            "value 'nonsense'"
+                                            % relax_ng_type),
+                           ('<nonsense/>',
+                            'ERROR:RELAXNGV:ERR_UNPARSED_ENTITY: '
+                            'Datatype element value has child elements'))
+        self._testValueTagWithCData(value_type, needs_name_attribute,
+                                    valid_content, invalid_content,
+                                    property_template)
+        if min_allowed is not None:
+            self._testIntegerLimit(property_type, value_type, relax_ng_type,
+                                   min_allowed, min_allowed - 1)
+        if max_allowed is not None:
+            self._testIntegerLimit(property_type, value_type, relax_ng_type,
+                                   max_allowed, max_allowed + 1)
+
+    def _testIntegerValueTags(self, property_type):
+        """Validation of <value> tags with integral content."""
+        int_types = (
+            ('dbus.Byte', 'unsignedByte', 0, 255),
+            ('dbus.Int16', 'short', -32768, 32767),
+            ('dbus.Int32', 'int', -2**31, 2**31-1),
+            ('dbus.Int64', 'long', -2**63, 2**63-1),
+            ('dbus.UInt16', 'unsignedShort', 0, 2**16-1),
+            ('dbus.UInt32', 'unsignedInt', 0, 2**32-1),
+            ('dbus.UInt64', 'unsignedLong', 0, 2**64-1),
+            ('int', 'int', -2**31, 2**31-1),
+            ('long', 'integer', None, None))
+        for value_type, relax_ng_type, min_allowd, max_allowed in int_types:
+            self._testIntegerValueTag(property_type, value_type, relax_ng_type,
+                                      min_allowd, max_allowed)
+
+    def _testFloatValueTag(self, property_type, value_type):
+        """Validation of a <value> tag with float-number content."""
+        property_template, needs_name_attribute = (
+            self._setupContainerTag('property', 'foo', property_type))
+        valid_content = ('0', '1', '1.1', '-2.34')
+        invalid_content = (('', "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
+                                    "Type decimal doesn't allow value ''"),
+                           ('nonsense', "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
+                                            "Type decimal doesn't allow "
+                                            "value 'nonsense'"),
+                           ('<nonsense/>',
+                            'ERROR:RELAXNGV:ERR_UNPARSED_ENTITY: '
+                                'Datatype element value has child elements'))
+        self._testValueTagWithCData(value_type, needs_name_attribute,
+                                    valid_content, invalid_content,
+                                    property_template)
+
+    def _testFloatValueTags(self, property_type):
+        """Validation of <value> tags with float-number content."""
+        float_types = ('dbus.Double', 'float')
+        for value_type in float_types:
+            self._testFloatValueTag(property_type, value_type)
+
+    def _testListOrDictValueTag(self, property_type, value_type):
+        """Validation of a list or dict-like value tag."""
+        property_template, needs_name_attribute = self._setupContainerTag(
+            'property', 'foo', property_type)
+        if needs_name_attribute:
+            value_template, needs_name_attribute = self._setupContainerTag(
+                'value', 'bar', value_type)
+        else:
+            value_template, needs_name_attribute = self._setupContainerTag(
+                'value', None, value_type)
+        template = property_template % value_template
+
+        # CDATA content is not allowed.
+        tag = template % 'nonsense'
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text = tag,
+            where = '</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                'Element value has extra content: text',
+            'CDATA in <value type="%s">' % value_type)
+
+        # Lists and dicts may be empty.
+        tag = template % ''
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text = tag,
+            where = '</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None, 'empty tag <value type="%s">' % value_type)
+
+        # Other sub-tags than <value> are invalid.
+        tag = template % '<nonsense/>'
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text = tag,
+            where = '</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                'Element value has extra content: nonsense',
+            'CDATA in <value type="%s">' % value_type)
+
+        if needs_name_attribute:
+            # Dict-like <value> tags need nested <value> tags with the
+            # attribute name.
+            tag = template % '<value type="int" name="baz">1</value>'
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text = tag,
+                where = '</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertNotEqual(
+                result, None,
+                'valid <value> tag inside <value type="%s">' % value_type)
+
+            tag = template % '<value type="int">1</value>'
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text = tag,
+                where = '</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertErrorMessage(
+                submission_id, result,
+                'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                    'Element value has extra content: value',
+                'invalid <value> tag inside <value type="%s">' % value_type)
+        else:
+            # List-like <value> tags need nested <value> tags without the
+            # attribute name.
+            tag = template % '<value type="int">1</value>'
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text = tag,
+                where = '</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertNotEqual(
+                result, None,
+                'valid <value> tag inside <value type="%s">' % value_type)
+
+            tag = template % '<value type="int" nam="baz">1</value>'
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text = tag,
+                where = '</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertErrorMessage(
+                submission_id, result,
+                'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                    'Element value has extra content: value',
+                'invalid <value> tag inside <value type="%s">' % value_type)
+
+    def _testListAndDictValueTags(self, property_type):
+        """Validation of list and dict-like values."""
+        for value_type in ('list', 'dbus.Array', 'dict', 'dbus.Dictionary'):
+            self._testListOrDictValueTag(property_type, value_type)
+
+    def _testValueTags(self, property_type):
+        """Tests of <value> sub-tags of <property type="property_type">."""
+        self._testBooleanValueTags(property_type)
+        self._testStringValueTags(property_type)
+        self._testIntegerValueTags(property_type)
+        self._testFloatValueTags(property_type)
+        self._testListAndDictValueTags(property_type)
+
+    def _testListOrDictProperty(self, property_type):
+        """Validation of a list property."""
+        self._testListAndDictPropertyCDataContent(property_type)
+        self._testEmptyListAndDictProperty(property_type)
+        self._testInvalidSubtagOfListAndDictProperty(property_type)
+        self._testValueTags(property_type)
+
+    def testListAndDictProperties(self):
+        """Validation of dbus.Array and list properties."""
+        for property_type in ('dbus.Array', 'list', 'dbus.Dictionary', 'dict'):
+            self._testListOrDictProperty(property_type)
+
+    def testProcessorsTag(self):
+        """Validation of the <processors> tag.
+
+        This tag has no attributes. The only allowed sub-tag is <processor>.
+        At least one <processor> tag must be present.
+        """
+        sample_data = self.sample_data.replace(
+            '<processors>', '<processors foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
+                'Invalid attribute foo for element processors',
+            'invalid attribute of <processors>')
+
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where = '</processors>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
+                'Expecting element processor, got nonsense',
+            'invalid sub-tag of <processors>')
+
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<processor id',
+            to_text='</processor>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
+                'Expecting an element processor, got nothing',
+            'missing sub-tags of <processors>')
+
+    def testProcessorTag(self):
+        """Validation of the <processors> tag."""
+        # The attributes "id" and "name" are required.
+        sample_data = self.sample_data.replace(
+            '<processor id="123" name="0">', '<processor id="123">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_PEREF_NO_NAME: '
+                'Element processor failed to validate attributes',
+            'missing attribute "name" of <processors>')
+
+        sample_data = self.sample_data.replace(
+            '<processor id="123" name="0">', '<processor name="0">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_PEREF_NO_NAME: '
+                'Element processor failed to validate attributes',
+            'missing attribute "id" attribute of <processors>')
+
+        # other attributes are invalid.
+        sample_data = self.sample_data.replace(
+            '<processor id="123" name="0">',
+            '<processor id="123" name="0" foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
+                'Invalid attribute foo for element processor',
+            'missing attribute "id" attribute of <processors>')
+
+        # Other sub-tags than <property> are invalid.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where = '</processor>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
+                'Expecting element property, got nonsense',
+            'invalid sub-tag of <processor>')
+
+        # At least one <property> tag must be present
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<processor id="123" name="0"/>',
+            from_text='<processor id="123" name="0">',
+            to_text='</processor>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
+                'Expecting an element property, got nothing',
+            'missing sub-tags of <processor>')
+
+    def testAliasesTag(self):
+        """Validation of the <aliases> tag."""
+        # The <aliases> tag has no attributes.
+        sample_data = self.sample_data.replace(
+            '<aliases>', '<aliases foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element aliases in interleave',
+            'invalid attribute of <aliases>')
+
+        # The <aliases> tag may be omittied.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<aliases>',
+            to_text='</aliases>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(result, None, 'omitted tag <aliases>')
+
+        # The <aliases> may be empty.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<aliases/>',
+            from_text='<aliases>',
+            to_text='</aliases>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(result, None, 'empty tag <aliases>')
+
+        # Other sub-tags than <alias> are invalid.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</aliases>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element aliases in interleave',
+            'invalid sub-tag of <aliases>')
+
+    def testAliasTag(self):
+        """Validation of the <alias> tag."""
+        # The attribute target is required.
+        # Note that the expected error message from the validator
+        # is identical to the last error message expected in
+        # testAliasesTag: lxml's Relax NG validator is sometimes
+        # not as informative as one might wish.
+        sample_data = self.sample_data.replace(
+            '<alias target="65">', '<alias>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element aliases in interleave',
+            'missing attribute of <alias>')
+
+        # Other attributes are not allowed. We get again the same
+        # quite unspecific error message as above.
+        sample_data = self.sample_data.replace(
+            '<alias target="65">', '<alias target="65" foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element aliases in interleave',
+            'invalid attribute of <alias>')
+
+        # The <alias> tag requires exactly two sub-tags: <vendor> and
+        # <model>. Omitting either of them is forbidden. Again, we get
+        # same error message from the validator.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<vendor>',
+            to_text='</vendor>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element aliases in interleave',
+            'missing sub-tag <vendor> of <alias>')
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<model>',
+            to_text='</model>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element aliases in interleave',
+            'missing sub-tag <model> of <alias>')
+
+        # Other sub-tags are not allowed.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</alias>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element aliases in interleave',
+            'invalid sub-tag of <alias>')
+
+    def testAliasVendorTag(self):
+        """Validation of the <vendor> tag in <alias>."""
+        # The tag may not have any attributes. As for the <alias> tag,
+        # we don't get very specific error messages.
+        sample_data = self.sample_data.replace(
+            '<vendor>', '<vendor foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element aliases in interleave',
+            'invalid attribute of <vendor>')
+
+        # <vendor> may not have any sub-tags.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</vendor>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element aliases in interleave',
+            'invalid sub-tag of <alias>')
+
+    def testAliasModelTag(self):
+        """Validation of the <model> tag in <alias>."""
+        # The tag may not have any attributes. As for the <alias> tag,
+        # we don't get very specific error messages.
+        sample_data = self.sample_data.replace(
+            '<model>', '<model foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element aliases in interleave',
+            'invalid attribute of <model>')
+
+        # <model> may not have any sub-tags.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</model>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element aliases in interleave',
+            'invalid sub-tag of <alias>')
+
+    def testSoftwareTag(self):
+        """Validation of the <software> tag."""
+        # <software> has no attributes.
+        sample_data = self.sample_data.replace(
+            '<software>', '<software foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
+                'Invalid attribute foo for element software',
+            'invalid attribute of <software>')
+
+        # <software> has three allowed sub-tags: <lsbrelease>, <packages>
+        # <xorg>. <lsbrelease> is required, the other two tags are
+        # optional.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<lsbrelease',
+            to_text='</lsbrelease>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
+                'Expecting an element lsbrelease, got nothing',
+            'omitted tag <lsbrelease>')
+
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<packages',
+            to_text='</packages>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(result, None, 'omitted tag <packages>')
+
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<xorg',
+            to_text='</xorg>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(result, None, 'omitted tag <xorg>')
+
+        # other sub-tags are rejected.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text = '<nonsense/>',
+            where='</software>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                'Element software has extra content: nonsense',
+            'invalid sub-tag of <software>')
+
+        # CDATA content is not allowed
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='nonsense',
+            where='</software>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                'Element software has extra content: text',
+            'CDATA content of <software>')
+
+
+    def testLsbreleaseTag(self):
+        """Validation of the <lsbrelease> tag."""
+        # <lsbrelease> has no attributes.
+        sample_data = self.sample_data.replace(
+            '<lsbrelease>', '<lsbrelease foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
+                'Invalid attribute foo for element lsbrelease',
+            'attributes of <lsbrelease>')
+
+        # <lsbrelease> requires at least one <property> sub-tag,
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<lsbrelease/>',
+            from_text='<lsbrelease>',
+            to_text='</lsbrelease>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
+                'Expecting an element property, got nothing',
+            'required sub-tag of <lsbrelease>')
+
+        # other sub-tags are not allowed.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</lsbrelease>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
+                'Expecting element property, got nonsense',
+            'invalid sub-tag of <lsbrelease>')
+
+        # CDATA content is not allowed.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='nonsense',
+            where='</lsbrelease>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_ENTITYREF_SEMICOL_MISSING: '
+                'Expecting an element got text',
+            'CDATA content of <lsbrelease>')
+
+    def testPackagesTag(self):
+        """Validation of the <packages> tag."""
+        # This tag has no attributes.
+        sample_data = self.sample_data.replace(
+            '<packages>', '<packages foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element packages in interleave',
+            'attributes of <packages>')
+
+        # <packages> may be empty.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<package name=',
+            to_text='</package>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(result, None, 'empty <packages> tag')
+
+        # Any sub-tag except <package> is invalid.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</packages>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element packages in interleave',
+            'invalid sub-tag of <packages>')
+
+        # CDATA content is invalid.
+        # Any sub-tag except <package> is invalid.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='nonsense',
+            where='</packages>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element packages in interleave',
+            'CDATA in <packages>')
+
+    def testPackageTag(self):
+        """Validation of the <package> tag."""
+        # The attribute "name" is required.
+        sample_data = self.sample_data.replace(
+            '<package name="metacity">', '<package>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element packages in interleave',
+            'missing attribute name in <package>')
+
+        # Other attributes are not allowed.
+        sample_data = self.sample_data.replace(
+            '<package name="metacity">',
+            '<package name="metacity" foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element packages in interleave',
+            'invalid attributes in <package>')
+
+        # Other sub-tags than <property> are not allowed.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='ynonsense/>',
+            where='</package>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element packages in interleave',
+            'invalid sub-tags of <package>')
+
+        # At least one <property> tag is required
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<package name="metacity"/>',
+            from_text='<package name="metacity">',
+            to_text='</package>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element packages in interleave',
+            'empty <package> tag')
+
+        # CDATA content is not allowed.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='ynonsense/>',
+            where='</package>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element packages in interleave',
+            'CDATA in <package>')
+
+    def testXorgTag(self):
+        """Validation of the <xorg> tag."""
+        # The <xorg> tag required an attribute name.
+        sample_data = self.sample_data.replace(
+            '<xorg version="1.3.0">', '<xorg>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element xorg in interleave',
+            'missing attribute version of <xorg>')
+
+        # other attributes are invalid.
+        sample_data = self.sample_data.replace(
+            '<xorg version="1.3.0">', '<xorg version="1.3.0" foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element xorg in interleave',
+            'invalid attribute of <xorg>')
+        
+        # the only allowed sub-tag is <driver>.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</xorg>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element xorg in interleave',
+            'invalid sub-tag of <xorg>')
+        
+        # <xorg> may be empty
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<xorg version="1.2.3"/>',
+            from_text='<xorg',
+            to_text='</xorg>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(result, None, 'empty <xorg> tag')
+
+        # CDATA content is not allowed.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='nonsense',
+            where='</xorg>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element xorg in interleave',
+            'CDATA content of <xorg>')
+
+    def _getXorgDriverTag(self, attributes):
+        attributes = attributes.items()
+        attributes = [
+            '%s="%s"' % attribute for attribute in attributes]
+        attributes = ' '.join(attributes)
+        return '<driver %s/>' % attributes
+        
+
+    def testXorgDriverTag(self):
+        """Validation of the <driver> sub-tag of <xorg>."""
+        # The attributes "name" and "class" are required.
+        all_attributes = {
+            'name': 'fglrx',
+            'version': '1.23',
+            'class': 'X.Org Video Driver',
+            'device': '12'}
+        for omit in ('name', 'class'):
+            test_attributes = all_attributes.copy()
+            del test_attributes[omit]
+            driver_tag = self._getXorgDriverTag(test_attributes)
+            sample_data = self.replaceSampledata(
+                data=self.sample_data,
+                replace_text=driver_tag,
+                from_text='<driver name="fglrx"',
+                to_text='/>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertErrorMessage(
+                submission_id, result,
+                'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                    'Extra element xorg in interleave',
+                'missing attribute %s of <driver> in <xorg>' % omit)
+
+        # the attributes "device" and "version" are optional.
+        for omit in ('version', 'device'):
+            test_attributes = all_attributes.copy()
+            del test_attributes[omit]
+            driver_tag = self._getXorgDriverTag(test_attributes)
+            sample_data = self.replaceSampledata(
+                data=self.sample_data,
+                replace_text=driver_tag,
+                from_text='<driver name="fglrx"',
+                to_text='/>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertNotEqual(
+                submission_id, result,
+                'missing attribute %s of <driver> in <xorg>' % omit)
+        
+        # other attributes are not allowed.
+        for omit in ('name', 'class'):
+            test_attributes = all_attributes.copy()
+            test_attributes['foo'] = 'bar'
+            driver_tag = self._getXorgDriverTag(test_attributes)
+            sample_data = self.replaceSampledata(
+                data=self.sample_data,
+                replace_text=driver_tag,
+                from_text='<driver name="fglrx"',
+                to_text='/>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertErrorMessage(
+                submission_id, result,
+                'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                    'Extra element xorg in interleave',
+                'missing attribute %s of <driver> in <xorg>' % omit)
+
+        # sub-tags are not allowed.
+        driver_tag = ('<driver device="12" version="1.23" name="fglrx" '
+                      'class="X.Org Video Driver"><nonsense/></driver>')
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text=driver_tag,
+            from_text='<driver name="fglrx"',
+            to_text='/>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element xorg in interleave',
+            'sub-tag of <driver> in <xorg>')
+
+        # CDATA is not allowed.
+        driver_tag = ('<driver device="12" version="1.23" name="fglrx" '
+                      'class="X.Org Video Driver">nonsense</driver>')
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text=driver_tag,
+            from_text='<driver name="fglrx"',
+            to_text='/>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element xorg in interleave',
+            'CDATA content of <driver> in <xorg>')
+
+    def testQuestionsTag(self):
+        """Validation of the <questions> tag."""
+        # This tag has no attributes.
+        sample_data = self.sample_data.replace(
+            '<questions>', '<questions foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
+                'Invalid attribute foo for element questions',
+            'attributes of <questions>')
+
+        # The only allowed sub-tag is <question>
+        sample_data = self.insertSampledata(
+            data = self.sample_data,
+            insert_text='<nonsense/>',
+            where='</questions>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
+                'Expecting element question, got nonsense',
+            'invalid sub-tag of <questions>')
+
+        # <questions> may be empty
+        sample_data = self.replaceSampledata(
+            data = self.sample_data,
+            replace_text='<questions/>',
+            from_text='<questions>',
+            to_text='</questions>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(result, None, 'empty tag <questions>')
+
+        # CDATA content is not allowed.
+        sample_data = self.insertSampledata(
+            data = self.sample_data,
+            insert_text='nonsense',
+            where='</questions>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                'Element questions has extra content: question',
+            'CDATA content of <questions>')
+
+    def testQuestionTag(self):
+        """Validation of the <question> tag."""
+        # The attribute "name" is required.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<question plugin="foo">',
+            from_text='<question name',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                'Element questions has extra content: question',
+            'missing attribute "name" in <question>')
+
+        # The attribute "plugin" is optional.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<question name="foo">',
+            from_text='<question name',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None, 
+            'missing attribute "plugin" in <question>')
+
+        # Other attributes are not allowed.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<question plugin="foo" bar="baz">',
+            from_text='<question name',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
+                'Invalid attribute bar for element question',
+            'invalid attribute in <question>')
+
+        # The sub-tag <command> is optional.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<question name="foo">',
+            from_text='<question name',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None, 
+            'omitted sub-tag <command> of <question>')
+
+        # The sub-tag <answer> is required; <answer_choices>, which follows
+        # the first <answer> tag in the sample data, is invalid without
+        # an accompanying <answer> tag.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<answer type',
+            to_text='</answer>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
+                'Expecting element answer, got answer_choices',
+            'omitted sub-tag <answer> of <question> (1)')
+
+        # Omitting both <answer> and <answer_choice> is invalid too, but
+        # results in a different error message.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<answer type',
+            to_text='</answer_choices>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
+                'Expecting an element answer, got nothing',
+            'omitted sub-tag <answer> of <question> (2)')
+
+        # A tag <answer type="multiple_choice"> must have an accompanying
+        # <answer_choices> tag.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<answer_choices>',
+            to_text='</answer_choices>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
+                'Expecting an element answer_choices, got nothing',
+             'omitted sub-tag <answer_choices> of <question>')
+
+        # The sub-tag <target> is optional; it may appear more than once.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<target>',
+            to_text='</target>')
+        sample_data = self.replaceSampledata(
+            data=sample_data,
+            replace_text='',
+            from_text='<target>',
+            to_text='</target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'omitted sub-tag <target> of <anwser>')
+
+        # The sub-tag <comment> is optional.
+        # The sub-tag <target> is optional; it may appear more than once.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<comment>',
+            to_text='</comment>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'omitted sub-tag <comment> of <anwser>')
+
+        # other sub-tags are invalid.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</question>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                'Element question has extra content: nonsense',
+             'omitted sub-tag <answer_choices> of <question>')
+
+    def testAnswerCommandTag(self):
+        """Validation of the <command> tag."""
+        # No attributes are allowed.
+        sample_data = self.sample_data.replace(
+            '<command/>', '<command foo="bar"/>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element command in interleave',
+             'attributes of <command>')
+
+        # No sub-tags are allowed.
+        sample_data = self.sample_data.replace(
+            '<command/>', '<command><nonsense/></command>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
+                'Extra element command in interleave',
+             'sub-tags of <command>')
+
+    def testAnswerTag(self):
+        """Validation of the <answer> tag."""
+        # The attribute "type" is required.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<answer>',
+            from_text='<answer',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_PEREF_SEMICOL_MISSING: '
+                'Element answer failed to validate content',
+             '<answer> without attributes')
+
+        # The only allowed values for the attribute type are:
+        # "multiple_choice" and "measurement"
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<answer type="nonsense">',
+            from_text='<answer',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_PEREF_SEMICOL_MISSING: '
+                'Element answer failed to validate content',
+             '<answer> with wrong value of attribute type')
+
+        # Tags of type measurement have the optional attribute unit.
+        # The parser must check if the value of unit is reasonable
+        # for a particular test or if the attribute may be omitted for
+        # a particular test.
+        sample_data = self.sample_data.replace(
+            '<answer type="measurement" unit="MB/sec">38.4</answer>',
+            '<answer type="measurement">38.4</answer>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'measurement answer without attribute unit')
+
+        # Other attributes are invalid.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<answer type="multiple_choice" foo="bar">',
+            from_text='<answer',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_PEREF_NO_NAME: '
+                'Element answer failed to validate attributes',
+             '<answer> with invalid attribute')
+
+        # Tags of type multipe_choice can have any text content. The
+        # consistency check, if the text matches one of the
+        # <answer_choices>, must be done by the submission parser.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<answer type="multiple_choice">nonsense</answer>',
+            from_text='<answer',
+            to_text='</answer>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'multiple choice answer with wrong content')
+
+        # Tags of type measurement must have numerical content.
+        sample_data = self.sample_data.replace(
+            '<answer type="measurement" unit="MB/sec">38.4</answer>',
+            '<answer type="measurement" unit="MB/sec">nonsense</answer>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
+                "Type decimal doesn't allow value 'nonsense'",
+             '<answer> with invalid attribute')
+
+        # Sub-tags are not allowed.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<answer type="multiple_choice">'
+                             'pass<nonsense/></answer>',
+            from_text='<answer',
+            to_text='</answer>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_UNPARSED_ENTITY: '
+                'Datatype element answer has child elements',
+             '<answer> with invalid attribute')
+
+    def testAnswerChoicesTag(self):
+        """Validation of the <answer_choices> tag."""
+        # This tag has no attributes.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<answer_choices foo="bar">',
+            from_text='<answer_choices',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'RELAXNGV:WAR_UNDECLARED_ENTITY: '
+                'Invalid attribute foo for element answer_choices',
+             '<answer_choices> attributes')
+
+        # CDATA content is invalid.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='nonsense',
+            where='</answer_choices>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_ENTITYREF_SEMICOL_MISSING: '
+                'Expecting an element got text',
+             'CDATA in <answer_choices>')
+
+        # the only allowed sub-tag is <value>
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</answer_choices>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
+                'Expecting element value, got nonsense',
+             'invalid sub-tag of <answer_choices>')
+        
+
+    def testTargetTag(self):
+        """Validation of the <target> tag."""
+        # This tag has no attributes.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<target foo="bar">',
+            from_text='<target',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
+                'Invalid attribute foo for element target',
+             '<target> attributes')
+
+        # The consistency of the CDATA content is not validated.
+        # While this tag is supposed to contain IDs assigned to other
+        # tags, it is niether checked, if the content is numeric,
+        # nor if another tag with this ID exists. This check must be
+        # done by the parser.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<target>no_id</target>',
+            from_text='<target',
+            to_text='</target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(result, None, 'inconsistent content of <target>')
+
+        # The only allowed sub-tag is <driver>.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<target>42<driver>foo</driver></target>',
+            from_text='<target',
+            to_text='</target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(result, None, 'inconsistent content of <target>')
+        
+        # Other sub-tags are invalid.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<target>42<nonsense/></target>',
+            from_text='<target',
+            to_text='</target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                'Element target has extra content: nonsense',
+             'sub-tags of <target>')
+
+    def testTargetDriverTag(self):
+        """Validation of the <driver> sub-tag of <target>."""
+        # This tag has no attributes.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<target>42<driver bar="baz">foo</driver></target>',
+            from_text='<target',
+            to_text='</target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
+                'Invalid attribute bar for element driver',
+             'attributes of <driver> in <target>')
+
+        # Sub-tags are not allowed.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<target>42<driver>foo<nonsense/></driver></target>',
+            from_text='<target',
+            to_text='</target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                'Element driver has extra content: nonsense',
+             'sub-tags of <driver> in <target>')
+
+    def testCommentTag(self):
+        """Validation of the <comment> tag."""
+        # This tag has no attributes.
+        sample_data = self.sample_data.replace(
+            '<comment>', '<comment foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
+                'Invalid attribute foo for element comment',
+             'attributes of <comment>')
+
+        # Sub-tags are not allowed.
+        sample_data = self.sample_data.replace(
+            '<comment>', '<comment><nonsense/>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
+                'Element comment has extra content: nonsense',
+             'sub.tags of <comment>')
+        
 
 
 def test_suite():
