@@ -1089,10 +1089,6 @@ ALTER TABLE bugnomination ENABLE TRIGGER ALL;
 
 ALTER TABLE bugnotification DISABLE TRIGGER ALL;
 
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (1, 15, 40, true, '2007-01-04 15:00:50.552021');
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (2, 15, 41, false, '2007-01-04 15:00:50.552021');
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (3, 15, 42, false, '2007-01-04 15:00:50.552021');
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (4, 15, 43, false, '2007-01-04 15:00:50.552021');
 
 
 ALTER TABLE bugnotification ENABLE TRIGGER ALL;
@@ -2248,10 +2244,6 @@ INSERT INTO karma (id, datecreated, person, "action", product, distribution, sou
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (61, '2000-03-13 20:46:49.83307', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (62, '2001-07-03 21:30:51.583356', 12, 47, NULL, 1, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (63, '2001-08-09 11:39:16.836856', 63, 1, 20, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (64, '2007-12-18 16:30:19.103679', 16, 1, 22, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (65, '2007-12-18 16:30:47.889614', 16, 21, 22, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (66, '2007-12-18 16:30:47.889614', 16, 21, 8, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (67, '2007-12-18 16:30:47.889614', 16, 9, 8, NULL, NULL);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;
