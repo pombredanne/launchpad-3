@@ -1005,12 +1005,9 @@ class BugTaskSet:
         return bugtask
 
     def getMultiple(self, task_ids):
-        """See `IBugTaskSet`."""        
-        # Ensure we have a sequence of bug task IDs: 
-        try:
-            task_ids = [int(task_id) for task_id in task_ids]
-        except:
-            raise TypeError("Sequence of bug task IDs expected.")
+        """See `IBugTaskSet`."""
+        # Ensure we have a sequence of bug task IDs:
+        task_ids = [int(task_id) for task_id in task_ids]
         # Query the database, returning the results in a dictionary:
         if len(task_ids) > 0:
             tasks = BugTask.select('id in %s' % sqlvalues(task_ids))

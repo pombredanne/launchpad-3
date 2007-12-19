@@ -59,11 +59,8 @@ task in the database:
 When given a singleton sequence containing a valid bug task ID, the
 method returns a singleton dictionary:
 
-    >>> sample_task = sample_tasks[0]
-    >>> sample_task_id = sample_task_ids[0]
-    >>> retrieved_tasks = task_set.getMultiple([sample_task_id])
-    >>> assert len(retrieved_tasks) == 1
-    >>> assert retrieved_tasks[sample_task_id].id == sample_task_id
+    >>> task_set.getMultiple([2])
+    {2: <BugTask at ...>}
 
 When given an empty sequence, the method returns an empty dictionary:
 
@@ -72,28 +69,29 @@ When given an empty sequence, the method returns an empty dictionary:
 
 When given a sequence containing some bug task IDs not present in the
 database, the method returns a dictionary containing entries only for
-those bug task IDs that are present in the database:
+those bug task IDs that are present in the database. The dictionary
+does not contain entries for bug task IDs not present in the database:
 
-    >>> retrieved_tasks = task_set.getMultiple([0, sample_task_id])
-    >>> assert retrieved_tasks[sample_task_id].id == sample_task_id
+    >>> task_set.getMultiple([1, 2])
+    {2: <BugTask at ...>}
+    >>> task_set.get(1)
 
-The dictionary does not contain entries for bug task IDs not present
-in the database:
-
-    >>> no_such_task = retrieved_tasks[0]
+    >>> task_set.get(1)
     Traceback (most recent call last):
     ...
-    KeyError: 0
+    NotFoundError: ...
+    >>> task_set.get(2)
+    {2: <BugTask at ...>}
 
 When given an argument that isn't a valid sequence, or a sequence
 containing one or more entries that aren't valid bug task IDs, the
-method raises a TypeError:
+method raises errors appropriately:
 
     >>> task_set.getMultiple(None)
     Traceback (most recent call last):
     ...
-    TypeError: Sequence of bug task IDs expected.
-    >>> print task_set.getMultiple(['1; DROP TABLE person'])
+    TypeError: ...
+    >>> print task_set.getMultiple(['1; DROP TABLE person;'])
     Traceback (most recent call last):
     ...
-    TypeError: Sequence of bug task IDs expected.
+    ValueError: ...
