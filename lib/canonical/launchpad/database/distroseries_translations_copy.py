@@ -98,7 +98,7 @@ def _copy_active_translations_to_new_series(
     # Copy each POTMsgSet whose template we copied, and let MultiTableCopy
     # replace each potemplate reference with a reference to our copy of the
     # original POTMsgSet's potemplate.
-    copier.extract('POTMsgSet', ['POTemplate'], 'POTMsgSet.sequence > 0')
+    copier.extract('POTMsgSet', ['POTemplate'], 'sequence > 0')
 
     # Copy POFiles, making them refer to the child's copied POTemplates.
     copier.extract('POFile', ['POTemplate'])
@@ -320,35 +320,6 @@ def _prepare_translationmessage_merge(
     This function is not reusable; it only makes sense as a part of
     `copy_active_translations_as_update`.
     """
-    # Exclude TranslationMessages for which one with an equivalent set of
-    # translations already exists in the child series, or we'd be introducing
-    # needless duplicates.
-    # Don't offer replacements for messages that the child has newer ones for,
-    # i.e. ones with the same (potmsgset, pofile) whose date_created is no
-    # older than the one the parent has to offer.
-    have_better = """
-        EXISTS (
-            SELECT *
-            FROM TranslationMessage better
-            JOIN temp_equiv_potmsgset ON
-                holding.potmsgset = temp_equiv_potmsgset.id AND
-                better.potmsgset = temp_equiv_potmsgset.new_id
-            JOIN %(pofile_holding_table)s pfh ON
-                holding.pofile = pfh.id AND
-                better.pofile = pfh.new_id
-            WHERE
-                better.date_created >= holding.date_created OR
-                ((COALESCE(better.msgstr0, -1) =
-                    COALESCE(holding.msgstr0, -1)) AND
-                (COALESCE(better.msgstr1, -1) =
-                    COALESCE(holding.msgstr1, -1)) AND
-                (COALESCE(better.msgstr2, -1) =
-                    COALESCE(holding.msgstr2, -1)) AND
-                (COALESCE(better.msgstr3, -1) =
-                    COALESCE(holding.msgstr3, -1)))
-        )
-        """ % query_parameters
-
     cur = cursor()
     cur.execute(
         "SELECT min(new_id), max(new_id) FROM %s" % holding_tables['pofile'])
@@ -358,23 +329,40 @@ def _prepare_translationmessage_merge(
 
     # We're only interested in current, complete translation messages.  See
     # TranslationMessage.is_complete for the definition of "complete."
+    # We also exclude messages that would duplicate an existing translation in
+    # the child series.  Finally, we only replace translations in the child
+    # with ones from the parent if the replacement is newer than the
+    # translation the child already has.
     where_clause = """
         is_current AND
-        pofile = POFile.id AND
-        POFile.language = Language.id AND
+        %(pofile_holding_table)s.language = Language.id AND
         potmsgset = POTMsgSet.id AND
         potmsgset = temp_equiv_potmsgset.id AND
         msgstr0 IS NOT NULL AND
         (potmsgset.msgid_plural IS NULL OR (
          (msgstr1 IS NOT NULL OR COALESCE(Language.pluralforms,2) <= 1) AND
          (msgstr2 IS NOT NULL OR COALESCE(Language.pluralforms,2) <= 2) AND
-         (msgstr3 IS NOT NULL OR COALESCE(Language.pluralforms,2) <= 3)))
-        """
-    copier.extract(
-        'TranslationMessage', joins=['POFile'],
-        where_clause=where_clause, inert_where=have_better,
-        external_joins=[
-            'temp_equiv_potmsgset', 'POTMsgSet', 'POFile', 'Language'],
+         (msgstr3 IS NOT NULL OR COALESCE(Language.pluralforms,2) <= 3))) AND
+        NOT EXISTS (
+            SELECT *
+            FROM TranslationMessage better
+            WHERE
+                better.pofile = %(pofile_holding_table)s.new_id AND
+                better.potmsgset = temp_equiv_potmsgset.new_id AND
+                (better.date_created >= source.date_created OR
+                 ((COALESCE(better.msgstr0, -1) =
+                    COALESCE(source.msgstr0, -1)) AND
+                  (COALESCE(better.msgstr1, -1) =
+                    COALESCE(source.msgstr1, -1)) AND
+                  (COALESCE(better.msgstr2, -1) =
+                    COALESCE(source.msgstr2, -1)) AND
+                  (COALESCE(better.msgstr3, -1) =
+                    COALESCE(source.msgstr3, -1))))
+        )
+        """ % query_parameters
+    joined_tables = ['temp_equiv_potmsgset', 'POTMsgSet', 'Language']
+    copier.extract('TranslationMessage', joins=['POFile'],
+        where_clause=where_clause, external_joins=joined_tables,
         pre_pouring_callback=prepare_translationmessage_pouring,
         batch_pouring_callback=_prepare_translationmessage_batch)
     transaction.commit()
@@ -390,19 +378,6 @@ def _prepare_translationmessage_merge(
         SET potmsgset = temp_equiv_potmsgset.new_id
         FROM temp_equiv_potmsgset
         WHERE holding.potmsgset = temp_equiv_potmsgset.id
-        """ % query_parameters)
-
-    # Map new_ids in holding to those of child distroseries' corresponding
-    # TranslationMessages.
-    logger.info("Re-keying inert TranslationMessages")
-    cur.execute("""
-        UPDATE %(translationmessage_holding_table)s AS holding
-        SET new_id = tm.id
-        FROM TranslationMessage tm
-        WHERE
-            holding.new_id IS NULL AND
-            holding.potmsgset = tm.potmsgset AND
-            holding.pofile = tm.pofile
         """ % query_parameters)
 
 
@@ -461,8 +436,7 @@ def _copy_active_translations_as_update(child, transaction, logger):
     transaction.reset_after_transaction = False
     full_name = "%s_%s" % (child.distribution.name, child.name)
     tables = ['POFile', 'TranslationMessage']
-    copier = MultiTableCopy(
-        full_name, tables, restartable=False, logger=logger)
+    copier = MultiTableCopy(full_name, tables, logger=logger)
 
     copier.dropHoldingTables()
     drop_tables(cursor(), [
@@ -500,6 +474,8 @@ def _copy_active_translations_as_update(child, transaction, logger):
         WHERE
             ptms1.potemplate = temp_equiv_template.id AND
             ptms2.potemplate = temp_equiv_template.new_id AND
+            ptms1.sequence > 0 AND
+            ptms2.sequence > 0 AND
             ptms1.msgid_singular = ptms2.msgid_singular AND
             (ptms1.msgid_plural = ptms2.msgid_plural OR
              (ptms1.msgid_plural IS NULL AND ptms2.msgid_plural IS NULL)) AND
@@ -558,11 +534,6 @@ def _copy_active_translations_as_update(child, transaction, logger):
         DELETE FROM %(pofile_holding_table)s AS holding
         USING POFile
         WHERE holding.id = POFile.id""" % query_parameters)
-    logger.info("Filtering out inert TranslationMessages")
-    cur.execute("""
-        DELETE FROM %(translationmessage_holding_table)s AS holding
-        USING TranslationMessage
-        WHERE holding.new_id = TranslationMessage.id""" % query_parameters)
     transaction.commit()
     transaction.begin()
     cur = cursor()
