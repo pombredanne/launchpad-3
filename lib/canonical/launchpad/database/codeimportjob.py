@@ -107,7 +107,7 @@ class CodeImportJobWorkflow:
     def deletePendingJob(self, code_import):
         """See `ICodeImportJobWorkflow`."""
         assert code_import.review_status != CodeImportReviewStatus.REVIEWED, (
-            "Review status of %s is %s" % (
+            "Review status of %s is %s." % (
             code_import.branch.unique_name, code_import.review_status.name))
         assert code_import.import_job is not None, (
             "Not associated to a CodeImportJob: %s" % (
@@ -116,4 +116,6 @@ class CodeImportJobWorkflow:
             "Job associated to %s is %s" % (
             code_import.branch.unique_name,
             code_import.import_job.state.name))
+        # CodeImportJobWorkflow is the only class that is allowed to delete
+        # CodeImportJob rows, so destroySelf is not exposed in ICodeImportJob.
         removeSecurityProxy(code_import).import_job.destroySelf()

@@ -249,6 +249,8 @@ class TestCodeImportJobWorkflowDeletePendingJob(unittest.TestCase,
         # Checking sampledata expectations.
         self.assertEqual(reviewed_import.branch.unique_name,
                          '~vcs-imports/gnome-terminal/import')
+        # ICodeImport does not allow setting any attribute, so we need to use
+        # removeSecurityProxy to set the review_status attribute.
         INVALID = CodeImportReviewStatus.INVALID
         removeSecurityProxy(reviewed_import).review_status = INVALID
         self.assertNotEqual(reviewed_import.import_job, None)

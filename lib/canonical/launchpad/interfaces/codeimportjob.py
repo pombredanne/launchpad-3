@@ -122,7 +122,7 @@ class ICodeImportJobWorkflow(Interface):
     """Utility to manage `CodeImportJob` objects through their life cycle."""
 
     def newJob(code_import):
-        """Create a new `CodeImportJob` associated to a reviewed `CodeImport`.
+        """Create a `CodeImportJob` associated with a reviewed `CodeImport`.
 
         Call this method from `CodeImport.updateFromData` when the
         review_status of `code_import` changes to REVIEWED.
@@ -134,7 +134,7 @@ class ICodeImportJobWorkflow(Interface):
         """
 
     def deletePendingJob(code_import):
-        """Delete a pending `CodeImportJob` associated to a `CodeImport`.
+        """Delete a pending `CodeImportJob` associated with a `CodeImport`.
 
         Call this method from `CodeImport.updateFromData` when the
         review_status of `code_import` changes from REVIEWED.
