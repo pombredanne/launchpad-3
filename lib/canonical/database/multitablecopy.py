@@ -307,7 +307,8 @@ class MultiTableCopy:
             `_pointsToTable` method to provide the right target table for each
             foreign key that the operation should know about.
         :param where_clause: Boolean SQL expression characterizing rows to be
-            extracted.
+            extracted.  May refer to rows from table being extracted as
+            "source."
         :param id_sequence: SQL sequence that should assign new identifiers
             for the extracted rows.  Defaults to `source_table` with "_seq_id"
             appended, which by SQLObject/Launchpad convention is the sequence
@@ -394,8 +395,8 @@ class MultiTableCopy:
         new_id column.
         """
         source_table = str(source_table)
-        select = ['%s.*' % source_table]
-        from_list = [source_table]
+        select = ['source.*']
+        from_list = ["%s source" % source_table]
         where = []
 
         for join in joins:
@@ -428,7 +429,6 @@ class MultiTableCopy:
             'holding_table': holding_table,
             'id_sequence': "nextval('%s'::regclass)" % id_sequence,
             'inert_where': inert_where,
-            'main': source_table,
             'source_tables': ','.join(from_list),
             'where': where_text,
             'temp': '',
@@ -445,7 +445,7 @@ class MultiTableCopy:
             # holding table), we assign new_ids right in the same query.
             cur.execute('''
                 CREATE %(temp)s TABLE %(holding_table)s AS
-                SELECT DISTINCT ON (%(main)s.id)
+                SELECT DISTINCT ON (source.id)
                     %(columns)s, %(id_sequence)s AS new_id
                 FROM %(source_tables)s
                 %(where)s
@@ -457,7 +457,7 @@ class MultiTableCopy:
             # rows that do not match the "inert_where" condition.
             cur.execute('''
                 CREATE %(temp)s TABLE %(holding_table)s AS
-                SELECT DISTINCT ON (%(main)s.id)
+                SELECT DISTINCT ON (source.id)
                     %(columns)s, NULL::integer AS new_id
                 FROM %(source_tables)s
                 %(where)s
