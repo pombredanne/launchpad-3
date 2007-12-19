@@ -278,9 +278,10 @@ class ExternalBugTracker:
         try:
             self.initializeRemoteBugDB(bug_ids_to_update)
         except Exception, error:
-            # If the error is one recognised by BugWatchErrorType we
-            # record it against all the bugwatches that should have been
-            # updated before re-raising it.
+            # We record the error against all the bugwatches that should
+            # have been updated before re-raising it. We also update the
+            # bug watches' lastchecked dates so that checkwatches
+            # doesn't keep trying to update them every time it runs.
             errortype = get_bugwatcherrortype_for_error(error)
             for bugwatch in bug_watches:
                 bugwatch.lastchecked = UTC_NOW
@@ -347,8 +348,9 @@ class ExternalBugTracker:
                 bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
                     bug_watch_ids)
 
-                # We record errors against the bug watches where
-                # possible.
+                # We record errors against the bug watches and update
+                # their lastchecked dates so that we don't try to
+                # re-check them every time checkwatches runs.
                 errortype = get_bugwatcherrortype_for_error(error)
                 for bugwatch in bug_watches:
                     bugwatch.lastchecked = UTC_NOW
