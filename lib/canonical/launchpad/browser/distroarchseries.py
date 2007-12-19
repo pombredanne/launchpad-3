@@ -9,7 +9,6 @@ __all__ = [
     'DistroArchSeriesView',
     'DistroArchSeriesAddView',
     'DistroArchSeriesBinariesView',
-    'DistroArchSeriesDetailsView',
     ]
 
 from canonical.launchpad.webapp import (
@@ -116,19 +115,3 @@ class DistroArchSeriesAddView(SQLObjectAddView):
         return self._nextURL
 
 
-class DistroArchSeriesDetailsView(LaunchpadView):
-    """Implementing `DistroArchSeries` details presentation."""
-
-    def __call__(self):
-        details = []
-
-        if self.context.official:
-            details.append('official')
-
-        if self.context.ppa_supported:
-            details.append('ppa')
-
-        if details:
-            return "(%s)" % ', '.join(details)
-
-        return ""

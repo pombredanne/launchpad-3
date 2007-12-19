@@ -574,6 +574,13 @@ class LaunchpadTestRequest(TestRequest):
     >>> from zope.interface.verify import verifyObject
     >>> verifyObject(IBrowserFormNG, request.form_ng)
     True
+
+    It also provides the  hooks for popup calendar iframes:
+
+    >>> request.needs_datetimepicker_iframe
+    True
+    >>> request.needs_datepicker_iframe
+    True
     """
     implements(INotificationRequest, IBasicLaunchpadRequest,
                canonical.launchpad.layers.LaunchpadLayer)
@@ -585,6 +592,8 @@ class LaunchpadTestRequest(TestRequest):
             skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
         self.breadcrumbs = []
         self.traversed_objects = []
+        self.needs_datepicker_iframe = True
+        self.needs_datetimepicker_iframe = True
 
     @property
     def uuid(self):

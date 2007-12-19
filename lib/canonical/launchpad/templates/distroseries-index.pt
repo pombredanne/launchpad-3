@@ -53,7 +53,6 @@
           tal:content="structure context/@@+portlet-latestuploads"
         />
         <div class="section"
-             condition="context/milestones"
              tal:content="structure context/@@+portlet-milestones" />
         <div class="section"
              tal:content="structure context/@@+portlet-architectures" />
