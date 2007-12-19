@@ -91,6 +91,11 @@ class BugWatch(SQLBase):
             self.sync()
 
         for linked_bugtask in self.bugtasks:
+            # We don't updated conjoined bug tasks; they must be updated
+            # through their conjoined masters.
+            if linked_bugtask._isConjoinedBugTask():
+                continue
+
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.importance = malone_importance
@@ -110,6 +115,11 @@ class BugWatch(SQLBase):
             # constant to a datetime value.
             self.sync()
         for linked_bugtask in self.bugtasks:
+            # We don't updated conjoined bug tasks; they must be updated
+            # through their conjoined masters.
+            if linked_bugtask._isConjoinedBugTask():
+                continue
+
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.transitionToStatus(
