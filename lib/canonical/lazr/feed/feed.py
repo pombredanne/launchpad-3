@@ -48,6 +48,7 @@ class FeedBase(LaunchpadFormView):
     max_age = config.launchpad.max_feed_cache_minutes * MINUTES
     quantity = 25
     items = None
+    rootsite = 'mainsite'
     template_files = {'atom': 'templates/feed-atom.pt',
                       'html': 'templates/feed-html.pt'}
 
@@ -78,6 +79,11 @@ class FeedBase(LaunchpadFormView):
     def site_url(self):
         """See `IFeed`."""
         return allvhosts.configs['mainsite'].rooturl[:-1]
+    
+    @property
+    def alternate_url(self):
+        """See `IFeed`."""
+        return canonical_url(self.context, rootsite=self.rootsite)
 
     def getItems(self):
         """See `IFeed`."""
