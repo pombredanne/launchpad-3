@@ -107,13 +107,13 @@ class CodeImportJobWorkflow:
     def deletePendingJob(self, code_import):
         """See `ICodeImportJobWorkflow`."""
         assert code_import.review_status != CodeImportReviewStatus.REVIEWED, (
-            "Review status of %s is %s." % (
+            "The review status of %s is %s." % (
             code_import.branch.unique_name, code_import.review_status.name))
         assert code_import.import_job is not None, (
             "Not associated to a CodeImportJob: %s" % (
             code_import.branch.unique_name,))
         assert code_import.import_job.state == CodeImportJobState.PENDING, (
-            "Job associated to %s is %s" % (
+            "The CodeImportJob associated to %s is %s." % (
             code_import.branch.unique_name,
             code_import.import_job.state.name))
         # CodeImportJobWorkflow is the only class that is allowed to delete

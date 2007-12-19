@@ -220,8 +220,8 @@ class TestCodeImportJobWorkflowDeletePendingJob(unittest.TestCase,
         self.assertEqual(reviewed_import.review_status, REVIEWED)
         # Testing deletePendingJob failure.
         self.assertFailure(
-            "Review status of ~vcs-imports/gnome-terminal/import "
-            "is REVIEWED",
+            "The review status of ~vcs-imports/gnome-terminal/import "
+            "is REVIEWED.",
             getUtility(ICodeImportJobWorkflow).deletePendingJob,
             reviewed_import)
 
@@ -258,7 +258,8 @@ class TestCodeImportJobWorkflowDeletePendingJob(unittest.TestCase,
         removeSecurityProxy(reviewed_import.import_job).state = RUNNING
         # Testing deletePendingJob failure.
         self.assertFailure(
-            "Job associated to ~vcs-imports/gnome-terminal/import is RUNNING",
+            "The CodeImportJob associated to "
+            "~vcs-imports/gnome-terminal/import is RUNNING.",
             getUtility(ICodeImportJobWorkflow).deletePendingJob,
             reviewed_import)
 
