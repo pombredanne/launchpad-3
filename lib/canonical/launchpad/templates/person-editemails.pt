@@ -89,7 +89,7 @@
 
     <table class="form">
       <thead>
-        <th>For this mailing list...</th>
+        <th style="white-space:nowrap">For this mailing list...</th>
         <td><strong>Subscribe with this address</strong></td>
       </thead>
       <tbody>
