@@ -309,7 +309,6 @@ def _prepare_translationmessage_batch(
         """ % (holding_table, batch_clause))
 
 
-
 def _prepare_translationmessage_merge(
     copier, transaction, query_parameters, holding_tables, logger):
     """`TranslationMessage` chapter of `copy_active_translations_as_update`.
@@ -440,7 +439,8 @@ def _copy_active_translations_as_update(child, transaction, logger):
 
     copier.dropHoldingTables()
     drop_tables(cursor(), [
-        'temp_equiv_template', 'temp_equiv_potmsgset', 'temp_changed_pofiles'])
+        'temp_equiv_template', 'temp_equiv_potmsgset',
+        'temp_changed_pofiles'])
 
     # Map parent POTemplates to corresponding POTemplates in child.  This will
     # come in handy later.
@@ -569,7 +569,8 @@ def _copy_active_translations_as_update(child, transaction, logger):
 
     # Clean up after ourselves, in case we get called again this session.
     drop_tables(cursor(), [
-        'temp_equiv_template', 'temp_equiv_potmsgset', 'temp_changed_pofiles'])
+        'temp_equiv_template', 'temp_equiv_potmsgset',
+        'temp_changed_pofiles'])
 
     flush_database_updates()
     transaction.commit()

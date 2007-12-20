@@ -102,7 +102,8 @@ class PouringLoop:
         # just renews our setting after the connection is reset.
         postgresql.allow_sequential_scans(self.cur, False)
 
-    def prepareBatch(self, from_table, to_table, batch_size, begin_id, end_id):
+    def prepareBatch(
+        self, from_table, to_table, batch_size, begin_id, end_id):
         """If batch_pouring_callback is defined, call it."""
         if self.batch_pouring_callback is not None:
             self.batch_pouring_callback(
@@ -307,8 +308,8 @@ class MultiTableCopy:
             `_pointsToTable` method to provide the right target table for each
             foreign key that the operation should know about.
         :param where_clause: Boolean SQL expression characterizing rows to be
-            extracted.  May refer to rows from table being extracted as
-            "source."
+            extracted.  The WHERE clause may refer to rows from table being
+            extracted as "source."
         :param id_sequence: SQL sequence that should assign new identifiers
             for the extracted rows.  Defaults to `source_table` with "_seq_id"
             appended, which by SQLObject/Launchpad convention is the sequence
@@ -407,7 +408,8 @@ class MultiTableCopy:
 
             self._checkForeignKeyOrder(column, referenced_table)
 
-            select.append('%s.new_id AS new_%s' % (referenced_holding, column))
+            select.append('%s.new_id AS new_%s' % (
+                referenced_holding, column))
             from_list.append(referenced_holding)
             where.append('%s = %s.id' % (column, referenced_holding))
 
