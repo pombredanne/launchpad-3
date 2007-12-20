@@ -61,7 +61,8 @@ the .watches attribute.
     >>> bugtrackerset = getUtility(IBugTrackerSet)
     >>> debbugs = bugtrackerset['debbugs']
     >>> sorted([(watch.bug.id, watch.remotebug) for watch in debbugs.watches])
-    [(1, u'304014'), (2, u'327452'), (3, u'327549'), (7, u'280883')]
+    [(1, u'304014'), (2, u'327452'), (3, u'327549'), (7, u'280883'),
+     (15, u'308994')]
     >>> mozilla_bugtracker = bugtrackerset['mozilla.org']
     >>> sorted([(watch.bug.id, watch.remotebug) for watch in
     ...     mozilla_bugtracker.watches])
