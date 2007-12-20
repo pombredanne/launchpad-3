@@ -583,17 +583,14 @@ class Builder(SQLBase):
         # Builds in those situation should not be built because they will
         # be wasting build-time, the former case already has a newer source
         # and the latter could not be built in DAK.
-        if (candidate.is_last_version and
-            candidate.build.pocket != PackagePublishingPocket.SECURITY):
-            # We already have the candidate we need.
-            return candidate
-
         while candidate is not None:
             if candidate.build.pocket == PackagePublishingPocket.SECURITY:
                 logger.debug(
                     "Build %s FAILEDTOBUILD, queue item %s REMOVED"
                     % (candidate.build.id, candidate.id))
                 candidate.build.buildstate = BuildStatus.FAILEDTOBUILD
+            elif candidate.is_last_version:
+                return candidate
             else:
                 logger.debug(
                     "Build %s SUPERSEDED, queue item %s REMOVED"
