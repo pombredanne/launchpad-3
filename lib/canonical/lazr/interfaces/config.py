@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ConfigErrors',
     'ConfigSchemaError',
     'IConfig',
     'IConfigLoader',
@@ -49,6 +50,13 @@ class UnknownKeyError(ConfigSchemaError):
     """The section has a key that is not in the schema."""
 
 
+class ConfigErrors(ConfigSchemaError):
+    """The errors in a Config.
+
+    The list of errors can be accessed via the errors attribute.
+    """
+
+
 class ISectionSchema(Interface):
     """Defines the valid keys and default values for a configuration group."""
     name = Attribute("The section name.")
@@ -70,9 +78,6 @@ class ISectionSchema(Interface):
 class ISection(ISectionSchema):
     """Defines the values for a configuration group."""
     schema = Attribute("The ISectionSchema that defines this ISection.")
-
-    def get(key, default=None):
-        """Return the value of the key, or default if key does not exist."""
 
 
 class IConfigLoader(Interface):
@@ -137,11 +142,12 @@ class IConfig(IConfigSchema):
 
     See `IConfigSchema` for more information about the config file format.
     """
+    schema = Attribute("The schema that defines the config.")
     extends = Attribute("The configuration that this extends.")
 
     def validate():
         """Return True if the config is valid for the schema.
 
-        :raise `ConfigSchemaError`: if the are errors. A list of all schema
+        :raise `ConfigErrors`: if the are errors. A list of all schema
             problems can be retrieved via the errors property.
         """

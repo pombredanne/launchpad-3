@@ -18,12 +18,13 @@ import StringIO
 from zope.interface import implements
 
 from canonical.lazr.interfaces import (
-    ConfigSchemaError, IConfig, IConfigLoader, IConfigSchema,
+    ConfigErrors, IConfig, IConfigLoader, IConfigSchema,
     InvalidSectionNameError, ISection, ISectionSchema, NoCategoryError,
     RedefinedSectionError, UnknownKeyError, UnknownSectionError)
+from canonical.lp import decorates
 
 
-def read_from_filename(filename):
+def read_content(filename):
     """Return the content of a file at filename as a string."""
     source_file = open(filename, 'r')
     try:
@@ -33,7 +34,7 @@ def read_from_filename(filename):
     return raw_data
 
 
-class ConfigSchema(object):
+class ConfigSchema:
     """See `IConfigSchema`."""
     implements(IConfigSchema, IConfigLoader)
 
@@ -65,7 +66,7 @@ class ConfigSchema(object):
         This method verifies that the file is ascii encoded and that no
         section name is redefined.
         """
-        raw_schema = read_from_filename(filename)
+        raw_schema = read_content(filename)
         # Verify that the string is ascii.
         raw_schema.encode('ascii', 'ignore')
         # Verify that no sections are redefined.
@@ -165,18 +166,21 @@ class ConfigSchema(object):
 
     def load(self, filename):
         """See `IConfigLoader`."""
-        config_data = read_from_filename(filename)
+        config_data = read_content(filename)
         return Config(filename, config_data, self)
 
     def loadFile(self, source_file, filename=None):
         """See `IConfigLoader`."""
         config_data = source_file.read()
         if filename is None:
-            filename = source_file.name
+            filename = getattr(source_file, 'name')
+            assert filename is not None, (
+                'filename must be provided if the file-like object '
+                'does not have a name attribute.')
         return Config(filename, config_data, self)
 
 
-class Config(object):
+class Config:
     """see `IConfig`."""
     implements(IConfig)
 
@@ -185,60 +189,96 @@ class Config(object):
         self.filename = filename
         self.name = os.path.basename(filename)
         self.schema = schema
+        self._sections = self._getRequiredSectionsFromSchema()
+        self._category_names = self._getCategoryNames()
         self._extends = None
         self._errors = []
-        self._verifyEncoding(config_data)
-        parser = SafeConfigParser()
-        parser.readfp(StringIO.StringIO(config_data), filename)
-        self._sections = {}
-        self._category_names = []
-        self._setSectionsAndCategoryNames(parser)
+        self._loadConfigData(config_data, filename)
+
+    def _getRequiredSectionsFromSchema(self):
+        """return a dict of `Section`s from the required `SectionSchemas`."""
+        sections = {}
+        for section_schema in self.schema:
+            if not section_schema.optional:
+                sections[section_schema.name] = Section(section_schema)
+        return sections
+
+    def _getCategoryNames(self):
+        """Return a tuple of category names that the `Section`s belong to."""
+        category_names = set()
+        for section_name in self._sections:
+            if '.' in section_name:
+                category_names.add(section_name.split('.')[0])
+        return tuple(category_names)
 
     def _verifyEncoding(self, config_data):
-        """Verify the data encoding and store any errors."""
+        """Verify that the data is ASCII encoded.
+
+        :return: a list of UnicodeDecodeError errors. If there are no
+            errors, return an empty list.
+        """
+        errors = []
         try:
             config_data.encode('ascii', 'ignore')
         except UnicodeDecodeError, error:
-            self._errors.append(error)
+            errors.append(error)
+        return errors
 
-    def _setSectionsAndCategoryNames(self, parser):
-        """Set the Sections and category_names from the schema and parser."""
-        # Build the sections from the required section_schemas.
-        for section_schema in self.schema:
-            if not section_schema.optional:
-                self._sections[section_schema.name] = Section(section_schema)
-        # Update the sections and keys from the parser's data.
+    def _loadConfigData(self, config_data, filename):
+        """Set the Sections and category_names from the config data.
+
+        New _sections, _category_names, and _errors are created from copies
+        of the current objects instead of making updates. This allows
+        overlaid configs to retain their state.
+
+        :return: a list of parsing errors. If there are no errors, an empty
+            list is returned.
+        """
+        sections = dict(self._sections)
+        errors = list(self._errors)
+        encoding_errors = self._verifyEncoding(config_data)
+        errors.extend(encoding_errors)
+        parser = SafeConfigParser()
+        parser.readfp(StringIO.StringIO(config_data), filename)
         for section_name in parser.sections():
             if section_name == 'meta':
-                # The meta section is reserved to the config parser.
-                for key in parser.options(section_name):
-                    if key == "extends":
-                        self._extends = parser.get(section_name, 'extends')
-                    else:
-                        # Any other key is an error.
-                        msg = "The %s section does not have a %s key." % (
-                            section_name, key)
-                        self._errors.append(UnknownKeyError(msg))
+                meta_errors = self._loadMetaData(parser)
+                errors.extend(meta_errors)
                 continue
             if section_name not in self.schema:
                 # Any section not in the the schema is an error.
                 msg = "%s does not have a %s section." % (
                     self.schema.name, section_name)
-                self._errors.append(UnknownSectionError(msg))
+                errors.append(UnknownSectionError(msg))
                 continue
             if section_name not in self._sections:
-                # Retrieve the optional section from the schema.
+                # Create the optional section from the schema.
                 section_schema = self.schema[section_name]
-                self._sections[section_name] = Section(section_schema)
+                sections[section_name] = Section(section_schema)
             # Update the section with the parser options.
-            self._errors.extend(
-                self._sections[section_name].update(
-                    parser.items(section_name)))
-        category_names = set()
-        for section_name in self._sections:
-            if '.' in section_name:
-                category_names.add(section_name.split('.')[0])
-        self._category_names = list(category_names)
+            items = parser.items(section_name)
+            section_errors = sections[section_name].update(items)
+            errors.extend(section_errors)
+        self._sections = sections
+        self._errors = errors
+        self._category_names = self._getCategoryNames()
+
+    def _loadMetaData(self, parser):
+        """Load the config meta data from the ConfigParser.
+
+        The meta section is reserved for the LAZR config parser.
+
+        :return: a list of errors if there are errors, or an empty list.
+        """
+        errors = []
+        for key in parser.options('meta'):
+            if key == "extends":
+                self._extends = parser.get('meta', 'extends')
+            else:
+                # Any other key is an error.
+                msg = "The meta section does not have a %s key." % key
+                errors.append(UnknownKeyError(msg))
+        return errors
 
     @property
     def extends(self):
@@ -278,13 +318,13 @@ class Config(object):
     def validate(self):
         """See `IConfig`."""
         if len(self._errors) > 0:
-            error = ConfigSchemaError("%s is not valid" % self.name)
+            error = ConfigErrors("%s is not valid" % self.name)
             error.errors = self._errors
             raise error
         return True
 
 
-class SectionSchema(object):
+class SectionSchema:
     """See `ISectionSchema`."""
     implements(ISectionSchema)
 
@@ -315,9 +355,10 @@ class SectionSchema(object):
         return self._options[key]
 
 
-class Section(object):
+class Section:
     """See `ISection`."""
     implements(ISection)
+    decorates(ISectionSchema, context='schema')
 
     def __init__(self, schema):
         """Create an `ISection` from schema.
@@ -325,40 +366,23 @@ class Section(object):
         :param schema: The ISectionSchema that defines this ISection.
         """
         self.schema = schema
-        self.name = schema.name
-        self.optional = schema.optional
         self._options = dict([(key, schema[key]) for key in schema])
-
-    def __iter__(self):
-        """See `ISection`"""
-        return self._options.iterkeys()
-
-    def __contains__(self, name):
-        """See `ISection`"""
-        return name in self._options
 
     def __getitem__(self, key):
         """See `ISection`"""
         return self._options[key]
 
-    def get(self, key, default=None):
-        """See `ISection`."""
-        if key in self._options:
-            return self._options[key]
-        else:
-            return default
-
     def update(self, items):
         """Update the keys with new values.
 
         :return: A list of `UnknownKeyError`s if the section does not have
-            the key. An empty list is returned if there are not errors.
+            the key. An empty list is returned if there are no errors.
         """
         errors = []
         for key, value in items:
             if key in self._options:
                 self._options[key] = value
             else:
-                msg = "%s does not have a %s key" % (self.name, key)
-                errors.append(UnknownSectionError(msg))
+                msg = "%s does not have a %s key." % (self.name, key)
+                errors.append(UnknownKeyError(msg))
         return errors

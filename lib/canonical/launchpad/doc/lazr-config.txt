@@ -280,8 +280,6 @@ not have template or optional sections.
     >>> raw_conf = local_file.read()
     >>> local_file.close()
     >>> print raw_conf
-    [meta]
-    extends: base.conf
     # Localize a key for section-1.
     [section-1]
     key5: local value
@@ -289,7 +287,11 @@ not have template or optional sections.
     [section-5]
 
 A Config is created by a schema using either the load() or loadFile()
-methods to return a Config instance.
+methods to return a Config instance. Those methods are part of the
+IConfigLoader interface that is also provided by ConfigSchema. The
+load() method accepts a filename, which is what we will use now.
+The loadFile() method accepts a file-like object (`see IConfigLoader`
+for an example).
 
     >>> from canonical.lazr.config import Config
     >>> from canonical.lazr.interfaces import IConfig, IConfigLoader
@@ -310,13 +312,13 @@ system. The 'extends' key explicitly declares that local.conf inherits
 all the information from base.conf--the schema in this case. The config
 can access the schema via the schema property.
 
-    >>> config.extends
-    'base.conf'
+    >>> print config.extends
+    None
     >>> config.schema.name
     'base.conf'
     >>> config.schema.filename
     '...ftests/testfiles/base.conf'
-    >>> config.schema.filename == schema.filename
+    >>> config.schema is schema
     True
 
 A config is made up of multiple Sections like the schema. They can be
@@ -441,16 +443,8 @@ An error is raised if a non-existent key is accessed via a subscript.
       ...
     KeyError: ...
 
-But the get() method will return None or the default keyword argument
-if the key is not present.
-
-    >>> print section_1.get('not-exist')
-    None
-    >>> section_1.get('not-exist', default='failover')
-    'failover'
-
 The Section keys can be iterated. The section has all the keys from
-the SectionSchema, and its localized values from th config file
+the SectionSchema, and its localized values from the config file
 took precedence over the schema values.
 
     >>> for key in sorted(section_1):
@@ -464,15 +458,57 @@ took precedence over the schema values.
     >>> section_1.schema['key5']
     ''
 
-Sections that were not defined in the config file are present because
-the schema defined them. In the case of section-3.app-b, its keys
-were defined in a template section.
+The schema provided mandatory sections and default values to the
+config. So while the config file did not declare all the sections, they
+are present. In the case of section-3.app-b, its keys were defined in a
+template section.
 
     >>> for key in sorted(config['section-3.app-b']):
     ...     print key, ':', config['section-3.app-b'][key]
     key1 : 17
     key2 : changed
     key3 : unique
+
+
+== IConfigLoader  ==
+
+ConfigSchema implements the two methods in the IConfigLoader interface.
+The load() and loadFile() methods load config data from a file.
+
+The load() method was used to load a config from its filename in the
+previous `Config` section. Passing a filename to a non-existent file
+will raise an error.
+
+    >>> schema.load("fnord.conf")
+    Traceback (most recent call last):
+      ...
+    IOError: [Errno 2] No such file or directory: 'fnord.conf'
+
+The loadFile method accepts a file-like object and an optional filename
+keyword arg. The filename arg must be passed if the file-like object
+does not have a name attribute.
+
+    >>> import StringIO
+    >>> bad_data = '\n'.join([
+    ...     "[meta]",
+    ...     "extends: base.conf",
+    ...     "metakey: unsupported",
+    ...     "[unknown-section]",
+    ...     "key1 = value1",
+    ...     "[section-1]",
+    ...     "keyn: unknown key",
+    ...     "key1: bad character in café)",
+    ...     "[section-3.template]",
+    ...     "key1: schema suffixes are not permitted"])
+    >>> schema.loadFile(StringIO.StringIO(bad_data))
+    Traceback (most recent call last):
+      ...
+    AttributeError: StringIO instance has no attribute 'name'
+
+    >>> bad_config = schema.loadFile(
+    ...     StringIO.StringIO(bad_data), 'unknown section')
+    >>> bad_config.name
+    'unknown section'
 
 
 == Validating configs ==
@@ -483,30 +519,20 @@ according to the schema. The method returns True if the config is valid.
     >>> config.validate()
     True
 
-When the config is not valid, a ConfigSchemaError is raised. The
+When the config is not valid, a ConfigErrors is raised. The
 exception has an errors property that contains a list of all the
 errors in the config.
 
-    >>> import StringIO
-    >>> from canonical.lazr.interfaces import ConfigSchemaError
-    >>> bad_data = '\n'.join([
-    ...     "[meta]",
-    ...     "extends: base.conf",
-    ...     "metakey: unsupported",
-    ...     "[unknown-section]",
-    ...     "key1 = value1",
-    ...     "[section-1]",
-    ...     "keyn: unknown key",
-    ...     "key1: bad character in café)"])
-    >>> bad_config = schema.loadFile(
-    ...     StringIO.StringIO(bad_data), 'unknown section')
+    >>> from canonical.lazr.interfaces import ConfigErrors
+
     >>> try:
     ...     bad_config.validate()
-    ... except ConfigSchemaError, validation_error:
+    ... except ConfigErrors, validation_error:
     ...     for error in validation_error.errors:
-    ...         print error
-    'ascii' codec can't decode byte 0xc3 in position ...
-    The meta section does not have a metakey key.
-    section-1 does not have a keyn key
-    base.conf does not have a unknown-section section.
+    ...         print  "%s: %s" % (error.__class__.__name__, error)
+    UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in ... range(128)
+    UnknownSectionError: base.conf does not have a section-3.template section.
+    UnknownKeyError: The meta section does not have a metakey key.
+    UnknownKeyError: section-1 does not have a keyn key.
+    UnknownSectionError: base.conf does not have a unknown-section section.
 
