@@ -114,6 +114,26 @@ of content as the latest bugs feed for a product.
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name16
 
+== Latest bugs for a source package ==
+
+This feed gets the latest bugs for a source package, and has the same 
+type of content as the latest bugs feed for a product.
+
+    >>> browser.open(
+    ...     'http://feeds.launchpad.dev/ubuntu/+source/cnews/latest-bugs.atom')
+    >>> browser.title
+    'Bugs in cnews in ubuntu'
+    >>> browser.url
+    'http://feeds.launchpad.dev/ubuntu/+source/cnews/latest-bugs.atom'
+
+    >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
+    >>> print extract_text(soup.find('id'))
+    http://feeds.launchpad.dev/ubuntu/+source/cnews/latest-bugs.atom
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    0
+
+
 == Latest bugs for a distroseries ==
 
 This feed gets the latest bugs for a distribution series, and has the same 
