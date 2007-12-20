@@ -94,6 +94,10 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         # created, the termination deferred will not be fired unless
         # _branch_mirror_complete_deferred is fired first.
         self._branch_mirror_complete_deferred = None
+        # If the subprocess terminates before it tells us whether the
+        # mirroring succeeded or failed, we assume it failed.  That means we
+        # have to record whether the subprocess has told us such or not...
+        self.reported_mirror_finished = False
         # This Deferred is fired only when the child process has terminated
         # *and* any other operations have completed.
         self._termination_deferred = deferred
@@ -193,12 +197,16 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         self._branch_mirror_complete_deferred.addErrback(self.unexpectedError)
 
     def do_mirrorSucceeded(self, latest_revision):
-        self._branch_mirror_complete_deferred.addCallback(
-            lambda ignored: self.listener.mirrorSucceeded(latest_revision))
+        self.reported_mirror_finished = True
+        def mirrorSucceeded(ignored):
+            return self.listener.mirrorSucceeded(latest_revision)
+        self._branch_mirror_complete_deferred.addCallback(mirrorSucceeded)
 
     def do_mirrorFailed(self, reason, oops):
-        self._branch_mirror_complete_deferred.addCallback(
-            lambda ignored: self.listener.mirrorFailed(reason, oops))
+        self.reported_mirror_finished = True
+        def mirrorFailed(ignored):
+            return self.listener.mirrorFailed(reason, oops)
+        self._branch_mirror_complete_deferred.addCallback(mirrorFailed)
 
     def do_progressMade(self):
         """Any progress resets the timout counter."""
@@ -216,7 +224,7 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         self.unexpectedError(failure.Failure(TimeoutError()))
 
     def unexpectedError(self, failure):
-        """Called when we receive malformed, or on timeout.
+        """Called when we receive malformed data, or on timeout.
 
         Causes of malformed data could be the client not sending a netstring,
         or sending an recognized command, or sending the wrong number of
@@ -260,7 +268,18 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
             self._sigkill_delayed_call = None
         if self._termination_failure is not None:
             reason = self._termination_failure
-        self._processTerminated(reason)
+        if self.reported_mirror_finished:
+            self._processTerminated(reason)
+        else:
+            error = self._stderr.getvalue()
+            if error:
+                error = error.splitlines()[-1]
+            else:
+                error = str(reason.value)
+            self.mirror_failed_deferred = defer.maybeDeferred(
+                self.listener.mirrorFailed, error, None)
+            self.mirror_failed_deferred.addCallback(
+                lambda ignored: self._processTerminated(reason))
 
 
 class PullerMaster:
@@ -369,8 +388,13 @@ class PullerMaster:
             ('dest', self.destination_url),
             ('error-explanation', failure.getErrorMessage())])
         request.URL = get_canonical_url_for_branch_name(self.unique_name)
+        tb = None
+        if failure.check(error.ProcessTerminated):
+            tb = getattr(failure, 'error', None)
+        if tb is None:
+            tb = failure.getTraceback()
         errorlog.globalErrorUtility.raising(
-            (failure.type, failure.value, failure.getTraceback()), request,
+            (failure.type, failure.value, tb), request,
             now)
         self.logger.info('Recorded %s', request.oopsid)
 
