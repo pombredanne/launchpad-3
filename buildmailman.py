@@ -42,8 +42,16 @@ def build_mailman():
     # permissions, otherwise configure will complain.
     user, group = config.mailman.build.user_group
     # Now work backwards to get the uid and gid
-    uid = pwd.getpwnam(user).pw_uid
-    gid = grp.getgrnam(group).gr_gid
+    try:
+        uid = pwd.getpwnam(user).pw_uid
+    except KeyError:
+        print >> sys.stderr, 'No user found:', user
+        sys.exit(1)
+    try:
+        gid = grp.getgrnam(group).gr_gid
+    except KeyError:
+        print >> sys.stderr, 'No group found:', group
+        sys.exit(1)
 
     # Ensure that the var_dir exists, is owned by the user:group, and has
     # the necessary permissions.  Set the mode separately after the

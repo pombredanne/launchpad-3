@@ -432,6 +432,7 @@ COMMENT ON COLUMN Product.license_info IS 'Additional information about licenses
 COMMENT ON COLUMN Product.enable_bug_expiration IS 'Indicates whether automatic bug expiration is enabled.';
 COMMENT ON COLUMN Product.official_blueprints IS 'Whether or not this product upstream uses Blueprints officially. This is useful to help indicate whether or not the upstream project will be actively watching the blueprints in Launchpad.';
 COMMENT ON COLUMN Product.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on this product.';
+COMMENT ON COLUMN Product.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
 
 -- ProductLicense
 COMMENT ON TABLE ProductLicense IS 'The licenses that cover the software for a product.';
@@ -558,6 +559,7 @@ COMMENT ON COLUMN Project.icon IS 'The library file alias to a small image to be
 COMMENT ON COLUMN Project.mugshot IS 'The library file alias of a mugshot image to display as the branding of a project, on its home page.';
 COMMENT ON COLUMN Project.logo IS 'The library file alias of a smaller version of this product\'s mugshot.';
 COMMENT ON COLUMN Project.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on products in this project.';
+COMMENT ON COLUMN Project.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
 
 -- ProjectRelationship
 COMMENT ON TABLE ProjectRelationship IS 'Project Relationships. This table stores information about the way projects are related to one another in the open source world. The actual nature of the relationship is stored in the \'label\' field, and possible values are given by the ProjectRelationship enum in dbschema.py. Examples are AGGREGATES ("the Gnome Project AGGREGATES EOG and Evolution and Gnumeric and AbiWord") and SIMILAR ("the Evolution project is SIMILAR to the Mutt project").';
@@ -768,6 +770,7 @@ COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroSeries that shoul
 COMMENT ON COLUMN Distribution.language_pack_admin IS 'The Person or Team that handle language packs for the distro release.';
 COMMENT ON COLUMN Distribution.enable_bug_expiration IS 'Indicates whether automatic bug expiration is enabled.';
 COMMENT ON COLUMN Distribution.bug_reporting_guidelines IS 'Guidelines to the end user for reporting bugs on this distribution.';
+COMMENT ON COLUMN Distribution.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
 
 -- DistroSeries
 
