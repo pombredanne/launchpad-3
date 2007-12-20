@@ -844,6 +844,14 @@ class BugTaskEditView(LaunchpadEditFormView):
         return editable_field_names
 
     @property
+    def is_question(self):
+        """Return True or False if this bug was converted into a question.
+
+        Bugtasks cannot be edited if the bug was converted into a question.
+        """
+        return self.context.bug.getQuestionCreatedFromBug() is not None
+
+    @property
     def next_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)

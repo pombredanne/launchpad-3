@@ -71,7 +71,7 @@
                   (<a tal:attributes="href python:view.md5URL(file.libraryfile, release)"
                   >md5</a><tal:signature condition="file/signature">
                   , <a tal:attributes="href python:view.fileURL(file.signature,release)">
-                  pgp</a></tal:signature>)
+                  sig</a></tal:signature>)
                 </td>
                 <td>
                    <tal:version content="release/version">version</tal:version>
