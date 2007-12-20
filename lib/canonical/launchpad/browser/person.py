@@ -2740,7 +2740,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         email address.
         """
         validated = self.context.preferredemail
-        if validated is None:
+        if validated is None and self.context.validatedemails.count() > 0:
             validated = self.context.validatedemails[0]
         unvalidated = self.unvalidated_addresses
         if len(unvalidated) > 0:
@@ -2811,9 +2811,10 @@ class PersonEditEmailsView(LaunchpadFormView):
         mailing_list_set = getUtility(IMailingListSet)
         fields = []
         terms = [SimpleTerm("Preferred address"),
-                 SimpleTerm("Don't subscribe"),
-                 SimpleTerm(self.context.preferredemail,
-                            self.context.preferredemail.email)]
+                 SimpleTerm("Don't subscribe")]
+        if self.context.preferredemail:
+            terms.append(SimpleTerm(self.context.preferredemail,
+                                    self.context.preferredemail.email))
         terms += [SimpleTerm(email, email.email)
                    for email in self.context.validatedemails]
         for team in self.context.teams_participated_in:
@@ -2872,6 +2873,17 @@ class PersonEditEmailsView(LaunchpadFormView):
         # Return the EmailAddress/LoginToken object for use in any
         # further validation.
         return email
+
+    @property
+    def validated_addresses(self):
+        """All of this person's validated email addresses, including
+        their preferred address (if any).
+        """
+        addresses = []
+        if self.context.preferredemail:
+            addresses.append(self.context.preferredemail)
+        addresses += [email for email in self.context.validatedemails]
+        return addresses
 
     @property
     def unvalidated_addresses(self):
