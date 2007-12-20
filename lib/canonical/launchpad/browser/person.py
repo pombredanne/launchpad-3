@@ -2948,14 +2948,16 @@ class PersonEditEmailsView(LaunchpadFormView):
     def action_confirm(self, action, data):
         """Mail a validation URL to the selected email address."""
         email = data['UNVALIDATED_SELECTED']
+        if IEmailAddress.providedBy(email):
+            email = email.email
         token = getUtility(ILoginTokenSet).new(
-                    self.context, getUtility(ILaunchBag).login, email.email,
+                    self.context, getUtility(ILaunchBag).login, email,
                     LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest(self.request.getApplicationURL())
         self.request.response.addInfoNotification(
             "An e-mail message was sent to '%s' with "
             "instructions on how to confirm that "
-            "it belongs to you." % email.email)
+            "it belongs to you." % email)
         self.next_url = self.action_url
 
     def validate_action_remove_unvalidated(self, action, data):
