@@ -70,11 +70,11 @@ as the latest bugs feed for a product.
     http://feeds.launchpad.dev/mozilla/latest-bugs.atom
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
-    4
+    5
 
     >>> entry = entries[0]
     >>> print extract_text(entry.title)
-    [9] Thunderbird crashes
+    [15] Nonsensical bugs are useless
     >>> print extract_text(entry.author('name')[0])
     Foo Bar
     >>> print extract_text(entry.author('uri')[0])
@@ -82,11 +82,11 @@ as the latest bugs feed for a product.
 
     >>> entry = entries[1]
     >>> print extract_text(entry.title)
-    [5] Firefox install instructions should be complete
+    [9] Thunderbird crashes
     >>> print extract_text(entry.author('name')[0])
-    Sample Person
+    Foo Bar
     >>> print extract_text(entry.author('uri')[0])
-    http://bugs.launchpad.dev/~name12
+    http://bugs.launchpad.dev/~name16
 
 
 == Latest bugs for a person ==
@@ -104,7 +104,7 @@ This feed gets the latest bugs for a person.
     http://feeds.launchpad.dev/~name16/latest-bugs.atom
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
-    6
+    7
 
     >>> entry = entries[0]
     >>> print extract_text(entry.title)
@@ -116,7 +116,7 @@ This feed gets the latest bugs for a person.
 
     >>> entry = entries[1]
     >>> print extract_text(entry.title)
-    [12] Copy, Cut and Delete operations should work on selections
+    [15] Nonsensical bugs are useless
     >>> print extract_text(entry.author('name')[0])
     Foo Bar
     >>> print extract_text(entry.author('uri')[0])
@@ -223,11 +223,11 @@ to True.
 
     >>> entry = entries[1]
     >>> print extract_text(entry.title)
-    [5] Firefox install instructions should be complete
+    [15] Nonsensical bugs are useless
     >>> print extract_text(entry.author('name')[0])
-    Sample Person
+    Foo Bar
     >>> print extract_text(entry.author('uri')[0])
-    http://bugs.launchpad.dev/~name12
+    http://bugs.launchpad.dev/~name16
 
 
 == Results for a single bug ==
