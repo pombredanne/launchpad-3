@@ -88,6 +88,86 @@ as the latest bugs feed for a product.
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name12
 
+== Latest bugs for a distro ==
+
+This feed gets the latest bugs for a distribution, and has the same type 
+of content as the latest bugs feed for a product.
+
+    >>> browser.open('http://feeds.launchpad.dev/ubuntu/latest-bugs.atom')
+    >>> browser.title
+    'Bugs in Ubuntu'
+    >>> browser.url
+    'http://feeds.launchpad.dev/ubuntu/latest-bugs.atom'
+
+    >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
+    >>> print extract_text(soup.find('id'))
+    http://feeds.launchpad.dev/ubuntu/latest-bugs.atom
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    4
+
+    >>> entry = entries[1]
+    >>> print extract_text(entry.title)
+    [10] another test bug
+    >>> print extract_text(entry.author('name')[0])
+    Foo Bar
+    >>> print extract_text(entry.author('uri')[0])
+    http://bugs.launchpad.dev/~name16
+
+== Latest bugs for a distroseries ==
+
+This feed gets the latest bugs for a distribution series, and has the same 
+type of content as the latest bugs feed for a product.
+
+    >>> browser.open(
+    ...     'http://feeds.launchpad.dev/ubuntu/hoary/latest-bugs.atom')
+    >>> browser.title
+    'Bugs in Hoary'
+    >>> browser.url
+    'http://feeds.launchpad.dev/ubuntu/hoary/latest-bugs.atom'
+
+    >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
+    >>> print extract_text(soup.find('id'))
+    http://feeds.launchpad.dev/ubuntu/hoary/latest-bugs.atom
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    1
+
+    >>> entry = entries[0]
+    >>> print extract_text(entry.title)
+    [2] Blackhole Trash folder
+    >>> print extract_text(entry.author('name')[0])
+    Sample Person
+    >>> print extract_text(entry.author('uri')[0])
+    http://bugs.launchpad.dev/~name12
+
+== Latest bugs for a product series ==
+
+This feed gets the latest bugs for a product series, and has the same 
+type of content as the latest bugs feed for a product.
+
+    >>> browser.open(
+    ...     'http://feeds.launchpad.dev/firefox/1.0/latest-bugs.atom')
+    >>> browser.title
+    'Bugs in 1.0'
+    >>> browser.url
+    'http://feeds.launchpad.dev/firefox/1.0/latest-bugs.atom'
+
+    >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
+    >>> print extract_text(soup.find('id'))
+    http://feeds.launchpad.dev/firefox/1.0/latest-bugs.atom
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    1
+
+    >>> entry = entries[0]
+    >>> print extract_text(entry.title)
+    [5] Firefox install instructions should be complete
+    >>> print extract_text(entry.author('name')[0])
+    Sample Person
+    >>> print extract_text(entry.author('uri')[0])
+    http://bugs.launchpad.dev/~name12
+
 
 == Latest bugs for a person ==
 
