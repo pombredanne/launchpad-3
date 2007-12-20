@@ -120,18 +120,25 @@ This feed gets the latest bugs for a source package, and has the same
 type of content as the latest bugs feed for a product.
 
     >>> browser.open(
-    ...     'http://feeds.launchpad.dev/ubuntu/+source/cnews/latest-bugs.atom')
+    ...     'http://feeds.launchpad.dev/ubuntu/+source/thunderbird'
+    ...     '/latest-bugs.atom')
     >>> browser.title
-    'Bugs in cnews in ubuntu'
+    'Bugs in thunderbird in ubuntu'
     >>> browser.url
-    'http://feeds.launchpad.dev/ubuntu/+source/cnews/latest-bugs.atom'
-
+    'http://feeds.launchpad.dev/ubuntu/+source/thunderbird/latest-bugs.atom'
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
-    http://feeds.launchpad.dev/ubuntu/+source/cnews/latest-bugs.atom
+    http://feeds.launchpad.dev/ubuntu/+source/thunderbird/latest-bugs.atom
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
-    0
+    1
+    >>> entry = entries[0]
+    >>> print extract_text(entry.title)
+    [9] Thunderbird crashes
+    >>> print extract_text(entry.author('name')[0])
+    Foo Bar
+    >>> print extract_text(entry.author('uri')[0])
+    http://bugs.launchpad.dev/~name16
 
 
 == Latest bugs for a distroseries ==
