@@ -228,9 +228,9 @@ valid.
     False
     >>> summarize_bugtasks(hoary_bugtask.bug.bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
-    thunderbird  False   351  New         False     False  False  False
     ubuntu       True    351  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
+    thunderbird  False   351  New         False     False  False  False
 
 If the valid bugtask becomes Invalid or Won't Fix, the hoary bugtask
 will be expirable.
@@ -241,13 +241,14 @@ will be expirable.
     True
     >>> summarize_bugtasks(hoary_bugtask.bug.bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
-    thunderbird  False   351  Won't Fix   False     False  False  False
     ubuntu       True    351  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
+    thunderbird  False   351  Won't Fix   False     False  False  False
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350)
     >>> summarize_bugtasks(expirable_bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
+    ubuntu       True    351  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
 
 The ubuntu bugtask is never returned; it is a conjoined slave to the
@@ -265,6 +266,7 @@ are returned.
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(60)
     >>> summarize_bugtasks(expirable_bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
+    ubuntu       True    351  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
     jokosher     True     61  Incomplete  False     False  False  False
 
@@ -278,6 +280,7 @@ the hoary bugtask.
     ...     0, bug=hoary_bugtask.bug)
     >>> summarize_bugtasks(expirable_bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
+    ubuntu       True    351  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
 
 When a BugTarget is passed as an argument to findExpirableBugTasks(), it
@@ -290,6 +293,7 @@ bugtasks that can expire if they are not confirmed.
     ...     0, target=ubuntu)
     >>> summarize_bugtasks(expirable_bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
+    ubuntu       True    351  Incomplete  False     False  False  False
     hoary        True    351  Incomplete  False     False  False  False
     recent       True     31  Incomplete  False     False  False  False
 
@@ -349,7 +353,7 @@ config.malone.expiration_dbuser.
     INFO    creating lockfile
     INFO    Expiring unattended, INCOMPLETE bugtasks older than
             60 days for projects that use Launchpad Bugs.
-    INFO    Found 2 bugtasks to expire.
+    INFO    Found 3 bugtasks to expire.
     INFO    Expired 2 bugtasks.
     INFO    Finished expiration run.
     <BLANKLINE>
@@ -391,8 +395,8 @@ Only the three test bugtasks were expired in the entire database.
     >>> summarize_bugtasks(invalid_bugtasks)
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     ubuntu       True      0  Invalid     False     False  False  False
-    jokosher     True      0  Invalid     False     False  False  False
     hoary        True      0  Invalid     False     False  False  False
+    jokosher     True      0  Invalid     False     False  False  False
 
 The bugtasks statusexplanation was updated to explain the change in
 status.

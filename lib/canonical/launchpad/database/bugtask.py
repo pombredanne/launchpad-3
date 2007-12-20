@@ -1607,8 +1607,7 @@ class BugTaskSet:
         for bugtask in all_bugtasks:
             # Only add bugtasks that are not product or distribution
             # conjoined slaves.
-            if (bugtask.bug.permits_expiration
-                and bugtask.conjoined_master is None):
+            if bugtask.bug.permits_expiration:
                 bugtasks.append(bugtask)
 
         def date_last_updated_key(bugtask):
@@ -1616,6 +1615,24 @@ class BugTaskSet:
             return bugtask.bug.date_last_updated
 
         return sorted(bugtasks, key=date_last_updated_key)
+
+    def _bugTaskBugPermitsExpiration(self, bugtask):
+        """Return True if a BugTask's Bug permits BugTask expiration."""
+        expirable_status_list = [
+            BugTaskStatus.INCOMPLETE, BugTaskStatus.INVALID,
+            BugTaskStatus.WONTFIX]
+
+        unexpirable_bugtasks = BugTask.select("""
+            BugTask.bug = %s
+            AND BugTask.status NOT IN %s
+            """ % sqlvalues(bugtask.bug, expirable_status_list))
+
+        if (unexpirable_bugtasks.count() == 0 and
+            bugtask.status == BugTaskStatus.INCOMPLETE and
+            bugtask.pillar.enable_bug_expiration):
+            return True
+        else:
+            return False
 
     def _getTargetJoinAndClause(self, target):
         """Return a SQL join clause to a `BugTarget`.
