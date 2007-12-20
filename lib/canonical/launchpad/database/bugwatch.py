@@ -145,6 +145,8 @@ class BugWatch(SQLBase):
                 "correct.",
             BugWatchErrorType.TIMEOUT: "Launchpad's connection to "
                 "%(bugtracker)s timed out.",
+            BugWatchErrorType.UNKNOWN: "Launchpad couldn't import bug "
+                "#%(bug)s from " "%(bugtracker)s.",
             BugWatchErrorType.UNPARSABLE_BUG: "Launchpad couldn't "
                 "extract a status from %(bug)s on %(bugtracker)s.",
             BugWatchErrorType.UNPARSABLE_BUG_TRACKER: "Launchpad "
