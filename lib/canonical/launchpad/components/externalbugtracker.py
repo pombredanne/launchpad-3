@@ -31,7 +31,7 @@ from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
     CreateBugParams, IBugWatchSet, IDistribution, IExternalBugTracker,
-    ILaunchpadCelebrities, IMessageSet, IPersonSet, NotFoundError,
+    ILaunchpadCelebrities, IMessageSet, IPersonSet,
     PersonCreationRationale, ISupportsCommentImport,
     UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp.url import urlparse

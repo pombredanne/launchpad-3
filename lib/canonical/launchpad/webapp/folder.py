@@ -9,6 +9,7 @@ __all__ = [
 import errno
 import os
 import re
+import time
 
 from zope.interface import implements
 from zope.app.content_types import guess_content_type
@@ -31,7 +32,7 @@ class File:
         f.close()
         self.content_type, enc = guess_content_type(path, self.data)
         self.__name__ = name
-        self.lmt = float(os.path.getmtime(path)) or time()
+        self.lmt = float(os.path.getmtime(path)) or time.time()
         self.lmh = rfc1123_date(self.lmt)
 
 

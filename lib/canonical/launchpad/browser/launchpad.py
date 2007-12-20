@@ -23,7 +23,6 @@ __all__ = [
     ]
 
 import cgi
-import errno
 import urllib
 import os
 import re
@@ -36,10 +35,6 @@ from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 from zope.app.traversing.interfaces import ITraversable
-from zope.app.publisher.browser.fileresource import setCacheControl
-from zope.app.datetimeutils import rfc1123_date
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.publisher.interfaces import NotFound
 
 from BeautifulSoup import BeautifulStoneSoup, Comment
 

@@ -9,27 +9,18 @@ We should investigate zc.datewidget available from the Z3 SVN repository.
 __metaclass__ = type
 
 import os
-from datetime import date, datetime
+from datetime import datetime
 import pytz
 
 from zope.app.datetimeutils import parse, DateTimeError
-from zope.app.form.browser.interfaces import IWidgetInputErrorView
 from zope.app.form.browser.textwidgets import escape, TextWidget
 from zope.app.form.browser.widget import DisplayWidget
-from zope.app.form.browser.widget import renderElement
-from zope.app.form.interfaces import IDisplayWidget, IInputWidget
-from zope.app.form.interfaces import InputErrors, WidgetInputError
+from zope.app.form.interfaces import InputErrors
 from zope.app.form.interfaces import ConversionError
-from zope.app import zapi
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
-from zope.interface import implements
-from zope.schema import Int
-from zope.schema.interfaces import ValidationError
 
-from canonical.launchpad import _
 from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import ExportedFolder
 
 

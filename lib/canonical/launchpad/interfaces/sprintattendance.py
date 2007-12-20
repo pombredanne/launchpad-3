@@ -9,7 +9,7 @@ __all__ = [
     'ISprintAttendance',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 from zope.schema import Choice, Datetime
 from canonical.launchpad import _
 

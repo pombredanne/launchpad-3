@@ -13,7 +13,7 @@ __all__ = [
 
 from canonical.launchpad.webapp import (
     canonical_url, enabled_with_permission, ContextMenu, GetitemNavigation,
-    LaunchpadView, Link, StandardLaunchpadFacets)
+    Link, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.addview import SQLObjectAddView
