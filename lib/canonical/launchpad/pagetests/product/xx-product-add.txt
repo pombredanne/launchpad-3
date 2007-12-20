@@ -126,7 +126,7 @@ The mail is sent when the transaction gets commited:
     >>> msg['From']
     'Launchpad <noreply@launchpad.net>'
     >>> msg['Subject']
-    'Project License Submitted'
+    'Project License Submitted for testing2 by name12'
     >>> msg['Reply-To']
     'Sample Person <test@canonical.com>'
     >>> msg.get_payload()
@@ -164,7 +164,7 @@ The mail is sent when the transaction gets commited:
     >>> msg['From']
     'Launchpad <noreply@launchpad.net>'
     >>> msg['Subject']
-    'Project License Submitted'
+    'Project License Submitted for foss by name12'
     >>> msg['Reply-To']
     'Sample Person <test@canonical.com>'
     >>> msg.get_payload()

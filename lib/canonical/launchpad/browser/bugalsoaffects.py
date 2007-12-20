@@ -429,6 +429,11 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
     label = "Also affects distribution/package"
     target_field_names = ('distribution', 'sourcepackagename')
 
+    @property
+    def initial_values(self):
+        """Return the initial values for the view's fields."""
+        return {'distribution': getUtility(ILaunchpadCelebrities).ubuntu}
+
     def getTarget(self, data=None):
         if data is not None:
             return data.get('distribution')
