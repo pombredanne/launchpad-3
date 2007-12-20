@@ -13,7 +13,8 @@ from zope.interface import implements, providedBy
 from zope.component import getUtility
 
 # SQL imports
-from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, SQLMultipleJoin
+from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
+    SQLMultipleJoin)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -91,6 +92,11 @@ class BugWatch(SQLBase):
             self.sync()
 
         for linked_bugtask in self.bugtasks:
+            # We don't updated conjoined bug tasks; they must be updated
+            # through their conjoined masters.
+            if linked_bugtask._isConjoinedBugTask():
+                continue
+
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.importance = malone_importance
@@ -110,6 +116,11 @@ class BugWatch(SQLBase):
             # constant to a datetime value.
             self.sync()
         for linked_bugtask in self.bugtasks:
+            # We don't updated conjoined bug tasks; they must be updated
+            # through their conjoined masters.
+            if linked_bugtask._isConjoinedBugTask():
+                continue
+
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.transitionToStatus(
@@ -359,7 +370,8 @@ class BugWatchSet(BugSetBase):
 
     def extractBugTrackerAndBug(self, url):
         """See IBugWatchSet."""
-        for trackertype, parse_func in self.bugtracker_parse_functions.items():
+        for trackertype, parse_func in (
+            self.bugtracker_parse_functions.items()):
             scheme, host, path, query_string, frag = urlsplit(url)
             query = {}
             for query_part in query_string.split('&'):
