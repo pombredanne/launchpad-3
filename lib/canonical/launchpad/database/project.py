@@ -5,13 +5,14 @@
 __metaclass__ = type
 __all__ = [
     'Project',
+    'ProjectSeries',
     'ProjectSet',
     ]
 
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
+    AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
 
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -20,7 +21,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IFAQCollection, IHasIcon, IHasLogo, IHasMugshot,
-    IProduct, IProject, IProjectSet, ISearchableByQuestionOwner,
+    IProduct, IProject, IProjectSeries, IProjectSet, ISearchableByQuestionOwner,
     ImportStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     SpecificationFilter, SpecificationImplementationStatus,
     SpecificationSort, SprintSpecificationStatus, TranslationPermission)
@@ -38,6 +39,7 @@ from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import ProjectMilestone
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.product import Product
+from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -91,6 +93,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     bugtracker = ForeignKey(
         foreignKey="BugTracker", dbName="bugtracker", notNull=False,
         default=None)
+    bug_reporting_guidelines = StringCol(default=None)
 
     # convenient joins
 
@@ -177,7 +180,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def valid_specifications(self):
         return self.specifications(filter=[SpecificationFilter.VALID])
 
-    def specifications(self, sort=None, quantity=None, filter=None):
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       series=None):
         """See `IHasSpecifications`."""
 
         # Make a new list of the filter, so that we do not mutate what we
@@ -189,8 +193,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = (
-                ['-priority', 'Specification.definition_status', 'Specification.name'])
+            order = ['-priority', 'Specification.definition_status',
+                     'Specification.name']
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -231,9 +235,16 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 
+        clause_tables = ['Product']
+        if series is not None:
+            query += ('AND Specification.productseries = ProductSeries.id'
+                      ' AND ProductSeries.name = %s'
+                      % sqlvalues(series))
+            clause_tables.append('ProductSeries')
+
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity,
-            clauseTables=['Product'])
+            clauseTables=clause_tables)
         return results.prejoin(['assignee', 'approver', 'drafter'])
 
     # XXX: Bjorn Tillenius 2006-08-17:
@@ -385,6 +396,19 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 return milestone
         return None
 
+    def getSeries(self, series_name):
+        """See `IProject.`"""
+        has_series = ProductSeries.selectFirst(
+            AND(ProductSeries.q.productID == Product.q.id,
+                ProductSeries.q.name == series_name,
+                Product.q.projectID == self.id), orderBy='id')
+
+        if has_series is None:
+            return None
+
+        return ProjectSeries(self, series_name)
+
+
 class ProjectSet:
     implements(IProjectSet)
 
@@ -511,3 +535,37 @@ class ProjectSet:
         query = " AND ".join(queries)
         return Project.select(query, distinct=True, clauseTables=clauseTables)
 
+
+class ProjectSeries(HasSpecificationsMixin):
+    """See `IprojectSeries`."""
+
+    implements(IProjectSeries)
+
+    def __init__(self, project, name):
+        self.project = project
+        self.name = name
+
+    def specifications(self, sort=None, quantity=None, filter=None):
+        return self.project.specifications(
+            sort, quantity, filter, self.name)
+
+    @property
+    def has_any_specifications(self):
+        """See `IHasSpecifications`."""
+        return self.all_specifications.count()
+
+    @property
+    def all_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.ALL])
+
+    @property
+    def valid_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.VALID])
+
+    @property
+    def title(self):
+        return "%s Series %s" % (self.project.title, self.name)
+
+    @property
+    def displayname(self):
+        return self.name

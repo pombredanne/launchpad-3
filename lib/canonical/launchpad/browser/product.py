@@ -66,6 +66,7 @@ from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
+from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.objectreassignment import (
@@ -188,7 +189,8 @@ class ProductLicenseMixin:
         if (License.OTHER_PROPRIETARY in self.product.licenses
                 or License.OTHER_OPEN_SOURCE in self.product.licenses):
             user = getUtility(ILaunchBag).user
-            subject = 'Project License Submitted'
+            subject = "Project License Submitted for %s by %s" % (
+                    self.product.name, user.name)
             fromaddress = format_address("Launchpad",
                                          config.noreply_from_address)
             license_titles = '\n'.join(
@@ -337,14 +339,12 @@ class ProductOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def announce(self):
         text = 'Make announcement'
-        enabled = self.isBetaUser
         summary = 'Publish an item of news for this project'
-        return Link('+announce', text, summary, enabled=enabled, icon='add')
+        return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
         text = 'Show announcements'
-        enabled = bool(self.context.announcements().count()
-                       and self.isBetaUser)
+        enabled = bool(self.context.announcements().count())
         return Link('+announcements', text, enabled=enabled)
 
     def branch_add(self):
@@ -557,7 +557,7 @@ class SortSeriesMixin:
         return series_list
 
 
-class ProductView(HasAnnouncementsView, SortSeriesMixin):
+class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin):
 
     __used_for__ = IProduct
 
@@ -706,11 +706,18 @@ class ProductDownloadFileMixin:
         raise NotImplementedError
 
     def fileURL(self, file_, release=None):
-        """Create a download URL for the file."""
+        """Create a download URL for the `LibraryFileAlias`."""
         if release is None:
             release = self.context
         return "%s/+download/%s" % (canonical_url(release),
-                                    file_.libraryfile.filename)
+                                    file_.filename)
+
+    def md5URL(self, file_, release=None):
+        """Create a URL for the MD5 digest."""
+        if release is None:
+            release = self.context
+        return "%s/+download/%s/+md5" % (canonical_url(release),
+                                         file_.filename)
 
     def processDeleteFiles(self):
         """If the 'delete_files' button was pressed, process the deletions."""
@@ -765,6 +772,17 @@ class ProductDownloadFilesView(LaunchpadView,
                 if release.files.count() > 0:
                     return True
         return False
+    
+    @cachedproperty
+    def any_download_files_with_signatures(self):
+        """Across series and releases do any download files have signatures?
+        """
+        for series in self.product.serieses:
+            for release in series.releases:
+                for file in release.files:
+                    if file.signature:
+                        return True
+        return False
 
     @cachedproperty
     def milestones(self):
@@ -795,11 +813,12 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     schema = IProduct
     label = "Change project details"
     field_names = [
-        "displayname", "title", "summary", "description", "project",
-        "bugtracker", 'enable_bug_expiration', "official_rosetta",
-        "official_answers", "homepageurl", "sourceforgeproject",
-        "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
-        "programminglang", "development_focus", "licenses", "license_info"]
+        "displayname", "title", "summary", "description",
+        "bug_reporting_guidelines", "project", "bugtracker",
+        "enable_bug_expiration", "official_rosetta", "official_answers",
+        "homepageurl", "sourceforgeproject", "freshmeatproject", "wikiurl",
+        "screenshotsurl", "downloadurl", "programminglang",
+        "development_focus", "licenses", "license_info"]
     custom_widget(
         'licenses', LicenseWidget, column_count=3, orientation='vertical')
     custom_widget('bugtracker', ProductBugTrackerWidget)

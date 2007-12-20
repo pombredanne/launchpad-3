@@ -24,6 +24,7 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, DistroSeriesStatus, IBug,
     IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
@@ -529,10 +530,11 @@ class Bug(SQLBase):
 
         return bugmsg.message
 
-    def linkMessage(self, message):
+    def linkMessage(self, message, bugwatch=None):
         """See `IBug`."""
         if message not in self.messages:
-            result = BugMessage(bug=self, message=message)
+            result = BugMessage(bug=self, message=message,
+                bugwatch=bugwatch)
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, message.owner)
             self.findCvesInText(message.text_contents, message.owner)
@@ -746,11 +748,18 @@ class Bug(SQLBase):
 
     def getMessageChunks(self):
         """See `IBug`."""
-        chunks = MessageChunk.select("""
+        query = """
             Message.id = MessageChunk.message AND
             BugMessage.message = Message.id AND
             BugMessage.bug = %s
-            """ % sqlvalues(self),
+            """ % sqlvalues(self)
+
+        # We can exclude comments imported from external bug trackers by
+        # only retrieving those comments without a linked BugWatch.
+        if not config.malone.show_imported_comments:
+            query = query + "AND BugMessage.bugwatch IS NULL"
+
+        chunks = MessageChunk.select(query,
             clauseTables=["BugMessage", "Message"],
             # XXX: kiko 2006-09-16 bug=60745:
             # There is an issue that presents itself

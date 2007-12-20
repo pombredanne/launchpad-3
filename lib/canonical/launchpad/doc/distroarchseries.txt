@@ -244,3 +244,56 @@ pockets.
     ...    'at', include_pending=True, archive=cprov_archive)
     >>> soyuz_helper.checkPubList(all_ppa_pubs, result)
     True
+
+== DistroArchSeries Lookup ==
+
+The architectures related to a specific distroseries can be retrieved
+via the 'architectures' property.
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> warty = ubuntu['warty']
+    >>> hoary = ubuntu['hoary']
+
+    >>> def print_architectures(architectures):
+    ...     for arch in architectures:
+    ...         details = create_view(arch, "+details")()
+    ...         if details:
+    ...             print arch.title, details
+    ...         else:
+    ...             print arch.title
+
+    >>> print_architectures(warty.architectures)
+    The Warty Warthog Release for hppa (hppa)
+    The Warty Warthog Release for i386 (x86) (official, ppa)
+
+DistroArchSeries for which we support PPA building can be obtained via
+another distroseries method called 'ppa_architectures'.
+
+For testing purpose we can compare the results of a
+manually-calculated set of warty architectures for which we support
+PPA  and the actual value returned from the 'ppa_architecture'
+property.
+
+    >>> expected_ppa_archs = [arch for arch in warty.architectures
+    ...                       if arch.ppa_supported is True]
+    >>> print_architectures(expected_ppa_archs)
+    The Warty Warthog Release for i386 (x86) (official, ppa)
+
+    >>> print_architectures(warty.ppa_architectures)
+    The Warty Warthog Release for i386 (x86) (official, ppa)
+
+Let's activate ppa support for hoary/hppa and check if
+'ppa_architectures' will include it this time.
+
+    >>> print_architectures(hoary.ppa_architectures)
+    The Hoary Hedgehog Release for i386 (x86) (official, ppa)
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> login('foo.bar@canonical.com')
+
+    >>> hoary['hppa'].ppa_supported = True
+    >>> flush_database_updates()
+
+    >>> print_architectures(hoary.ppa_architectures)
+    The Hoary Hedgehog Release for hppa (hppa) (ppa)
+    The Hoary Hedgehog Release for i386 (x86) (official, ppa)

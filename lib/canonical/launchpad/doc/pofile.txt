@@ -912,6 +912,18 @@ Launchpad.
     >>> print pofile_changed.updatesCount()
     1
 
+This message is also counted as translated message (number of translated
+messages is the number of imported/currentCount plus number of newly
+translated in Launchpad/rosettaCount plus number of changed in
+Launchpad/updatesCount):
+
+    >>> print pofile_changed.currentCount()
+    7
+    >>> print pofile_changed.rosettaCount()
+    0
+    >>> print pofile_changed.updatesCount()
+    1
+
 We make sure that submissions on untranslated strings are not considered
 'changed in Launchpad', since this method is mainly designed to help
 translators revert translations to published translations.

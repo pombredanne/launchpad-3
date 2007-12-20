@@ -9,11 +9,12 @@ __all__ = [
     'DistroArchSeriesView',
     'DistroArchSeriesAddView',
     'DistroArchSeriesBinariesView',
+    'DistroArchSeriesDetailsView',
     ]
 
 from canonical.launchpad.webapp import (
-    canonical_url, StandardLaunchpadFacets, ContextMenu, Link,
-    GetitemNavigation, enabled_with_permission)
+    canonical_url, enabled_with_permission, ContextMenu, GetitemNavigation,
+    LaunchpadView, Link, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -46,7 +47,8 @@ class DistroArchSeriesContextMenu(ContextMenu):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
-    # Search link not necessary, because there's a search form on the overview page.
+    # Search link not necessary, because there's a search form on
+    # the overview page.
 
     def builds(self):
         text = 'Show builds'
@@ -102,14 +104,31 @@ class DistroArchSeriesAddView(SQLObjectAddView):
         self._nextURL = '.'
         SQLObjectAddView.__init__(self, context, request)
 
-    def create(self, architecturetag, processorfamily, official, owner):
+    def create(self, architecturetag, processorfamily, official, owner,
+               ppa_supported):
         """Create a new Port."""
-        dar = self.context.newArch(architecturetag, processorfamily,
-            official, owner)
-        self._nextURL = canonical_url(dar)
-        return dar
+        distroarchseries = self.context.newArch(
+            architecturetag, processorfamily, official, owner, ppa_supported)
+        self._nextURL = canonical_url(distroarchseries)
+        return distroarchseries
 
     def nextURL(self):
         return self._nextURL
 
 
+class DistroArchSeriesDetailsView(LaunchpadView):
+    """Implementing `DistroArchSeries` details presentation."""
+
+    def __call__(self):
+        details = []
+
+        if self.context.official:
+            details.append('official')
+
+        if self.context.ppa_supported:
+            details.append('ppa')
+
+        if details:
+            return "(%s)" % ', '.join(details)
+
+        return ""

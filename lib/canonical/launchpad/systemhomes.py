@@ -5,6 +5,7 @@
 __all__ = [
     'AuthServerApplication',
     'BazaarApplication',
+    'CodeImportScheduler',
     'FeedsApplication',
     'MailingListApplication',
     'MaloneApplication',
@@ -19,12 +20,13 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,
-    IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistroSeriesSet,
-    IFeedsApplication, IHWDBApplication, ILanguageSet, ILaunchBag,
-    ILaunchpadStatisticSet, IMailingListApplication, IMaloneApplication,
-    IOpenIdApplication, IProductSet, IRegistryApplication,
-    IRosettaApplication, IShipItApplication, ITranslationGroupSet)
+    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication, IBugSet,
+    IBugTaskSet, IBugTrackerSet, IBugWatchSet,
+    ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
+    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
+    IMailingListApplication, IMaloneApplication, IOpenIdApplication,
+    IProductSet, IRegistryApplication, IRosettaApplication,
+    IShipItApplication, ITranslationGroupSet)
 
 
 class AuthServerApplication:
@@ -32,6 +34,13 @@ class AuthServerApplication:
     implements(IAuthServerApplication)
 
     title = "Auth Server"
+
+
+class CodeImportSchedulerApplication:
+    """CodeImportScheduler End-Point."""
+    implements(ICodeImportSchedulerApplication)
+
+    title = "Code Import Scheduler"
 
 
 class RegistryApplication:

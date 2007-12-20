@@ -19,7 +19,7 @@
 
 <div metal:fill-slot="main">
 
-  <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
+  <link rel="alternate" type="application/atom+xml" title="Announcements"
         tal:attributes="href view/feed_url" />
 
   <div tal:condition="view/announcement_nav/batch/listlength" id="announcements">

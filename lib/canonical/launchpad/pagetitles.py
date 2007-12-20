@@ -747,6 +747,9 @@ announcement_delete = 'Permanently delete this announcement'
 
 announcement_edit = 'Modify this announcement'
 
+def announcement_index(context, view):
+    return '%s announcement' % context.target.displayname
+
 announcement_publish = 'Publish this announcement'
 
 announcement_retarget = 'Move this announcement to a different project'
@@ -781,6 +784,13 @@ openid_index = 'Launchpad OpenID Server'
 def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""
     return 'Invalid OpenID identity %s' % view.openid_request.identity
+
+openidrpconfig_add = 'Add an OpenID Relying Party Configuration'
+
+openidrpconfig_edit = ContextDisplayName(
+    'Edit Relying Party Configuration for %s')
+
+openidrpconfigset_index = 'OpenID Relying Party Configurations'
 
 def package_bugs(context, view):
     """Return the page title bug in a package."""
@@ -1044,6 +1054,8 @@ registry_review = 'Review Launchpad items'
 related_bounties = ContextDisplayName('Bounties for %s')
 
 remotebug_index = ContextTitle('%s')
+
+root_featuredprojects = 'Manage featured projects in Launchpad'
 
 root_index = 'Launchpad'
 

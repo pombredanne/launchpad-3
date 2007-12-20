@@ -12,7 +12,6 @@ __all__ = [
 import logging
 from datetime import datetime, timedelta
 from StringIO import StringIO
-import sys
 import urlparse
 
 import pytz
@@ -30,9 +29,10 @@ from canonical.launchpad.interfaces import (
     IRevisionSet, NotFoundError)
 from canonical.launchpad.mailnotification import (
     send_branch_revision_notifications)
-from canonical.launchpad.webapp import canonical_url, errorlog
 
 UTC = pytz.timezone('UTC')
+# Use at most the first 100 characters of the commit message.
+SUBJECT_COMMIT_MESSAGE_LENGTH = 100
 
 
 class BadLineInBugsProperty(Exception):
@@ -306,7 +306,7 @@ class BzrSync:
                     contents = ('%d revisions were removed from the branch.'
                                 % number_removed)
                 # No diff is associated with the removed email.
-                self.pending_emails.append((contents, ''))
+                self.pending_emails.append((contents, '', None))
 
         # Merged (non-history) revisions in the database and the bzr branch.
         old_merged = db_ancestry.difference(db_history)
@@ -474,7 +474,23 @@ class BzrSync:
                     and self.subscribers_want_notification):
                     message = self.getRevisionMessage(revision)
                     revision_diff = self.getDiff(revision)
-                    self.pending_emails.append((message, revision_diff))
+                    # Use the first (non blank) line of the commit message
+                    # as part of the subject, limiting it to 100 characters
+                    # if it is longer.
+                    message_lines = [
+                        line.strip() for line in revision.message.split('\n')
+                        if len(line.strip()) > 0]
+                    if len(message_lines) == 0:
+                        first_line = 'no commit message given'
+                    else:
+                        first_line = message_lines[0]
+                        if len(first_line) > SUBJECT_COMMIT_MESSAGE_LENGTH:
+                            offset = SUBJECT_COMMIT_MESSAGE_LENGTH - 3
+                            first_line = first_line[:offset] + '...'
+                    subject = '[Branch %s] Rev %s: %s' % (
+                        self.db_branch.unique_name, sequence, first_line)
+                    self.pending_emails.append(
+                        (message, revision_diff, subject))
                 self.createBugBranchLinksForRevision(db_revision, revision)
 
     def createBugBranchLinksForRevision(self, db_revision, bzr_revision):
@@ -567,10 +583,11 @@ class BzrSync:
                        ' in the revision history of the branch.' %
                        revisions)
             send_branch_revision_notifications(
-                self.db_branch, self.email_from, message, '')
+                self.db_branch, self.email_from, message, '', None)
         else:
-            for message, diff in self.pending_emails:
+            for message, diff, subject in self.pending_emails:
                 send_branch_revision_notifications(
-                    self.db_branch, self.email_from, message, diff)
+                    self.db_branch, self.email_from, message, diff,
+                    subject)
 
         self.trans_manager.commit()
