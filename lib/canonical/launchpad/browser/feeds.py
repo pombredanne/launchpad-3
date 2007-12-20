@@ -5,10 +5,16 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugFeedLink',
+    'BugTargetLatestBugsFeedLink',
+    'FeedLinkBase',
+    'FeedsMixin',
     'FeedsNavigation',
-    'FeedsRootUrlData'
+    'FeedsRootUrlData',
+    'PersonLatestBugsFeedLink',
     ]
 
+import urlparse
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -17,11 +23,13 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBugSet, IBugTaskSet, IFeedsApplication, IPersonSet, IPillarNameSet,
     NotFoundError)
+from canonical.launchpad.interfaces import IBugTask, IBugTarget, IPerson
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp import (
     canonical_name, canonical_url, Navigation, stepto)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class FeedsRootUrlData:
@@ -120,3 +128,91 @@ class FeedsNavigation(Navigation):
 
         except NotFoundError:
             return None
+
+
+class FeedLinkBase:
+    """Base class for formatting an Atom <link> tag.
+
+    Subclasses must override:
+        href: Url pointing to atom feed.
+
+    Subclasses can override:
+        title: The name of the feed as it appears in a browser.
+    """
+    title = 'Atom Feed'
+    href = None
+    rooturl = allvhosts.configs['feeds'].rooturl
+
+    def __init__(self, context):
+        self.context = context
+        assert self.usedfor.providedBy(context), (
+            "Context %r does not provide interface %r"
+            % (context, self.usedfor))
+
+    def render(self):
+        return ('<link rel="alternate" type="application/atom+xml"'
+                ' title="%s" href="%s"/>\n' % (self.title, self.href))
+
+
+class BugFeedLink(FeedLinkBase):
+    usedfor = IBugTask
+
+    @property
+    def title(self):
+        return 'Bug %s Feed' % self.context.bug.id
+
+    @property
+    def href(self):
+        return urlparse.urljoin(
+            self.rooturl,
+            'bugs/' + str(self.context.bug.id) + '/bug.atom')
+
+
+class BugTargetLatestBugsFeedLink(FeedLinkBase):
+    usedfor = IBugTarget
+
+    @property
+    def title(self):
+        return 'Latest Bugs for %s' % self.context.displayname
+
+    @property
+    def href(self):
+        return urlparse.urljoin(
+            self.rooturl,
+            self.context.name + '/latest-bugs.atom')
+
+
+class PersonLatestBugsFeedLink(FeedLinkBase):
+    usedfor = IPerson
+
+    @property
+    def title(self):
+        return 'Latest Bugs for %s' % self.context.displayname
+
+    @property
+    def href(self):
+        return urlparse.urljoin(
+            self.rooturl,
+            '~' + self.context.name + '/latest-bugs.atom')
+
+
+class FeedsMixin:
+    """Mixin which adds the feed_links attribute to a view object.
+
+    feed_types: This class attribute can be overridden to reduce the
+        feed links that are added to the page.
+
+    feed_links: Returns a list of objects subclassed from FeedLinkBase.
+    """
+    feed_types = (
+        BugFeedLink,
+        BugTargetLatestBugsFeedLink,
+        PersonLatestBugsFeedLink,
+        )
+
+    @property
+    def feed_links(self):
+        return [feed_type(self.context)
+                for feed_type in self.feed_types
+                if feed_type.usedfor.providedBy(self.context)]
+

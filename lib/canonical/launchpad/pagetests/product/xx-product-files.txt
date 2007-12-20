@@ -209,6 +209,13 @@ To add a download file the +adddownloadfile page is accessed.
     >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0/')
     >>> firefox_owner.getLink('Add download file').click()
 
+The maximum size of the upload file is shown on the page.
+
+    >>> content = find_main_content(firefox_owner.contents)
+    >>> print content
+    <...
+    ...You may upload files up to 60.0 MiB...
+
 Create a file to upload, and upload it. We'll also upload a dummy signature.
 Uploading file signatures is optional, so we'll just try it this once.
 
@@ -236,7 +243,7 @@ the md5 digest of the file, and the signature that we uploaded.
     >>> content = find_main_content(non_owner.contents)
     >>> print content
     <...
-    ...foo.txt...md5...pgp...Foo installer...
+    ...foo.txt...md5...sig...Foo installer...
 
 Try to add a file with no description.
 
