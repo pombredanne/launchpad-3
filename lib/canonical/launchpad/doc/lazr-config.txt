@@ -510,3 +510,82 @@ errors in the config.
     section-1 does not have a keyn key
     base.conf does not have a unknown-section section.
 
+
+== Config overlays ==
+
+As Config supports inheritance through the extends key, each conf
+file produces an overlay of the config that was extended. The overlays
+property lists the configs as it was constructed from bottom to top.
+The bottom is always parsed schema.
+
+    >>> for overlay in config.overlays:
+    ...     print overlay.name
+    'base.conf'
+    'local.conf'
+
+Raw config data can be merged with the config to create a new overlay
+for testing. The push() method accepts a string of config data. The
+data must conform to the schema. Besides updating section keys, optional
+sections can be enabled too.
+
+    >>> test_data = '\n'.join([
+    ...     "[section-1]",
+    ...     "key1: test1",
+    ...     "key5:"])
+    >>> config.push('test config', test_data)
+
+    >>> app_a_data = "[section-3.app-a]"
+    >>> config.push('test app-a', app_a_data)
+
+The config's name and overlays are updated by push().
+
+    >>> config.name
+    'test-app-a'
+    >>> config.filename
+    'test-app-a'
+    >>> for overlay in config.overlays:
+    ...     print overlay.name
+    'base.conf'
+    'local.conf'
+    'test config'
+    'test app-a'
+
+The data is merged into the config's sections. 'section-3.app-a' was
+enabled with the default keys from the schema. 'section-1''s keys were
+updated.
+
+    >>> for section in sorted(config, key=attrgetter('name')):
+    ...     print section.name
+    section-1
+    section-2.app-b
+    section-3.app-a
+    section-3.app-b
+    section-5
+
+    >>> for key in sorted(config['section-1']):
+    ...     print key, ':', config['section-1'][key]
+    key1 : test1
+    key2 : bar and baz
+    key3 : Launchpad&nbsp;rocks
+    key4 : F&#028c;k yeah!
+    key5 :
+
+    >>> for key in sorted(config['section-3.app-a']):
+    ...     print key, ':', config['section-3.app-a'][key]
+    key1: 17
+    key2: 3.1415
+
+An overlay, and its descendants, can be removed from the config using
+the pop() method. The methods returns a list of the overlays from
+bottom to top.
+
+    >>> overlays = config.pop('test-config')
+    >>> for overlay in overlays:
+    ...     overlay.name
+    'test config'
+    'test app-a'
+
+    >>> for overlay in config.overlays:
+    ...     print overlay.name
+    'base.conf'
+    'local.conf'
