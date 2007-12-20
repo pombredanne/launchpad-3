@@ -290,7 +290,7 @@ key that declares that this conf extends shared.conf.
     [section-5]
 
 The shared.conf file extends base.conf, which is the schema file. The
-conf file inerits the default values from the schmea. This conf was
+config file inherits the default values from the schema. This config was
 loaded before local.conf because its sections and values are required
 to be in place before local.conf applies its changes.
 
@@ -534,10 +534,11 @@ errors in the config.
 
 == Config overlays ==
 
-As Config supports inheritance through the extends key, each conf
-file produces an overlay of the config that was extended. The overlays
-property lists the configs as it was constructed from bottom to top.
-The bottom is always parsed schema.
+As Config supports inheritance through the extends key, each conf file
+produces an overlay of the config that was extended. An overlay is an
+archive of the Config instance. The overlays property lists the configs
+as it was constructed from bottom to top. The bottom is always parsed
+schema.
 
     >>> for overlay in config.overlays:
     ...     print overlay.name
@@ -567,6 +568,7 @@ The config's name and overlays are updated by push().
     >>> for overlay in config.overlays:
     ...     print overlay.name
     'base.conf'
+    'shared.conf'
     'local.conf'
     'test config'
     'test app-a'
@@ -586,7 +588,7 @@ updated.
     >>> for key in sorted(config['section-1']):
     ...     print key, ':', config['section-1'][key]
     key1 : test1
-    key2 : bar and baz
+    key2 : sharing is fun
     key3 : Launchpad&nbsp;rocks
     key4 : F&#028c;k yeah!
     key5 :
@@ -609,4 +611,5 @@ bottom to top.
     >>> for overlay in config.overlays:
     ...     print overlay.name
     'base.conf'
+    'shared.conf'
     'local.conf'
