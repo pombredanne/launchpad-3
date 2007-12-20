@@ -273,7 +273,8 @@ are required to run the local processes.
 
 Like the schema file, the conf file is made up of sections with keys.
 The sections may belong to a category. Unlike the schema file, it does
-not have template or optional sections.
+not have template or optional sections. The [meta] has the extends
+key that declares that this conf extends shared.conf.
 
     >>> local_conf = '%s/%s' % (testfiles_dir,  'local.conf')
     >>> local_file = open(local_conf, 'r')
@@ -281,12 +282,29 @@ not have template or optional sections.
     >>> local_file.close()
     >>> print raw_conf
     [meta]
-    extends: base.conf
+    extends: shared.conf
     # Localize a key for section-1.
     [section-1]
     key5: local value
     # Accept the default values for the optional section-5.
     [section-5]
+
+The shared.conf file extends base.conf, which is the schema file. The
+conf file inerits the default values from the schmea. This conf was
+loaded before local.conf because its sections and values are required
+to be in place before local.conf applies its changes.
+
+    >>> shared_conf = '%s/%s' % (testfiles_dir,  'shared.conf')
+    >>> shared_file = open(shared_conf, 'r')
+    >>> raw_conf = shared_file.read()
+    >>> shared_file.close()
+    >>> print raw_conf
+    [meta]
+    extends: base.conf
+    # Localize a key for section-1.
+    [section-1]
+    key2: sharing is fun
+    key5: shared value
 
 A Config is created by a schema using either the load() or loadFile()
 methods to return a Config instance.
@@ -311,7 +329,7 @@ all the information from base.conf--the schema in this case. The config
 can access the schema via the schema property.
 
     >>> config.extends
-    'base.conf'
+    'shared.conf'
     >>> config.schema.name
     'base.conf'
     >>> config.schema.filename
@@ -449,14 +467,17 @@ if the key is not present.
     >>> section_1.get('not-exist', default='failover')
     'failover'
 
-The Section keys can be iterated. The section has all the keys from
-the SectionSchema, and its localized values from th config file
-took precedence over the schema values.
+The Section keys can be iterated. The section has all the keys from the
+SectionSchema. The values came form the schema's default values, then
+the values from shared.conf were applied, and lastly, the values from
+local.conf were applied. The schema provided the values of key1, key3,
+and key4, shared.conf provided the value of key2. local.conf provided
+key5. While shared.conf provided a key5, local.conf too precedence.
 
     >>> for key in sorted(section_1):
     ...     print key, ':', section_1[key]
     key1 : foo
-    key2 : bar and baz
+    key2 : sharing is fun
     key3 : Launchpad&nbsp;rocks
     key4 : F&#028c;k yeah!
     key5 : local value
