@@ -269,8 +269,13 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         if self._termination_failure is not None:
             reason = self._termination_failure
         if self.reported_mirror_finished:
+            # If the subprocess already reported whether it succeeded or
+            # failed, we're done.
             self._processTerminated(reason)
         else:
+            # If the process finished before reporting, this is a failure.  If
+            # there was any output on stderr, it was probably a traceback and
+            # so we use the last line of it as the reason for failing.
             error = self._stderr.getvalue()
             if error:
                 error = error.splitlines()[-1]
@@ -388,6 +393,9 @@ class PullerMaster:
             ('dest', self.destination_url),
             ('error-explanation', failure.getErrorMessage())])
         request.URL = get_canonical_url_for_branch_name(self.unique_name)
+        # If the subeprocess exited abnormally, the stderr it produced is
+        # probably a much more interesting traceback than the one attached to
+        # the Failure we've been passed.
         tb = None
         if failure.check(error.ProcessTerminated):
             tb = getattr(failure, 'error', None)

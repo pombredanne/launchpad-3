@@ -832,8 +832,10 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         return deferred.addErrback(self._dumpError)
 
     def test_mirror_with_unexpected_failure(self):
-        # XXX
+        # If the puller worker script fails before recording success of
+        # failure, the branch is considered to have failed.
 
+        # This script will fail with a distinctive NameError:
         unexpected_error_script = """
         OOGA_BOOGA
         """
@@ -844,8 +846,12 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         destination_branch = BzrDir.create_branch_convenience(
             puller_master.destination_url)
 
+        # "Mirroring" the branch will fail.
         deferred = self.assertFailure(
             puller_master.mirror(), error.ProcessTerminated)
+
+        # And the process monitoring machinery will call "mirrorFailed" for
+        # the branch.
         def check_mirror_failed(ignored):
             self.assertEqual(len(self.client.calls), 1)
             mirror_failed_call, = self.client.calls
