@@ -575,9 +575,6 @@ class Builder(SQLBase):
         logger = self._getSlaveScannerLogger()
         candidate = self._findBuildCandidate()
 
-        if not candidate:
-            return None
-
         # Mark build records targeted to old source versions as SUPERSEDED
         # and build records target to SECURITY pocket as FAILEDTOBUILD.
         # Builds in those situation should not be built because they will
@@ -599,7 +596,8 @@ class Builder(SQLBase):
             candidate.destroySelf()
             candidate = self._findBuildCandidate()
 
-        return candidate
+        # No candidate was found
+        return None
 
     def dispatchBuildCandidate(self, candidate):
         """See `IBuilder`."""

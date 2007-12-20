@@ -266,15 +266,15 @@ implementation.
 To solve this problem temporarily until we start building security
 uploads, we will mark builds targeted to the SECURITY pocket as
 FAILEDTOBUILD during the findBuildCandidate look-up. We will also
-create another candidate to check if legit pending candidates will
+create another candidate to check if legitimate pending candidates will
 remain valid.
 
   >>> pending_build = sprf.sourcepackagerelease.createBuild(
   ...     hoary_i386, PackagePublishingPocket.UPDATES, hoary.main_archive)
   >>> pending_job = pending_build.createBuildQueueEntry()
 
-Security job needs be considered first, so we will increase its score
-level to ensure it will happen.
+We increase the score of the security job to ensure it is considered
+before the legitimate job.
 
   >>> sec_job.lastscore = 1000
   >>> flush_database_updates()
