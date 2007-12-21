@@ -89,6 +89,46 @@ value.
     ...         print 'UTC_NOW'
 
 
+== Testing whether a job is overdue ==
+
+CodeImportJob objects have a date_due attribute that specifies when the
+job should ideally be started. If the date_due is in the past, the job
+is said to be overdue, and will be run as soon as possible.
+
+The CodeImportJob.isOverdue() method tells whether a job is overdue.
+
+    >>> from datetime import datetime
+    >>> from pytz import UTC
+    >>> import_job = reviewed_import.import_job
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> def set_date_due(import_job, date):
+    ...     # ICodeImportJob does not allow setting date_due, so we must use
+    ...     # removeSecurityProxy to set it.
+    ...     removeSecurityProxy(import_job).date_due = date
+
+If the date_due is in the future, then the job is not overdue.
+
+    >>> future_date = datetime(2100, 1, 1, tzinfo=UTC)
+    >>> set_date_due(import_job, future_date)
+    >>> import_job.isOverdue()
+    False
+
+If the date_due is in the past, then the job is overdue.
+
+    >>> past_date = datetime(1900, 1, 1, tzinfo=UTC)
+    >>> set_date_due(import_job, past_date)
+    >>> import_job.isOverdue()
+    True
+
+Owing to the fleeting nature of time, if the date_due is the time of the
+current transaction, then the job is overdue.
+
+    >>> set_date_due(import_job, UTC_NOW)
+    >>> import_job.isOverdue()
+    True
+
+
 == Creating a new job ==
 
 CodeImportJob objects are created using the CodeImportJobWorkflow.newJob
@@ -101,7 +141,6 @@ handled by the CodeImport.updateFromData method.
 When the review status an import changes to REVIEWED, an associated job
 is created.
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.interfaces import CodeImportReviewStatus
     >>> unproxied_new_import = removeSecurityProxy(new_import)
     >>> unproxied_new_import.review_status = CodeImportReviewStatus.REVIEWED

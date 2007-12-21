@@ -107,6 +107,14 @@ class ICodeImportJob(Interface):
         required=False, readonly=True,
         description=_("When the import began to be processed."))
 
+    def isOverdue():
+        """Return whether `self.date_due` is now or in the past.
+
+        This method should be used in preference to comparing date_due to the
+        system clock. It does the correct thing, which is to compare date_due
+        to the time of the current transaction.
+        """
+
 
 class ICodeImportJobSet(Interface):
     """The set of pending and active code import jobs."""

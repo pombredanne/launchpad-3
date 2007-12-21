@@ -17,7 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces import (
     CodeImportJobState, CodeImportReviewStatus, ICodeImportJob,
@@ -55,6 +55,23 @@ class CodeImportJob(SQLBase):
     logtail = StringCol(notNull=False, default=None)
 
     date_started = UtcDateTimeCol(notNull=False, default=None)
+
+    def isOverdue(self):
+        """See `ICodeImportJob`."""
+        # SQLObject offers no easy way to compare a timestamp to UTC_NOW, so
+        # we must use trickery here.
+
+        # First we flush any pending update to self to ensure that the
+        # following database query will give the correct result even if
+        # date_due was modified in this transaction.
+        self.syncUpdate()
+
+        # Then, we try to find a CodeImportJob object with the id of self, and
+        # a date_due of now or past. If we find one, this means self is
+        # overdue.
+        import_job = CodeImportJob.selectOne(
+            "id = %s AND date_due <= %s" % sqlvalues(self.id, UTC_NOW))
+        return import_job is not None
 
 
 class CodeImportJobSet(object):
