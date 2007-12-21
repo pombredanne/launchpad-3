@@ -1613,7 +1613,6 @@ class BugTaskSet:
 
         return sorted(bugtasks, key=date_last_updated_key)
 
-<<<<<<< TREE
     def _getUnconfirmedBugJoin(self):
         """Return the SQL to join BugTask to unconfirmed bugs.
 
@@ -1645,26 +1644,6 @@ class BugTaskSet:
             ON BugTask.bug = UnconfirmedBugs.bug
             """ % sqlvalues(BugTaskStatus.INCOMPLETE, unexpirable_status_list)
 
-=======
-    def _bugTaskBugPermitsExpiration(self, bugtask):
-        """Return True if a BugTask's Bug permits BugTask expiration."""
-        expirable_status_list = [
-            BugTaskStatus.INCOMPLETE, BugTaskStatus.INVALID,
-            BugTaskStatus.WONTFIX]
-
-        unexpirable_bugtasks = BugTask.select("""
-            BugTask.bug = %s
-            AND BugTask.status NOT IN %s
-            """ % sqlvalues(bugtask.bug, expirable_status_list))
-
-        if (unexpirable_bugtasks.count() == 0 and
-            bugtask.status == BugTaskStatus.INCOMPLETE and
-            bugtask.pillar.enable_bug_expiration):
-            return True
-        else:
-            return False
-
->>>>>>> MERGE-SOURCE
     def _getTargetJoinAndClause(self, target):
         """Return a SQL join clause to a `BugTarget`.
 
