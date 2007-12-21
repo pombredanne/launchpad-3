@@ -260,7 +260,7 @@ class BugTaskSetFindExpirableBugTasksTest(LaunchpadFunctionalTestCase):
         for target in supported_targets:
             expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
                 0, target=target)
-            self.assertEqual(len(expirable_bugtasks), 1,
+            self.assertNotEqual(len(expirable_bugtasks), 0,
                  "%s has %d expirable bugtasks." %
                  (self.distroseries, len(expirable_bugtasks)))
 
