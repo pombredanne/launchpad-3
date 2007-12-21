@@ -24,7 +24,6 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
-from canonical.config import config
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, DistroSeriesStatus, IBug,
     IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
