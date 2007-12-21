@@ -2778,11 +2778,13 @@ class PersonEditEmailsView(LaunchpadFormView):
             else:
                 term = SimpleTerm(term, term.email)
             terms.append(term)
+        if self.validated_addresses:
+            title = _('These addresses may also be yours'),
+        else:
+            title = _('These addresses may be yours'),
         return form.Fields(
-            Choice(__name__='UNVALIDATED_SELECTED',
-                   title=_('These addresses may also be yours'),
-                   source=SimpleVocabulary(terms),
-                   ),
+            Choice(__name__='UNVALIDATED_SELECTED', title=title,
+                   source=SimpleVocabulary(terms)),
             custom_widget = self.custom_widgets['UNVALIDATED_SELECTED'])
 
     def _mailing_list_subscription_type(self, mailing_list):
@@ -2812,11 +2814,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         fields = []
         terms = [SimpleTerm("Preferred address"),
                  SimpleTerm("Don't subscribe")]
-        if self.context.preferredemail:
-            terms.append(SimpleTerm(self.context.preferredemail,
-                                    self.context.preferredemail.email))
         terms += [SimpleTerm(email, email.email)
-                   for email in self.context.validatedemails]
+                   for email in self.validated_addresses]
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
             if mailing_list is not None and mailing_list.isUsable():
