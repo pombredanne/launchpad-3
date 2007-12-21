@@ -1657,34 +1657,39 @@ class BugTaskSet:
             `IBugTarget`
         """
         target_join = """
-            INNER JOIN (
+            JOIN (
+                -- We create this rather bizarre looking structure
+                -- because we must replicate the behaviour of BugTask since
+                -- we are joining to it. So when distroseries is set,
+                -- distribution should be NULL. The two pillar columns will
+                -- be used in the WHERE clause.
                 SELECT 0 AS distribution, 0 AS distroseries,
                        0 AS product , 0 AS productseries,
                        0 AS distribution_pillar, 0 AS product_pillar
                 UNION
-                SELECT Distribution.id, NULL, NULL, NULL,
-                    Distribution.id, NULL
-                FROM Distribution
-                WHERE Distribution.enable_bug_expiration IS TRUE
+                    SELECT Distribution.id, NULL, NULL, NULL,
+                        Distribution.id, NULL
+                    FROM Distribution
+                    WHERE Distribution.enable_bug_expiration IS TRUE
                 UNION
-                SELECT NULL, DistroSeries.id, NULL, NULL,
-                    Distribution.id, NULL
-                FROM DistroSeries
-                    INNER JOIN Distribution
-                        ON DistroSeries.distribution = Distribution.id
-                WHERE Distribution.enable_bug_expiration IS TRUE
+                    SELECT NULL, DistroSeries.id, NULL, NULL,
+                        Distribution.id, NULL
+                    FROM DistroSeries
+                        JOIN Distribution
+                            ON DistroSeries.distribution = Distribution.id
+                    WHERE Distribution.enable_bug_expiration IS TRUE
                 UNION
-                SELECT NULL, NULL, Product.id, NULL,
-                    NULL, Product.id
-                FROM Product
-                WHERE Product.enable_bug_expiration IS TRUE
+                    SELECT NULL, NULL, Product.id, NULL,
+                        NULL, Product.id
+                    FROM Product
+                    WHERE Product.enable_bug_expiration IS TRUE
                 UNION
-                SELECT NULL, NULL, NULL, ProductSeries.id,
-                    NULL, Product.id
-                FROM ProductSeries
-                    INNER JOIN Product
-                        ON ProductSeries.Product = Product.id
-                WHERE Product.enable_bug_expiration IS TRUE) target
+                    SELECT NULL, NULL, NULL, ProductSeries.id,
+                        NULL, Product.id
+                    FROM ProductSeries
+                        JOIN Product
+                            ON ProductSeries.Product = Product.id
+                    WHERE Product.enable_bug_expiration IS TRUE) target
                 ON (BugTask.distribution = target.distribution
                     OR BugTask.distroseries = target.distroseries
                     OR BugTask.product = target.product
