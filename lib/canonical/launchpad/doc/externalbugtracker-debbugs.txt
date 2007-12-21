@@ -517,6 +517,14 @@ message - the comment will be linked to the bug.
     >>> from canonical.database.sqlbase import commit
     >>> commit()
 
+If we try to import the comments from a bug whose comments log doesn't
+exist or can't be parsed we will get a warning. We can demonstrate this
+by forcing importBugComments to fail on our Test DebBugs bugtracker.
+
+    >>> external_debbugs.debbugs_db.fail_on_load_log = True
+    >>> external_debbugs.importBugComments(bug_watch)
+    WARNING:...:Unable to import comments for DebBugs bug #1234.
+    Could not parse comment log.
 
 === Script for importing Debian bugs, linking them to Ubutu ===
 
