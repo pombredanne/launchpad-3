@@ -11,6 +11,7 @@ __all__ = [
 
 from sqlobject import ForeignKey, IntCol, SQLObjectNotFound, StringCol
 
+from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
@@ -20,8 +21,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportReviewStatus, ICodeImportJob,
-    ICodeImportJobSet, ICodeImportJobWorkflow)
+    CodeImportJobState, CodeImportReviewStatus, ICodeImportEventSet,
+    ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow)
 
 
 class CodeImportJob(SQLBase):
@@ -136,3 +137,24 @@ class CodeImportJobWorkflow:
         # CodeImportJobWorkflow is the only class that is allowed to delete
         # CodeImportJob rows, so destroySelf is not exposed in ICodeImportJob.
         removeSecurityProxy(code_import).import_job.destroySelf()
+
+    def requestJob(self, import_job, user):
+        """See `ICodeImportJobWorkflow`."""
+        assert import_job.state == CodeImportJobState.PENDING, (
+            "The CodeImportJob associated with %s is %s."
+            % (import_job.code_import.branch.unique_name,
+               import_job.state.name))
+        assert import_job.requesting_user is None, (
+            "The CodeImportJob associated with %s "
+            "was already requested by %s."
+            % (import_job.code_import.branch.unique_name,
+               import_job.requesting_user.name))
+        # CodeImportJobWorkflow is the only class that is allowed to set the
+        # date_due and requesting_user attributes of CodeImportJob, they are
+        # not settable through ICodeImportJob. So we must use
+        # removeSecurityProxy here.
+        if not import_job.isOverdue():
+            removeSecurityProxy(import_job).date_due = UTC_NOW
+        removeSecurityProxy(import_job).requesting_user = user
+        getUtility(ICodeImportEventSet).newRequest(
+            import_job.code_import, user)

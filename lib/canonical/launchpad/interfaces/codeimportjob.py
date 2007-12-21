@@ -153,3 +153,15 @@ class ICodeImportJobWorkflow(Interface):
         :precondition: `code_import`.import_job.state == PENDING.
         :postcondition: `code_import`.import_job is None.
         """
+
+    def requestJob(import_job, user):
+        """Request that a job be run as soon as possible.
+
+        :param import_job: `CodeImportJob` object.
+        :param user: `Person` who makes the request.
+        :precondition: `import_job`.states == PENDING.
+        :precondition: `import_job`.requesting_user is None.
+        :postcondition: `import_job`.date_due is now or in the past.
+        :postcondition: `import_job`.request_user is set to `user`.
+        :postcondition: A REQUEST `CodeImportEvent` was created.
+        """

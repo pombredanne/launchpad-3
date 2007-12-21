@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+__all__ = ['NewEvents', 'test_suite']
+
 from datetime import datetime
 from pytz import UTC
 import unittest
@@ -15,9 +17,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database import (
     CodeImportMachine, CodeImportResult)
+
 from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus,
-    ICodeImportJobSet, ICodeImportSet, ICodeImportJobWorkflow)
+    CodeImportJobState, CodeImportResultStatus, CodeImportEventType,
+    CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJobSet,
+    ICodeImportSet, ICodeImportJobWorkflow, IPersonSet)
 from canonical.launchpad.ftests import login
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -73,25 +77,93 @@ class AssertFailureMixin:
             self.fail("AssertionError was not raised")
 
 
-class AssertSqlNowMixin:
-    """Helper to test that SQL values are equal to UTC_NOW."""
+class AssertSqlDateMixin:
+    """Helper to test SQL date values."""
 
-    def assertSqlAttributeEqualsNow(self, sql_object, attribute_name):
-        """Fail unless the value of the attribute is UTC_NOW.
+    def assertSqlAttributeEqualsDate(self, sql_object, attribute_name, date):
+        """Fail unless the value of the attribute is equal to the date.
 
-        :param sql_object: an sqlobject instance.
+        Use this method to test that date value that may be UTC_NOW is equal
+        to another date value. Trickery is required because SQLBuilder truth
+        semantics cause UTC_NOW to appear equal to all dates.
+
+        :param sql_object: a security-proxied SQLObject instance.
         :param attribute_name: the name of a database column in the table
             associated to this object.
+        :param date: `datetime.datetime` object or `UTC_NOW`.
         """
+        sql_object = removeSecurityProxy(sql_object)
+        sql_object.syncUpdate()
         sql_class = type(sql_object)
         found_object = sql_class.selectOne(
             'id=%%s AND %s=%%s' % (attribute_name,)
-            % sqlvalues(sql_object.id, UTC_NOW))
-        self.assertEqual(sql_object, found_object)
+            % sqlvalues(sql_object.id, date))
+        if found_object is None:
+            self.fail(
+                "Expected %s to be %s, but it was %s."
+                % (attribute_name, date, getattr(sql_object, attribute_name)))
+
+
+class NewEvents(object):
+    """Help in testing the creation of CodeImportEvent objects.
+
+    To test that an operation creates CodeImportEvent objects, create an
+    NewEvent object, perform the operation, then test the value of the
+    NewEvents instance.
+
+    Doctests should print the NewEvent object, and unittests should iterate
+    over it.
+    """
+
+    def __init__(self):
+        event_set = getUtility(ICodeImportEventSet)
+        self.initial = set(event.id for event in event_set.getAll())
+
+    def __str__(self):
+        """Render a summary of the newly created CodeImportEvent objects."""
+        lines = []
+        for event in self:
+            words = []
+            words.append(event.event_type.name)
+            words.append(event.code_import.branch.unique_name)
+            if event.machine is not None:
+                words.append(event.machine.hostname)
+            if event.person is not None:
+                words.append(event.person.name)
+            lines.append(' '.join(words))
+        return '\n'.join(lines)
+
+    def __iter__(self):
+        """Iterate over the newly created CodeImportEvent objects."""
+        event_set = getUtility(ICodeImportEventSet)
+        for event in event_set.getAll():
+            if event.id in self.initial:
+                continue
+            yield event
+
+
+class AssertEventMixin:
+    """Helper to test that a CodeImportEvent has the expected values."""
+
+    def assertEventLike(
+            self, import_event, event_type, code_import,
+            machine=None, person=None):
+        """Fail unless `import_event` has the expected attribute values.
+
+        :param import_event: The `CodeImportEvent` to test.
+        :param event_type: expected value of import_event.event_type.
+        :param code_import: expected value of import_event.code_import.
+        :param machine: expected value of import_event.machine.
+        :param person: expected value of import_event.person.
+        """
+        self.assertEqual(import_event.event_type, event_type)
+        self.assertEqual(import_event.code_import, code_import)
+        self.assertEqual(import_event.machine, machine)
+        self.assertEqual(import_event.person, person)
 
 
 class TestCodeImportJobWorkflowNewJob(unittest.TestCase,
-        AssertFailureMixin, AssertSqlNowMixin):
+        AssertFailureMixin, AssertSqlDateMixin):
     """Unit tests for the CodeImportJobWorkflow.newJob method."""
 
     layer = LaunchpadFunctionalLayer
@@ -152,7 +224,7 @@ class TestCodeImportJobWorkflowNewJob(unittest.TestCase,
         # CodeImportJob has date_due set to UTC_NOW.
         code_import = self.getCodeImportForDateDueTest()
         job = getUtility(ICodeImportJobWorkflow).newJob(code_import)
-        self.assertSqlAttributeEqualsNow(removeSecurityProxy(job), 'date_due')
+        self.assertSqlAttributeEqualsDate(job, 'date_due', UTC_NOW)
 
     def test_dateDueRecentPreviousResult(self):
         # If there is a CodeImportResult for the CodeImport that is more
@@ -179,8 +251,8 @@ class TestCodeImportJobWorkflowNewJob(unittest.TestCase,
         # changed from REVIEWED. That is the date_job_started of the most
         # recent CodeImportResult plus the effective update interval.
         job = getUtility(ICodeImportJobWorkflow).newJob(code_import)
-        self.assertEqual(
-            code_import.import_job.date_due,
+        self.assertSqlAttributeEqualsDate(
+            code_import.import_job, 'date_due',
             recent_result.date_job_started + interval)
 
     def test_dateDueOldPreviousResult(self):
@@ -197,7 +269,7 @@ class TestCodeImportJobWorkflowNewJob(unittest.TestCase,
             date_created=datetime(2000, 1, 1, 12, 5, 0, tzinfo=UTC))
         # When we create the job, its date due must be set to UTC_NOW.
         job = getUtility(ICodeImportJobWorkflow).newJob(code_import)
-        self.assertSqlAttributeEqualsNow(removeSecurityProxy(job), 'date_due')
+        self.assertSqlAttributeEqualsDate(job, 'date_due', UTC_NOW)
 
 
 class TestCodeImportJobWorkflowDeletePendingJob(unittest.TestCase,
@@ -254,6 +326,8 @@ class TestCodeImportJobWorkflowDeletePendingJob(unittest.TestCase,
         INVALID = CodeImportReviewStatus.INVALID
         removeSecurityProxy(reviewed_import).review_status = INVALID
         self.assertNotEqual(reviewed_import.import_job, None)
+        # ICodeImportJob does not allow setting state, so we must
+        # use removeSecurityProxy.
         RUNNING = CodeImportJobState.RUNNING
         removeSecurityProxy(reviewed_import.import_job).state = RUNNING
         # Testing deletePendingJob failure.
@@ -262,6 +336,105 @@ class TestCodeImportJobWorkflowDeletePendingJob(unittest.TestCase,
             "~vcs-imports/gnome-terminal/import is RUNNING.",
             getUtility(ICodeImportJobWorkflow).deletePendingJob,
             reviewed_import)
+
+
+class TestCodeImportJobWorkflowRequestJob(unittest.TestCase,
+        AssertFailureMixin, AssertSqlDateMixin, AssertEventMixin):
+    """Unit tests for CodeImportJobWorkflow.requestJob."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login_for_code_imports()
+
+    def test_wrongJobState(self):
+        # CodeImportJobWorkflow.requestJob fails if the state of the
+        # CodeImportJob is different from PENDING.
+        reviewed_import = getUtility(ICodeImportSet).get(1)
+        no_priv = getUtility(IPersonSet).getByName('no-priv')
+        # Checking sampledata expectations.
+        self.assertEqual(reviewed_import.branch.unique_name,
+                         '~vcs-imports/gnome-terminal/import')
+        # Testing requestJob failure.
+        import_job = reviewed_import.import_job
+        # ICodeImportJob does not allow setting state, so we must
+        # use removeSecurityProxy.
+        removeSecurityProxy(import_job).state = CodeImportJobState.RUNNING
+        self.assertFailure(
+            "The CodeImportJob associated with "
+            "~vcs-imports/gnome-terminal/import is RUNNING.",
+            getUtility(ICodeImportJobWorkflow).requestJob,
+            import_job, no_priv)
+
+    def test_alreadyRequested(self):
+        # CodeImportJobWorkflow.requestJob fails if the job was requested
+        # already, that is, if its requesting_user attribute is set.
+        reviewed_import = getUtility(ICodeImportSet).get(1)
+        no_priv = getUtility(IPersonSet).getByName('no-priv')
+        other_person = getUtility(IPersonSet).getByName('name12')
+        # Checking sampledata expectations.
+        self.assertEqual(reviewed_import.branch.unique_name,
+                         '~vcs-imports/gnome-terminal/import')
+        # Testing requestJob failure.
+        import_job = reviewed_import.import_job
+        # ICodeImportJob does not allow setting requesting_user, so we must
+        # use removeSecurityProxy.
+        removeSecurityProxy(import_job).requesting_user = no_priv
+        self.assertFailure(
+            "The CodeImportJob associated with "
+            "~vcs-imports/gnome-terminal/import was "
+            "already requested by no-priv.",
+            getUtility(ICodeImportJobWorkflow).requestJob,
+            import_job, other_person)
+
+    def test_requestFutureJob(self):
+        # CodeImportJobWorkflow.requestJob sets requesting_user and
+        # date_due if the current date_due is in the future.
+        pending_job = getUtility(ICodeImportSet).get(1).import_job
+        no_priv = getUtility(IPersonSet).getByName('no-priv')
+        # Checking sampledata expectations.
+        self.assertEqual(pending_job.state, CodeImportJobState.PENDING)
+        self.assertEqual(pending_job.requesting_user, None)
+        # Set date_due in the future. ICodeImportJob does not allow setting
+        # date_due, so we must use removeSecurityProxy.
+        removeSecurityProxy(pending_job).date_due = (
+            datetime(2100, 1, 1, tzinfo=UTC))
+        # requestJob sets both requesting_user and date_due.
+        new_events = NewEvents()
+        getUtility(ICodeImportJobWorkflow).requestJob(
+            pending_job, no_priv)
+        self.assertEqual(pending_job.requesting_user, no_priv)
+        self.assertSqlAttributeEqualsDate(pending_job, 'date_due', UTC_NOW)
+        # When requestJob is successful, it creates a REQUEST event.
+        [request_event] = list(new_events)
+        self.assertEventLike(
+            request_event, CodeImportEventType.REQUEST,
+            pending_job.code_import, person=no_priv)
+
+    def test_requestOverdueJob(self):
+        # CodeImportJobWorkflow.requestJob only sets requesting_user if the
+        # date_due is already past.
+        pending_job = getUtility(ICodeImportSet).get(1).import_job
+        no_priv = getUtility(IPersonSet).getByName('no-priv')
+        # Checking sampledata expectations.
+        self.assertEqual(pending_job.state, CodeImportJobState.PENDING)
+        self.assertEqual(pending_job.requesting_user, None)
+        # Set date_due in the past. ICodeImportJob does not allow setting
+        # date_due, so we must use removeSecurityProxy.
+        overdue_date = datetime(1900, 1, 1, tzinfo=UTC)
+        removeSecurityProxy(pending_job).date_due = overdue_date
+        # requestJob only sets requesting_user.
+        new_events = NewEvents()
+        getUtility(ICodeImportJobWorkflow).requestJob(
+            pending_job, no_priv)
+        self.assertEqual(pending_job.requesting_user, no_priv)
+        self.assertSqlAttributeEqualsDate(
+            pending_job, 'date_due', overdue_date)
+        # When requestJob is successful, it creates a REQUEST event.
+        [request_event] = list(new_events)
+        self.assertEventLike(
+            request_event, CodeImportEventType.REQUEST,
+            pending_job.code_import, person=no_priv)
 
 
 def test_suite():

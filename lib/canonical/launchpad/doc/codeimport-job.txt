@@ -69,6 +69,14 @@ The other one has review_status set to REVIEWED.
     >>> print reviewed_import.review_status.name
     REVIEWED
 
+Some workflow methods expect the user that is requesting the action. We use
+the No Privileges Person, regardless of what privileges may be required to
+initiate the action.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> person_set = getUtility(IPersonSet)
+    >>> nopriv = person_set.getByName('no-priv')
+
 
 == Test helpers ==
 
@@ -80,13 +88,20 @@ value.
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.database.sqlbase import sqlvalues
     >>> from canonical.launchpad.database import CodeImportJob
+    >>> from canonical.launchpad.ftests import syncUpdate
     >>> def print_date_due(job):
+    ...     syncUpdate(job)
     ...     found_job = CodeImportJob.selectOne(
     ...         'id=%s AND date_due=%s' % sqlvalues(job.id, UTC_NOW))
     ...     if found_job is None:
     ...         print job.date_due
     ...     else:
     ...         print 'UTC_NOW'
+
+The NewEvents class helps testing the creation of CodeImportEvent
+objects.
+
+    >>> from canonical.launchpad.tests.test_codeimportjob import NewEvents
 
 
 == Testing whether a job is overdue ==
@@ -177,3 +192,42 @@ associated job is not running, the job is deleted.
     >>> workflow.deletePendingJob(new_import)
     >>> print new_import.import_job
     None
+
+
+== Requesting a job run ==
+
+When a job is pending, users can request that it be run as soon as
+possible.
+
+    >>> from datetime import datetime
+    >>> from pytz import UTC
+    >>> pending_job = reviewed_import.import_job
+    >>> future_date = datetime(2100, 1, 1, tzinfo=UTC)
+    >>> # ICodeImportJob does not expose date_due,
+    >>> # so we must use removeSecurityProxy.
+    >>> removeSecurityProxy(pending_job).date_due = future_date
+    >>> new_events = NewEvents()
+
+    >>> workflow.requestJob(pending_job, nopriv)
+
+This records the requesting user in the job object and sets its date due
+for running as soon as possible.
+
+    >>> print pending_job.requesting_user.name
+    no-priv
+    >>> print_date_due(pending_job)
+    UTC_NOW
+
+The job request is also recorded in the CodeImportEvent audit trail.
+
+    >>> print new_events
+    REQUEST ~vcs-imports/gnome-terminal/import no-priv
+
+Once a job has been requested by a user, it cannot be requested a second
+time until the job runs and terminates.
+
+    >>> workflow.requestJob(pending_job, nopriv)
+    Traceback (most recent call last):
+    ...
+    AssertionError: The CodeImportJob associated with
+    ~vcs-imports/gnome-terminal/import was already requested by no-priv.
