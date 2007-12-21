@@ -107,21 +107,21 @@ The CodeImportJob.isOverdue() method tells whether a job is overdue.
     ...     # removeSecurityProxy to set it.
     ...     removeSecurityProxy(import_job).date_due = date
 
-If the date_due is in the future, then the job is not overdue.
+If date_due is in the future, then the job is not overdue.
 
     >>> future_date = datetime(2100, 1, 1, tzinfo=UTC)
     >>> set_date_due(import_job, future_date)
     >>> import_job.isOverdue()
     False
 
-If the date_due is in the past, then the job is overdue.
+If date_due is in the past, then the job is overdue.
 
     >>> past_date = datetime(1900, 1, 1, tzinfo=UTC)
     >>> set_date_due(import_job, past_date)
     >>> import_job.isOverdue()
     True
 
-Owing to the fleeting nature of time, if the date_due is the time of the
+Owing to the fleeting nature of time, if date_due is the time of the
 current transaction, then the job is overdue.
 
     >>> set_date_due(import_job, UTC_NOW)
