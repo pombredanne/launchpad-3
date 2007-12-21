@@ -264,6 +264,61 @@ section name.
     InvalidSectionNameError: [$category.name_part.optional] ...
 
 
+== IConfigLoader  ==
+
+ConfigSchema implements the two methods in the IConfigLoader interface.
+A Config is created by a schema using either the load() or loadFile()
+methods to return a Config instance.
+
+    >>> from canonical.lazr.interfaces import IConfig, IConfigLoader
+    >>> verifyObject(IConfigLoader, schema)
+    True
+
+The load() method accepts a filename.
+
+    >>> local_conf = '%s/%s' % (testfiles_dir,  'local.conf')
+    >>> config = schema.load(local_conf)
+
+    >>> from canonical.lazr.config import Config
+    >>> verifyObject(IConfig, config)
+    True
+
+Passing a filename to a non-existent file will raise an IOError.
+
+    >>> schema.load("fnord.conf")
+    Traceback (most recent call last):
+      ...
+    IOError: [Errno 2] No such file or directory: 'fnord.conf'
+
+The loadFile method accepts a file-like object and an optional filename
+keyword arg. The filename arg must be passed if the file-like object
+does not have a name attribute.
+
+    >>> import StringIO
+    >>> bad_data = '\n'.join([
+    ...     "[meta]",
+    ...     "extends: base.conf",
+    ...     "metakey: unsupported",
+    ...     "[unknown-section]",
+    ...     "key1 = value1",
+    ...     "[section-1]",
+    ...     "keyn: unknown key",
+    ...     "key1: bad character in caf\xc3)",
+    ...     "[section-3.template]",
+    ...     "key1: schema suffixes are not permitted"])
+    >>> schema.loadFile(StringIO.StringIO(bad_data))
+    Traceback (most recent call last):
+      ...
+    AttributeError: StringIO instance has no attribute 'name'
+
+    >>> bad_config = schema.loadFile(
+    ...     StringIO.StringIO(bad_data), 'bad conf')
+    >>> verifyObject(IConfig, bad_config)
+    True
+
+The bad_config example will be used for validation tests.
+
+
 == Config ==
 
 The config represents the local configuration of the process on system.
@@ -275,7 +330,6 @@ Like the schema file, the conf file is made up of sections with keys.
 The sections may belong to a category. Unlike the schema file, it does
 not have template or optional sections.
 
-    >>> local_conf = '%s/%s' % (testfiles_dir,  'local.conf')
     >>> local_file = open(local_conf, 'r')
     >>> raw_conf = local_file.read()
     >>> local_file.close()
@@ -286,31 +340,16 @@ not have template or optional sections.
     # Accept the default values for the optional section-5.
     [section-5]
 
-A Config is created by a schema using either the load() or loadFile()
-methods to return a Config instance. Those methods are part of the
-IConfigLoader interface that is also provided by ConfigSchema. The
-load() method accepts a filename, which is what we will use now.
-The loadFile() method accepts a file-like object (`see IConfigLoader`
-for an example).
-
-    >>> from canonical.lazr.config import Config
-    >>> from canonical.lazr.interfaces import IConfig, IConfigLoader
-    >>> verifyObject(IConfigLoader, schema)
-    True
-
-    >>> config = schema.load(local_conf)
-    >>> verifyObject(IConfig, config)
-    True
+The config that was loaded has name and filename attributes to identify
+the configuration.
 
     >>> config.name
     'local.conf'
     >>> config.filename
     '...ftests/testfiles/local.conf'
 
-A conf file always contains a meta section that is used by the config
-system. The 'extends' key explicitly declares that local.conf inherits
-all the information from base.conf--the schema in this case. The config
-can access the schema via the schema property.
+A conf file may contains a meta section that is used by the config
+system. The config can access the schema via the schema property.
 
     >>> print config.extends
     None
@@ -470,47 +509,6 @@ template section.
     key3 : unique
 
 
-== IConfigLoader  ==
-
-ConfigSchema implements the two methods in the IConfigLoader interface.
-The load() and loadFile() methods load config data from a file.
-
-The load() method was used to load a config from its filename in the
-previous `Config` section. Passing a filename to a non-existent file
-will raise an error.
-
-    >>> schema.load("fnord.conf")
-    Traceback (most recent call last):
-      ...
-    IOError: [Errno 2] No such file or directory: 'fnord.conf'
-
-The loadFile method accepts a file-like object and an optional filename
-keyword arg. The filename arg must be passed if the file-like object
-does not have a name attribute.
-
-    >>> import StringIO
-    >>> bad_data = '\n'.join([
-    ...     "[meta]",
-    ...     "extends: base.conf",
-    ...     "metakey: unsupported",
-    ...     "[unknown-section]",
-    ...     "key1 = value1",
-    ...     "[section-1]",
-    ...     "keyn: unknown key",
-    ...     "key1: bad character in café)",
-    ...     "[section-3.template]",
-    ...     "key1: schema suffixes are not permitted"])
-    >>> schema.loadFile(StringIO.StringIO(bad_data))
-    Traceback (most recent call last):
-      ...
-    AttributeError: StringIO instance has no attribute 'name'
-
-    >>> bad_config = schema.loadFile(
-    ...     StringIO.StringIO(bad_data), 'unknown section')
-    >>> bad_config.name
-    'unknown section'
-
-
 == Validating configs ==
 
 Config provides the validate() method to verify that the config is valid
@@ -528,8 +526,10 @@ errors in the config.
     >>> try:
     ...     bad_config.validate()
     ... except ConfigErrors, validation_error:
+    ...     print validation_error
     ...     for error in validation_error.errors:
     ...         print  "%s: %s" % (error.__class__.__name__, error)
+    ConfigErrors: bad conf is not valid.
     UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in ... range(128)
     UnknownSectionError: base.conf does not have a section-3.template section.
     UnknownKeyError: The meta section does not have a metakey key.

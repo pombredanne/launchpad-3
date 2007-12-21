@@ -56,6 +56,18 @@ class ConfigErrors(ConfigSchemaError):
     The list of errors can be accessed via the errors attribute.
     """
 
+    def __init__(self, message, errors=[]):
+        """Initialize the error with a message and errors.
+
+        :param message: a message string
+        :param errors: a list of errors in the config
+        """
+        self.message = message
+        self.errors = errors
+
+    def __str__(self):
+        return '%s: %s' % (self.__class__.__name__, self.message)
+
 
 class ISectionSchema(Interface):
     """Defines the valid keys and default values for a configuration group."""

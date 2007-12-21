@@ -318,9 +318,8 @@ class Config:
     def validate(self):
         """See `IConfig`."""
         if len(self._errors) > 0:
-            error = ConfigErrors("%s is not valid" % self.name)
-            error.errors = self._errors
-            raise error
+            message = "%s is not valid." % self.name
+            raise ConfigErrors(message, errors=self._errors)
         return True
 
 
