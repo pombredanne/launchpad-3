@@ -2740,7 +2740,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         email address.
         """
         validated = self.context.preferredemail
-        if validated is None:
+        if validated is None and self.context.validatedemails.count() > 0:
             validated = self.context.validatedemails[0]
         unvalidated = self.unvalidated_addresses
         if len(unvalidated) > 0:
@@ -2778,11 +2778,14 @@ class PersonEditEmailsView(LaunchpadFormView):
             else:
                 term = SimpleTerm(term, term.email)
             terms.append(term)
+        if self.validated_addresses:
+            title = _('These addresses may also be yours')
+        else:
+            title = _('These addresses may be yours')
+
         return form.Fields(
-            Choice(__name__='UNVALIDATED_SELECTED',
-                   title=_('These addresses may also be yours'),
-                   source=SimpleVocabulary(terms),
-                   ),
+            Choice(__name__='UNVALIDATED_SELECTED', title=title,
+                   source=SimpleVocabulary(terms)),
             custom_widget = self.custom_widgets['UNVALIDATED_SELECTED'])
 
     def _mailing_list_subscription_type(self, mailing_list):
@@ -2811,11 +2814,9 @@ class PersonEditEmailsView(LaunchpadFormView):
         mailing_list_set = getUtility(IMailingListSet)
         fields = []
         terms = [SimpleTerm("Preferred address"),
-                 SimpleTerm("Don't subscribe"),
-                 SimpleTerm(self.context.preferredemail,
-                            self.context.preferredemail.email)]
+                 SimpleTerm("Don't subscribe")]
         terms += [SimpleTerm(email, email.email)
-                   for email in self.context.validatedemails]
+                   for email in self.validated_addresses]
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
             if mailing_list is not None and mailing_list.isUsable():
@@ -2872,6 +2873,17 @@ class PersonEditEmailsView(LaunchpadFormView):
         # Return the EmailAddress/LoginToken object for use in any
         # further validation.
         return email
+
+    @property
+    def validated_addresses(self):
+        """All of this person's validated email addresses, including
+        their preferred address (if any).
+        """
+        addresses = []
+        if self.context.preferredemail:
+            addresses.append(self.context.preferredemail)
+        addresses += [email for email in self.context.validatedemails]
+        return addresses
 
     @property
     def unvalidated_addresses(self):
