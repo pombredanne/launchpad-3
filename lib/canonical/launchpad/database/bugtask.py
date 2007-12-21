@@ -1587,21 +1587,19 @@ class BugTaskSet:
             AND BugTask.id IN (
                 SELECT BugTask.id
                 FROM BugTask
-                    INNER JOIN Bug
-                        ON BugTask.bug = Bug.id
+                    JOIN Bug ON BugTask.bug = Bug.id
                 """ + unconfirmed_bug_join + """
                 """ + target_join + """
                 WHERE
                 """ + target_clause + """
                 """ + bug_clause + """
-                    AND BugTask.status = %s
                     AND BugTask.assignee IS NULL
                     AND BugTask.bugwatch IS NULL
                     AND BugTask.milestone IS NULL
                     AND Bug.duplicateof IS NULL
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
-            )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old),
+            )""" % sqlvalues(min_days_old),
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
 
@@ -1622,26 +1620,27 @@ class BugTaskSet:
         will be, confirmed to be legitimate. Once the bug is considered
         valid for one target, it is valid for all targets.
         """
+        statuses_not_preventing_expiration = [
+            BugTaskStatus.INVALID, BugTaskStatus.INCOMPLETE,
+            BugTaskStatus.WONTFIX]
+
         unexpirable_status_list = [
-            BugTaskStatus.NEW, BugTaskStatus.CONFIRMED, BugTaskStatus.TRIAGED,
-            BugTaskStatus.INPROGRESS, BugTaskStatus.FIXCOMMITTED,
-            BugTaskStatus.FIXRELEASED]
+            status for status in BugTaskStatus.items
+            if status not in statuses_not_preventing_expiration]
+
         return """
-            INNER JOIN (
-            -- ALL bugs with incomplete bugtasks.
-            SELECT BugTask.bug AS bug
-            FROM BugTask
-            WHERE BugTask.status = %s
+            JOIN (
+                -- ALL bugs with incomplete bugtasks.
+                SELECT BugTask.bug AS bug
+                  FROM BugTask
+                 WHERE BugTask.status = %s
             EXCEPT
-            -- All valid bugs
+                -- All valid bugs
             SELECT DISTINCT Bug.id as bug
-            FROM Bug
-            INNER JOIN BugTask
-                ON Bug.id = BugTask.bug
-            WHERE
-                BugTask.status IN %s
-            ) UnconfirmedBugs
-            ON BugTask.bug = UnconfirmedBugs.bug
+                FROM Bug
+                    JOIN BugTask ON Bug.id = BugTask.bug
+                WHERE BugTask.status IN %s
+            ) UnconfirmedBugs ON BugTask.bug = UnconfirmedBugs.bug
             """ % sqlvalues(BugTaskStatus.INCOMPLETE, unexpirable_status_list)
 
     def _getTargetJoinAndClause(self, target):
