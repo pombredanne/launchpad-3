@@ -6,6 +6,7 @@ __metaclass__ = type
 
 Classes to handle and create entries on launchpad db.
 """
+
 __all__ = [
     'ImporterHandler',
     'BinaryPackageHandler',
@@ -144,7 +145,7 @@ class ImporterHandler:
         if archtag in self.archinfo.keys():
             return
 
-        """Get distroarchseries and processor from the architecturetag"""
+        # Get distroarchseries and processor from the architecturetag.
         dar = DistroArchSeries.selectOneBy(
                 distroseriesID=self.distroseries.id,
                 architecturetag=archtag)
@@ -333,7 +334,8 @@ class ImporterHandler:
     def publish_sourcepackage(self, sourcepackagerelease, sourcepackagedata):
         """Append to the sourcepackagerelease imported list."""
         self.sppublisher.publish(sourcepackagerelease, sourcepackagedata)
-        self.imported_sources.append((sourcepackagerelease, sourcepackagedata))
+        self.imported_sources.append((sourcepackagerelease,
+            sourcepackagedata))
 
     def publish_binarypackage(self, binarypackagerelease, binarypackagedata,
                               archtag):
@@ -568,7 +570,7 @@ class SourcePackageHandler:
             dsc=src.dsc,
             copyright=src.copyright,
             version=src.version,
-            changelog=src.changelog,
+            changelog_entry=src.changelog,
             builddepends=src.build_depends,
             builddependsindep=src.build_depends_indep,
             architecturehintlist=src.architecture,
@@ -925,7 +927,7 @@ def ensure_person(displayname, emailaddress, package_name, distroseries_name):
     """
     person = getUtility(IPersonSet).getByEmail(emailaddress)
     if person is None:
-        comment=('when the %s package was imported into %s'
+        comment = ('when the %s package was imported into %s'
                  % (package_name, distroseries_name))
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             emailaddress, PersonCreationRationale.SOURCEPACKAGEIMPORT,

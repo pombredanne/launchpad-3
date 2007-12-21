@@ -838,7 +838,7 @@ COMMENT ON COLUMN SourcePackageRelease.dateuploaded IS 'Creation timestamp.';
 COMMENT ON COLUMN SourcePackageRelease.urgency IS 'SourcePackageUrgency constant';
 COMMENT ON COLUMN SourcePackageRelease.dscsigningkey IS 'Reference to the GPGKey used to sign the DSC.';
 COMMENT ON COLUMN SourcePackageRelease.component IS 'The original component to where this source was submitted.';
-COMMENT ON COLUMN SourcePackageRelease.changelog IS 'Changelog text section extracted from the changesfile.';
+COMMENT ON COLUMN SourcePackageRelease.changelog_entry IS 'Changelog text section extracted from the changesfile.';
 COMMENT ON COLUMN SourcePackageRelease.builddepends IS 'DSC builddepends line section.';
 COMMENT ON COLUMN SourcePackageRelease.builddependsindep IS 'DSC builddependsindep line section.';
 COMMENT ON COLUMN SourcePackageRelease.architecturehintlist IS 'DSC arch line';
@@ -1045,7 +1045,7 @@ this sourcepackagerelease is intended (by the uploader) to reside. E.g.
 main, universe, restricted. Note that the distribution managers will often
 override this data and publish the package in an entirely different
 component.';
-COMMENT ON COLUMN SourcePackageRelease.changelog IS 'The changelog of this
+COMMENT ON COLUMN SourcePackageRelease.changelog_entry IS 'The changelog of this
 source package release.';
 COMMENT ON COLUMN SourcePackageRelease.builddepends IS 'The build
 dependencies for this source package release.';
