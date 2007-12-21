@@ -130,8 +130,17 @@ def create_old_bug(
 
 def summarize_bugtasks(bugtasks):
     """Summarize a sequence of bugtasks."""
-    print 'ROLE  EXPIRE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
+    # Sort the bugtasks so that we can rely on them being displayed in
+    # the right order.
+    bugtasks_by_id = {}
     for bugtask in bugtasks:
+        bugtasks_by_id[bugtask.id] = bugtask
+
+    sorted_bugtasks = [bugtasks_by_id[bugtask_id] for bugtask_id in
+        sorted(bugtasks_by_id.keys())]
+
+    print 'ROLE  EXPIRE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
+    for bugtask in sorted_bugtasks:
         if len(bugtask.bug.bugtasks) == 1:
             title = bugtask.bug.title
         else:
