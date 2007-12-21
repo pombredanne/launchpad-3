@@ -2779,9 +2779,10 @@ class PersonEditEmailsView(LaunchpadFormView):
                 term = SimpleTerm(term, term.email)
             terms.append(term)
         if self.validated_addresses:
-            title = _('These addresses may also be yours'),
+            title = _('These addresses may also be yours')
         else:
-            title = _('These addresses may be yours'),
+            title = _('These addresses may be yours')
+
         return form.Fields(
             Choice(__name__='UNVALIDATED_SELECTED', title=title,
                    source=SimpleVocabulary(terms)),
