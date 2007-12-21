@@ -244,12 +244,6 @@ class Bug(SQLBase):
         :See: `IBug.can_expire` or `BugTaskSet.findExpirableBugTasks` to
             check or get a list of bugs that can expire.
         """
-        # No one has replied to the first message reporting the bug.
-        # The bug reporter should be notified that more information
-        # is required to confirm the bug report.
-        if self.messages.count() == 1:
-            return False
-
         # Bugs cannot be expired if any bugtask is valid.
         expirable_status_list = [
             BugTaskStatus.INCOMPLETE, BugTaskStatus.INVALID,

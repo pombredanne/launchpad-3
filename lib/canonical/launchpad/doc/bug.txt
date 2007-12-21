@@ -872,13 +872,13 @@ will expire if it becomes inactive because of a bugtask.
 
 `bugtask-expiration.txt` outlines the complete list of constraints that
 govern expiration. In general, a bug that is not valid anywhere,
-that has a single unattended Incomplete bugtask whose pillar uses
-Launchpad to track bugs is expirable. Once an bug is recognised to be
-valid for one bugtask (confirmed), or attended (is assigned or has a
-milestone), the bug will not permit expiration.
+that has a single unattended Incomplete bugtask whose pillar has enabled
+bug expiration. Once an bug is recognised to be valid for one bugtask
+(confirmed), or attended (is assigned or has a milestone), the bug will
+not permit expiration.
 
-The thunderbird project does not use Launchpad to track bugs. Incomplete
-bug reports cannot ever expire for this project.
+The thunderbird project does not use Launchpad to track bugs.
+Incomplete, unattended bug reports cannot ever expire for this project.
 
     >>> # create_old_bug creates an bug with a bugtask that is eligible for
     >>> # expiration, so long as the pillar object has enabled bug expiration.
@@ -891,15 +891,15 @@ bug reports cannot ever expire for this project.
     >>> sync_bugtasks(upstream_bugtask)
     >>> upstream_bugtask.status.name
     'INCOMPLETE'
-    >>> upstream_bugtask.pillar.official_malone
+    >>> upstream_bugtask.pillar.enable_bug_expiration
     False
     >>> upstream_bugtask.bug.permits_expiration
     False
     >>> upstream_bugtask.bug.can_expire
     False
 
-Ubuntu uses launchpad to track bug. Incomplete bugs can be expired, but
-the bug must have a message sent in response to the first bug message.
+Ubuntu has enabled bug expiration. Incomplete, unattended bugs can
+expired.
 
     >>> expirable_bugtask = create_old_bug(
     ...     'bug c', 1, ubuntu, with_message=False)
@@ -907,24 +907,8 @@ the bug must have a message sent in response to the first bug message.
 
     >>> expirable_bugtask.status.name
     'INCOMPLETE'
-    >>> expirable_bugtask.pillar.official_malone
+    >>> expirable_bugtask.pillar.enable_bug_expiration
     True
-    >>> expirable_bugtask.bug.messages.count()
-    1
-    >>> expirable_bugtask.bug.permits_expiration
-    False
-    >>> expirable_bugtask.bug.can_expire
-    False
-
-When the bug is responded to with another message, expiration is
-permitted, and the bug can expire because the bugtask is is an
-expirable state.
-
-    >>> message = expirable_bugtask.bug.newMessage(
-    ...     owner=sample_person, subject='Something is broken.',
-    ...     content='Can you provide more information?')
-    >>> expirable_bugtask.bug.messages.count()
-    2
     >>> expirable_bugtask.bug.permits_expiration
     True
     >>> expirable_bugtask.bug.can_expire

@@ -13,10 +13,9 @@ are:
 2. The bugtask has the status Incomplete.
 3. The last update of the bug is older than 60 days.
 4. The bug is not a duplicate.
-5. The bug has at least one message (a request for more information).
-6. The bug does not have any other valid bugtasks.
-7. The bugtask is not assigned to anyone.
-8. The bugtask does not have a milestone.
+5. The bug does not have any other valid bugtasks.
+6. The bugtask is not assigned to anyone.
+7. The bugtask does not have a milestone.
 
 Bugtasks cannot transition to Invalid automatically unless they meet
 all the rules stated above.
@@ -152,14 +151,6 @@ Let's also make some bugs that almost qualify for expiration.
     >>> milestone_bugtask.bug.can_expire
     False
 
-    # A bugtask that is not expirable because it has no reply messages.
-    >>> no_replies_bugtask = create_old_bug(
-    ...     'no_replies', 61, ubuntu, with_message=False)
-    >>> no_replies_bugtask.bug.permits_expiration
-    False
-    >>> no_replies_bugtask.bug.can_expire
-    False
-
     # A bugtask that is not expirable because it less than the
     # min_days_old.
     >>> recent_bugtask = create_old_bug('recent', 31, ubuntu)
@@ -185,7 +176,7 @@ expired. The other bugs do not meet one of the preconditions.
     >>> bugtasks = [ubuntu_bugtask, hoary_bugtask, jokosher_bugtask,
     ...     new_bugtask, assigned_bugtask, confirmed_bugtask,
     ...     duplicate_bugtask, external_bugtask, milestone_bugtask,
-    ...     no_replies_bugtask, recent_bugtask, no_expiration_bugtask]
+    ...     recent_bugtask, no_expiration_bugtask]
 
     # Sync the bugs and bugtasks defined above with their modified DB values.
     >>> sync_bugtasks(bugtasks)
@@ -201,7 +192,6 @@ expired. The other bugs do not meet one of the preconditions.
     duplicate    True     61  Incomplete  False     True   False  False
     external     False    61  Incomplete  False     False  False  False
     milestone    True     61  Incomplete  False     False  True   False
-    no_replies   True     61  Incomplete  False     False  False  True
     recent       True     31  Incomplete  False     False  False  False
     no_expire    False    61  Incomplete  False     False  False  False
 
@@ -282,7 +272,7 @@ the hoary bugtask.
 
 When a BugTarget is passed as an argument to findExpirableBugTasks(), it
 returns all the target's expirable bugtasks, or an empty list. If the
-target's pillar does not use Launchpad Bugs, None is always returned.
+target's pillar has not enabled bug expiration, None is always returned.
 Passing ubuntu with 0 min_days_old shows that the distribution has two
 bugtasks that can expire if they are not confirmed.
 
@@ -293,7 +283,7 @@ bugtasks that can expire if they are not confirmed.
     hoary        True    351  Incomplete  False     False  False  False
     recent       True     31  Incomplete  False     False  False  False
 
-Thunderbird does not use Launchpad Bugs. Even when the min_days_old
+Thunderbird has not enabled bug expiration. Even when the min_days_old
 is set to 0, no bugtasks are replaced.
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
@@ -379,7 +369,6 @@ was expired. The remaining bugtasks are unchanged.
     duplicate    True     61  Incomplete  False     True   False  False
     external     False    61  Incomplete  False     False  False  False
     milestone    True     61  Incomplete  False     False  True   False
-    no_replies   True     61  Incomplete  False     False  False  True
     recent       True     31  Incomplete  False     False  False  False
     no_expire    False    61  Incomplete  False     False  False  False
 
