@@ -65,8 +65,10 @@ __all__ = [
     'PersonTeamBranchesView',
     'PersonTranslationView',
     'PersonView',
+    'PersonIndexView',
     'RedirectToEditLanguagesView',
     'ReportedBugTaskSearchListingView',
+    'RestrictedMembershipsPersonView',
     'SearchAnsweredQuestionsView',
     'SearchAssignedQuestionsView',
     'SearchCommentedQuestionsView',
@@ -120,17 +122,21 @@ from canonical.launchpad.interfaces import (
     IPersonClaim, IPersonSet, IPollSet, IPollSubset,
     IRequestPreferredLanguages, ISSHKeySet, ISignedCodeOfConductSet, ITeam,
     ITeamMembership, ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
-    LoginTokenType, NotFoundError, PersonCreationRationale,
+    LoginTokenType, NotFoundError, PersonCreationRationale, PersonVisibility,
     QuestionParticipation, SSHKeyType, SpecificationFilter,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    is_participant_in_beta_program)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
 from canonical.launchpad.browser.branchlisting import BranchListingView
+from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
+from canonical.launchpad.browser.openiddiscovery import (
+    OpenIDPersistentIdentity, XRDSContentNegotiationMixin)
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -147,11 +153,65 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView, 
-    Link, Navigation, smartquote, StandardLaunchpadFacets, stepthrough, stepto)
+    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
+    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
+    custom_widget, enabled_with_permission, smartquote, stepthrough, stepto)
 
 from canonical.launchpad import _
+
+class RestrictedMembershipsPersonView(LaunchpadView):
+    """Secure access to team membership information for a person.
+
+    This class checks that the logged-in user has access to view
+    all the teams that these attributes and functions return.
+    """
+
+    def getLatestApprovedMembershipsForPerson(self):
+        """Returns a list of teams the person has recently joined.
+
+        Private teams are filtered out if the user is not a member of them.
+        """
+        # This method returns a list as opposed to the database object's
+        # getLatestApprovedMembershipsForPerson which returns a sqlobject
+        # result set.
+        membership_list = self.context.getLatestApprovedMembershipsForPerson()
+        return [membership for membership in membership_list
+                if check_permission('launchpad.View', membership.team)]
+
+    @property
+    def teams_with_icons(self):
+        """Returns list of teams with custom icons.
+
+        These are teams that the person is an active member of.
+        Private teams are filtered out if the user is not a member of them.
+        """
+        # This method returns a list as opposed to the database object's
+        # teams_with_icons which returns a sqlobject
+        # result set.
+        return [team for team in self.context.teams_with_icons
+                if check_permission('launchpad.View', team)]
+
+    @property
+    def administrated_teams(self):
+        """Return the list of teams administrated by the person.
+
+        The user must be an administrator of the team, and the team must
+        be public.
+        """
+        # XXX Edwin Grubbs 2007-12-14 bug=175758
+        # Checking if the team.visibility is None can be removed
+        # after a notnull constraint has been added.
+        return [team for team in self.context.getAdministratedTeams()
+                if team.visibility is None
+                or team.visibility == PersonVisibility.PUBLIC]
+
+    def userCanViewMembership(self):
+        """Return true if the user can view a team's membership.
+
+        Only launchpad admins and team members can view the private
+        membership. Anyone can view a public team's membership.
+        """
+        return check_permission('launchpad.View', self.context)
 
 
 class BranchTraversalMixin:
@@ -806,7 +866,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editemailaddresses(self):
         target = '+editemails'
-        text = 'Update e-mail addresses'
+        text = 'Change e-mail settings'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -891,7 +951,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'add_member', 'memberships', 'received_invitations', 'mugshots',
              'editemail', 'configure_mailing_list', 'editlanguages', 'polls',
              'add_poll', 'joinleave', 'mentorships', 'reassign',
-             'common_packages', 'related_projects', 'activate_ppa', 'show_ppa']
+             'common_packages', 'related_projects', 'activate_ppa',
+             'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -913,6 +974,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
 
+    @enabled_with_permission('launchpad.View')
     def members(self):
         target = '+members'
         text = 'Show all members'
@@ -943,6 +1005,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, summary=summary, enabled=enabled,
                     icon='info')
 
+    @enabled_with_permission('launchpad.View')
     def mugshots(self):
         target = '+mugshots'
         text = 'Show group photo'
@@ -972,11 +1035,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def configure_mailing_list(self):
         target = '+mailinglist'
         text = 'Configure mailing list'
-        mailing_list = getUtility(IMailingListSet).get(self.context.name)
-        enabled = config.mailman.expose_hosted_mailing_lists
         summary = (
             'The mailing list associated with %s' % self.context.browsername)
-        return Link(target, text, summary, enabled=enabled, icon='edit')
+        return Link(target, text, summary,
+                    enabled=is_participant_in_beta_program(self.context),
+                    icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):
@@ -1112,7 +1175,8 @@ class PersonDeactivateAccountView(LaunchpadFormView):
     schema = IPerson
     field_names = ['account_status_comment', 'password']
     label = "Deactivate your Launchpad account"
-    custom_widget('account_status_comment', TextAreaWidget, height=5, width=60)
+    custom_widget('account_status_comment', TextAreaWidget, height=5,
+                  width=60)
 
     def validate(self, data):
         loginsource = getUtility(IPlacelessLoginSource)
@@ -1279,6 +1343,8 @@ def userIsActiveTeamMember(team):
     """Return True if the user is an active member of this team."""
     user = getUtility(ILaunchBag).user
     if user is None:
+        return False
+    if not check_permission('launchpad.View', team):
         return False
     return user in team.activemembers
 
@@ -1539,7 +1605,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return self.getBugContactPackageSearchURL()
 
 
-class PersonRelatedBugsView(BugTaskSearchListingView):
+class PersonRelatedBugsView(BugTaskSearchListingView, FeedsMixin):
     """All bugs related to someone."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
@@ -1757,7 +1823,7 @@ class PersonLanguagesView(LaunchpadView):
             self.request.response.redirect(redirection_url)
 
 
-class PersonView(LaunchpadView):
+class PersonView(LaunchpadView, FeedsMixin):
     """A View class used in almost all Person's pages."""
 
     @cachedproperty
@@ -1937,6 +2003,17 @@ class PersonView(LaunchpadView):
 
     def joinAllowed(self):
         """Return True if this is not a restricted team."""
+        # Joining a moderated team will put you on the proposed_members
+        # list. If it is a private membership team, you are not allowed
+        # to view the proposed_members attribute until you are an
+        # active member; therefore, it would look like the join button
+        # is broken. Either private membership teams should always have a
+        # restricted subscription policy, or we need a more complicated
+        # permission model.
+        if not (self.context.visibility is None
+                or self.context.visibility == PersonVisibility.PUBLIC):
+            return False
+
         restricted = TeamSubscriptionPolicy.RESTRICTED
         return self.context.subscriptionpolicy != restricted
 
@@ -1987,6 +2064,22 @@ class PersonView(LaunchpadView):
         if mailing_list is None:
             return None
         return mailing_list.archive_url
+
+
+class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
+    """View class for person +index and +xrds pages."""
+
+    xrds_template = ViewPageTemplateFile("../templates/person-xrds.pt")
+
+    @cachedproperty
+    def enable_xrds_discovery(self):
+        """Only enable discovery if person is OpenID enabled."""
+        return self.context.is_openid_enabled
+
+    @cachedproperty
+    def openid_identity_url(self):
+        """The identity URL for the person."""
+        return canonical_url(OpenIDPersistentIdentity(self.context))
 
 
 class PersonRelatedProjectsView(LaunchpadView):
@@ -2631,7 +2724,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         self.form_fields = (self._validated_emails_field() +
                             self._unvalidated_emails_field() +
                             form.fields(TextLine(__name__='newemail',
-                                                 title=u'Add a new address')))
+                                                 title=u'Add a new address'))
+                            + self._mailing_list_fields())
 
     @property
     def initial_values(self):
@@ -2646,7 +2740,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         email address.
         """
         validated = self.context.preferredemail
-        if validated is None:
+        if validated is None and self.context.validatedemails.count() > 0:
             validated = self.context.validatedemails[0]
         unvalidated = self.unvalidated_addresses
         if len(unvalidated) > 0:
@@ -2684,12 +2778,61 @@ class PersonEditEmailsView(LaunchpadFormView):
             else:
                 term = SimpleTerm(term, term.email)
             terms.append(term)
+        if self.validated_addresses:
+            title = _('These addresses may also be yours')
+        else:
+            title = _('These addresses may be yours')
+
         return form.Fields(
-            Choice(__name__='UNVALIDATED_SELECTED',
-                   title=_('These addresses may also be yours'),
-                   source=SimpleVocabulary(terms),
-                   ),
+            Choice(__name__='UNVALIDATED_SELECTED', title=title,
+                   source=SimpleVocabulary(terms)),
             custom_widget = self.custom_widgets['UNVALIDATED_SELECTED'])
+
+    def _mailing_list_subscription_type(self, mailing_list):
+        """Return the context user's subscription type for the given list.
+
+        This is 'Preferred address' if the user is subscribed using her
+        preferred address and 'Don't subscribe' if the user is not
+        subscribed at all. Otherwise it's the EmailAddress under
+        which the user is subscribed to this mailing list.
+        """
+        subscription = mailing_list.getSubscription(self.context)
+        if subscription is not None:
+            if subscription.email_address is None:
+                return "Preferred address"
+            else:
+                return subscription.email_address
+        else:
+            return "Don't subscribe"
+
+    def _mailing_list_fields(self):
+        """Creates a field for each mailing list the user can subscribe to.
+
+        If a team doesn't have a mailing list, or the mailing list
+        isn't usable, it's not included.
+        """
+        mailing_list_set = getUtility(IMailingListSet)
+        fields = []
+        terms = [SimpleTerm("Preferred address"),
+                 SimpleTerm("Don't subscribe")]
+        terms += [SimpleTerm(email, email.email)
+                   for email in self.validated_addresses]
+        for team in self.context.teams_participated_in:
+            mailing_list = mailing_list_set.get(team.name)
+            if mailing_list is not None and mailing_list.isUsable():
+                name = 'subscription.%s' % team.name
+                value = self._mailing_list_subscription_type(mailing_list)
+                field = Choice(__name__=name,
+                               title=team.name,
+                               source=SimpleVocabulary(terms), default=value)
+                fields.append(field)
+        return form.fields(*fields)
+
+    @property
+    def mailing_list_widgets(self):
+        """Return all the mailing list subscription widgets."""
+        return [widget for widget in self.widgets
+                if 'field.subscription.' in widget.name]
 
     def _validate_selected_address(self, data, field='VALIDATED_SELECTED'):
         """A generic validator for this view's actions.
@@ -2732,6 +2875,17 @@ class PersonEditEmailsView(LaunchpadFormView):
         return email
 
     @property
+    def validated_addresses(self):
+        """All of this person's validated email addresses, including
+        their preferred address (if any).
+        """
+        addresses = []
+        if self.context.preferredemail:
+            addresses.append(self.context.preferredemail)
+        addresses += [email for email in self.context.validatedemails]
+        return addresses
+
+    @property
     def unvalidated_addresses(self):
         """All of this person's unvalidated and guessed emails.
 
@@ -2744,7 +2898,7 @@ class PersonEditEmailsView(LaunchpadFormView):
              if not guessed.email in emailset])
         return emailset
 
-    ### Actions to do with validated email addresses.
+    # Actions to do with validated email addresses.
 
     def validate_action_remove_validated(self, action, data):
         """Make sure the user selected an email address to remove."""
@@ -2758,8 +2912,6 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "You can't remove %s because it's your contact email "
                 "address." % self.context.preferredemail.email)
             return self.errors
-        assert (self.context.preferredemail is not None,
-                "User no longer has a preferred email!")
         return self.errors
 
     @action(_("Remove"), name="remove_validated",
@@ -2797,7 +2949,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                     emailaddress.email))
         self.next_url = self.action_url
 
-    ### Actions to do with unvalidated email addresses.
+    # Actions to do with unvalidated email addresses.
 
     def validate_action_confirm(self, action, data):
         """Make sure the user selected an email address to confirm."""
@@ -2808,14 +2960,16 @@ class PersonEditEmailsView(LaunchpadFormView):
     def action_confirm(self, action, data):
         """Mail a validation URL to the selected email address."""
         email = data['UNVALIDATED_SELECTED']
+        if IEmailAddress.providedBy(email):
+            email = email.email
         token = getUtility(ILoginTokenSet).new(
-                    self.context, getUtility(ILaunchBag).login, email.email,
+                    self.context, getUtility(ILaunchBag).login, email,
                     LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest(self.request.getApplicationURL())
         self.request.response.addInfoNotification(
             "An e-mail message was sent to '%s' with "
             "instructions on how to confirm that "
-            "it belongs to you." % email.email)
+            "it belongs to you." % email)
         self.next_url = self.action_url
 
     def validate_action_remove_unvalidated(self, action, data):
@@ -2850,7 +3004,7 @@ class PersonEditEmailsView(LaunchpadFormView):
             "The email address '%s' has been removed." % email)
         self.next_url = self.action_url
 
-    ### Actions to do with new email addresses
+    # Actions to do with new email addresses
 
     def validate_action_add_email(self, action, data):
         """Make sure the user entered a valid email address.
@@ -2909,6 +3063,56 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "provider might use 'greylisting', which could delay the "
                 "message for up to an hour or two.)" % newemail)
         self.next_url = self.action_url
+
+    # Actions to do with subscription management.
+
+    def validate_action_update_subscriptions(self, action, data):
+        """Make sure the user is subscribing using a valid address.
+
+        Valid addresses are the ones presented as options for the mailing
+        list widgets.
+        """
+        names = [w.context.getName() for w in self.mailing_list_widgets]
+        self.validate_widgets(data, names)
+        return self.errors
+
+    @action(_("Update Subscriptions"), name="update_subscriptions",
+            validator=validate_action_update_subscriptions)
+    def action_update_subscriptions(self, action, data):
+        """Change the user's mailing list subscriptions."""
+        mailing_list_set = getUtility(IMailingListSet)
+        dirty = False
+        prefix_length = len('subscription.')
+        for widget in self.mailing_list_widgets:
+            mailing_list_name = widget.context.getName()[prefix_length:]
+            mailing_list = mailing_list_set.get(mailing_list_name)
+            new_value = data[widget.context.getName()]
+            old_value = self._mailing_list_subscription_type(mailing_list)
+            if IEmailAddress.providedBy(new_value):
+                new_value_string = new_value.email
+            else:
+                new_value_string = new_value
+            if new_value_string != old_value:
+                dirty = True
+                if new_value == "Don't subscribe":
+                    # Delete the subscription.
+                    mailing_list.unsubscribe(self.context)
+                else:
+                    if new_value == "Preferred address":
+                        # If the user is subscribed but not under any
+                        # particular address, her current preferred
+                        # address will always be used.
+                        new_value = None
+                    subscription = mailing_list.getSubscription(self.context)
+                    if subscription is None:
+                        mailing_list.subscribe(self.context, new_value)
+                    else:
+                        mailing_list.changeAddress(self.context, new_value)
+        if dirty:
+            self.request.response.addInfoNotification(
+                "Subscriptions updated.")
+        self.next_url = self.action_url
+
 
 class TeamReassignmentView(ObjectReassignmentView):
 

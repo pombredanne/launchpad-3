@@ -17,6 +17,7 @@ import sha
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
+from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, MultipleJoin, SQLMultipleJoin,
@@ -52,10 +53,11 @@ from canonical.launchpad.interfaces import (
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
     IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType, MailingListStatus,
-    PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
-    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType,
+    PersonCreationRationale, PersonVisibility,
+    QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
+    ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -214,6 +216,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     timezone = StringCol(dbName='timezone', default='UTC')
 
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
+    visibility = EnumCol(
+        enum=PersonVisibility,
+        default=PersonVisibility.PUBLIC)
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
@@ -956,9 +961,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     @property
     def is_openid_enabled(self):
         """See `IPerson`."""
-        if self.isTeam():
-            return False
-
         if not self.is_valid_person:
             return False
 
@@ -1020,6 +1022,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         """See `IPerson`."""
         if team is None:
             return False
+
+        # Translate the team name to an ITeam if we were passed a team.
+        if isinstance(team, str):
+            team = PersonSet().getByName(team)
 
         if team.id == self.id: # Short circuit - would return True anyway
             return True
@@ -1090,7 +1096,13 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             raise AssertionError(
                 "Unknown subscription policy: %s" % team.subscriptionpolicy)
 
-        team.addMember(self, reviewer=self, status=status)
+        # XXX Edwin Grubbs 2007-12-14 bug=117980
+        # removeSecurityProxy won't be necessary after addMember()
+        # is configured to call a method on the new member, so the
+        # security configuration will verify that the logged in user
+        # has the right permission to add the specified person to the team.
+        naked_team = removeSecurityProxy(team)
+        naked_team.addMember(self, reviewer=self, status=status)
 
     def clearInTeamCache(self):
         """See `IPerson`."""
@@ -2000,15 +2012,9 @@ class PersonSet:
         return Person.selectOne(query)
 
     def getByOpenIdIdentifier(self, openid_identifier):
-        """Returns a Person with the given openid_identifier, or None.
-
-        None is returned if the person is not enabled for OpenID usage
-        (see Person.is_openid_enabled).
-        """
-        person = Person.selectOne(
-                Person.q.openid_identifier == openid_identifier
-                )
-        if person is not None and person.is_openid_enabled:
+        """Returns a Person with the given openid_identifier, or None."""
+        person = Person.selectOneBy(openid_identifier=openid_identifier)
+        if person.is_valid_person:
             return person
         else:
             return None

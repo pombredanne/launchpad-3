@@ -121,6 +121,15 @@ in.
   Pending in warty-release
   Published in hoary-release on 2005-09-15 
 
+The package release version links to the the page of this distro package
+release.
+
+  >>> first_header_link = first_header.find('a')
+  >>> print extract_text(first_header_link)
+  1.0.9a-4ubuntu1
+  >>> first_header_link.get('href')
+  u'/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1'
+
 Following the header we get a body with the changelog in it.  Note that
 any email addreses in the changelog are obfuscated because we are not
 logged in (this prevents bots from harvesting email addresses).
@@ -147,9 +156,6 @@ address:
 
 The presented changelog is also linkified for any bugs mentioned in the
 form LP: #nnn where nnn is the bug number.
-
-  >>> browser.getLink('1.0.9a-4ubuntu1').url
-  'http://launchpad.dev/ubuntu/hoary/+source/alsa-utils/1.0.9a-4ubuntu1'
 
   >>> browser.getLink('LP: #10').url
   'http://launchpad.dev/bugs/10'

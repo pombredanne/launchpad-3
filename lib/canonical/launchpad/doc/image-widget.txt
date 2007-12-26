@@ -478,3 +478,45 @@ to be uploaded.
     WidgetInputError: ('field.mugshot', u'Mugshot',
                        Please specify the image you want to use.)
 
+
+== Non-exact Image Dimensions ==
+
+For some input fields, we don't require a particular size for an
+image, but want to enforce a maximum size on the image.  This can be
+achieved by setting the exact_dimensions attribute of the field to
+False:
+
+    >>> person_mugshot.exact_dimensions = False
+    >>> person_mugshot.dimensions = (64, 64)
+    >>> mugshot = StringIO(open(mugshot_file_name, 'r').read())
+    >>> mugshot.filename = 'mugshot.png'
+    >>> form = {'field.mugshot.action': 'change',
+    ...         'field.mugshot.image': mugshot}
+    >>> widget = ImageChangeWidget(
+    ...     person_mugshot, LaunchpadTestRequest(form=form), edit_style)
+    >>> widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    WidgetInputError: ('field.mugshot', u'Mugshot',
+                       This image is larger than 64x64 pixels in size.)
+
+If the image is smaller than the dimensions, the input validates:
+
+    >>> person_mugshot.dimensions = (256, 256)
+    >>> mugshot.seek(0)
+    >>> widget = ImageChangeWidget(
+    ...     person_mugshot, LaunchpadTestRequest(form=form), edit_style)
+    >>> fileupload = widget.getInputValue()
+    >>> fileupload.filename
+    u'mugshot.png'
+
+The same occurs if the image matches the specified dimensions:
+
+    >>> person_mugshot.dimensions = (192, 192)
+    >>> mugshot.seek(0)
+    >>> widget = ImageChangeWidget(
+    ...     person_mugshot, LaunchpadTestRequest(form=form), edit_style)
+    >>> fileupload = widget.getInputValue()
+    >>> fileupload.filename
+    u'mugshot.png'
+

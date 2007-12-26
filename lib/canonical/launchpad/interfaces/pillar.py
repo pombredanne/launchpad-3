@@ -62,3 +62,11 @@ class IPillarNameSet(Interface):
         The results are ordered descending by rank.
         """
 
+    def add_featured_project(project):
+        """Add a project to the featured project list."""
+
+    def remove_featured_project(project):
+        """Remove a project from the featured project list."""
+
+    featured_projects = Attribute("Return the set of featured projects.")
+

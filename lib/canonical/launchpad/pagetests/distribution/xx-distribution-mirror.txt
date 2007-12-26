@@ -83,13 +83,13 @@ distribution owners.
     This mirror is an unofficial Ubuntu Linux mirror, and will not be
     verified.
 
-To make a mirror official, one has to go to the +mark-official page, which
+To make a mirror official, one has to go to the +review page, which
 is accessible only to mirror admins of that distribution and the
 distribution owner.
 
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/'
-    ...     '+mark-official')
+    ...     '+review')
     Traceback (most recent call last):
     ...
     Unauthorized...
@@ -102,11 +102,9 @@ the mirror owner, but can only be edited by mirror admins).
     ...     auth='Basic karl@canonical.com:test')
     >>> karl_browser.open(
     ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
-    >>> karl_browser.getLink('Mark as official').click()
+    >>> karl_browser.getLink('Review mirror').click()
     
-    >>> official_approved = karl_browser.getControl(
-    ...     'This is one of the official mirrors of this distribution')
-    >>> official_approved.selected = True
+    >>> karl_browser.getControl('Status').value = ['OFFICIAL']
     >>> karl_browser.getControl('Whiteboard').value = 'This is a good mirror'
     >>> karl_browser.getControl('Save').click()
     

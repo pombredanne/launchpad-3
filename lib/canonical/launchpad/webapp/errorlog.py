@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
+
 """Error logging facilities."""
 
 __metaclass__ = type
@@ -11,6 +13,7 @@ import datetime
 import pytz
 import rfc822
 import logging
+import types
 import urllib
 
 from zope.interface import implements
@@ -59,6 +62,7 @@ def _safestr(obj):
     # A call to str(obj) could raise anything at all.
     # We'll ignore these errors, and print something
     # useful instead, but also log the error.
+    # We disable the pylint warning for the blank except.
     try:
         value = str(obj)
     except:
@@ -217,6 +221,16 @@ class ErrorReportingUtility:
                 lastid = int(oopsid)
         return lastid
 
+    def getOopsReport(self, time):
+        """Return the contents of the OOPS report logged at 'time'."""
+        oops_filename = self.getOopsFilename(
+            self._findLastOopsId(self.errordir(time)), time)
+        oops_report = open(oops_filename, 'r')
+        try:
+            return ErrorReport.read(oops_report)
+        finally:
+            oops_report.close()
+
     def errordir(self, now=None):
         """Find the directory to write error reports to.
 
@@ -244,6 +258,14 @@ class ErrorReportingUtility:
                 self.lastid_lock.release()
         return errordir
 
+    def getOopsFilename(self, oops_id, time):
+        """Get the filename for a given OOPS id and time."""
+        oops_prefix = config.launchpad.errorreports.oops_prefix
+        error_dir = self.errordir(time)
+        second_in_day = time.hour * 3600 + time.minute * 60 + time.second
+        return os.path.join(
+            error_dir, '%05d.%s%s' % (second_in_day, oops_prefix, oops_id))
+
     def newOopsId(self, now=None):
         """Returns an (oopsid, filename) pair for the next Oops ID
 
@@ -269,13 +291,10 @@ class ErrorReportingUtility:
             newid = self.lastid
         finally:
             self.lastid_lock.release()
-        day_number = (now - epoch).days + 1
-        second_in_day = now.hour * 3600 + now.minute * 60 + now.second
         oops_prefix = config.launchpad.errorreports.oops_prefix
+        day_number = (now - epoch).days + 1
         oops = 'OOPS-%d%s%d' % (day_number, oops_prefix, newid)
-        filename = os.path.join(errordir, '%05d.%s%s' % (second_in_day,
-                                                         oops_prefix,
-                                                         newid))
+        filename = self.getOopsFilename(newid, now)
         return oops, filename
 
     def raising(self, info, request=None, now=None):
@@ -316,11 +335,11 @@ class ErrorReportingUtility:
                     else:
                         login = 'unauthenticated'
                     username = _safestr(
-                        ', '.join(map(unicode, (login,
-                                                request.principal.id,
-                                                request.principal.title,
-                                                request.principal.description
-                                                ))))
+                        ', '.join([
+                                unicode(login),
+                                unicode(request.principal.id),
+                                unicode(request.principal.title),
+                                unicode(request.principal.description)]))
                 # XXX jamesh 2005-11-22:
                 # When there's an unauthorized access, request.principal is
                 # not set, so we get an AttributeError.
@@ -376,11 +395,17 @@ class ErrorReportingUtility:
                             now - _rate_restrict_burst*_rate_restrict_period)
             next_when += _rate_restrict_period
             _rate_restrict_pool[strtype] = next_when
-            # The logging module doesn't provide a way to pass in
-            # exception info, so we temporarily raise the exception so
-            # it can be logged.
+            # Sometimes traceback information can be passed in as a string. In
+            # those cases, we don't (can't!) log the traceback. The traceback
+            # information is still preserved in the actual OOPS report.
+            traceback = info[2]
+            if not isinstance(traceback, types.TracebackType):
+                traceback = None
+            # The logging module doesn't provide a way to pass in exception
+            # info, so we temporarily raise the exception so it can be logged.
+            # We disable the pylint warning for the blank except.
             try:
-                raise info[0], info[1], info[2]
+                raise info[0], info[1], traceback
             except:
                 logging.getLogger('SiteError').exception(
                     '%s (%s)' % (url, oopsid))

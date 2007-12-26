@@ -66,6 +66,31 @@ Neither can a team subscribe to a mailing list.
     CannotSubscribe: Teams cannot be mailing list members: Team One
 
 
+== MailingListSubscription objects ==
+
+MailingListSubscription objects make it possible to see under which
+address (if any) a user is subscribed. That information is available
+as the email_address member.
+
+    >>> list_one.getSubscription(bart).email_address.email
+    u'bperson@example.org'
+
+Every subscription has a corresponding MailingListSubscription object,
+but not every MailingListSubscription object names a specific email
+address. If a user is subscribed under their preferred address, the
+corresponding MailingListSubscription object will exist but not be
+associated with any specific address.
+
+    >>> list_one.getSubscription(anne).email_address is None
+    True
+
+If a user is not subscribed to a mailing list, they will have no
+MailingListSubscription object for that mailing list.
+
+    >>> list_one.getSubscription(cris) is None
+    True
+
+
 == Nested teams ==
 
 Indirect members can subscribe to a team's mailing list.  To illustrate this,
@@ -77,6 +102,7 @@ we first create team-two as a subteam of team-one.
     # reviewer for adding team-two to team-one.
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> login('foo.bar@canonical.com')
     >>> team_one.addMember(team_two, salgado, force_team_add=True)
     >>> sorted(member.displayname for member in team_one.allmembers)
     [u'Anne Person', u'Bart Person', u'No Privileges Person', u'Team Two']

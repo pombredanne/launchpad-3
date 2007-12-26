@@ -17,6 +17,10 @@
 
 <div metal:fill-slot="main">
 
+   <link rel="alternate" type="application/atom+xml"
+         tal:attributes="title string:Announcements for ${context/displayname};
+                         href view/feed_url" />
+
   <p id="project-inactive" tal:condition="not: context/active" class="warning message">
     This project is currently inactive <a href="+review">(change this)</a>
   </p>
@@ -98,6 +102,10 @@
         <div
           class="section"
           tal:content="structure context/@@+portlet-coming-sprints"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestannouncements"
         />
         <div class="portlet">
           <h2>Timeline</h2>

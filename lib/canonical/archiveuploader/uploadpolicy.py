@@ -248,14 +248,28 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         for uploadfile in upload.changes.files:
             upload_size += uploadfile.size
 
-        # Reject the upload if the archive size is going to exceed
-        # the authorized_size.
-        proposed_size = self.archive.estimated_size + upload_size
-        if proposed_size > self.archive.authorized_size:
-            upload.reject(
-                "PPA exceeded its size limit of %s bytes. Contact a "
-                "Launchpad administrator if you really need more space." % (
-                self.archive.authorized_size))
+        current_size = self.archive.estimated_size
+        new_size = current_size + upload_size
+
+        if new_size > self.archive.authorized_size:
+            # XXX cprov 20071203: once the users get the the opportunity
+            # to remove packages via the UI and get habituated with the
+            # limiting policies, we should start to reject uploads over
+            # the size quota (hint: use upload.reject instead of warn).
+            # Warning users about a PPA exceeding the size limit.
+            upload.warn(
+                "PPA exceeded its size limit (%d of %d bytes). "
+                "Contact a Launchpad administrator if you need "
+                "more space." % (new_size, self.archive.authorized_size))
+        elif new_size > 0.95 * self.archive.authorized_size:
+            # Warning users about a PPA over 95 % of the size limit.
+            upload.warn(
+                "PPA exceeded 95 %% of its size limit (%d of %d bytes). "
+                "Contact a Launchpad administrator if you need "
+                "more space." % (new_size, self.archive.authorized_size))
+        else:
+            # No need to warn user about his PPA's size.
+            pass
 
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now.

@@ -23,6 +23,19 @@
     permission="zope.Public"
     />
 
+  <securedutility
+    class="canonical.launchpad.systemhomes.CodeImportSchedulerApplication"
+    provides="canonical.launchpad.interfaces.ICodeImportSchedulerApplication">
+    <allow interface="canonical.launchpad.interfaces.ICodeImportSchedulerApplication"/>
+  </securedutility>
+
+  <xmlrpc:view
+    for="canonical.launchpad.interfaces.ICodeImportSchedulerApplication"
+    interface="canonical.launchpad.interfaces.ICodeImportScheduler"
+    class="canonical.launchpad.xmlrpc.CodeImportSchedulerAPI"
+    permission="zope.Public"
+    />
+
   <class class="canonical.launchpad.xmlrpc.faults.BranchAlreadyRegistered">
     <require like_class="xmlrpclib.Fault" />
   </class>

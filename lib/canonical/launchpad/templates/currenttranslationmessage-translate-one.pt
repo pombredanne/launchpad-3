@@ -360,78 +360,81 @@
     <tal:imported-submission
       define="submission translation_dictionary/imported_translation_message"
       condition="submission">
-  <tr class="secondary"
-    tal:attributes="id string:msgset_${context/potmsgset/id}_packaged">
-    <th colspan="3">
-      Packaged:
-    </th>
-    <td class="icon left right">
-      <tal:form-writeable condition="view/form_is_writeable">
-      <tal:user-is-official-translator
-        condition="view/user_is_official_translator">
-        <input
-          type="radio"
+      <tal:imported-not-empty condition="not:submission/is_empty">
+        <tr class="secondary"
+          tal:attributes="id string:msgset_${context/potmsgset/id}_packaged">
+          <th colspan="3">
+            Packaged:
+          </th>
+          <td class="icon left right">
+            <tal:form-writeable condition="view/form_is_writeable">
+            <tal:user-is-official-translator
+              condition="view/user_is_official_translator">
+              <input
+                type="radio"
+                tal:attributes="
+                  name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton;
+                  id string:msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index}_radiobutton;
+                  value string:msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index};
+                  onClick string:
+                    javascript:copyInnerHTMLById(
+                      'msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index}',
+                      'msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new')
+                  " />
+            </tal:user-is-official-translator>
+            <tal:user-is-not-official-translator condition="not:view/user_is_official_translator">
+              <a href=""
+                tal:attributes="
+                  onClick string:
+                    javascript:copyInnerHTMLById(
+                      'msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index}',
+                      'msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new');;
+                    selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select', event);;
+                  return false;;
+                "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
+            </tal:user-is-not-official-translator>
+            </tal:form-writeable>
+          </td>
+          <td>
+            <div
+              tal:condition="not:view/user_is_official_translator"
+              tal:attributes="
+                lang context/pofile/language/dashedcode;
+                dir context/pofile/language/abbreviated_text_dir;
+                id string:msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index}"
+              tal:content="structure translation_dictionary/imported_translation">
+              imported translation
+            </div>
+            <label
+              style="white-space: normal"
+              tal:condition="view/user_is_official_translator"
+              tal:attributes="
+                lang context/pofile/language/dashedcode;
+                dir context/pofile/language/abbreviated_text_dir;
+                id string:msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index};
+                for string:msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index}_radiobutton;"
+              tal:content="
+                structure translation_dictionary/imported_translation">
+              imported translation
+            </label>
+          </td>
+        </tr>
+        <tr class="discreet secondary"
           tal:attributes="
-            name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton;
-            id string:msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index}_radiobutton;
-            value string:msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index};
-            onClick string:
-              javascript:copyInnerHTMLById(
-                'msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index}',
-                'msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new')
-            " />
-      </tal:user-is-official-translator>
-      <tal:user-is-not-official-translator condition="not:view/user_is_official_translator">
-        <a href=""
-          tal:attributes="
-            onClick string:
-              javascript:copyInnerHTMLById(
-                'msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index}',
-                'msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new');;
-              selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select', event);;
-            return false;;
-          "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
-      </tal:user-is-not-official-translator>
-      </tal:form-writeable>
-    </td>
-    <td>
-      <div
-        tal:condition="not:view/user_is_official_translator"
-        tal:attributes="
-          lang context/pofile/language/dashedcode;
-          dir context/pofile/language/abbreviated_text_dir;
-          id string:msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index}"
-        tal:content="structure translation_dictionary/imported_translation">
-        imported translation
-      </div>
-      <label
-        style="white-space: normal"
-        tal:condition="view/user_is_official_translator"
-        tal:attributes="
-          lang context/pofile/language/dashedcode;
-          dir context/pofile/language/abbreviated_text_dir;
-          id string:msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index};
-          for string:msgset_${context/potmsgset/id}_${language_code}_suggestion_${submission/id}_${plural_index}_radiobutton;"
-        tal:content="structure translation_dictionary/imported_translation">
-        imported translation
-      </label>
-    </td>
-  </tr>
-  <tr class="discreet secondary"
-    tal:attributes="id string:msgset_${context/potmsgset/id}_packaged_origin">
-    <td colspan="4" class="icon left right" />
-    <td style="overflow: auto;">
-      Translated by
-      <a tal:content="submission/submitter/browsername"
-         tal:attributes="href submission/submitter/fmt:url">Foo Bar</a>
-      <span
-        tal:attributes="title submission/date_created/fmt:datetime"
-        tal:content="submission/date_created/fmt:displaydate">
-        2006-08-05
-      </span>
-    </td>
-  </tr>
-
+            id string:msgset_${context/potmsgset/id}_packaged_origin">
+          <td colspan="4" class="icon left right" />
+          <td style="overflow: auto;">
+            Translated by
+            <a tal:content="submission/submitter/browsername"
+               tal:attributes="href submission/submitter/fmt:url">Foo Bar</a>
+            <span
+              tal:attributes="title submission/date_created/fmt:datetime"
+              tal:content="submission/date_created/fmt:displaydate">
+              2006-08-05
+            </span>
+          </td>
+        </tr>
+      </tal:imported-not-empty>
     </tal:imported-submission>
     <tal:locked condition="not:context/potmsgset/is_translation_credit">
       <tal:suggestions-title

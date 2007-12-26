@@ -1,0 +1,59 @@
+<h2>
+  <tal:date tal:condition="context/date_announced">
+    <span tal:replace="context/date_announced/fmt:date">
+      22 Oct 2008
+    </span>:
+  </tal:date>
+  <tal:title content="context/title">News item title</tal:title>
+</h2>
+
+<tal:summary condition="context/summary"
+             tal:replace="structure context/summary/fmt:text-to-html" />
+<p>
+  <a tal:attributes="href string:${context/fmt:url}"
+     >Permalink.</a>
+  <tal:future condition="context/future">
+    <img src="/@@/warning" title="Announcement is not yet public" />
+    <strong tal:condition="context/active">
+      <tal:date_set condition="context/date_announced">
+        This will be published on
+        <span tal:replace="context/date_announced/fmt:datetime" />
+      </tal:date_set>
+    </strong>
+  </tal:future>
+  <strong tal:condition="not: context/active">
+      [Retracted]
+  </strong>
+  <strong tal:condition="not: context/date_announced">
+      No publishing date set.
+  </strong>
+  <strong tal:condition="context/date_last_modified">
+      Updated
+      <span tal:replace="context/date_last_modified/fmt:displaydate" />.
+  </strong>
+  <a tal:condition="context/url"
+     tal:attributes="href context/url">
+     <img src="/@@/link" alt="Link" /> Read more...</a>
+</p>
+<p>
+  <tal:editor condition="context/required:launchpad.Edit">
+    <img src="/@@/edit" alt="[Edit]" />
+    <a tal:attributes="href string:${context/fmt:url}/+edit"
+       >Edit this announcement.</a>
+    <a tal:condition="not: context/published"
+       tal:attributes="href string:${context/fmt:url}/+publish"
+       >Publish now.</a>
+    <a tal:condition="context/active"
+       tal:attributes="href string:${context/fmt:url}/+retract"
+       >Retract this announcement.</a>
+    <a tal:condition="not: context/active"
+       tal:attributes="href string:${context/fmt:url}/+delete"
+       >Permanently delete this announcement.</a>
+    <br />
+  </tal:editor>
+  Created for
+  <tal:pillar replace="structure context/target/fmt:link" />
+  <tal:date_created replace="context/date_created/fmt:displaydate" />
+  by
+  <tal:registrant replace="structure context/registrant/fmt:link" />
+</p>

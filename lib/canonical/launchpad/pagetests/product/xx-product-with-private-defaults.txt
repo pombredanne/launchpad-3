@@ -63,7 +63,7 @@ If we file a new bug in redfish:
 You can see it's been marked private:
 
     >>> redfish = getUtility(IProductSet).getByName("redfish")
-    >>> redfish_bugtask = redfish.all_bugtasks[0]
+    >>> redfish_bugtask = redfish.all_bugtasks[1]
     >>> redfish_bugtask.bug.private
     True
 

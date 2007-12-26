@@ -15,7 +15,8 @@
                   product series review_status
                   rcs_type cvs_root cvs_module svn_branch_url
                   date_last_successful
-                  update_interval effective_update_interval" />
+                  update_interval effective_update_interval
+                  import_job" />
     <require
       permission="launchpad.Edit"
       attributes="updateFromData" />

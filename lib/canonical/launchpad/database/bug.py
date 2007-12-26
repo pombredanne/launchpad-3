@@ -20,7 +20,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 
-from sqlobject import ForeignKey, StringCol, BoolCol
+from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
@@ -198,6 +198,7 @@ class Bug(SQLBase):
     bug_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
+    number_of_duplicates = IntCol(notNull=True, default=0)
 
     @property
     def displayname(self):
@@ -242,12 +243,6 @@ class Bug(SQLBase):
         :See: `IBug.can_expire` or `BugTaskSet.findExpirableBugTasks` to
             check or get a list of bugs that can expire.
         """
-        # No one has replied to the first message reporting the bug.
-        # The bug reporter should be notified that more information
-        # is required to confirm the bug report.
-        if self.messages.count() == 1:
-            return False
-
         # Bugs cannot be expired if any bugtask is valid.
         expirable_status_list = [
             BugTaskStatus.INCOMPLETE, BugTaskStatus.INVALID,
@@ -528,10 +523,11 @@ class Bug(SQLBase):
 
         return bugmsg.message
 
-    def linkMessage(self, message):
+    def linkMessage(self, message, bugwatch=None):
         """See `IBug`."""
         if message not in self.messages:
-            result = BugMessage(bug=self, message=message)
+            result = BugMessage(bug=self, message=message,
+                bugwatch=bugwatch)
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, message.owner)
             self.findCvesInText(message.text_contents, message.owner)
@@ -745,11 +741,13 @@ class Bug(SQLBase):
 
     def getMessageChunks(self):
         """See `IBug`."""
-        chunks = MessageChunk.select("""
+        query = """
             Message.id = MessageChunk.message AND
             BugMessage.message = Message.id AND
             BugMessage.bug = %s
-            """ % sqlvalues(self),
+            """ % sqlvalues(self)
+
+        chunks = MessageChunk.select(query,
             clauseTables=["BugMessage", "Message"],
             # XXX: kiko 2006-09-16 bug=60745:
             # There is an issue that presents itself
@@ -917,12 +915,14 @@ class Bug(SQLBase):
         if bugtask.conjoined_master is not None:
             bugtask = bugtask.conjoined_master
 
+        if bugtask.status == status:
+            return None
+
         bugtask_before_modification = Snapshot(
             bugtask, providing=providedBy(bugtask))
         bugtask.transitionToStatus(status, user)
-        if bugtask_before_modification.status != bugtask.status:
-            notify(SQLObjectModifiedEvent(
-                bugtask, bugtask_before_modification, ['status'], user=user))
+        notify(SQLObjectModifiedEvent(
+            bugtask, bugtask_before_modification, ['status'], user=user))
 
         return bugtask
 

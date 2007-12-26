@@ -9,8 +9,10 @@ __metaclass__ = type
 __all__ = [
     'POHeader',
     'POParser',
+    'plural_form_mapper',
     ]
 
+import gettext
 import datetime
 import re
 import codecs
@@ -27,6 +29,74 @@ from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFileData, TranslationMessageData)
 from canonical.launchpad.versioninfo import revno
 
+class BadPluralExpression(Exception):
+    pass
+
+def make_plural_function(expression):
+    """Create a lambda function for C-like plural expression."""
+    # Largest expressions we could find in practice were 113 characters
+    # long.  500 is a reasonable value which is still 4 times more than
+    # that, yet not incredibly long.
+    if expression is None or len(expression) > 500:
+        raise BadPluralExpression
+
+    # Guard against '**' usage: it's not useful in evaluating
+    # plural forms, yet can be used to introduce a DoS.
+    if expression.find('**') != -1:
+        raise BadPluralExpression
+
+    # We allow digits, whitespace [ \t], parentheses, "n", and operators
+    # as allowed by GNU gettext implementation as well.
+    if not re.match('^[0-9 \t()n|&?:!=<>+%*/-]*$', expression):
+        raise BadPluralExpression
+
+    try:
+        function = gettext.c2py(expression)
+    except (ValueError, SyntaxError):
+        raise BadPluralExpression
+
+    return function
+
+def plural_form_mapper(first_expression, second_expression):
+    """Maps plural forms from one plural formula to the other.
+
+    Returns a dict indexed by indices in the `first_formula`
+    pointing to corresponding indices in the `second_formula`.
+    """
+    identity_map = {0:0, 1:1, 2:2, 3:3}
+    try:
+        first_func = make_plural_function(first_expression)
+        second_func = make_plural_function(second_expression)
+    except BadPluralExpression:
+        return identity_map
+
+    # Can we create a mapping from one expression to the other?
+    mapping = {}
+    for n in range(1000):
+        try:
+            first_form = first_func(n)
+            second_form = second_func(n)
+        except (ArithmeticError, TypeError):
+            return identity_map
+
+        # Is either result out of range?
+        if first_form not in [0,1,2,3] or second_form not in [0,1,2,3]:
+            return identity_map
+
+        if first_form in mapping:
+            if mapping[first_form] != second_form:
+                return identity_map
+        else:
+            mapping[first_form] = second_form
+
+    # The mapping must be an isomorphism.
+    if sorted(mapping.keys()) != sorted(mapping.values()):
+        return identity_map
+
+    # Fill in the remaining inputs from the identity map:
+    result = identity_map.copy()
+    result.update(mapping)
+    return result
 
 class POSyntaxWarning(Warning):
     """ Syntax warning in a po file """
@@ -363,9 +433,13 @@ class POHeader:
 class POParser(object):
     """Parser class for Gettext files."""
 
-    def __init__(self):
+    def __init__(self, plural_formula=None):
         self._translation_file = None
         self._lineno = 0
+        # This is a default plural form mapping (i.e. no mapping) when
+        # no header is present in the PO file.
+        self._plural_form_mapping = {0: 0, 1: 1, 2: 2, 3: 3}
+        self._expected_plural_formula = plural_formula
 
     def _decode(self):
         # is there anything to convert?
@@ -529,6 +603,13 @@ class POParser(object):
                 POSyntaxWarning(
                     self._lineno, 'Header entry is not first entry'))
 
+        plural_formula = self._translation_file.header.plural_form_expression
+        if plural_formula is None:
+            # We default to a simple plural formula which uses
+            # a single form for translations.
+            plural_formula = '0'
+        self._plural_form_mapping = plural_form_mapper(
+            plural_formula, self._expected_plural_formula)
         # convert buffered input to the encoding specified in the PO header
         self._decode()
 
@@ -732,7 +813,8 @@ class POParser(object):
             self._translation_file.header.has_plural_forms = True
         elif self._section == 'msgstr':
             self._message.addTranslation(
-                self._plural_case, self._parsed_content)
+                self._plural_form_mapping[self._plural_case],
+                self._parsed_content)
         else:
             raise AssertionError('Unknown section %s' % self._section)
 

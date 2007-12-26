@@ -25,6 +25,7 @@ from canonical.launchpad.interfaces import (
     IBugTarget, IHasAppointedDriver, IHasDrivers, IHasOwner,
     IHasSecurityContact, ILaunchpadUsage, ISpecificationTarget)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
@@ -41,9 +42,9 @@ class DistributionNameField(PillarNameField):
         return IDistribution
 
 class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
-    IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
-    IHasSprints, IHasTranslationGroup, IKarmaContext, ILaunchpadUsage,
-    ISpecificationTarget):
+    IHasMentoringOffers, IHasMilestones, IMakesAnnouncements, IHasOwner,
+    IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
+    ILaunchpadUsage, ISpecificationTarget):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -141,6 +142,8 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         "All disabled and official mirrors of this Distribution.")
     unofficial_mirrors = Attribute(
         "All unofficial mirrors of this Distribution.")
+    pending_review_mirrors = Attribute(
+        "All mirrors of this Distribution that haven't been reviewed yet.")
     serieses = Attribute("DistroSeries'es inside this Distribution")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")

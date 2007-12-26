@@ -510,6 +510,7 @@ IBrowserApplicationRequest.
     >>> verifyObject(ILaunchpadBrowserApplicationRequest, request)
     True
 
+
 == Handling form data using IBrowserFormNG ==
 
 Submitted form data is available in the form_ng request attribute. This
@@ -595,6 +596,69 @@ All the submitted field names can be iterated over:
     items_field
 
 
+== Page ID ==
+
+Our publication implementation sets a WSGI variable 'launchpad.pageid'.
+This is an identifier of the form ContextName:ViewName.
+
+    >>> from canonical.launchpad.webapp.interfaces import (
+    ...     IPlacelessAuthUtility)
+    >>> auth_utility = getUtility(IPlacelessAuthUtility)
+    >>> request, publication = get_request_and_publication()
+    >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
+
+Originally, this variable isn't set.
+
+    >>> request._orig_env.has_key('launchpad.pageid')
+    False
+
+It is set during the callObject() hook. The pageid is made of the
+name of the context class and the view class name.
+
+    >>> class TestView(object):
+    ...     """A very simple view."""
+    ...
+    ...     def __init__(self, context, request):
+    ...         self.context = context
+    ...         self.request = request
+    ...
+    ...     def __call__(self):
+    ...         return u"Result"
+
+    >>> class TestContext(object):
+    ...     """Test context object."""
+
+    >>> view = TestView(TestContext(), request)
+    >>> publication.callObject(request, view)
+    u'Result'
+    >>> print request._orig_env['launchpad.pageid']
+    TestContext:TestView
+
+When a view is registered using ZCML, the Zope machinery will store 
+the name under which the view was registered in the view's '__name__'
+attribute. For these views, that's the name that will be used in
+the pageid.
+
+    >>> view.__name__ = '+test'
+    >>> publication.callObject(request, view)
+    u'Result'
+    >>> print request._orig_env['launchpad.pageid']
+    TestContext:+test
+
+If the published object doesn't have a context attribute (unlike most
+views), the pageid will be empty.
+
+    >>> request, publication = get_request_and_publication()
+    >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
+
+    >>> def callable_publication():
+    ...     return u'Result'
+    >>> publication.callObject(request, callable_publication)
+    u'Result'
+    >>> request._orig_env['launchpad.pageid']
+    ''
+
+
 == Transaction Logging ==
 
 The publication implementation is responsible for putting the name
@@ -606,9 +670,9 @@ The user attribute is an empty string, when no user is logged in.
 
     >>> import transaction
     >>> txn = transaction.begin()
+    >>> request, publication = get_request_and_publication()
     >>> print request.principal
     None
-    >>> request, publication = get_request_and_publication()
     >>> publication.afterCall(request, None)
     >>> txn.user
     ''
@@ -671,6 +735,7 @@ But not if the request uses POST, the changes will be preserved.
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
     >>> print foo_bar.city
     Montreal
+
 
 == HEAD requests have empty body ==
 

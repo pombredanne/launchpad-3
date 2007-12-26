@@ -62,6 +62,14 @@ BugActivity records are created.
     >>> latest_activity.newvalue
     u'Confirmed'
 
+The edited bugtask is only returned if it's actually edited. If the
+bugtask already has the specified status, None is returned.
+
+    >>> firefox_bugtask.status.name
+    'CONFIRMED'
+    >>> print bug.setStatus(firefox, BugTaskStatus.CONFIRMED, no_priv)
+    None
+
 === Product series ===
 
 If a product series is specified, but the bug is target only to the

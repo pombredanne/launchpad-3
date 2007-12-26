@@ -244,7 +244,9 @@ do uploads:
   >>> uploader_team = getUtility(IPersonSet).getByName("ubuntu-team")
   >>> assert uploader_team is not None
 
+  >>> login("foo.bar@canonical.com")
   >>> uploader_team.addMember(user, reviewer=uploader_team.teamowner)
+  >>> login("test@canonical.com")
 
 
 Assign the loaded GPG key to the katie user.

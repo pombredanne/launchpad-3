@@ -12,7 +12,6 @@ __all__ = [
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
-    'LaunchpadRootIndexView',
     'OneZeroTemplateStatus',
     'IcingFolder',
     'StructuralHeaderPresentationView',
@@ -49,6 +48,7 @@ import canonical.launchpad.layers
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
+    IAnnouncementSet,
     IAppFrontPageSearchForm,
     IBazaarApplication,
     IBinaryPackageNameSet,
@@ -417,6 +417,7 @@ class LaunchpadRootNavigation(Navigation):
             'https://help.launchpad.net/Feedback', status=301)
 
     stepto_utilities = {
+        '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
         'bounties': IBountySet,
         'bugs': IMaloneApplication,
@@ -572,22 +573,6 @@ class SoftTimeoutView(LaunchpadView):
         return (
             'Soft timeout threshold is set to %s ms. This page took'
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
-
-
-class LaunchpadRootIndexView(LaunchpadView):
-    """An view for the default view of the LaunchpadRoot."""
-
-    def isRedirectInhibited(self):
-        """Returns True if redirection has been inhibited."""
-        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
-
-    def isBetaUser(self):
-        """Return True if the user is in the beta testers team."""
-        if config.launchpad.beta_testers_redirection_host is None:
-            return False
-
-        return self.user is not None and self.user.inTeam(
-            getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
 
 
 class ObjectForTemplate:

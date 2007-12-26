@@ -147,7 +147,9 @@ class IPOTMsgSet(Interface):
         If there is an error with the translations and ignore_errors is not
         True or it's not a fuzzy submit, raises gettextpo.error
 
-        Returns a modified or newly created translation message.
+        :return: a modified or newly created translation message; or None if
+            no message is to be updated.  This can happen when updating a
+            translation credits message without the is_imported parameter set.
         """
 
     def flags():

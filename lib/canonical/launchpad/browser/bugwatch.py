@@ -5,19 +5,54 @@
 __metaclass__ = type
 __all__ = [
     'BugWatchSetNavigation',
-    'BugWatchEditView']
+    'BugWatchEditView',
+    'BugWatchView']
 
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IBugWatch, IBugWatchSet, ILaunchBag
+from canonical.launchpad.browser import get_comments_for_bugtask
+from canonical.launchpad.interfaces import (IBugWatch, IBugWatchSet,
+    ILaunchBag, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadEditFormView)
+    action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadView)
 
 
 class BugWatchSetNavigation(GetitemNavigation):
 
     usedfor = IBugWatchSet
+
+
+class BugWatchView(LaunchpadView):
+    """View for displaying a bug watch."""
+
+    schema = IBugWatch
+
+    @property
+    def comments(self):
+        """Return the comments to be displayed for a bug watch.
+
+        If the current user is not a member of the Launchpad developers
+        team, no comments will be returned.
+        """
+        user = getUtility(ILaunchBag).user
+        lp_developers = getUtility(ILaunchpadCelebrities).launchpad_developers
+        if not user.inTeam(lp_developers):
+            return []
+
+        bug_comments = get_comments_for_bugtask(self.context.bug.bugtasks[0],
+            truncate=True)
+
+        # Filter out those comments that don't pertain to this bug
+        # watch.
+        displayed_comments = []
+        for bug_comment in bug_comments:
+            if bug_comment.bugwatch == self.context:
+                bug_comment.display_if_from_bugwatch = True
+                displayed_comments.append(bug_comment)
+
+        return displayed_comments
 
 
 class BugWatchEditView(LaunchpadEditFormView):

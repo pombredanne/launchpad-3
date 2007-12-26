@@ -415,6 +415,36 @@ the sample data:
   >>> spr_hoary_ppa, pub_hoary_ppa = createPackageAndPublication(
   ...     name6, hoary, "i386 hppa", archive=cprov.archive)
 
+Only the architecture with established support for PPA will be
+considered when creating PPA builds. See distroarchseries.txt for
+further information.
+
+  >>> legal_archs = set(hoary.architectures)
+  >>> [a.architecturetag for a in
+  ...      determineArchitecturesToBuild(pub_hoary_ppa, legal_archs, hoary)]
+  [u'i386']
+
+PPA builds are not affected by P-a-s restrictions, i.e., they will
+build for all requested architectures currently supported in the PPA
+subsystem.
+
+  >>> pas_verify = getPASVerifier("%test-ppa: hppa")
+  >>> [a.architecturetag for a in
+  ...      determineArchitecturesToBuild(pub_hoary_ppa, legal_archs,
+  ...                                    hoary, pas_verify)]
+  [u'i386']
+
+  >>> pas_verify = getPASVerifier("%test-ppa: !i386")
+  >>> [a.architecturetag for a in
+  ...      determineArchitecturesToBuild(pub_hoary_ppa, legal_archs,
+  ...                                    hoary, pas_verify)]
+  [u'i386']
+
+XXX cprov 20071211: we can't properly test PPA binary-PAS right now
+because there is no binary package published in PPA. The way the P-a-s
+component is completely ignored for PPAs indicates that we are safe,
+however, for now, we have to rely on the previous primary-archive tests.
+
 Now we create builds and buildqueues and check their contents:
 
   >>> for dr in distroserieses:
@@ -427,10 +457,6 @@ Check that we only created new Build entry for ppa publication:
   >>> for build in sorted(new_builds, key=operator.attrgetter('id')):
   ...   print build.title
   i386 build of test-ppa 674 in ubuntu hoary UPDATES
-
-Note that it did not create a build for 'hppa' as is requested in the
-given 'architeturehintlist' ('i386 hppa'). Only 'i386' and 'amd64' are
-allowed for PPA (see further comments in buildmaster/master.py).
 
 Check if BuildQueue are also created for ppa_builds:
 

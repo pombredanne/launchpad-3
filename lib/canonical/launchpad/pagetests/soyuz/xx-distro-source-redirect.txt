@@ -1,8 +1,0 @@
-
-Check that going to $distribution/+source redirects to $distribution.
-
-  >>> browser.open("http://localhost/ubuntu/+source")
-  >>> browser.url
-  'http://localhost/ubuntu'
-
-  
