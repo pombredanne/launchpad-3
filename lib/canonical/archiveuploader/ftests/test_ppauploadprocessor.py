@@ -679,10 +679,6 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "-----BEGIN PGP SIGNATURE-----" not in body,
             "Unexpected start of PGP signature found")
         self.assertTrue(
-            "iD8DBQFFt7D9jn63CGxkqMURAk1BAJwIQfOMS+l9lDDwPORtuZb3hFI2OgCaArNc"
-                not in body,
-            "Unexpected PGP signature data found")
-        self.assertTrue(
             "-----END PGP SIGNATURE-----" not in body,
             "Unexpected end of PGP signature found")
 
