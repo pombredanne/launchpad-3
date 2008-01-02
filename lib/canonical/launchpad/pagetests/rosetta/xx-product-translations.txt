@@ -54,13 +54,23 @@ If you're logged in as someone else, the Translations page suggests that you
 contact the product's registrant.
 
     >>> unprivileged = setupBrowser(auth='Basic no-priv@canonical.com:test')
-    >>> unprivileged.open(
-    ...     'http://translations.launchpad.dev/gnomebaker')
+    >>> unprivileged.open('http://translations.launchpad.dev/gnomebaker')
     >>> print extract_text(find_main_content(unprivileged.contents))
     Translation setup needed
     The gnomebaker project is not set up for translation in Launchpad.
     You might want to talk with Foo Bar, the project registrant, about
     using Launchpad for translations.
+
+If you're not logged in, you get essentially the same message but with
+the added possibility that you could actually be the registrant.
+
+    >>> anon_browser.open('http://translations.launchpad.dev/gnomebaker')
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Translation setup needed
+    The gnomebaker project is not set up for translation in Launchpad.
+    If you are Foo Bar, log in to begin the setup process.
+    Otherwise, you might want to talk with Foo Bar, the project registrant,
+    about using Launchpad for translations.
 
 It omits the registrant-only links ...
 
