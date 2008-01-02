@@ -24,7 +24,6 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
-from canonical.config import config
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, DistroSeriesStatus, IBug,
     IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
@@ -244,12 +243,6 @@ class Bug(SQLBase):
         :See: `IBug.can_expire` or `BugTaskSet.findExpirableBugTasks` to
             check or get a list of bugs that can expire.
         """
-        # No one has replied to the first message reporting the bug.
-        # The bug reporter should be notified that more information
-        # is required to confirm the bug report.
-        if self.messages.count() == 1:
-            return False
-
         # Bugs cannot be expired if any bugtask is valid.
         expirable_status_list = [
             BugTaskStatus.INCOMPLETE, BugTaskStatus.INVALID,
@@ -753,11 +746,6 @@ class Bug(SQLBase):
             BugMessage.message = Message.id AND
             BugMessage.bug = %s
             """ % sqlvalues(self)
-
-        # We can exclude comments imported from external bug trackers by
-        # only retrieving those comments without a linked BugWatch.
-        if not config.malone.show_imported_comments:
-            query = query + "AND BugMessage.bugwatch IS NULL"
 
         chunks = MessageChunk.select(query,
             clauseTables=["BugMessage", "Message"],

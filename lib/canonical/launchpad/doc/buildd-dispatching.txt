@@ -265,19 +265,34 @@ implementation.
 
 To solve this problem temporarily until we start building security
 uploads, we will mark builds targeted to the SECURITY pocket as
-FAILEDTOBUILD during the findBuildCandidate look-up.
+FAILEDTOBUILD during the findBuildCandidate look-up. We will also
+create another candidate to check if legitimate pending candidates will
+remain valid.
 
-  >>> print bob_builder.findBuildCandidate()
-  None
+  >>> pending_build = sprf.sourcepackagerelease.createBuild(
+  ...     hoary_i386, PackagePublishingPocket.UPDATES, hoary.main_archive)
+  >>> pending_job = pending_build.createBuildQueueEntry()
+
+We increase the score of the security job to ensure it is considered
+before the legitimate job.
+
+  >>> sec_job.lastscore = 1000
   >>> flush_database_updates()
 
-As expected, the security job was marked as SUPERSEDED and the
+New we can check that the next valid candidate is the just-added
+'pending_job'.
+
+  >>> candidate = bob_builder.findBuildCandidate()
+  >>> flush_database_updates()
+  >>> candidate.id == pending_job.id
+  True
+
+And as expected, the security job was marked as FAILEDTOBUILD and the
 corresponding BuildQueue record was removed.  This way the security
 builds, created due to missing binary uploads from DAK, will be
-appropriately registered as FAILEDTOBUILD.
+appropriately recorded and ignored.
 
-  >>> sec_build.buildstate.name
-  'FAILEDTOBUILD'
+  >>> print sec_build.buildstate.name
+  FAILEDTOBUILD
   >>> print sec_build.buildqueue_record
   None
-

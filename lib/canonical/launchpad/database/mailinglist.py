@@ -23,8 +23,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
-    IMailingListSet, IMailingListSubscription, MailingListStatus,
-    MAILING_LISTS_DOMAIN)
+    IMailingListSet, IMailingListSubscription, MailingListStatus)
 
 
 class MailingList(SQLBase):
@@ -60,7 +59,7 @@ class MailingList(SQLBase):
     @property
     def address(self):
         """See `IMailingList`."""
-        return '%s@%s' % (self.team.name, MAILING_LISTS_DOMAIN)
+        return '%s@%s' % (self.team.name, config.mailman.build.host_name)
 
     @property
     def archive_url(self):
