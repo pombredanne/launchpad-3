@@ -23,6 +23,7 @@ import psycopg
 
 from canonical.config import config
 
+
 CACHE_DIR = os.path.join(config.root, 'mockdbcache~')
 
 
@@ -44,7 +45,7 @@ class CacheEntry:
     connection_number = None
 
     # If the command raised an exception, it is stored here.
-    exeption = None
+    exception = None
 
     def __init__(self, connection):
         self.connection_number = connection.connection_number
@@ -126,19 +127,28 @@ class ReplayCache:
                     % (entry.params, params)
                     )
 
+        if entry.exception is not None:
+            raise entry.exception
+
         return entry
 
     def close(self, connection):
         """Handle Connection.close()."""
-        ignored = self.getNextEntry(connection, CloseCacheEntry)
+        entry = self.getNextEntry(connection, CloseCacheEntry)
+        if entry.exception is not None:
+            raise entry.exception
 
     def commit(self, connection):
         """Handle Connection.commit()."""
-        ignored = self.getNextEntry(connection, CommitCacheEntry)
+        entry = self.getNextEntry(connection, CommitCacheEntry)
+        if entry.exception is not None:
+            raise entry.exception
 
     def rollback(self, connection):
         """Handle Connection.rollback()."""
-        ignored = self.getNextEntry(connection, RollbackCacheEntry)
+        entry = self.getNextEntry(connection, RollbackCacheEntry)
+        if entry.exception is not None:
+            raise entry.exception
 
     def handleInvalidCache(self, reason):
         """Remove the cache from disk and raise a RetryTest exception."""
@@ -158,16 +168,26 @@ class RecordCache:
 
     def execute(self, cursor, query, params=None):
         """Handle Cursor.execute()."""
-        entry = ExecuteCacheEntry(cursor.connection)
+        con = cursor.connection
+        entry = ExecuteCacheEntry(con)
         entry.query = query
         entry.params = params
 
         real_cursor = cursor.real_cursor
-        real_cursor.execute(query, params)
+        try:
+            real_cursor.execute(query, params)
+        except (con.Warning, con.Error), exception:
+            entry.exception = exception
+            self.log.append(entry)
+            raise
 
-        entry.results = list(real_cursor.fetchall())
-        entry.rowcount = real_cursor.rowcount
-        entry.description = real_cursor.description
+        try:
+            entry.results = list(real_cursor.fetchall())
+            entry.rowcount = real_cursor.rowcount
+            entry.description = real_cursor.description
+        except con.Error:
+            # No results, such as an UPDATE query
+            entry.results = None
 
         self.log.append(entry)
         return entry
@@ -175,17 +195,33 @@ class RecordCache:
     def close(self, connection):
         """Handle Connection.close()."""
         entry = CloseCacheEntry(connection)
-        self.log.append(entry)
+        try:
+            connection.real_connection.close()
+            self.log.append(entry)
+        except (connection.Warning, connection.Error), exception:
+            entry.exception = exception
+            self.log.append(entry)
+            raise
 
     def commit(self, connection):
         """Handle Connection.commit()."""
         entry = CommitCacheEntry(connection)
-        self.log.append(entry)
+        try:
+            connection.real_connection.commit()
+            self.log.append(entry)
+        except (connection.Warning, connection.Error), exception:
+            entry.exception = exception
+            self.log.append(entry)
 
     def rollback(self, connection):
         """Handle Connection.rollback()."""
         entry = RollbackCacheEntry(connection)
-        self.log.append(entry)
+        try:
+            connection.real_connection.rollback()
+            self.log.append(entry)
+        except (connection.Warning, connection.Error), exception:
+            entry.exception = exception
+            self.log.append(entry)
 
     def store(self):
         """Store the log for future runs."""
@@ -241,6 +277,10 @@ class MockDbConnection:
 
     def close(self):
         """As per DB-API."""
+        # DB-API says an exception should be raised if closing an already
+        # closed connection, but psycopg1 doesn't follow the spec here.
+        if self._closed is True:
+            return
         self._checkClosed()
         self.cache.close(self)
         self._closed = True
@@ -255,21 +295,33 @@ class MockDbConnection:
         self._checkClosed()
         self.cache.rollback(self)
 
+    # Exceptions exposed on connection, as per optional DB-API extension
+    Warning = psycopg.Warning
+    Error = psycopg.Error
+    InterfaceError = psycopg.InterfaceError
+    DatabaseError = psycopg.DatabaseError
+    DataError = psycopg.DataError
+    OperationalError = psycopg.OperationalError
+    IntegrityError = psycopg.IntegrityError
+    InternalError = psycopg.InternalError
+    ProgrammingError = psycopg.ProgrammingError
+    NotSupportedError = psycopg.NotSupportedError
 
 class MockDbCursor:
     _cache_entry = None
 
+    arraysize = 100 # As per DB-API
+    connection = None # As per DB-API optional extension
+
     def __init__(self, connection):
         self.connection = connection
-
-    arraysize = 100 # As per DB-API
 
     @property
     def description(self):
         """As per DB-API, pulled from the cache entry."""
         if self._cache_entry is None:
             return None
-        return self.entry.description
+        return self._cache_entry.description
 
     @property
     def rowcount(self):
@@ -280,7 +332,7 @@ class MockDbCursor:
         if self._cache_entry is None:
             return -1
         results = self._cache_entry.results
-        if results is None or len(results) > 0:
+        if results is None or self._fetch_position < len(results):
             return -1
         return self._cache_entry.rowcount
 
@@ -331,8 +383,10 @@ class MockDbCursor:
     def fetchone(self):
         """As per DB-API."""
         self._checkClosed()
+        if self._cache_entry is None:
+            raise psycopg.Error("No query issued yet")
         if self._cache_entry.results is None:
-            raise psycopg.Error('Query returned no results')
+            raise psycopg.Error("Query returned no results")
         try:
             row = self._cache_entry.results[self._fetch_position]
             self._fetch_position += 1
@@ -350,6 +404,10 @@ class MockDbCursor:
     def fetchall(self):
         """As per DB-API."""
         self._checkClosed()
+        if self._cache_entry is None:
+            raise psycopg.Error('No query issued yet')
+        if self._cache_entry.results is None:
+            raise psycopg.Error('Query returned no results')
         results = self._cache_entry.results[self._fetch_position:]
         self._fetch_position = len(results)
         return results
@@ -369,4 +427,17 @@ class MockDbCursor:
         self._checkClosed()
         return # No-op
 
+    ## psycopg1 does not support this extension.
+    ##
+    ## def next(self):
+    ##     """As per iterator spec and DB-API optional extension."""
+    ##     row = self.fetchone()
+    ##     if row is None:
+    ##         raise StopInteration
+    ##     else:
+    ##         return row
+
+    ## def __iter__(self):
+    ##     """As per iterator spec and DB-API optional extension."""
+    ##     return self
 

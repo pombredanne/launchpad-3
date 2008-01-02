@@ -33,6 +33,8 @@ class ConnectionWrapper(object):
     dirty = False
 
     def __init__(self, real_connection):
+        assert not isinstance(real_connection, ConnectionWrapper), \
+                "Wrapped the wrapper!"
         self.__dict__['real_connection'] = real_connection
         PgTestSetup.connections.append(self)
 
@@ -90,6 +92,8 @@ class CursorWrapper:
     record_sql = False
 
     def __init__(self, real_cursor):
+        assert not isinstance(real_cursor, CursorWrapper), \
+                "Wrapped the wrapper!"
         self.__dict__['real_cursor'] = real_cursor
 
     def execute(self, *args, **kwargs):
@@ -244,7 +248,10 @@ class PgTestSetup(object):
         con = psycopg.connect(
             self._connectionString(self.dbname, self.dbuser)
             )
-        return ConnectionWrapper(con)
+        if isinstance(con, ConnectionWrapper):
+            return con
+        else:
+            return ConnectionWrapper(con)
 
     def dropDb(self):
         '''Drop the database if it exists.
