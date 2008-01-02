@@ -216,6 +216,12 @@ k            </description>
             The maximum number of minutes that Bug feeds should be cached for.
             </description>
         </key>
+        <key name="max_branch_feed_cache_minutes" required="no"
+            datatype="integer" default="60">
+            <description>
+            The maximum number of minutes that Branch feeds should be cached for.
+            </description>
+        </key>
         <key name="is_bug_search_feed_active" required="no"
             datatype="boolean" default="false">
             <description>
