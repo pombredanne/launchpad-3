@@ -1105,7 +1105,7 @@ def notify_team_join(event):
         # notification to the person too.
         member_addrs = contactEmailAddresses(person)
 
-        subject = '%s joined' % person.name
+        subject = '%s joined %s' % (person.name, team.name)
         templatename = 'new-member-notification.txt'
         if person.isTeam():
             templatename = 'new-member-notification-for-teams.txt'
@@ -1139,7 +1139,7 @@ def notify_team_join(event):
     if membership.status in [approved, admin]:
         template = get_email_template(
             'new-member-notification-for-admins.txt')
-        subject = '%s joined' % person.name
+        subject = '%s joined %s' % (person.name, team.name)
     elif membership.status == proposed:
         template = get_email_template('pending-membership-approval.txt')
         subject = "%s wants to join" % person.name

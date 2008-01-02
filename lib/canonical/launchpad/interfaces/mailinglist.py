@@ -13,7 +13,6 @@ __all__ = [
     'IMailingListApplication',
     'IMailingListSet',
     'IMailingListSubscription',
-    'MAILING_LISTS_DOMAIN',
     'MailingListAutoSubscribePolicy',
     'MailingListStatus',
     'PersonalStanding',
@@ -29,9 +28,6 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import IEmailAddress
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.lazr.enum import DBEnumeratedType, DBItem
-
-
-MAILING_LISTS_DOMAIN = 'lists.launchpad.net'
 
 
 class IMailingListApplication(ILaunchpadApplication):
