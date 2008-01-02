@@ -343,34 +343,21 @@ key that declares that this conf extends shared.conf.
     # Accept the default values for the optional section-5.
     [section-5]
 
-The shared.conf file extends base.conf, which is the schema file. The
-config file inherits the default values from the schema. This config was
-loaded before local.conf because its sections and values are required
-to be in place before local.conf applies its changes.
+The shared.conf file derives the keys and default values from the
+schema. This config was loaded before local.conf because its sections
+and values are required to be in place before local.conf applies its
+changes.
 
     >>> shared_conf = '%s/%s' % (testfiles_dir,  'shared.conf')
     >>> shared_file = open(shared_conf, 'r')
     >>> raw_conf = shared_file.read()
     >>> shared_file.close()
     >>> print raw_conf
-    [meta]
-    extends: base.conf
+    # The schema is defined by base.conf.
     # Localize a key for section-1.
     [section-1]
     key2: sharing is fun
     key5: shared value
-
-A Config is created by a schema using either the load() or loadFile()
-methods to return a Config instance.
-
-    >>> from canonical.lazr.config import Config
-    >>> from canonical.lazr.interfaces import IConfig, IConfigLoader
-    >>> verifyObject(IConfigLoader, schema)
-    True
-
-    >>> config = schema.load(local_conf)
-    >>> verifyObject(IConfig, config)
-    True
 
 The config that was loaded has name and filename attributes to identify
 the configuration.
@@ -387,8 +374,6 @@ system. The config can access the schema via the schema property.
     'shared.conf'
     >>> config.schema.name
     'base.conf'
-    >>> config.schema.filename
-    '...ftests/testfiles/base.conf'
     >>> config.schema is schema
     True
 
@@ -415,7 +400,9 @@ You can check if a section name is in a config.
 Optional SchemaSections are not inherited by the config. A config file
 must declare all optional sections. Including the section heading is
 enough to inherit the section and its keys. The config file may localize
-the keys by declaring them too.
+the keys by declaring them too. The local.conf file includes
+'section-5', but not 'section-3.app-a'
+
 
     >>> 'section-3.app-a' in config
     False
@@ -514,14 +501,6 @@ An error is raised if a non-existent key is accessed via a subscript.
       ...
     KeyError: ...
 
-But the get() method will return None or the default keyword argument
-if the key is not present.
-
-    >>> print section_1.get('not-exist')
-    None
-    >>> section_1.get('not-exist', default='failover')
-    'failover'
-
 The Section keys can be iterated. The section has all the keys from the
 SectionSchema. The values came form the schema's default values, then
 the values from shared.conf were applied, and lastly, the values from
@@ -585,12 +564,13 @@ errors in the config.
 As Config supports inheritance through the extends key, each conf file
 produces an overlay of the config that was extended. An overlay is an
 archive of the Config instance. The overlays property lists the configs
-as it was constructed from bottom to top. The bottom is always parsed
-schema.
+as it was constructed from bottom to top. The bottom is always the
+config created from the schema.
 
     >>> for overlay in config.overlays:
     ...     print overlay.name
     'base.conf'
+    'shared.conf'
     'local.conf'
 
 Raw config data can be merged with the config to create a new overlay
