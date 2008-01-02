@@ -128,7 +128,7 @@ account accessed via a private key available in the builddmaster
 machine (which used ftpmaster configuration profile) as in:
 
 {{{
-ssh ~/.ssh/ppa-reset-key ppa@(vm_host)s
+ssh ~/.ssh/ppa-reset-key ppa@%(vm_host)s
 }}}
 
 The test configuration uses a fake command that can be performed in
