@@ -56,10 +56,11 @@ contact the product's registrant.
     >>> unprivileged = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> unprivileged.open(
     ...     'http://translations.launchpad.dev/gnomebaker')
-    >>> print unprivileged.contents
-    <...
-    ...talk with...Foo Bar...
-    ...
+    >>> print extract_text(find_main_content(unprivileged.contents))
+    Translation setup needed
+    The gnomebaker project is not set up for translation in Launchpad.
+    You might want to talk with Foo Bar, the project registrant, about
+    using Launchpad for translations.
 
 It omits the registrant-only links ...
 
