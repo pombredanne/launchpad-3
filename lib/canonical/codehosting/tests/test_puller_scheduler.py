@@ -863,7 +863,6 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
         # And check that the process monitoring machinery will call
         # "mirrorFailed" for the branch.
         def check_mirror_failed(ignored):
-            print repr(ignored)
             self.assertEqual(len(self.client.calls), 1)
             mirror_failed_call, = self.client.calls
             self.assertEqual(
