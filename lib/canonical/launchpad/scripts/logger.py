@@ -39,8 +39,6 @@ class FakeLogger:
         print prefix, ' '.join(stuff)
 
         if 'exc_info' in kw:
-            import sys
-            import traceback
             exception = traceback.format_exception(*sys.exc_info())
             for thing in exception:
                 for line in thing.splitlines():
@@ -173,8 +171,7 @@ def logger_options(parser, default=logging.INFO):
                 getattr(parser.values, 'loglevel', default) + inc
                 )
         parser.values.verbose = (parser.values.loglevel < default)
-        # Reset the global log
-        global log
+        # Reset the global log.
         log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
 
     parser.add_option(
@@ -193,7 +190,6 @@ def logger_options(parser, default=logging.INFO):
             )
 
     # Set the global log
-    global log
     log._log = _logger(default, out_stream=sys.stderr)
 
 
@@ -222,9 +218,11 @@ def logger(options=None, name=None):
 
     if options.log_file:
         out_stream = open(options.log_file, 'a')
-        return _logger(options.loglevel, out_stream=out_stream, name=name)
+    else:
+        out_stream = sys.stderr
 
-    return _logger(options.loglevel, out_stream=sys.stderr, name=name)
+    return _logger(options.loglevel, out_stream=out_stream, name=name)
+
 
 def reset_root_logger():
     root_logger = logging.getLogger()
@@ -269,7 +267,7 @@ def _logger(level, out_stream, name=None):
         # Don't output timestamps in the test environment
         fmt = '%(levelname)-7s %(message)s'
     else:
-        fmt='%(asctime)s %(levelname)-7s %(message)s'
+        fmt = '%(asctime)s %(levelname)-7s %(message)s'
     formatter = LibrarianFormatter(
         fmt=fmt,
         # Put date back if we need it, but I think just time is fine and
@@ -285,7 +283,7 @@ def _logger(level, out_stream, name=None):
 
     logger.setLevel(level)
 
-    global log
+    # Set the global log
     log._log = logger
 
     return logger
@@ -322,7 +320,3 @@ class _LogWrapper:
 
 
 log = _LogWrapper(logging.getLogger())
-
-
-
-

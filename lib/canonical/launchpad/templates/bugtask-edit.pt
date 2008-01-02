@@ -29,8 +29,13 @@
   </metal:rightportlets>
 
     <div metal:fill-slot="main">
+      <p tal:condition="view/is_question" class="error message">
+        This bug was converted into a question. It cannot be edited.
+      </p>
 
-      <div tal:content="structure context/@@+edit-form" />
+      <div
+        tal:condition="not: view/is_question"
+        tal:content="structure context/@@+edit-form" />
 
       <h2>Bug description</h2>
 

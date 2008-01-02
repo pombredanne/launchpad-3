@@ -187,15 +187,17 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
             if path is not None:
                 # We got a path to store as the new one for the POFile.
-                pofile.path = path
-            elif (self.context.is_published and
-                  pofile.path != self.context.path):
+                pofile.setPathIfUnique(path)
+            elif self.context.is_published:
                 # This entry comes from upstream, which means that the path we
                 # got is exactly the right one. If it's different from what
                 # pofile has, that would mean that either the entry changed
                 # its path since previous upload or that we had to guess it
                 # and now that we got the right path, we should fix it.
-                pofile.path = self.context.path
+                pofile.setPathIfUnique(self.context.path)
+            else:
+                # Leave path unchanged.
+                pass
 
         self.context.status = RosettaImportStatus.APPROVED
         self.context.date_status_changed = UTC_NOW

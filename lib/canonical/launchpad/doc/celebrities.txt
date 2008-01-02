@@ -36,13 +36,13 @@ The vcs-imports celebrity owns the branches created by importd.
     True
 
 
-== registry ==
+== registry_experts ==
 
-The registry celebrity has permissions to perform registry gardening
+The registry_experts celebrity has permissions to perform registry gardening
 operations.
 
     >>> registry = personset.getByName('registry')
-    >>> celebs.registry == registry
+    >>> celebs.registry_experts == registry
     True
 
 

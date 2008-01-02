@@ -21,13 +21,13 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.config import config
 
-from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
-    get_email_template, contactEmailAddresses)
+    contactEmailAddresses, get_email_template)
 from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
-    ITeamMembership, ITeamParticipation, ITeamMembershipSet,
+    IPersonSet, ITeamMembership, ITeamMembershipSet, ITeamParticipation,
     TeamMembershipRenewalPolicy, TeamMembershipStatus)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
@@ -43,7 +43,8 @@ class TeamMembership(SQLBase):
 
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-    reviewer = ForeignKey(dbName='reviewer', foreignKey='Person', default=None)
+    reviewer = ForeignKey(
+        dbName='reviewer', foreignKey='Person', default=None)
     status = EnumCol(
         dbName='status', notNull=True, enum=TeamMembershipStatus)
     datejoined = UtcDateTimeCol(
@@ -79,16 +80,17 @@ class TeamMembership(SQLBase):
         assert team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND
 
         from_addr = format_address(
-            "Launchpad Team Membership Notifier", config.noreply_from_address)
+            team.displayname, config.noreply_from_address)
         replacements = {'member_name': member.unique_displayname,
                         'team_name': team.unique_displayname,
                         'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
-        subject = ('Launchpad: renewed %s as member of %s'
-                   % (member.name, team.name))
+        subject = '%s extended their membership' % member.name
         template = get_email_template('membership-member-renewed.txt')
-        msg = MailWrapper().format(template % replacements)
         admins_addrs = self.team.getTeamAdminsEmailAddresses()
         for address in admins_addrs:
+            recipient = getUtility(IPersonSet).getByEmail(address)
+            replacements['recipient_name'] = recipient.displayname
+            msg = MailWrapper().format(template % replacements)
             simple_sendmail(from_addr, address, subject, msg)
 
     def sendAutoRenewalNotification(self):
@@ -98,30 +100,33 @@ class TeamMembership(SQLBase):
         assert team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC
 
         from_addr = format_address(
-            "Launchpad Team Membership Notifier", config.noreply_from_address)
+            team.displayname, config.noreply_from_address)
         replacements = {'member_name': member.unique_displayname,
                         'team_name': team.unique_displayname,
                         'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
-        subject = ('Launchpad: renewed %s as member of %s'
-                   % (member.name, team.name))
+        subject = '%s renewed automatically' % member.name
 
         if member.isTeam():
             member_addrs = contactEmailAddresses(member.teamowner)
-            template_name = 'membership-auto-renewed-impersonal.txt'
+            template_name = 'membership-auto-renewed-bulk.txt'
         else:
             template_name = 'membership-auto-renewed-personal.txt'
             member_addrs = contactEmailAddresses(member)
         template = get_email_template(template_name)
-        msg = MailWrapper().format(template % replacements)
         for address in member_addrs:
+            recipient = getUtility(IPersonSet).getByEmail(address)
+            replacements['recipient_name'] = recipient.displayname
+            msg = MailWrapper().format(template % replacements)
             simple_sendmail(from_addr, address, subject, msg)
 
-        template_name = 'membership-auto-renewed-impersonal.txt'
+        template_name = 'membership-auto-renewed-bulk.txt'
         admins_addrs = self.team.getTeamAdminsEmailAddresses()
         admins_addrs = set(admins_addrs).difference(member_addrs)
         template = get_email_template(template_name)
-        msg = MailWrapper().format(template % replacements)
         for address in admins_addrs:
+            recipient = getUtility(IPersonSet).getByEmail(address)
+            replacements['recipient_name'] = recipient.displayname
+            msg = MailWrapper().format(template % replacements)
             simple_sendmail(from_addr, address, subject, msg)
 
     def canChangeExpirationDate(self, person):
@@ -161,12 +166,12 @@ class TeamMembership(SQLBase):
         member = self.person
         if member.isTeam():
             recipient = member.teamowner
-            templatename = 'membership-expiration-warning-impersonal.txt'
+            templatename = 'membership-expiration-warning-bulk.txt'
         else:
             recipient = member
             templatename = 'membership-expiration-warning-personal.txt'
         team = self.team
-        subject = 'Launchpad: %s team membership about to expire' % team.name
+        subject = 'Team membership about to expire'
 
         if team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND:
             how_to_renew = (
@@ -189,12 +194,12 @@ class TeamMembership(SQLBase):
                     # extend his membership.
                     if admin != member:
                         admins_names.append(
-                            "%s <%s>"
-                            % (admin.unique_displayname, canonical_url(admin)))
+                            "%s <%s>" % (admin.unique_displayname,
+                                         canonical_url(admin)))
 
                 how_to_renew = (
-                    "To prevent this membership from expiring, you should get "
-                    "in touch\nwith one of the team's administrators:\n")
+                    "To prevent this membership from expiring, you should "
+                    "get in touch\nwith one of the team's administrators:\n")
                 how_to_renew += "\n".join(admins_names)
         else:
             how_to_renew = (
@@ -206,8 +211,8 @@ class TeamMembership(SQLBase):
         formatter = DurationFormatterAPI(
             self.dateexpires - datetime.now(pytz.timezone('UTC')))
         replacements = {
+            'recipient_name': recipient.displayname,
             'member_name': member.unique_displayname,
-            'member_displayname': member.displayname,
             'team_url': canonical_url(team),
             'how_to_renew': how_to_renew,
             'team_name': team.unique_displayname,
@@ -216,7 +221,7 @@ class TeamMembership(SQLBase):
 
         msg = get_email_template(templatename) % replacements
         from_addr = format_address(
-            "Launchpad Team Membership Notifier", config.noreply_from_address)
+            team.displayname, config.noreply_from_address)
         simple_sendmail(from_addr, to_addrs, subject, msg)
 
     def setStatus(self, status, reviewer, reviewercomment=None):
@@ -233,8 +238,7 @@ class TeamMembership(SQLBase):
         invited = TeamMembershipStatus.INVITED
         invitation_declined = TeamMembershipStatus.INVITATION_DECLINED
 
-        # Flush the cache used by the Person.inTeam method
-        self.person._inTeam_cache = {}
+        self.person.clearInTeamCache()
 
         # Make sure the transition from the current status to the given one
         # is allowed. All allowed transitions are in the TeamMembership spec.
@@ -285,20 +289,19 @@ class TeamMembership(SQLBase):
         """Send a status change notification to all team admins and the
         member whose membership's status changed.
         """
+        team = self.team
+        member = self.person
+        reviewer = self.reviewer
         from_addr = format_address(
-            "Launchpad Team Membership Notifier", config.noreply_from_address)
+            team.displayname, config.noreply_from_address)
         new_status = self.status
-        admins_emails = self.team.getTeamAdminsEmailAddresses()
+        admins_emails = team.getTeamAdminsEmailAddresses()
         # self.person might be a team, so we can't rely on its preferredemail.
-        member_email = contactEmailAddresses(self.person)
+        member_email = contactEmailAddresses(member)
         # Make sure we don't send the same notification twice to anybody.
         for email in member_email:
             if email in admins_emails:
                 admins_emails.remove(email)
-
-        team = self.team
-        member = self.person
-        reviewer = self.reviewer
 
         if reviewer != member:
             reviewer_name = reviewer.unique_displayname
@@ -314,7 +317,7 @@ class TeamMembership(SQLBase):
 
         replacements = {
             'member_name': member.unique_displayname,
-            'member_greeting_name': member.displayname,
+            'recipient_name': member.displayname,
             'team_name': team.unique_displayname,
             'old_status': old_status.title,
             'new_status': new_status.title,
@@ -322,41 +325,57 @@ class TeamMembership(SQLBase):
             'comment': comment}
 
         template_name = 'membership-statuschange'
-        subject = ('Launchpad: Membership change: %(member)s in %(team)s'
+        subject = ('Membership change: %(member)s in %(team)s'
                    % {'member': member.name, 'team': team.name})
         if new_status == TeamMembershipStatus.EXPIRED:
             template_name = 'membership-expired'
-            subject = (
-                'Launchpad: %s expired from %s' % (member.name, team.name))
+            subject = 'membership of %s expired' % member.name
         elif (new_status == TeamMembershipStatus.APPROVED and
               old_status != TeamMembershipStatus.ADMIN):
-            subject = 'Launchpad: %s added to %s' % (member.name, team.name)
             if old_status == TeamMembershipStatus.INVITED:
+                subject = ('Invitation to %s accepted by %s'
+                           % (member.name, reviewer.name))
                 template_name = 'membership-invitation-accepted'
+            elif old_status == TeamMembershipStatus.PROPOSED:
+                subject = '%s approved by %s' % (member.name, reviewer.name)
+            else:
+                subject = '%s added by %s' % (member.name, reviewer.name)
         elif new_status == TeamMembershipStatus.INVITATION_DECLINED:
-            subject = ('Launchpad: %s decline invitation to join %s'
-                       % (member.name, team.name))
+            subject = ('Invitation to %s declined by %s'
+                       % (member.name, reviewer.name))
             template_name = 'membership-invitation-declined'
+        elif new_status == TeamMembershipStatus.DEACTIVATED:
+            subject = '%s deactivated by %s' % (member.name, reviewer.name)
+        elif new_status == TeamMembershipStatus.ADMIN:
+            subject = '%s made admin by %s' % (member.name, reviewer.name)
+        elif new_status == TeamMembershipStatus.DECLINED:
+            subject = '%s declined by %s' % (member.name, reviewer.name)
         else:
             # Use the default template and subject.
             pass
 
         if admins_emails:
             admins_template = get_email_template(
-                "%s-impersonal.txt" % template_name)
-            admins_msg = MailWrapper().format(admins_template % replacements)
-            simple_sendmail(from_addr, admins_emails, subject, admins_msg)
+                "%s-bulk.txt" % template_name)
+            for address in admins_emails:
+                recipient = getUtility(IPersonSet).getByEmail(address)
+                replacements['recipient_name'] = recipient.displayname
+                msg = MailWrapper().format(admins_template % replacements)
+                simple_sendmail(from_addr, address, subject, msg)
 
         # The member can be a team without any members, and in this case we
         # won't have a single email address to send this notification to.
         if member_email and self.reviewer != member:
             if member.isTeam():
-                template = '%s-impersonal.txt' % template_name
+                template = '%s-bulk.txt' % template_name
             else:
                 template = '%s-personal.txt' % template_name
             member_template = get_email_template(template)
-            member_msg = MailWrapper().format(member_template % replacements)
-            simple_sendmail(from_addr, member_email, subject, member_msg)
+            for address in member_email:
+                recipient = getUtility(IPersonSet).getByEmail(address)
+                replacements['recipient_name'] = recipient.displayname
+                msg = MailWrapper().format(member_template % replacements)
+                simple_sendmail(from_addr, address, subject, msg)
 
 
 class TeamMembershipSet:
@@ -374,6 +393,9 @@ class TeamMembershipSet:
         admin = TeamMembershipStatus.ADMIN
         invited = TeamMembershipStatus.INVITED
         assert status in [proposed, approved, admin, invited]
+
+        person.clearInTeamCache()
+
         tm = TeamMembership(
             person=person, team=team, status=status, dateexpires=dateexpires,
             reviewer=reviewer, reviewercomment=reviewercomment)

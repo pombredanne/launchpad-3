@@ -25,6 +25,12 @@
 >
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
+    <tal:atomfeeds condition="view/feed_links | nothing">
+      <tal:loop repeat="link view/feed_links">
+        <tal:feed content="structure link/render"/>
+      </tal:loop>
+    </tal:atomfeeds>
+
     <!-- Launchpad style sheet -->
     <style
       type="text/css"
@@ -274,10 +280,9 @@
           tal:replace="nothing">
           <a tal:attributes="href vhosts/mainsite/rooturl">Launchpad home</a> |
           <a tal:attributes="href vhosts/code/rooturl">Code</a> |
-        <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> |
-        <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> |
-        <a tal:attributes="href vhosts/translations/rooturl">Translations</a> |
-  
+          <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> |
+          <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> |
+          <a tal:attributes="href vhosts/translations/rooturl">Translations</a> |
           <a tal:attributes="href vhosts/answers/rooturl">Answers</a>
         </div>
         <div id="colophon">

@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
     IHasOwner, IHasSecurityContact, ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
-from canonical.launchpad.interfaces.pillar import PillarNameField
+from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationTarget)
 from canonical.launchpad.interfaces.sprint import IHasSprints
@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.fields import (
-    IconImageUpload, LogoImageUpload, MugshotImageUpload)
+    IconImageUpload, LogoImageUpload, MugshotImageUpload, ProductNameField)
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -74,19 +74,11 @@ class License(DBEnumeratedType):
     OTHER_OPEN_SOURCE = DBItem(1010, "Other/Open Source")
 
 
-class ProductNameField(PillarNameField):
-    """The pillar for a product."""
-    @property
-    def _content_iface(self):
-        """Return the interface of this pillar object."""
-        return IProduct
-
-
 class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
-               IHasMilestones, IHasMugshot, IHasOwner, IHasSecurityContact,
-               IHasSprints, IHasTranslationGroup, IKarmaContext,
-               ILaunchpadUsage, ISpecificationTarget):
+               IHasMilestones, IHasMugshot, IMakesAnnouncements, IHasOwner,
+               IHasSecurityContact, IHasSprints, IHasTranslationGroup,
+               IKarmaContext, ILaunchpadUsage, ISpecificationTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -408,11 +400,8 @@ class IProductSet(Interface):
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       reviewed=False, mugshot=None, logo=None,
-                      icon=None):
-        """Create and Return a brand new Product.
-
-        The licenses parameter must not be an empty tuple.
-        """
+                      icon=None, licenses=(), license_info=None):
+        """Create and Return a brand new Product."""
 
     def forReview():
         """Return an iterator over products that need to be reviewed."""

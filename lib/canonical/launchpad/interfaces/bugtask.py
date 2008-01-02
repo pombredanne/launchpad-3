@@ -14,10 +14,12 @@ __all__ = [
     'BugTaskStatusSearchDisplay',
     'ConjoinedBugTaskEditError',
     'IAddBugTaskForm',
+    'IAddBugTaskWithProductCreationForm',
     'IBugTask',
     'IBugTaskDelta',
     'IBugTaskSearch',
     'IBugTaskSet',
+    'ICreateQuestionFromBugTaskForm',
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
@@ -26,6 +28,7 @@ __all__ = [
     'IPersonBugTaskSearch',
     'IProductSeriesBugTask',
     'ISelectResultsSlicable',
+    'IRemoveQuestionFromBugTaskForm',
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
@@ -34,18 +37,20 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Bool, Choice, Datetime, Int, Text, TextLine, List, Field)
+    Bool, Choice, Datetime, Field, Int, List, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from sqlos.interfaces import ISelectResults
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import StrippedTextLine, Tag
+from canonical.launchpad.fields import (
+    ProductNameField, StrippedTextLine, Summary, Tag)
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import (
     DBEnumeratedType, DBItem, use_template)
@@ -871,8 +876,18 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distroseries must be provided.
         """
 
-    def findExpirableBugTasks(min_days_old):
+    def findExpirableBugTasks(min_days_old, bug=None, target=None):
         """Return a list of bugtasks that are at least min_days_old.
+
+        :param min_days_old: An int representing the minimum days of
+            inactivity for a bugtask to be considered expirable. Setting
+            this parameter to 0 will return all bugtask that can expire.
+        :param bug: An `IBug`. If a bug is provided, only bugtasks that belong
+            to the bug may be returned. If bug is None, all bugs are searched.
+        :param target: An `IBugTarget`. If a target is provided, only
+            bugtasks that belong to the target may be returned. If target
+            is None, all bugtargets are searched.
+        :return: A ResultSet of bugtasks that are considered expirable.
 
         A bugtask is expirable if its status is Incomplete, and the bug
         report has been never been confirmed, and it has been inactive for
@@ -960,6 +975,36 @@ class IAddBugTaskForm(Interface):
         description=_("Used to keep track of the steps we visited in a "
                       "wizard-like form."))
 
+class IAddBugTaskWithProductCreationForm(Interface):
+
+    bug_url = StrippedTextLine(
+        title=_('Bug URL'), required=True, constraint=valid_remote_bug_url,
+        description=_("The URL of this bug in the remote bug tracker."))
+    displayname = TextLine(title=_('Project name'))
+    name = ProductNameField(
+        title=_('Project ID'), constraint=name_validator, required=True,
+        description=_(
+            "A short name starting with a lowercase letter or number, "
+            "followed by letters, dots, hyphens or plusses. e.g. firefox, "
+            "linux, gnome-terminal."))
+    summary = Summary(title=_('Project summary'), required=True)
+
 
 class INominationsReviewTableBatchNavigator(ITableBatchNavigator):
     """Marker interface to render custom template for the bug nominations."""
+
+
+class ICreateQuestionFromBugTaskForm(Interface):
+    """Form for creating and question from a bug."""
+    comment = Text(
+        title=_('Comment'),
+        description=_('An explanation of why the bug report is a question.'),
+        required=False)
+
+
+class IRemoveQuestionFromBugTaskForm(Interface):
+    """Form for removing a question created from a bug."""
+    comment = Text(
+        title=_('Comment'),
+        description=_('An explanation of why the bug report is valid.'),
+        required=False)

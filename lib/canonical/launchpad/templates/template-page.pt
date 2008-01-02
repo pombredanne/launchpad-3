@@ -12,12 +12,9 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
+</metal:portlets>
 
 <p metal:fill-slot="help-XXXX">
   HELP TEXT HERE

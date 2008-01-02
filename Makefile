@@ -99,8 +99,6 @@ inplace: build
 build:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
-
-mailman_instance: build
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
 		 $(PYTHON) -t buildmailman.py
 
@@ -175,7 +173,7 @@ start: inplace stop bzr_version_info
 # so killing them after is a race condition.
 stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
-	    utilities/killservice.py librarian buildsequencer launchpad
+	    utilities/killservice.py librarian buildsequencer launchpad mailman
 
 harness:
 	PYTHONPATH=lib $(PYTHON) -i lib/canonical/database/harness.py

@@ -150,6 +150,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def add_release(self):
         text = 'Register a release'
         return Link('+addrelease', text, icon='add')
@@ -594,13 +595,13 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
             cvsbranch = data.get('cvsbranch')
             # Make sure there is an error set for these fields if they
             # are unset.
-            if not (cvsroot or self.getWidgetError('cvsroot')):
+            if not (cvsroot or self.getFieldError('cvsroot')):
                 self.setFieldError('cvsroot',
                                    'Enter a CVS root.')
-            if not (cvsmodule or self.getWidgetError('cvsmodule')):
+            if not (cvsmodule or self.getFieldError('cvsmodule')):
                 self.setFieldError('cvsmodule',
                                    'Enter a CVS module.')
-            if not (cvsbranch or self.getWidgetError('cvsbranch')):
+            if not (cvsbranch or self.getFieldError('cvsbranch')):
                 self.setFieldError('cvsbranch',
                                    'Enter a CVS branch.')
             if cvsroot and cvsmodule and cvsbranch:
@@ -616,7 +617,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
 
         elif rcstype == RevisionControlSystems.SVN:
             svnrepository = data.get('svnrepository')
-            if not (svnrepository or self.getWidgetError('svnrepository')):
+            if not (svnrepository or self.getFieldError('svnrepository')):
                 self.setFieldError('svnrepository',
                     "Enter the URL of a Subversion branch.")
             if svnrepository:
@@ -674,8 +675,8 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     def allowCertify(self, action):
         return self.isAdmin() and not self.context.syncCertified()
 
-    @action(_('Approve import for production and publication'), name='certify',
-            condition=allowCertify)
+    @action(_('Approve import for production and publication'),
+            name='certify', condition=allowCertify)
     def certify_action(self, action, data):
         self.updateContextFromData(data)
         self.context.certifyForSync()

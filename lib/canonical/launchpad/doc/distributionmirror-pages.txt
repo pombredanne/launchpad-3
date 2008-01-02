@@ -1,0 +1,48 @@
+= DistributionMirror Pages =
+
+== Reviewing a distribution mirror ==
+
+This page allows mirror admins to set the status of a given mirror.  The
+status can be PENDING_REVIEW, UNOFFICIAL and OFFICIAL.  When the status is
+changed we also store the person who changed it and the date it was changed.
+
+    >>> from canonical.launchpad.ftests import LaunchpadFormHarness
+    >>> from canonical.launchpad.browser import DistributionMirrorReviewView
+    >>> from canonical.launchpad.interfaces import IDistributionMirrorSet
+    >>> mirror = getUtility(IDistributionMirrorSet).getByName(
+    ...     'canonical-archive')
+    >>> print mirror.status.name
+    OFFICIAL
+    >>> print mirror.date_reviewed, mirror.reviewer
+    None None
+
+If the status is not changed, the reviewer and date_reviewed won't be
+changed either.
+
+    >>> login('karl@canonical.com')
+    >>> harness = LaunchpadFormHarness(mirror, DistributionMirrorReviewView)
+    >>> harness.submit('save', {'field.status': mirror.status.name})
+    >>> print mirror.status.name
+    OFFICIAL
+    >>> print mirror.date_reviewed, mirror.reviewer
+    None None
+
+When the status is changed, though, both reviewer and date_reviewed are
+changed.
+
+    >>> harness.submit('save', {'field.status': 'UNOFFICIAL'})
+    >>> print mirror.status.name
+    UNOFFICIAL
+    >>> print mirror.reviewer.name
+    karl
+
+    # This is to check that the mirror's date_reviewed has just been updated,
+    # but since this test could run at 23:59:59 of any given day we can only
+    # reliably check that the timedelta from now to the date it was reviewed
+    # is less than or equal to 1 day.
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> utc_now = datetime.now(pytz.timezone('UTC'))
+    >>> abs((mirror.date_reviewed.date() - utc_now.date()).days) <= 1
+    True
+

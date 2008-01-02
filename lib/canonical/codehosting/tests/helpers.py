@@ -24,15 +24,14 @@ from bzrlib.errors import SmartProtocolError
 
 from zope.component import getUtility
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
-from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.authserver.interfaces import PERMISSION_DENIED_FAULT_CODE
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet, IPersonSet, IProductSet, License,
-    PersonCreationRationale, UnknownBranchTypeError)
+    BranchType, IBranchSet)
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.tests.test_twisted import TwistedTestCase
@@ -74,7 +73,8 @@ class AvatarTestCase(TwistedTestCase):
         shutil.rmtree(self.tmpdir)
 
         # Remove test droppings in the current working directory from using
-        # twisted.trial.unittest.TestCase.mktemp outside the trial test runner.
+        # twisted.trial.unittest.TestCase.mktemp outside the trial test
+        # runner.
         tmpdir_root = self.tmpdir.split(os.sep, 1)[0]
         shutil.rmtree(tmpdir_root)
 
@@ -166,12 +166,13 @@ class BranchTestCase(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        self._integer = 0
+        self._factory = LaunchpadObjectFactory()
         self.cursor = cursor()
         self.branch_set = getUtility(IBranchSet)
 
     def createTemporaryBazaarBranchAndTree(self, base_directory='.'):
-        """Create a local branch with one revision, return the working tree."""
+        """Create a local branch with one revision, return the working tree.
+        """
         tree = self.make_branch_and_tree(base_directory)
         self.local_branch = tree.branch
         self.build_tree([os.path.join(base_directory, 'foo')])
@@ -181,13 +182,13 @@ class BranchTestCase(TestCaseWithTransport):
 
     def emptyPullQueues(self):
         transaction.begin()
-        self.cursor.execute("UPDATE Branch SET mirror_request_time = NULL")
+        self.cursor.execute("UPDATE Branch SET next_mirror_time = NULL")
         transaction.commit()
 
     def getUniqueInteger(self):
         """Return an integer unique to this run of the test case."""
-        self._integer += 1
-        return self._integer
+        # Delegate to the factory.
+        return self._factory.getUniqueInteger()
 
     def getUniqueString(self, prefix=None):
         """Return a string to this run of the test case.
@@ -200,61 +201,34 @@ class BranchTestCase(TestCaseWithTransport):
         """
         if prefix is None:
             prefix = self.id().split('.')[-1]
-        string = "%s%s" % (prefix, self.getUniqueInteger())
-        return string.replace('_', '-').lower()
+        # Delegate to the factory.
+        return self._factory.getUniqueString(prefix)
 
     def getUniqueURL(self):
         """Return a URL unique to this run of the test case."""
-        return 'http://%s.example.com/%s' % (
-            self.getUniqueString(), self.getUniqueString())
+        # Delegate to the factory.
+        return self._factory.getUniqueURL()
 
     def makePerson(self, email=None, name=None):
         """Create and return a new, arbitrary Person."""
-        if email is None:
-            email = self.getUniqueString('email')
-        if name is None:
-            name = self.getUniqueString('person-name')
-        return getUtility(IPersonSet).createPersonAndEmail(
-            email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
+        # Delegate to the factory.
+        return self._factory.makePerson(email, name)
 
     def makeProduct(self):
         """Create and return a new, arbitrary Product."""
-        owner = self.makePerson()
-        return getUtility(IProductSet).createProduct(
-            owner, self.getUniqueString('product-name'),
-            self.getUniqueString('displayname'),
-            self.getUniqueString('title'),
-            self.getUniqueString('summary'),
-            self.getUniqueString('description'),
-            licenses=[License.GPL])
+        # Delegate to the factory.
+        return self._factory.makeProduct()
 
-    def makeBranch(self, branch_type=None, owner=None, name=None, product=None,
-                   url=None, **optional_branch_args):
+    def makeBranch(self, branch_type=None, owner=None, name=None,
+                   product=None, url=None, **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
         default ones.
         """
-        if branch_type is None:
-            branch_type = BranchType.HOSTED
-        if owner is None:
-            owner = self.makePerson()
-        if name is None:
-            name = self.getUniqueString('branch')
-        if product is None:
-            product = self.makeProduct()
-
-        if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
-            url = None
-        elif (branch_type in (BranchType.MIRRORED, BranchType.REMOTE)
-              and url is None):
-            url = self.getUniqueURL()
-        else:
-            raise UnknownBranchTypeError(
-                'Unrecognized branch type: %r' % (branch_type,))
-        return self.branch_set.new(
-            branch_type, name, owner, owner, product, url,
-            **optional_branch_args)
+        # Delegate to the factory.
+        return self._factory.makeBranch(
+            branch_type, owner, name, product, url, **optional_branch_args)
 
     def restrictSecurityPolicy(self):
         """Switch to using 'LaunchpadSecurityPolicy'."""
@@ -331,10 +305,11 @@ class FakeLaunchpad:
         """
         if self.failing_branch_name == branch_name:
             raise Fault(self.failing_branch_code, self.failing_branch_string)
-        for user_id, user_info in self._person_set.iteritems():
+        user_id = None
+        for id, user_info in self._person_set.iteritems():
             if user_info['name'] == user:
-                break
-        else:
+                user_id = id
+        if user_id is None:
             return ''
         product_id = self.fetchProductID(product)
         if product_id is None:
@@ -409,8 +384,18 @@ class FakeLaunchpad:
                     (product, self._product_set[product]['name'], branches))
         return result
 
-    def requestMirror(self, branchID):
-        self._request_mirror_log.append(branchID)
+    def requestMirror(self, loginID, branchID):
+        self._request_mirror_log.append((loginID, branchID))
+
+
+def clone_test(test, new_id):
+    """Return a clone of the given test."""
+    from copy import deepcopy
+    new_test = deepcopy(test)
+    def make_new_test_id():
+        return lambda: new_id
+    new_test.id = make_new_test_id()
+    return new_test
 
 
 class CodeHostingTestProviderAdapter:
@@ -420,14 +405,9 @@ class CodeHostingTestProviderAdapter:
         self._servers = servers
 
     def adaptForServer(self, test, serverFactory):
-        from copy import deepcopy
-        new_test = deepcopy(test)
         server = serverFactory()
+        new_test = clone_test(test, '%s(%s)' % (test.id(), server._schema))
         new_test.installServer(server)
-        def make_new_test_id():
-            new_id = "%s(%s)" % (new_test.id(), server._schema)
-            return lambda: new_id
-        new_test.id = make_new_test_id()
         return new_test
 
     def adapt(self, test):

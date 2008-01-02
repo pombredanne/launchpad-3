@@ -26,9 +26,11 @@ from twisted.web.xmlrpc import Proxy
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 import canonical
+from canonical.cachedproperty import cachedproperty
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
     get_canonical_url_for_branch_name)
+from canonical.codehosting.puller import get_lock_id_for_branch_id
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 
@@ -92,9 +94,23 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         # created, the termination deferred will not be fired unless
         # _branch_mirror_complete_deferred is fired first.
         self._branch_mirror_complete_deferred = None
+        # If the subprocess terminates before it tells us whether the
+        # mirroring succeeded or failed, we assume it failed.  That means we
+        # have to record whether the subprocess has told us such or not...
+        self.reported_mirror_finished = False
         # This Deferred is fired only when the child process has terminated
         # *and* any other operations have completed.
         self._termination_deferred = deferred
+        # When an unexpected error occurs, we terminate the subprocess which
+        # will cause processEnded to be called with a ProcessTerminated
+        # failure -- which isn't very interesting, we want to report to the
+        # listener _why_ we killed the process so we store that here.
+        self._termination_failure = None
+        # When we SIGINT the process, we schedule a call to SIGKILL it a few
+        # seconds later, to be sure it exits, but we want to be able to cancel
+        # the call if the SIGINT does indeed kill the process so we stash it
+        # here.
+        self._sigkill_delayed_call = None
         self.listener = listener
         self._resetState()
         self._stderr = StringIO()
@@ -181,12 +197,16 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         self._branch_mirror_complete_deferred.addErrback(self.unexpectedError)
 
     def do_mirrorSucceeded(self, latest_revision):
-        self._branch_mirror_complete_deferred.addCallback(
-            lambda ignored: self.listener.mirrorSucceeded(latest_revision))
+        self.reported_mirror_finished = True
+        def mirrorSucceeded(ignored):
+            return self.listener.mirrorSucceeded(latest_revision)
+        self._branch_mirror_complete_deferred.addCallback(mirrorSucceeded)
 
     def do_mirrorFailed(self, reason, oops):
-        self._branch_mirror_complete_deferred.addCallback(
-            lambda ignored: self.listener.mirrorFailed(reason, oops))
+        self.reported_mirror_finished = True
+        def mirrorFailed(ignored):
+            return self.listener.mirrorFailed(reason, oops)
+        self._branch_mirror_complete_deferred.addCallback(mirrorFailed)
 
     def do_progressMade(self):
         """Any progress resets the timout counter."""
@@ -204,26 +224,67 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         self.unexpectedError(failure.Failure(TimeoutError()))
 
     def unexpectedError(self, failure):
-        """Called when we receive malformed, or on timeout.
+        """Called when we receive malformed data, or on timeout.
 
         Causes of malformed data could be the client not sending a netstring,
         or sending an recognized command, or sending the wrong number of
         arguments for a command etc.
 
-        Calling this method kills the child process and fires the completion
-        deferred that was provided to the constructor.
+        Calling this method sends SIGINT to the child process, arranges to
+        SIGKILL the process in a few seconds if it doesn't exit and records
+        the failure for later use by processEnded().
         """
-        self.unexpected_error_received = True
+        self._termination_failure = failure
+        try:
+            self.transport.signalProcess('INT')
+            self._sigkill_delayed_call = self.clock.callLater(
+                5, self._sigkill)
+        except error.ProcessExitedAlready:
+            # The process has already died. Fine.
+            pass
+
+    def _sigkill(self):
+        """Send SIGKILL to the child process.
+
+        We rely on this killing the process, i.e. we assume that
+        processEnded() will be called soon after this.
+        """
+        self._sigkill_delayed_call = None
         try:
             self.transport.signalProcess('KILL')
         except error.ProcessExitedAlready:
             # The process has already died. Fine.
             pass
-        self._processTerminated(failure)
 
     def processEnded(self, reason):
+        """See `ProcessProtocol.processEnded`.
+
+        Fires the termination deferred with reason or, if the process died
+        because we killed it, why we killed it.
+        """
         ProcessProtocol.processEnded(self, reason)
-        self._processTerminated(reason)
+        if self._sigkill_delayed_call is not None:
+            self._sigkill_delayed_call.cancel()
+            self._sigkill_delayed_call = None
+        if self._termination_failure is not None:
+            reason = self._termination_failure
+        if self.reported_mirror_finished:
+            # If the subprocess already reported whether it succeeded or
+            # failed, we're done.
+            self._processTerminated(reason)
+        else:
+            # If the process finished before reporting, this is a failure.  If
+            # there was any output on stderr, it was probably a traceback and
+            # so we use the last line of it as the reason for failing.
+            error = self._stderr.getvalue()
+            if error:
+                error = error.splitlines()[-1]
+            else:
+                error = str(reason.value)
+            self.mirror_failed_deferred = defer.maybeDeferred(
+                self.listener.mirrorFailed, error, None)
+            self.mirror_failed_deferred.addCallback(
+                lambda ignored: self._processTerminated(reason))
 
 
 class PullerMaster:
@@ -233,8 +294,14 @@ class PullerMaster:
     generated by that process.
     """
 
+    path_to_script = os.path.join(
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(canonical.__file__))),
+        'scripts/mirror-branch.py')
+    master_protocol_class = PullerMasterProtocol
+
     def __init__(self, branch_id, source_url, unique_name, branch_type,
-                 logger, client):
+                 logger, client, available_oops_prefixes):
         """Construct a PullerMaster object.
 
         :param branch_id: The database ID of the branch to be mirrored.
@@ -246,6 +313,10 @@ class PullerMaster:
         :param logger: A Python logging object.
         :param client: An asynchronous client for the branch status XML-RPC
             service.
+        :param available_oops_prefixes: A set of OOPS prefixes to pass out to
+            worker processes. The purpose is to ensure that there are no
+            collisions in OOPS prefixes between currently-running worker
+            processes.
         """
         self.branch_id = branch_id
         self.source_url = source_url.strip()
@@ -256,28 +327,47 @@ class PullerMaster:
         self.branch_type = branch_type
         self.logger = logger
         self.branch_status_client = client
+        self._available_oops_prefixes = available_oops_prefixes
+
+    @cachedproperty
+    def oops_prefix(self):
+        """Allocate and return an OOPS prefix for the worker process."""
+        try:
+            return self._available_oops_prefixes.pop()
+        except KeyError:
+            self.unexpectedError(failure.Failure())
+            raise
+
+    def releaseOopsPrefix(self, pass_through=None):
+        """Release the OOPS prefix allocated to this worker.
+
+        :param pass_through: An unused parameter that is returned unmodified.
+            Useful for adding this method as a Twisted callback / errback.
+        """
+        self._available_oops_prefixes.add(self.oops_prefix)
+        return pass_through
 
     def mirror(self):
-        path_to_script = os.path.join(
-            os.path.dirname(
-                os.path.dirname(os.path.dirname(canonical.__file__))),
-            'scripts/mirror-branch.py')
+        """Spawn a worker process to mirror a branch."""
         deferred = defer.Deferred()
-        protocol = PullerMasterProtocol(deferred, self)
+        protocol = self.master_protocol_class(deferred, self)
         command = [
-            sys.executable, path_to_script, self.source_url,
+            sys.executable, self.path_to_script, self.source_url,
             self.destination_url, str(self.branch_id), self.unique_name,
-            self.branch_type.name]
-        # Passing env=None means that the subprocess will inherit our
-        # environment, and thus our configuration settings. This is necessary
-        # to ensure that branches are mirrored to the right place, that
-        # OOPSes are reported correctly etc.
-        reactor.spawnProcess(protocol, sys.executable, command, env=None)
+            self.branch_type.name, self.oops_prefix]
+        env = os.environ.copy()
+        env['BZR_EMAIL'] = get_lock_id_for_branch_id(self.branch_id)
+        reactor.spawnProcess(protocol, sys.executable, command, env=env)
         return deferred
 
     def run(self):
+        """Launch a child worker and mirror a branch, handling errors.
+
+        This is the main method to call to mirror a branch.
+        """
         deferred = self.mirror()
         deferred.addErrback(self.unexpectedError)
+        deferred.addBoth(self.releaseOopsPrefix)
         return deferred
 
     def startMirroring(self):
@@ -303,8 +393,16 @@ class PullerMaster:
             ('dest', self.destination_url),
             ('error-explanation', failure.getErrorMessage())])
         request.URL = get_canonical_url_for_branch_name(self.unique_name)
+        # If the subeprocess exited abnormally, the stderr it produced is
+        # probably a much more interesting traceback than the one attached to
+        # the Failure we've been passed.
+        tb = None
+        if failure.check(error.ProcessTerminated):
+            tb = getattr(failure, 'error', None)
+        if tb is None:
+            tb = failure.getTraceback()
         errorlog.globalErrorUtility.raising(
-            (failure.type, failure.value, failure.getTraceback()), request,
+            (failure.type, failure.value, tb), request,
             now)
         self.logger.info('Recorded %s', request.oopsid)
 
@@ -323,6 +421,18 @@ class JobScheduler:
         self.branch_type = branch_type
         self.name = 'branch-puller-%s' % branch_type.name.lower()
         self.lockfilename = '/var/lock/launchpad-%s.lock' % self.name
+
+    @cachedproperty
+    def available_oops_prefixes(self):
+        """Generate and return a set of OOPS prefixes for worker processes.
+
+        This set will contain at most config.supermirror.maximum_workers
+        elements. It's expected that the contents of the set will be modified
+        by `PullerMaster` objects.
+        """
+        return set(
+            [config.launchpad.errorreports.oops_prefix + str(i)
+             for i in range(config.supermirror.maximum_workers)])
 
     def _run(self, puller_masters):
         """Run all branches_to_mirror registered with the JobScheduler."""
@@ -353,7 +463,7 @@ class JobScheduler:
         branch_src = branch_src.strip()
         return PullerMaster(
             branch_id, branch_src, unique_name, self.branch_type, self.logger,
-            self.branch_status_client)
+            self.branch_status_client, self.available_oops_prefixes)
 
     def getPullerMasters(self, branches_to_pull):
         return [
@@ -378,6 +488,7 @@ class JobScheduler:
 class LockError(StandardError):
 
     def __init__(self, lockfilename):
+        StandardError.__init__(self)
         self.lockfilename = lockfilename
 
     def __str__(self):

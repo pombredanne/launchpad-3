@@ -67,6 +67,19 @@ class BasePublishingRecordView(LaunchpadView):
         """
         return self.context.dateremoved is not None
 
+    @property
+    def js_connector(self):
+        """Return the javascript glue for expandable rows mechanism."""
+        return """
+        <script type="text/javascript">
+           registerLaunchpadFunction(function() {
+               connect('pub%s-expander', 'onclick', function (e) {
+                   toggleExpandableTableRow('pub%s');
+                   });
+               });
+        </script>
+        """ % (self.context.id, self.context.id)
+
 
 class SourcePublishingRecordView(BasePublishingRecordView):
     """View class for `ISourcePackagePublishingHistory`."""

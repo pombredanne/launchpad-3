@@ -8,6 +8,7 @@
 # classes and the zope3 CA-fu at your fingertips, connected to launchpad_dev
 # or your LP_DBNAME environment variable (if you have one set).
 #
+import os
 import sys
 #sys.path.insert(0, '../sourcecode/zope/src/')
 #sys.path.insert(0, '../sourcecode/sqlobject/')
@@ -43,6 +44,12 @@ import readline
 import rlcompleter
 readline.parse_and_bind('tab: complete')
 
+# Mimic the real interactive interpreter's loading of any $PYTHONSTARTUP file.
+startup = os.environ.get('PYTHONSTARTUP')
+if startup:
+    execfile(startup)
+
+
 #
 # Let's get a few handy objects going
 #
@@ -56,4 +63,3 @@ if dbuser == 'launchpad':
     b1 = Bug.get(1)
     s = Specification.get(1)
     q = Question.get(1)
-

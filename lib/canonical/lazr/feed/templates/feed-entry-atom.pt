@@ -5,17 +5,20 @@
     xmlns:metal="http://xml.zope.org/namespaces/metal">
     <title tal:content="entry/title/content"
            tal:attributes="type entry/title/content_type" />
-    <link rel="alternate" tal:attributes="href entry/link_alternate" />
-    <published tal:content="entry/date_published" />
-    <updated tal:content="entry/date_updated" />
-    <id tal:content="entry/id">http://api.launchpad.net/bugs/NNN#description</id>
+    <link rel="alternate" tal:condition="entry/link_alternate"
+          tal:attributes="href entry/link_alternate" />
+    <published
+        tal:condition="entry/date_published"
+        tal:content="entry/date_published/fmt:isodate" />
+    <updated tal:content="entry/date_updated/fmt:isodate" />
+    <id tal:content="entry/id">http://launchpad.net/bugs/NNN#description</id>
     <author tal:repeat="author entry/authors">
         <tal:name tal:condition="author/name">
             <name tal:content="author/name" />
-            <email tal:condition="author/email"
-                   tal:content="author/email" />
             <uri tal:condition="author/uri"
                  tal:content="author/uri" />
+            <email tal:condition="author/email"
+                   tal:content="author/email" />
         </tal:name>
     </author>
     <content tal:condition="entry/content"

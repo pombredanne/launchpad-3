@@ -169,6 +169,15 @@ class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
         pass
 
 
+class RTExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with RoundUp URLs."""
+
+    bugtracker_type = BugTrackerType.RT
+    bug_url = 'http://some.host/Ticket/Display.html?id=2379'
+    base_url = 'http://some.host/'
+    bug_id = '2379'
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(BugzillaExtractBugTrackerAndBugTest))
@@ -179,6 +188,7 @@ def test_suite():
     suite.addTest(unittest.makeSuite(DebbugsExtractBugTrackerAndBugShorthandTest))
     suite.addTest(unittest.makeSuite(SFExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(MantisExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(RTExtractBugTrackerAndBugTest))
     return suite
 
 

@@ -54,7 +54,8 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="entry view/batchnav/currentBatch">
+        <tr tal:repeat="entry view/batchnav/currentBatch"
+            tal:attributes="id string:${entry/potemplate/name}">
           <td>
             <a tal:attributes="href string:${entry/fmt:url}/+translate"
                tal:content="entry/potemplate/name">
@@ -75,12 +76,12 @@
               tal:content="entry/untranslatedCount">
               0
             </span>
-            <tal:count
+            <a tal:attributes="href string:${entry/fmt:url}/+translate?show=untranslated"
               tal:condition="entry/untranslatedCount"
-              tal:replace="entry/untranslatedCount"
+              tal:content="entry/untranslatedCount"
               >
               0
-            </tal:count>
+            </a>
             <tal:count tal:condition="not: entry/untranslatedCount">
                 &mdash;
             </tal:count>
@@ -90,12 +91,12 @@
               tal:content="entry/unreviewedCount">
               0
             </span>
-            <tal:count
+            <a tal:attributes="href string:${entry/fmt:url}/+translate?show=new_suggestions"
               tal:condition="entry/unreviewedCount"
-              tal:replace="entry/unreviewedCount"
+              tal:content="entry/unreviewedCount"
               >
               0
-            </tal:count>
+            </a>
             <tal:count tal:condition="not: entry/unreviewedCount">
                 &mdash;
             </tal:count>
@@ -105,12 +106,12 @@
               tal:content="entry/updatesCount">
               0
             </span>
-            <tal:count
+            <a tal:attributes="href string:${entry/fmt:url}/+translate?show=changed_in_launchpad"
               tal:condition="entry/updatesCount"
-              tal:replace="entry/updatesCount"
+              tal:content="entry/updatesCount"
               >
               0
-            </tal:count>
+            </a>
             <tal:count condition="not: entry/updatesCount">
                 &mdash;
             </tal:count>

@@ -21,7 +21,9 @@ The new product form contains an example of a normal text widget:
   >>> print content
   <...
   <tr>
-    <th><label for="field.displayname">Display Name:</label></th>
+    <th>
+      <label for="field.displayname">Display Name:</label>
+    </th>
     <td width="100%">
       <div>
         <input ... name="field.displayname" ... />
@@ -36,7 +38,9 @@ If the text field is optional, then that is noted after the widget:
   >>> print content
   <...
   <tr>
-    <th><label for="field.homepageurl">Homepage URL:</label></th>
+    <th>
+      <label for="field.homepageurl">Homepage URL:</label>
+    </th>
     <td width="100%">
       <div>
         <input ... name="field.homepageurl" ...  />

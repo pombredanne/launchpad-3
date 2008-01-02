@@ -18,7 +18,8 @@
       />
     <require
       permission="launchpad.AnyPerson"
-      attributes="newQuestion addAnswerContact removeAnswerContact"
+      attributes="newQuestion createQuestionFromBug addAnswerContact
+                  removeAnswerContact"
       />
   </content>
   <adapter

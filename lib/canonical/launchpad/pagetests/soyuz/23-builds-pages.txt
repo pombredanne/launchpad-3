@@ -181,30 +181,76 @@ to raise the correct exception:
   UnexpectedFormData: No suitable state found for value "foo"
 
 
-Check if page still works for sourcepackages with no builds (bug #62545):
+== Builds page messages ==
+
+When you first view the builds page for a distribution that has no
+builds, for instance 'debian' in our sampledata, the page says 'No
+packages are currently building'. We assume that this is your first
+view if there are no GET arguments.
+
+  >>> browser.open("http://launchpad.dev/debian/+builds")
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, 'no-default-result'))
+  No packages currently building.
+  >>> find_tag_by_id(browser.contents, 'empty-result') is None
+  True
+
+When the user updates the page, the message changes to say that 'No
+matching builds' be found. This message clearly differentiate first
+page loads from searches, helping the user to figure out exactly what
+was done before.
+
+  >>> browser.getControl(name="build_state").value = ['all']
+  >>> browser.getControl("Update").click()
+  >>> find_tag_by_id(browser.contents, 'no-default-result') is None
+  True
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, 'empty-result'))
+  No matching builds.
+
+If there *are* builds present, we don't display any special
+message. (We added this to catch bug #160331.)"
+
+  >>> browser.open("http://launchpad.dev/ubuntu/+builds")
+  >>> find_tag_by_id(browser.contents, 'empty-result') is None
+  True
+  >>> find_tag_by_id(browser.contents, 'no-default-result') is None
+  True
+
+The same mechanism still works for a SourcePackage-Builds page with
+no builds, see bug 62545.
+
+After opening a empty SourcePackage Builds page we will repeat the
+same set of tests done for Distribution Builds page.
 
   >>> browser.open(
   ...    "http://launchpad.dev/ubuntu/hoary/+source/mozilla-firefox/+builds")
-  >>> browser.getControl(name="build_state").value = ['all']
-  >>> browser.getControl("Update").click()
 
-  >>> print find_tag_by_id(browser.contents, 'empty-result')
-  <div id="empty-result">
-          No matching builds.
-  </div>
+First load only 'No packages currently building' message is presented.
 
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, 'no-default-result'))
+  No packages currently building.
+  >>> find_tag_by_id(browser.contents, 'empty-result') is None
+  True
 
-Checking that we show the right message for a distribution that
-doesn't have any builds.
-
-  >>> browser.open("http://launchpad.dev/debian/+builds")
-  >>> browser.contents
-  '...No packages currently building...'
+When the user updates the page, the message for empty results changes
+to 'No matching builds'.
 
   >>> browser.getControl(name="build_state").value = ['all']
   >>> browser.getControl("Update").click()
-  >>> browser.contents
-  '...No matching builds...'
+
+  >>> find_tag_by_id(browser.contents, 'no-default-result') is None
+  True
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, 'empty-result'))
+  No matching builds.
+
+The described mechanism should work similarly for:
+
+ * Builder History;
+ * DistroSeries Builds and
+ * DistroArchSeries Builds.
 
 
 == Partner builds ==

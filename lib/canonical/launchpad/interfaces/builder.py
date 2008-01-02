@@ -284,6 +284,11 @@ class IBuilderSet(Interface):
     def getBuildersByArch(arch):
         """Return all configured builders for a given DistroArchSeries."""
 
+    def getBuildQueueDepthByArch():
+        """Return a list of architectures and the number of Builds that are
+        in the NEEDSBUILD state for each of them.
+        """
+
     def pollBuilders(logger, txn):
         """Poll all the builders and take any immediately available actions.
 

@@ -30,15 +30,16 @@ from canonical.launchpad.interfaces import (
     BinaryPackageFileType, IDistributionMirrorSet, IDistributionMirror,
     IDistroArchSeries, IDistroSeries, ILaunchpadCelebrities,
     IMirrorCDImageDistroSeries, IMirrorDistroArchSeries,
-    IMirrorDistroSeriesSource, IMirrorProbeRecord, MirrorContent, MirrorSpeed,
-    MirrorStatus, PackagePublishingPocket,
+    IMirrorDistroSeriesSource, IMirrorProbeRecord, MirrorContent,
+    MirrorFreshness, MirrorSpeed, MirrorStatus, PackagePublishingPocket,
     PackagePublishingStatus, pocketsuffix, PROBE_INTERVAL,
     SourcePackageFileType)
 from canonical.launchpad.database.country import Country
 from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.publishing import (
-    SecureSourcePackagePublishingHistory, SecureBinaryPackagePublishingHistory)
+    SecureSourcePackagePublishingHistory,
+    SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses, shortlist)
 from canonical.launchpad.webapp import urlappend, canonical_url
@@ -54,6 +55,8 @@ class DistributionMirror(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
+    reviewer = ForeignKey(
+        dbName='reviewer', foreignKey='Person', default=None)
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution', notNull=True)
     name = StringCol(
@@ -78,9 +81,10 @@ class DistributionMirror(SQLBase):
         notNull=True, enum=MirrorContent)
     official_candidate = BoolCol(
         notNull=True, default=False)
-    official_approved = BoolCol(
-        notNull=True, default=False)
+    status = EnumCol(
+        notNull=True, default=MirrorStatus.PENDING_REVIEW, enum=MirrorStatus)
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    date_reviewed = UtcDateTimeCol(default=None)
     whiteboard = StringCol(
         notNull=False, default=None)
 
@@ -116,7 +120,8 @@ class DistributionMirror(SQLBase):
     @property
     def has_ftp_or_rsync_base_url(self):
         """See IDistributionMirror"""
-        return self.ftp_base_url is not None or self.rsync_base_url is not None
+        return (self.ftp_base_url is not None
+                or self.rsync_base_url is not None)
 
     def destroySelf(self):
         """Delete this mirror from the database.
@@ -127,41 +132,41 @@ class DistributionMirror(SQLBase):
             "This mirror has been probed and thus can't be removed.")
         SQLBase.destroySelf(self)
 
-    def getOverallStatus(self):
+    def getOverallFreshness(self):
         """See IDistributionMirror"""
         # XXX Guilherme Salgado 2006-08-16:
-        # We shouldn't be using MirrorStatus to represent the overall
-        # status of a mirror, but for now it'll do the job and we'll use the
-        # UNKNOWN status to represent a mirror without any content (which may
-        # mean the mirror was never verified or it was verified and no content
-        # was found).
+        # We shouldn't be using MirrorFreshness to represent the overall
+        # freshness of a mirror, but for now it'll do the job and we'll use
+        # the UNKNOWN freshness to represent a mirror without any content
+        # (which may mean the mirror was never verified or it was verified
+        # and no content was found).
         if self.content == MirrorContent.RELEASE:
             if self.cdimage_serieses:
-                return MirrorStatus.UP
+                return MirrorFreshness.UP
             else:
-                return MirrorStatus.UNKNOWN
+                return MirrorFreshness.UNKNOWN
         elif self.content == MirrorContent.ARCHIVE:
-            # Return the worst (i.e. highest valued) mirror status out of all
-            # mirrors (binary and source) for this distribution mirror.
-            query = ("distribution_mirror = %s AND status != %s"
-                     % sqlvalues(self, MirrorStatus.UNKNOWN))
+            # Return the worst (i.e. highest valued) mirror freshness out of
+            # all mirrors (binary and source) for this distribution mirror.
+            query = ("distribution_mirror = %s AND freshness != %s"
+                     % sqlvalues(self, MirrorFreshness.UNKNOWN))
             arch_mirror = MirrorDistroArchSeries.selectFirst(
-                query, orderBy='-status')
+                query, orderBy='-freshness')
             source_mirror = MirrorDistroSeriesSource.selectFirst(
-                query, orderBy='-status')
+                query, orderBy='-freshness')
             if arch_mirror is None and source_mirror is None:
                 # No content.
-                return MirrorStatus.UNKNOWN
+                return MirrorFreshness.UNKNOWN
             elif arch_mirror is not None and source_mirror is None:
-                return arch_mirror.status
+                return arch_mirror.freshness
             elif source_mirror is not None and arch_mirror is None:
-                return source_mirror.status
+                return source_mirror.freshness
             else:
                 # Arch and Source mirror
-                if source_mirror.status > arch_mirror.status:
-                    return source_mirror.status
+                if source_mirror.freshness > arch_mirror.freshness:
+                    return source_mirror.freshness
                 else:
-                    return arch_mirror.status
+                    return arch_mirror.freshness
         else:
             raise AssertionError(
                 'DistributionMirror.content is not ARCHIVE nor RELEASE: %r'
@@ -169,7 +174,8 @@ class DistributionMirror(SQLBase):
 
     def isOfficial(self):
         """See IDistributionMirror"""
-        return self.official_candidate and self.official_approved
+        return (self.official_candidate
+                and self.status == MirrorStatus.OFFICIAL)
 
     def shouldDisable(self, expected_file_count=None):
         """See IDistributionMirror"""
@@ -293,6 +299,11 @@ class DistributionMirror(SQLBase):
             mirror.destroySelf()
 
     @property
+    def arch_serieses(self):
+        """See IDistributionMirror"""
+        return MirrorDistroArchSeries.selectBy(distribution_mirror=self)
+
+    @property
     def cdimage_serieses(self):
         """See IDistributionMirror"""
         return MirrorCDImageDistroSeries.selectBy(distribution_mirror=self)
@@ -316,14 +327,9 @@ class DistributionMirror(SQLBase):
                     AND DistributionMirror.distribution = %(distribution)s
               ORDER BY MirrorDistroSeriesSource.distribution_mirror,
                        MirrorDistroSeriesSource.distroseries,
-                       MirrorDistroSeriesSource.status DESC)
+                       MirrorDistroSeriesSource.freshness DESC)
             """ % sqlvalues(distribution=self.distribution, mirrorid=self)
         return MirrorDistroSeriesSource.select(query)
-
-    @property
-    def arch_serieses(self):
-        """See IDistributionMirror"""
-        return MirrorDistroArchSeries.selectBy(distribution_mirror=self)
 
     def getSummarizedMirroredArchSerieses(self):
         """See IDistributionMirror"""
@@ -339,7 +345,7 @@ class DistributionMirror(SQLBase):
                       AND DistributionMirror.distribution = %(distribution)s
                 ORDER BY MirrorDistroArchSeries.distribution_mirror,
                          MirrorDistroArchSeries.distroarchseries,
-                         MirrorDistroArchSeries.status DESC)
+                         MirrorDistroArchSeries.freshness DESC)
             """ % sqlvalues(distribution=self.distribution, mirrorid=self)
         return MirrorDistroArchSeries.select(query)
 
@@ -395,7 +401,7 @@ class DistributionMirrorSet:
             DistributionMirror.q.enabled == True,
             DistributionMirror.q.http_base_url != None,
             DistributionMirror.q.official_candidate == True,
-            DistributionMirror.q.official_approved == True)
+            DistributionMirror.q.status == MirrorStatus.OFFICIAL)
         query = AND(DistributionMirror.q.countryID == country_id, base_query)
         mirrors = shortlist(
             DistributionMirror.select(query, orderBy=['-speed']),
@@ -434,9 +440,9 @@ class DistributionMirrorSet:
                 ON mirrorproberecord.distribution_mirror = distributionmirror.id
             WHERE distributionmirror.content = %s
                 AND distributionmirror.official_candidate IS TRUE
-                AND distributionmirror.official_approved IS TRUE
+                AND distributionmirror.status = %s
             GROUP BY distributionmirror.id
-            """ % sqlvalues(content_type)
+            """ % sqlvalues(content_type, MirrorStatus.OFFICIAL)
 
         if not ignore_last_probe:
             query += """
@@ -453,7 +459,8 @@ class DistributionMirrorSet:
             query += " LIMIT %d" % limit
 
         conn = DistributionMirror._connection
-        ids = ", ".join(str(id) for (id, date_created) in conn.queryAll(query))
+        ids = ", ".join(str(id)
+                        for (id, date_created) in conn.queryAll(query))
         query = '1 = 2'
         if ids:
             query = 'id IN (%s)' % ids
@@ -485,25 +492,26 @@ class _MirrorSeriesMixIn:
     it and override the methods and attributes that say so.
     """
 
-    # The status_times map defines levels for specifying how up to date a
+    # The freshness_times map defines levels for specifying how up to date a
     # mirror is; we use published files to assess whether a certain level is
     # fulfilled by a mirror. The map is used in combination with a special
-    # status UP that maps to the latest published file for that distribution
-    # series, component and pocket: if that file is found, we consider the
-    # distribution to be up to date; if it is not found we then look through
-    # the rest of the map to try and determine at what level the mirror is.
-    status_times = [
-        (MirrorStatus.ONEHOURBEHIND, 1.5),
-        (MirrorStatus.TWOHOURSBEHIND, 2.5),
-        (MirrorStatus.SIXHOURSBEHIND, 6.5),
-        (MirrorStatus.ONEDAYBEHIND, 24.5),
-        (MirrorStatus.TWODAYSBEHIND, 48.5),
-        (MirrorStatus.ONEWEEKBEHIND, 168.5)
+    # freshness UP that maps to the latest published file for that
+    # distribution series, component and pocket: if that file is found, we
+    # consider the distribution to be up to date; if it is not found we then
+    # look through the rest of the map to try and determine at what level
+    # the mirror is.
+    freshness_times = [
+        (MirrorFreshness.ONEHOURBEHIND, 1.5),
+        (MirrorFreshness.TWOHOURSBEHIND, 2.5),
+        (MirrorFreshness.SIXHOURSBEHIND, 6.5),
+        (MirrorFreshness.ONEDAYBEHIND, 24.5),
+        (MirrorFreshness.TWODAYSBEHIND, 48.5),
+        (MirrorFreshness.ONEWEEKBEHIND, 168.5)
         ]
 
     def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
-        """Given a publishing record, return a dictionary mapping MirrorStatus
-        items to URLs of files on this mirror.
+        """Given a publishing record, return a dictionary mapping
+        MirrorFreshness items to URLs of files on this mirror.
 
         Must be overwritten on subclasses.
         """
@@ -529,12 +537,12 @@ class _MirrorSeriesMixIn:
             return {}
 
         url = self._getPackageReleaseURLFromPublishingRecord(latest_upload)
-        urls = {MirrorStatus.UP: url}
+        urls = {MirrorFreshness.UP: url}
 
-        # For each status in self.status_times, do:
-        #   1) if latest_upload was published before the start of this status'
-        #      time interval, skip it and move to the next status.
-        #   2) if latest_upload was published between this status' time
+        # For each freshness in self.freshness_times, do:
+        #   1) if latest_upload was published before the start of this
+        #      freshness' time interval, skip it and move to the next item.
+        #   2) if latest_upload was published between this freshness' time
         #      interval, adjust the end of the time interval to be identical
         #      to latest_upload.datepublished. We do this because even if the
         #      mirror doesn't have the latest upload, we can't skip that whole
@@ -547,11 +555,11 @@ class _MirrorSeriesMixIn:
         #      misreport the mirror as being very out of date.
         #   3) search for publishing records whose datepublished is between
         #      the specified time interval, and if one is found, append an
-        #      item to the urls dictionary containing this status and the url
-        #      on this mirror from where the file correspondent to that
+        #      item to the urls dictionary containing this freshness and the
+        #      url on this mirror from where the file correspondent to that
         #      publishing record can be downloaded.
         last_threshold = 0
-        for status, threshold in self.status_times:
+        for freshness, threshold in self.freshness_times:
             start = when - timedelta(hours=threshold)
             end = when - timedelta(hours=last_threshold)
             last_threshold = threshold
@@ -565,11 +573,11 @@ class _MirrorSeriesMixIn:
 
             if upload is None:
                 # No uploads that would allow us to know the mirror was in
-                # this status, so we better skip it.
+                # this freshness, so we better skip it.
                 continue
 
             url = self._getPackageReleaseURLFromPublishingRecord(upload)
-            urls.update({status: url})
+            urls.update({freshness: url})
 
         return urls
 
@@ -595,7 +603,7 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
     implements(IMirrorDistroArchSeries)
     _table = 'MirrorDistroArchSeries'
     _defaultOrder = [
-        'distroarchseries', 'component', 'pocket', 'status', 'id']
+        'distroarchseries', 'component', 'pocket', 'freshness', 'id']
 
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
@@ -605,8 +613,8 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
         notNull=True)
     component = ForeignKey(
         dbName='component', foreignKey='Component', notNull=True)
-    status = EnumCol(
-        notNull=True, default=MirrorStatus.UNKNOWN, enum=MirrorStatus)
+    freshness = EnumCol(
+        notNull=True, default=MirrorFreshness.UNKNOWN, enum=MirrorFreshness)
     pocket = EnumCol(
         notNull=True, schema=PackagePublishingPocket)
 
@@ -642,7 +650,8 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
             query = (query + " AND datepublished >= %s AND datepublished < %s"
                      % sqlvalues(start, end))
         return SecureBinaryPackagePublishingHistory.selectFirst(
-            query, clauseTables=['BinaryPackageFile'], orderBy='-datepublished')
+            query, clauseTables=['BinaryPackageFile'],
+            orderBy='-datepublished')
 
 
     def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
@@ -663,7 +672,7 @@ class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
 
     implements(IMirrorDistroSeriesSource)
     _table = 'MirrorDistroSeriesSource'
-    _defaultOrder = ['distroseries', 'component', 'pocket', 'status', 'id']
+    _defaultOrder = ['distroseries', 'component', 'pocket', 'freshness', 'id']
 
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
@@ -673,8 +682,8 @@ class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
         notNull=True)
     component = ForeignKey(
         dbName='component', foreignKey='Component', notNull=True)
-    status = EnumCol(
-        notNull=True, default=MirrorStatus.UNKNOWN, enum=MirrorStatus)
+    freshness = EnumCol(
+        notNull=True, default=MirrorFreshness.UNKNOWN, enum=MirrorFreshness)
     pocket = EnumCol(
         notNull=True, schema=PackagePublishingPocket)
 

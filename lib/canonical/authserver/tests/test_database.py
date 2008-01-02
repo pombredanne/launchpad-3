@@ -1,4 +1,5 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0141
 
 """Tests for lib/canonical/authserver/database.py"""
 
@@ -21,10 +22,9 @@ from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.database import BRANCH_NAME_VALIDATION_ERROR_MESSAGE
 from canonical.launchpad.interfaces import (
-    BranchType, EmailAddressStatus, IBranchSet, IEmailAddressSet, IPersonSet,
-    IProductSet, IWikiNameSet)
+    BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE, EmailAddressStatus,
+    IBranchSet, IEmailAddressSet, IPersonSet, IProductSet, IWikiNameSet)
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
@@ -62,24 +62,24 @@ class DatabaseTest(unittest.TestCase):
         setSecurityPolicy(self._old_policy)
         super(DatabaseTest, self).tearDown()
 
-    def getMirrorRequestTime(self, branch_id):
-        """Return the value of mirror_request_time for the branch with the
-        given id.
+    def getNextMirrorTime(self, branch_id):
+        """Return the value of next_mirror_time for the branch with the given
+        id.
 
         :param branch_id: The id of a row in the Branch table. An int.
         :return: A timestamp or None.
         """
         self.cursor.execute(
-            "SELECT mirror_request_time FROM branch WHERE id = %s"
+            "SELECT next_mirror_time FROM branch WHERE id = %s"
             % sqlvalues(branch_id))
-        [mirror_request_time] = self.cursor.fetchone()
-        return mirror_request_time
+        [next_mirror_time] = self.cursor.fetchone()
+        return next_mirror_time
 
-    def setMirrorRequestTime(self, branch_id, mirror_request_time):
-        """Set mirror_request_time on the branch with the given id."""
+    def setNextMirrorTime(self, branch_id, next_mirror_time):
+        """Set next_mirror_time on the branch with the given id."""
         self.cursor.execute(
-            "UPDATE Branch SET mirror_request_time = %s WHERE id = %s"
-            % sqlvalues(mirror_request_time, branch_id))
+            "UPDATE Branch SET next_mirror_time = %s WHERE id = %s"
+            % sqlvalues(next_mirror_time, branch_id))
 
     def setSeriesDateLastSynced(self, series_id, value=None, now_minus=None):
         """Helper to set the datelastsynced of a ProductSeries.
@@ -99,7 +99,8 @@ class DatabaseTest(unittest.TestCase):
             "UPDATE ProductSeries SET datelastsynced = (%s) WHERE id = %d"
             % (value, series_id))
 
-    def setBranchLastMirrorAttempt(self, branch_id, value=None, now_minus=None):
+    def setBranchLastMirrorAttempt(self, branch_id, value=None,
+                                   now_minus=None):
         """Helper to set the last_mirror_attempt of a Branch.
 
         :param branch_id: Database id of the Branch to update.
@@ -241,7 +242,8 @@ class UserDetailsStorageTest(DatabaseTest):
         # Authing a user with a NULL password should always return {}
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        # The 'admins' user in the sample data has no password, so we use that.
+        # The 'admins' user in the sample data has no password, so we use
+        # that.
         userDict = storage._authUserInteraction('admins', ssha)
         self.assertEqual({}, userDict)
 
@@ -384,7 +386,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         storage = DatabaseUserDetailsStorageV2(None)
         branchID = storage._createBranchInteraction(
             12, 'name12', 'firefox', 'foo')
-        # Assert branchID now appears in database.  Note that title and summary
+        # Assert branchID now appears in database. Note that title and summary
         # should be NULL, and author should be set to the owner.
         cur = cursor()
         cur.execute("""
@@ -419,7 +421,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
     def test_createBranch_bad_product(self):
         # Test that creating a branch for a non-existant product fails.
         storage = DatabaseUserDetailsStorageV2(None)
-        message = "Product 'no-such-product' does not exist."
+        message = "Project 'no-such-product' does not exist."
         self.assertRaisesFault(
             NOT_FOUND_FAULT_CODE, message,
             storage._createBranchInteraction,
@@ -440,7 +442,8 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         storage = DatabaseUserDetailsStorageV2(None)
         self.assertRaisesFault(
             PERMISSION_DENIED_FAULT_CODE,
-            BRANCH_NAME_VALIDATION_ERROR_MESSAGE,
+            ("Invalid branch name 'invalid name!'. %s" %
+                BRANCH_NAME_VALIDATION_ERROR_MESSAGE),
             storage._createBranchInteraction,
             12, 'name12', 'firefox', 'invalid name!')
 
@@ -471,9 +474,9 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         self.assertEqual('', productID)
 
     def test_getBranchesForUser(self):
-        # getBranchesForUser returns all of the hosted branches that a user may
-        # write to. The branches are grouped by product, and are specified by
-        # name and id. The name and id of the products are also included.
+        # getBranchesForUser returns all of the hosted branches that a user
+        # may write to. The branches are grouped by product, and are specified
+        # by name and id. The name and id of the products are also included.
         transaction.begin()
         no_priv = getUtility(IPersonSet).getByName('no-priv')
         firefox = getUtility(IProductSet).getByName('firefox')
@@ -544,8 +547,8 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
 
     def test_getBranchInformation_nonexistent(self):
         # When we get the branch information for a non-existent branch, we get
-        # a tuple of two empty strings (the empty string being an approximation
-        # of 'None').
+        # a tuple of two empty strings (the empty string being an
+        # approximation of 'None').
         store = DatabaseUserDetailsStorageV2(None)
         branch_id, permissions = store._getBranchInformationInteraction(
             12, 'name12', 'gnome-terminal', 'doesnt-exist')
@@ -553,8 +556,8 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         self.assertEqual('', permissions)
 
     def test_getBranchInformation_unowned(self):
-        # When we get the branch information for a branch that we don't own, we
-        # get the database id and a flag saying that we can only read that
+        # When we get the branch information for a branch that we don't own,
+        # we get the database id and a flag saying that we can only read that
         # branch.
         store = DatabaseUserDetailsStorageV2(None)
         branch_id, permissions = store._getBranchInformationInteraction(
@@ -581,7 +584,8 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         self.assertEqual(READ_ONLY, permissions)
 
     def test_getBranchInformation_remote(self):
-        # Remote branches are not accessible by the smartserver or SFTP server.
+        # Remote branches are not accessible by the smartserver or SFTP
+        # server.
         no_priv = getUtility(IPersonSet).getByName('no-priv')
         firefox = getUtility(IProductSet).getByName('firefox')
         branch = getUtility(IBranchSet).new(
@@ -615,56 +619,88 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         self.assertEqual('', permissions)
 
     def test_initialMirrorRequest(self):
-        # The default 'mirror_request_time' for a newly created hosted branch
+        # The default 'next_mirror_time' for a newly created hosted branch
         # should be None.
         storage = DatabaseUserDetailsStorageV2(None)
         branchID = storage._createBranchInteraction(
             1, 'sabdfl', '+junk', 'foo')
-        self.assertEqual(self.getMirrorRequestTime(branchID), None)
+        self.assertEqual(self.getNextMirrorTime(branchID), None)
 
     def test_requestMirror(self):
-        # requestMirror should set the mirror_request_time field to be the
+        # requestMirror should set the next_mirror_time field to be the
         # current time.
         hosted_branch_id = 25
         # make sure the sample data is sane
-        self.assertEqual(None, self.getMirrorRequestTime(hosted_branch_id))
+        self.assertEqual(None, self.getNextMirrorTime(hosted_branch_id))
 
         cur = cursor()
         cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
         [current_db_time] = cur.fetchone()
 
         storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(hosted_branch_id)
+        storage._requestMirrorInteraction(1, hosted_branch_id)
 
         self.assertTrue(
-            current_db_time < self.getMirrorRequestTime(hosted_branch_id),
-            "Branch mirror_request_time not updated.")
+            current_db_time < self.getNextMirrorTime(hosted_branch_id),
+            "Branch next_mirror_time not updated.")
+
+    def test_requestMirror_private(self):
+        # requestMirror can be used to request the mirror of a private branch.
+        store = DatabaseUserDetailsStorageV2(None)
+
+        # salgado is a member of landscape-developers.
+        person_set = getUtility(IPersonSet)
+        salgado = person_set.getByName('salgado')
+        landscape_dev = person_set.getByName('landscape-developers')
+        self.assertTrue(
+            salgado.inTeam(landscape_dev),
+            "salgado should be in landscape-developers team, but isn't.")
+
+        branch_id = store._createBranchInteraction(
+            'salgado', 'landscape-developers', 'landscape',
+            'some-branch')
+
+        cur = cursor()
+        cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
+        [current_db_time] = cur.fetchone()
+
+        store._requestMirrorInteraction(salgado.id, branch_id)
+        self.assertTrue(
+            current_db_time < self.getNextMirrorTime(branch_id),
+            "Branch next_mirror_time not updated.")
+
 
     def test_mirrorComplete_resets_mirror_request(self):
-        # After successfully mirroring a branch, mirror_request_time should be
+        # After successfully mirroring a branch, next_mirror_time should be
         # set to NULL.
 
+        # An arbitrary hosted branch.
+        hosted_branch_id = 25
+
+        # The user id of a person who can see the hosted branch.
+        user_id = 1
+
         # Request that 25 (a hosted branch) be mirrored. This sets
-        # mirror_request_time.
+        # next_mirror_time.
         storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(25)
+        storage._requestMirrorInteraction(user_id, hosted_branch_id)
 
         # Simulate successfully mirroring branch 25
         storage = DatabaseBranchDetailsStorage(None)
         cur = cursor()
-        storage._startMirroringInteraction(25)
-        storage._mirrorCompleteInteraction(25, 'rev-1')
+        storage._startMirroringInteraction(hosted_branch_id)
+        storage._mirrorCompleteInteraction(hosted_branch_id, 'rev-1')
 
-        self.assertEqual(None, self.getMirrorRequestTime(25))
+        self.assertEqual(None, self.getNextMirrorTime(hosted_branch_id))
 
 
 class UserDetailsStorageV2Test(DatabaseTest):
     """Test the implementation of `IUserDetailsStorageV2`."""
 
     def test_teamDict(self):
-        # The user dict from a V2 storage should include a 'teams' element with
-        # a list of team dicts, one for each team the user is in, including
-        # the user.
+        # The user dict from a V2 storage should include a 'teams' element
+        # with a list of team dicts, one for each team the user is in,
+        # including the user.
 
         # Get a user dict
         storage = DatabaseUserDetailsStorageV2(None)
@@ -673,12 +709,14 @@ class UserDetailsStorageV2Test(DatabaseTest):
         # Sort the teams by id, they may be returned in any order.
         teams = sorted(userDict['teams'], key=lambda teamDict: teamDict['id'])
 
-        # Mark should be in his own team, Ubuntu Team, Launchpad Administrators
-        # and testing Spanish team, and other teams of which Launchpad
-        # Administrators is a member or owner.
+        # Mark should be in his own team, Ubuntu Team, Launchpad
+        # Administrators and testing Spanish team, and other teams of which
+        # Launchpad Administrators is a member or owner.
         self.assertEqual(
-            [{'displayname': u'Mark Shuttleworth', 'id': 1, 'name': u'sabdfl'},
-             {'displayname': u'Ubuntu Team', 'id': 17, 'name': u'ubuntu-team'},
+            [{'displayname': u'Mark Shuttleworth',
+              'id': 1, 'name': u'sabdfl'},
+             {'displayname': u'Ubuntu Team',
+              'id': 17, 'name': u'ubuntu-team'},
              {'displayname': u'Launchpad Administrators',
               'id': 25, 'name': u'admins'},
              {'displayname': u'testing Spanish team',
@@ -718,8 +756,8 @@ class UserDetailsStorageV2Test(DatabaseTest):
         # Ensure that the authserver copes gracefully with users with:
         #    a) no wikinames at all
         #    b) no wikiname for http://www.ubuntulinux.com/wiki/
-        # (even though in the long run we want to make sure these situations can
-        # never happen, until then the authserver should be robust).
+        # (even though in the long run we want to make sure these situations
+        # can never happen, until then the authserver should be robust).
 
         # First, make sure that the sample user has no wikiname.
         transaction.begin()
@@ -742,7 +780,8 @@ class UserDetailsStorageV2Test(DatabaseTest):
         transaction.begin()
         login(ANONYMOUS)
         person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-        getUtility(IWikiNameSet).new(person, 'http://foowiki/', 'SamplePerson')
+        getUtility(IWikiNameSet).new(
+            person, 'http://foowiki/', 'SamplePerson')
         logout()
         transaction.commit()
 

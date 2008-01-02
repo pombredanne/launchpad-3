@@ -1,0 +1,117 @@
+= Distribution mirrors =
+
+There are several pages which list the mirrors of a given distribution based
+on their status and content.
+
+    # First we'll define a helper function to extract some data from the
+    # pages we're going to use.
+    >>> def print_mirrors_by_countries(contents):
+    ...     mirrors_table = find_tag_by_id(contents, 'mirrors_list')
+    ...     header = mirrors_table.find('tr')
+    ...     country = extract_text(header.find('th'))
+    ...     mirrors = []
+    ...     for tr in header.findNextSiblings('tr'):
+    ...         if 'highlighted' in str(tr.attrs):
+    ...             print "%s: %s" % (country, mirrors)
+    ...             country = extract_text(tr.find('th'))
+    ...             mirrors = []
+    ...         elif 'note' in str(tr.attrs):
+    ...             # This is an empty row to visually separate the mirrors
+    ...             # from different countries, so we'll just skip it.
+    ...             pass
+    ...         else:
+    ...             mirrors.append(extract_text(tr.find('td')))
+    ...     print "%s: %s" % (country, mirrors)
+
+== Official mirrors ==
+
+These are the mirrors that show up in public listings. They're higly
+reliable and we strongly encourage their use.
+
+We have one page which lists all archive mirrors and another one which lists
+the release (cdimage) ones.
+
+    >>> browser.open('http://launchpad.dev/ubuntu')
+    >>> browser.getLink('Show archive mirrors').click()
+    >>> browser.title
+    'Mirrors of Ubuntu Linux'
+    >>> find_main_content(browser.contents).find('h1').renderContents()
+    'Official Archive Mirrors'
+    >>> print_mirrors_by_countries(browser.contents)
+        Antarctica: [u'Archive-mirror2']
+            France: [u'Archive-404-mirror', u'Archive-mirror']
+    United Kingdom: [u'Canonical-archive']
+
+    >>> browser.open('http://launchpad.dev/ubuntu')
+    >>> browser.getLink('Show CD mirrors').click()
+    >>> browser.url
+    'http://launchpad.dev/ubuntu/+cdmirrors'
+    >>> find_main_content(browser.contents).find('h1').renderContents()
+    'Official CD Mirrors'
+    >>> print_mirrors_by_countries(browser.contents)
+            France: [u'Releases-mirror', u'Unreachable-mirror']
+           Germany: [u'Releases-mirror2']
+    United Kingdom: [u'Canonical-releases']
+  
+=== Disabled mirrors ===
+
+These are official mirrors for which the last check wasn't successful (e.g.
+they were out of date, missing some content, etc). This list can only be
+seen by distro owners, mirror admins of the distro or launchpad admins.
+
+    >>> user_browser.open('http://launchpad.dev/ubuntu/+disabledmirrors')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+    >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/ubuntu/+disabledmirrors')
+    >>> browser.url
+    'http://launchpad.dev/ubuntu/+disabledmirrors'
+
+    >>> print find_main_content(browser.contents).find('h1').renderContents()
+    Disabled Mirrors
+    >>> print find_tag_by_id(browser.contents, 'mainarea').renderContents()
+    <BLANKLINE>
+    ...We don't know of any Disabled Mirrors for this distribution...
+
+  
+== Unofficial mirrors ==
+
+The unofficial mirrors are listed in a separate page, which is not public.
+It's only visible to distro owners, mirror admins of the distro or
+launchpad admins.
+
+    >>> user_browser.open('http://launchpad.dev/ubuntu/+unofficialmirrors')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+    >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/ubuntu/+unofficialmirrors')
+    >>> browser.url
+    'http://launchpad.dev/ubuntu/+unofficialmirrors'
+
+    >>> print find_main_content(browser.contents).find('h1').renderContents()
+    Unofficial Mirrors
+    >>> print_mirrors_by_countries(browser.contents)
+    France: [u'Invalid-mirror']
+
+
+== Pending-review mirrors ==
+
+These are the mirrors that were created but none of the mirror admins have
+looked at yet.
+
+    >>> user_browser.open('http://launchpad.dev/ubuntu/+pendingreviewmirrors')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+    >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/ubuntu/+pendingreviewmirrors')
+
+    >>> print find_main_content(browser.contents).find('h1').renderContents()
+    Pending-review mirrors
+    >>> print_mirrors_by_countries(browser.contents)
+    United Kingdom: [u'Random-releases-mirror']

@@ -73,8 +73,11 @@ class IBuild(Interface):
         """Restore the build record to its initial state.
 
         Build record loses its history, is moved to NEEDSBUILD and a new
-        empty BuildQueue entry is created for it.
+        non-scored BuildQueue entry is created for it.
         """
+
+    def updateDependencies():
+        """Update the build-dependencies line within the targeted context."""
 
     def __getitem__(name):
         """Mapped to getBinaryPackageRelease."""
@@ -159,6 +162,13 @@ class IBuildSet(Interface):
         Optionally, for a given status and/or pocket, if ommited return all
         records. If name is passed return only the builds which the
         sourcepackagename matches (SQL LIKE).
+        """
+    def retryDepWaiting(distroarchseries):
+        """Re-process all MANUALDEPWAIT builds for a given IDistroArchSeries.
+
+        This method will update all the dependency lines of all MANUALDEPWAIT
+        records in the given architecture and those with all dependencies
+        satisfied at this point will be automatically retried and re-scored.
         """
 
 
