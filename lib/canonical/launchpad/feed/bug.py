@@ -26,7 +26,6 @@ from canonical.launchpad.interfaces import (
     IBug, IBugTarget, IBugTaskSet, IMaloneApplication, IPerson)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
-from canonical.lazr.interfaces import IFeed
 
 
 def get_unique_bug_tasks(items):
@@ -131,8 +130,8 @@ class BugsFeedBase(FeedBase):
         url = canonical_url(bugtask, rootsite=self.rootsite)
         content_view = BugFeedContentView(bug, self.request, self)
         entry = FeedEntry(title=title,
-                          id_=url,
                           link_alternate=url,
+                          date_created=bugtask.datecreated,
                           date_updated=bug.date_last_updated,
                           date_published=bugtask.datecreated,
                           authors=[FeedPerson(bug.owner, self.rootsite)],
@@ -250,7 +249,7 @@ class SearchBugsFeed(BugsFeedBase):
         """See `IFeed`."""
         return "%s?%s" % (self.request.getURL(),
                           self.request.get('QUERY_STRING'))
-    
+
     @property
     def alternate_url(self):
         """See `IFeed`."""

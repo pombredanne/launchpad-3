@@ -9,6 +9,7 @@ __all__ = [
     'TargetAnnouncementsFeed',
     ]
 
+
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import canonical_url
@@ -19,30 +20,42 @@ from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData)
 
 
-class AnnouncementsFeed(FeedBase):
-    """Publish an Atom feed of all public announcements in Launchpad."""
+class AnnouncementsFeedBase(FeedBase):
+    """Abstract class for announcement feeds."""
 
-    usedfor = IFeedsApplication
     feedname = "announcements"
 
-    def getItems(self):
+    def normalizedUrl(self, rootsite=None):
+        url = canonical_url(self.context, rootsite=rootsite)
+        # canonical_url has a trailing '/' when there is no path information
+        # but does not if a path is present.  If a trailing '/' doesn't exist,
+        # add it on so the constructed URL will be correct for all cases.
+        if not url.endswith('/'):
+            url += '/'
+        return url
+
+    @property
+    def alternate_url(self):
         """See `IFeed`."""
-        # The quantity is defined in FeedBase or config file.
-        items = getUtility(IAnnouncementSet).announcements(limit=self.quantity)
-        # Convert the items into their feed entry representation.
-        items = [self.itemToFeedEntry(item) for item in items]
-        return items
+        return "%s+announcements" % self.normalizedUrl(rootsite="mainsite")
+
+    def entryTitle(self, announcement):
+        """Return the title for the announcement.
+
+        Override in each base class.
+        """
+        raise NotImplementedError
 
     def itemToFeedEntry(self, announcement):
         """See `IFeed`."""
-        title = FeedTypedData('[%s] %s' % (
-            announcement.target.name, announcement.title))
-        id = 'tag:launchpad.net,%s:/+announcements/%d' % (
-                announcement.date_created.date().isoformat(),
-                announcement.id)
+        title = self.entryTitle(announcement)
+        entry_extra_path = "/+announcement/%d" % announcement.id
+        entry_alternate_url = "%s%s" % (
+            canonical_url(announcement.target, rootsite=self.rootsite),
+            entry_extra_path)
         entry = FeedEntry(title=title,
-                          id_=id,
-                          link_alternate=announcement.url,
+                          link_alternate=entry_alternate_url,
+                          date_created=announcement.date_created,
                           date_updated=announcement.date_updated,
                           date_published=announcement.date_announced,
                           authors=[FeedPerson(
@@ -50,6 +63,31 @@ class AnnouncementsFeed(FeedBase):
                                     rootsite="mainsite")],
                           content=FeedTypedData(announcement.summary))
         return entry
+
+    @property
+    def url(self):
+        """See `IFeed`."""
+        return "%s%s.%s" % (
+            self.normalizedUrl(), self.feedname, self.format)
+
+
+class AnnouncementsFeed(AnnouncementsFeedBase):
+    """Publish an Atom feed of all public announcements in Launchpad."""
+
+    usedfor = IFeedsApplication
+
+    def getItems(self):
+        """See `IFeed`."""
+        # The quantity is defined in FeedBase or config file.
+        items = getUtility(IAnnouncementSet).announcements(
+            limit=self.quantity)
+        # Convert the items into their feed entry representation.
+        items = [self.itemToFeedEntry(item) for item in items]
+        return items
+
+    def entryTitle(self, announcement):
+        return FeedTypedData('[%s] %s' % (
+                announcement.target.name, announcement.title))
 
     @property
     def title(self):
@@ -68,18 +106,14 @@ class AnnouncementsFeed(FeedBase):
         url = '/@@/launchpad'
         return self.site_url + url
 
-    @property
-    def url(self):
-        """See `IFeed`."""
-        return "%s%s.%s" % (
-            canonical_url(self.context), self.feedname, self.format)
 
+class TargetAnnouncementsFeed(AnnouncementsFeedBase):
+    """Publish an Atom feed of all announcements.
 
-class TargetAnnouncementsFeed(FeedBase):
-    """Publish an Atom feed of all announcements for a project."""
+    Used for a project, product, or distribution.
+    """
 
     usedfor = IHasAnnouncements
-    feedname = "announcements"
 
     def getItems(self):
         """See `IFeed`."""
@@ -89,22 +123,8 @@ class TargetAnnouncementsFeed(FeedBase):
         items = [self.itemToFeedEntry(item) for item in items]
         return items
 
-    def itemToFeedEntry(self, announcement):
-        """See `IFeed`."""
-        title = FeedTypedData(announcement.title)
-        id = 'tag:launchpad.net,%s:/+announcements/%d' % (
-                announcement.date_created.date().isoformat(),
-                announcement.id)
-        entry = FeedEntry(title=title,
-                          id_=id,
-                          link_alternate=announcement.url,
-                          date_updated=announcement.date_updated,
-                          date_published=announcement.date_announced,
-                          authors=[FeedPerson(
-                                    announcement.registrant,
-                                    rootsite="mainsite")],
-                          content=FeedTypedData(announcement.summary))
-        return entry
+    def entryTitle(self, announcement):
+        return FeedTypedData(announcement.title)
 
     @property
     def title(self):
@@ -136,10 +156,3 @@ class TargetAnnouncementsFeed(FeedBase):
         elif IDistribution.providedBy(self.context):
             url = '/@@/distribution'
         return self.site_url + url
-
-    @property
-    def url(self):
-        """See `IFeed`."""
-        return "%s/%s.%s" % (
-            canonical_url(self.context), self.feedname, self.format)
-

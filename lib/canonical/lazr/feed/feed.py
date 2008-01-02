@@ -16,10 +16,12 @@ __all__ = [
     'MINUTES',
     ]
 
+import cgi
 import operator
 import os
 import time
 from datetime import datetime
+from urlparse import urlparse
 
 from zope.app.datetimeutils import rfc1123_date
 from zope.app.pagetemplate import ViewPageTemplateFile
@@ -53,8 +55,7 @@ class FeedBase(LaunchpadFormView):
                       'html': 'templates/feed-html.pt'}
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(FeedBase, self).__init__(context, request)
         self.format = self.feed_format
 
     def initialize(self):
@@ -79,17 +80,23 @@ class FeedBase(LaunchpadFormView):
     def site_url(self):
         """See `IFeed`."""
         return allvhosts.configs['mainsite'].rooturl[:-1]
-    
+
     @property
     def alternate_url(self):
         """See `IFeed`."""
         return canonical_url(self.context, rootsite=self.rootsite)
 
+    @property
+    def id_(self):
+        """See `IFeed`."""
+        id_ = "tag:"
+        return id_
+
     def getItems(self):
         """See `IFeed`."""
         raise NotImplementedError
 
-    def getPublicRawItems():
+    def getPublicRawItems(self):
         """See `IFeed`."""
         raise NotImplementedError
 
@@ -165,8 +172,8 @@ class FeedEntry:
     """An entry for a feed."""
     def __init__(self,
                  title,
-                 id_,
                  link_alternate,
+                 date_created,
                  date_updated,
                  date_published=None,
                  authors=None,
@@ -188,7 +195,10 @@ class FeedEntry:
         if contributors is None:
             contribuors = []
         self.contributors = contributors
-        self.id = id_
+        self.id = 'tag:launchpad.net,%s:%s' % (
+            date_created.date().isoformat(),
+            urlparse(link_alternate)[2])
+
 
     @property
     def last_modified(self):
@@ -205,7 +215,7 @@ class FeedTypedData:
     content_types = ['text', 'html', 'xhtml']
 
     def __init__(self, content, content_type='text'):
-        self.content = content
+        self.content = cgi.escape(content)
         if content_type not in self.content_types:
             raise UnsupportedFeedFormat("%s: is not valid" % content_type)
         self.content_type = content_type

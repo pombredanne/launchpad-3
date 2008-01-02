@@ -1,4 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
+
 """Interfaces for feeds generation."""
 
 __metaclass__ = type
@@ -19,7 +21,7 @@ class UnsupportedFeedFormat(Exception):
 
 
 class IFeed(Interface):
-    """Inteface for feeds."""
+    """Interface for feeds."""
 
     max_age = Int(
         title=u"Maximum age",
@@ -42,7 +44,12 @@ class IFeed(Interface):
 
     alternate_url = TextLine(
         title=u"Alternate URL for the feed.",
-        description=u"An alternate representation of the same info.")
+        description=u"The URL to a resource that is the human-readable "
+                     "equivalent of the feed.  So for: "
+                     "http://feeds.launchpad.net/ubuntu/announcements.atom "
+                     "the alternate_url would be: "
+                     "http://launchpad.net/ubuntu/+announcements"
+        )
 
     feed_format = TextLine(
         title=u"Feed format",

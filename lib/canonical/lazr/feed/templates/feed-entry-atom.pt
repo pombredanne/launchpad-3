@@ -11,7 +11,7 @@
         tal:condition="entry/date_published"
         tal:content="entry/date_published/fmt:isodate" />
     <updated tal:content="entry/date_updated/fmt:isodate" />
-    <id tal:content="entry/id">http://launchpad.net/bugs/NNN#description</id>
+    <id tal:content="entry/id">tag:launchpad.net,2007-11-25:/ubuntu/+announcement/1</id>
     <author tal:repeat="author entry/authors">
         <tal:name tal:condition="author/name">
             <name tal:content="author/name" />
