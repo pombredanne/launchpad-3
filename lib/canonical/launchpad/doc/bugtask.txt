@@ -848,7 +848,7 @@ if we query logged in as a user who can't see that bug).
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
     ...     sample_person, user=foobar)
     >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
-    [1, 4, 5, 7, 13]
+    [1, 4, 5, 7, 13, 15, 15]
 
 
 == Privacy and Launchpad Admins ==
@@ -876,7 +876,7 @@ we'll also see bug 1 again in the results, even though it's private.
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
     ...     sample_person, user=debonzi)
     >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
-    [1, 4, 5, 7, 13]
+    [1, 4, 5, 7, 13, 15, 15]
 
 Trying to retrieve the bug directly will work fine:
 

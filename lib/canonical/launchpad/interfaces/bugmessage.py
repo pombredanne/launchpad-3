@@ -84,6 +84,10 @@ class IBugComment(IMessage):
         Comments are global to bugs, but the bug task is needed in order
         to construct the correct URL.
         """)
+    bugwatch = Attribute('The bugwatch to which the comment pertains.')
+    can_be_shown = Bool(
+        title=u'Whether or not the comment can be displayed',
+        readonly=True)
     index = Int(title=u'The comment number', required=True, readonly=True)
     was_truncated = Bool(
         title=u'Whether the displayed text was truncated for display.',

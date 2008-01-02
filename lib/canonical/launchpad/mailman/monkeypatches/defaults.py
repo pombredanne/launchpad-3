@@ -13,9 +13,6 @@ MAILMAN_SITE_LIST = 'unused_mailman_site_list'
 # pulling incoming messages from a POP account.
 MTA = None
 
-# Turn off all archiving.
-ARCHIVE_TO_MBOX = -1
-
 # Disable runners for features we don't need.
 QRUNNERS = [
 ##     ('ArchRunner',     1), # messages for the archiver
