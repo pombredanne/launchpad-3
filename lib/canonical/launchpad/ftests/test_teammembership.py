@@ -50,6 +50,7 @@ class TestTeamMembershipSet(unittest.TestCase):
     def test_handleMembershipsExpiringToday(self):
         # Create a couple new teams, with one being a member of the other and
         # make Sample Person an approved member of both teams.
+        login('foo.bar@canonical.com')
         foobar = self.personset.getByName('name16')
         sample_person = self.personset.getByName('name12')
         ubuntu_dev = self.personset.newTeam(

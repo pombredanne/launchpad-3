@@ -205,8 +205,13 @@ class Database:
         log = os.path.join(self.root, 'db-h', self._hash(bug), '%d.log' % bug.id)
         comments = []
 
+        # We set the perl path manually so that debbugs-log.pl can
+        # always find the Debbugs::Log module.
+        debbugs_path = os.path.dirname(self.debbugs_pl)
+        command = "perl -I %s %s %s" % (debbugs_path, self.debbugs_pl, log)
+
         try:
-            logreader = os.popen(self.debbugs_pl + ' %s' % log, 'r')
+            logreader = os.popen(command, 'r')
             comment = cStringIO.StringIO()
             for line in logreader:
                 if line == '.\n':

@@ -238,3 +238,9 @@ class SearchBugsFeed(BugsFeedBase):
         """See `IFeed`."""
         return "%s?%s" % (self.request.getURL(),
                           self.request.get('QUERY_STRING'))
+    
+    @property
+    def alternate_url(self):
+        """See `IFeed`."""
+        return "%s/bugs/%s?%s" % (self.site_url, self.feedname,
+                             self.request.get('QUERY_STRING'))

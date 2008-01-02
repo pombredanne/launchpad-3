@@ -6,13 +6,10 @@ __metaclass__ = type
 
 import gzip
 import os
-import pytz
 import shutil
 import stat
 import tempfile
 import unittest
-
-from datetime import datetime, timedelta
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -428,11 +425,11 @@ class TestPublisher(TestNativePublishingBase):
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=cprov.archive)
-        pub_bin = self.getPubBinary(
+        pub_bin = self.getPubBinaries(
             pub_source=pub_source,
             description="   My leading spaces are normalised to a single "
                         "space but not trailing.  \n    It does nothing, "
-                        "though")
+                        "though")[0]
 
         archive_publisher.A_publish(False)
         self.layer.txn.commit()
@@ -472,7 +469,7 @@ class TestPublisher(TestNativePublishingBase):
              'Maintainer: Foo Bar <foo@bar.com>',
              'Architecture: all',
              'Version: 666',
-             'Filename: pool/main/f/foo/foo-bin.deb',
+             'Filename: pool/main/f/foo/foo-bin_all.deb',
              'Size: 18',
              'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              'Description: Foo app is great',
@@ -485,22 +482,9 @@ class TestPublisher(TestNativePublishingBase):
         # Check if apt_handler.release_files_needed has the right requests.
         # 'source' & 'binary-i386' Release files should be regenerated
         # for all breezy-autotest components.
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'main', 'source')
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'main', 'binary-i386')
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'restricted', 'source')
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'restricted', 'binary-i386')
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'universe', 'source')
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'universe', 'binary-i386')
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'multiverse', 'source')
-        self.assertReleaseFileRequested(
-            archive_publisher, 'breezy-autotest', 'multiverse', 'binary-i386')
+
+        # We always regenerate all Releases file for a given suite.
+        self.checkAllRequestedReleaseFiles(archive_publisher)
 
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
@@ -544,9 +528,9 @@ class TestPublisher(TestNativePublishingBase):
             pocket=PackagePublishingPocket.SECURITY,
             status=PackagePublishingStatus.DELETED)
 
-        deleted_binary = self.getPubBinary(
+        deleted_binary = self.getPubBinaries(
             pocket=PackagePublishingPocket.BACKPORTS,
-            status=PackagePublishingStatus.DELETED)
+            status=PackagePublishingStatus.DELETED)[0]
 
         # Run the deletion detection.
         publisher.A2_markPocketsWithDeletionsDirty()
@@ -569,116 +553,13 @@ class TestPublisher(TestNativePublishingBase):
             source_pocket, PackagePublishingPocket.BACKPORTS,
             "Expected backports pocket, got %s" % source_pocket)
 
-    def testCarefulDominationOnDevelopmentSeries(self):
-        """Test the careful domination procedure.
-
-        Check if it works on a development series.
-        A SUPERSEDED, DELETED or OBSOLETE published source should
-        have its scheduleddeletiondate set.
-        """
-        publisher = Publisher(
-            self.logger, self.config, self.disk_pool,
-            self.ubuntutest.main_archive)
-
-        superseded_source = self.getPubSource(
-            status=PackagePublishingStatus.SUPERSEDED)
-        self.assertTrue(superseded_source.scheduleddeletiondate is None)
-        deleted_source = self.getPubSource(
-            status=PackagePublishingStatus.DELETED)
-        self.assertTrue(deleted_source.scheduleddeletiondate is None)
-        obsoleted_source = self.getPubSource(
-            status=PackagePublishingStatus.OBSOLETE)
-        self.assertTrue(obsoleted_source.scheduleddeletiondate is None)
-
-        # Ensure the stay of execution is 5 days.  This is so that we
-        # can do a sensible check later (see comment below).
-        publisher._config.stayofexecution = 5
-
-        publisher.B_dominate(True)
-        self.layer.txn.commit()
-
-        # Retrieve the publishing record again since the transaction was
-        # committed.
-        from canonical.launchpad.database.publishing import (
-            SourcePackagePublishingHistory)
-        superseded_source = SourcePackagePublishingHistory.get(
-            superseded_source.id)
-        deleted_source = SourcePackagePublishingHistory.get(
-            deleted_source.id)
-        obsoleted_source = SourcePackagePublishingHistory.get(
-            obsoleted_source.id)
-
-        # The publishing records will be scheduled for removal.
-        # DELETED publications are set to be deleted immediately, whereas
-        # SUPERSEDED ones get a stay of execution according to the
-        # configuration.
-        #
-        # Hopefully I crafted this check well enough so not to cause a time
-        # bomb for the test harness.
-        UTC = pytz.timezone("UTC")
-        self.assertEqual(
-            superseded_source.status, PackagePublishingStatus.SUPERSEDED)
-        expected_date = datetime.now(UTC) + timedelta(
-            days=publisher._config.stayofexecution)
-        date_diff = expected_date - superseded_source.scheduleddeletiondate
-        self.assertTrue(
-            date_diff < timedelta(seconds=60),
-            "SUPERSEDED scheduleddeletiondate is %s, expected %s within "
-            "a 60 seconds tolerance" % (
-                superseded_source.scheduleddeletiondate,
-                expected_date))
-
-        self.assertEqual(
-            deleted_source.status, PackagePublishingStatus.DELETED)
-        expected_date = datetime.now(UTC)
-        date_diff = (
-            expected_date - deleted_source.scheduleddeletiondate)
-        self.assertTrue(
-            date_diff < timedelta(seconds=60),
-            "DELETED scheduleddeletiondate is %s, expected %s within "
-            "a 60 seconds tolerance" % (
-                deleted_source.scheduleddeletiondate,
-                expected_date))
-
-        # OBSOLETE does not go through domination so I don't care too much
-        # what its scheduleddeletiondate is, as long as it's set.
-        self.assertEqual(
-            obsoleted_source.status, PackagePublishingStatus.OBSOLETE)
-        self.assertTrue(obsoleted_source.scheduleddeletiondate is not None)
-
-    def testCarefulDominationOnObsoleteSeries(self):
-        """Test the careful domination procedure.
-
-        Check if it works on a obsolete series.
-        A SUPERSEDED published source should be have its scheduleddeletiondate
-        set.
-        """
-        publisher = Publisher(
-            self.logger, self.config, self.disk_pool,
-            self.ubuntutest.main_archive)
-
-        self.ubuntutest['breezy-autotest'].status = (
-            DistroSeriesStatus.OBSOLETE)
-
-        pub_source = self.getPubSource(
-            status=PackagePublishingStatus.SUPERSEDED)
-        self.assertTrue(pub_source.scheduleddeletiondate is None)
-
-        publisher.B_dominate(True)
-        self.layer.txn.commit()
-
-        # See comment above.
-        from canonical.launchpad.database.publishing import (
-            SourcePackagePublishingHistory)
-        pub_source = SourcePackagePublishingHistory.get(pub_source.id)
-
-        # Publishing record got scheduled for removal.
-        self.assertEqual(
-            pub_source.status, PackagePublishingStatus.SUPERSEDED)
-        self.assertTrue(pub_source.scheduleddeletiondate is not None)
-
     def assertReleaseFileRequested(self, publisher, suite_name,
                                    component_name, arch_name):
+        """Assert the given context will have it's Release file regenerated.
+
+        Check if a request for the given context is correctly stored in:
+           publisher.apt_handler.release_files_needed
+        """
         suite = publisher.apt_handler.release_files_needed.get(suite_name)
         self.assertTrue(
             suite is not None, 'Suite %s not requested' % suite_name)
@@ -689,6 +570,31 @@ class TestPublisher(TestNativePublishingBase):
             arch_name in suite[component_name],
             'Arch %s/%s/%s not requested' % (
             suite_name, component_name, arch_name))
+
+    def checkAllRequestedReleaseFiles(self, publisher):
+        """Check if all expected Release files are going to be regenerated.
+
+        'source', 'binary-i386' and 'binary-hppa' Release Files should be
+        requested for regeneration in all breezy-autotest components.
+        """
+        available_components = sorted([
+            c.name for c in self.breezy_autotest.components])
+        self.assertEqual(available_components,
+                         ['main', 'multiverse', 'restricted', 'universe'])
+
+        available_archs = ['binary-%s' % a.architecturetag
+                           for a in self.breezy_autotest.architectures]
+        self.assertEqual(available_archs, ['binary-hppa', 'binary-i386'])
+
+        # XXX cprov 20071210: Include the artificial component 'source' as a
+        # location to check for generated indexes. Ideally we should
+        # encapsulate this task in publishing.py and this common method
+        # in tests as well.
+        dists = ['source'] + available_archs
+        for component in available_components:
+            for dist in dists:
+                self.assertReleaseFileRequested(
+                    publisher, 'breezy-autotest', component, dist)
 
     def testReleaseFile(self):
         """Test release file writing.
@@ -705,26 +611,8 @@ class TestPublisher(TestNativePublishingBase):
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
 
-        # Check if apt_handler.release_files_needed has the right requests.
-        # 'source' and 'binary-i386' Release files should be regenerated
-        # for all breezy-autotest components.
         # We always regenerate all Releases file for a given suite.
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'main', 'source')
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'main', 'binary-i386')
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'restricted', 'source')
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'restricted', 'binary-i386')
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'universe', 'source')
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'universe', 'binary-i386')
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'multiverse', 'source')
-        self.assertReleaseFileRequested(
-            publisher, 'breezy-autotest', 'multiverse', 'binary-i386')
+        self.checkAllRequestedReleaseFiles(publisher)
 
         publisher.D_writeReleaseFiles(False)
 
@@ -735,7 +623,7 @@ class TestPublisher(TestNativePublishingBase):
         md5_header = 'MD5Sum:'
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
-        first_md5_line = release_contents[md5_header_index + 10]
+        first_md5_line = release_contents[md5_header_index + 17]
         self.assertEqual(
             first_md5_line,
             (' a5e5742a193740f17705c998206e18b6              '
@@ -744,7 +632,7 @@ class TestPublisher(TestNativePublishingBase):
         sha1_header = 'SHA1:'
         self.assertTrue(sha1_header in release_contents)
         sha1_header_index = release_contents.index(sha1_header)
-        first_sha1_line = release_contents[sha1_header_index + 10]
+        first_sha1_line = release_contents[sha1_header_index + 17]
         self.assertEqual(
             first_sha1_line,
             (' 6222b7e616bcc20a32ec227254ad9de8d4bd5557              '
@@ -753,7 +641,7 @@ class TestPublisher(TestNativePublishingBase):
         sha256_header = 'SHA256:'
         self.assertTrue(sha256_header in release_contents)
         sha256_header_index = release_contents.index(sha256_header)
-        first_sha256_line = release_contents[sha256_header_index + 10]
+        first_sha256_line = release_contents[sha256_header_index + 17]
         self.assertEqual(
             first_sha256_line,
             (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
@@ -791,55 +679,55 @@ class TestPublisher(TestNativePublishingBase):
         self.assertTrue(md5_header in release_contents)
         md5_header_index = release_contents.index(md5_header)
 
-        plain_sources_md5_line = release_contents[md5_header_index + 4]
+        plain_sources_md5_line = release_contents[md5_header_index + 7]
         self.assertEqual(
             plain_sources_md5_line,
             (' 77b1655f4038b2f4e95c29429c3981bd              '
              '211 main/source/Sources'))
-        release_md5_line = release_contents[md5_header_index + 5]
+        release_md5_line = release_contents[md5_header_index + 8]
         self.assertEqual(
             release_md5_line,
             (' a5e5742a193740f17705c998206e18b6              '
              '114 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
-        gz_sources_md5_line = release_contents[md5_header_index + 6]
+        gz_sources_md5_line = release_contents[md5_header_index + 9]
         self.assertTrue('main/source/Sources.gz' in gz_sources_md5_line)
 
         sha1_header = 'SHA1:'
         self.assertTrue(sha1_header in release_contents)
         sha1_header_index = release_contents.index(sha1_header)
 
-        plain_sources_sha1_line = release_contents[sha1_header_index + 4]
+        plain_sources_sha1_line = release_contents[sha1_header_index + 7]
         self.assertEqual(
             plain_sources_sha1_line,
             (' db70d9d7421a78b2e009be3d8f2546678beb734c              '
              '211 main/source/Sources'))
-        release_sha1_line = release_contents[sha1_header_index + 5]
+        release_sha1_line = release_contents[sha1_header_index + 8]
         self.assertEqual(
             release_sha1_line,
             (' 6222b7e616bcc20a32ec227254ad9de8d4bd5557              '
              '114 main/source/Release'))
         # See above.
-        gz_sources_sha1_line = release_contents[sha1_header_index + 6]
+        gz_sources_sha1_line = release_contents[sha1_header_index + 9]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha1_line)
 
         sha256_header = 'SHA256:'
         self.assertTrue(sha256_header in release_contents)
         sha256_header_index = release_contents.index(sha256_header)
 
-        plain_sources_sha256_line = release_contents[sha256_header_index + 4]
+        plain_sources_sha256_line = release_contents[sha256_header_index + 7]
         self.assertEqual(
             plain_sources_sha256_line,
             (' 1ad45a96a6c7b35145a52fddc3c60daea9791fdde6639425289e58'
              'cf3be3813a              211 main/source/Sources'))
-        release_sha256_line = release_contents[sha256_header_index + 5]
+        release_sha256_line = release_contents[sha256_header_index + 8]
         self.assertEqual(
             release_sha256_line,
             (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
              '8d106a6338              114 main/source/Release'))
         # See above.
-        gz_sources_sha256_line = release_contents[sha256_header_index + 6]
+        gz_sources_sha256_line = release_contents[sha256_header_index + 9]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
 
 

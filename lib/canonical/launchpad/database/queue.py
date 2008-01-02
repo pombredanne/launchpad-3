@@ -711,6 +711,19 @@ class PackageUpload(SQLBase):
         :bcc: Optional email Blind Carbon Copy address(es).
         """
         extra_headers = { 'X-Katie' : 'Launchpad actually' }
+
+        # XXX cprov 20071212: ideally we only need to check archive.purpose,
+        # however the current code in uploadprocessor.py (around line 259)
+        # temporarily transforms the primary-archive into a PPA one (w/o
+        # setting a proper owner) in order to allow processing of a upload
+        # to unknown PPA and subsequent rejection notification.
+
+        # Include the 'X-Launchpad-PPA' header for PPA upload notfications
+        # containing the PPA owner name.
+        if (self.archive.purpose == ArchivePurpose.PPA and
+            self.archive.owner):
+            extra_headers['X-Launchpad-PPA'] = self.archive.owner.name
+
         if from_addr is None:
             from_addr = format_address(
                 config.uploader.default_sender_name,
@@ -854,16 +867,22 @@ class PackageUploadSource(SQLBase):
         """See `IPackageUploadSource`."""
         # Check for duplicate source version across all distroseries.
         for distroseries in self.packageupload.distroseries.distribution:
-            if distroseries.getQueueItems(
+            uploads = distroseries.getQueueItems(
                 status=[PackageUploadStatus.ACCEPTED,
                         PackageUploadStatus.DONE],
                 name=self.sourcepackagerelease.name,
                 version=self.sourcepackagerelease.version,
                 archive=self.packageupload.archive,
-                exact_match=True).count() > 0:
+                exact_match=True)
+            if uploads.count() > 0:
                 raise QueueInconsistentStateError(
-                    'This sourcepackagerelease is already accepted in %s.'
-                    % self.packageupload.distroseries.name)
+                    "The source %s is already accepted in %s/%s and you "
+                    "cannot upload the same version within the same "
+                    "distribution. You have to modify the source version "
+                    "and re-upload." % (
+                    self.sourcepackagerelease.title,
+                    distroseries.distribution.name,
+                    distroseries.name))
 
     def verifyBeforePublish(self):
         """See `IPackageUploadSource`."""

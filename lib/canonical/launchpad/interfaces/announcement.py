@@ -57,6 +57,8 @@ class IAnnouncement(Interface):
     registrant = Attribute("The person who registered this announcement")
     date_last_modified = Attribute(
         "The date this announcement was last modified, if ever.")
+    date_updated = Attribute(
+        "The date created, or the date last modified, if ever")
 
     # The potential pillars to which the Announcement could belong, of which
     # only 1 should not be None.

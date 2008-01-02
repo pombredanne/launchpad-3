@@ -68,6 +68,12 @@ class Announcement(SQLBase):
         else:
             raise AssertionError, 'Announcement has no obvious target'
 
+    @property
+    def date_updated(self):
+        if self.date_last_modified is not None:
+            return self.date_last_modified
+        return self.date_created
+
     def retarget(self, target):
         """See `IAnnouncement`."""
         if IProduct.providedBy(target):

@@ -131,6 +131,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     development_focus = ForeignKey(
         foreignKey="ProductSeries", dbName="development_focus", notNull=False,
         default=None)
+    bug_reporting_guidelines = StringCol(default=None)
 
     license_info = StringCol(dbName='license_info', default=None)
 
@@ -799,5 +800,3 @@ class ProductSet:
 
     def count_codified(self):
         return self.stats.value('products_with_branches')
-
-

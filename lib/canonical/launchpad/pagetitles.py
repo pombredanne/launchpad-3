@@ -266,6 +266,11 @@ def bugwatch_editform(context, view):
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (
         context.bug.id, context.remotebug, context.bugtracker.title)
 
+def bugwatch_comments(context, view):
+    """Return the title for a page of imported comments for a bug watch."""
+    return "Bug #%d - Comments imported from bug watch %s on %s" % (
+        context.bug.id, context.remotebug, context.bugtracker.title)
+
 # bugpackageinfestations_index is a redirect
 
 # bugproductinfestations_index is a redirect
@@ -747,6 +752,9 @@ announcement_delete = 'Permanently delete this announcement'
 
 announcement_edit = 'Modify this announcement'
 
+def announcement_index(context, view):
+    return '%s announcement' % context.target.displayname
+
 announcement_publish = 'Publish this announcement'
 
 announcement_retarget = 'Move this announcement to a different project'
@@ -781,6 +789,13 @@ openid_index = 'Launchpad OpenID Server'
 def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""
     return 'Invalid OpenID identity %s' % view.openid_request.identity
+
+openidrpconfig_add = 'Add an OpenID Relying Party Configuration'
+
+openidrpconfig_edit = ContextDisplayName(
+    'Edit Relying Party Configuration for %s')
+
+openidrpconfigset_index = 'OpenID Relying Party Configurations'
 
 def package_bugs(context, view):
     """Return the page title bug in a package."""
@@ -1044,6 +1059,8 @@ registry_review = 'Review Launchpad items'
 related_bounties = ContextDisplayName('Bounties for %s')
 
 remotebug_index = ContextTitle('%s')
+
+root_featuredprojects = 'Manage featured projects in Launchpad'
 
 root_index = 'Launchpad'
 

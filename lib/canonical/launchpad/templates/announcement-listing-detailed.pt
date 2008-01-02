@@ -7,7 +7,11 @@
   <tal:title content="context/title">News item title</tal:title>
 </h2>
 
+<tal:summary condition="context/summary"
+             tal:replace="structure context/summary/fmt:text-to-html" />
 <p>
+  <a tal:attributes="href string:${context/fmt:url}"
+     >Permalink.</a>
   <tal:future condition="context/future">
     <img src="/@@/warning" title="Announcement is not yet public" />
     <strong tal:condition="context/active">
@@ -27,26 +31,27 @@
       Updated
       <span tal:replace="context/date_last_modified/fmt:displaydate" />.
   </strong>
-  <tal:summary condition="context/summary" tal:replace="context/summary" />
   <a tal:condition="context/url"
      tal:attributes="href context/url">
      <img src="/@@/link" alt="Link" /> Read more...</a>
+</p>
+<p>
   <tal:editor condition="context/required:launchpad.Edit">
-    <br />
     <img src="/@@/edit" alt="[Edit]" />
-    <a tal:attributes="href context/fmt:url"
+    <a tal:attributes="href string:${context/fmt:url}/+edit"
        >Edit this announcement.</a>
     <a tal:condition="not: context/published"
        tal:attributes="href string:${context/fmt:url}/+publish"
-       >Publish now</a>
+       >Publish now.</a>
     <a tal:condition="context/active"
        tal:attributes="href string:${context/fmt:url}/+retract"
        >Retract this announcement.</a>
     <a tal:condition="not: context/active"
        tal:attributes="href string:${context/fmt:url}/+delete"
        >Permanently delete this announcement.</a>
+    <br />
   </tal:editor>
-  <br />Created for
+  Created for
   <tal:pillar replace="structure context/target/fmt:link" />
   <tal:date_created replace="context/date_created/fmt:displaydate" />
   by

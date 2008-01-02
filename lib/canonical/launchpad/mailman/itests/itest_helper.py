@@ -11,6 +11,7 @@ import signal
 import socket
 import mailbox
 import datetime
+import tempfile
 
 from email import message_from_file
 from subprocess import Popen, PIPE
@@ -22,7 +23,6 @@ __all__ = [
     'TOP',
     'create_transaction_manager',
     'make_browser',
-    'mbox_iterator'
     'review_list',
     'run_mailman',
     'transactionmgr',
@@ -113,9 +113,24 @@ class SMTPServer:
     like a normal SMTP server.  However, this stores the messages in a Unix
     mbox file format so that they can be easily accessed for correctness.
     """
-    def __init__(self, mbox_filename):
+    def __init__(self):
+        # Calculate a temporary file for the mbox.  This will be communicated
+        # to the smtp2mbox subprocess when it gets started up.
+        descriptor, mbox_filename = tempfile.mkstemp()
+        os.close(descriptor)
         self._mbox_filename = mbox_filename
         self._pid = None
+
+    def _command(self, command):
+        """Send a command to the child process."""
+        # Import this here since sys.path won't be set up properly when this
+        # module is imported.
+        from canonical.config import config
+        s = socket.socket()
+        s.connect(config.mailman.smtp)
+        s.setblocking(0)
+        s.send(command + '\r\n')
+        s.close()
 
     def start(self):
         """Fork and exec the child process."""
@@ -130,15 +145,9 @@ class SMTPServer:
         # Parent -- wait until the child is listening.
         until = datetime.datetime.now() + datetime.timedelta(seconds=10)
         s = socket.socket()
-        # Import this here since sys.path won't be set up properly when this
-        # module is imported.
-        from canonical.config import config
         while datetime.datetime.now() < until:
             try:
-                s.connect(config.mailman.smtp)
-                s.setblocking(0)
-                s.send('QUIT\r\n')
-                s.close()
+                self._command('QUIT')
                 # Return None for no output in the doctest.
                 return None
             except socket.error:
@@ -154,6 +163,22 @@ class SMTPServer:
         except OSError, error:
             if error.errno != errno.ENOENT:
                 raise
+
+    def reset(self):
+        """Tell the child process to reset its mbox file."""
+        self._command('RSET')
+
+    def getMessages(self):
+        """Return a list of all the messages currently in the mbox file."""
+        # We have to use Python 2.4's icky mailbox module until Launchpad
+        # upgrades Zope to a Python 2.5 compatible version.
+        mbox = mailbox.UnixMailbox(
+            open(self._mbox_filename), message_from_file)
+        return list(mbox)
+
+    def getMailboxSize(self):
+        """Return the size in bytes of the mailbox."""
+        return get_size(self._mbox_filename)
 
 
 def get_size(path):
@@ -200,15 +225,6 @@ class LogWatcher:
         self._last_size = get_size(self._log_path)
 
 
-def mbox_iterator(mbox_filename):
-    """Iterate over the messages in a mailbox."""
-    # We have to use Python 2.4's icky mailbox module until Launchpad upgrades
-    # Zope to a Python 2.5 compatible version.
-    mbox = mailbox.UnixMailbox(open(mbox_filename), message_from_file)
-    for message in mbox:
-        yield message
-
-
 def review_list(list_name, status=None):
     """Helper for approving a mailing list.
 
@@ -223,7 +239,7 @@ def review_list(list_name, status=None):
     login('foo.bar@canonical.com')
     mailinglists_helper.review_list(list_name, status)
     commit()
-    # Wait until Mailman has actually creating the mailing list.
+    # Wait until Mailman has actually created the mailing list.
     wait_for_mailman()
     # Return an updated mailing list object.
     mailing_list = getUtility(IMailingListSet).get(list_name)

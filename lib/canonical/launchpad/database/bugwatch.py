@@ -13,7 +13,8 @@ from zope.interface import implements, providedBy
 from zope.component import getUtility
 
 # SQL imports
-from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, SQLMultipleJoin
+from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
+    SQLMultipleJoin)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -27,8 +28,8 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.uri import find_uris_in_text
 
 from canonical.launchpad.interfaces import (
-    BugTaskImportance, BugTrackerType, BugWatchErrorType, IBugTrackerSet,
-    IBugWatch, IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
+    BugTrackerType, BugWatchErrorType, IBugTrackerSet, IBugWatch,
+    IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
     NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.database.bugset import BugSetBase
 
@@ -42,11 +43,12 @@ class BugWatch(SQLBase):
                 foreignKey='BugTracker', notNull=True)
     remotebug = StringCol(notNull=True)
     remotestatus = StringCol(notNull=False, default=None)
+    remote_importance = StringCol(notNull=False, default=None)
     lastchanged = UtcDateTimeCol(notNull=False, default=None)
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
+    last_error_type = EnumCol(schema=BugWatchErrorType, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    last_error_type = EnumCol(schema=BugWatchErrorType, default=None)
 
     # useful joins
     bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',
@@ -65,6 +67,7 @@ class BugWatch(SQLBase):
             BugTrackerType.TRAC:        'ticket/%s',
             BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
             BugTrackerType.ROUNDUP:     'issue%s',
+            BugTrackerType.RT:          'Ticket/Display.html?id=%s',
             BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
             BugTrackerType.MANTIS:      'view.php?id=%s',
         }
@@ -79,8 +82,33 @@ class BugWatch(SQLBase):
         """See canonical.launchpad.interfaces.IBugWatch."""
         return True
 
+    def updateImportance(self, remote_importance, malone_importance):
+        """See `IBugWatch`."""
+        if self.remote_importance != remote_importance:
+            self.remote_importance = remote_importance
+            self.lastchanged = UTC_NOW
+            # Sync the object in order to convert the UTC_NOW sql
+            # constant to a datetime value.
+            self.sync()
+
+        for linked_bugtask in self.bugtasks:
+            # We don't updated conjoined bug tasks; they must be updated
+            # through their conjoined masters.
+            if linked_bugtask._isConjoinedBugTask():
+                continue
+
+            old_bugtask = Snapshot(
+                linked_bugtask, providing=providedBy(linked_bugtask))
+            linked_bugtask.importance = malone_importance
+
+            if linked_bugtask.importance != old_bugtask.importance:
+                event = SQLObjectModifiedEvent(
+                    linked_bugtask, old_bugtask, ['importance'],
+                    user=getUtility(ILaunchpadCelebrities).bug_watch_updater)
+                notify(event)
+
     def updateStatus(self, remote_status, malone_status):
-        """See IBugWatch."""
+        """See `IBugWatch`."""
         if self.remotestatus != remote_status:
             self.remotestatus = remote_status
             self.lastchanged = UTC_NOW
@@ -88,13 +116,17 @@ class BugWatch(SQLBase):
             # constant to a datetime value.
             self.sync()
         for linked_bugtask in self.bugtasks:
+            # We don't updated conjoined bug tasks; they must be updated
+            # through their conjoined masters.
+            if linked_bugtask._isConjoinedBugTask():
+                continue
+
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.transitionToStatus(
                 malone_status,
                 getUtility(ILaunchpadCelebrities).bug_watch_updater)
-            # We don't yet support updating the following values.
-            linked_bugtask.importance = BugTaskImportance.UNKNOWN
+            # We don't yet support updating the assignee of bug watches.
             linked_bugtask.transitionToAssignee(None)
             if linked_bugtask.status != old_bugtask.status:
                 event = SQLObjectModifiedEvent(
@@ -124,6 +156,8 @@ class BugWatch(SQLBase):
                 "correct.",
             BugWatchErrorType.TIMEOUT: "Launchpad's connection to "
                 "%(bugtracker)s timed out.",
+            BugWatchErrorType.UNKNOWN: "Launchpad couldn't import bug "
+                "#%(bug)s from " "%(bugtracker)s.",
             BugWatchErrorType.UNPARSABLE_BUG: "Launchpad couldn't "
                 "extract a status from %(bug)s on %(bugtracker)s.",
             BugWatchErrorType.UNPARSABLE_BUG_TRACKER: "Launchpad "
@@ -160,6 +194,7 @@ class BugWatchSet(BugSetBase):
             BugTrackerType.BUGZILLA: self.parseBugzillaURL,
             BugTrackerType.DEBBUGS:  self.parseDebbugsURL,
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
+            BugTrackerType.RT: self.parseRTURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
             BugTrackerType.TRAC: self.parseTracURL,
             BugTrackerType.MANTIS: self.parseMantisURL,
@@ -292,6 +327,17 @@ class BugWatchSet(BugSetBase):
         base_url = urlunsplit((scheme, host, base_path, '', ''))
         return base_url, remote_bug
 
+    def parseRTURL(self, scheme, host, path, query):
+        """Extract the RT base URL and bug ID."""
+        match = re.match(r'(.*/)Ticket/Display.html', path)
+        if not match:
+            return None
+        base_path = match.group(1)
+        remote_bug = query['id']
+
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
     def parseTracURL(self, scheme, host, path, query):
         """Extract the Trac base URL and bug ID."""
         match = re.match(r'(.*/)ticket/(\d+)', path)
@@ -324,7 +370,8 @@ class BugWatchSet(BugSetBase):
 
     def extractBugTrackerAndBug(self, url):
         """See IBugWatchSet."""
-        for trackertype, parse_func in self.bugtracker_parse_functions.items():
+        for trackertype, parse_func in (
+            self.bugtracker_parse_functions.items()):
             scheme, host, path, query_string, frag = urlsplit(url)
             query = {}
             for query_part in query_string.split('&'):

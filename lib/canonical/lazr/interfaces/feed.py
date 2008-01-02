@@ -42,6 +42,10 @@ class IFeed(Interface):
         title=u"Site URL",
         description=u"The URL for the main site of Launchpad.")
 
+    alternate_url = TextLine(
+        title=u"Alternate URL for the feed.",
+        description=u"An alternate representation of the same info.")
+
     feed_format = TextLine(
         title=u"Feed format",
         description=u"Requested feed format.  "

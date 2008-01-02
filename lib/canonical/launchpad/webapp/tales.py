@@ -315,6 +315,7 @@ class NoneFormatter:
         'date',
         'datetime',
         'displaydate',
+        'isodate',
         'email-to-html',
         'exactduration',
         'lower',
@@ -935,6 +936,9 @@ class DateTimeFormatterAPI:
     def rfc822utcdatetime(self):
         return formatdate(
             rfc822.mktime_tz(self._datetime.utctimetuple() + (0,)))
+
+    def isodate(self):
+        return self._datetime.isoformat()
 
 
 class DurationFormatterAPI:

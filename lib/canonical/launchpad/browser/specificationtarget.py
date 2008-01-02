@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces import (
     IProduct,
     IProductSeries,
     IProject,
+    IProjectSeries,
     ISprint,
     ISpecificationTarget,
     SpecificationFilter,
@@ -88,6 +89,10 @@ class HasSpecificationsView(LaunchpadView):
         elif IProject.providedBy(self.context):
             self.is_project = True
             self.is_pillar = True
+            self.show_target = True
+            self.show_series = True
+        elif IProjectSeries.providedBy(self.context):
+            self.show_milestone = True
             self.show_target = True
             self.show_series = True
         elif (IProductSeries.providedBy(self.context) or
@@ -337,14 +342,17 @@ class HasSpecificationsView(LaunchpadView):
         # set of blueprints, we first fetch all the dependencies
         # in one go (rather than ask SQLObject to get a related
         # join for every iteration).
-        cur = cursor()
-        cur.execute("""
-        SELECT specification, dependency
-        FROM SpecificationDependency
-        WHERE specification IN %s
-        """ % sqlvalues([spec.id for spec in specs]))
-        dependencies = cur.fetchall()
-        cur.close()
+        if len(specs):
+            cur = cursor()
+            cur.execute("""
+            SELECT specification, dependency
+            FROM SpecificationDependency
+            WHERE specification IN %s
+            """ % sqlvalues([spec.id for spec in specs]))
+            dependencies = cur.fetchall()
+            cur.close()
+        else:
+            dependencies = []
 
         # We loop over all the blueprints, adding them only
         # after their dependencies have been added.

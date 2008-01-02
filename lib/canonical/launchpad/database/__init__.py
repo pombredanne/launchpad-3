@@ -82,6 +82,7 @@ from canonical.launchpad.database.builder import *
 from canonical.launchpad.database.buildqueue import *
 from canonical.launchpad.database.publishing import *
 from canonical.launchpad.database.faq import *
+from canonical.launchpad.database.featuredproject import *
 from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
 from canonical.launchpad.database.bountymessage import *
