@@ -875,6 +875,7 @@ Similarly, PPA builds pass the 'archives' arguments:
   >>> cprov_archive = getUtility(IPersonSet).getByName('cprov').archive
   >>> removeSecurityProxy(a_build).archive = cprov_archive
   >>> a_builder.trusted = False
+  >>> a_builder.vm_host = 'localhost.ppa'
   >>> commit()
   >>> a_builder.setSlaveForTesting(OkSlave())
   >>> a_builder.is_available
