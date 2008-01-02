@@ -140,7 +140,7 @@ in production, as 'vm_host' variable replacement.
     'echo %(vm_host)s'
 
 Before performing the command, it checks if the builder is indeed
-virtual (untrusted) and raises CannotResumeHost is it not.
+virtual (untrusted) and raises CannotResumeHost if it isn't.
 
     >>> bob = getUtility(IBuilderSet)['bob']
     >>> bob.resumeSlaveHost()
