@@ -47,7 +47,7 @@
         for="canonical.launchpad.interfaces.IBuilderSet"
         schema="canonical.launchpad.interfaces.IBuilder"
         label="Register a new build machine"
-        fields="name title description processor url owner"
+        fields="name title description processor url owner vm_host"
         content_factory="canonical.launchpad.database.Builder"
         class="canonical.launchpad.browser.BuilderSetAddView"
         permission="launchpad.Admin"
@@ -134,7 +134,7 @@
         for="canonical.launchpad.interfaces.IBuilder"
         schema="canonical.launchpad.interfaces.IBuilder"
         facet="overview"
-        fields="name title description processor url manual owner"
+        fields="name title description processor url manual owner vm_host"
         permission="launchpad.Edit"
         template="../templates/builder-edit.pt"
         >
@@ -156,7 +156,7 @@
         schema="canonical.launchpad.interfaces.IBuilder"
         label="Administer builder"
         facet="overview"
-        fields="name title description processor url manual owner trusted builderok failnotes"
+        fields="name title description processor url manual owner trusted builderok failnotes vm_host"
         permission="launchpad.Admin"
         template="../templates/builder-admin.pt"
         />
