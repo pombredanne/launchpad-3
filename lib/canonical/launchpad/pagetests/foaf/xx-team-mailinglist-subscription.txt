@@ -1,0 +1,145 @@
+= Mailing list subscription management =
+
+Teams can have mailing lists associated with them, and a member of a
+team with a usable mailing list can subscribe to that list. A person
+can subscribe to a mailing list using any of his email addresses, or a
+dynamic subscription which uses whichever email address is his
+preferred address at a given time.
+
+== Setup ==
+
+We're going to use the sample user Carlos, who belongs to four teams
+(`admins`, `rosetta-admins`, `testing-spanish-team`, and
+`ubuntu-translators`) and has two email addresses. We're going to give
+mailing lists to `admins` and `rosetta-admins`, but only `admins` will
+actually have its mailing list used as its contact address. We're also
+going to create a mailing list for `testing-spanish-team`, but not
+approve it.
+
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     new_list_for_team)
+    >>> new_list_for_team('admins', True)
+    >>> new_list_for_team('rosetta-admins', False)
+
+The testing-spanish-team must be made a member of the mailing list beta
+testers team, otherwise it cannot have a mailing list.
+
+XXX BarryWarsaw 06-Dec-2007 This can't use new_list_for_team() because we
+don't want to approve and activate testing-spanish-team yet.  But without this
+stanza, Carlos wouldn't be able to apply for a mailing list.  This should get
+refactored as part of bug 163130, and eventually go away altogether when
+mailing lists go public.
+
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     beta_program_enable)
+    >>> beta_program_enable('testing-spanish-team')
+
+Now Carlos can apply for a mailing list for his team.
+
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~testing-spanish-team')
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+
+
+== Subscription management ==
+
+To subscribe to a mailing list, Carlos uses his subscription management
+screen, which shows a subscription control for the mailing lists of every team
+he's a member of.  Mailing lists show up in this list regardless of whether
+it's currently the team contact method.
+
+    >>> browser.open('http://launchpad.dev/~carlos/')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.title
+    "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
+
+    >>> admins = browser.getControl(name='field.subscription.admins')
+    >>> rosetta_admins = browser.getControl(
+    ...     name='field.subscription.rosetta-admins')
+
+    >>> admins.displayOptions
+    ['Preferred address', "Don't subscribe",
+     'carlos@canonical.com', 'carlos@test.com']
+
+    >>> print admins.value
+    ["Don't subscribe"]
+    >>> print rosetta_admins.value
+    ["Don't subscribe"]
+
+However, testing-spanish-team's list doesn't show up because its creation has
+not been completed (specifically, Mailman hasn't constructed it yet).
+
+    >>> browser.getControl(name='field.subscription.testing-spanish-team')
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.subscription.testing-spanish-team'
+
+Carlos can subscribe to a list using his preferred email address.  Such
+subscriptions will track changes to his preferred address without requiring
+him to update his subscription.  So this is not the same as subscribing
+explicitly with whatever is his preferred email address.
+
+    >>> admins = browser.getControl(name='field.subscription.admins')
+    >>> admins.value = ['Preferred address']
+    >>> browser.getControl('Update Subscriptions').click()
+
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    Subscriptions updated.
+
+    >>> admins = browser.getControl(name='field.subscription.admins')
+    >>> rosetta_admins = browser.getControl(
+    ...     name='field.subscription.rosetta-admins')
+    >>> print admins.value
+    ['Preferred address']
+    >>> print rosetta_admins.value
+    ["Don't subscribe"]
+
+Carlos can subscribe to a list using any of his validated addresses
+explicitly.
+
+    >>> admins.value = ['carlos@canonical.com']
+    >>> rosetta_admins.value = ['carlos@test.com']
+    >>> browser.getControl('Update Subscriptions').click()
+
+    >>> admins = browser.getControl(name='field.subscription.admins')
+    >>> rosetta_admins = browser.getControl(
+    ...     name='field.subscription.rosetta-admins')
+    >>> print admins.value
+    ['carlos@canonical.com']
+    >>> print rosetta_admins.value
+    ['carlos@test.com']
+
+He can switch from one address to another, or from a specific address
+to the preferred address.
+
+    >>> admins.value = ['Preferred address']
+    >>> rosetta_admins.value = ['carlos@canonical.com']
+    >>> browser.getControl('Update Subscriptions').click()
+
+    >>> admins = browser.getControl(name='field.subscription.admins')
+    >>> rosetta_admins = browser.getControl(
+    ...     name='field.subscription.rosetta-admins')
+    >>> print admins.value
+    ['Preferred address']
+    >>> print rosetta_admins.value
+    ['carlos@canonical.com']
+
+Finally, he can unsubscribe from any mailing list by setting the subscription
+menu item to "Don't subscribe".
+
+    >>> admins = browser.getControl(name='field.subscription.admins')
+    >>> rosetta_admins = browser.getControl(
+    ...     name='field.subscription.rosetta-admins')
+    >>> admins.value = ["Don't subscribe"]
+    >>> rosetta_admins.value = ["Don't subscribe"]
+    >>> browser.getControl('Update Subscriptions').click()
+
+    >>> admins = browser.getControl(name='field.subscription.admins')
+    >>> rosetta_admins = browser.getControl(
+    ...     name='field.subscription.rosetta-admins')
+    >>> print admins.value
+    ["Don't subscribe"]
+    >>> print rosetta_admins.value
+    ["Don't subscribe"]

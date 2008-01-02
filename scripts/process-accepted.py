@@ -74,12 +74,12 @@ def main():
                 for archive in distribution.all_distro_archives]
 
         for archive, description in target_archives:
-            for distrorelease in distribution.serieses:
+            for distroseries in distribution.serieses:
 
                 log.debug("Processing queue for %s %s" % (
-                        distrorelease.name, description))
+                        distroseries.name, description))
 
-                queue_items = distrorelease.getQueueItems(
+                queue_items = distroseries.getQueueItems(
                     PackageUploadStatus.ACCEPTED, archive=archive)
                 for queue_item in queue_items:
                     try:

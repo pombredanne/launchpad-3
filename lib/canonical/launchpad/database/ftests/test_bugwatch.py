@@ -10,10 +10,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.interfaces import (
-    IBugTaskSet, IBugTrackerSet, IBugWatchSet, IPersonSet, NoBugTrackerFound,
-    UnrecognizedBugTrackerURL)
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.lp.dbschema import BugTrackerType
+    BugTrackerType, IBugTrackerSet, IBugWatchSet, IPersonSet,
+    NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -171,6 +169,15 @@ class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
         pass
 
 
+class RTExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with RoundUp URLs."""
+
+    bugtracker_type = BugTrackerType.RT
+    bug_url = 'http://some.host/Ticket/Display.html?id=2379'
+    base_url = 'http://some.host/'
+    bug_id = '2379'
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(BugzillaExtractBugTrackerAndBugTest))
@@ -181,6 +188,7 @@ def test_suite():
     suite.addTest(unittest.makeSuite(DebbugsExtractBugTrackerAndBugShorthandTest))
     suite.addTest(unittest.makeSuite(SFExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(MantisExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(RTExtractBugTrackerAndBugTest))
     return suite
 
 

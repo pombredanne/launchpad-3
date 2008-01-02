@@ -162,8 +162,10 @@ just PO files.
   False
   >>> request_set.addRequest(person, product_template)
   >>> alsa_template = POTemplate.selectOneBy(path='po/alsa-utils.pot')
+  >>> alsa_es = alsa_template.getPOFileByLang('es')
   >>> netapplet_template = POTemplate.selectOneBy(path='po/netapplet.pot')
-  >>> request_set.addRequest(person, [alsa_template, netapplet_template])
+  >>> request_set.addRequest(
+  ...     person, [alsa_template, netapplet_template], [alsa_es])
   >>> transaction.commit()
 
 The script is run.

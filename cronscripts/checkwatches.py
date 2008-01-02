@@ -1,4 +1,7 @@
 #!/usr/bin/python2.4
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0403
+
 """
 Cron job to run daily to check all of the BugWatches
 """

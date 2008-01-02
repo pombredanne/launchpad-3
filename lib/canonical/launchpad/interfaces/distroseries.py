@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistroSeries."""
 
@@ -130,7 +131,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         title=_("Status"), required=True,
         vocabulary=DistroSeriesStatus)
     datereleased = Attribute("The datereleased.")
-    parentseries = Choice(
+    parent_series = Choice(
         title=_("Parent series"),
         description=_("The series from which this one was branched."),
         required=True,
@@ -160,9 +161,11 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     architecturecount = Attribute("The number of architectures in this "
         "series.")
-    architectures = Attribute("The architectures in this series.")
+    architectures = Attribute("All architectures in this series.")
+    ppa_architectures = Attribute(
+        "All architectures in this series where PPA is supported.")
     nominatedarchindep = Attribute(
-        "DistroArchRelease designed to build architecture-independent "
+        "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")
     milestones = Attribute(_(
         "The visible milestones associated with this series, "
@@ -261,7 +264,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "or obsolete.")
 
     def isUnstable():
-        """Return True if in unstable (or "development") phase, False otherwise.
+        """Whether or not a distroseries is unstable.
 
         The distribution is "unstable" until it is released; after that
         point, all development on the Release pocket is stopped and
@@ -355,6 +358,18 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
         If 'archive' is not specified consider publication in the main_archive,
         otherwise respect the given value.
+        """
+
+    def getAllPublishedSources():
+        """Return all currently published sources for the distroseries.
+
+        Return publications in the main archives only.
+        """
+
+    def getAllPublishedBinaries():
+        """Return all currently published binaries for the distroseries.
+
+        Return publications in the main archives only.
         """
 
     def getSourcesPublishedForAllArchives():
@@ -515,7 +530,8 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         the changesfile is unsigned.
         """
 
-    def newArch(architecturetag, processorfamily, official, owner):
+    def newArch(architecturetag, processorfamily, official, owner,
+                ppa_supported=False):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
     def newMilestone(name, dateexpected=None, description=None):
@@ -606,5 +622,5 @@ class IDistroSeriesSet(Interface):
         """
 
     def new(distribution, name, displayname, title, summary, description,
-            version, parentseries, owner):
+            version, parent_series, owner):
         """Creates a new distroseries"""

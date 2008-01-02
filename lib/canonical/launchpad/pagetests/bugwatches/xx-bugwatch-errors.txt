@@ -63,6 +63,7 @@ We can observe this for each of the BugWatchErrorType values:
     ...     for tag in find_tags_by_class(user_browser.contents,
     ...         'error message'):
     ...         print tag.renderContents()
+    Launchpad couldn't import bug #900 from The Mozilla.org Bug Tracker.
     The Mozilla.org Bug Tracker bug #900 appears not to exist. Check
     that the bug number is correct.
     Launchpad couldn't connect to The Mozilla.org Bug Tracker.

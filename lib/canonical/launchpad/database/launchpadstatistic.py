@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 """Classes that implement LaunchpadStatistics."""
 
 __metaclass__ = type
@@ -169,13 +170,16 @@ class LaunchpadStatisticSet:
         ztm.commit()
 
         cur = cursor()
-        cur.execute("SELECT COUNT(DISTINCT person) FROM POSubmission")
+        cur.execute(
+            "SELECT COUNT(DISTINCT submitter) FROM TranslationMessage")
         self.update('translator_count', cur.fetchone()[0] or 0)
         ztm.commit()
 
         cur = cursor()
         cur.execute("""
-            SELECT COUNT(DISTINCT person) FROM POSubmission WHERE origin=2
+            SELECT COUNT(DISTINCT submitter)
+            FROM TranslationMessage
+            WHERE origin=2
             """)
         self.update('rosetta_translator_count', cur.fetchone()[0] or 0)
         ztm.commit()

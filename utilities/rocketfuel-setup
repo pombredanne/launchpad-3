@@ -183,7 +183,7 @@ NameVirtualHost 127.0.0.88:80
 
 <VirtualHost 127.0.0.88:80>
   ServerName launchpad.dev
-  ServerAlias code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev
+  ServerAlias code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev feeds.launchpad.dev
   <Proxy *>
     Order deny,allow
     Allow from 127.0.0.0/255.0.0.0
@@ -375,6 +375,14 @@ fi
 ls -l rocketfuel-get | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
 if [ $? -ne 0 ]; then
   echo "WARNING: /usr/local/bin/rocketfuel-get should be deleted so I can
+         recreate it."
+fi
+if [ ! -e rocketfuel-flakes ]; then
+  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-flakes
+fi
+ls -l rocketfuel-flakes | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+if [ $? -ne 0 ]; then
+  echo "WARNING: /usr/local/bin/rocketfuel-flakes should be deleted so I can
          recreate it."
 fi
 if [ ! -e rocketfuel-branch ]; then

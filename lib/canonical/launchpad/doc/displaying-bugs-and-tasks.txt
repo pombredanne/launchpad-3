@@ -14,9 +14,8 @@ The icon is dependent on the importance of the IBugTask object.
 Let's use a few examples to demonstrate:
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IBugTaskSet
+  >>> from canonical.launchpad.interfaces import BugTaskImportance, IBugTaskSet
   >>> from canonical.launchpad.ftests import test_tales
-  >>> from canonical.lp.dbschema import BugTaskImportance
   >>> from canonical.launchpad.ftests import login
 
   >>> login("foo.bar@canonical.com")

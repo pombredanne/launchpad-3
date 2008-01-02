@@ -1,4 +1,5 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces for groups of translators."""
 
@@ -95,7 +96,7 @@ class IHasTranslationGroup(Interface):
             " then only the designated translation group will be able to"
             " touch the translation files at all."),
         required=True,
-        vocabulary='TranslationPermission')
+        vocabulary=TranslationPermission)
 
 
 class ITranslationGroup(IHasOwner):

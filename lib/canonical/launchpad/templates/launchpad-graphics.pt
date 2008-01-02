@@ -362,6 +362,15 @@
         row.</td>
       </tr>
       <tr>
+        <td>rss</td>
+        <td><img src="/@@/rss" /></td>
+        <td rowspan="2">There is an RSS feed here.</td>
+      </tr>
+      <tr>
+        <td>rss-large</td>
+        <td><img src="/@@/rss-large" /></td>
+      </tr>
+      <tr>
         <td>search</td>
         <td><img src="/@@/search" /></td>
         <td>Search - used to indicate search fields or tags.</td>

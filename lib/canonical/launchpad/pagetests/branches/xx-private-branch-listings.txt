@@ -130,9 +130,8 @@ listing tab.
     ...         print extract_text(row)
 
     >>> print_landscape_code_listing(anon_browser)
-    There may be branches registered for The Landscape Project but none
-    of them match the current filter criteria for this page. Try
-    filtering on "Any Status".
+    There are no branches registered for The Landscape Project in Launchpad
+    today...
 
     >>> print_landscape_code_listing(no_priv_browser)
     testing-branch             ... New

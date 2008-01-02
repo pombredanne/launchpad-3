@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <div class="boardComment">
 
   <tal:comment condition="nothing">
@@ -20,7 +26,7 @@
         <tr>
          <td>
            <strong tal:content="context/status/name">PUBLISHED</strong>:
-           <a tal:attributes="href context/distroseries/fmt:url"
+           <a tal:attributes="href context/meta_sourcepackage/fmt:url"
               tal:content="context/distroseries/displayname">warty</a>
            pocket <strong tal:content="context/pocket/title">Release</strong>
            in component <strong tal:content="context/component/name">main</strong>
@@ -36,3 +42,4 @@
   </div>
 
 </div>
+</tal:root>

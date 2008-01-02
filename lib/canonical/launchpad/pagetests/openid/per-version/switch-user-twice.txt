@@ -1,0 +1,74 @@
+= Switching Users Twice =
+
+If a user is already logged in when authenticating via OpenID, they
+have the option to sign in as someone else.  This logs them out and
+takes them to the login form.
+
+By using the back button in their browser, it is possible for the user
+to perform this action twice.  The result should be the same: the user
+is taken to the login form.
+
+To test this, we will first sign the user in.  First we'll set up the
+OpenID consumer:
+
+    >>> from openid.consumer.consumer import Consumer
+    >>> from openid.fetchers import setDefaultFetcher
+    >>> from openid.store.memstore import MemoryStore
+    >>> from canonical.launchpad.ftests.openidhelpers import (
+    ...     install_consumer, make_identifier_select_endpoint,
+    ...     uninstall_consumer, PublisherFetcher)
+    >>> install_consumer()
+    >>> setDefaultFetcher(PublisherFetcher())
+
+    >>> openid_store = MemoryStore()
+    >>> consumer = Consumer(session={}, store=openid_store)
+
+Then log in as Sample Person:
+
+    >>> request = consumer.beginWithoutDiscovery(
+    ...     make_identifier_select_endpoint(PROTOCOL_URI))
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+
+    >>> print browser.title
+    Launchpad Login Service
+    >>> browser.getControl(name='field.email').value = 'test@canonical.com'
+    >>> browser.getControl(name='field.password').value = 'test'
+    >>> browser.getControl('Continue').click()
+    >>> print browser.url
+    http://launchpad.dev/+openid-consumer?...
+
+Now lets start a second authentication request, which should take us
+to the authentication page asking if we want to sign in as someone
+else:
+
+    >>> request = consumer.beginWithoutDiscovery(
+    ...     make_identifier_select_endpoint(PROTOCOL_URI))
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+    >>> print browser.title
+    Authenticate to http://launchpad.dev/
+    >>> print extract_text(find_main_content(browser.contents).findAll(
+    ...     'h2')[1])
+    Sign in as Sample Person?
+
+Now log out, by saying that we are someone else:
+
+    >>> browser.getControl("I'm Someone Else").click()
+    >>> print browser.title
+    Launchpad Login Service
+
+Going back and repeating the action should succeed without error:
+
+    >>> browser.goBack()
+    >>> print browser.title
+    Authenticate to http://launchpad.dev/
+    >>> browser.getControl("I'm Someone Else").click()
+    >>> print browser.title
+    Launchpad Login Service
+
+
+== Cleanup ==
+
+    >>> setDefaultFetcher(None)
+    >>> uninstall_consumer()

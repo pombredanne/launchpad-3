@@ -156,7 +156,8 @@ We'll set lifeless as the security_contact for evolution.
 (Make the bug public to ensure the security contact will get
 subscribed.)
 
-    >>> bug.private = False
+    >>> bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
 
     >>> lifeless = personset.get(2)
     >>> print lifeless.name
@@ -241,7 +242,8 @@ and notice that the subscription list doesn't change:
 But publish the same event again, when the bug is marked public, and
 stub will be added to the subscriber list:
 
-    >>> bug.private = False
+    >>> bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
 
     >>> notify(bug_product_changed)
 

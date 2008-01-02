@@ -29,7 +29,7 @@
           permission="launchpad.Edit"
           attributes="setNew setUnapproved setRejected setAccepted setDone
                       realiseUpload addSource addBuild addCustom syncUpdate
-                      notify"
+                      notify acceptFromQueue rejectFromQueue"
           set_attributes="status distroseries pocket changesfile archive"
           />
     </content>

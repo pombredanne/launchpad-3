@@ -382,12 +382,10 @@ testing this, we need to log in as a translations administrator.
     >>> translations_admin = getUtility(IPersonSet).getByEmail(
     ...     'carlos@canonical.com')
 
-We'll also create new templates, so we need IPOTemplateSet and
-POTemplateNameSet:
+We'll also create new templates, so we need IPOTemplateSet:
 
     >>> from canonical.launchpad.interfaces import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
-    >>> from canonical.launchpad.database import POTemplateNameSet
 
 Firefox has two series, but no translatable series either:
 
@@ -412,10 +410,10 @@ But, there's also a 1.0 series for Firefox.
 
 We can create and associate a new potemplate with Firefox 1.0.
 
-    >>> firefox_potemplatename = POTemplateNameSet()['firefox']
     >>> potemplatesubset = potemplate_set.getSubset(
     ...     productseries=firefox_10)
-    >>> firefox_10_pot = potemplatesubset.new(firefox_potemplatename,
+    >>> firefox_10_pot = potemplatesubset.new('firefox',
+    ...                                       'firefox',
     ...                                       'firefox.pot',
     ...                                       translations_admin)
 
@@ -435,7 +433,8 @@ translatable because it's a series with development focus.
 
     >>> potemplatesubset = potemplate_set.getSubset(
     ...     productseries=firefox_trunk)
-    >>> firefox_trunk_pot = potemplatesubset.new(firefox_potemplatename,
+    >>> firefox_trunk_pot = potemplatesubset.new('firefox',
+    ...                                          'firefox',
     ...                                          'firefox.pot',
     ...                                          translations_admin)
     >>> print firefox.primary_translatable.displayname
@@ -445,4 +444,29 @@ If we change the development_focus, primary_translatable changes as well.
 
     >>> firefox.development_focus = firefox_10
     >>> print firefox.primary_translatable.displayname
+    1.0
+
+
+= Series list = 
+
+The series for a product are returned as a sorted list, with the
+exception that the current development focus is first.
+
+    >>> from zope.component import getView
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest()
+    >>> firefox_view = getView(firefox, "+index", request)
+    >>> sorted_series = firefox_view.sorted_series_list
+    >>> for series in sorted_series:
+    ...     print series.name
+    1.0
+    trunk
+
+Change the development focus and the sort order changes.
+
+    >>> firefox.development_focus = sorted_series[-1]
+    >>> sorted_series = firefox_view.sorted_series_list
+    >>> for series in sorted_series:
+    ...     print series.name
+    trunk
     1.0

@@ -20,6 +20,10 @@
       template="../templates/binarypackagepublishinghistory-listing-detailed.pt"
       />
     <browser:page
+      name="+listing-summary"
+      template="../templates/binarypackagepublishinghistory-listing-summary.pt"
+      />
+    <browser:page
       name="+record-details"
       template="../templates/packagepublishing-details.pt"
       />

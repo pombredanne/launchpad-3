@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -98,7 +105,7 @@
   </tal:comment>
   <tr tal:repeat="sourcepackagerelease sourcepackagereleases">
   <tal:block define="spr sourcepackagerelease;
-                     distroseries spr/uploaddistroseries">
+                     distroseries spr/upload_distroseries">
     <td>
       <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}"
          class="distrosrcpackage"
@@ -157,7 +164,7 @@
   </tal:comment>
   <tr tal:repeat="sourcepackagerelease sourcepackagereleases">
   <tal:block define="spr sourcepackagerelease;
-                     distroseries spr/uploaddistroseries;
+                     distroseries spr/upload_distroseries;
                      ppa spr/upload_archive">
     <td tal:content="spr/sourcepackagename/name">
       iceweasel

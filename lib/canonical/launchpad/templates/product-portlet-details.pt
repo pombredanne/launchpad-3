@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <table class="summary" id="table-details">
   <tbody>
     <tr>
@@ -90,5 +96,10 @@
              tal:content="structure context/license_info/fmt:text-to-html" />
       </td>
     </tr>
+    <tr tal:condition="context/programminglang">
+      <th>Languages:</th>
+      <td id="product-languages" tal:content="context/programminglang" />
+    </tr>
   </tbody>
 </table>
+</tal:root>

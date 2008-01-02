@@ -25,7 +25,7 @@ these emails are going to be transferred.
 
     >>> admin_browser.url
     'http://launchpad.dev/people/+adminpeoplemerge'
-    >>> print get_feedback_messages(admin_browser)[0]
+    >>> print get_feedback_messages(admin_browser.contents)[0]
     The following email addresses are owned by Andrew Bennetts and are going
     to be transferred to Guilherme Salgado: andrew.bennetts@ubuntulinux.com
 
@@ -62,7 +62,7 @@ teams are merged.
 
     >>> admin_browser.url
     'http://launchpad.dev/people/+adminteammerge'
-    >>> print get_feedback_messages(admin_browser)[0]
+    >>> print get_feedback_messages(admin_browser.contents)[0]
     Landscape Developers has 2 active members which will have to be
     deactivated before the teams can be merged.
 
@@ -91,7 +91,7 @@ merged, though.
     >>> admin_browser.url
     'http://launchpad.dev/people/+adminteammerge'
 
-    >>> print get_feedback_messages(admin_browser)
+    >>> print get_feedback_messages(admin_browser.contents)
     [u'There is 1 error.',
      u"guadamen is associated with a Launchpad mailing list;
        we can't merge it."]
@@ -105,7 +105,7 @@ We also can't (for obvious reasons) merge any person/team into itself.
     >>> admin_browser.url
     'http://launchpad.dev/people/+adminteammerge'
 
-    >>> print get_feedback_messages(admin_browser)
+    >>> print get_feedback_messages(admin_browser.contents)
     [u'There is 1 error.', u"You can't merge ubuntu-team into itself."]
 
 Nor can we merge a person into a team or a team into a person.
@@ -119,6 +119,6 @@ Nor can we merge a person into a team or a team into a person.
 
     # Yes, the error message is not of much help, but this UI is only for
     # admins and they're supposed to know what they're doing.
-    >>> print get_feedback_messages(admin_browser)
+    >>> print get_feedback_messages(admin_browser.contents)
     [u'There is 1 error.', u'Constraint not satisfied']
 

@@ -514,15 +514,15 @@ class SourcePackageHandler:
                 SourcePackageRelease.version = %s AND
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
-                SourcePackagePublishingHistory.distrorelease =
-                    DistroRelease.id AND
+                SourcePackagePublishingHistory.distroseries =
+                    DistroSeries.id AND
                 SourcePackagePublishingHistory.archive = %s AND
-                DistroRelease.distribution = %s
+                DistroSeries.distribution = %s
                 """ % sqlvalues(sourcepackagename, version,
                                 distroseries.main_archive,
                                 distroseries.distribution)
         ret = SourcePackageRelease.select(query,
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
             orderBy=["-SourcePackagePublishingHistory.datecreated"])
         if not ret:
             return None
@@ -573,7 +573,7 @@ class SourcePackageHandler:
             builddependsindep=src.build_depends_indep,
             architecturehintlist=src.architecture,
             format=SourcePackageFormat.DPKG,
-            uploaddistroseries=distroseries.id,
+            upload_distroseries=distroseries.id,
             dsc_format=src.format,
             dsc_maintainer_rfc822=maintainer_line,
             dsc_standards_version=src.standards_version,
@@ -654,7 +654,7 @@ class SourcePackagePublisher:
         """Query for the publishing entry"""
         ret = SecureSourcePackagePublishingHistory.select(
                 """sourcepackagerelease = %s
-                   AND distrorelease = %s
+                   AND distroseries = %s
                    AND archive = %s
                    AND status in (%s, %s)""" %
                 sqlvalues(sourcepackagerelease, self.distroseries,
@@ -689,8 +689,8 @@ class BinaryPackageHandler:
         version = binarypackagedata.version
         architecture = binarypackagedata.architecture
 
-        clauseTables = ["BinaryPackageRelease", "DistroRelease", "Build",
-                        "DistroArchRelease"]
+        clauseTables = ["BinaryPackageRelease", "DistroSeries", "Build",
+                        "DistroArchSeries"]
         distroseries = distroarchinfo['distroarchseries'].distroseries
 
         # When looking for binaries, we need to remember that they are
@@ -700,14 +700,14 @@ class BinaryPackageHandler:
         query = ("BinaryPackageRelease.binarypackagename=%s AND "
                  "BinaryPackageRelease.version=%s AND "
                  "BinaryPackageRelease.build = Build.id AND "
-                 "Build.distroarchrelease = DistroArchRelease.id AND "
-                 "DistroArchRelease.distrorelease = DistroRelease.id AND "
-                 "DistroRelease.distribution = %d" %
+                 "Build.distroarchseries = DistroArchSeries.id AND "
+                 "DistroArchSeries.distroseries = DistroSeries.id AND "
+                 "DistroSeries.distribution = %d" %
                  (binaryname.id, quote(version),
                   distroseries.distribution.id))
 
         if architecture != "all":
-            query += ("AND DistroArchRelease.architecturetag = %s" %
+            query += ("AND DistroArchSeries.architecturetag = %s" %
                       quote(architecture))
 
         try:
@@ -772,7 +772,7 @@ class BinaryPackageHandler:
         """Ensure a build record."""
         distroarchseries = distroarchinfo['distroarchseries']
         distribution = distroarchseries.distroseries.distribution
-        clauseTables = ["Build", "DistroArchRelease", "DistroRelease"]
+        clauseTables = ["Build", "DistroArchSeries", "DistroSeries"]
 
         # XXX kiko 2006-02-03:
         # This method doesn't work for real bin-only NMUs that are
@@ -783,13 +783,13 @@ class BinaryPackageHandler:
         # doing it the second time.
 
         query = ("Build.sourcepackagerelease = %d AND "
-                 "Build.distroarchrelease = DistroArchRelease.id AND "
-                 "DistroArchRelease.distrorelease = DistroRelease.id AND "
-                 "DistroRelease.distribution = %d"
+                 "Build.distroarchseries = DistroArchSeries.id AND "
+                 "DistroArchSeries.distroseries = DistroSeries.id AND "
+                 "DistroSeries.distribution = %d"
                  % (srcpkg.id, distribution.id))
 
         if archtag != "all":
-            query += ("AND DistroArchRelease.architecturetag = %s"
+            query += ("AND DistroArchSeries.architecturetag = %s"
                       % quote(archtag))
 
         try:
@@ -898,7 +898,7 @@ class BinaryPackagePublisher:
         """Query for the publishing entry"""
         ret = SecureBinaryPackagePublishingHistory.select(
                 """binarypackagerelease = %s
-                   AND distroarchrelease = %s
+                   AND distroarchseries = %s
                    AND archive = %s
                    AND status in (%s, %s)""" %
                 sqlvalues(binarypackage, self.distroarchseries,

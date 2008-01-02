@@ -106,7 +106,13 @@ Perform `post publication` override:
    >>> version = bpph.binarypackagerelease.version
    >>> pmount_hoary_i386_released = pmount_hoary_i386[version]
 
-   >>> pmount_hoary_i386_released.changeOverride(new_section=new_section)
+   >>> pmount_i386_pub = pmount_hoary_i386_released.current_publishing_record
+   >>> override = pmount_i386_pub.changeOverride(
+   ...     new_section=new_section)
+   >>> override.section == new_section
+   True
+   >>> override.status.name
+   'PENDING'
    >>> pub_hist = pmount_hoary_i386.publishing_history
    >>> pub_hist.count()
    3
@@ -118,7 +124,8 @@ Override information about 'pmount' is pending publication:
 
 Supersede current publication:
 
-   >>> superseded_pmount = pmount_hoary_i386_released.supersede()
+   >>> pmount_pubrec = pmount_hoary_i386_released.current_publishing_record
+   >>> superseded_pmount = pmount_pubrec.supersede()
    >>> pmount_hoary_i386.publishing_history.count()
    3
 
@@ -237,3 +244,56 @@ pockets.
     ...    'at', include_pending=True, archive=cprov_archive)
     >>> soyuz_helper.checkPubList(all_ppa_pubs, result)
     True
+
+== DistroArchSeries Lookup ==
+
+The architectures related to a specific distroseries can be retrieved
+via the 'architectures' property.
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> warty = ubuntu['warty']
+    >>> hoary = ubuntu['hoary']
+
+    >>> def print_architectures(architectures):
+    ...     for arch in architectures:
+    ...         details = create_view(arch, "+details")()
+    ...         if details:
+    ...             print arch.title, details
+    ...         else:
+    ...             print arch.title
+
+    >>> print_architectures(warty.architectures)
+    The Warty Warthog Release for hppa (hppa)
+    The Warty Warthog Release for i386 (x86) (official, ppa)
+
+DistroArchSeries for which we support PPA building can be obtained via
+another distroseries method called 'ppa_architectures'.
+
+For testing purpose we can compare the results of a
+manually-calculated set of warty architectures for which we support
+PPA  and the actual value returned from the 'ppa_architecture'
+property.
+
+    >>> expected_ppa_archs = [arch for arch in warty.architectures
+    ...                       if arch.ppa_supported is True]
+    >>> print_architectures(expected_ppa_archs)
+    The Warty Warthog Release for i386 (x86) (official, ppa)
+
+    >>> print_architectures(warty.ppa_architectures)
+    The Warty Warthog Release for i386 (x86) (official, ppa)
+
+Let's activate ppa support for hoary/hppa and check if
+'ppa_architectures' will include it this time.
+
+    >>> print_architectures(hoary.ppa_architectures)
+    The Hoary Hedgehog Release for i386 (x86) (official, ppa)
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> login('foo.bar@canonical.com')
+
+    >>> hoary['hppa'].ppa_supported = True
+    >>> flush_database_updates()
+
+    >>> print_architectures(hoary.ppa_architectures)
+    The Hoary Hedgehog Release for hppa (hppa) (ppa)
+    The Hoary Hedgehog Release for i386 (x86) (official, ppa)

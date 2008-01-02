@@ -9,8 +9,10 @@ __metaclass__ = type
 __all__ = [
     'POHeader',
     'POParser',
+    'plural_form_mapper',
     ]
 
+import gettext
 import datetime
 import re
 import codecs
@@ -21,12 +23,80 @@ from zope.interface import implements
 from zope.app import datetimeutils
 
 from canonical.launchpad.interfaces import (
-    ITranslationHeader, TranslationConstants,
+    ITranslationHeaderData, TranslationConstants,
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
-    TranslationFile, TranslationMessage)
+    TranslationFileData, TranslationMessageData)
 from canonical.launchpad.versioninfo import revno
 
+class BadPluralExpression(Exception):
+    pass
+
+def make_plural_function(expression):
+    """Create a lambda function for C-like plural expression."""
+    # Largest expressions we could find in practice were 113 characters
+    # long.  500 is a reasonable value which is still 4 times more than
+    # that, yet not incredibly long.
+    if expression is None or len(expression) > 500:
+        raise BadPluralExpression
+
+    # Guard against '**' usage: it's not useful in evaluating
+    # plural forms, yet can be used to introduce a DoS.
+    if expression.find('**') != -1:
+        raise BadPluralExpression
+
+    # We allow digits, whitespace [ \t], parentheses, "n", and operators
+    # as allowed by GNU gettext implementation as well.
+    if not re.match('^[0-9 \t()n|&?:!=<>+%*/-]*$', expression):
+        raise BadPluralExpression
+
+    try:
+        function = gettext.c2py(expression)
+    except (ValueError, SyntaxError):
+        raise BadPluralExpression
+
+    return function
+
+def plural_form_mapper(first_expression, second_expression):
+    """Maps plural forms from one plural formula to the other.
+
+    Returns a dict indexed by indices in the `first_formula`
+    pointing to corresponding indices in the `second_formula`.
+    """
+    identity_map = {0:0, 1:1, 2:2, 3:3}
+    try:
+        first_func = make_plural_function(first_expression)
+        second_func = make_plural_function(second_expression)
+    except BadPluralExpression:
+        return identity_map
+
+    # Can we create a mapping from one expression to the other?
+    mapping = {}
+    for n in range(1000):
+        try:
+            first_form = first_func(n)
+            second_form = second_func(n)
+        except (ArithmeticError, TypeError):
+            return identity_map
+
+        # Is either result out of range?
+        if first_form not in [0,1,2,3] or second_form not in [0,1,2,3]:
+            return identity_map
+
+        if first_form in mapping:
+            if mapping[first_form] != second_form:
+                return identity_map
+        else:
+            mapping[first_form] = second_form
+
+    # The mapping must be an isomorphism.
+    if sorted(mapping.keys()) != sorted(mapping.values()):
+        return identity_map
+
+    # Fill in the remaining inputs from the identity map:
+    result = identity_map.copy()
+    result.update(mapping)
+    return result
 
 class POSyntaxWarning(Warning):
     """ Syntax warning in a po file """
@@ -99,8 +169,8 @@ def get_header_dictionary(raw_header, handled_keys_order):
 
 
 class POHeader:
-    """See `ITranslationHeader`."""
-    implements(ITranslationHeader)
+    """See `ITranslationHeaderData`."""
+    implements(ITranslationHeaderData)
 
     # Set of known keys in the .po header.
     _handled_keys_mapping = {
@@ -228,7 +298,7 @@ class POHeader:
                 pass
 
     def getRawContent(self):
-        """See ITranslationHeader."""
+        """See `ITranslationHeaderData`."""
         raw_content_list = []
         for key in self._handled_keys_order:
             value = self._handled_keys_mapping[key]
@@ -319,7 +389,7 @@ class POHeader:
         return u''.join(raw_content_list)
 
     def updateFromTemplateHeader(self, template_header):
-        """See `ITranslationHeader`."""
+        """See `ITranslationHeaderData`."""
         template_header_dictionary = get_header_dictionary(
             template_header.getRawContent(), self._handled_keys_order)
         # 'Domain' is a non standard header field. However, this is required
@@ -337,7 +407,7 @@ class POHeader:
         self.template_creation_date = template_header.template_creation_date
 
     def getLastTranslator(self):
-        """See `ITranslationHeader`."""
+        """See `ITranslationHeaderData`."""
         # Get last translator information. If it's not found, we use the
         # default value from Gettext.
         name, email = parseaddr(self._last_translator)
@@ -352,7 +422,7 @@ class POHeader:
             return name, email
 
     def setLastTranslator(self, email, name=None):
-        """See `ITranslationHeader`."""
+        """See `ITranslationHeaderData`."""
         assert email is not None, 'Email address cannot be None'
 
         if name is None:
@@ -363,9 +433,13 @@ class POHeader:
 class POParser(object):
     """Parser class for Gettext files."""
 
-    def __init__(self):
+    def __init__(self, plural_formula=None):
         self._translation_file = None
         self._lineno = 0
+        # This is a default plural form mapping (i.e. no mapping) when
+        # no header is present in the PO file.
+        self._plural_form_mapping = {0: 0, 1: 1, 2: 2, 3: 3}
+        self._expected_plural_formula = plural_formula
 
     def _decode(self):
         # is there anything to convert?
@@ -421,13 +495,13 @@ class POParser(object):
     def parse(self, content_text):
         """Parse string as a PO file."""
         # Initialise the parser.
-        self._translation_file = TranslationFile()
+        self._translation_file = TranslationFileData()
         self._messageids = set()
         self._pending_chars = content_text
         self._pending_unichars = u''
         self._lineno = 0
         # Message specific variables.
-        self._message = TranslationMessage()
+        self._message = TranslationMessageData()
         self._message_lineno = self._lineno
         self._section = None
         self._plural_case = None
@@ -442,7 +516,7 @@ class POParser(object):
         while line is not None:
             self._parseLine(line.decode(charset))
             if (self._translation_file.header is not None or
-                self._message.msgid):
+                self._message.msgid_singular):
                 # Either found the header already or it's a message with a
                 # non empty msgid which means is not a header.
                 break
@@ -450,7 +524,7 @@ class POParser(object):
 
         if line is None:
             if (self._translation_file.header is None and
-                not self._message.msgid):
+                not self._message.msgid_singular):
                 # Seems like the file has only the header without any message,
                 # we parse it.
                 self._dumpCurrentSection()
@@ -486,7 +560,7 @@ class POParser(object):
 
     def _storeCurrentMessage(self):
         if self._message is not None:
-            msgkey = self._message.msgid
+            msgkey = self._message.msgid_singular
             if self._message.context is not None:
                 msgkey = '%s\2%s' % (self._message.context, msgkey)
             if msgkey in self._messageids:
@@ -529,6 +603,13 @@ class POParser(object):
                 POSyntaxWarning(
                     self._lineno, 'Header entry is not first entry'))
 
+        plural_formula = self._translation_file.header.plural_form_expression
+        if plural_formula is None:
+            # We default to a simple plural formula which uses
+            # a single form for translations.
+            plural_formula = '0'
+        self._plural_form_mapping = plural_form_mapper(
+            plural_formula, self._expected_plural_formula)
         # convert buffered input to the encoding specified in the PO header
         self._decode()
 
@@ -563,7 +644,7 @@ class POParser(object):
 
           >>> class FakeHeader:
           ...     charset = 'UTF-8'
-          >>> parser._translation_file = TranslationFile()
+          >>> parser._translation_file = TranslationFileData()
           >>> parser._translation_file.header = FakeHeader()
           >>> parser._parseQuotedString(utf8_string)
           u'view \xab${version_title}\xbb'
@@ -725,14 +806,15 @@ class POParser(object):
         elif self._section == 'msgctxt':
             self._message.context = self._parsed_content
         elif self._section == 'msgid':
-            self._message.msgid = self._parsed_content
+            self._message.msgid_singular = self._parsed_content
         elif self._section == 'msgid_plural':
             self._message.msgid_plural = self._parsed_content
             # Note in the header that there are plural forms.
             self._translation_file.header.has_plural_forms = True
         elif self._section == 'msgstr':
             self._message.addTranslation(
-                self._plural_case, self._parsed_content)
+                self._plural_form_mapping[self._plural_case],
+                self._parsed_content)
         else:
             raise AssertionError('Unknown section %s' % self._section)
 
@@ -758,7 +840,7 @@ class POParser(object):
             if self._message is None:
                 # first entry - do nothing.
                 pass
-            elif self._message.msgid:
+            elif self._message.msgid_singular:
                 self._dumpCurrentSection()
                 self._storeCurrentMessage()
             elif self._translation_file.header is None:
@@ -771,7 +853,7 @@ class POParser(object):
                     POSyntaxWarning(self._lineno, 'We got a second header.'))
 
             # Start a new message.
-            self._message = TranslationMessage()
+            self._message = TranslationMessageData()
             self._message_lineno = self._lineno
             self._section = None
             self._plural_case = None

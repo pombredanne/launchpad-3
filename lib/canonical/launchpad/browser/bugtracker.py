@@ -20,13 +20,17 @@ from itertools import chain
 from zope.interface import implements
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
+from zope.formlib import form
+from zope.schema import Choice
 
+from canonical.launchpad import _
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    IBugTracker, IBugTrackerSet, IRemoteBug, ILaunchBag)
+    BugTrackerType, IBugTracker, IBugTrackerSet, IRemoteBug, ILaunchBag)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, ContextMenu, Link, Navigation,
-    GetitemNavigation, redirection, LaunchpadEditFormView, LaunchpadView)
+    ContextMenu, GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
+    redirection)
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 
@@ -60,29 +64,66 @@ class BugTrackerSetContextMenu(ContextMenu):
         return Link('+newbugtracker', text, icon='add')
 
 
-class BugTrackerAddView:
+class BugTrackerAddView(LaunchpadFormView):
+    
+    schema = IBugTracker
+    label = "Register an external bug tracker"
+    field_names = ['name', 'bugtrackertype', 'title', 'summary',
+                   'baseurl', 'contactdetails']
 
-    def create(self, name, bugtrackertype, title, summary, baseurl,
-               contactdetails):
+    def setUpWidgets(self, context=None):
+        vocab_items = [
+            item for item in BugTrackerType.items.items
+            if item not in (BugTrackerType.DEBBUGS,
+                            BugTrackerType.SOURCEFORGE)]
+        fields = []
+        for field_name in self.field_names:
+            if field_name == 'bugtrackertype':
+                fields.append(form.FormField(
+                    Choice(__name__='bugtrackertype',
+                           title=_('Bug Tracker Type'),
+                           values=vocab_items,
+                           default=BugTrackerType.BUGZILLA)))
+            else:
+                fields.append(self.form_fields[field_name])
+        self.form_fields = form.Fields(*fields)
+        super(BugTrackerAddView, self).setUpWidgets(context=context)
+
+    @action(_('Add'), name='add')
+    def add(self, action, data):
         """Create the IBugTracker."""
         btset = getUtility(IBugTrackerSet)
         bugtracker = btset.ensureBugTracker(
-            name=name,
-            bugtrackertype=bugtrackertype,
-            title=title,
-            summary=summary,
-            baseurl=baseurl,
-            contactdetails=contactdetails,
+            name=data['name'],
+            bugtrackertype=data['bugtrackertype'],
+            title=data['title'],
+            summary=data['summary'],
+            baseurl=data['baseurl'],
+            contactdetails=data['contactdetails'],
             owner=getUtility(ILaunchBag).user)
-        # keep track of the new one
-        self._newtracker_ = bugtracker
-        return bugtracker
+        self.next_url = canonical_url(bugtracker)
+        
+#     def create(self, name, bugtrackertype, title, summary, baseurl,
+#                contactdetails):
+#         """Create the IBugTracker."""
+#         btset = getUtility(IBugTrackerSet)
+#         bugtracker = btset.ensureBugTracker(
+#             name=name,
+#             bugtrackertype=bugtrackertype,
+#             title=title,
+#             summary=summary,
+#             baseurl=baseurl,
+#             contactdetails=contactdetails,
+#             owner=getUtility(ILaunchBag).user)
+#         # keep track of the new one
+#         self._newtracker_ = bugtracker
+#         return bugtracker
 
-    def add(self, content):
-        return content
+#     def add(self, content):
+#         return content
 
-    def nextURL(self):
-        return canonical_url(self._newtracker_)
+#     def nextURL(self):
+#         return canonical_url(self._newtracker_)
 
 
 class BugTrackerView(LaunchpadView):

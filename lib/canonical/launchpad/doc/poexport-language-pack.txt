@@ -15,6 +15,7 @@ Some initialisation tasks:
     >>> from canonical.launchpad.scripts.language_pack import \
     ...    export_language_pack
     >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from canonical.database.sqlbase import flush_database_caches
     >>> login("daf@canonical.com")
 
     # This is a dummy logger class to capture the export's log messages.
@@ -105,7 +106,6 @@ classes.
     >>> from StringIO import StringIO
     >>> from canonical.launchpad.database import DistroSeries
     >>> from canonical.launchpad.database import SourcePackageName
-    >>> from canonical.launchpad.database import POTemplateName
     >>> from canonical.launchpad.database import POTemplate
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet)
@@ -136,14 +136,13 @@ creating.
 
 Create a PO template and put a single message set in it.
 
-    >>> ptn = POTemplateName(
-    ...     name='test', translationdomain='test', title='test')
     >>> pot_header = 'Content-Type: text/plain; charset=UTF-8\n'
     >>> template = POTemplate(
-    ...     potemplatename=ptn, distroseries=series, sourcepackagename=spn,
+    ...     name='test', translation_domain='test',
+    ...     distroseries=series, sourcepackagename=spn,
     ...     owner=mark, languagepack=True, path='po/test.pot',
     ...     header=pot_header)
-    >>> potmsgset = template.createMessageSetFromText(u'blah')
+    >>> potmsgset = template.createMessageSetFromText(u'blah', None)
     >>> potmsgset.sequence = 1
 
 Get some dates.
@@ -157,21 +156,21 @@ Create a Spanish PO file, with an active translation submission created on
 2000/01/01.
 
     >>> pofile_es = template.newPOFile('es')
-    >>> pomsgset_es = pofile_es.createMessageSetFromMessageSet(potmsgset)
     >>> translations = { 0: u'blah (es)' }
-    >>> pomsgset_es.updateTranslationSet(mark, translations, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> pomsgset_es.date_reviewed = d2000_01_01
+    >>> new_translation_message = potmsgset.updateTranslation(
+    ...     pofile_es, mark, translations, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> new_translation_message.date_reviewed = d2000_01_01
 
 Create a Welsh PO file, with an active translation submission created on
 2000/01/03.
 
     >>> pofile_cy = template.newPOFile('cy')
-    >>> pomsgset_cy = pofile_cy.createMessageSetFromMessageSet(potmsgset)
     >>> translations = { 0: u'blah (cy)' }
-    >>> pomsgset_cy.updateTranslationSet(mark, translations, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> pomsgset_cy.date_reviewed = d2000_01_03
+    >>> new_translation_message = potmsgset.updateTranslation(
+    ...     pofile_cy, mark, translations, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> new_translation_message.date_reviewed = d2000_01_03
     >>> transaction.commit()
 
 This is handy for examining the tar files that are generated.
@@ -190,6 +189,7 @@ files.
     >>> print series.language_pack_base
     None
     >>> logger = FakeLogger()
+    >>> flush_database_caches()
     >>> language_pack = export_language_pack(
     ...     distribution_name='ubuntu',
     ...     series_name='grumpy',
@@ -232,7 +232,7 @@ Check that the log looks ok.
 Check the files look OK.
 
     >>> fh = tarfile.extractfile('rosetta-grumpy/es/LC_MESSAGES/test.po')
-    >>> print fh.read()
+    >>> print fh.read().decode('UTF-8')
     # Spanish translation for evolution
     # Copyright (c) ... Rosetta Contributors and Canonical Ltd ...
     # This file is distributed under the same license as the evolution package.
@@ -256,7 +256,7 @@ Check the files look OK.
     msgstr "blah (es)"
 
     >>> fh = tarfile.extractfile('rosetta-grumpy/cy/LC_MESSAGES/test.po')
-    >>> print fh.read()
+    >>> print fh.read().decode('UTF-8')
     # Welsh translation for evolution
     # Copyright (c) ... Rosetta Contributors and Canonical Ltd ...
     # This file is distributed under the same license as the evolution package.
@@ -279,7 +279,7 @@ Check the files look OK.
     msgid "blah"
     msgstr "blah (cy)"
 
-We set this langauge pack as the base package for the distroseries. Next
+We set this language pack as the base package for the distroseries. Next
 export will be a delta based on that one.
 
     >>> series.language_pack_base = language_pack
@@ -294,9 +294,7 @@ exported, thus, we set it and request an update export, which means we should
 get only files that where updated after 2000-01-02.
 
     >>> series.language_pack_base.date_exported = d2000_01_02
-    >>> transaction.commit()
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
+    >>> flush_database_caches()
     >>> language_pack = export_language_pack(
     ...     distribution_name='ubuntu',
     ...     series_name='grumpy',
@@ -319,3 +317,4 @@ after the last generated language pack.
     |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
     |     1 | rosetta-grumpy/timestamp.txt
     |     1 | rosetta-grumpy/mapping.txt
+

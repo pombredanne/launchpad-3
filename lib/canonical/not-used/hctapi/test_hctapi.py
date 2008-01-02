@@ -178,13 +178,13 @@ class GetObject(DatabaseScaffold):
         obj = get_object("lp:///ubuntu")
         self.assertEquals(obj.name, "ubuntu")
 
-    def testNonExplicitDistroReleaseByName(self):
+    def testNonExplicitDistroSeriesByName(self):
         """get_object returns a non-explicit distro release by name."""
         from canonical.launchpad.hctapi import get_object
         obj = get_object("lp:///hoary")
         self.assertEquals(obj.name, "hoary")
 
-    def testNonExplicitDistroReleaseByVersion(self):
+    def testNonExplicitDistroSeriesByVersion(self):
         """get_object returns a non-explicit distro release by version."""
         from canonical.launchpad.hctapi import get_object
         obj = get_object("lp:///5.04")
@@ -231,24 +231,24 @@ class GetObject(DatabaseScaffold):
         self.assertRaises(LaunchpadError, get_object,
                           "lp:///products/firefox/milestones/0.9/foo")
 
-    def testDistroReleaseByName(self):
+    def testDistroSeriesByName(self):
         """get_object returns a distro release by name."""
         from canonical.launchpad.hctapi import get_object
         obj = get_object("lp:///ubuntu/hoary")
         self.assertEquals(obj.name, "hoary")
 
-    def testNonExplicitDistroReleaseByVersion(self):
+    def testNonExplicitDistroSeriesByVersion(self):
         """get_object returns a distro release by version."""
         from canonical.launchpad.hctapi import get_object
         obj = get_object("lp:///ubuntu/5.04")
         self.assertEquals(obj.name, "hoary")
 
-    def testDistroReleaseNotFound(self):
+    def testDistroSeriesNotFound(self):
         """get_object raises LaunchpadError if distro release not found."""
         from canonical.launchpad.hctapi import get_object, LaunchpadError
         self.assertRaises(LaunchpadError, get_object, "lp:///ubuntu/horny")
 
-    def testSourcesAfterDistroRelease(self):
+    def testSourcesAfterDistroSeries(self):
         """get_object eats +sources after distro release."""
         from canonical.launchpad.hctapi import get_object
         obj = get_object("lp:///ubuntu/hoary/+sources")
@@ -286,13 +286,13 @@ class GetObject(DatabaseScaffold):
         obj = get_object("lp:///ubuntu/netapplet/1.0-1")
         self.assertEquals(obj.sourcepackagerelease.version, "1.0-1")
 
-    def testSourcePackageReleaseInDistroRelease(self):
+    def testSourcePackageReleaseInDistroSeries(self):
         """get_object returns current SourcePackageRelease in distro rel."""
         from canonical.launchpad.hctapi import get_object
         obj = get_object("lp:///ubuntu/warty/netapplet")
         self.assertEquals(obj.sourcepackagerelease.version, "0.99.6-1")
 
-    def testSourcePackageReleaseInDistroReleaseNotFound(self):
+    def testSourcePackageReleaseInDistroSeriesNotFound(self):
         """get_object raises LaunchpadError on spr in dr not found."""
         from canonical.launchpad.hctapi import get_object, LaunchpadError
         self.assertRaises(LaunchpadError, get_object,
@@ -304,7 +304,7 @@ class GetObject(DatabaseScaffold):
         self.assertRaises(LaunchpadError, get_object,
                           "lp:///ubuntu/hoary/netapplet/1.0-1")
 
-    def testSourcesBetweenDistroReleaseAndSourcePackage(self):
+    def testSourcesBetweenDistroSeriesAndSourcePackage(self):
         """get_object eats +sources between distro release and source."""
         from canonical.launchpad.hctapi import get_object
         obj = get_object("lp:///ubuntu/hoary/+sources/netapplet")
@@ -346,11 +346,11 @@ class WhereAmI(DatabaseScaffold):
         self.assertEquals(where_am_i(Distribution.byName("ubuntu")),
                           "lp:///distros/ubuntu")
 
-    def testDistroRelease(self):
-        """where_am_i returns URL for a DistroRelease."""
-        from canonical.launchpad.database import DistroRelease
+    def testDistroSeries(self):
+        """where_am_i returns URL for a DistroSeries."""
+        from canonical.launchpad.database import DistroSeries
         from canonical.launchpad.hctapi import where_am_i
-        self.assertEquals(where_am_i(DistroRelease.selectOneBy(name="hoary")),
+        self.assertEquals(where_am_i(DistroSeries.selectOneBy(name="hoary")),
                           "lp:///distros/ubuntu/hoary")
 
     def testSourcePackage(self):
@@ -446,11 +446,11 @@ class ResolveObject(DatabaseScaffold):
         self.assertEquals(resolve_object(package),
                           release.sourcepackagerelease)
 
-    def testDistroRelease(self):
-        """resolve_object raises LaunchpadError if given DistroRelease."""
-        from canonical.launchpad.database import DistroRelease
+    def testDistroSeries(self):
+        """resolve_object raises LaunchpadError if given DistroSeries."""
+        from canonical.launchpad.database import DistroSeries
         from canonical.launchpad.hctapi import resolve_object, LaunchpadError
-        self.assertRaises(LaunchpadError, resolve_object, DistroRelease.get(3))
+        self.assertRaises(LaunchpadError, resolve_object, DistroSeries.get(3))
 
     def testDistribution(self):
         """resolve_object raises LaunchpadError if given Distribution."""
@@ -808,7 +808,7 @@ class GetPackage(DatabaseScaffold):
         distro = "lp:///distros/naibed"
         self.assertRaises(LaunchpadError, get_package, url, distro)
 
-    def testDistroReleaseAsUrl(self):
+    def testDistroSeriesAsUrl(self):
         """get_package raises LaunchpadError if url is a distro release."""
         from canonical.launchpad.hctapi import get_package, LaunchpadError
         url = "lp:///distros/ubuntu/hoary"
@@ -894,7 +894,7 @@ class GetPackage(DatabaseScaffold):
         distro = "lp:///distros/ubuntu/warty"
         self.assertRaises(LaunchpadError, get_package, url, distro)
 
-    def testProductSeriesInNonLatestDistroRelease(self):
+    def testProductSeriesInNonLatestDistroSeries(self):
         """get_package maps productseries to sp release in non-latest d-r."""
         from canonical.launchpad.hctapi import get_package
         url = "lp:///products/netapplet/releases"

@@ -1,0 +1,92 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+
+    <metal:extra-info fill-slot="extra_info">
+      <p id="mailing_list_status_message"
+         tal:condition="view/mailing_list_status_message">
+        <b tal:content="structure view/mailing_list_status_message">
+          This team's mailing list will be available within a few minutes.
+        </b>
+      </p>
+
+      <p tal:condition="view/list_is_usable">
+        This team's mailing list is active at
+        <b><address tal:replace="view/mailinglist_address" /></b>.
+      </p>
+    </metal:extra-info>
+
+    <metal:widgets fill-slot="widgets">
+      <div id="no_mailing_list"
+         tal:condition="view/list_can_be_requested">
+        <p>
+          You can request a mailing list for this team. Once a
+          Launchpad administrator approves your request, team members
+          can subscribe and post to the team mailing list. The team
+          mailing list may also be used as the team's contact address.
+        </p>
+
+        <p>
+          <!--XXX leonardr 2007-11-13 bug=162483. Need a link here to
+                  mailing list help.-->
+          &#187; <a href="http://help.launchpad.net/">Help for mailing lists</a>
+        </p>
+        <input tal:replace="structure view/request_list_creation/render" />
+      </div>
+
+      <div id="mailing_list_pending_approval"
+         tal:condition="view/list_application_can_be_cancelled">
+        <p>The application for this team's mailing list is pending approval.</p>
+        <p>
+          <input tal:replace="structure view/cancel_list_creation/render" />
+        </p>
+      </div>
+
+      <p id="mailing_list_not_contact_address"
+         tal:condition="view/list_is_usable_but_not_contact_method">
+        The mailing list is not set as the team contact
+        address. You can
+        <a tal:attributes="href
+                           string:${context/fmt:url}/+contactaddress">
+          set it</a>.
+      </p>
+
+      <div tal:condition="view/list_is_usable">
+       <tal:widget define="widget nocall:view/widgets/welcome_message">
+         <metal:block use-macro="context/@@launchpad_form/widget_row" />
+       </tal:widget>
+      </div>
+    </metal:widgets>
+
+    <div class="actions" metal:fill-slot="buttons">
+      <p tal:condition="view/list_is_usable">
+        <input tal:replace="structure view/save_action/render" />
+      </p>
+
+      <span tal:condition="view/list_can_be_deactivated">
+
+        <h2>Deactivation</h2>
+
+        <p>Deactivating this list will stop it from accepting posted
+        messages. You can reactivate the list later, without having to
+        get administrator approval.</p>
+
+        <input tal:replace="structure view/deactivate_list/render" />
+      </span>
+
+      <p tal:condition="view/list_can_be_reactivated">
+        <input tal:replace="structure view/reactivate_list/render" />
+      </p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

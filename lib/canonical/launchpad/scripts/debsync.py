@@ -21,7 +21,6 @@ from canonical.launchpad.interfaces import (
     IBugSet, IMessageSet, ILaunchpadCelebrities, UnknownSender, IBugTaskSet,
     IBugWatchSet, ICveSet, InvalidEmailMessage, CreateBugParams)
 from canonical.launchpad.scripts import debbugs
-from canonical.lp.dbschema import BugTaskStatus
 
 
 def bug_filter(bug, previous_import_set, target_bugs, target_package_set,

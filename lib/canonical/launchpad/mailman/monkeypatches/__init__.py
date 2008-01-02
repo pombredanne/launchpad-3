@@ -61,6 +61,10 @@ XMLRPC_SLEEPTIME = %(xmlrpc_sleeptime)s
 
 DEFAULT_EMAIL_HOST = 'launchpad.dev'
 SITE_LIST_OWNER = '%(site_list_owner)s'
+
+# Extend the global pipeline with a handler that ensures posters are Launchpad
+# members.
+GLOBAL_PIPELINE.insert(0, 'LaunchpadMember')
 """ % dict(launchpad_top=launchpad_top,
            smtp_host=host,
            smtp_port=port,
@@ -82,3 +86,14 @@ SITE_LIST_OWNER = '%(site_list_owner)s'
             'import *')
     finally:
         runner_file.close()
+    # Mailman needs an additional handler at the front of the global pipeline
+    # to determine whether the poster is a Launchpad member or not.
+    handler_path = os.path.join(mailman_path,
+                                'Mailman', 'Handlers', 'LaunchpadMember.py')
+    handler_file = open(handler_path, 'w')
+    try:
+        print >> handler_file, (
+            'from canonical.launchpad.mailman.monkeypatches.lphandler '
+            'import *')
+    finally:
+        handler_file.close()

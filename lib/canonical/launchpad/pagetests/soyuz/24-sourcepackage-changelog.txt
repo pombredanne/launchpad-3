@@ -64,6 +64,18 @@ bots from picking them up):
   * Placeholder
   -- Sample Person &lt;email address hidden&gt; Tue, 7 Feb 2006 12:10:08 +0300
 
+If the email address is recognised as one registered in Launchpad, the
+address is linkified to point to the person's profile page.  Here,
+'commercialpackage' has a known email address in its changelog:
+
+  >>> user_browser.open(
+  ...     "http://launchpad.dev/ubuntu/hoary/+source/commercialpackage/"
+  ...     "+changelog")
+  >>> changelog = find_tag_by_id(
+  ...     user_browser.contents, 'commercialpackage_1.0-1')
+  >>> changelog.find('a')
+  <a href="http://launchpad.dev/~name16"><img ...src="/@@/person" />&nbsp;foo.bar@canonical.com</a>
+
 Browsing the individual sourcepackage changelog.
 
   >>> user_browser.open(

@@ -10,7 +10,6 @@ Here are some imports we need to get this test running.
 
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.interfaces import IPersonSet
-  >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
   >>> from canonical.launchpad.interfaces import ITranslationImportQueue
   >>> from canonical.launchpad.database import POTemplateSubset
   >>> import datetime
@@ -25,12 +24,6 @@ We need this for the Librarian to work properly.
 And also, the DBSchema to change the imports status
 
   >>> from canonical.launchpad.interfaces import RosettaImportStatus
-
-Then, let's get a handle to our mailer. This is the thing we'll examine to show
-what email has been sent, to whom, and what the body of the message contains:
-
-  >>> import email
-  >>> from canonical.launchpad.mail import stub
 
 Login as an admin to be able to do changes to the import queue.
 
@@ -48,10 +41,10 @@ Now, is time to create the new potemplate
   >>> release.productseries.product.name
   u'firefox'
   >>> series = release.productseries
-  >>> ptn = getUtility(IPOTemplateNameSet)['firefox']
   >>> subset = POTemplateSubset(productseries=series)
   >>> potemplate = subset.new(
-  ...     potemplatename=ptn,
+  ...     name='firefox',
+  ...     translation_domain='firefox',
   ...     path='po/firefox.pot',
   ...     owner=person)
 
@@ -68,30 +61,18 @@ TranslationFormatSyntaxError
   ...     productseries=series, potemplate=potemplate)
   >>> transaction.commit()
   >>> entry.status = RosettaImportStatus.APPROVED
-  >>> flush_database_updates()
-  >>> potemplate.importFromQueue()
+  >>> (subject, message) = potemplate.importFromQueue(entry)
 
 The status is now FAILED:
 
   >>> entry.status == RosettaImportStatus.FAILED
   True
 
-And we sent an email with the notification of the error.
+And the code composed email with a notification of the error.
 
-We need to commit the transaction to get the email.
-
-  >>> transaction.commit()
-
-There is one email and it's for the error we produced.
-
-  >>> len(stub.test_emails)
-  1
-
-  >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
-  >>> msg = email.message_from_string(raw_message)
-  >>> msg["Subject"]
-  'Import problem - firefox in Mozilla Firefox trunk'
-  >>> print msg.get_payload(decode=True)
+  >>> subject
+  u'Import problem - firefox in Mozilla Firefox trunk'
+  >>> print message
   Hello Mark Shuttleworth,
   <BLANKLINE>
   On ..., you uploaded a file with translation templates for firefox in

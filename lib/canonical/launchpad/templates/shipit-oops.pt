@@ -1,5 +1,21 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:layout define="columns1 default">
-<html metal:use-macro="context/@@main_template/master">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
   <body>
     <metal:heading fill-slot="pageheading">
       <h1 class="exception">Oops!</h1>
@@ -27,3 +43,4 @@
   </body>
 </html>
 </tal:layout>
+</tal:root>

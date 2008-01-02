@@ -1,0 +1,64 @@
+= Launchpad OpenID Teams Extension =
+
+The Launchpad OpenID server implements a custom team membership
+extension.  This allows a relying party to query whether the user is a
+member of one or more teams.
+
+First we'll set up the OpenID consumer:
+
+    >>> from openid.consumer.consumer import Consumer
+    >>> from openid.fetchers import setDefaultFetcher
+    >>> from openid.store.memstore import MemoryStore
+    >>> from canonical.launchpad.ftests.openidhelpers import (
+    ...     complete_from_browser, install_consumer, make_endpoint,
+    ...     uninstall_consumer, PublisherFetcher)
+    >>> install_consumer()
+    >>> setDefaultFetcher(PublisherFetcher())
+
+    >>> openid_store = MemoryStore()
+    >>> consumer = Consumer(session={}, store=openid_store)
+
+Now perform an OpenID authentication request, querying membership in
+four team names:
+ * one that the user is a member of
+ * one that does not exist
+ * one that does exist but the user is not a member of
+ * one that is actually the user's name
+
+    >>> endpoint = make_endpoint(
+    ...     PROTOCOL_URI, 'http://openid.launchpad.dev/+id/sabdfl_oid')
+    >>> request = consumer.beginWithoutDiscovery(endpoint)
+
+    >>> from canonical.launchpad.browser.openidserver import (
+    ...     LAUNCHPAD_TEAMS_NS)
+    >>> print LAUNCHPAD_TEAMS_NS
+    http://ns.launchpad.net/2007/openid-teams
+    >>> request.message.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
+    'lp'
+    >>> request.addExtensionArg(
+    ...     LAUNCHPAD_TEAMS_NS, 'query_membership',
+    ...     'ubuntu-team,no-such-team,launchpad-beta-testers,sabdfl')
+
+    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+    >>> browser.getControl('Sign In', index=0).click()
+    >>> print browser.url
+    http://launchpad.dev/+openid-consumer?...
+
+    >>> info = complete_from_browser(consumer, browser)
+    >>> print info.status
+    success
+    >>> print
+    >>> print info.getSigned(LAUNCHPAD_TEAMS_NS, 'is_member')
+    ubuntu-team
+
+The response reveals that the user is a member of the ubuntu-team.  As
+specified, there is no difference in the response for non-existent
+teams and teams that the user is not a member of.
+
+
+== Cleanup ==
+
+    >>> setDefaultFetcher(None)
+    >>> uninstall_consumer()

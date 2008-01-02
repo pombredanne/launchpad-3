@@ -257,3 +257,10 @@ The confirmation email shows no errors at all.
     > from the following location:
     > 
     >     http://localhost:58000/.../po_evolution-2.2.pot
+
+Finally, if we try to do an export with an empty queue, we don't do
+anything:
+
+    >>> process_queue(transaction, logging.getLogger())
+    >>> len(test_emails)
+    0

@@ -1,5 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0403
 
 """Script to probe distribution mirrors and check how up-to-date they are."""
 

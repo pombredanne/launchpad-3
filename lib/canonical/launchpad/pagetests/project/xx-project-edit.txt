@@ -8,8 +8,7 @@ The owner of a project can edit its details.
   >>> browser.title
   'Change project group details'
 
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> print soup.first('h1').renderContents()
   Change project group details
 
@@ -42,7 +41,7 @@ But administrators can access the page:
   >>> admin_browser.title
   'Change project group details'
 
-  >>> soup = BeautifulSoup(admin_browser.contents)
+  >>> soup = find_main_content(admin_browser.contents)
   >>> print soup.first('h1').renderContents()
   Review upstream project group details
 

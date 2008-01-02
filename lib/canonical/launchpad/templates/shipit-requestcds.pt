@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
   <head>
     <metal:head_epilogue fill-slot="head_epilogue">
@@ -125,6 +132,7 @@
         based on the AMD64 or EM64T architecture (e.g., Athlon64, Opteron,
         EM64T Xeon).
       </li>
+    </ul>
   </tal:not-edubuntu>
 
   <tal:custom-request condition="view/should_show_custom_request">
@@ -272,6 +280,7 @@
   <span tal:content="structure view/dvds_section" />
 </td>
 </tr>
+</tbody>
 </table>  
   
 </div>

@@ -12,7 +12,6 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/distribution/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -35,6 +34,21 @@
       </div>
     </tal:is-owner-or-admin>
 
+    <table id="mirror-details" class="summary" style="float: right">
+      <tr>
+        <th>Speed:</th>
+        <td tal:content="context/speed/title">2 Mbps</td>
+      </tr>
+      <tr>
+        <th>Country:</th>
+        <td tal:content="context/country/name">Brazil</td>
+      </tr>
+      <tr>
+        <th>Content:</th>
+        <td tal:content="context/content/title">Archive</td>
+      </tr>
+    </table>
+
     <p id="status">
       <strong>
         <tal:official condition="context/isOfficial">Official</tal:official>
@@ -51,21 +65,6 @@
           Distribution Mirror Description
       </p>
     </div>
-
-    <table id="mirror-details" class="summary" style="float: none">
-      <tr>
-        <th>Speed:</th>
-        <td tal:content="context/speed/title">2 Mbps</td>
-      </tr>
-      <tr>
-        <th>Country:</th>
-        <td tal:content="context/country/name">Brazil</td>
-      </tr>
-      <tr>
-        <th>Content:</th>
-        <td tal:content="context/content/title">Archive</td>
-      </tr>
-    </table>
 
     <h2>Mirror URLs</h2>
 
@@ -84,6 +83,8 @@
                   rsync://url/</a>
       </li>
     </ul>
+
+    <tal:entries replace="structure view/sources_list_entries" />
 
     <div id="last-probe" tal:define="probe context/last_probe_record">
       <h2>Last probe</h2>
@@ -117,8 +118,8 @@
 
     <tal:has-last-probe condition="context/last_probe_record">
       <tal:archive-mirror condition="context/content/enumvalue:ARCHIVE"
-        define="arch_serieses view/getSummarizedMirroredArchSerieses;
-                source_serieses view/getSummarizedMirroredSourceSerieses">
+        define="arch_serieses view/summarized_arch_series;
+                source_serieses view/summarized_source_series">
         <metal:mirror-content
           use-macro="context/@@+distributionmirror-macros/archive-mirror-content" />
       </tal:archive-mirror>

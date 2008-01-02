@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
@@ -127,7 +128,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def milestones(self):
         """See IProductSeries."""
         return Milestone.selectBy(
-            productseries=self, visible=True, orderBy=['dateexpected', 'name'])
+            productseries=self, visible=True,
+            orderBy=['dateexpected', 'name'])
 
     @property
     def parent(self):
@@ -173,10 +175,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getPOTemplate(self, name):
         """See IProductSeries."""
         return POTemplate.selectOne(
-            "POTemplate.productseries = %s AND "
-            "POTemplate.potemplatename = POTemplateName.id AND "
-            "POTemplateName.name = %s" % sqlvalues(self.id, name),
-            clauseTables=['POTemplateName'])
+            "productseries = %s AND name = %s" % sqlvalues(self.id, name))
 
     @property
     def title(self):
@@ -187,6 +186,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
              DeprecationWarning)
         return self.summary
     shortdesc = property(shortdesc)
+
+    @property
+    def bug_reporting_guidelines(self):
+        """See `IBugTarget`."""
+        return self.product.bug_reporting_guidelines
 
     @property
     def sourcepackages(self):
@@ -314,9 +318,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += (' AND Specification.definition_status NOT IN ( %s, %s ) '
-                      % sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                                  SpecificationDefinitionStatus.SUPERSEDED))
+            query += (
+                ' AND Specification.definition_status NOT IN ( %s, %s ) '
+                % sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                            SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -525,11 +530,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.selectBy(productseries=self)
-        result = result.prejoin(['potemplatename'])
-        return sorted(
-            shortlist(result, 300),
-            key=lambda x: (-x.priority, x.potemplatename.name))
+        result = POTemplate.selectBy(productseries=self,
+                                     orderBy=['-priority','name'])
+        return shortlist(result, 300)
 
     def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -540,11 +543,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ProductSeries.product = Product.id AND
             Product.official_rosetta IS TRUE
             ''' % sqlvalues(self),
+            orderBy=['-priority','name'],
             clauseTables = ['ProductSeries', 'Product'])
-        result = result.prejoin(['potemplatename'])
-        return sorted(
-            shortlist(result, 300),
-            key=lambda x: (-x.priority, x.potemplatename.name))
+        return shortlist(result, 300)
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -554,11 +555,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ProductSeries.product = Product.id AND
             (iscurrent IS FALSE OR Product.official_rosetta IS FALSE)
             ''' % sqlvalues(self),
+            orderBy=['-priority','name'],
             clauseTables = ['ProductSeries', 'Product'])
-        result = result.prejoin(['potemplatename'])
-        return sorted(
-            shortlist(result, 300),
-            key=lambda x: (-x.priority, x.potemplatename.name))
+        return shortlist(result, 300)
 
 
 class ProductSeriesSet:

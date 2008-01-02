@@ -252,6 +252,18 @@ distroseries
     ...     distroseries=g2k5)
     True
 
+Packaging entries can be deleted using PackagingUtil.deletePackaging.
+
+    >>> PackagingUtil().deletePackaging(
+    ...     productseries=sp.productseries,
+    ...     sourcepackagename=a52dec,
+    ...     distroseries=g2k5)
+    >>> PackagingUtil().packagingEntryExists(
+    ...     productseries=sp.productseries,
+    ...     sourcepackagename=a52dec,
+    ...     distroseries=g2k5)
+    False
+
 Linkified changelogs are available through SourcePackageReleaseView:
 XXX julian 2007-09-17
 This is duplicating the page test. Instead it should be more like the bug
@@ -353,7 +365,7 @@ Lastly, note that sourcepackages know how to compare to each other:
 
 SourcePackageName implements IHasTranslationImports interface:
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IHasTranslationImports)
     >>> IHasTranslationImports.providedBy(warty_firefox)
