@@ -266,6 +266,11 @@ def bugwatch_editform(context, view):
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (
         context.bug.id, context.remotebug, context.bugtracker.title)
 
+def bugwatch_comments(context, view):
+    """Return the title for a page of imported comments for a bug watch."""
+    return "Bug #%d - Comments imported from bug watch %s on %s" % (
+        context.bug.id, context.remotebug, context.bugtracker.title)
+
 # bugpackageinfestations_index is a redirect
 
 # bugproductinfestations_index is a redirect

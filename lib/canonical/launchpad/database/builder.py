@@ -295,9 +295,19 @@ class Builder(SQLBase):
          * Ensure that the build pocket allows builds for the current
            distroseries state.
         """
-        if self.trusted:
-            assert build_queue_item.is_trusted, (
-                "Attempt to build untrusted item on a trusted-only builder.")
+        assert not (self.trusted and not build_queue_item.is_trusted), (
+            "Attempt to build untrusted item on a trusted-only builder.")
+
+        # Assert that we are not silently building SECURITY jobs.
+        # See findBuildCandidates. Once we start building SECURITY
+        # correctly from EMBARGOED archive this assertion can be removed.
+        # XXX 2007-18-12 Julian. This is being addressed in the work on the
+        # blueprint:
+        # https://blueprints.launchpad.net/soyuz/+spec/security-in-soyuz
+        target_pocket = build_queue_item.build.pocket
+        assert target_pocket != PackagePublishingPocket.SECURITY, (
+            "Soyuz is not yet capable of building SECURITY uploads.")
+
         # Ensure build has the needed chroot
         chroot = build_queue_item.archseries.getChroot()
         if chroot is None:
@@ -306,13 +316,6 @@ class Builder(SQLBase):
                 build_queue_item.build.distroseries.distribution.name,
                 build_queue_item.build.distroseries.name,
                 build_queue_item.build.distroarchseries.architecturetag)
-
-        # XXX cprov 20071025: We silently ignore SECURITY builds until we
-        # have a proper infrastructure to build (EMBARGO archive) and
-        # reviewed the UI to hide their information until public disclosure.
-        if build_queue_item.build.pocket == PackagePublishingPocket.SECURITY:
-            raise CannotBuild(
-                'Soyuz is not yet capable of building SECURITY uploads.')
 
         # The main distribution has policies to prevent uploads to some
         # pockets (e.g. security) during different parts of the distribution
@@ -572,18 +575,29 @@ class Builder(SQLBase):
         logger = self._getSlaveScannerLogger()
         candidate = self._findBuildCandidate()
 
-        if not candidate:
-            return None
-
-        while candidate and candidate.is_last_version is False:
-            logger.debug(
-                "Build %s SUPERSEDED, queue item %s REMOVED"
-                % (candidate.build.id, candidate.id))
-            candidate.build.buildstate = BuildStatus.SUPERSEDED
+        # Mark build records targeted to old source versions as SUPERSEDED
+        # and build records target to SECURITY pocket as FAILEDTOBUILD.
+        # Builds in those situation should not be built because they will
+        # be wasting build-time, the former case already has a newer source
+        # and the latter could not be built in DAK.
+        while candidate is not None:
+            if candidate.build.pocket == PackagePublishingPocket.SECURITY:
+                logger.debug(
+                    "Build %s FAILEDTOBUILD, queue item %s REMOVED"
+                    % (candidate.build.id, candidate.id))
+                candidate.build.buildstate = BuildStatus.FAILEDTOBUILD
+            elif candidate.is_last_version:
+                return candidate
+            else:
+                logger.debug(
+                    "Build %s SUPERSEDED, queue item %s REMOVED"
+                    % (candidate.build.id, candidate.id))
+                candidate.build.buildstate = BuildStatus.SUPERSEDED
             candidate.destroySelf()
             candidate = self._findBuildCandidate()
 
-        return candidate
+        # No candidate was found
+        return None
 
     def dispatchBuildCandidate(self, candidate):
         """See `IBuilder`."""

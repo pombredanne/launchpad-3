@@ -26,6 +26,13 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IBugWatch"
+    name="+comments"
+    class="canonical.launchpad.browser.BugWatchView"
+    permission="launchpad.AnyPerson"
+    template="../templates/bugwatch-comments.pt" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IBugWatch"
     name="+edit"
     class="canonical.launchpad.browser.BugWatchEditView"
     permission="launchpad.AnyPerson"
