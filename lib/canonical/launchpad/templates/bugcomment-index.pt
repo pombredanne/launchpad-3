@@ -26,8 +26,10 @@
 
 <div metal:fill-slot="main" tal:define="comment view/comment">
 
-  <metal:comment-box
-      metal:use-macro="context/@@bugcomment-macros/comment-box" />
+  <tal:comment condition="view/display_comment">
+    <metal:comment-box
+        metal:use-macro="context/@@bugcomment-macros/comment-box" />
+  </tal:comment>
 
 </div>
 </body>
