@@ -19,6 +19,10 @@ basepath = filter(None, sys.path)
 
 def build_mailman():
     # Build and install Mailman if it is enabled and not yet built.
+    if config.mailman is None or config.mailman.build is None:
+        # There is no <mailman> or <mailman-build> section in the
+        # configuration file, so there's nothing to build.
+        return 0
     mailman_path = config.mailman.build.prefix
     mailman_bin = os.path.join(mailman_path, 'bin')
     var_dir = os.path.abspath(config.mailman.build.var_dir)
