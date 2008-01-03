@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 
+import cgi
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import canonical_url
@@ -61,7 +62,7 @@ class AnnouncementsFeedBase(FeedBase):
                           authors=[FeedPerson(
                                     announcement.registrant,
                                     rootsite="mainsite")],
-                          content=FeedTypedData(announcement.summary))
+                          content=FeedTypedData(cgi.escape(announcement.summary)))
         return entry
 
     @property

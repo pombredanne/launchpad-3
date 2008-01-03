@@ -48,8 +48,12 @@ class IFeed(Interface):
                      "equivalent of the feed.  So for: "
                      "http://feeds.launchpad.net/ubuntu/announcements.atom "
                      "the alternate_url would be: "
-                     "http://launchpad.net/ubuntu/+announcements"
-        )
+                     "http://launchpad.net/ubuntu/+announcements")
+
+    feed_id = TextLine(
+        title=u"ID for the feed.",
+        description=u"The <id> for a feed is permanent and globally unique. "
+                     "It is constructed following RFC 4151.")
 
     feed_format = TextLine(
         title=u"Feed format",

@@ -16,7 +16,6 @@ __all__ = [
     'MINUTES',
     ]
 
-import cgi
 import operator
 import os
 import time
@@ -38,7 +37,7 @@ from canonical.lazr.interfaces import (
     IFeed, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
 
 SUPPORTED_FEEDS = ('.atom', '.html')
-MINUTES = 60 # seconds in a minute
+MINUTES = 60 # Seconds in a minute.
 
 
 class FeedBase(LaunchpadFormView):
@@ -87,9 +86,18 @@ class FeedBase(LaunchpadFormView):
         return canonical_url(self.context, rootsite=self.rootsite)
 
     @property
-    def id_(self):
+    def feed_id(self):
         """See `IFeed`."""
-        id_ = "tag:"
+        url_path = urlparse(self.alternate_url)[2]
+        if self.rootsite != 'mainsite':
+            id_ = 'tag:launchpad.net,%s:%s/%s' % (
+                self.context.datecreated.date().isoformat(),
+                self.rootsite,
+                url_path)
+        else:
+            id_ = 'tag:launchpad.net,%s:%s' % (
+                self.context.datecreated.date().isoformat(),
+                url_path)
         return id_
 
     def getItems(self):
@@ -195,10 +203,20 @@ class FeedEntry:
         if contributors is None:
             contribuors = []
         self.contributors = contributors
+        url_path = urlparse(link_alternate)[2]
+        # Strip the first portion of the path, which will be the
+        # project/product identifier but is not needed in the <id> as it may
+        # actually change if the entry is re-assigned.
+        try:
+            unique_url_path = url_path[url_path.index('/', 2):]
+        except ValueError:
+            # This condition should not happen, but if the call to index
+            # raises a ValueError because '/' was not in the path, then fall
+            # back to using the entire path.
+            unique_url_path = url_path
         self.id = 'tag:launchpad.net,%s:%s' % (
             date_created.date().isoformat(),
-            urlparse(link_alternate)[2])
-
+            unique_url_path)
 
     @property
     def last_modified(self):
@@ -215,7 +233,7 @@ class FeedTypedData:
     content_types = ['text', 'html', 'xhtml']
 
     def __init__(self, content, content_type='text'):
-        self.content = cgi.escape(content)
+        self.content = content
         if content_type not in self.content_types:
             raise UnsupportedFeedFormat("%s: is not valid" % content_type)
         self.content_type = content_type

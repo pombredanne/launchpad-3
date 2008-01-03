@@ -10,7 +10,7 @@
 
     <title tal:content="view/title">Recently opened bugs</title>
 
-    <id tal:content="view/url">http://feeds.launchpad.net/bugs/</id>
+    <id tal:content="view/feed_id">tag:launchpad.net,2008-01-02:/bugs/ubuntu</id>
     <link rel="self" tal:attributes="href view/url" />
     <link rel="alternate" tal:attributes="href view/alternate_url" />
     <logo tal:condition="view/logo"
