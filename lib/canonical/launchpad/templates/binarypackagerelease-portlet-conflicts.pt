@@ -7,6 +7,7 @@
   <h2>Conflicts</h2>
 
   <div class="portletBody portletContent"
+       id="conflicts"
        tal:define="relationships view/conflicts">
 
      <tal:has_dep condition="relationships/has_items">

@@ -7,6 +7,7 @@
   <h2>Suggests</h2>
 
   <div class="portletBody portletContent"
+       id="suggests"
        tal:define="relationships view/suggests">
 
      <tal:has_dep condition="relationships/has_items">

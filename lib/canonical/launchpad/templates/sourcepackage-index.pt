@@ -10,7 +10,7 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">    
+    <metal:heading fill-slot="pageheading">
       <h1 tal:content="context/title">source package name</h1>
     </metal:heading>
 
@@ -30,7 +30,7 @@
   <h2>Versions published</h2>
 
   <p class="warning message" tal:condition="not:context/currentrelease">
-    There is no current release of this source package 
+    There is no current release of this source package
     in <span tal:replace="context/distroseries/title" />.
     You can still report bugs, make translations, and so on,
     but they might not be used until the package is published.
@@ -113,9 +113,7 @@
       </p>
     </div>
 
-    <h2 tal:condition="view/has_build_depends">
-        Package relationships
-    </h2>
+    <h2>Package relationships</h2>
 
     <table width="100%" valign="top">
       <tr>
@@ -130,6 +128,19 @@
               <tal:block replace="structure relationships/@@+render-list"/>
           </td>
       </tr>
+      <tr>
+          <td id="conflicts" tal:define="relationships view/build_conflicts"
+              tal:condition="relationships/has_items">
+              <h3>Build conflicts</h3>
+              <tal:block replace="structure relationships/@@+render-list"/>
+          </td>
+          <td id="conflictsindep"
+              tal:define="relationships view/build_conflicts_indep"
+              tal:condition="relationships/has_items">
+              <h3>Platform-independent build dependencies</h3>
+              <tal:block replace="structure relationships/@@+render-list"/>
+          </td>
+      </tr>
     </table>
 
   </tal:block>
@@ -137,4 +148,4 @@
 </div>
 </body>
 </html>
- 
+

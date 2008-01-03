@@ -198,6 +198,9 @@ def parse_relationship_section(content):
     soup = BeautifulSoup(content)
     section = soup.find('ul')
     whitespace_re = re.compile('\s+')
+    if section is None:
+        print 'EMPTY SECTION'
+        return
     for li in section.findAll('li'):
         if li.a:
             link = li.a
