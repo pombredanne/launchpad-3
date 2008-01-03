@@ -141,8 +141,7 @@ standard unicode ordering.
      u'http://ccc.example.com/',
      u'http://zzz.example.com/']
 
-BugTrackerAliases can also be looked up by bug tracker or by bug
-tracker ID.
+BugTrackerAliases can also be looked up by bug tracker.
 
     >>> mozilla_bugzilla.aliases = [
     ...     'http://just.example.com/',
@@ -154,14 +153,6 @@ Query by bug tracker:
     ...        bugtrackeralias_set.queryByBugTracker(mozilla_bugzilla))
     [u'http://just.example.com/',
      u'http://magic.example.com/']
-
-Query by bug tracker ID:
-
-    >>> sorted(alias.base_url for alias in
-    ...        bugtrackeralias_set.queryByBugTracker(mozilla_bugzilla.id))
-    [u'http://just.example.com/',
-     u'http://magic.example.com/']
-
 
 The aliases attribute never contains the current baseurl. For example,
 if BugTracker.baseurl is changed to an existing alias of itself, the

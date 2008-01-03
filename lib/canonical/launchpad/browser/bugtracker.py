@@ -150,7 +150,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
                 used_alias_errors.append(
                     "%s already refers to %s" % (
                         alias_url, bugtracker.title))
-        if used_alias_errors:
+        if len(used_alias_errors) > 0:
             self.setFieldError('aliases', '; '.join(used_alias_errors))
 
     @action('Change', name='change')

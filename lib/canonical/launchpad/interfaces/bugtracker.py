@@ -245,10 +245,7 @@ class IBugTrackerAliasSet(Interface):
     """A set of IBugTrackerAliases."""
 
     def queryByBugTracker(bugtracker):
-        """Query IBugTrackerAliases by BugTracker.
-
-        A BugTracker can be passed in, or the ID of a BugTracker.
-        """
+        """Query IBugTrackerAliases by BugTracker."""
 
 
 class IRemoteBug(Interface):

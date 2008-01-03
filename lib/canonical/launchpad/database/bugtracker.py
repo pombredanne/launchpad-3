@@ -133,6 +133,8 @@ class BugTracker(SQLBase):
                     self.id, hours_since_last_check))
         return BugWatch.select(query, orderBy=["remotebug", "id"])
 
+    # Join to return a list of BugTrackerAliases relating to this
+    # BugTracker.
     _bugtracker_aliases = SQLMultipleJoin(
         'BugTrackerAlias', joinColumn='bugtracker')
 
@@ -303,7 +305,4 @@ class BugTrackerAliasSet:
 
     def queryByBugTracker(self, bugtracker):
         """See IBugTrackerSet."""
-        if IBugTracker.providedBy(bugtracker):
-            return self.table.selectBy(bugtracker=bugtracker.id)
-        else:
-            return self.table.selectBy(bugtracker=bugtracker)
+        return self.table.selectBy(bugtracker=bugtracker.id)
