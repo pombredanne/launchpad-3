@@ -6,25 +6,12 @@ Test harness for tests needing a PostgreSQL backend.
 __metaclass__ = type
 
 import unittest
-import os, os.path, sys
-import re
+import sys
 import time
-from warnings import warn
 
 import psycopg
-from zope.app.rdb.interfaces import DatabaseException
 from canonical.database.postgresql import resetSequences
 
-def _caller_debug(lvl=1):
-    return
-    f1 = sys._getframe(lvl)
-    f2 = sys._getframe(lvl+2)
-    print '%s - %s (%s line %s)' % (
-            f1.f_code.co_name,
-            f2.f_code.co_name,
-            f2.f_globals['__file__'],
-            f2.f_lineno,
-            )
 
 class ConnectionWrapper(object):
     real_connection = None
@@ -39,7 +26,6 @@ class ConnectionWrapper(object):
         PgTestSetup.connections.append(self)
 
     def close(self):
-        _caller_debug()
         if self in PgTestSetup.connections:
             PgTestSetup.connections.remove(self)
             self.__dict__['real_connection'].close()
