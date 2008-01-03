@@ -111,23 +111,37 @@ aliases.
     ...     'http://cambridge.example.com/']
 
     >>> mozilla_bugzilla.aliases
-    [u'http://cambridge.example.com/',
-     u'https://norwich.example.com/']
+    (u'http://cambridge.example.com/',
+     u'https://norwich.example.com/')
 
     >>> mozilla_bugzilla.aliases = []
     >>> mozilla_bugzilla.aliases
-    []
+    ()
 
-You can actually assign any iterable (of URL strings) to the aliases
-attribute, but aliases is always a regular list.
+You can assign any iterable (of URL strings) to the aliases attribute,
+but, when accessed, aliases is always a regular tuple.
+
+Because this attribute is computed on each access, an immutable object
+- a tuple - is returned. This defends against mutations of aliases
+where the expectation is that the aliases in the database are changed,
+but silently are not. For example, if a plain list were returned, it
+might be tempting to append() another alias to it. But this would not
+be reflected in the database.
+
+You can also assign None to aliases to remove all aliases. This has
+the same effect as assigning an empty list.
+
+    >>> mozilla_bugzilla.aliases = None
+    >>> mozilla_bugzilla.aliases
+    ()
 
     >>> mozilla_bugzilla.aliases = set(['http://set.example.com/'])
     >>> mozilla_bugzilla.aliases
-    [u'http://set.example.com/']
+    (u'http://set.example.com/',)
 
     >>> mozilla_bugzilla.aliases = (u'http://tuple.example.com/',)
     >>> mozilla_bugzilla.aliases
-    [u'http://tuple.example.com/']
+    (u'http://tuple.example.com/',)
 
 Your ordering is not preserved; aliases are sorted using Python's
 standard unicode ordering.
@@ -136,10 +150,10 @@ standard unicode ordering.
     ...     'http://%s.example.com/' % domain
     ...     for domain in '111 zzz ccc ZZZ'.split())
     >>> mozilla_bugzilla.aliases
-    [u'http://111.example.com/',
+    (u'http://111.example.com/',
      u'http://ZZZ.example.com/',
      u'http://ccc.example.com/',
-     u'http://zzz.example.com/']
+     u'http://zzz.example.com/')
 
 BugTrackerAliases can also be looked up by bug tracker.
 
@@ -161,7 +175,7 @@ an alias.
 
     >>> mozilla_bugzilla.baseurl = 'http://magic.example.com/'
     >>> mozilla_bugzilla.aliases
-    [u'http://just.example.com/']
+    (u'http://just.example.com/',)
 
     >>> sorted(alias.base_url for alias in
     ...        bugtrackeralias_set.queryByBugTracker(mozilla_bugzilla))

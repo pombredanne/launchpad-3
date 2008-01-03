@@ -144,7 +144,7 @@ class BugTracker(SQLBase):
         # Although it does no harm if the current baseurl is also an
         # alias, we hide it here to avoid confusion.
         alias_urls.discard(self.baseurl)
-        return sorted(alias_urls)
+        return tuple(sorted(alias_urls))
 
     def _set_aliases(self, alias_urls):
         """See `IBugTracker.aliases`."""
