@@ -81,6 +81,7 @@ The archive index is also available in in compressed formats.
  Package: alsa-utils
  Binary: alsa-mixer
  Version: 1.0.8-1ubuntu1
+ Section: base
  Maintainer: Mark Shuttleworth <sabdfl@hbd.com>
  Architecture: all
  Standards-Version: 3.6.2
@@ -182,11 +183,13 @@ Generating respective "Packages" stanzas:
 
  >>> print bpph.getIndexStanza() #doctest: -NORMALIZE_WHITESPACE
  Package: mozilla-firefox
+ Source: mozilla-firefox
  Priority: important
  Section: editors
  Maintainer: Mark Shuttleworth <mark@canonical.com>
  Architecture: i386
  Version: 0.9
+ Recommends: gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)
  Replaces: gnome-mozilla-browser
  Suggests: firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint
  Provides: mozilla-firefox
