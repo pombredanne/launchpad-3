@@ -20,7 +20,6 @@ import operator
 import os
 import time
 from datetime import datetime
-from urlparse import urlparse
 
 from zope.app.datetimeutils import rfc1123_date
 from zope.app.pagetemplate import ViewPageTemplateFile
@@ -31,7 +30,7 @@ from canonical.config import config
 # XXX - bac - 2007-09-20, modules in canonical.lazr should not import from
 # canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.  Bug 153795.
-from canonical.launchpad.webapp import canonical_url, LaunchpadFormView
+from canonical.launchpad.webapp import canonical_url, LaunchpadFormView, urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
     IFeed, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
@@ -87,16 +86,28 @@ class FeedBase(LaunchpadFormView):
 
     @property
     def feed_id(self):
-        """See `IFeed`."""
+        """See `IFeed`.
+
+        Override this method if the context used does not create a
+        meaningful id.
+        """
+        # Get the creation date, if available.  Otherwise use a fixed date, as
+        # allowed by the RFC.
+        if hasattr(self.context, 'datecreated'):
+            datecreated = self.context.datecreated.date().isoformat()
+        elif hasattr(self.context, 'date_created'):
+            datecreated = self.context.date_created.date().isoformat()
+        else:
+            datecreated = "2008"
         url_path = urlparse(self.alternate_url)[2]
         if self.rootsite != 'mainsite':
-            id_ = 'tag:launchpad.net,%s:%s/%s' % (
-                self.context.datecreated.date().isoformat(),
+            id_ = 'tag:launchpad.net,%s:/%s%s' % (
+                datecreated,
                 self.rootsite,
                 url_path)
         else:
             id_ = 'tag:launchpad.net,%s:%s' % (
-                self.context.datecreated.date().isoformat(),
+                datecreated,
                 url_path)
         return id_
 
@@ -205,10 +216,11 @@ class FeedEntry:
         self.contributors = contributors
         url_path = urlparse(link_alternate)[2]
         # Strip the first portion of the path, which will be the
-        # project/product identifier but is not needed in the <id> as it may
-        # actually change if the entry is re-assigned.
+        # project/product identifier but is not wanted in the <id> as it may
+        # change if the entry is re-assigned which would break the permanence
+        # of the <id>.
         try:
-            unique_url_path = url_path[url_path.index('/', 2):]
+            unique_url_path = url_path[url_path.index('/', 1):]
         except ValueError:
             # This condition should not happen, but if the call to index
             # raises a ValueError because '/' was not in the path, then fall
