@@ -644,9 +644,10 @@ The one submitting the string will be Carlos.  He's an editor for this POFile.
 
 As it happens, our templates have some messages with the same msgids but
 different contexts.  These exist in both Hoary and Humpy, but one is
-translated only in Hoary; another only in Humpy; another in both, with the one
-in Humpy the most recent; and yet another in both but with the one in Hoary
-the most recent.
+translated only in Hoary; another only in Humpy; another in both, with
+the one in Humpy the most recent; and yet another in both but with the
+one in Hoary the most recent.  We also have an obsolete message that is
+translated in Hoary but not in Humpy.
 
     >>> from zope.security.proxy import removeSecurityProxy
 
@@ -664,6 +665,12 @@ the most recent.
     ...     potmsgset.updateTranslation(
     ...         pofile, carlos, { 0: translation }, is_fuzzy=False,
     ...         is_imported=False, lock_timestamp=now())
+
+    >>> context_msg = add_messageset_to_template(
+    ...     potemplate_humpy, 0, u"Obsolete message", None)
+    >>> context_msg = add_messageset_to_template(
+    ...     potemplate_hoary, 0, u"Obsolete message", None)
+    >>> add_translation(pofile_es_hoary, context_msg, "Obsolete (in Hoary)")
 
     >>> context_msg = add_messageset_to_template(
     ...     potemplate_hoary, 100, u"A contexted message", None)
@@ -741,16 +748,34 @@ the total number of current translations that matters.
     >>> def count_current_translations(pofile):
     ...     """Count how many messages in pofile have current translations.
     ...     """
+    ...     query = """
+    ...         pofile = %s AND
+    ...         POTMsgSet.id = potmsgset AND
+    ...         POTMsgSet.sequence > 0 AND
+    ...         is_current
+    ...         """ % quote(pofile)
     ...     return TranslationMessage.select(
-    ...         "pofile = %s AND is_current" % quote(pofile)).count()
+    ...         query, clauseTables=['POTMsgSet']).count()
 
     >>> count_current_translations(pofile_es_hoary)
-    14
+    13
     >>> count_current_translations(pofile_es_humpy)
     12
 
-When we compare the full translations for hoary and humpy, we see the changes
-we just made, as well as the differences between the messages-with-context.
+There are also some obsolete messages.
+
+    >>> msg = pofile_es_hoary.getCurrentTranslationMessage(
+    ...     u"Obsolete message")
+    >>> msg.translations
+    [u'Obsolete (in Hoary)']
+    >>> msg = pofile_es_humpy.getCurrentTranslationMessage(
+    ...     u"Obsolete message")
+    >>> print msg.msgstr0
+    None
+
+When we compare the full translations for hoary and humpy, we see the
+changes we just made, as well as the differences between the
+messages-with-context.  The obsolete messages do not show up.
 
     >>> flush_database_caches()
     >>> print compare_translations(hoary, humpy)
@@ -845,6 +870,17 @@ were in Hoary, or were translated in Humpy but not at all in Hoary.
      msgid "A contexted message"
     -msgstr "Hoary3"
     +msgstr "Humpy3"
+
+Obsolete messages are not copied.
+
+    >>> msg = pofile_es_hoary.getCurrentTranslationMessage(
+    ...     u"Obsolete message")
+    >>> msg.translations
+    [u'Obsolete (in Hoary)']
+    >>> msg = pofile_es_humpy.getCurrentTranslationMessage(
+    ...     u"Obsolete message")
+    >>> print msg.msgstr0
+    None
 
 Changes in Humpy supersede any translation changes that may be made in its
 parent distroseries for that same message.  So even if someone now translates
