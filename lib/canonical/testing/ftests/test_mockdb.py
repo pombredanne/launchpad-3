@@ -21,7 +21,8 @@ class MockDbTestCase(unittest.TestCase):
     connections = None
 
     def setUp(self):
-        self.cache_filename = mockdb.cache_filename('_mockdb_unittest')
+        self.test_key = '_mockdb_unittest'
+        self.cache_filename = mockdb.cache_filename(self.test_key)
         self.connections = []
         self.recordMode()
 
@@ -44,11 +45,11 @@ class MockDbTestCase(unittest.TestCase):
 
     def recordMode(self):
         self.closeConnections()
-        self.cache = RecordCache(self.cache_filename)
+        self.cache = RecordCache(self.test_key)
 
     def replayMode(self):
         self.closeConnections()
-        self.cache = ReplayCache(self.cache_filename)
+        self.cache = ReplayCache(self.test_key)
 
     def modes(self):
         """This generator allows a test to run the same block under

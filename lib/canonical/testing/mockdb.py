@@ -18,6 +18,7 @@ __all__ = []
 import cPickle as pickle
 import gzip
 import os.path
+import urllib
 
 import psycopg
 
@@ -33,6 +34,7 @@ class RetryTest(Exception):
 
 def cache_filename(key):
     """Calculate and return the cache filename to use."""
+    key = urllib.quote(key, safe='')
     return os.path.join(CACHE_DIR, key) + '.pickle.gz'
 
 
@@ -72,6 +74,107 @@ class RollbackCacheEntry(CacheEntry):
     """An entry created via Connection.rollback()."""
 
 
+class RecordCache:
+    key = None # The unique key to this test
+    cache_filename = None # path to our cache file
+    log = None
+    connections = None
+
+    # Parameters used to open the database connection
+    connectionArgs = None
+    connectionKw = None
+
+    def __init__(self, key):
+        self.key = key
+        self.cache_filename = cache_filename(key)
+        self.log = []
+        self.connections = []
+
+    def checkConnectionParams(self, *args, **kw):
+        """Store the connection parameters."""
+        self.connectionArgs = args
+        self.connectionKw = kw
+
+    def execute(self, cursor, query, params=None):
+        """Handle Cursor.execute()."""
+        con = cursor.connection
+        entry = ExecuteCacheEntry(con)
+        entry.query = query
+        entry.params = params
+
+        real_cursor = cursor.real_cursor
+        try:
+            real_cursor.execute(query, params)
+        except (con.Warning, con.Error), exception:
+            entry.exception = exception
+            self.log.append(entry)
+            raise
+
+        try:
+            entry.results = list(real_cursor.fetchall())
+            entry.rowcount = real_cursor.rowcount
+            entry.description = real_cursor.description
+        except con.Error:
+            # No results, such as an UPDATE query
+            entry.results = None
+
+        self.log.append(entry)
+        return entry
+
+    def close(self, connection):
+        """Handle Connection.close()."""
+        entry = CloseCacheEntry(connection)
+        try:
+            connection.real_connection.close()
+            self.log.append(entry)
+        except (connection.Warning, connection.Error), exception:
+            entry.exception = exception
+            self.log.append(entry)
+            raise
+
+    def commit(self, connection):
+        """Handle Connection.commit()."""
+        entry = CommitCacheEntry(connection)
+        try:
+            connection.real_connection.commit()
+            self.log.append(entry)
+        except (connection.Warning, connection.Error), exception:
+            entry.exception = exception
+            self.log.append(entry)
+
+    def rollback(self, connection):
+        """Handle Connection.rollback()."""
+        entry = RollbackCacheEntry(connection)
+        try:
+            connection.real_connection.rollback()
+            self.log.append(entry)
+        except (connection.Warning, connection.Error), exception:
+            entry.exception = exception
+            self.log.append(entry)
+
+    def store(self):
+        """Store the log for future runs."""
+        # Create cache directory if necessary
+        if not os.path.isdir(CACHE_DIR):
+            os.makedirs(CACHE_DIR, mode=0700)
+
+        # Insert our connection parameters into the list we will pickle.
+        obj_to_store = [
+                self.key, self.connectionArgs, self.connectionKw
+                ] + self.log
+        pickle.dump(
+                obj_to_store, gzip.open(self.cache_filename, 'wb'),
+                pickle.HIGHEST_PROTOCOL
+                )
+
+        # Trash all the connected connections. This isn't strictly necessary
+        # but protects us from silly mistakes.
+        while self.connections:
+            con = self.connections.pop()
+            if not con._closed:
+                con.close()
+
+
 class ReplayCache:
     """Replay database queries from a cache."""
 
@@ -79,10 +182,37 @@ class ReplayCache:
     log = None # List of CacheEntry objects loaded from _cache_filename
     connections = None # List of connections using this cache
 
-    def __init__(self, cache_filename):
-        self.cache_filename = cache_filename
-        self.log = pickle.load(gzip.open(cache_filename, 'rb'))
+    connectionArgs = None # The recorded argument list used to open the conn.
+    connectionKw = None # The recorded kw arg list used to open the connection.
+
+    def __init__(self, key):
+        self.key = key
+        self.cache_filename = cache_filename(key)
+        self.log = pickle.load(gzip.open(self.cache_filename, 'rb'))
+        try:
+            stored_key = self.log.pop(0)
+            self.connectionArgs = self.log.pop(0)
+            self.connectionKw = self.log.pop(0)
+        except IndexError:
+            self.handleInvalidCache(
+                    "Connection arguments not stored in cache."
+                    )
+
+        # cache_filename does not guarantee that only one key can
+        # map to a cache filename, so we should check for this. 
+        assert stored_key == key, \
+                'Improve cache_filename - %r and %r map to same file.' % (
+                        stored_key, key
+                        )
+
         self.connections = []
+
+    def checkConnectionParams(self, *args, **kw):
+        """Raise a RetryTest exception if the conntion arguments for this
+        run (passed in) do not match those loaded from the cache.
+        """
+        if (args, kw) != (self.connectionArgs, self.connectionKw):
+            self.handleInvalidCache("Connection parameters have changed.")
 
     def getNextEntry(self, connection, expected_entry_class):
         """Pull the next entry from the cache.
@@ -156,91 +286,6 @@ class ReplayCache:
         raise RetryTest(reason)
 
 
-class RecordCache:
-    cache_filename = None
-    log = None
-    connections = None
-
-    def __init__(self, cache_filename):
-        self.cache_filename = cache_filename
-        self.log = []
-        self.connections = []
-
-    def execute(self, cursor, query, params=None):
-        """Handle Cursor.execute()."""
-        con = cursor.connection
-        entry = ExecuteCacheEntry(con)
-        entry.query = query
-        entry.params = params
-
-        real_cursor = cursor.real_cursor
-        try:
-            real_cursor.execute(query, params)
-        except (con.Warning, con.Error), exception:
-            entry.exception = exception
-            self.log.append(entry)
-            raise
-
-        try:
-            entry.results = list(real_cursor.fetchall())
-            entry.rowcount = real_cursor.rowcount
-            entry.description = real_cursor.description
-        except con.Error:
-            # No results, such as an UPDATE query
-            entry.results = None
-
-        self.log.append(entry)
-        return entry
-
-    def close(self, connection):
-        """Handle Connection.close()."""
-        entry = CloseCacheEntry(connection)
-        try:
-            connection.real_connection.close()
-            self.log.append(entry)
-        except (connection.Warning, connection.Error), exception:
-            entry.exception = exception
-            self.log.append(entry)
-            raise
-
-    def commit(self, connection):
-        """Handle Connection.commit()."""
-        entry = CommitCacheEntry(connection)
-        try:
-            connection.real_connection.commit()
-            self.log.append(entry)
-        except (connection.Warning, connection.Error), exception:
-            entry.exception = exception
-            self.log.append(entry)
-
-    def rollback(self, connection):
-        """Handle Connection.rollback()."""
-        entry = RollbackCacheEntry(connection)
-        try:
-            connection.real_connection.rollback()
-            self.log.append(entry)
-        except (connection.Warning, connection.Error), exception:
-            entry.exception = exception
-            self.log.append(entry)
-
-    def store(self):
-        """Store the log for future runs."""
-        # Create cache directory if necessary
-        if not os.path.isdir(CACHE_DIR):
-            os.makedirs(CACHE_DIR, mode=0700)
-        pickle.dump(
-                self.log, gzip.open(self.cache_filename, 'wb'),
-                pickle.HIGHEST_PROTOCOL
-                )
-
-        # Trash all the connected connections. This isn't strictly necessary
-        # but protects us from silly mistakes.
-        while self.connections:
-            con = self.connections.pop()
-            if not con._closed:
-                con.close()
-
-
 class MockDbConnection:
     """Connection to our Mock database."""
 
@@ -248,11 +293,15 @@ class MockDbConnection:
     connection_number = None
     cache = None
 
-    def __init__(self, cache, real_connection=None):
+    def __init__(self, cache, real_connection=None, *args, **kw):
         """Initialize the MockDbConnection.
 
         If we have a real_connection, we are proxying and recording results.
         If real_connection is None, we are replaying results from the cache.
+
+        *args and **kw are the arguments passed to open the real connection
+        and are used by the cache to confirm the db connection details have
+        not been changed; a RetryTest exception may be raised in replay mode.
         """
         self.cache = cache
         if isinstance(cache, ReplayCache):
@@ -260,6 +309,8 @@ class MockDbConnection:
                     'Passed a real db connection in replay mode.'
         else:
             self.real_connection = real_connection
+
+        self.cache.checkConnectionParams(*args, **kw) # May raise RetryTest 
 
         cache.connections.append(self)
         self.connection_number = cache.connections.index(self)
