@@ -20,9 +20,11 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
-    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer'
+    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
+    'ExperimentalLaunchpadZopelessLayer',
     ]
 
+import  os
 import socket
 import time
 from urllib import urlopen
@@ -274,6 +276,11 @@ class LibrarianLayer(BaseLayer):
         config.librarian.upload_port = cls._orig_librarian_port
 
 
+# We store a reference to the DB-API connect method here when we
+# put a proxy in its place.
+_org_connect = None
+
+
 class DatabaseLayer(BaseLayer):
     """Provides tests access to the Launchpad sample database."""
 
@@ -323,9 +330,15 @@ class DatabaseLayer(BaseLayer):
             else:
                 break
 
+        if cls.use_mockdb is True:
+            cls.installMockDb()
+
     @classmethod
     @profiled
     def testTearDown(cls):
+        if cls.use_mockdb is True:
+            cls.uninstallMockDb()
+
         # Ensure that the database is connectable
         cls.connect().close()
 
@@ -335,6 +348,72 @@ class DatabaseLayer(BaseLayer):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if cls._reset_between_tests:
             LaunchpadTestSetup().tearDown()
+
+    use_mockdb = False
+    mockdb_mode = None
+
+    @classmethod
+    @profiled
+    def installMockDb(cls):
+        from canonical.testing.mockdb import (
+                cache_filename, MockDbConnection, RecordCache, ReplayCache,
+                )
+
+        # We need a unique key for each test to store the mock db cache.
+        # Lets use the same thing that the test runner displays. Its tricky
+        # to get too, but should be good enough for our needs. If this is
+        # considered generally useful, we could make the upstream testrunner
+        # provide this information.
+        import inspect
+        frame = inspect.currentframe()
+        try:
+            while frame.f_code.co_name != 'startTest':
+                frame = frame.f_back
+            test_key = str(frame.f_locals['test'])
+        finally:
+            del frame # As per no-leak stack inspection in Python reference
+
+        # Determine if we are in replay or record mode and setup our
+        # mock db cache.
+        filename = cache_filename(test_key)
+        if os.path.exists(filename):
+            cls.mockdb_mode = 'replay'
+            cls.cache = ReplayCache(test_key)
+        else:
+            cls.mockdb_mode = 'record'
+            cls.cache = RecordCache(test_key)
+
+        # Proxy real connections with our mockdb.
+        global _org_connect
+        _org_connect = psycopg.connect
+
+        def record_fake_connect(*args, **kw):
+            real_connection = _org_connect(*args, **kw)
+            return MockDbConnection(cls.cache, real_connection, *args, **kw)
+
+        def replay_fake_connect(*args, **kw):
+            return MockDbConnection(cls.cache, None, *args, **kw)
+
+        if cls.mockdb_mode == 'replay':
+            psycopg.connect = replay_fake_connect
+        else:
+            psycopg.connect = record_fake_connect
+
+    @classmethod
+    @profiled
+    def uninstallMockDb(cls):
+        if cls.mockdb_mode is None:
+            return # Already uninstalled
+
+        # Store results if we are recording
+        if cls.mockdb_mode == 'record':
+            cls.cache.store()
+
+        cls.mockdb_mode = None
+        global _org_connect
+        psycopg.connect = _org_connect
+        _org_connect = None
+
 
     @classmethod
     @profiled
@@ -631,6 +710,25 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
         cls.txn.uninstall()
         cls.txn = initZopeless(**kw)
         LaunchpadZopelessTestSetup.txn = cls.txn
+
+class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):
+    """LaunchpadZopelessLayer using the mock database."""
+
+    @classmethod
+    def setUp(cls):
+        DatabaseLayer.use_mockdb = True
+
+    @classmethod
+    def tearDown(cls):
+        DatabaseLayer.use_mockdb = False
+
+    @classmethod
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    def testTearDown(cls):
+        pass
 
 
 class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):

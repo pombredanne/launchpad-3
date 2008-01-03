@@ -10,10 +10,20 @@ import unittest
 
 import psycopg
 
+from canonical.config import config
 from canonical.testing import mockdb, DatabaseLayer
 from canonical.testing.mockdb import (
         MockDbConnection, RecordCache, ReplayCache, RetryTest,
         )
+
+def dont_retry(func):
+    """Decorator for tests that flag a RetryTest exception as a failure."""
+    def dont_retry_func(self, *args, **kw):
+        try:
+            return func(self, *args, **kw)
+        except RetryTest, exception:
+            self.fail("Retry attempted: %s" % str(exception))
+    return dont_retry_func
 
 class MockDbTestCase(unittest.TestCase):
     layer = DatabaseLayer
@@ -21,6 +31,9 @@ class MockDbTestCase(unittest.TestCase):
     connections = None
 
     def setUp(self):
+        # Turn off automatic use of the infrastructure we need to test
+        DatabaseLayer.uninstallMockDb()
+
         self.test_key = '_mockdb_unittest'
         self.cache_filename = mockdb.cache_filename(self.test_key)
         self.connections = []
@@ -70,6 +83,7 @@ class MockDbTestCase(unittest.TestCase):
         yield 'replay'
 
     def connect(self):
+        """Open a connection to the (possibly fake) database."""
         # Genuine mode
         if self.cache is None:
             con = DatabaseLayer.connect()
@@ -84,6 +98,7 @@ class MockDbTestCase(unittest.TestCase):
         self.connections.append(con)
         return con
 
+    @dont_retry
     def testIncorrectReplay(self):
         # Record nothing but a close on a single connection
         con = self.connect()
@@ -100,8 +115,9 @@ class MockDbTestCase(unittest.TestCase):
         con = self.connect()
         self.assertRaises(RetryTest, con.rollback)
 
+    @dont_retry
     def testMultipleConnections(self):
-        # Ensure that commands issued via different connections need to
+        # Ensure that commands issued via different connections
         # maintain their global order.
         con1 = self.connect()
         con2 = self.connect()
@@ -122,11 +138,43 @@ class MockDbTestCase(unittest.TestCase):
         con2 = self.connect()
         self.assertRaises(RetryTest, con2.close)
 
+    @dont_retry
+    def testConnectionParams(self):
+        # Make sure we can correctly connect with different connection parms
+        for mode in self.modes():
+            for dbuser in ['launchpad', 'testadmin']:
+                connection_string = "dbname=%s user=%s host=%s" % (
+                        config.dbname, dbuser, config.dbhost
+                        )
+
+                if mode == 'standard':
+                    con = psycopg.connect(connection_string)
+                elif mode == 'record':
+                    con = MockDbConnection(
+                            self.cache, psycopg.connect(connection_string),
+                            connection_string
+                            )
+                else:
+                    con = MockDbConnection(
+                            self.cache, None, connection_string
+                            )
+
+                cur = con.cursor()
+                cur.execute("SHOW session authorization")
+                self.failUnlessEqual(cur.fetchone()[0], dbuser)
+
+        # Confirm that unexpected connection parameters raises a RetryTest
+        self.replayMode()
+        self.assertRaises(
+                RetryTest, MockDbConnection, self.cache, None, "whoops"
+                )
+
+    @dont_retry
     def testNoopSession(self):
         for mode in self.modes():
             con = self.connect()
-            con.close()
 
+    @dont_retry
     def testSimpleQuery(self):
         # Ensure that we can cache and replay a simple query
         for mode in self.modes():
@@ -151,16 +199,48 @@ class MockDbTestCase(unittest.TestCase):
             name = cur.fetchone()[0]
             self.assertEqual(name, 'carlos')
 
+    @dont_retry
     def testExceptions(self):
         for mode in self.modes():
-            # Raise an exception, recording.
             con = self.connect()
             cur = con.cursor()
             self.assertRaises(
                     psycopg.ProgrammingError,
-                    cur.execute, "SELECT blood FROM stone"
+                    cur.execute, "SELECT blood FROM Stone"
                     )
 
+    @dont_retry
+    def testUnexpectedQuery(self):
+        for mode in self.modes():
+            con = self.connect()
+            cur = con.cursor()
+            if mode != 'replay':
+                cur.execute("SELECT name FROM Person WHERE name='sabdfl'")
+            else:
+                # Issue an unexpected query in replay mode. A RetryTest
+                # exception should be raised.
+                self.assertRaises(
+                        RetryTest, cur.execute,
+                        "SELECT name FROM Person WHERE name='stub'"
+                        )
+
+    @dont_retry
+    def testUnexpectedQueryParameters(self):
+        for mode in self.modes():
+            con = self.connect()
+            cur = con.cursor()
+            query = "SELECT name FROM Person WHERE name=%s"
+            if mode != 'replay':
+                cur.execute(query, ('sabdfl',))
+            else:
+                # Issue a query with unexpected bound parameters in replay
+                # mode. A RetryTest should be raised.
+                self.assertRaises(
+                        RetryTest, cur.execute,
+                        query, ('stub',)
+                        )
+
+    @dont_retry
     def testCommit(self):
         # Confirm commit behavior.
         for mode in self.modes():
@@ -195,6 +275,7 @@ class MockDbTestCase(unittest.TestCase):
             con.commit()
 
 
+    @dont_retry
     def testRollback(self):
         # Confirm rollback behavior
         for mode in self.modes():
@@ -211,6 +292,7 @@ class MockDbTestCase(unittest.TestCase):
                     "Commit not seen by subsequent transaction"
                     )
 
+    @dont_retry
     def testClose(self):
         # Confirm and record close bahavior
         for mode in self.modes():
@@ -227,6 +309,7 @@ class MockDbTestCase(unittest.TestCase):
             #self.assertRaises(psycopg.Error, con.close)
             con.close()
 
+    @dont_retry
     def testCursorDescription(self):
         # Confirm cursor.description behavior
         for mode in self.modes():
@@ -245,6 +328,7 @@ class MockDbTestCase(unittest.TestCase):
             self.failUnlessEqual(desc[0][0], "name")
             self.failUnlessEqual(desc[0][1], psycopg.STRING)
 
+    @dont_retry
     def testCursorRowcount(self):
         # Confirm and record cursor.rowcount behavior
         for mode in self.modes():
@@ -265,6 +349,7 @@ class MockDbTestCase(unittest.TestCase):
             cur.fetchall()
             self.failUnlessEqual(cur.rowcount, 2)
 
+    @dont_retry
     def testCursorClose(self):
         # Confirm and record cursor.close behavior
         for mode in self.modes():
@@ -278,6 +363,7 @@ class MockDbTestCase(unittest.TestCase):
             cur = con.cursor()
             cur.execute("SELECT name FROM Person WHERE name='stub'")
 
+    @dont_retry
     def testFetchOne(self):
         for mode in self.modes():
             con = self.connect()
@@ -305,6 +391,7 @@ class MockDbTestCase(unittest.TestCase):
 
     ## psycopg1 does not support this extension.
     ##
+    ## @dont_retry
     ## def testCursorIteration(self):
     ##     for mode in self.modes():
     ##         con = self.connect()
@@ -321,6 +408,7 @@ class MockDbTestCase(unittest.TestCase):
     ##                 )
     ##             self.failUnlessEqual(row[0], 1, "Bad result %s" % repr(row))
   
+    @dont_retry
     def testFetchAll(self):
         for mode in self.modes():
             con = self.connect()

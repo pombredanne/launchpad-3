@@ -13,7 +13,7 @@ a RetryTest exception raised for the test runner to deal with.
 """
 
 __metaclass__ = type
-__all__ = []
+__all__ = ['MockDbConnection', 'RecordCache', 'ReplayCache', 'cache_filename']
 
 import cPickle as pickle
 import gzip
@@ -53,6 +53,17 @@ class CacheEntry:
         self.connection_number = connection.connection_number
 
 
+class ConnectCacheEntry(CacheEntry):
+    """An entry created instantiating a Connection."""
+    args = None # Arguments passed to the connect() method
+    kw = None # Keyword arguments passed to the connect() method
+    
+    def __init__(self, connection, *args, **kw):
+        super(ConnectCacheEntry, self).__init__(connection)
+        self.args = args
+        self.kw = kw
+
+
 class ExecuteCacheEntry(CacheEntry):
     """An entry created via Cursor.execute()."""
     query = None # Query passed to Cursor.execute()
@@ -74,6 +85,14 @@ class RollbackCacheEntry(CacheEntry):
     """An entry created via Connection.rollback()."""
 
 
+class SetIsolationLevelCacheEntry(CacheEntry):
+    """An entry created via Connection.set_isolation_level()."""
+    level = None # The requested isolation level
+    def __init__(self, connection, level):
+        super(SetIsolationLevelCacheEntry, self).__init__(connection)
+        self.level = level
+
+
 class RecordCache:
     key = None # The unique key to this test
     cache_filename = None # path to our cache file
@@ -90,10 +109,11 @@ class RecordCache:
         self.log = []
         self.connections = []
 
-    def checkConnectionParams(self, *args, **kw):
-        """Store the connection parameters."""
-        self.connectionArgs = args
-        self.connectionKw = kw
+    def connect(self, connection, *args, **kw):
+        self.connections.append(connection)
+        connection.connection_number = self.connections.index(connection)
+        entry = ConnectCacheEntry(connection, *args, **kw)
+        self.log.append(entry)
 
     def execute(self, cursor, query, params=None):
         """Handle Cursor.execute()."""
@@ -105,7 +125,7 @@ class RecordCache:
         real_cursor = cursor.real_cursor
         try:
             real_cursor.execute(query, params)
-        except (con.Warning, con.Error), exception:
+        except (psycopg.Warning, psycopg.Error), exception:
             entry.exception = exception
             self.log.append(entry)
             raise
@@ -114,7 +134,7 @@ class RecordCache:
             entry.results = list(real_cursor.fetchall())
             entry.rowcount = real_cursor.rowcount
             entry.description = real_cursor.description
-        except con.Error:
+        except psycopg.Error:
             # No results, such as an UPDATE query
             entry.results = None
 
@@ -152,6 +172,16 @@ class RecordCache:
             entry.exception = exception
             self.log.append(entry)
 
+    def set_isolation_level(self, connection, level):
+        """Handle Connection.set_isolation_level()."""
+        entry = SetIsolationLevelCacheEntry(connection, level)
+        try:
+            connection.real_connection.set_isolation_level(level)
+            self.log.append(entry)
+        except (connection.Warning, connection.Error), exception:
+            entry.exception = exception
+            self.log.append(entry)
+
     def store(self):
         """Store the log for future runs."""
         # Create cache directory if necessary
@@ -182,9 +212,6 @@ class ReplayCache:
     log = None # List of CacheEntry objects loaded from _cache_filename
     connections = None # List of connections using this cache
 
-    connectionArgs = None # The recorded argument list used to open the conn.
-    connectionKw = None # The recorded kw arg list used to open the connection.
-
     def __init__(self, key):
         self.key = key
         self.cache_filename = cache_filename(key)
@@ -206,13 +233,6 @@ class ReplayCache:
                         )
 
         self.connections = []
-
-    def checkConnectionParams(self, *args, **kw):
-        """Raise a RetryTest exception if the conntion arguments for this
-        run (passed in) do not match those loaded from the cache.
-        """
-        if (args, kw) != (self.connectionArgs, self.connectionKw):
-            self.handleInvalidCache("Connection parameters have changed.")
 
     def getNextEntry(self, connection, expected_entry_class):
         """Pull the next entry from the cache.
@@ -240,6 +260,13 @@ class ReplayCache:
 
         return entry
 
+    def connect(self, connection, *args, **kw):
+        self.connections.append(connection)
+        connection.connection_number = self.connections.index(connection)
+        entry = self.getNextEntry(connection, ConnectCacheEntry)
+        if (entry.args, entry.kw) != (args, kw):
+            self.handleInvalidCache("Connection parameters have changed.")
+
     def execute(self, cursor, query, params=None):
         """Handle Cursor.execute()."""
         connection = cursor.connection
@@ -248,7 +275,7 @@ class ReplayCache:
         if query != entry.query:
             self.handleInvalidCache(
                     'Unexpected command. Expected %s. Got %s.'
-                    % (entry.sql_command, command)
+                    % (entry.query, query)
                     )
 
         if params != entry.params:
@@ -280,9 +307,18 @@ class ReplayCache:
         if entry.exception is not None:
             raise entry.exception
 
+    def set_isolation_level(self, connection, level):
+        """Handle Connection.set_isolation_level()."""
+        entry = self.getNextEntry(connection, SetIsolationLevelCacheEntry)
+        if entry.level != level:
+            self.handleInvalidCache("Different isolation level requested.")
+        if entry.exception is not None:
+            raise entry.exception
+
     def handleInvalidCache(self, reason):
         """Remove the cache from disk and raise a RetryTest exception."""
-        os.unlink(self.cache_filename)
+        if os.path.exists(self.cache_filename):
+            os.unlink(self.cache_filename)
         raise RetryTest(reason)
 
 
@@ -310,10 +346,7 @@ class MockDbConnection:
         else:
             self.real_connection = real_connection
 
-        self.cache.checkConnectionParams(*args, **kw) # May raise RetryTest 
-
-        cache.connections.append(self)
-        self.connection_number = cache.connections.index(self)
+        cache.connect(self, *args, **kw)
 
     def cursor(self):
         """As per DB-API."""
@@ -346,17 +379,24 @@ class MockDbConnection:
         self._checkClosed()
         self.cache.rollback(self)
 
-    # Exceptions exposed on connection, as per optional DB-API extension
-    Warning = psycopg.Warning
-    Error = psycopg.Error
-    InterfaceError = psycopg.InterfaceError
-    DatabaseError = psycopg.DatabaseError
-    DataError = psycopg.DataError
-    OperationalError = psycopg.OperationalError
-    IntegrityError = psycopg.IntegrityError
-    InternalError = psycopg.InternalError
-    ProgrammingError = psycopg.ProgrammingError
-    NotSupportedError = psycopg.NotSupportedError
+    def set_isolation_level(self, level):
+        """As per psycopg1 extension."""
+        self._checkClosed()
+        self.cache.set_isolation_level(self, level)
+
+    # Exceptions exposed on connection, as per optional DB-API extension.
+    ## Disabled, as psycopg1 does not implement this extension.
+    ## Warning = psycopg.Warning
+    ## Error = psycopg.Error
+    ## InterfaceError = psycopg.InterfaceError
+    ## DatabaseError = psycopg.DatabaseError
+    ## DataError = psycopg.DataError
+    ## OperationalError = psycopg.OperationalError
+    ## IntegrityError = psycopg.IntegrityError
+    ## InternalError = psycopg.InternalError
+    ## ProgrammingError = psycopg.ProgrammingError
+    ## NotSupportedError = psycopg.NotSupportedError
+
 
 class MockDbCursor:
     _cache_entry = None

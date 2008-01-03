@@ -49,20 +49,6 @@ class MockDbTestCase(unittest.TestCase):
         replayer = mockdb.ReplayCache(self.cache_filename)
         self.assertRaises(mockdb.RetryTest, replayer.getNextEntry, None, None)
 
-    def testChangedConnectionParams(self):
-        # Ensure that RetryTest is raised if we try to replay with changed
-        # connection parameters.
-        recorder = mockdb.RecordCache(self.cache_filename)
-        recorder.checkConnectionParams('good', bad='ugly')
-        recorder.store()
-
-        replayer = mockdb.ReplayCache(self.cache_filename)
-        replayer.checkConnectionParams('good', bad='ugly')
-        self.assertRaises(
-                mockdb.RetryTest, replayer.checkConnectionParams,
-                'good', bad='worse'
-                )
-
     def testCacheFilename(self):
         # Ensure evil characters in the key don't mess up the cache_filename
         # results. Only '/' is really evil - others chars should all work

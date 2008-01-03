@@ -9,7 +9,7 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'PageTestLayer', 'TwistedLayer',
-    'LaunchpadScriptLayer',
+    'LaunchpadScriptLayer', 'ExperimentalLaunchpadZopelessLayer',
     ]
 
 import logging
@@ -49,6 +49,7 @@ def reset_logging():
 
 # Imported here to avoid circular import issues
 from canonical.testing.layers import (
+    ExperimentalLaunchpadZopelessLayer,
     BaseLayer, DatabaseLayer, LibrarianLayer, FunctionalLayer,
     LaunchpadLayer, ZopelessLayer, LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer, PageTestLayer, TwistedLayer, LaunchpadScriptLayer)

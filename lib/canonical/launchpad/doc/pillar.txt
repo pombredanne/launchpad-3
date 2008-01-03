@@ -10,6 +10,8 @@ share their name namespace are Product, Project and Distribution.
     ...     )
     >>> pillar_set = getUtility(IPillarNameSet)
 
+    >>> 'snot' in pillar_set
+    False
     >>> 'ubuntu' in pillar_set
     True
     >>> pillar_set['ubuntu'].name
