@@ -151,10 +151,11 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 class BranchListingView(LaunchpadFormView):
     """A base class for views of branch listings."""
     schema = IBranchListingFilter
-    field_names = ['lifecycle', 'sort_by']
+    field_names = ['lifecycle', 'sort_by', 'show_dormant']
     development_focus_branch = None
     custom_widget('lifecycle', LaunchpadDropdownWidget)
     custom_widget('sort_by', LaunchpadDropdownWidget)
+    custom_widget('show_dormant', LaunchpadDropdownWidget)
     extra_columns = []
     heading_template = 'Bazaar branches for %(displayname)s'
     # no_sort_by is a sequence of items from the BranchListingSort

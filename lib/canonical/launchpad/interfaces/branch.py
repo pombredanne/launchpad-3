@@ -1067,6 +1067,12 @@ class BranchListingSort(EnumeratedType):
         Sort branches from oldest to newest.
         """)
 
+class BranchListingDormancy(EnumeratedType):
+    """Show older branches."""
+
+    HIDE_DORMANT = Item("hide dormant branches")
+    SHOW_DORMANT = Item("show dormant branches")
+
 
 class IBranchListingFilter(Interface):
     """The schema for the branch listing filtering/ordering form."""
@@ -1088,3 +1094,6 @@ class IBranchListingFilter(Interface):
         title=_('ordered by'), vocabulary=BranchListingSort,
         default=BranchListingSort.LIFECYCLE)
 
+    show_dormant = Choice(
+        title=_("Show dormant branches"), vocabulary=BranchListingDormancy,
+        description=_("Show dormant branches"))
