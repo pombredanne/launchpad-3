@@ -56,11 +56,11 @@ class ConfigErrors(ConfigSchemaError):
     The list of errors can be accessed via the errors attribute.
     """
 
-    def __init__(self, message, errors=[]):
+    def __init__(self, message, errors=None):
         """Initialize the error with a message and errors.
 
         :param message: a message string
-        :param errors: a list of errors in the config
+        :param errors: a list of errors in the config, or None
         """
         self.message = message
         self.errors = errors
