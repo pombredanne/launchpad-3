@@ -370,7 +370,7 @@ the configuration.
 A conf file may contains a meta section that is used by the config
 system. The config can access the schema via the schema property.
 
-    >>> config.extends
+    >>> config.extends.name
     'shared.conf'
     >>> config.schema.name
     'base.conf'
