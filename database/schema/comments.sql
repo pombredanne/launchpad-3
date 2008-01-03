@@ -279,7 +279,7 @@ COMMENT ON COLUMN CodeImportResult.machine IS 'The machine the job ran on.';
 COMMENT ON COLUMN CodeImportResult.log_file IS 'A partial log of the job for users to see. It is normally only recorded if the job failed in a step that interacts with the remote repository. If a job was successful, or failed in a houskeeping step, the log file would not contain information useful to the user.';
 COMMENT ON COLUMN CodeImportResult.log_excerpt IS 'The last few lines of the partial log, in case it is set.';
 COMMENT ON COLUMN CodeImportResult.status IS 'How the job ended. Success, some kind of failure, or some kind of interruption before completion.';
-COMMENT ON COLUMN CodeImportResult.date_started IS 'When the job started to run (date_created is when it finished).';
+COMMENT ON COLUMN CodeImportResult.date_job_started IS 'When the job started to run (date_created is when it finished).';
 --COMMENT ON COLUMN CodeImportResult.killing_user IS 'The user who killed the job.';
 
 -- CodeImportMachine
