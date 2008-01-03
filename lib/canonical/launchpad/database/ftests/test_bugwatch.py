@@ -178,6 +178,15 @@ class RTExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     bug_id = '2379'
 
 
+class CpanExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with RoundUp URLs."""
+
+    bugtracker_type = BugTrackerType.RT
+    bug_url = 'http://rt.cpan.org/Public/Bug/Display.html?id=2379'
+    base_url = 'http://rt.cpan.org/'
+    bug_id = '2379'
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(BugzillaExtractBugTrackerAndBugTest))
@@ -189,6 +198,7 @@ def test_suite():
     suite.addTest(unittest.makeSuite(SFExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(MantisExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(RTExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(CpanExtractBugTrackerAndBugTest))
     return suite
 
 
