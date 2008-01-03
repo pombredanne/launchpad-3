@@ -541,7 +541,7 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
     that the new recipients have been subscribed to the bug. Otherwise
     it's just a notification of a new bug report.
     """
-    subject = u"[Bug %d] %s" % (bug.id, bug.title)
+    subject = u"[Bug %d] [NEW] %s" % (bug.id, bug.title)
 
     if bug.private:
         # This is a confidential bug.
