@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 
 """Layers used by Canonical tests.
 
@@ -361,7 +361,7 @@ class DatabaseLayer(BaseLayer):
 
         # We need a unique key for each test to store the mock db cache.
         # Lets use the same thing that the test runner displays. Its tricky
-        # to get too, but should be good enough for our needs. If this is
+        # to get to, but should be good enough for our needs. If this is
         # considered generally useful, we could make the upstream testrunner
         # provide this information.
         import inspect
@@ -413,7 +413,6 @@ class DatabaseLayer(BaseLayer):
         global _org_connect
         psycopg.connect = _org_connect
         _org_connect = None
-
 
     @classmethod
     @profiled

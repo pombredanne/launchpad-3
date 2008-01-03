@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """A self maintaining mock database for tests.
 
@@ -440,6 +440,7 @@ class MockDbCursor:
     _closed = False
 
     def close(self):
+        """As per DB-API."""
         self._checkClosed()
         self._closed = True
         if self._real_cursor is not None:
