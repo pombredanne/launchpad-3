@@ -72,7 +72,7 @@
               (<a tal:attributes="href python:view.md5URL(file.libraryfile)"
               >md5</a><tal:signature condition="file/signature">,
               <a tal:attributes="href python:view.fileURL(file.signature)">
-              pgp</a></tal:signature>)
+              sig</a></tal:signature>)
             </td>
             <td tal:content="file/description">Installer for i386</td>
           </tr>

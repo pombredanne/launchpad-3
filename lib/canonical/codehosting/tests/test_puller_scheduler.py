@@ -831,6 +831,40 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
 
         return deferred.addErrback(self._dumpError)
 
+    def test_mirror_with_unexpected_failure(self):
+        # If the puller worker script fails before recording success of
+        # failure, the branch is considered to have failed.
+
+        # This script will fail with a distinctive NameError:
+        unexpected_error_script = """
+        OOGA_BOOGA
+        """
+
+        puller_master = self.makePullerMaster(
+            script_text=unexpected_error_script)
+
+        destination_branch = BzrDir.create_branch_convenience(
+            puller_master.destination_url)
+
+        # "Mirroring" the branch will fail.
+        deferred = self.assertFailure(
+            puller_master.mirror(), error.ProcessTerminated)
+
+        # And the process monitoring machinery will call "mirrorFailed" for
+        # the branch.
+        def check_mirror_failed(ignored):
+            self.assertEqual(len(self.client.calls), 1)
+            mirror_failed_call, = self.client.calls
+            self.assertEqual(
+                mirror_failed_call[:2],
+                ('mirrorFailed', self.db_branch.id))
+            self.assertTrue(
+                "OOGA_BOOGA" in mirror_failed_call[2])
+            return ignored
+        deferred.addCallback(check_mirror_failed)
+
+        return deferred.addErrback(self._dumpError)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
