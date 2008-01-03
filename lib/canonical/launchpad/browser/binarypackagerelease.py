@@ -10,7 +10,7 @@ __all__ = [
 from apt_pkg import ParseDepends
 
 from canonical.launchpad.browser.packagerelationship import (
-    PackageRelationship, relationship_builder)
+    relationship_builder)
 from canonical.launchpad.interfaces import IBinaryPackageRelease
 from canonical.launchpad.webapp import Navigation
 
