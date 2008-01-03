@@ -87,16 +87,14 @@ class IBuild(Interface):
         raise NotFoundError if no such package exists.
         """
 
-    def createBinaryPackageRelease(binarypackagename, version,
-                                   summary, description,
-                                   binpackageformat, component,
-                                   section, priority, shlibdeps,
-                                   depends, recommends, suggests,
-                                   conflicts, replaces, provides,
-                                   essential, installedsize,
-                                   architecturespecific):
-        """Create a binary package release with the provided args, attached
-        to this specific build.
+    def createBinaryPackageRelease(
+        binarypackagename, version, summary, description, binpackageformat,
+        component, section, priority, shlibdeps, depends, recommends,
+        suggests, conflicts, replaces, provides, pre_depends, enhances,
+        breaks, essential, installedsize, architecturespecific):
+        """Create and return a `BinaryPackageRelease`.
+
+        The binarypackagerelease will be attached to this specific build.
         """
 
     def createBuildQueueEntry():

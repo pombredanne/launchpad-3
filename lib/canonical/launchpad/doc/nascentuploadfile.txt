@@ -338,7 +338,7 @@ the given version of source.
 
   >>> ed_mixed_dsc = DSCFile(
   ...     datadir('ed_0.2-20.dsc'),
-  ...     'e31eeb0b6b3b87e1ea79378df864be18', 522, 'editors',
+  ...     'de8b206f8fc57bd931f6226feac6644a', 578, 'editors',
   ...     'important', 'ed', '0.2-20', ed_mixed_changes,
   ...     modified_insecure_policy, mock_logger_quiet)
 
@@ -407,7 +407,20 @@ disk:
 
   >>> errors = ed_broken_dsc.verify()
   >>> [str(err) for err in errors]
-  ['File ed_0.2-20.dsc mentioned in the changes has a checksum mismatch. e31eeb0b6b3b87e1ea79378df864be18 != e31eeb0b6b3b87e1ea79378df864ffff']
+  ['File ed_0.2-20.dsc mentioned in the changes has a checksum mismatch. de8b206f8fc57bd931f6226feac6644a != e31eeb0b6b3b87e1ea79378df864ffff']
+
+As a over-careful check it also verifies the file size when the
+checksum matches.
+
+  >>> ed_broken_dsc = DSCFile(
+  ...     datadir('ed_0.2-20.dsc'),
+  ...     'de8b206f8fc57bd931f6226feac6644a', 500, 'editors',
+  ...     'important', 'ed', '0.2-20', ed_mixed_changes,
+  ...     modified_insecure_policy, mock_logger_quiet)
+
+  >>> errors = ed_broken_dsc.verify()
+  >>> [str(err) for err in errors]
+  ['File ed_0.2-20.dsc mentioned in the changes has a size mismatch. 578 != 500']
 
 
 === Sub-DSC files or DSCUploadedFiles ===
@@ -432,7 +445,7 @@ The DSCUploadedFile also inherit the ability to verify file sanity:
   ...     modified_insecure_policy, mock_logger_quiet)
   >>> errors = ed_broken_dsc_file.verify()
   >>> [str(err) for err in errors]
-  ['File ed_0.2-20.diff.gz mentioned in the changes has a checksum mismatch. f9e1e5f13725f581919e9bfd62272a05 != f9e1e5f13725f581919e9bfd6227ffff']
+  ['File ed_0.2-20.diff.gz mentioned in the changes has a checksum mismatch. 8343836094fb01ee9b9a1067b23365f1 != f9e1e5f13725f581919e9bfd6227ffff']
 
 
 === Sub-DSC file lookup ===

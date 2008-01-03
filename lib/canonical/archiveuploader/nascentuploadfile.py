@@ -123,7 +123,10 @@ class NascentUploadFile:
 
     @property
     def content_type(self):
-        """The content type for this file ready for adding to the librarian."""
+        """The content type for this file.
+
+        Return a value ready for adding to the librarian.
+        """
         for content_type_map in self.filename_ending_content_type_map.items():
             ending, content_type = content_type_map
             if self.filename.endswith(ending):
@@ -525,7 +528,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         """
         if not re_valid_version.match(self.control_version):
             yield UploadError("%s: invalid version number %r."
-                              % (self.filename, control_version))
+                              % (self.filename, self.control_version))
 
         binary_match = re_isadeb.match(self.filename)
         filename_version = binary_match.group(2)
@@ -545,7 +548,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
         if control_arch not in valid_archs and control_arch != "all":
             yield UploadError(
-                "%s: Unknown architecture: %r" % (self.filename, control_arch))
+                "%s: Unknown architecture: %r" % (
+                self.filename, control_arch))
 
         if control_arch not in self.changes.architectures:
             yield UploadError(
@@ -583,8 +587,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         control_priority = self.control.get('Priority', '')
         if control_priority and self.priority_name != control_priority:
             yield UploadError(
-                "%s control file lists priority as %s but changes file has %s."
-                % (self.filename, control_priority, self.priority_name))
+                "%s control file lists priority as %s but changes file has "
+                "%s." % (self.filename, control_priority, self.priority_name))
 
     def verifyFormat(self):
         """Check if the DEB format is sane.
@@ -652,10 +656,10 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 else:
                     yield UploadError("Could not find data tarball in %s"
                                        % self.filename)
-                    deb_file.close();
+                    deb_file.close()
                     return
 
-            deb_file.close();
+            deb_file.close()
 
             future_files = tar_checker.future_files.keys()
             if future_files:
@@ -719,7 +723,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # XXX cprov 2006-08-09 bug=55774: Building from ACCEPTED is
             # special condition, not really used in production. We should
             # remove the support for this use case.
-            self.logger.debug("No source published, checking the ACCEPTED queue")
+            self.logger.debug(
+                "No source published, checking the ACCEPTED queue")
 
             queue_candidates = distroseries.getQueueItems(
                 status=PackageUploadStatus.ACCEPTED,
@@ -755,8 +760,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         if self.source_name != sourcepackagerelease.name:
             raise UploadError(
                 "source name %r for %s does not match name %r in "
-                "control file"
-                % (sourcepackagerelease.name, self.filename, self.source_name))
+                "control file" % (sourcepackagerelease.name, self.filename,
+                                  self.source_name))
 
     def findBuild(self, sourcepackagerelease):
         """Find and return a build for the given archtag, cached on policy.
@@ -847,6 +852,9 @@ class BaseBinaryUploadFile(PackageUploadFile):
             conflicts=encoded.get('Conflicts', ''),
             replaces=encoded.get('Replaces', ''),
             provides=encoded.get('Provides', ''),
+            pre_depends=encoded.get('Pre-Depends', ''),
+            enhances=encoded.get('Enhances', ''),
+            breaks=encoded.get('Breaks', ''),
             essential=is_essential,
             installedsize=installedsize,
             architecturespecific=architecturespecific)
