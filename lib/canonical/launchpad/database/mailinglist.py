@@ -257,7 +257,7 @@ class MailingList(SQLBase):
                 (person.displayname, address.email))
         subscription.email_address = address
 
-    def getAddresses(self):
+    def getSubscribedAddresses(self):
         """See `IMailingList`."""
         subscriptions = MailingListSubscription.select(
             """mailing_list = %s AND
@@ -269,6 +269,27 @@ class MailingList(SQLBase):
             distinct=True, clauseTables=['TeamParticipation', 'MailingList'])
         for subscription in subscriptions:
             yield subscription.subscribed_address.email
+
+    def getSenderAddresses(self):
+        """See `IMailingList`."""
+        # Make this more efficient.
+        subscriptions = MailingListSubscription.select(
+            """mailing_list = %s AND
+               TeamParticipation.team = %s AND
+               MailingList.status <> %s AND
+               MailingList.id = MailingListSubscription.mailing_list AND
+               TeamParticipation.person = MailingListSubscription.person
+            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
+            distinct=True, clauseTables=['TeamParticipation', 'MailingList'])
+        email_addresses = set()
+        for subscription in subscriptions:
+            preferred = subscription.person.preferredemail
+            if preferred is not None:
+                email_addresses.add(preferred.email)
+            email_addresses.update(
+                email.email for email in subscription.person.validatedemails)
+        for address in email_addresses:
+            yield address
 
 
 class MailingListSet:
