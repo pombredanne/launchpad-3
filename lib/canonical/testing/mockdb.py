@@ -99,10 +99,6 @@ class RecordCache:
     log = None
     connections = None
 
-    # Parameters used to open the database connection
-    connectionArgs = None
-    connectionKw = None
-
     def __init__(self, key):
         self.key = key
         self.cache_filename = cache_filename(key)
@@ -189,9 +185,7 @@ class RecordCache:
             os.makedirs(CACHE_DIR, mode=0700)
 
         # Insert our connection parameters into the list we will pickle.
-        obj_to_store = [
-                self.key, self.connectionArgs, self.connectionKw
-                ] + self.log
+        obj_to_store = [self.key] + self.log
         pickle.dump(
                 obj_to_store, gzip.open(self.cache_filename, 'wb'),
                 pickle.HIGHEST_PROTOCOL
@@ -218,19 +212,11 @@ class ReplayCache:
         self.log = pickle.load(gzip.open(self.cache_filename, 'rb'))
         try:
             stored_key = self.log.pop(0)
-            self.connectionArgs = self.log.pop(0)
-            self.connectionKw = self.log.pop(0)
+            assert stored_key == key, "Cache loaded for wrong key."
         except IndexError:
             self.handleInvalidCache(
-                    "Connection arguments not stored in cache."
+                    "Connection key not stored in cache."
                     )
-
-        # cache_filename does not guarantee that only one key can
-        # map to a cache filename, so we should check for this. 
-        assert stored_key == key, \
-                'Improve cache_filename - %r and %r map to same file.' % (
-                        stored_key, key
-                        )
 
         self.connections = []
 
@@ -243,7 +229,9 @@ class ReplayCache:
             entry = self.log.pop(0)
         except IndexError:
             self.handleInvalidCache('Ran out of commands.')
-        assert isinstance(entry, CacheEntry), 'Unknown object in cache'
+
+        if not isinstance(entry, CacheEntry):
+            self.handleInvalidCache('Unexpected object type in cache')
 
         if connection.connection_number != entry.connection_number:
             self.handleInvalidCache(
