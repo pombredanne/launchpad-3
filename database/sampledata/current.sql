@@ -958,6 +958,7 @@ Running on Ubuntu - with Jokosher 0.2 runscript.', 16, NULL, NULL, false, false,
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates) VALUES (12, '2007-03-15 20:41:18.635493', NULL, 'Copy, Cut and Delete operations should work on selections', 'When trying to copy, cut or delete just a selected portion of an event, the operations affect the event completely. That is, you can''t select a portion and cut that piece. The whole event will be cut. Same goes for the other 2 operations.', 16, NULL, NULL, false, false, '2007-03-15 20:46:49.909153', NULL, NULL, NULL, 0);
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates) VALUES (13, '2007-07-27 20:00:58.299796', NULL, 'Launchpad CSS and JS is not testible', 'The messages placed on this bug are for eyeball viewing of JS and CSS behaviour.', 12, NULL, NULL, false, false, '2007-07-27 20:29:46.336737', NULL, NULL, NULL, 0);
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates) VALUES (14, '2007-08-09 11:39:16.836856', NULL, 'jokosher exposes personal details in its actions portlet', 'Jokosher discloses to any passerby the fact that I am single and unwed in its actions portlet. Please fix this blatant violacion of privacy now!!', 63, NULL, NULL, true, true, '2007-08-09 11:39:16.836856', NULL, NULL, NULL, 0);
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated, date_made_private, who_made_private, date_last_message, number_of_duplicates) VALUES (15, '2007-12-18 16:30:19.103679', NULL, 'Nonsensical bugs are useless', 'Like this one, natch.', 16, NULL, NULL, false, false, '2007-12-18 16:31:34.972893', NULL, NULL, '2007-12-18 16:31:34.790641', 0);
 
 
 ALTER TABLE bug ENABLE TRIGGER ALL;
@@ -998,6 +999,9 @@ INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, ne
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (31, 12, '2007-03-15 20:41:42.154264', 16, 'jokosher: statusexplanation', NULL, '', NULL);
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (32, 13, '2007-07-27 20:00:58.299796', 12, 'bug', NULL, NULL, 'added bug');
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (33, 14, '2007-08-09 11:39:16.836856', 63, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (34, 15, '2007-12-18 16:30:19.103679', 16, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (35, 15, '2007-12-18 16:30:47.889614', 16, 'bug', NULL, NULL, 'assigned to thunderbird');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (36, 15, '2007-12-18 16:31:34.790641', 62, 'thunderbird: status', 'Unknown', 'New', NULL);
 
 
 ALTER TABLE bugactivity ENABLE TRIGGER ALL;
@@ -1060,6 +1064,13 @@ INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (26, 12, 36, NULL);
 INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (27, 13, 37, NULL);
 INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (28, 13, 38, NULL);
 INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (29, 14, 39, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (30, 15, 40, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (31, 15, 44, 11);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (32, 15, 45, 11);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (33, 15, 46, 11);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (34, 15, 47, 11);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (35, 15, 48, 11);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (36, 15, 49, 11);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -1113,6 +1124,7 @@ INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (13, 16, 12, 
 INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (14, 12, 13, '2007-07-27 20:00:58.299796');
 INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (15, 63, 14, '2007-08-09 11:39:16.836856');
 INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (16, 14, 14, '2007-08-09 11:39:16.836856');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (17, 16, 15, '2007-12-18 16:30:19.103679');
 
 
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
@@ -1161,6 +1173,8 @@ INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackage
 INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (31, 12, 20, NULL, NULL, NULL, NULL, 20, NULL, 50, NULL, NULL, '2007-03-15 20:41:18.635493', 16, NULL, NULL, '', NULL, 'Jokosher', '2007-03-15 20:41:42.256326', NULL, NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (32, 13, 17, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-07-27 20:00:58.299796', 12, NULL, NULL, NULL, NULL, 'Launchpad', NULL, NULL, NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (33, 14, 20, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-08-09 11:39:16.836856', 63, NULL, NULL, NULL, NULL, 'Jokosher', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (34, 15, 22, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-12-18 16:30:19.103679', 16, NULL, NULL, NULL, NULL, 'Redfish', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distroseries, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries, date_incomplete) VALUES (35, 15, 8, NULL, NULL, NULL, NULL, 10, NULL, 999, NULL, NULL, '2007-12-18 16:30:47.889614', 16, NULL, 11, NULL, NULL, 'Mozilla Thunderbird', NULL, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE bugtask ENABLE TRIGGER ALL;
@@ -1197,6 +1211,8 @@ INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged,
 INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type, remote_importance) VALUES (8, 1, 3, '304014', NULL, '2006-03-29 16:46:54.407686', NULL, '2006-03-29 16:46:54.407686', 12, NULL, NULL);
 INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type, remote_importance) VALUES (9, 2, 3, '327452', NULL, '2006-03-29 16:47:51.515017', NULL, '2006-03-29 16:47:51.515017', 12, NULL, NULL);
 INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type, remote_importance) VALUES (10, 3, 3, '327549', NULL, '2006-03-29 16:48:18.807764', NULL, '2006-03-29 16:48:18.807764', 12, NULL, NULL);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type, remote_importance) VALUES (11, 15, 3, '308994', 'open important', '2007-12-18 16:31:34.790641', '2007-12-18 16:31:34.790641', '2007-12-18 16:30:47.889614', 16, NULL, 'UNKNOWN');
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner", last_error_type, remote_importance) VALUES (12, 15, 2, '304070', NULL, NULL, NULL, '2007-12-18 16:31:34.790641', 243614, 2, NULL);
 
 
 ALTER TABLE bugwatch ENABLE TRIGGER ALL;
@@ -1238,7 +1254,7 @@ ALTER TABLE build ENABLE TRIGGER ALL;
 ALTER TABLE builder DISABLE TRIGGER ALL;
 
 INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual, date_created, vm_host) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 61, NULL, false, NULL, true, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL);
-INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual, date_created, vm_host) VALUES (2, 1, 'frog', 'The frog builder', 'The untrusted build-slave', 61, NULL, false, NULL, false, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', NULL);
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual, date_created, vm_host) VALUES (2, 1, 'frog', 'The frog builder', 'The untrusted build-slave', 61, NULL, false, NULL, false, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', 'localhost-host.ppa');
 
 
 ALTER TABLE builder ENABLE TRIGGER ALL;
@@ -1911,6 +1927,9 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (68, '
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (69, 'archive@ubuntu.com', 243609, 4, '2007-12-07 13:43:20.393704');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (70, 'member@canonical.com', 243610, 4, '2007-12-14 16:52:15.403833');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (71, 'owner@canonical.com', 243611, 4, '2007-12-14 16:52:15.403833');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (72, 'jbuhl_nospam@gmx.de', 243614, 1, '2007-12-18 16:31:34.790641');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (73, 'sjoerd@spring.luon.net', 243615, 1, '2007-12-18 16:31:34.790641');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (74, 'mpitt@debian.org', 243616, 1, '2007-12-18 16:31:34.790641');
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -1995,16 +2014,15 @@ ALTER TABLE faq ENABLE TRIGGER ALL;
 
 ALTER TABLE featuredproject DISABLE TRIGGER ALL;
 
-INSERT INTO featuredproject (id, pillar_name) VALUES (1, 1);
-INSERT INTO featuredproject (id, pillar_name) VALUES (2, 4);
-INSERT INTO featuredproject (id, pillar_name) VALUES (3, 11);
-INSERT INTO featuredproject (id, pillar_name) VALUES (4, 27);
-INSERT INTO featuredproject (id, pillar_name) VALUES (5, 15);
-INSERT INTO featuredproject (id, pillar_name) VALUES (6, 28);
-INSERT INTO featuredproject (id, pillar_name) VALUES (7, 13);
-INSERT INTO featuredproject (id, pillar_name) VALUES (8, 16);
-INSERT INTO featuredproject (id, pillar_name) VALUES (9, 21);
-
+INSERT INTO featuredproject (id, pillar_name) VALUES (1, 1);  -- ubuntu
+INSERT INTO featuredproject (id, pillar_name) VALUES (2, 4);  -- gentoo
+INSERT INTO featuredproject (id, pillar_name) VALUES (3, 11); -- firefox
+INSERT INTO featuredproject (id, pillar_name) VALUES (4, 27); -- mozilla
+INSERT INTO featuredproject (id, pillar_name) VALUES (5, 15); -- thunderbird
+INSERT INTO featuredproject (id, pillar_name) VALUES (6, 28); -- gnome
+INSERT INTO featuredproject (id, pillar_name) VALUES (7, 13); -- gnome-terminal
+INSERT INTO featuredproject (id, pillar_name) VALUES (8, 16); -- applets
+INSERT INTO featuredproject (id, pillar_name) VALUES (9, 21); -- bazaar
 
 ALTER TABLE featuredproject ENABLE TRIGGER ALL;
 
@@ -3062,6 +3080,13 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (72, 72, 'ubuntu-hoary-translations-update.tar.gz', 'application/x-gtar', NULL, '2007-09-10 19:15:01.67038', '2007-09-10 19:15:01.67038');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (73, 73, 'ubuntu-hoary-translations-update.tar.gz', 'application/x-gtar', NULL, '2007-09-10 19:15:19.947543', '2007-09-10 19:15:19.947543');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (74, 74, 'ubuntu-hoary-translations.tar.gz', 'application/x-gtar', NULL, '2007-09-10 19:16:01.017943', '2007-09-10 19:16:01.017943');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (75, 75, 'cX0Ey6rIIK5MqHphucFPna1fQMt.msg', 'message/rfc822', NULL, '2007-12-18 16:31:34.790641', '2007-12-18 16:31:34.790641');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (76, 76, 'nSpn1l12p7HBplm6e7kaaX6lf86.msg', 'message/rfc822', NULL, '2007-12-18 16:31:34.790641', '2007-12-18 16:31:34.790641');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (77, 77, 'evJ9qHEN3ufdtsDUnGPb8a5hs77.msg', 'message/rfc822', NULL, '2007-12-18 16:31:34.790641', '2007-12-18 16:31:34.790641');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (78, 78, 'jqUQpLymm7f9DjBAAsQoM10WndS.msg', 'message/rfc822', NULL, '2007-12-18 16:31:34.790641', '2007-12-18 16:31:34.790641');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (79, 79, '378cZyfOfUKx6BySEK0HYKz4Tpd.msg', 'message/rfc822', NULL, '2007-12-18 16:31:34.790641', '2007-12-18 16:31:34.790641');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (80, 80, 'unnamed', 'application/pgp-signature; name="signature.asc"', NULL, '2007-12-18 16:31:34.790641', '2007-12-18 16:31:34.790641');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created) VALUES (81, 81, 'jm81HhLQDRDAsqbl74W7GT3cpel.msg', 'message/rfc822', NULL, '2007-12-18 16:31:34.790641', '2007-12-18 16:31:34.790641');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -3138,6 +3163,13 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (72, '2007-09-10 19:15:01.67038', NULL, 221, '0ddef36534d59da64790eeffa55cc0221a01736d', false, 'df6ce34951747929ca9c6a4e2cb78f94');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (73, '2007-09-10 19:15:19.947543', NULL, 217, 'ea265925f6214628dc46e731ca1e131f1e632127', false, '9d19d15feffc620c0d16523e0ce00a54');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (74, '2007-09-10 19:16:01.017943', NULL, 22899, '234acbb3dc11b2af9bc46b6e33f0e453c3b1289d', false, '6d2d916ea729bc875ca0bd739f6be476');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (75, '2007-12-18 16:31:34.790641', NULL, 4296, 'e8b25389964bc3bd471c20a1508d00852ee7de40', false, 'e6b759498b7cde49e9d34e7b8c8b4542');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (76, '2007-12-18 16:31:34.790641', NULL, 2103, 'c154e1c1c2407d9b80c96b63c48d61a94248bf95', false, 'd86630cafdf624a3aa32aba0c41078c5');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (77, '2007-12-18 16:31:34.790641', NULL, 2787, '2d94c4a6a014895f93b581fb0134efe73ae4e2c8', false, '315ef57e5f6ad295e98db65607c5c18a');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (78, '2007-12-18 16:31:34.790641', NULL, 3534, '2bd22db53f2b9e47df50ed731128ff1fc54a5775', false, 'e0d510b49f803a0a4c2b2712d0a80522');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (79, '2007-12-18 16:31:34.790641', NULL, 3327, 'a57356e4cbf97bbb47df202449a95d909d50614a', false, '8c5ffb558a0d0f520887f3d4cbd619c5');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (80, '2007-12-18 16:31:34.790641', NULL, 189, '9800f54c65017e1bafe2d09a13af6176ba0ab244', false, 'a94677aabcd34b0901f1f75a35f7dff3');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (81, '2007-12-18 16:31:34.790641', NULL, 2926, 'b53bb11bc40c42b0f9ecd981561fe9d6f265b275', false, '496cf1cbb97c17a67998478402520ab5');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -3226,6 +3258,16 @@ INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rf
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (37, '2007-07-27 20:00:58.299796', 'Launchpad CSS and JS is not testible', 12, NULL, NULL, '<20070727200058.25131.76173.malonedeb@autumn.annrky-sinzui.local>', NULL, NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (38, '2007-07-27 20:29:46.25854', 'Re: Launchpad CSS and JS is not testible', 12, NULL, NULL, '<20070727202946.25131.16206.malone@autumn.annrky-sinzui.local>', NULL, NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (39, '2007-08-09 11:39:16.836856', 'jokosher exposes personal details in its actions portlet', 63, NULL, NULL, '<20070809113916.26819.83859.malonedeb@localhost.localdomain>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (40, '2004-12-18 16:30:19.103679', 'Nonsensical bugs are useless', 16, NULL, NULL, '<20071218163019.18924.87555.malonedeb@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (41, '2007-12-18 16:30:47.889614', 'Re: Nonsensical bugs are useless', 16, NULL, NULL, '<20071218163048.18924.13348.launchpad@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (42, '2007-12-18 16:30:47.889614', 'Re: Nonsensical bugs are useless', 16, NULL, NULL, '<20071218163048.18924.86681.launchpad@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (43, '2007-12-18 16:31:34.790641', 'Re: Nonsensical bugs are useless', 62, NULL, NULL, '<20071218163134.18996.53651.launchpad@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (44, '2005-05-13 16:37:37', 'gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, NULL, NULL, '<4284D7D1.6010208@gmx.de>', NULL, 75);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (45, '2005-05-17 18:54:29', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243615, 44, NULL, '<20050517185429.GB20786@spring.luon.net>', NULL, 76);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (46, '2005-05-17 19:24:25', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, 45, NULL, '<428A44E9.6090802@gmx.de>', NULL, 77);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (47, '2005-05-17 20:20:44', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243615, 46, NULL, '<20050517202044.GA23231@spring.luon.net>', NULL, 78);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (48, '2005-06-17 14:00:11', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243616, 46, NULL, '<20050617140011.GA15638@piware.de>', NULL, 79);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (49, '2005-06-25 10:13:10', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, NULL, NULL, '<42BD2E36.9090809@gmx.de>', NULL, 81);
 
 
 ALTER TABLE message ENABLE TRIGGER ALL;
@@ -3411,6 +3453,281 @@ T2PIWy0CUJsX8RXSt/M51WE=
 =J2S5
 ', NULL, NULL);
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (39, 39, 1, 'Jokosher discloses to any passerby the fact that I am single and unwed in its actions portlet. Please fix this blatant violacion of privacy now!!', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (40, 40, 1, 'Like this one, natch.', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (41, 41, 1, '** Bug watch added: Debian Bug tracker #308994
+   http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=308994', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (42, 42, 1, '** Also affects: thunderbird via
+   http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=308994
+   Importance: Unknown
+       Status: Unknown', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (43, 43, 1, '** Changed in: thunderbird
+       Status: Unknown => New', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (44, 44, 1, 'Package: gnome-volume-manager
+Version: 1.2.0-1
+Severity: important
+
+When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
+burner on my system, the volume is unreadable, since it gets pmounted
+rw, and blocks get changed. unmounting the volume reports a dirty
+dvd+rw. the same volume is readable if mounted by hand with the
+read-only flag.
+
+
+I''ve filed a bug upstream for this, which is here:
+
+http://bugzilla.gnome.org/show_bug.cgi?id=304070
+
+but wanted it in the debian bug database for user and maintainer reference.
+
+
+-j
+
+
+Debian Release: 3.1
+  APT prefers testing
+  APT policy: (990, ''testing'')
+Architecture: i386 (i686)
+Kernel: Linux 2.6.10
+Locale: LANG=en_US.UTF-8, LC_CTYPE=en_US.UTF-8 (charmap=UTF-8)
+
+Versions of packages gnome-volume-manager depends on:
+ii  dbus-1               0.23.2-3            simple interprocess
+messaging syst
+ii  dbus-glib-1          0.23.2-3            simple interprocess
+messaging syst
+ii  gconf2               2.8.1-5             GNOME configuration
+database syste
+ii  hal                  0.4.7-3             Hardware Abstraction Layer
+ii  libart-2.0-2         2.3.17-1            Library of functions for 2D
+graphi
+ii  libatk1.0-0          1.8.0-4             The ATK accessibility toolkit
+ii  libbonobo2-0         2.8.1-2             Bonobo CORBA interfaces library
+ii  libbonoboui2-0       2.8.1-2             The Bonobo UI library
+ii  libc6                2.3.2.ds1-21        GNU C Library: Shared
+libraries an
+ii  libgconf2-4          2.8.1-5             GNOME configuration
+database syste
+ii  libglade2-0          1:2.4.2-2           library to load .glade
+files at ru
+ii  libglib2.0-0         2.6.4-1             The GLib library of C routines
+ii  libgnome2-0          2.8.1-2             The GNOME 2 library -
+runtime file
+ii  libgnomecanvas2-0    2.8.0-1             A powerful object-oriented
+display
+ii  libgnomeui-0         2.8.1-3             The GNOME 2 libraries (User
+Interf
+ii  libgnomevfs2-0       2.8.4-2             The GNOME virtual
+file-system libr
+ii  libgtk2.0-0          2.6.4-1             The GTK+ graphical user
+interface
+ii  libhal0              0.4.7-3             Hardware Abstraction Layer
+- share
+ii  libice6              4.3.0.dfsg.1-12.0.1 Inter-Client Exchange library
+ii  liborbit2            1:2.12.1-1          libraries for ORBit2 - a
+CORBA ORB
+ii  libpango1.0-0        1.8.1-1             Layout and rendering of
+internatio
+ii  libpopt0             1.7-5               lib for parsing cmdline
+parameters
+ii  libsm6               4.3.0.dfsg.1-12.0.1 X Window System Session
+Management
+ii  libx11-6             4.3.0.dfsg.1-12.0.1 X Window System protocol
+client li
+ii  libxml2              2.6.16-4            GNOME XML library
+ii  pmount               0.7.1-1             mount removable devices as
+normal
+ii  xlibs                4.3.0.dfsg.1-12     X Keyboard Extension (XKB)
+configu
+ii  zlib1g               1:1.2.2-3           compression library - runtime
+
+
+
+
+', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (45, 45, 1, 'reassign 308994 pmount
+thanks, 
+
+On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
+> When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
+> burner on my system, the volume is unreadable, since it gets pmounted
+> rw, and blocks get changed. unmounting the volume reports a dirty
+> dvd+rw. the same volume is readable if mounted by hand with the
+> read-only flag.
+> 
+
+I guess that''s a pmount issue.. Although i don''t completely understand the 
+issue (don''t have a dvd writer).
+
+  Sjoerd
+Air is water with holes in it.
+
+
+', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (46, 46, 1, 'reassign 308994 gnome-volume-manager
+
+Sjoerd Simons wrote:
+> reassign 308994 pmount
+> thanks, 
+> 
+> On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
+> 
+>>When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
+>>burner on my system, the volume is unreadable, since it gets pmounted
+>>rw, and blocks get changed. unmounting the volume reports a dirty
+>>dvd+rw. the same volume is readable if mounted by hand with the
+>>read-only flag.
+>>
+> 
+> 
+> I guess that''s a pmount issue.. Although i don''t completely understand the 
+> issue (don''t have a dvd writer).
+
+hope you don''t mind my re-re-assigning back to you even though I''m not a
+debian-developer.
+
+It''s not a pmount thing, rather gnome-volume-manager has pmount
+hardcoded into it:
+
+josh@spleen:~$  strings /usr/bin/gnome-volume-manager | grep pmount
+/usr/bin/pmount-hal %h
+josh@spleen:~$
+
+and it doesn''t let the user pass options to pmount. Also, the
+gnome-volume-properties dialog has no option to set to mount volumes
+read-only. This is a bug with how gnome-volume-manager uses pmount, not
+with pmount itself.
+
+I think instead of reassigning, you should mark as "forwarded to
+upstream". I already filed the upsteam bug for you:
+
+http://bugzilla.gnome.org/show_bug.cgi?id=304070
+
+
+-josh
+
+
+', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (47, 47, 1, 'reassign 308994 pmount
+thanks,
+
+On Tue, May 17, 2005 at 09:24:25PM +0200, josh wrote:
+> reassign 308994 gnome-volume-manager
+> 
+> Sjoerd Simons wrote:
+> > reassign 308994 pmount
+> > thanks, 
+> > 
+> > On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
+> > 
+> >>When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
+> >>burner on my system, the volume is unreadable, since it gets pmounted
+> >>rw, and blocks get changed. unmounting the volume reports a dirty
+> >>dvd+rw. the same volume is readable if mounted by hand with the
+> >>read-only flag.
+> >>
+> > 
+> > 
+> > I guess that''s a pmount issue.. Although i don''t completely understand the 
+> > issue (don''t have a dvd writer).
+> 
+> hope you don''t mind my re-re-assigning back to you even though I''m not a
+> debian-developer.
+> 
+> It''s not a pmount thing, rather gnome-volume-manager has pmount
+> hardcoded into it:
+> 
+> josh@spleen:~$  strings /usr/bin/gnome-volume-manager | grep pmount
+> /usr/bin/pmount-hal %h
+> josh@spleen:~$
+> 
+> and it doesn''t let the user pass options to pmount. Also, the
+> gnome-volume-properties dialog has no option to set to mount volumes
+> read-only. This is a bug with how gnome-volume-manager uses pmount, not
+> with pmount itself.
+
+pmount-hal''s job is to figure out the right options, so it should
+handle dvd+rw''s right. Worst-case it should be changed to decide mounting ro or
+rw based on an hal property. 
+  
+> I think instead of reassigning, you should mark as "forwarded to
+> upstream". I already filed the upsteam bug for you:
+> 
+> http://bugzilla.gnome.org/show_bug.cgi?id=304070
+
+Upstream doesn''t use pmount, so it''s useless forwarding to upstream. Even more,
+debian''s gnome-volume-manager is so heavily patched that reporting upstream is
+basically useless.. (Not that upstream reacts to us anyway)
+
+  Sjoerd
+The clearest way into the Universe is through a forest wilderness.
+		-- John Muir
+
+
+', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (48, 48, 1, 'Hi!
+
+Usually CD-ROMs are handled in /etc/fstab, so this might not even be a
+pmount bug. However, I do not understand the problem properly. Can you
+please post your /etc/fstab and the output of "mount" here? This will
+tell me the file system of your dvd (UDF, I suppose), and what you
+changed in fstab.
+
+Thanks,
+
+Martin
+Martin Pitt        http://www.piware.de
+Ubuntu Developer   http://www.ubuntu.com
+Debian Developer   http://www.debian.org
+', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (49, 48, 2, NULL, 80, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (50, 49, 1, 'I''ll be happy to add the info you request to the bug report if it will
+help, but I don''t think it will.
+
+The gnome-volume-manager automounts media-volumes for users *without*
+having a mountpoint exist or having any mountpoint info, etc,. in
+/etc/fstab. The debian version uses hal, udev and pmount to do this.
+gnome-volume-manager has pmount with fixed options hardcoded into it:
+
+josh@spleen:~$  strings /usr/bin/gnome-volume-manager | grep pmount
+/usr/bin/pmount-hal %h
+josh@spleen:~$
+
+
+The problem is that dvdrw''s get auto-pmounted by gnome-volume-manager in
+rw mode, which makes the volume unreadable, since blocks get changed
+when mount rw. unmounting the volume by hand in a terminal window
+reports a dirty dvd+rw. the same volume is readable if mounted by hand
+with the read-only flag.
+
+Either gnome-volume-manager needs to be able to pass a read-only mount
+flag to pmount when it automounts a dvdrw, or pmount/hal needs to detect
+an rw and automagically mount readonly.
+
+I didn''t change anything in fstab and there is no entry for cdroms or
+similar in it (well, actually, I did change it...I removed all those
+entries that I had added years ago to user mount cdroms, since
+gnome-volume-manager mounts them for the user...), so this wouldn''t tell
+you anything.
+
+-j
+
+Martin Pitt wrote:
+> Hi!
+> 
+> Usually CD-ROMs are handled in /etc/fstab, so this might not even be a
+> pmount bug. However, I do not understand the problem properly. Can you
+> please post your /etc/fstab and the output of "mount" here? This will
+> tell me the file system of your dvd (UDF, I suppose), and what you
+> changed in fstab.
+> 
+> Thanks,
+> 
+> Martin
+
+
+
+
+', NULL, NULL);
 
 
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;
@@ -3696,6 +4013,9 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243611, 'Owner', 'zpAkRDpNGKvwvoPeBHuuwK4RFNCrwUnEMglcuWfzV1FCZ0M9nskK8w==', NULL, NULL, 'owner', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-14 16:52:15.403833', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'MGWJnTL', NULL, 20, 0, NULL, NULL, 1, true, 1);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243612, 'My Team', NULL, 243611, NULL, 'myteam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-14 16:52:15.403833', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'ewxwdWA', NULL, 10, 0, NULL, NULL, 1, true, 20);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243613, 'Other Team', NULL, 243611, NULL, 'otherteam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-14 16:52:15.403833', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'XPJeTcA', NULL, 10, 0, NULL, NULL, 1, true, 1);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243614, 'josh', NULL, NULL, NULL, 'jbuhl-nospam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, '6KHNEe3', NULL, 10, 0, NULL, NULL, 1, true, 1);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243615, 'Sjoerd Simons', NULL, NULL, NULL, 'sjoerd', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 'yEzBPbd', NULL, 10, 0, NULL, NULL, 1, true, 1);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243616, 'Martin Pitt', NULL, NULL, NULL, 'mpitt', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 'R8FpwXd', NULL, 10, 0, NULL, NULL, 1, true, 1);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -7368,29 +7688,29 @@ ALTER TABLE sourcepackagename ENABLE TRIGGER ALL;
 
 ALTER TABLE sourcepackagerelease DISABLE TRIGGER ALL;
 
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (14, 1, '0.9', '2004-09-27 11:57:13', 1, NULL, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1), pmount', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4), pmount', 'any', NULL, 1, 1, 1, 3, 1, 'Mark Shuttleworth <mark@canonical.com>', '3.6.2', '1.0', 'mozilla-firefox', 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (15, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 2, 1, 9, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (16, 1, '1.0-1', '2005-03-10 16:30:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 3, 1, 10, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (17, 1, '0.99.6-1', '2005-03-14 18:00:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 2, 1, 10, 1, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (20, 1, '0.1-1', '2005-03-24 20:59:31.439579', 1, NULL, 1, 'pmount (0.1-1) hoary; urgency=low
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (14, 1, '0.9', '2004-09-27 11:57:13', 1, NULL, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1), pmount', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4), pmount', 'any', NULL, 1, 1, 1, 3, 1, 'Mark Shuttleworth <mark@canonical.com>', '3.6.2', '1.0', 'mozilla-firefox', 1, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (15, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 2, 1, 9, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (16, 1, '1.0-1', '2005-03-10 16:30:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 3, 1, 10, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (17, 1, '0.99.6-1', '2005-03-14 18:00:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 2, 1, 10, 1, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (20, 1, '0.1-1', '2005-03-24 20:59:31.439579', 1, NULL, 1, 'pmount (0.1-1) hoary; urgency=low
 
  * Fix description (Malone #1)
  * Fix debian (Debian #2000)
  * Fix warty (Warty Ubuntu #1)
 
  -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 2, 1, 14, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (21, 1, '0.1-2', '2005-06-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-2', NULL, NULL, 'powerpc', NULL, 1, 1, 14, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (23, 1, '1.0.8-1ubuntu1', '2005-02-03 08:50:00', 1, NULL, 1, 'alsa-utils (1.0.8-1ubuntu1) warty; urgency=low
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (21, 1, '0.1-2', '2005-06-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-2', NULL, NULL, 'powerpc', NULL, 1, 1, 14, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (23, 1, '1.0.8-1ubuntu1', '2005-02-03 08:50:00', 1, NULL, 1, 'alsa-utils (1.0.8-1ubuntu1) warty; urgency=low
 
  * Placeholder
 
      -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 1, 19, 1, 1, 'Mark Shuttleworth <sabdfl@hbd.com>', '3.6.2', '1.0', 'alsa-mixer', 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (24, 1, '1.0.9a-4', '2005-07-01 22:47:00', 1, NULL, 1, 'alsa-utils (1.0.9a-4) warty; urgency=low
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (24, 1, '1.0.9a-4', '2005-07-01 22:47:00', 1, NULL, 1, 'alsa-utils (1.0.9a-4) warty; urgency=low
 
  * Placeholder
 
      -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'any', NULL, 2, 1, 19, 8, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (25, 1, '1.0.9a-4ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, 'alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (25, 1, '1.0.9a-4ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, 'alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
 
  * Placeholder
  LP: #10
@@ -7398,21 +7718,21 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
  LP: #badid
 
      -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 19, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (26, 1, 'cr.g7-37', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 20, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (27, 1, 'b8p', '2006-02-10 11:19:00', 1, NULL, 1, 'libstdc++ (9.9-1) hoary; urgency=high
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (26, 1, 'cr.g7-37', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 20, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (27, 1, 'b8p', '2006-02-10 11:19:00', 1, NULL, 1, 'libstdc++ (9.9-1) hoary; urgency=high
 
  * Placeholder
 
  -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', NULL, NULL, 'powerpc i386', NULL, 1, 16, 21, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, 16, 22, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 17, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (30, 1, '1.0', '2006-09-28 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 20, 10, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (31, 1, '1.0', '2006-09-28 18:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 20, 10, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (32, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 23, 10, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (33, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 24, 10, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (34, 1, '1.0', '2007-02-15 14:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 29, 16, 25, 10, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (35, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, 16, 26, 1, 1, NULL, NULL, NULL, NULL, 10, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (36, 243606, '1.0-1', '2007-08-09 21:25:37.832976', 1, NULL, 5, 'commercialpackage (1.0-1) breezy; urgency=low
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, 16, 22, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 17, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (30, 1, '1.0', '2006-09-28 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 20, 10, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (31, 1, '1.0', '2006-09-28 18:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 20, 10, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (32, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 23, 10, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (33, 1, '1.0', '2006-12-01 13:19:01', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 1, 16, 24, 10, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (34, 1, '1.0', '2007-02-15 14:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 29, 16, 25, 10, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (35, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 1, 16, 26, 1, 1, NULL, NULL, NULL, NULL, 10, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (36, 243606, '1.0-1', '2007-08-09 21:25:37.832976', 1, NULL, 5, 'commercialpackage (1.0-1) breezy; urgency=low
 
   * Initial version
       Address for testing linkification: Foo Bar <foo.bar@canonical.com>
@@ -7437,7 +7757,7 @@ iD8DBQFGtzTjWhGlTF8G/HcRAtFsAJ4hHyKhOnsUOQDI+SAk000DmFAnUgCcC84J
 3F4bEPeRcnUjCFI/hjR0kxg=
 =Tjln
 ', 7, 243606, 27, 10, 1, 'Julian Edwards <launchpad@julian-edwards.com>', '3.6.2', '1.0', 'commercialpackage', 12, NULL, NULL, NULL);
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (37, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 26, 1, 1, NULL, NULL, NULL, NULL, 11, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (37, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 26, 1, 1, NULL, NULL, NULL, NULL, 11, NULL, NULL, NULL);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
@@ -8131,6 +8451,9 @@ INSERT INTO teamparticipation (id, team, person) VALUES (159, 243612, 243611);
 INSERT INTO teamparticipation (id, team, person) VALUES (160, 243612, 243610);
 INSERT INTO teamparticipation (id, team, person) VALUES (161, 243613, 243613);
 INSERT INTO teamparticipation (id, team, person) VALUES (162, 243613, 243611);
+INSERT INTO teamparticipation (id, team, person) VALUES (163, 243614, 243614);
+INSERT INTO teamparticipation (id, team, person) VALUES (164, 243615, 243615);
+INSERT INTO teamparticipation (id, team, person) VALUES (165, 243616, 243616);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9052,6 +9375,9 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (59, 243608, 'https://w
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (60, 243609, 'https://wiki.ubuntu.com/', 'Katie');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (61, 243610, 'https://wiki.ubuntu.com/', 'GoldMember');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (62, 243611, 'https://wiki.ubuntu.com/', 'Owner');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (63, 243614, 'https://wiki.ubuntu.com/', 'Josh');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (64, 243615, 'https://wiki.ubuntu.com/', 'SjoerdSimons');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (65, 243616, 'https://wiki.ubuntu.com/', 'MartinPitt2');
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;
