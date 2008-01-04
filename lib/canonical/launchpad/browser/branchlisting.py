@@ -24,7 +24,8 @@ from canonical.lp import decorates
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.branch import BranchBadges
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchListingSort,
+    BranchLifecycleStatus, BranchLifecycleStatusFilter,
+    BranchListingDormancy, BranchListingSort,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
     IBranchBatchNavigator, IBranchListingFilter, IBugBranchSet,
     ISpecificationBranchSet)
@@ -189,6 +190,15 @@ class BranchListingView(LaunchpadFormView):
         else:
             return (BranchLifecycleStatus.items[lifecycle_filter.name], )
 
+    @property
+    def show_dormant_branches(self):
+        """Only show dormant branches if explicitly told to by the user."""
+        widget = self.widgets['show_dormant']
+        if widget.hasValidInput():
+            return widget.getInputValue() == BranchListingDormancy.SHOW
+        else:
+            return False
+
     def branches(self):
         """All branches related to this target, sorted for display."""
         # Separate the public property from the underlying virtual method.
@@ -200,17 +210,24 @@ class BranchListingView(LaunchpadFormView):
         This method is called from the `BranchListingBatchNavigator` to
         get the branches to show in the listing.
         """
-        return self._branches(self.selected_lifecycle_status)
+        return self._branches(
+            self.selected_lifecycle_status, self.show_dormant_branches)
 
     def hasAnyBranchesVisibleByUser(self):
         """Does the context have any branches that are visible to the user?"""
-        return self._branches(None).count() > 0
+        return self._branches(None, True).count() > 0
 
-    def _branches(self, lifecycle_status):
+    def _branches(self, lifecycle_status, show_dormant):
         """Return a sequence of branches.
 
         This method is overridden in the derived classes to perform the
         specific query.
+
+        :param lifecycle_status: A filter of the branch's lifecycle status.
+        :param show_dormant: A flag to indicate whether or not to show
+            dormant branches.  A branch is dormant if it has not had any
+            activity for a significant period of time.  The dormant time
+            frame is specified in config.launchpad.branch_dormant_days.
         """
         raise NotImplementedError("Derived classes must implement _branches.")
 
@@ -310,6 +327,8 @@ class NoContextBranchListingView(BranchListingView):
 
     field_names = ['lifecycle']
 
+    # Dormant branches are shown in these listings.
+    show_dormant_branches = True
     no_branch_message = (
         'There are no branches that match the current status filter.')
     extra_columns = ('author', 'product', 'date_created')
@@ -320,8 +339,12 @@ class RecentlyRegisteredBranchesView(NoContextBranchListingView):
 
     page_title = 'Recently registered branches'
 
-    def _branches(self, lifecycle_status):
-        """Return the branches ordered by date created."""
+    def _branches(self, lifecycle_status, show_dormant):
+        """Return the branches ordered by date created.
+
+        The dormant parameter is ignored as the dormant selector widget is
+        not shown for this view.
+        """
         return getUtility(IBranchSet).getRecentlyRegisteredBranches(
             lifecycle_statuses=lifecycle_status,
             visible_by_user=self.user)
@@ -333,8 +356,12 @@ class RecentlyImportedBranchesView(NoContextBranchListingView):
     page_title = 'Recently imported branches'
     extra_columns = ('product', 'date_created')
 
-    def _branches(self, lifecycle_status):
-        """Return imported branches ordered by last update."""
+    def _branches(self, lifecycle_status, show_dormant):
+        """Return imported branches ordered by last update.
+
+        The dormant parameter is ignored as the dormant selector widget is
+        not shown for this view.
+        """
         return getUtility(IBranchSet).getRecentlyImportedBranches(
             lifecycle_statuses=lifecycle_status,
             visible_by_user=self.user)
@@ -345,8 +372,12 @@ class RecentlyChangedBranchesView(NoContextBranchListingView):
 
     page_title = 'Recently changed branches'
 
-    def _branches(self, lifecycle_status):
-        """Return non-imported branches orded by last commit."""
+    def _branches(self, lifecycle_status, show_dormant):
+        """Return non-imported branches orded by last commit.
+
+        The dormant parameter is ignored as the dormant selector widget is
+        not shown for this view.
+        """
         return getUtility(IBranchSet).getRecentlyChangedBranches(
             lifecycle_statuses=lifecycle_status,
             visible_by_user=self.user)

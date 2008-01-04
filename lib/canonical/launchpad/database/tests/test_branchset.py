@@ -11,8 +11,11 @@ import pytz
 
 import transaction
 
+from canonical.config import config
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import (
+    cursor, quote, SQLBase, sqlvalues)
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
@@ -22,6 +25,7 @@ from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchType, BranchVisibilityRule, IBranchSet,
     IPersonSet, IProductSet, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
     PersonCreationRationale, TeamSubscriptionPolicy)
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -100,6 +104,45 @@ class TestBranchSet(TestCase):
             self.assertEqual(expected_branches, branches)
         finally:
             logout()
+
+
+class TestBranchSetDormancyClause(TestCase):
+    """Test that the dormancy clause correctly selects branches."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login(ANONYMOUS)
+        factory = LaunchpadObjectFactory()
+        self.branch_owner = factory.makePerson()
+
+        dormant_days = config.launchpad.branch_dormant_days
+        dormant_cutoff = datetime.now(pytz.UTC) - timedelta(dormant_days)
+
+        # Make two new branches on either side of the cut off period.
+        for delta in [-10, -1, 1, 10]:
+            date_created = dormant_cutoff + timedelta(days=delta)
+            factory.makeBranch(
+                owner=self.branch_owner, date_created=date_created)
+
+    def tearDown(self):
+        logout()
+
+    def test_showDormantBranchClause(self):
+        """Four branches should be returned if showing dormant branches."""
+        branch_set = getUtility(IBranchSet)
+        branch_count = branch_set.getBranchesForPerson(
+            self.branch_owner, show_dormant=True).count()
+        self.assertEqual(4, branch_count,
+                         "Expected 4 branches, got %d" % branch_count)
+
+    def test_hideDormantBranchClause(self):
+        """Two branches should be returned if showing dormant branches."""
+        branch_set = getUtility(IBranchSet)
+        branch_count = branch_set.getBranchesForPerson(
+            self.branch_owner, show_dormant=False).count()
+        self.assertEqual(2, branch_count,
+                         "Expected 2 branches, got %d" % branch_count)
 
 
 class TestBranchSetNewNameValidation(TestCase):

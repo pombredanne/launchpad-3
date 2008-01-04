@@ -24,6 +24,9 @@ function hookUpFilterSubmission () {
   if (getElement('field.sort_by')) {
     connect('field.sort_by', 'onchange', submit_filter);
   }
+  if (getElement('field.show_dormant')) {
+    connect('field.show_dormant', 'onchange', submit_filter);
+  }
 }
 
 registerLaunchpadFunction(hookUpFilterSubmission);

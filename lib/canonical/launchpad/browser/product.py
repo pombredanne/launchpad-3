@@ -1272,9 +1272,10 @@ class ProductBranchesView(BranchListingView):
     def development_focus_branch(self):
         return self.context.development_focus.series_branch
 
-    def _branches(self, lifecycle_status):
+    def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, lifecycle_status, self.user, self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
 
     @property
     def no_branch_message(self):
