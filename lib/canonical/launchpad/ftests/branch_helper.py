@@ -4,8 +4,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'make_branch_dormant',
     'reset_all_branch_last_modified',
-    'set_last_modifed_for_branch',
     ]
 
 from datetime import datetime, timedelta
