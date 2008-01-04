@@ -7,6 +7,16 @@ The branch listing page template and associated view provide batching
 of the branches, filtering of the lifecycle statuses, ordering of
 various kinds and badge decoration.
 
+Branch listing pages now hide dormant branches by default.  Dormant
+branches are branches that have not been updated or committed to for
+some time.
+
+    >>> # To avoid a timebomb for last_modified, reset all branches here.
+    >>> from canonical.launchpad.ftests.branch_helper import (
+    ...     reset_all_branch_last_modified)
+    >>> reset_all_branch_last_modified()
+
+
 == Branch Batching ==
 
 Batching is applied to branch listings where there are many items.
@@ -367,6 +377,48 @@ The branch is not shown as development focus when listed from
 the person context.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    main      Sample Person        New          firefox         Author
+    2.6                            Mature       gnome-terminal  Registrant
+    main                           Development  gnome-terminal  Registrant
+    klingon   Sample Person        Experimental gnome-terminal  Author
+    launchpad Launchpad Developers New          gnome-terminal  Subscriber
+    mirrored                       New          gnome-terminal  Registrant
+
+
+== Hidden dormant branches ==
+
+Branches are hidden by default if they have not been modified in a
+significant period of time.
+
+Here we are going to make two of Sample Person's branches dormant so
+they are not shown by default.
+
+    >>> from canonical.launchpad.ftests.branch_helper import (
+    ...     make_branch_dormant)
+    >>> make_branch_dormant('~name12/gnome-terminal/klingon')
+    >>> make_branch_dormant('~name12/gnome-terminal/mirrored')
+
+The default listing now doesn't show these two branches.
+
+    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    main      Sample Person        New          firefox         Author
+    2.6                            Mature       gnome-terminal  Registrant
+    main                           Development  gnome-terminal  Registrant
+    launchpad Launchpad Developers New          gnome-terminal  Subscriber
+    pushed                         New          gnome-terminal  Registrant
+    scanned                        New          gnome-terminal  Registrant
+
+If we specify that the listing should show dormant branches they
+are shown.
+
+    >>> browser.getControl(name='field.show_dormant').value = ['SHOW']
+    >>> browser.getControl('Filter').click()
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)

@@ -11,6 +11,14 @@ created and imported branches), on the bug details page for bug-branch
 links, and on the blueprint pages when branches are associated with the
 blueprint.
 
+Branch listing pages now hide dormant branches by default.  Dormant
+branches are branches that have not been updated or committed to for
+some time.
+
+    >>> # To avoid a timebomb for last_modified, reset all branches here.
+    >>> from canonical.launchpad.ftests.branch_helper import (
+    ...     reset_all_branch_last_modified)
+    >>> reset_all_branch_last_modified()
 
 == Additional sample data ==
 
