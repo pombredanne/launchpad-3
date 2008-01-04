@@ -16,8 +16,8 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.publisher import LaunchpadView, urlparse
+from canonical.launchpad.webapp import canonical_url, urlparse
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.browser.bugtask import BugTaskView
 from canonical.launchpad.browser import (
     BugsBugTaskSearchListingView, BugTargetView,
