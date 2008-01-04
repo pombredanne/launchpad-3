@@ -1,0 +1,71 @@
+= Searching by tags =
+
+The advanced bug search allows searching for bugs by the tags they are
+tagged with. It is possible to search either inclusively - for bugs
+tagged with any of the specified tags, or exclusively - only for bugs
+tagged with all the specified tags.
+
+First, we create some bugs.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IPersonSet, IProductSet, CreateBugParams)
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+
+    >>> login("foo.bar@canonical.com")
+    >>> firefox = getUtility(IProductSet).get(4)
+    >>> foobar = getUtility(IPersonSet).get(16)
+
+The first bug is tagged with both 'test-tag-1' and 'test-tag-2'.
+
+    >>> params = CreateBugParams(
+    ...     title="test bug a", comment="test bug a", owner=foobar)
+    >>> params.setBugTarget(product=firefox)
+    >>> test_bug_a = getUtility(IBugSet).createBug(params)
+    >>> test_bug_a.tags = ['test-tag-1', 'test-tag-2']
+
+The second bug is tagged with only 'test-tag-1'.
+
+    >>> params = CreateBugParams(
+    ...     title="test bug b", comment="test bug b", owner=foobar)
+    >>> params.setBugTarget(product=firefox)
+    >>> test_bug_b = getUtility(IBugSet).createBug(params)
+    >>> test_bug_b.tags = ['test-tag-1']
+
+    >>> logout()
+
+We go to the bug search page and search for bugs with any of the tags.
+Both bugs are returned.
+
+    >>> browser.open('http://launchpad.dev/firefox/+bugs?advanced=1')
+    >>> browser.getControl(name='field.tag').value = 'test-tag-1 test-tag-2'
+    >>> browser.getControl(name='field.tags_combinator').value = ['ANY']
+    >>> browser.getControl('Search', index=1).click()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'buglisting'))
+    Summary
+    Importance
+    Status
+    16
+    test bug a
+    Undecided
+    New
+    17
+    test bug b
+    Undecided
+    New
+
+When we search for bugs with all the tags, though, only the first bug is
+returned, since it's the only bug with both tags.
+
+    >>> browser.open('http://launchpad.dev/firefox/+bugs?advanced=1')
+    >>> browser.getControl(name='field.tag').value = 'test-tag-1 test-tag-2'
+    >>> browser.getControl(name='field.tags_combinator').value = ['ALL']
+    >>> browser.getControl('Search', index=1).click()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'buglisting'))
+    Summary
+    Importance
+    Status
+    16
+    test bug a
+    Undecided
+    New

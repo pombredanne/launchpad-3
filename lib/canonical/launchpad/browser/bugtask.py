@@ -67,11 +67,12 @@ from canonical.launchpad.webapp import (
     redirection, stepthrough)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugNominationStatus, BugTaskImportance,
-    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay, IBug,
-    IBugAttachmentSet, IBugBranchSet, IBugNominationSet, IBugSet, IBugTask,
-    IBugTaskSearch, IBugTaskSet, ICreateQuestionFromBugTaskForm, ICveSet,
-    IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
+    BugAttachmentType, BugNominationStatus, BugTagsSearchCombinator,
+    BugTaskImportance, BugTaskSearchParams, BugTaskStatus,
+    BugTaskStatusSearchDisplay, IBug, IBugAttachmentSet, IBugBranchSet,
+    IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch, IBugTaskSet,
+    ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
+    IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
     INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
@@ -80,7 +81,7 @@ from canonical.launchpad.interfaces import (
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UnexpectedFormData, valid_upstreamtask, validate_distrotask)
 
-from canonical.launchpad.searchbuilder import any, NULL
+from canonical.launchpad.searchbuilder import all, any, NULL
 
 from canonical.launchpad import helpers
 
@@ -1542,6 +1543,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
     custom_widget('searchtext', NewLineToSpacesWidget)
     custom_widget('status_upstream', LabeledMultiCheckBoxWidget)
     custom_widget('tag', BugTagsWidget)
+    custom_widget('tags_combinator', RadioWidget)
     custom_widget('component', LabeledMultiCheckBoxWidget)
 
     @property
@@ -1736,11 +1738,33 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         # "Normalize" the form data into search arguments.
         form_values = {}
         for key, value in data.items():
+            if key in ('tag'):
+                # Skip tag-related parameters, they
+                # are handled later on.
+                continue
             if zope_isinstance(value, (list, tuple)):
                 if len(value) > 0:
                     form_values[key] = any(*value)
             else:
                 form_values[key] = value
+
+        if 'tag' in data:
+            # Tags require special handling, since they can be used
+            # to search either inclusively or exclusively.
+            # We take a look at the `tags_combinator` field, and wrap
+            # the tag list in the appropraite search directive (either
+            # `any` or `all`). If no value is supplied, we assume `any`,
+            # in order to remain compatible with old saved search URLs.
+            tags = data['tag']
+            tags_combinator_all = (
+                data['tags_combinator'] == BugTagsSearchCombinator.ALL)
+            if zope_isinstance(tags, (list, tuple)) and len(tags) > 0:
+                if tags_combinator_all:
+                    form_values['tag'] = all(*tags)
+                else:
+                    form_values['tag'] = any(*tags)
+            else:
+                form_values['tag'] = tags
 
         search_params = self._getDefaultSearchParams()
         for name, value in form_values.items():
