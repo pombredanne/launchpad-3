@@ -14,16 +14,22 @@
       <h1>Build details</h1>
     </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
+    <metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure context/@@+portlet-details" />
+      <div tal:replace="structure context/@@+portlet-binaries"
+           tal:condition="context/binarypackages"/>
+    </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-<div tal:replace="structure context/@@+portlet-binaries"
-     tal:condition="context/binarypackages"/>
-</metal:rightportlets>
+    <div metal:fill-slot="main">
 
-<div metal:fill-slot="main">
+      <div class="informational message"
+           tal:condition="view/user_can_retry_build">
+         <p> You can <a href="+retry">retry</a> this build if you think
+             the failure was transient. Be aware that the previous
+             buildlog will be purged.</p>
+      </div>
+
+      <div id="build-details" style="padding-top: 1em;">
 
       <table>
         <tbody>
@@ -64,7 +70,7 @@
           </tr>
 
           <tr tal:condition="context/dependencies">
-            <th>Missing Dependencies:</th>
+            <th>Dependencies:</th>
             <td tal:content="context/dependencies" />
           </tr>
 
@@ -98,33 +104,18 @@
                 </tr>
               </tal:bq_started>
             </tal:buildqueue>
-
           </tal:not_built>
 
+          <tal:built condition="context/was_built">
             <tr>
               <th>Started:</th>
               <td tal:condition="context/buildduration">
                 <span
-                  tal:attributes="
-                    title context/calculated_buildstart/fmt:datetime"
-                  tal:content="
-                    context/calculated_buildstart/fmt:approximatedate" />
+                  tal:define="start context/calculated_buildstart"
+                  tal:attributes="title start/fmt:datetime"
+                  tal:content="start/fmt:approximatedate" />
               </td>
               <td tal:condition="not: context/buildduration">
-                 <i>not available</i>
-              </td>
-            </tr>
-
-            <tr>
-              <th>Finished:</th>
-              <td tal:condition="context/datebuilt">
-                <span
-                  tal:attributes="title context/datebuilt/fmt:datetime"
-                  tal:content="context/datebuilt/fmt:approximatedate"/>
-                (took <span tal:replace="
-                       context/buildduration/fmt:approximateduration"/>)
-              </td>
-              <td tal:condition="not: context/datebuilt">
                  <i>not available</i>
               </td>
             </tr>
@@ -139,24 +130,38 @@
                  <i>not available</i>
               </td>
             </tr>
-            <tr>
-              <th>Build log:</th>
-              <td tal:condition="context/buildlog">
-                <a tal:attributes="href context/buildlog/http_url"
-                   tal:content="context/buildlog/filename">BUILDLOG</a>
-              </td>
-              <td tal:condition="not: context/buildlog">
-                <i>not available</i>
-              </td>
-            </tr>
+          </tal:built>
+
+          <tr>
+            <th>Build log:</th>
+            <td tal:condition="context/buildlog">
+              <a tal:attributes="href context/buildlog/http_url"
+                 tal:content="context/buildlog/filename">BUILDLOG</a>
+            </td>
+            <td tal:condition="not: context/buildlog">
+              <i>not available</i>
+            </td>
+          </tr>
+
+          <tr>
+            <th>Finished:</th>
+            <td tal:condition="context/datebuilt">
+              <span
+                tal:attributes="title context/datebuilt/fmt:datetime"
+                tal:content="context/datebuilt/fmt:approximatedate"/>
+              <tal:duration condition="context/buildduration">
+                (took <span tal:replace="
+                     context/buildduration/fmt:approximateduration"/>)
+              </tal:duration>
+            </td>
+            <td tal:condition="not: context/datebuilt">
+               <i>not available</i>
+            </td>
+          </tr>
 
         </tbody>
       </table>
-
-      <p tal:condition="view/user_can_retry_build">
-          Use the 'Retry build' link in the Actions menu if you wish to
-          retry your build.
-      </p>
+      </div>
 
     </div>
   </body>

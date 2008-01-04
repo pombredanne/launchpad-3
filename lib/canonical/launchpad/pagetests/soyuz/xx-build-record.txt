@@ -100,17 +100,17 @@ Also handles attempts to rescore a build in the wrong state:
 Build record inserted by gina that has an unknown build record.
 
     >>> admin_browser.open("http://localhost/+builds/+build/10")
-    >>> admin_browser.contents
-    '...Build details...
-    ...Changes file...not available...
-    ...Component...main...
-    ...Successfully built...
-    ...2006-01-27...
-    ...Started...not available...
-    ...Finished...not available...
-    ...Builder...not available...
-    ...Build log...not available...'
-
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'build-details'))
+    Changes file: not available
+    Archive: ubuntu archive
+    Component: main
+    Status: Successfully built
+    Queued: 2006-01-27
+    Started: not available
+    Builder: not available
+    Build log: not available
+    Finished: not available
 
 == Buildd Admins ==
 
@@ -215,8 +215,12 @@ lp-buildd-admins) have access for retrying PPA build.
 PPA build pages also have some text telling the viewer that they can retry
 the build if that action is possible:
 
-    >>> extract_text(find_main_content(admin_browser.contents))
-    u"...Use the 'Retry build' link in the Actions menu if you wish..."
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Build details
+    You can retry this build if you think
+    the failure was transient. Be aware that the previous
+    buildlog will be purged.
+    ...
 
 PPA owner can 'retry' a build.
 
