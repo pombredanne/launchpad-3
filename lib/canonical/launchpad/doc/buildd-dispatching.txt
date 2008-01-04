@@ -181,6 +181,7 @@ change it to 'untrusted' mode.  This is because PPA builds will only build
 on untrusted builders.
 
   >>> bob_builder.trusted = False
+  >>> bob_builder.vm_host = 'localhost.ppa'
   >>> flush_database_updates()
 
   >>> job = bob_builder.findBuildCandidate()
