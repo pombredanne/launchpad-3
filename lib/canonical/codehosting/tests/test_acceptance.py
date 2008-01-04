@@ -30,15 +30,19 @@ from bzrlib.urlutils import local_path_from_url
 from bzrlib.tests import default_transport, TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
 
+from paramiko import SSHClient, SSHException, MissingHostKeyPolicy
+
 from canonical.codehosting.tests.helpers import (
     adapt_suite, clone_test, deferToThread, ServerTestCase)
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting import branch_id_to_path
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing import TwistedLayer
 
 
@@ -589,6 +593,44 @@ class SmartserverTests(SSHTestCase):
         self.assertIn("Project 'no-such-product' does not exist.", str(error))
 
 
+class OOPSReportingSmartserverTests(SmartserverTests):
+
+    def setUp(self):
+        SmartserverTests.setUp(self)
+        self._oops_prefix = config.launchpad.errorreports.oops_prefix
+        self._errordir = config.launchpad.errorreports.errordir
+        self._copy_to_zlog = config.launchpad.errorreports.copy_to_zlog
+        errorreports = config.codehosting
+        print errorreports.oops_prefix, errorreports.errordir, errorreports.copy_to_zlog
+        config.launchpad.errorreports.oops_prefix = errorreports.oops_prefix
+        config.launchpad.errorreports.errordir = errorreports.errordir
+        config.launchpad.errorreports.copy_to_zlog = errorreports.copy_to_zlog
+        print '***', config.launchpad.errorreports.errordir
+
+    def tearDown(self):
+        SmartserverTests.tearDown(self)
+        config.launchpad.errorreports.oops_prefix = self._oops_prefix
+        config.launchpad.errorreports.errordir = self._errordir
+        config.launchpad.errorreports.copy_to_zlog = self._copy_to_zlog
+
+    def test_blah(self):
+        existing_report = globalErrorUtility.getLastOopsReport()
+        def inner():
+            c = SSHClient()
+            c.set_missing_host_key_policy(MissingHostKeyPolicy())
+            c.connect(
+                'localhost', 22222, 'sabdfl',
+                key_filename=os.path.join(os.environ['HOME'], '.ssh/id_dsa'))
+            try:
+                c.exec_command('sleep')
+            except SSHException:
+                pass
+        d = deferToThread(inner)()
+        def cb(ignored):
+            new_report = globalErrorUtility.getLastOopsReport()
+            self.assertNotEqual(existing_report, new_report)
+        return d.addCallback(cb)
+
 def make_server_tests(base_suite, servers):
     from canonical.codehosting.tests.helpers import (
         CodeHostingTestProviderAdapter)
@@ -617,5 +659,8 @@ def test_suite():
             base_suite, [make_sftp_server, make_bzr_ssh_server]))
     suite.addTest(make_server_tests(
             unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))
+    suite.addTest(make_server_tests(
+            unittest.makeSuite(OOPSReportingSmartserverTests),
+            [make_bzr_ssh_server]))
     suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))
     return suite

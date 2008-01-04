@@ -201,6 +201,22 @@ class ErrorReportingUtility:
         self.copy_to_zlog = config.launchpad.errorreports.copy_to_zlog
         self.lastid_lock = threading.Lock()
 
+    def _findLastOopsIdFilename(self, directory):
+        """XXX.
+        """
+        prefix = config.launchpad.errorreports.oops_prefix
+        lastid = 0
+        lastfilename = None
+        for filename in os.listdir(directory):
+            oopsid = filename.rsplit('.', 1)[1]
+            if not oopsid.startswith(prefix):
+                continue
+            oopsid = oopsid[len(prefix):]
+            if oopsid.isdigit() and int(oopsid) > lastid:
+                lastid = int(oopsid)
+                lastfilename = filename
+        return lastid, lastfilename
+
     def _findLastOopsId(self, directory):
         """Find the last error number used by this Launchpad instance
 
@@ -210,22 +226,29 @@ class ErrorReportingUtility:
         This method is not thread safe, and only intended to be called
         from the constructor.
         """
-        prefix = config.launchpad.errorreports.oops_prefix
-        lastid = 0
-        for filename in os.listdir(directory):
-            oopsid = filename.rsplit('.', 1)[1]
-            if not oopsid.startswith(prefix):
-                continue
-            oopsid = oopsid[len(prefix):]
-            if oopsid.isdigit() and int(oopsid) > lastid:
-                lastid = int(oopsid)
-        return lastid
+        return self._findLastOopsIdFilename(directory)[0]
 
     def getOopsReport(self, time):
         """Return the contents of the OOPS report logged at 'time'."""
         oops_filename = self.getOopsFilename(
             self._findLastOopsId(self.errordir(time)), time)
         oops_report = open(oops_filename, 'r')
+        try:
+            return ErrorReport.read(oops_report)
+        finally:
+            oops_report.close()
+
+    def getLastOopsReport(self):
+        """XXX."""
+        now = datetime.datetime.now(UTC)
+        directory = self.errordir(now)
+        oopsid, filename = self._findLastOopsIdFilename(directory)
+        if filename is None:
+            directory = self.errordir(now - datetime.timedelta(days=1))
+            oopsid, filename = self._findLastOopsIdFilename(directory)
+            if filename is None:
+                return None
+        oops_report = open(os.path.join(directory, filename), 'r')
         try:
             return ErrorReport.read(oops_report)
         finally:
