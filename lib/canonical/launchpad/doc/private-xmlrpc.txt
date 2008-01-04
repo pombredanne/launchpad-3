@@ -43,7 +43,7 @@ the external port.
     ...    transport=XMLRPCTestTransport())
     >>> external_api.filebug(dict(
     ...     product='firefox', summary='the summary', comment='the comment'))
-    'http://bugs.launchpad.dev/bugs/15'
+    'http://bugs.launchpad.dev/bugs/16'
 
 But it is not available on the internal port.
 

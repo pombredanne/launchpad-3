@@ -106,7 +106,25 @@ Another API for adding members is ITeam.addMember(), which ensures the given
 person has a membership entry for that team, regardless of whether the person
 was already an active/inactive member or has never been a member before.
 
+Only the team owner or a launchpad admin can call the addMember method.
+Other users must use the join method if they are going to add themselves
+to a team.
+
+    >>> from zope.security.interfaces import Unauthorized
     >>> sabdfl = personset.getByName('sabdfl')
+    >>> try:
+    ...     t3.addMember(
+    ...         salgado, reviewer=sabdfl, status=TeamMembershipStatus.ADMIN)
+    ... except Unauthorized, info:
+    ...     print Unauthorized, info
+    ... else:
+    ...     print "No exception raised"
+    zope.security.interfaces.Unauthorized (..., 'addMember', 'launchpad.Edit')
+
+Log in as the team owner.
+
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(t3.teamowner.preferredemail.email)
     >>> t3.addMember(
     ...     salgado, reviewer=sabdfl, status=TeamMembershipStatus.ADMIN)
     >>> from canonical.launchpad.interfaces import ITeamMembershipSet
@@ -142,7 +160,6 @@ invitation before the team is made a member.
 Once one of the t2 admins approve the membership, t2 is shown as a member
 of t1.
 
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(t2.teamowner.preferredemail.email)
     >>> t2.acceptInvitationToBeMemberOf(t1, comment='something')
     >>> [m.displayname for m in t1.allmembers]
@@ -162,7 +179,7 @@ add teams as members of other teams. We can do that by passing an extra
 force_team_add=True to addMember(). We'll use that to add t3 as a member of
 t2, thus making all t3 members be considered members of t2 as well.
 
-    >>> login(ANONYMOUS)
+    >>> login(t3.teamowner.preferredemail.email)
     >>> t2.addMember(t3, reviewer=sabdfl, force_team_add=True)
     >>> [m.displayname for m in t2.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't3']
@@ -732,6 +749,7 @@ member of.
 Adding admins as a member of t1 will make Salgado a member of t1 as well.
 
     >>> admins = getUtility(IPersonSet).getByName('admins')
+    >>> login(t1.teamowner.preferredemail.email)
     >>> t1.addMember(admins, reviewer=t1.teamowner, force_team_add=True)
     >>> flush_database_updates()
     >>> print '\n'.join(sorted(

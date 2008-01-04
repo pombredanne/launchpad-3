@@ -18,7 +18,7 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     ILoginTokenSet, IOpenIdApplication, IOpenIDPersistentIdentity,
-    IPersonSet, NotFoundError)
+    IOpenIDRPConfigSet, IPersonSet, NotFoundError)
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import (
@@ -50,6 +50,10 @@ class OpenIdApplicationNavigation(Navigation):
             return OpenIDPersistentIdentity(person)
         else:
             return None
+
+    @stepto('+rpconfig')
+    def rpconfig(self):
+        return getUtility(IOpenIDRPConfigSet)
 
     @stepto('token')
     def token(self):

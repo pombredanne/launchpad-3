@@ -42,7 +42,8 @@ from canonical.launchpad.interfaces import (
     PackageUploadCustomFormat, pocketsuffix, QueueBuildAcceptError,
     QueueInconsistentStateError, QueueStateWriteProtectedError,
     QueueSourceAcceptError, SourcePackageFileType)
-from canonical.launchpad.mail import format_address, simple_sendmail
+from canonical.launchpad.mail import (
+    format_address, signed_message_from_string, simple_sendmail)
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 
@@ -363,6 +364,12 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         return self.archive.purpose == ArchivePurpose.PPA
 
+    def _stripPgpSignature(self, changes_lines):
+        """Strip any PGP signature from the supplied changes lines."""
+        text = "".join(changes_lines)
+        signed_message = signed_message_from_string(text)
+        return signed_message.signedContent.splitlines(True)
+
     def _getChangesDict(self, changes_file_object=None):
         """Return a dictionary with changes file tags in it."""
         changes_lines = None
@@ -374,6 +381,13 @@ class PackageUpload(SQLBase):
 
         unsigned = not self.signing_key
         changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
+
+        if self.isPPA():
+            # Leaving the PGP signature on a package uploaded to a PPA
+            # leaves the possibility of someone hijacking the notification
+            # and uploading to the Ubuntu archive as the signer.
+            changes_lines = self._stripPgpSignature(changes_lines)
+
         return changes, changes_lines
 
     def _buildUploadedFilesList(self):
@@ -711,6 +725,19 @@ class PackageUpload(SQLBase):
         :bcc: Optional email Blind Carbon Copy address(es).
         """
         extra_headers = { 'X-Katie' : 'Launchpad actually' }
+
+        # XXX cprov 20071212: ideally we only need to check archive.purpose,
+        # however the current code in uploadprocessor.py (around line 259)
+        # temporarily transforms the primary-archive into a PPA one (w/o
+        # setting a proper owner) in order to allow processing of a upload
+        # to unknown PPA and subsequent rejection notification.
+
+        # Include the 'X-Launchpad-PPA' header for PPA upload notfications
+        # containing the PPA owner name.
+        if (self.archive.purpose == ArchivePurpose.PPA and
+            self.archive.owner):
+            extra_headers['X-Launchpad-PPA'] = self.archive.owner.name
+
         if from_addr is None:
             from_addr = format_address(
                 config.uploader.default_sender_name,

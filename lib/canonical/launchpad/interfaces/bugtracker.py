@@ -104,6 +104,12 @@ class BugTrackerType(DBEnumeratedType):
         Mantis is a web-based bug tracking system written in PHP.
         """)
 
+    RT = DBItem(7, """
+        Request Tracker (RT)
+
+        RT is a web-based ticketing system written in Perl.
+        """)
+
 
 class IBugTracker(Interface):
     """A remote a bug system."""

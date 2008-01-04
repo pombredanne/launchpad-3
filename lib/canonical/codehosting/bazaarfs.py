@@ -94,7 +94,8 @@ class SFTPServerUserDir(adhoc.AdhocDirectory, LoggingMixin):
 
         # Create directories for products that have branches.
         # avatar.branches[lpid] is a list of the form:
-        #    [(product id, product name, [(branch id, branch name), ...]), ...]
+        #    [(product id, product name,
+        #        [(branch id, branch name), ...]), ...]
         for productID, productName, branches in avatar.branches[lpid]:
             if productID == '':
                 productID = None
@@ -135,13 +136,15 @@ class SFTPServerUserDir(adhoc.AdhocDirectory, LoggingMixin):
 
     def createDirectory(self, childName):
         # XXX AndrewBennetts 2006-02-06: this returns a Deferred, but the
-        # upstream VFS code is still synchronous.  Upstream needs fixing
-        # (http://twistedmatrix.com/bugs/issue1223).  Luckily upstream SFTP code
-        # still does the right thing despite this, but that's not guaranteed.
+        # upstream VFS code is still synchronous. Upstream needs fixing
+        # (http://twistedmatrix.com/bugs/issue1223). Luckily upstream SFTP
+        # code still does the right thing despite this, but that's not
+        # guaranteed.
         assert childName != '+junk', "+junk already exists (if it's allowed)."
         # Check that childName is a product name registered in Launchpad.
         self.avatar.logger.debug(
-            "Creating virtual product directory for %r in %r", childName, self)
+            "Creating virtual product directory for %r in %r",
+            childName, self)
         deferred = self.avatar.fetchProductID(childName)
         def cb(productID):
             if productID is None:
@@ -209,8 +212,8 @@ class SFTPServerProductDir(adhoc.AdhocDirectory, LoggingMixin):
         # (e.g. invalid name),that we report a useful error to the client.
         if self.exists(childName):
             self.avatar.logger.debug(
-                'Tried to create branch directory %r under %r. Already exists',
-                childName, self)
+                'Tried to create branch directory %r under %r. '
+                'Already exists', childName, self)
             return self.child(childName)
         self.avatar.logger.debug(
             'Create branch directory %r under %r.', childName, self)
@@ -313,7 +316,8 @@ class WriteLoggingDirectory(osfs.OSDirectory, LoggingMixin):
         that this branch be mirrored.
         """
         if is_lock_directory(self.getAbsolutePath()):
-            self.avatar._launchpad.requestMirror(self.getBranchID())
+            self.avatar._launchpad.requestMirror(
+                self.avatar.lpid, self.getBranchID())
         self.logger.info('Renaming %r to %r', self, newName)
         osfs.OSDirectory.rename(self, newName)
 

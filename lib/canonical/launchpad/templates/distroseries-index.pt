@@ -55,18 +55,10 @@
           tal:condition="context/getLatestUploads"
           tal:content="structure context/@@+portlet-latestuploads"
         />
-        <div class="section" tal:condition="context/architectures">
-          <h2>Architectures</h2>
-          <ul class="architecture">
-            <li tal:repeat="architecture context/architectures">
-              <a tal:attributes="href architecture/fmt:url">
-                <tal:name replace="architecture/displayname" />
-                <tal:official condition="architecture/official"
-                >(official)</tal:official>
-              </a>
-            </li>
-          </ul>
-        </div>
+        <div
+          class="section"
+          tal:content="structure context/@@+pagelet-architectures"
+        />
         <div
           class="section"
           tal:content="structure context/@@+portlet-latestspecs"

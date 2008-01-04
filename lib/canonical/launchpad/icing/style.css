@@ -120,7 +120,6 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
   margin: 0.25em 0 0;
   padding: 0 0 0 25px;
   background: 0 0 no-repeat;
-  
 }
 .error {color: #db1f22;}
 .error.message, .error .message {
@@ -134,7 +133,7 @@ td.error {
 .warning.message, .warning .message {
   background-image: url(/@@/warning);
 }
-.helpwanted {background-color: #fafca9; color: black; border: 1px solid black; 
+.helpwanted {background-color: #fafca9; color: black; border: 1px solid black;
     padding: 0.5em; font-size: smaller; padding-left: 3em
 }
 .helpwanted.message, .helpwanted .message {
@@ -147,6 +146,15 @@ td.error {
 .debugging {background-color: #666; color: white;}
 .debugging.message, .debugging .message {
   background-image: url(/@@/info);
+}
+/* Guidelines, e.g. bug reporting guidelines. Content is typically
+ * provided by users, and rendered by text-to-html. Child elements
+ * are thus expected to be paragraphs.
+ */
+.guidelines {
+  font-weight: bold;
+  background-color: #fafca9; border: 1px solid #999;
+  margin: 0; padding: 0 1em;
 }
 
 /* --- Form controls --- */
@@ -649,7 +657,7 @@ body.freeform #globalfooter {
 }
 #colophon            {float: left;                     width: 49%;}
 #applications-footer {float: right; text-align: right; width: 49%;}
-#copyright           {float: right; text-align: right; width: 45%;}
+#copyright           {float: right; text-align: right; width: 48%;}
 
 /* === Specific page layouts === */
 

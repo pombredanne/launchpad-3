@@ -377,6 +377,14 @@ if [ $? -ne 0 ]; then
   echo "WARNING: /usr/local/bin/rocketfuel-get should be deleted so I can
          recreate it."
 fi
+if [ ! -e rocketfuel-flakes ]; then
+  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-flakes
+fi
+ls -l rocketfuel-flakes | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+if [ $? -ne 0 ]; then
+  echo "WARNING: /usr/local/bin/rocketfuel-flakes should be deleted so I can
+         recreate it."
+fi
 if [ ! -e rocketfuel-branch ]; then
   sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-branch
 fi

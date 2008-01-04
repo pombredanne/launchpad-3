@@ -17,6 +17,7 @@ import sha
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
+from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, MultipleJoin, SQLMultipleJoin,
@@ -52,7 +53,8 @@ from canonical.launchpad.interfaces import (
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
     IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType, PersonCreationRationale,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType,
+    PersonCreationRationale, PersonVisibility,
     QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
     ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
@@ -214,6 +216,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     timezone = StringCol(dbName='timezone', default='UTC')
 
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
+    visibility = EnumCol(
+        enum=PersonVisibility,
+        default=PersonVisibility.PUBLIC)
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
@@ -1091,7 +1096,13 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             raise AssertionError(
                 "Unknown subscription policy: %s" % team.subscriptionpolicy)
 
-        team.addMember(self, reviewer=self, status=status)
+        # XXX Edwin Grubbs 2007-12-14 bug=117980
+        # removeSecurityProxy won't be necessary after addMember()
+        # is configured to call a method on the new member, so the
+        # security configuration will verify that the logged in user
+        # has the right permission to add the specified person to the team.
+        naked_team = removeSecurityProxy(team)
+        naked_team.addMember(self, reviewer=self, status=status)
 
     def clearInTeamCache(self):
         """See `IPerson`."""

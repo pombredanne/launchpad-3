@@ -506,10 +506,10 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
         session = ISession(self.request)
         authdata = session['launchpad.authenticateduser']
         previous_login = authdata.get('personid')
-        assert previous_login is not None, "User is not logged in."
-        authdata['personid'] = None
-        authdata['logintime'] = datetime.utcnow()
-        notify(LoggedOutEvent(self.request))
+        if previous_login is not None:
+            authdata['personid'] = None
+            authdata['logintime'] = datetime.utcnow()
+            notify(LoggedOutEvent(self.request))
         # Display the unauthenticated form
         return LoginServiceLoginView(
             self.context, self.request, self.nonce)()

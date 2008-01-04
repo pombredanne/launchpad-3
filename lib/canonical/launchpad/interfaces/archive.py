@@ -77,7 +77,8 @@ class IArchive(IHasOwner):
         """
 
     def getPublishedSources(name=None, version=None, status=None,
-                            distroseries=None, exact_match=False):
+                            distroseries=None, pocket=None,
+                            exact_match=False):
         """All `ISourcePackagePublishingHistory` target to this archive.
 
         :param: name: source name filter (exact match or SQL LIKE controlled
@@ -85,6 +86,7 @@ class IArchive(IHasOwner):
         :param: version: source version filter (always exact match).
         :param: status: `PackagePublishingStatus` filter, can be a list.
         :param: distroseries: `IDistroSeries` filter.
+        :param: pocket: `PackagePublishingPocket` filter.
         :param: exact_match: either or not filter source names by exact
                              matching.
 
@@ -106,6 +108,7 @@ class IArchive(IHasOwner):
         :param: version: binary version filter (always exact match).
         :param: status: `PackagePublishingStatus` filter, can be a list.
         :param: distroarchseries: `IDistroArchSeries` filter, can be a list.
+        :param: pocket: `PackagePublishingPocket` filter.
         :param: exact_match: either or not filter source names by exact
                              matching.
 
@@ -123,6 +126,7 @@ class IArchive(IHasOwner):
         :param: version: binary version filter (always exact match).
         :param: status: `PackagePublishingStatus` filter, can be a list.
         :param: distroarchseries: `IDistroArchSeries` filter, can be a list.
+        :param: pocket: `PackagePublishingPocket` filter.
         :param: exact_match: either or not filter source names by exact
                              matching.
 

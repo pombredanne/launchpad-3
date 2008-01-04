@@ -16,7 +16,7 @@
                       driver members owner bugcontact
                       security_contact upload_admin upload_sender
                       mirror_admin homepage_content icon logo
-                      mugshot"
+                      mugshot bug_reporting_guidelines"
       />
     <require
       permission="launchpad.Admin"
@@ -306,6 +306,9 @@
     <browser:page
       name="+portlet-aboutcve"
       template="../templates/portlet-aboutcve.pt" />
+    <browser:page
+      name="+portlet-ppa-architectures"
+      template="../templates/distribution-portlet-ppa-architectures.pt" />
   </browser:pages>
 
   <browser:pages
