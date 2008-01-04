@@ -47,7 +47,6 @@ from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.validators import LaunchpadValidationError
 
 
 class Branch(SQLBase):
@@ -84,7 +83,7 @@ class Branch(SQLBase):
     last_mirror_attempt = UtcDateTimeCol(default=None)
     mirror_failures = IntCol(default=0, notNull=True)
     pull_disabled = BoolCol(default=False, notNull=True)
-    mirror_request_time = UtcDateTimeCol(default=None)
+    next_mirror_time = UtcDateTimeCol(default=None)
 
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
@@ -184,7 +183,7 @@ class Branch(SQLBase):
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created)
 
-    mirror_request_time = UtcDateTimeCol(default=None)
+    next_mirror_time = UtcDateTimeCol(default=None)
 
     @property
     def code_is_browseable(self):
@@ -427,9 +426,9 @@ class Branch(SQLBase):
         """See `IBranch`."""
         if self.branch_type == BranchType.REMOTE:
             raise BranchTypeError(self.unique_name)
-        self.mirror_request_time = UTC_NOW
+        self.next_mirror_time = UTC_NOW
         self.syncUpdate()
-        return self.mirror_request_time
+        return self.next_mirror_time
 
     def startMirroring(self):
         """See `IBranch`."""
@@ -447,14 +446,15 @@ class Branch(SQLBase):
         self.last_mirrored = self.last_mirror_attempt
         self.mirror_failures = 0
         self.mirror_status_message = None
-        if (self.mirror_request_time != None
-            and self.last_mirror_attempt > self.mirror_request_time):
+        if (self.next_mirror_time != None
+            and self.last_mirror_attempt > self.next_mirror_time):
             # No mirror was requested since we started mirroring.
             if self.branch_type == BranchType.MIRRORED:
-                self.mirror_request_time = (
-                    datetime.now(pytz.timezone('UTC')) + MIRROR_TIME_INCREMENT)
+                self.next_mirror_time = (
+                    datetime.now(pytz.timezone('UTC')) +
+                    MIRROR_TIME_INCREMENT)
             else:
-                self.mirror_request_time = None
+                self.next_mirror_time = None
         self.last_mirrored_id = last_revision_id
         self.syncUpdate()
 
@@ -466,11 +466,11 @@ class Branch(SQLBase):
         self.mirror_status_message = reason
         if (self.branch_type == BranchType.MIRRORED
             and self.mirror_failures < MAXIMUM_MIRROR_FAILURES):
-            self.mirror_request_time = (
+            self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC'))
                 + MIRROR_TIME_INCREMENT * 2 ** (self.mirror_failures - 1))
         else:
-            self.mirror_request_time = None
+            self.next_mirror_time = None
         self.syncUpdate()
 
 
@@ -603,7 +603,8 @@ class BranchSet:
         """
         PUBLIC_BRANCH = (False, None)
         PRIVATE_BRANCH = (True, None)
-        # You are not allowed to specify an owner that you are not a member of.
+        # You are not allowed to specify an owner that you are not a member
+        # of.
         if not creator.inTeam(owner):
             if owner.isTeam():
                 raise BranchCreatorNotMemberOfOwnerTeam(
@@ -667,7 +668,7 @@ class BranchSet:
             return PUBLIC_BRANCH
         else:
             membership_teams = rule_memberships.itervalues()
-            owner_membership = reduce(lambda x,y: x+y, membership_teams)
+            owner_membership = reduce(lambda x, y: x + y, membership_teams)
             assert len(owner_membership) == 0, (
                 'The owner should not be a member of any team that has '
                 'a specified team policy.')
@@ -760,14 +761,14 @@ class BranchSet:
                      + " AND Branch.product IS NULL"
                      + " AND Person.name = " + quote(owner_name)
                      + " AND Branch.name = " + quote(branch_name))
-            tables=['Person']
+            tables = ['Person']
         else:
             query = ("Branch.owner = Person.id"
                      + " AND Branch.product = Product.id"
                      + " AND Person.name = " + quote(owner_name)
                      + " AND Product.name = " + quote(product_name)
                      + " AND Branch.name = " + quote(branch_name))
-            tables=['Person', 'Product']
+            tables = ['Person', 'Product']
         branch = Branch.selectOne(query, clauseTables=tables)
         if branch is None:
             return default
@@ -1107,5 +1108,15 @@ class BranchSet:
         """See `IBranchSet`."""
         return Branch.select(
             AND(Branch.q.branch_type == branch_type,
-                Branch.q.mirror_request_time < UTC_NOW),
-            prejoins=['owner', 'product'], orderBy='mirror_request_time')
+                Branch.q.next_mirror_time < UTC_NOW),
+            prejoins=['owner', 'product'], orderBy='next_mirror_time')
+
+    def getTargetBranchesForUsersMergeProposals(self, user, product):
+        """See `IBranchSet`."""
+        return Branch.select("""
+            BranchMergeProposal.target_branch = Branch.id
+            AND BranchMergeProposal.registrant = %s
+            AND Branch.product = %s
+            """ % sqlvalues(user, product),
+            clauseTables=['BranchMergeProposal'],
+            orderBy=['owner', 'name'], distinct=True)

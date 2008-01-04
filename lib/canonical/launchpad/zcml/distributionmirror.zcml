@@ -16,7 +16,7 @@
                             country content official_candidate" />
         <require
             permission="launchpad.Admin"
-            set_attributes="official_approved owner whiteboard" />
+            set_attributes="status owner whiteboard reviewer date_reviewed" />
         <require
             permission="launchpad.Admin"
             attributes="destroySelf" />
@@ -62,11 +62,11 @@
     </browser:page>
 
     <browser:page
-        name="+mark-official"
+        name="+review"
         for="canonical.launchpad.interfaces.IDistributionMirror"
         permission="launchpad.Admin"
-        class="canonical.launchpad.browser.DistributionMirrorOfficialApproveView"
-        template="../templates/distributionmirror-mark-official.pt">
+        class="canonical.launchpad.browser.DistributionMirrorReviewView"
+        template="../templates/distributionmirror-review.pt">
     </browser:page>
 
     <browser:page

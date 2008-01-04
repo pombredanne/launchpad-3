@@ -80,15 +80,15 @@ class TestBranchView(unittest.TestCase):
                 'product': arbitrary_product
                 }
             add_view.add_action.success(data)
-            # Make sure that mirror_request_time is a datetime, not an
-            # sqlbuilder expression.
+            # Make sure that next_mirror_time is a datetime, not an sqlbuilder
+            # expression.
             removeSecurityProxy(add_view.branch).sync()
             now = datetime.now(pytz.timezone('UTC'))
-            self.assertNotEqual(None, add_view.branch.mirror_request_time)
+            self.assertNotEqual(None, add_view.branch.next_mirror_time)
             self.assertTrue(
-                add_view.branch.mirror_request_time < now,
-                "mirror_request_time not set to UTC_NOW: %s < %s"
-                % (add_view.branch.mirror_request_time, now))
+                add_view.branch.next_mirror_time < now,
+                "next_mirror_time not set to UTC_NOW: %s < %s"
+                % (add_view.branch.next_mirror_time, now))
         finally:
             logout()
 

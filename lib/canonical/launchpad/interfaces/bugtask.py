@@ -37,18 +37,17 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Bool, Choice, Datetime, Field, Int, List, Set, Text, TextLine)
+    Bool, Choice, Datetime, Field, Int, List, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from sqlos.interfaces import ISelectResults
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    Description, ProductNameField, StrippedTextLine, Summary, Tag)
+    ProductNameField, StrippedTextLine, Summary, Tag)
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
-from canonical.launchpad.interfaces.product import License
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -877,11 +876,18 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distroseries must be provided.
         """
 
-    def findExpirableBugTasks(min_days_old, bug=None):
+    def findExpirableBugTasks(min_days_old, bug=None, target=None):
         """Return a list of bugtasks that are at least min_days_old.
 
-        When a bug is passed as an argument, only bugtasks that belong
-        to the bug may be returned, otherwise all bugs are searched.
+        :param min_days_old: An int representing the minimum days of
+            inactivity for a bugtask to be considered expirable. Setting
+            this parameter to 0 will return all bugtask that can expire.
+        :param bug: An `IBug`. If a bug is provided, only bugtasks that belong
+            to the bug may be returned. If bug is None, all bugs are searched.
+        :param target: An `IBugTarget`. If a target is provided, only
+            bugtasks that belong to the target may be returned. If target
+            is None, all bugtargets are searched.
+        :return: A ResultSet of bugtasks that are considered expirable.
 
         A bugtask is expirable if its status is Incomplete, and the bug
         report has been never been confirmed, and it has been inactive for

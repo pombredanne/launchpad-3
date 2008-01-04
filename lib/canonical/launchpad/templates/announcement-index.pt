@@ -1,0 +1,29 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1 tal:content="context/title">Announcement headline</h1>
+
+  <p tal:replace="structure context/summary/fmt:text-to-html">
+    Summary of the announcement
+  </p>
+
+  <p tal:condition="context/url">
+    <a tal:attributes="href context/url">Read more...</a>
+  </p>
+
+</div>
+</body>
+</html>

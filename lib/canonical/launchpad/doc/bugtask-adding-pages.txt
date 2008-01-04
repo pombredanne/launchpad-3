@@ -173,9 +173,8 @@ package linked to an inactive upstream. -- Guilherme Salgado, 2007-09-18
     True
 
     # Mark the upstream as inactive.
-    >>> login('foo.bar@canonical.com')
-    >>> upstream.active = False
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(upstream).active = False
     >>> removeSecurityProxy(upstream).syncUpdate()
 
     >>> add_task_view = get_and_setup_view(
@@ -191,9 +190,8 @@ package linked to an inactive upstream. -- Guilherme Salgado, 2007-09-18
     This package is linked to an inactive upstream...
 
     # Mark the upstream back as active.
-    >>> upstream.active = True
+    >>> removeSecurityProxy(upstream).active = True
     >>> removeSecurityProxy(upstream).syncUpdate()
-    >>> login('foo.bar@canonical.com')
 
 Let's take a look at the second step now, where we may enter the URL of
 the remote bug and confirm the bugtask creation.
@@ -514,6 +512,23 @@ we'll present only the ones whose name is similar to what the user entered.
     >>> [product.name for product in add_task_view.existing_products]
     [u'foo-product']
 
+Here another user will choose to report a bug on the existing project.
+Note that we use another user to make sure our code doesn't attempt to
+change the bugtracker of the existing project, as that wouldn't make
+sense and could fail when the user didn't have the necessary rights on the
+project in question.
+
+    >>> login('no-priv@canonical.com')
+    >>> dummy = form.pop('field.actions.continue')
+    >>> form['field.existing_product'] = 'foo-product'
+    >>> form['field.actions.use_existing_product'] = 1
+    >>> bugtask_one = getUtility(IBugSet).get(1).bugtasks[0]
+    >>> add_task_view = create_view(
+    ...     bugtask_one, '+affects-new-product', form=form, method='POST')
+    >>> add_task_view.initialize()
+    >>> add_task_view.errors
+    []
+    >>> login('test@canonical.com')
 
 == IAddBugTaskForm Interface Definition ==
 

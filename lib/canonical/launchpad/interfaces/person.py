@@ -23,6 +23,7 @@ __all__ = [
     'ITeamReassignment',
     'JoinNotAllowed',
     'PersonCreationRationale',
+    'PersonVisibility',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamMembershipStatus',
@@ -202,6 +203,13 @@ class PersonCreationRationale(DBEnumeratedType):
         hardware database.
         """)
 
+    BUGWATCH = DBItem(15, """
+        Created by the updating of a bug watch.
+
+        A watch was made against a remote bug that the user submitted or
+        commented on.
+        """)
+
 class TeamMembershipRenewalPolicy(DBEnumeratedType):
     """TeamMembership Renewal Policy.
 
@@ -317,6 +325,34 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
         Restricted Team
 
         New members can only be added by one of the team's administrators.
+        """)
+
+
+class PersonVisibility(DBEnumeratedType):
+    """The visibility level of person or team objects.
+
+    Currently, only teams can have their visibility set to something
+    besides PUBLIC.
+    """
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Everyone can view all the attributes of this person.
+        """)
+
+    PRIVATE_MEMBERSHIP = DBItem(20, """
+        Private Membership
+
+        Only launchpad admins and team members can view the
+        membership list for this team.
+        """)
+
+    PRIVATE = DBItem(30, """
+        Private
+
+        Only launchpad admins and team members can see that
+        this team even exists in launchpad.
         """)
 
 
@@ -717,6 +753,11 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     entitlements = Attribute("List of Entitlements for this person or team.")
 
+    visibility = Choice(
+        title=_("Teams may be Public, Private Membership, or Private."),
+        required=True, vocabulary=PersonVisibility,
+        default=PersonVisibility.PUBLIC)
+
     @invariant
     def personCannotHaveIcon(person):
         """Only Persons can have icons."""
@@ -847,6 +888,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
 
+    # XXX BarryWarsaw 29-Nov-2007 I'd prefer for this to be an Object() with a
+    # schema of IMailingList, but setting that up correctly causes a circular
+    # import error with interfaces.mailinglists that is too difficult to
+    # unfunge for this one attribute.
+    mailing_list = Attribute(
+        _("The team's mailing list, if it has one, otherwise None."))
+
     def getProjectsAndCategoriesContributedTo(limit=10):
         """Return a list of dicts with projects and the contributions made
         by this person on that project.
@@ -894,13 +942,17 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
+
+        <team> can be the id of a team, an SQLObject representing the
+        ITeam, or the name of the team.
         """
 
     def clearInTeamCache():
         """Clears the person's inTeam cache.
 
         To be used when membership changes are enacted. Only meant to be
-        used between TeamMembership and Person objects."""
+        used between TeamMembership and Person objects.
+        """
 
     def lastShippedRequest():
         """Return this person's last shipped request, or None."""

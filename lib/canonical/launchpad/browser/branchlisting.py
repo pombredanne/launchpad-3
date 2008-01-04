@@ -43,13 +43,14 @@ class BranchListingItem(BranchBadges):
     decorates(IBranch, 'branch')
 
     def __init__(self, branch, last_commit, now, role, show_bug_badge,
-                 show_blueprint_badge):
+                 show_blueprint_badge, is_dev_focus):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
         self.show_blueprint_badge = show_blueprint_badge
         self.role = role
         self._now = now
+        self.is_development_focus = is_dev_focus
 
     @property
     def elapsed_time(self):
@@ -115,9 +116,18 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         show_bug_badge = branch.id in self.has_bug_branch_links
         show_blueprint_badge = branch.id in self.has_branch_spec_links
         role = self.view.roleForBranch(branch)
+        # XXX thumper 2007-11-14
+        # We can't do equality checks here due to BranchWithSortKeys
+        # being constructed from the BranchSet queries, and the development
+        # focus branch being an actual Branch instance.
+        if self.view.development_focus_branch is None:
+            is_dev_focus = False
+        else:
+            is_dev_focus = (
+                branch.id == self.view.development_focus_branch.id)
         return BranchListingItem(
             branch, last_commit, self._now, role, show_bug_badge,
-            show_blueprint_badge)
+            show_blueprint_badge, is_dev_focus)
 
     def branches(self):
         """Return a list of BranchListingItems."""
@@ -142,6 +152,7 @@ class BranchListingView(LaunchpadFormView):
     """A base class for views of branch listings."""
     schema = IBranchListingFilter
     field_names = ['lifecycle', 'sort_by']
+    development_focus_branch = None
     custom_widget('lifecycle', LaunchpadDropdownWidget)
     custom_widget('sort_by', LaunchpadDropdownWidget)
     extra_columns = []
@@ -329,7 +340,7 @@ class RecentlyImportedBranchesView(NoContextBranchListingView):
 
 
 class RecentlyChangedBranchesView(NoContextBranchListingView):
-    """A batched view of non-imported branches ordered by last scanned time."""
+    """Batched view of non-imported branches ordered by last scanned time."""
 
     page_title = 'Recently changed branches'
 

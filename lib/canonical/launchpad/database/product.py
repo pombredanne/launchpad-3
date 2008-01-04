@@ -31,6 +31,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.productlicense import ProductLicense
@@ -45,8 +46,8 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, IFAQTarget,
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, IFAQTarget, IHasIcon,
+    IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILaunchpadUsage, IPersonSet, IProduct,
     IProductSet, IQuestionTarget, License, NotFoundError,
     QUESTION_STATUS_DEFAULT_SEARCH, SpecificationSort, SpecificationFilter,
@@ -54,9 +55,11 @@ from canonical.launchpad.interfaces import (
     TranslationPermission)
 
 
-class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
-              KarmaContextMixin, BranchVisibilityPolicyMixin,
-              QuestionTargetMixin, HasTranslationImportsMixin):
+class Product(SQLBase, BugTargetBase, MakesAnnouncements,
+              HasSpecificationsMixin, HasSprintsMixin, KarmaContextMixin,
+              BranchVisibilityPolicyMixin, QuestionTargetMixin,
+              HasTranslationImportsMixin):
+
     """A Product."""
 
     implements(IFAQTarget, IHasLogo, IHasMugshot, IHasIcon,
@@ -113,6 +116,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
         dbName='official_rosetta', notNull=True, default=False)
+    enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
+        notNull=True, default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     private_bugs = BoolCol(
@@ -126,6 +131,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     development_focus = ForeignKey(
         foreignKey="ProductSeries", dbName="development_focus", notNull=False,
         default=None)
+    bug_reporting_guidelines = StringCol(default=None)
 
     license_info = StringCol(dbName='license_info', default=None)
 

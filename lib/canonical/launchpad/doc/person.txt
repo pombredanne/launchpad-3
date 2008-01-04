@@ -223,7 +223,9 @@ The team owner is also added as an administrator of its team.
 
 And we can even add other members to our new team!
 
+    >>> login('foo.bar@canonical.com')
     >>> not_a_person.addMember(lifeless, reviewer=ddaa)
+    >>> login(ANONYMOUS)
     >>> [member.name for member in not_a_person.activemembers]
     [u'ddaa', u'lifeless']
 
@@ -700,6 +702,7 @@ projects.
     project: Liba52 Test Decoder (a52dec)
     project: Gnome Baker (gnomebaker)
     project: ALSA utilities (alsa-utils)
+    project: Derby - Java Database (derby)
 
     >>> for pillarname in ubuntu_team.getOwnedOrDrivenPillars():
     ...     print_pillar(pillarname)

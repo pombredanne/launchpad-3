@@ -28,7 +28,8 @@ from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchive, IPPAActivateForm, IArchiveSet, IBuildSet,
-    IHasBuildRecords, NotFoundError, PackagePublishingStatus)
+    IHasBuildRecords, ILaunchpadCelebrities, NotFoundError,
+    PackagePublishingStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
@@ -96,7 +97,7 @@ class ArchiveView(LaunchpadView):
     __used_for__ = IArchive
 
     def initialize(self):
-        """Set up select control and our batched list of publishing records."""
+        """Set up select control and a batched list of publishing records."""
         entries = SourcesListEntries(self.context.distribution,
                                      self.context.archive_url,
                                      self.context.series_with_sources)
@@ -187,8 +188,10 @@ class ArchiveActivateView(LaunchpadFormView):
     def initialize(self):
         """Redirects user to the PPA page if it is already activated."""
         LaunchpadFormView.initialize(self)
+        self.distribution = getUtility(ILaunchpadCelebrities).ubuntu
         if self.context.archive is not None:
-            self.request.response.redirect(canonical_url(self.context.archive))
+            self.request.response.redirect(
+                canonical_url(self.context.archive))
 
     def validate(self, data):
         """Ensure user has checked the 'accepted' checkbox."""
@@ -198,16 +201,12 @@ class ArchiveActivateView(LaunchpadFormView):
                     "PPA Terms of Service must be accepted to activate "
                     "your PPA.")
 
-    def validate_cancel(self, action, data):
-        """Noop validation in case we cancel"""
-        return []
-
     @action(_("Activate"), name="activate")
     def action_save(self, action, data):
         """Activate PPA and moves to its page."""
         ppa = getUtility(IArchiveSet).ensure(
-            owner=self.context, distribution=None, purpose=ArchivePurpose.PPA,
-            description=data['description'])
+            owner=self.context, purpose=ArchivePurpose.PPA,
+            description=data['description'], distribution=None)
         self.next_url = canonical_url(ppa)
 
     @action(_("Cancel"), name="cancel", validator='validate_cancel')

@@ -1,0 +1,60 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+  <body>
+    <metal:portlets fill-slot="portlets">
+      <div tal:replace="structure context/@@+portlet-details" />
+    </metal:portlets>
+
+    <div metal:fill-slot="main">
+      <h1>
+        Bugs that can expire in
+        <tal:target replace="context/displayname" />
+      </h1>
+
+      <p tal:condition="not: view/can_show_expirable_bugs">
+        This project has not enabled bug expiration. No bugs can expire.
+        Project administrator's may choose to enable bug expiration by
+        updating the project's details.
+      </p>
+
+      <tal:expirable-bugs condition="view/can_show_expirable_bugs">
+        <p>
+          Incomplete Bugs reports can expire if they are unattended and they
+          become inactive. These bugs are not confirmed, or in a status
+          that indicates they were confirmed. An Incomplete bug can remain
+          in this list indefinitely, so long as the bug is regularly updated.
+        </p>
+
+        <div tal:define="batch_navigator view/search">
+          <tal:buglisting content="structure batch_navigator/@@+table-view" />
+        </div>
+      </tal:expirable-bugs>
+    </div>
+
+    <div metal:fill-slot="help">
+      <p>
+        Projects may choose to enable expiration of unattended Incomplete bug
+        reports when they become inactive. Bugs are considered unattended if
+        they are not assigned to a person or a milestone. Bug reports's are
+        considered inactive when the bug has not been updated in
+        <tal:expiration_age replace="view/inactive_expiration_age" /> days.
+      </p>
+      <p>
+        The bugs are listed from oldest to newest--bugs at the top of the
+        list will expire sooner. A bug report will be removed from this list
+        when it's status moved from Incomplete, or because it is assigned to
+        a person or milestone.
+      </p>
+    </div>
+  </body>
+</html>

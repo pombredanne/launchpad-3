@@ -214,11 +214,6 @@ class SoyuzScript(LaunchpadScript):
 
         Check if it matches the desired 'pocket' and 'component'.
         """
-        if currently_published.pocket != self.location.pocket:
-            raise SoyuzScriptError(
-                "%s was skipped because it is not in %s pocket." % (
-                currently_published.displayname, self.location.pocket.name))
-
         if not self.options.component:
             return
 
@@ -242,6 +237,7 @@ class SoyuzScript(LaunchpadScript):
             name=name, version=self.options.version,
             status=PackagePublishingStatus.PUBLISHED,
             distroseries=self.location.distroseries,
+            pocket=self.location.pocket,
             exact_match=True)
 
         if not published_sources:
@@ -277,6 +273,7 @@ class SoyuzScript(LaunchpadScript):
                     name=name, version=self.options.version,
                     status=PackagePublishingStatus.PUBLISHED,
                     distroarchseries=architecture,
+                    pocket=self.location.pocket,
                     exact_match=True)
             if not binaries:
                 continue

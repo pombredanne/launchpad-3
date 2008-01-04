@@ -19,6 +19,7 @@ __all__ = [
 import operator
 import os
 import time
+from datetime import datetime
 
 from zope.app.datetimeutils import rfc1123_date
 from zope.app.pagetemplate import ViewPageTemplateFile
@@ -47,6 +48,7 @@ class FeedBase(LaunchpadFormView):
     max_age = config.launchpad.max_feed_cache_minutes * MINUTES
     quantity = 25
     items = None
+    rootsite = 'mainsite'
     template_files = {'atom': 'templates/feed-atom.pt',
                       'html': 'templates/feed-html.pt'}
 
@@ -77,6 +79,11 @@ class FeedBase(LaunchpadFormView):
     def site_url(self):
         """See `IFeed`."""
         return allvhosts.configs['mainsite'].rooturl[:-1]
+    
+    @property
+    def alternate_url(self):
+        """See `IFeed`."""
+        return canonical_url(self.context, rootsite=self.rootsite)
 
     def getItems(self):
         """See `IFeed`."""
@@ -114,11 +121,14 @@ class FeedBase(LaunchpadFormView):
     def date_updated(self):
         """See `IFeed`."""
         sorted_items = sorted(self.getItems(),
-                              key=operator.attrgetter('date_updated'),
+                              key=operator.attrgetter('last_modified'),
                               reverse=True)
         if len(sorted_items) == 0:
-            return None
-        return sorted_items[0].date_updated
+            return datetime.utcnow()
+        last_modified = sorted_items[0].last_modified
+        if last_modified is None:
+            raise AssertionError, 'All feed entries require a date updated.'
+        return last_modified
 
     def render(self):
         """See `IFeed`."""
@@ -157,7 +167,7 @@ class FeedEntry:
                  title,
                  id_,
                  link_alternate,
-                 date_updated=None,
+                 date_updated,
                  date_published=None,
                  authors=None,
                  contributors=None,
@@ -168,8 +178,10 @@ class FeedEntry:
         self.title = title
         self.link_alternate = link_alternate
         self.content = content
-        self.date_published = date_published
         self.date_updated = date_updated
+        self.date_published = date_published
+        if date_updated is None:
+            raise AssertionError, 'date_updated is required by RFC 4287'
         if authors is None:
             authors = []
         self.authors = authors
@@ -177,6 +189,12 @@ class FeedEntry:
             contribuors = []
         self.contributors = contributors
         self.id = id_
+
+    @property
+    def last_modified(self):
+        if self.date_published is not None:
+            return max(self.date_published, self.date_updated)
+        return self.date_updated
 
 
 class FeedTypedData:

@@ -3,6 +3,7 @@
 """Helper functions for bug-related doctests and pagetests."""
 
 from datetime import datetime, timedelta
+from operator import attrgetter
 from pytz import UTC
 
 from zope.component import getUtility
@@ -130,15 +131,15 @@ def create_old_bug(
 
 def summarize_bugtasks(bugtasks):
     """Summarize a sequence of bugtasks."""
-    print 'ROLE  MALONE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
-    for bugtask in bugtasks:
+    print 'ROLE  EXPIRE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
+    for bugtask in sorted(set(bugtasks), key=attrgetter('id')):
         if len(bugtask.bug.bugtasks) == 1:
             title = bugtask.bug.title
         else:
             title = bugtask.target.name
         print '%s  %s  %s  %s  %s  %s  %s  %s' % (
             title,
-            bugtask.pillar.official_malone,
+            bugtask.pillar.enable_bug_expiration,
             (datetime.now(UTC) - bugtask.bug.date_last_updated).days,
             bugtask.status.title,
             bugtask.assignee is not None,

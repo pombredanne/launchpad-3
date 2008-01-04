@@ -30,6 +30,8 @@ There should be zero entries in these feeds, since all the bugs are private.
     >>> BSS(browser.contents)('entry')
     []
 
+    >>> from canonical.config import config
+    >>> config.launchpad.is_bug_search_feed_active = True
     >>> browser.open('http://feeds.launchpad.dev/bugs/+bugs.atom?'
     ...        'field.searchtext=&search=Search+Bug+Reports&'
     ...        'field.scope=all&field.scope.target=')
@@ -86,3 +88,7 @@ these HTML feeds, since all the bugs are private.
     ...     pass
     ... else:
     ...     print "Should raise Unauthorized exception"
+
+Revert configuration change after tests are finished.
+
+    >>> config.launchpad.is_bug_search_feed_active = False

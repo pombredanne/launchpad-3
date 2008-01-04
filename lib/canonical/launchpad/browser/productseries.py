@@ -150,6 +150,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def add_release(self):
         text = 'Register a release'
         return Link('+addrelease', text, icon='add')
@@ -674,8 +675,8 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     def allowCertify(self, action):
         return self.isAdmin() and not self.context.syncCertified()
 
-    @action(_('Approve import for production and publication'), name='certify',
-            condition=allowCertify)
+    @action(_('Approve import for production and publication'),
+            name='certify', condition=allowCertify)
     def certify_action(self, action, data):
         self.updateContextFromData(data)
         self.context.certifyForSync()
