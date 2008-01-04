@@ -37,6 +37,10 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://answers.launchpad.dev/
     althosts:
     ----
+    api @ api.launchpad.dev
+    rooturl: http://api.launchpad.dev/
+    althosts:
+    ----
     blueprints @ blueprints.launchpad.dev
     rooturl: http://blueprints.launchpad.dev/
     althosts:
@@ -93,6 +97,7 @@ request is headed to one of the officialy-used Launchpad host names:
     >>> for hostname in sorted(allvhosts.hostnames):
     ...     print hostname
     answers.launchpad.dev
+    api.launchpad.dev
     blueprints.launchpad.dev
     bugs.launchpad.dev
     code.launchpad.dev
@@ -382,6 +387,10 @@ the registered factories.)
     AnswersBrowserRequest
     AnswersPublication
 
+    >>> print_request_and_publication('api.launchpad.dev')
+    WebServiceClientRequest
+    WebServicePublication
+
     >>> print_request_and_publication('blueprints.launchpad.dev')
     BlueprintBrowserRequest
     BlueprintPublication
@@ -417,6 +426,42 @@ the registered factories.)
     >>> print_request_and_publication('shipit.kubuntu.dev')
     KubuntuShipItBrowserRequest
     ShipItPublication
+
+The web service RequestPublicationFactory responds to the five most
+common HTTP methods, but it will only accept a MIME type of
+application/json.
+
+    >>> print_request_and_publication('api.launchpad.dev', method='DELETE')
+    WebServiceClientRequest
+    WebServicePublication
+
+    >>> print_request_and_publication(
+    ...     'api.launchpad.dev', method='POST', mime_type='application/json')
+    WebServiceClientRequest
+    WebServicePublication
+
+    >>> print_request_and_publication(
+    ...     'api.launchpad.dev', method='POST', mime_type='application/xml')
+    ProtocolErrorRequest
+    ProtocolErrorPublication: status=415
+
+XXX: We don't want to expose the web service until it's ready, so
+we've defined a config variable which controls its availability. This
+test will go away when we decide to deploy the web service on
+production. -- Leonard Richardson 2008-01-04
+(https://launchpad.net/launchpad/+spec/api-bugs-remote)
+
+    >>> from canonical.config import config
+    >>> config.webservice.exposed
+    True
+
+    >>> config.webservice.exposed = False
+
+    >>> print_request_and_publication('api.launchpad.dev', method='GET')
+    ProtocolErrorRequest
+    ProtocolErrorPublication: status=404
+
+    >>> config.webservice.exposed = True
 
 The XML-RPC RequestPublicationFactory only responds to POST requests,
 and then only when the MIME type is text/xml.
