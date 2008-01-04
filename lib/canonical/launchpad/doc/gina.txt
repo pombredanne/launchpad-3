@@ -196,7 +196,7 @@ Check that x11proto-damage has its Build-Depends-Indep value correctly set:
 
 Check if the changelog message was stored correcly:
 
-    >>> print x11p.changelog
+    >>> print x11p.changelog_entry
     x11proto-damage (6.8.99.7-2) breezy; urgency=low
     <BLANKLINE>
     <BLANKLINE>
