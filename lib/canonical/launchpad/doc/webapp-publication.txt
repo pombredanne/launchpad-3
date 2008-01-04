@@ -427,16 +427,27 @@ the registered factories.)
     KubuntuShipItBrowserRequest
     ShipItPublication
 
-The web service RequestPublicationFactory responds to the five most
+The web service RequestPublicationFactory responds to the six most
 common HTTP methods, but it will only accept a MIME type of
 application/json.
 
-    >>> print_request_and_publication('api.launchpad.dev', method='DELETE')
+    >>> for m in ['GET', 'HEAD', 'DELETE', 'OPTIONS']:
+    ...     print_request_and_publication('api.launchpad.dev', method=m)
+    WebServiceClientRequest
+    WebServicePublication
+    WebServiceClientRequest
+    WebServicePublication
+    WebServiceClientRequest
+    WebServicePublication
     WebServiceClientRequest
     WebServicePublication
 
-    >>> print_request_and_publication(
-    ...     'api.launchpad.dev', method='POST', mime_type='application/json')
+
+    >>> for m in ['POST', 'PUT']:
+    ...     print_request_and_publication(
+    ...         'api.launchpad.dev', method=m, mime_type='application/json')
+    WebServiceClientRequest
+    WebServicePublication
     WebServiceClientRequest
     WebServicePublication
 
@@ -452,16 +463,16 @@ production. -- Leonard Richardson 2008-01-04
 (https://launchpad.net/launchpad/+spec/api-bugs-remote)
 
     >>> from canonical.config import config
-    >>> config.webservice.exposed
+    >>> config.launchpad.vhosts.expose_webservice
     True
 
-    >>> config.webservice.exposed = False
+    >>> config.launchpad.vhosts.expose_webservice = False
 
     >>> print_request_and_publication('api.launchpad.dev', method='GET')
     ProtocolErrorRequest
     ProtocolErrorPublication: status=404
 
-    >>> config.webservice.exposed = True
+    >>> config.launchpad.vhosts.expose_webservice = True
 
 The XML-RPC RequestPublicationFactory only responds to POST requests,
 and then only when the MIME type is text/xml.

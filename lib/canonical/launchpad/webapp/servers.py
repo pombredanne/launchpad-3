@@ -323,7 +323,8 @@ class XMLRPCRequestPublicationFactory(VirtualHostRequestPublicationFactory):
         return request_factory, publication_factory
 
 
-class WebServiceRequestPublicationFactory(VirtualHostRequestPublicationFactory):
+class WebServiceRequestPublicationFactory(
+    VirtualHostRequestPublicationFactory):
     """A VirtualHostRequestPublicationFactory for requests against
     resources published through a web service.
     """
@@ -334,7 +335,7 @@ class WebServiceRequestPublicationFactory(VirtualHostRequestPublicationFactory):
         """
         super(WebServiceRequestPublicationFactory, self).__init__(
             vhost_name, request_factory, publication_factory, port,
-            ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+            ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
     def checkRequest(self, environment):
         """See `VirtualHostRequestPublicationFactory`.
@@ -347,8 +348,7 @@ class WebServiceRequestPublicationFactory(VirtualHostRequestPublicationFactory):
         if request_factory is None:
             mime_type = environment.get('CONTENT_TYPE')
             method = environment.get('REQUEST_METHOD')
-            if (method not in ['GET', 'HEAD', 'DELETE', 'OPTIONS'] and
-                mime_type != 'application/json'):
+            if (method in ['PUT', 'POST'] and mime_type != 'application/json'):
                 request_factory = ProtocolErrorRequest
                 # 415 - Unsupported Media Type
                 publication_factory = ProtocolErrorPublicationFactory(415)
@@ -365,7 +365,7 @@ class WebServiceRequestPublicationFactory(VirtualHostRequestPublicationFactory):
         """
         result = super(WebServiceRequestPublicationFactory, self).canHandle(
             environment)
-        return result and config.webservice.exposed
+        return result and config.launchpad.vhosts.expose_webservice
 
 
 class NotFoundRequestPublicationFactory:
