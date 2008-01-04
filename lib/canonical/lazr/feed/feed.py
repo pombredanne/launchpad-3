@@ -30,13 +30,13 @@ from canonical.config import config
 # XXX - bac - 2007-09-20, modules in canonical.lazr should not import from
 # canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.  Bug 153795.
-from canonical.launchpad.webapp import canonical_url, LaunchpadFormView
+from canonical.launchpad.webapp import canonical_url, LaunchpadFormView, urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
     IFeed, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
 
 SUPPORTED_FEEDS = ('.atom', '.html')
-MINUTES = 60 # seconds in a minute
+MINUTES = 60 # Seconds in a minute.
 
 
 class FeedBase(LaunchpadFormView):
@@ -53,8 +53,7 @@ class FeedBase(LaunchpadFormView):
                       'html': 'templates/feed-html.pt'}
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(FeedBase, self).__init__(context, request)
         self.format = self.feed_format
 
     def initialize(self):
@@ -79,17 +78,44 @@ class FeedBase(LaunchpadFormView):
     def site_url(self):
         """See `IFeed`."""
         return allvhosts.configs['mainsite'].rooturl[:-1]
-    
+
     @property
     def alternate_url(self):
         """See `IFeed`."""
         return canonical_url(self.context, rootsite=self.rootsite)
 
+    @property
+    def feed_id(self):
+        """See `IFeed`.
+
+        Override this method if the context used does not create a
+        meaningful id.
+        """
+        # Get the creation date, if available.  Otherwise use a fixed date, as
+        # allowed by the RFC.
+        if hasattr(self.context, 'datecreated'):
+            datecreated = self.context.datecreated.date().isoformat()
+        elif hasattr(self.context, 'date_created'):
+            datecreated = self.context.date_created.date().isoformat()
+        else:
+            datecreated = "2008"
+        url_path = urlparse(self.alternate_url)[2]
+        if self.rootsite != 'mainsite':
+            id_ = 'tag:launchpad.net,%s:/%s%s' % (
+                datecreated,
+                self.rootsite,
+                url_path)
+        else:
+            id_ = 'tag:launchpad.net,%s:%s' % (
+                datecreated,
+                url_path)
+        return id_
+
     def getItems(self):
         """See `IFeed`."""
         raise NotImplementedError
 
-    def getPublicRawItems():
+    def getPublicRawItems(self):
         """See `IFeed`."""
         raise NotImplementedError
 
@@ -165,8 +191,8 @@ class FeedEntry:
     """An entry for a feed."""
     def __init__(self,
                  title,
-                 id_,
                  link_alternate,
+                 date_created,
                  date_updated,
                  date_published=None,
                  authors=None,
@@ -188,7 +214,21 @@ class FeedEntry:
         if contributors is None:
             contribuors = []
         self.contributors = contributors
-        self.id = id_
+        url_path = urlparse(link_alternate)[2]
+        # Strip the first portion of the path, which will be the
+        # project/product identifier but is not wanted in the <id> as it may
+        # change if the entry is re-assigned which would break the permanence
+        # of the <id>.
+        try:
+            unique_url_path = url_path[url_path.index('/', 1):]
+        except ValueError:
+            # This condition should not happen, but if the call to index
+            # raises a ValueError because '/' was not in the path, then fall
+            # back to using the entire path.
+            unique_url_path = url_path
+        self.id = 'tag:launchpad.net,%s:%s' % (
+            date_created.date().isoformat(),
+            unique_url_path)
 
     @property
     def last_modified(self):

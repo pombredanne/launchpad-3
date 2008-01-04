@@ -16,13 +16,13 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, urlparse
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.browser import (
     BugsBugTaskSearchListingView, BugTargetView,
     PersonRelatedBugsView)
 from canonical.launchpad.interfaces import (
-    IBug, IBugTarget, IBugTaskSet, IMaloneApplication, IPerson)
+    IBug, IBugTarget, IBugTaskSet, IDistribution, IMaloneApplication, IPerson)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 
@@ -119,8 +119,8 @@ class BugsFeedBase(FeedBase):
         url = canonical_url(bugtask, rootsite=self.rootsite)
         content_view = BugFeedContentView(bug, self.request, self)
         entry = FeedEntry(title=title,
-                          id_=url,
                           link_alternate=url,
+                          date_created=bugtask.datecreated,
                           date_updated=bug.date_last_updated,
                           date_published=bugtask.datecreated,
                           authors=[FeedPerson(bug.owner, self.rootsite)],
@@ -151,6 +151,16 @@ class BugFeed(BugsFeedBase):
         """See `IFeed`."""
         return "Bug %s" % self.context.id
 
+    @property
+    def feed_id(self):
+        """See `IFeed`."""
+        datecreated = self.context.datecreated.date().isoformat()
+        url_path = urlparse(self.alternate_url)[2]
+        id_ = 'tag:launchpad.net,%s:%s' % (
+            datecreated,
+            url_path)
+        return id_
+
     def _getRawItems(self):
         """Get the raw set of items for the feed."""
         bugtasks = list(self.context.bugtasks)
@@ -178,6 +188,23 @@ class BugTargetBugsFeed(BugsFeedBase):
     def title(self):
         """See `IFeed`."""
         return "Bugs in %s" % self.context.displayname
+
+    @property
+    def feed_id(self):
+        """See `IFeed`."""
+        # Get the creation date, if available.
+        if hasattr(self.context, 'date_created'):
+            datecreated = self.context.date_created.date().isoformat()
+        elif hasattr(self.context, 'datecreated'):
+            datecreated = self.context.datecreated.date().isoformat()
+        else:
+            datecreated = '2008'
+        url_path = urlparse(self.alternate_url)[2]
+        id_ = 'tag:launchpad.net,%s:/%s%s' % (
+            datecreated,
+            self.rootsite,
+            url_path)
+        return id_
 
     def _getRawItems(self):
         """Get the raw set of items for the feed."""
@@ -238,9 +265,21 @@ class SearchBugsFeed(BugsFeedBase):
         """See `IFeed`."""
         return "%s?%s" % (self.request.getURL(),
                           self.request.get('QUERY_STRING'))
-    
+
     @property
     def alternate_url(self):
         """See `IFeed`."""
         return "%s/bugs/%s?%s" % (self.site_url, self.feedname,
                              self.request.get('QUERY_STRING'))
+
+    @property
+    def feed_id(self):
+        """See `IFeed`."""
+        # We don't track the creation date for any given search query so we'll
+        # just use a fixed, abbreviated date, which is allowed by the RFC.
+        datecreated = "2008"
+        full_path = self.url[self.url.find('/+bugs'):]
+        id_ = 'tag:launchpad.net,%s:%s' % (
+            datecreated,
+            full_path)
+        return id_
