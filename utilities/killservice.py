@@ -9,6 +9,7 @@ import _pythonpath
 import os, sys, logging
 from signal import SIGTERM
 from optparse import OptionParser
+from canonical.config import config
 from canonical.pidfile import pidfile_path
 from canonical.launchpad.scripts import logger_options, logger
 from canonical.launchpad.mailman.runmailman import stop_mailman
@@ -22,8 +23,8 @@ if __name__ == '__main__':
     if len(args) < 1:
         parser.error('No service name provided')
     for service in args:
-        # Mailman is special.
-        if service == 'mailman':
+        # Mailman is special, but only stop it if it was launched.
+        if service == 'mailman' and config.mailman and config.mailman.launch:
             stop_mailman()
             continue
         pidfile = pidfile_path(service)

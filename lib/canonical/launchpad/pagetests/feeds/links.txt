@@ -108,3 +108,42 @@ show a link to the atom feed for that distro's latest bugs.
     [<link rel="alternate" type="application/atom+xml" 
         title="Latest Bugs for Ubuntu" 
         href="http://feeds.launchpad.dev/ubuntu/latest-bugs.atom" />]
+
+
+== Latest Bugs for a Distroseries ==
+
+On the distroseries page on bugs.launchpad.net, we should
+show a link to the atom feed for that distroseries' latest bugs.
+
+    >>> browser.open('http://bugs.launchpad.dev/ubuntu/hoary')
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [<link rel="alternate" type="application/atom+xml" 
+        title="Latest Bugs for Hoary" 
+        href="http://feeds.launchpad.dev/ubuntu/hoary/latest-bugs.atom" />]
+
+
+== Latest Bugs for a Product Series ==
+
+On the product series page on bugs.launchpad.net, we should
+show a link to the atom feed for that product series' latest bugs.
+
+    >>> browser.open('http://bugs.launchpad.dev/firefox/1.0')
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [<link rel="alternate" type="application/atom+xml" 
+        title="Latest Bugs for 1.0" 
+        href="http://feeds.launchpad.dev/firefox/1.0/latest-bugs.atom" />]
+
+
+== Latest Bugs for a Source Package ==
+
+On the source package page on bugs.launchpad.net, we should
+show a link to the atom feed for that source package's latest bugs.
+
+    >>> browser.open('http://bugs.launchpad.dev/ubuntu/+source/cnews')
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [<link rel="alternate" type="application/atom+xml" 
+        title="Latest Bugs for cnews in ubuntu" 
+        href="http://feeds.launchpad.dev/ubuntu/+source/cnews/latest-bugs.atom" />]

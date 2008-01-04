@@ -373,7 +373,7 @@ The contact address is now set to the mailing list address:
     >>> browser.getLink('Change contact address').click()
     >>> browser.getControl(name='field.contact_method').displayValue
     ['\xa0The Launchpad mailing list for this team -
-      landscape-developers@lists.launchpad.net']
+      landscape-developers@lists.launchpad.dev']
 
 
 == Customizing the welcome message ==

@@ -73,7 +73,7 @@ Bug 563 resides in the archive. It is also fetchable:
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
     >>> bug_watches = list(debbugs.getBugWatchesNeedingUpdate(23))
     >>> len(bug_watches)
-    4
+    5
 
 Log in and kick off the update. The importing of comments, which is
 controlled by a configuration option, is disabled here and will be
@@ -81,12 +81,13 @@ tested later.
 
     >>> external_debbugs.import_comments = False
     >>> external_debbugs.updateBugWatches(bug_watches)
-    INFO:...:Updating 4 watches on http://bugs.some.where
+    INFO:...:Updating 5 watches on http://bugs.some.where
 
     >>> for bug_watch in bug_watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     280883: done grave woody security
     304014: open important
+    308994: open important
     327452: done critical patch security
     327549: open important security
 
@@ -109,6 +110,7 @@ And the linked bugtasks got updated:
     1 mozilla-firefox (Debian) New Unknown
     3 mozilla-firefox (Debian Sarge) New Unknown
     7 evolution (Debian) Fix Released Unknown
+    15 thunderbird New Unknown
 
 Sometimes the severity field is missing in the bug summary. That will
 cause importance to be set to medium, equivalent to the default normal severity
@@ -418,23 +420,10 @@ implementation), so we need to pass a bug watch to the function.
     >>> external_debbugs.importBugComments(bug_watch)
     INFO:...:Imported 1 comments for remote bug 1234...
 
-These comments will have been added to the bug, but by default won't be
-displayed. Initially, we only see the message chunk that was added when
-the bug was created.
+These comments will have been added to the bug. If we look at the
+message chunks for the bug we will see the comments that have been
+imported, along with the creation comment of the bug.
 
-    >>> chunks = bug.getMessageChunks()
-    >>> for chunk in chunks:
-    ...     print chunk.content
-    Malone pages that use more complex layouts with portlets and fancy
-    CSS are sometimes not getting properly reflowed after rendering.
-
-There is a config setting, malone.show_imported_comments, which controls
-whether or not we display imported comments. This option is False by
-default. If we set it to True we'll see the message chunks in which the
-imported comments are stored.
-
-    >>> from canonical.config import config
-    >>> config.malone.show_imported_comments = True
     >>> chunks = bug.getMessageChunks()
     >>> for chunk_id, chunk in sorted([(chunk.id, chunk.content)
     ...     for chunk in chunks]):
@@ -442,8 +431,6 @@ imported comments are stored.
     Malone pages that use more complex layouts with portlets and fancy
     CSS are sometimes not getting properly reflowed after rendering.
     Things happen.
-
-    >>> config.malone.show_imported_comments = False
 
 The author of the comment will have had a Launchpad Person created for
 them if they didn't exist already:
@@ -470,7 +457,6 @@ existing comment will remain unaltered and the new comment will be
 imported into Launchpad as normal. We can demonstrate this by telling
 our test debbugs DB to load sample data for more than one comment
 
-    >>> config.malone.show_imported_comments = True
     >>> chunks = bug.getMessageChunks()
     >>> len(chunks)
     2
@@ -528,7 +514,17 @@ message - the comment will be linked to the bug.
     something else to happen.
     It doesn't necessarily happen in that order, though.
 
-    >>> config.malone.show_imported_comments = False
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
+
+If we try to import the comments from a bug whose comments log doesn't
+exist or can't be parsed we will get a warning. We can demonstrate this
+by forcing importBugComments to fail on our Test DebBugs bugtracker.
+
+    >>> external_debbugs.debbugs_db.fail_on_load_log = True
+    >>> external_debbugs.importBugComments(bug_watch)
+    WARNING:...:Unable to import comments for DebBugs bug #1234.
+    Could not parse comment log.
 
 === Script for importing Debian bugs, linking them to Ubutu ===
 

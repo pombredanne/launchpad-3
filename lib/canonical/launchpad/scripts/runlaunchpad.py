@@ -111,11 +111,11 @@ class MailmanService(Service):
         return config.mailman is not None and config.mailman.launch
 
     def launch(self):
-        # Don't run the server if it wasn't asked for.
-        if not self.should_launch:
-            return
-        runmailman.start_mailman()
-        atexit.register(runmailman.stop_mailman)
+        # Don't run the server if it wasn't asked for.  Also, don't attempt to
+        # shut it down at exit.
+        if self.should_launch:
+            runmailman.start_mailman()
+            atexit.register(runmailman.stop_mailman)
 
 
 def prepare_for_librarian():

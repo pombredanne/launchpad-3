@@ -638,10 +638,12 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE)
 
     def initialize(self):
-        if not self.redirectIfInvalidOrConsumedToken():
+        if self.redirectIfInvalidOrConsumedToken():
+            return
+        else:
             self.email = getUtility(IEmailAddressSet).getByEmail(
                 self.context.email)
-        super(NewAccountView, self).initialize()
+            super(NewAccountView, self).initialize()
 
     # Use a method to set self.next_url rather than a property because we
     # want to override self.next_url in a subclass of this.
