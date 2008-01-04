@@ -1143,6 +1143,16 @@ k            </description>
         <key name="import_comments" datatype="boolean" default="false" />
     </sectiontype>
 
+    <sectiontype name="webservice">
+        <key name="exposed" datatype="boolean" default="false">
+          <description>
+            Whether or not the web service is exposed. This is false
+            except in development. When the web service is ready to go
+            live, this variable will be removed.
+          </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="canonical" extends="database_options">
         <key name="chunkydiff" datatype="boolean"
             required="no" default="true" />
@@ -1195,6 +1205,7 @@ k            </description>
         <section name="*" type="archivepublisher"
             attribute="archivepublisher" />
         <section name="*" type="checkwatches" attribute="checkwatches" />
+        <section name="*" type="webservice" attribute="webservice" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file
