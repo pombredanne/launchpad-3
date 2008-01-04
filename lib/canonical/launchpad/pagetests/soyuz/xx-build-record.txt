@@ -1,53 +1,119 @@
 = Build Record UI =
 
-Presenting Build Record details:
+Relevant build details are listed in the page body.
 
-    >>> anon_browser.open("http://localhost/+builds/+build/17")
-    >>> anon_browser.contents
-    '...i386 build of pmount 0.1-1 in ubuntu breezy-autotest...
-    ...pmount...
-    ...0.1-1...
-    ...ubuntu...
-    ...breezy-autotest...
-    ...i386...
-    ...Failed to build...
-    ...2005-10-01...
-    ...2005-10-02...'
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/17")
+    >>> build_details = extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'build-details'))
 
-With anonymous access, Retry Build link should not be there
+XXX cprov 20080104: this function is required to present the contents
+of builf 17 page after filtered by 'extract_text', a simple 'print'
+results in a UnicodeDecodeError. Note that the usual procedure works
+fine for build 10 (see below in 'Builds created by Gina' section).
 
+    >>> def print_text(text):
+    ...     # Breaks the system ...
+    ...     #print text
+    ...     #return
+    ...     for l in text.splitlines():
+    ...         # world falls apart too
+    ...         #print l
+    ...         #continue
+    ...         print str(l)
+
+    >>> print_text(build_details)
+    Changes file: not available
+    Archive: ubuntu archive
+    Component: main
+    Status: Failed to build
+    Queued: 2005-10-01
+    Started: 2005-10-01
+    Builder: Bob The Builder
+    Build log: netapplet-1.0.0.tar.gz
+    Finished: 2005-10-02 (took three minutes)
+
+Let's also check a successfully built record.
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/30")
+    >>> build_details = extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'build-details'))
+    >>> print_text(build_details)
+    Changes file: not available
+    Archive: ubuntu archive
+    Component: main
+    Status: Successfully built
+    Queued: 2007-08-10
+    Started: 2007-08-10
+    Builder: Bob The Builder
+    Build log: netapplet-1.0.0.tar.gz
+    Finished: 2007-08-10 (took 15 seconds)
+
+Build records contain a portlet listing the resulting binaries.
+
+    >>> binary_portlet = extract_text(
+    ...     find_portlet(anon_browser.contents, 'Resulting binaries'))
+    >>> print_text(binary_portlet)
+    Resulting binaries
+    mozilla-firefox 0.9
+
+Each listed binary links to the corresponding page.
+
+    >>> anon_browser.getLink("mozilla-firefox 0.9").url
+    'http://launchpad.dev/ubuntu/warty/hppa/mozilla-firefox/0.9'
+
+
+== Build Retrying ==
+
+With anonymous access, Retry Build link should not be there.
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/17")
     >>> anon_browser.getLink("Retry build")
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-...and if we go directly to the page, no dice
+Even if accessed with a manually typed URL it will result in a error.
 
-    >>> anon_browser.open("http://localhost/+builds/+build/17/+retry")
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/17/+retry")
     Traceback (most recent call last):
     ...
     Unauthorized: ...
 
-Let's log in and the link should appear:
+When the user has permission (buildd-admin, admin or the source
+uploader) the link to 'retry' the build is presented in the Action
+menu.
 
-    >>> admin_browser.open("http://localhost/+builds/+build/17")
+    >>> admin_browser.open(
+    ...     "http://launchpad.dev/+builds/+build/17")
     >>> admin_browser.getLink("Retry build").click()
-    >>> admin_browser.contents
-    '...i386 build of pmount 0.1-1 in ubuntu breezy-autotest...
-    ...Retry Build...'
+
+The 'Retry Build' page contains a message explaining the consequences
+of this procedure.
+
+    >>> print_text(
+    ...     extract_text(find_main_content(admin_browser.contents)))
+    Retry i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
+    i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE is
+    Failed to build.
+    Retrying this build will destroy its history and logs.
+    Are you sure ?
 
 We'll also set up a second browser pointing at this page, for later.
 XXX: waiting for bug #68655's cloneBrowser function.
 
     >>> admin_browser_2 = setupBrowser(auth="Basic foo.bar@canonical.com:test")
-    >>> admin_browser_2.open("http://localhost/+builds/+build/17")
+    >>> admin_browser_2.open("http://launchpad.dev/+builds/+build/17")
     >>> admin_browser_2.getLink("Retry build").click()
 
 Performing "Retry Build" with the first browser
 
     >>> admin_browser.getControl("Retry Build").click()
-    >>> admin_browser.contents
-    '...Build record active...'
+    >>> get_feedback_messages(admin_browser.contents)
+    [u'Build record active']
 
 Now it's active again, the retry button and the link to the retry page
 are gone.
@@ -61,8 +127,11 @@ The second browser has old content, so still has a retry build button.
 Clicking this should give a warning.
 
     >>> admin_browser_2.getControl("Retry Build").click()
-    >>> admin_browser_2.contents
-    '...Build can not be retried...'
+    >>> get_feedback_messages(admin_browser_2.contents)
+    [u'Build can not be retried']
+
+
+== Build Rescoring ==
 
 Build rescoring feature (fixed bug #44227, we create build records
 when retrying a build, so there is not life-cycle for a pending build
@@ -71,20 +140,18 @@ w/o build record anymore.)
     >>> admin_browser.getLink("Rescore build").click()
     >>> admin_browser.getControl(name="SCORE").value = '100'
     >>> admin_browser.getControl("Update").click()
-    >>> admin_browser.contents
-    '...Rescore i386 build of pmount 0.1-1 in ubuntu breezy-autotest...
-    ...Build Record rescored to 100...'
+    >>> get_feedback_messages(admin_browser.contents)
+    [u'Build Record rescored to 100']
 
-it also checks input data sanity (bug # 44240):
+It checks input data sanity (bug # 44240).
 
     >>> admin_browser.getControl(name="SCORE").value = 'foo'
     >>> admin_browser.getControl("Update").click()
-    >>> admin_browser.contents
-    '...Rescore i386 build of pmount 0.1-1 in ubuntu breezy-autotest...
-    ...priority must be an integer not "foo"...'
+    >>> get_feedback_messages(admin_browser.contents)
+    [u'priority must be an integer not "foo"']
 
-
-Also handles attempts to rescore a build in the wrong state:
+And also handles direct attempts to rescore a build in the wrong
+state.
 
     >>> print http(r"""
     ... POST /ubuntu/+source/netapplet/0.99.6-1/+build/13/+rescore HTTP/1.1
@@ -97,11 +164,16 @@ Also handles attempts to rescore a build in the wrong state:
     ...i386 build of netapplet 0.99.6-1 in ubuntu warty...
     ...Build can not be rescored...
 
-Build record inserted by gina that has an unknown build record.
 
-    >>> admin_browser.open("http://localhost/+builds/+build/10")
+== Builds created by Gina ==
+
+Gina, when importing packages from debian, is allowed to create build
+records satisfy our DB model, however we don't populate most of the
+fields because they would not be accurate.
+
+    >>> anon_browser.open("http://launchpad.dev/+builds/+build/10")
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'build-details'))
+    ...     find_tag_by_id(anon_browser.contents, 'build-details'))
     Changes file: not available
     Archive: ubuntu archive
     Component: main
@@ -112,6 +184,7 @@ Build record inserted by gina that has an unknown build record.
     Build log: not available
     Finished: not available
 
+
 == Buildd Admins ==
 
 Check if buildd-celebrity is working as expected, try to access protected
@@ -120,19 +193,22 @@ method here, as don't know the password.
 
     >>> cprov_browser = setupBrowser(
     ...       auth='Basic celso.providelo@canonical.com:cprov')
-    >>> cprov_browser.open("http://localhost/+builds/+build/12")
+    >>> cprov_browser.open("http://launchpad.dev/+builds/+build/12")
     >>> cprov_browser.getLink("Retry build").click()
     >>> cprov_browser.getControl("Retry Build").click()
-    >>> cprov_browser.contents
-    '...Build record active...'
+    >>> print extract_text(find_main_content(cprov_browser.contents))
+    Retry i386 build of libstdc++ b8p in ubuntu hoary RELEASE
+    Build record active
 
 Allow Re-score:
 
     >>> cprov_browser.getLink("Rescore build").click()
     >>> cprov_browser.getControl(name="SCORE").value = '100'
     >>> cprov_browser.getControl("Update").click()
-    >>> cprov_browser.contents
-    '...Build Record rescored to 100...'
+    >>> print extract_text(find_main_content(cprov_browser.contents))
+    Rescore i386 build of libstdc++ b8p in ubuntu hoary RELEASE
+    Build Record rescored to 100
+    ...
 
 
 === Dealing with Builders ===
@@ -141,16 +217,16 @@ Only buildd-celebrities are allowed to add/modify builders
 
 Adding new builder:
 
-    >>> cprov_browser.open("http://localhost/+builds/+new")
+    >>> cprov_browser.open("http://launchpad.dev/+builds/+new")
 
 Administration of a builder:
 
-    >>> cprov_browser.open("http://localhost/+builds/bob/+admin")
+    >>> cprov_browser.open("http://launchpad.dev/+builds/bob/+admin")
 
 Adding new builder still denied for non-members (Edgar, no membership):
 
     >>> one_browser = setupBrowser(auth="Basic one-membership@test.com:test")
-    >>> one_browser.open("http://localhost/+builds/+new")
+    >>> one_browser.open("http://launchpad.dev/+builds/+new")
     Traceback (most recent call last):
     ...
     Unauthorized:...
@@ -158,7 +234,7 @@ Adding new builder still denied for non-members (Edgar, no membership):
 Adding a new builder is also denied for anonymous:
 
     >>> anon_browser.open(
-    ...     "http://localhost/+builds/+new")
+    ...     "http://launchpad.dev/+builds/+new")
     Traceback (most recent call last):
     ...
     Unauthorized: ...
@@ -174,27 +250,27 @@ also grant those rights to the PPA owner.
 the archive) are not allowed to modify the build record.
 
     >>> anon_browser.open(
-    ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
+    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> anon_browser.getLink('Retry build')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
     >>> one_browser.open(
-    ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
+    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> one_browser.getLink('Retry build')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
     >>> one_browser.open(
-    ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24/+retry")
+    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24/+retry")
     Traceback (most recent call last):
     ...
     Unauthorized:...
 
     >>> anon_browser.open(
-    ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24/+retry")
+    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24/+retry")
     Traceback (most recent call last):
     ...
     Unauthorized: ..., 'browserDefault', 'launchpad.Edit')
@@ -203,14 +279,14 @@ Ensure 'admins' and 'lp-buildd-admins' (foo.bar is a member of
 lp-buildd-admins) have access for retrying PPA build.
 
     >>> admin_browser.open(
-    ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
+    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> print_action_links(admin_browser.contents)
-    Retry build: http://localhost/~no-priv/+archive/+build/24/+retry
+    Retry build: http://launchpad.dev/~no-priv/+archive/+build/24/+retry
 
     >>> user_browser.open(
-    ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
+    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> print_action_links(user_browser.contents)
-    Retry build: http://localhost/~no-priv/+archive/+build/24/+retry
+    Retry build: http://launchpad.dev/~no-priv/+archive/+build/24/+retry
 
 PPA build pages also have some text telling the viewer that they can retry
 the build if that action is possible:
@@ -226,11 +302,12 @@ PPA owner can 'retry' a build.
 
     >>> no_priv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> no_priv_browser.open(
-    ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
+    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> no_priv_browser.getLink('Retry build').click()
     >>> no_priv_browser.getControl("Retry Build").click()
-    >>> no_priv_browser.contents
-    '...Build record active...'
+    >>> print extract_text(find_main_content(no_priv_browser.contents))
+    Retry i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    Build record active
 
 PPA owner may not re-score the build record. They could heavily mess
 with the PPA build ordering by having the ability to assign *any*
@@ -241,29 +318,25 @@ enormous score value.
     ...
     LinkNotFoundError
 
-
 'admins' and 'lp-build-admins' are the only entities able to
 re-score PPA jobs:
 
     >>> admin_browser.open(
-    ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
+    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> admin_browser.getLink('Rescore build').click()
     >>> admin_browser.getControl(name="SCORE").value
     '0'
     >>> admin_browser.getControl(name="SCORE").value = '100'
     >>> admin_browser.getControl("Update").click()
-    >>> admin_browser.contents
-    '...Rescore i386 build of cdrkit 1.0 in ubuntu warty...
-    ...Build Record rescored to 100...'
-
+    >>> get_feedback_messages(admin_browser.contents)
+    [u'Build Record rescored to 100']
 
     >>> cprov_browser.open(
-    ...    "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
+    ...    "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> cprov_browser.getLink('Rescore build').click()
     >>> cprov_browser.getControl(name="SCORE").value
     '100'
     >>> cprov_browser.getControl(name="SCORE").value = '200'
     >>> cprov_browser.getControl("Update").click()
-    >>> cprov_browser.contents
-    '...Rescore i386 build of cdrkit 1.0 in ubuntu warty...
-    ...Build Record rescored to 200...'
+    >>> get_feedback_messages(cprov_browser.contents)
+    [u'Build Record rescored to 200']
