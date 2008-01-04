@@ -59,8 +59,8 @@ them. Use IBugTrackerSet.getMostActiveBugTrackers to get this list.
     >>> top_trackers = bugtracker_set.getMostActiveBugTrackers(limit=4)
     >>> sorted([(tracker.watches.count(), tracker.name)
     ...         for tracker in top_trackers])
-    [(1, u'gnome-bugzilla'), (1, u'ubuntu-bugzilla'),
-     (4, u'debbugs'), (4, u'mozilla.org')]
+    [(1, u'ubuntu-bugzilla'), (2, u'gnome-bugzilla'),
+     (4, u'mozilla.org'), (5, u'debbugs')]
 
 
 == Getting Bug Trackers ==
@@ -93,6 +93,94 @@ If no bug tracker can be found None is returned.
 
     >>> bugtracker_set.queryByBaseURL('http://no/such/bugtracker') is None
     True
+
+
+=== Aliases ===
+
+A bug tracker can have a number of alias URLs associated with it.
+
+    >>> from canonical.launchpad.interfaces import IBugTrackerAliasSet
+    >>> bugtrackeralias_set = getUtility(IBugTrackerAliasSet)
+
+The most natural way to work with aliases is via the aliases attribute
+present on IBugTracker. This can be used to query, set or remove
+aliases.
+
+    >>> mozilla_bugzilla.aliases = [
+    ...     'https://norwich.example.com/',
+    ...     'http://cambridge.example.com/']
+
+    >>> mozilla_bugzilla.aliases
+    (u'http://cambridge.example.com/',
+     u'https://norwich.example.com/')
+
+    >>> mozilla_bugzilla.aliases = []
+    >>> mozilla_bugzilla.aliases
+    ()
+
+You can assign any iterable (of URL strings) to the aliases attribute,
+but, when accessed, aliases is always a regular tuple.
+
+Because this attribute is computed on each access, an immutable object
+- a tuple - is returned. This defends against mutations of aliases
+where the expectation is that the aliases in the database are changed,
+but silently are not. For example, if a plain list were returned, it
+might be tempting to append() another alias to it. But this would not
+be reflected in the database.
+
+You can also assign None to aliases to remove all aliases. This has
+the same effect as assigning an empty list.
+
+    >>> mozilla_bugzilla.aliases = None
+    >>> mozilla_bugzilla.aliases
+    ()
+
+    >>> mozilla_bugzilla.aliases = set(['http://set.example.com/'])
+    >>> mozilla_bugzilla.aliases
+    (u'http://set.example.com/',)
+
+    >>> mozilla_bugzilla.aliases = (u'http://tuple.example.com/',)
+    >>> mozilla_bugzilla.aliases
+    (u'http://tuple.example.com/',)
+
+Your ordering is not preserved; aliases are sorted using Python's
+standard unicode ordering.
+
+    >>> mozilla_bugzilla.aliases = (
+    ...     'http://%s.example.com/' % domain
+    ...     for domain in '111 zzz ccc ZZZ'.split())
+    >>> mozilla_bugzilla.aliases
+    (u'http://111.example.com/',
+     u'http://ZZZ.example.com/',
+     u'http://ccc.example.com/',
+     u'http://zzz.example.com/')
+
+BugTrackerAliases can also be looked up by bug tracker.
+
+    >>> mozilla_bugzilla.aliases = [
+    ...     'http://just.example.com/',
+    ...     'http://magic.example.com/']
+
+Query by bug tracker:
+
+    >>> sorted(alias.base_url for alias in
+    ...        bugtrackeralias_set.queryByBugTracker(mozilla_bugzilla))
+    [u'http://just.example.com/',
+     u'http://magic.example.com/']
+
+The aliases attribute never contains the current baseurl. For example,
+if BugTracker.baseurl is changed to an existing alias of itself, the
+aliases attribute hides the baseurl, although it is still recorded as
+an alias.
+
+    >>> mozilla_bugzilla.baseurl = 'http://magic.example.com/'
+    >>> mozilla_bugzilla.aliases
+    (u'http://just.example.com/',)
+
+    >>> sorted(alias.base_url for alias in
+    ...        bugtrackeralias_set.queryByBugTracker(mozilla_bugzilla))
+    [u'http://just.example.com/',
+     u'http://magic.example.com/']
 
 
 == checkwatches.py ==

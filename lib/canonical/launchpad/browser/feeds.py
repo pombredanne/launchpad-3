@@ -177,23 +177,17 @@ class BugTargetLatestBugsFeedLink(FeedLinkBase):
 
     @property
     def href(self):
-        return urlparse.urljoin(
-            self.rooturl,
-            self.context.name + '/latest-bugs.atom')
+        return (canonical_url(self.context, rootsite='feeds')
+               + '/latest-bugs.atom')
 
 
-class PersonLatestBugsFeedLink(FeedLinkBase):
+class PersonLatestBugsFeedLink(BugTargetLatestBugsFeedLink):
+    """Child class of BugTargetLatestBugsFeedLink.
+
+    This uses the same title and href attributes as the superclass.
+    The canonical_url takes care of the differences between the classes.
+    """
     usedfor = IPerson
-
-    @property
-    def title(self):
-        return 'Latest Bugs for %s' % self.context.displayname
-
-    @property
-    def href(self):
-        return urlparse.urljoin(
-            self.rooturl,
-            '~' + self.context.name + '/latest-bugs.atom')
 
 
 class FeedsMixin:
