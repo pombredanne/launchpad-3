@@ -277,6 +277,3 @@ class AnnouncementSetView(HasAnnouncementsView):
         AnnouncementsFeedLink,
         RootAnnouncementsFeedLink,
         )
-
-    def whoami(self):
-        return 'iamme'
