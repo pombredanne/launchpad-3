@@ -14,6 +14,7 @@ __all__ = [
     'PersonLatestBugsFeedLink',
     ]
 
+import urlparse
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -25,7 +26,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces import IBugTask, IBugTarget, IPerson
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp import (
-    Navigation, canonical_name, canonical_url, stepto, urljoin)
+    canonical_name, canonical_url, Navigation, stepto)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -162,7 +163,7 @@ class BugFeedLink(FeedLinkBase):
 
     @property
     def href(self):
-        return urljoin(
+        return urlparse.urljoin(
             self.rooturl,
             'bugs/' + str(self.context.bug.id) + '/bug.atom')
 
@@ -208,3 +209,4 @@ class FeedsMixin:
         return [feed_type(self.context)
                 for feed_type in self.feed_types
                 if feed_type.usedfor.providedBy(self.context)]
+
