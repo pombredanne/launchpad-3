@@ -258,7 +258,8 @@ class MockDbTestCase(unittest.TestCase):
                     )
             con.commit()
 
-            # Confirm that the changed value is visible froma fresh connection.
+            # Confirm that the changed value is visible from a
+            # fresh connection.
             con = self.connect()
             cur = con.cursor()
             cur.execute("SELECT displayname FROM Person WHERE name='stub'")
@@ -279,17 +280,19 @@ class MockDbTestCase(unittest.TestCase):
     def testRollback(self):
         # Confirm rollback behavior
         for mode in self.modes():
-            con = self.connect()
-            cur = con.cursor()
-            cur.execute("UPDATE Person SET displayname='Foo' WHERE name='stub'")
-            con.rollback()
+            con1 = self.connect()
+            cur1 = con1.cursor()
+            cur1.execute(
+                "UPDATE Person SET displayname='Foo' WHERE name='stub'"
+                )
+            con1.rollback()
 
-            con = self.connect()
-            cur = con.cursor()
-            cur.execute("SELECT displayname FROM Person WHERE name='stub'")
+            con2 = self.connect()
+            cur2 = con2.cursor()
+            cur2.execute("SELECT displayname FROM Person WHERE name='stub'")
             self.failUnlessEqual(
-                    cur.fetchone()[0], "Stuart Bishop",
-                    "Commit not seen by subsequent transaction"
+                    cur2.fetchone()[0], "Stuart Bishop",
+                    "Rollback did not roll back changes."
                     )
 
     @dont_retry
@@ -335,6 +338,8 @@ class MockDbTestCase(unittest.TestCase):
             con = self.connect()
             cur = con.cursor()
             self.failUnlessEqual(cur.rowcount, -1)
+
+            # Confirm fetchone() behavior
             cur.execute(
                     "SELECT name FROM Person WHERE name IN ('stub', 'sabdfl')"
                     )
@@ -343,11 +348,19 @@ class MockDbTestCase(unittest.TestCase):
             self.failUnless(cur.rowcount in (-1, 2)) # Ambiguous state
             cur.fetchone()
             self.failUnlessEqual(cur.rowcount, 2)
-            cur.execute(
-                    "SELECT name FROM Person WHERE name IN ('stub', 'sabdfl')"
-                    )
+
+            # Confirm fetchall() behavior
+            cur.execute("""
+                    SELECT name FROM Person
+                    WHERE name IN ('stub', 'sabdfl', 'carlos')
+                    """)
             cur.fetchall()
-            self.failUnlessEqual(cur.rowcount, 2)
+            self.failUnlessEqual(cur.rowcount, 3)
+
+            # Confirm no results behavior
+            cur.execute("SELECT name FROM Person WHERE FALSE")
+            cur.fetchall()
+            self.failUnlessEqual(cur.rowcount, 0)
 
     @dont_retry
     def testCursorClose(self):
