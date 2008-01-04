@@ -594,6 +594,7 @@ class SmartserverTests(SSHTestCase):
 
 
 class OOPSReportingSmartserverTests(SmartserverTests):
+    """Acceptance tests for the ssh server that involve OOPS reporting."""
 
     def setUp(self):
         SmartserverTests.setUp(self)
@@ -601,11 +602,9 @@ class OOPSReportingSmartserverTests(SmartserverTests):
         self._errordir = config.launchpad.errorreports.errordir
         self._copy_to_zlog = config.launchpad.errorreports.copy_to_zlog
         errorreports = config.codehosting
-        print errorreports.oops_prefix, errorreports.errordir, errorreports.copy_to_zlog
         config.launchpad.errorreports.oops_prefix = errorreports.oops_prefix
         config.launchpad.errorreports.errordir = errorreports.errordir
         config.launchpad.errorreports.copy_to_zlog = errorreports.copy_to_zlog
-        print '***', config.launchpad.errorreports.errordir
 
     def tearDown(self):
         SmartserverTests.tearDown(self)
@@ -613,10 +612,24 @@ class OOPSReportingSmartserverTests(SmartserverTests):
         config.launchpad.errorreports.errordir = self._errordir
         config.launchpad.errorreports.copy_to_zlog = self._copy_to_zlog
 
-    def test_blah(self):
+    def test_oops_reported_on_unhandled_exception(self):
+        # We have to examine the oops reports in the main thread because
+        # canonical.config.config is a thread-locals object, but we have to do
+        # ssh client things in another thread, as the server runs in the
+        # twisted reactor in the main thread.
+
+        # Note the last oops reported before we start.
         existing_report = globalErrorUtility.getLastOopsReport()
-        def inner():
+
+        @deferToThread
+        def cause_exception_in_ssh_server():
+            """Trigger an unhandled exception in the code hosting ssh server.
+
+            What we do is attempt to execute some command other than 'bzr
+            serve', which works but is thoroughly arbitrary.
+            """
             c = SSHClient()
+            # Connect to unrecognized hosts freely:
             c.set_missing_host_key_policy(MissingHostKeyPolicy())
             c.connect(
                 'localhost', 22222, 'sabdfl',
@@ -625,11 +638,19 @@ class OOPSReportingSmartserverTests(SmartserverTests):
                 c.exec_command('sleep')
             except SSHException:
                 pass
-        d = deferToThread(inner)()
-        def cb(ignored):
+            c.close()
+
+        d = cause_exception_in_ssh_server()
+
+        def check_new_oops_has_been_reported(ignored):
+            """Check that there has been a new OOPS report logged."""
             new_report = globalErrorUtility.getLastOopsReport()
-            self.assertNotEqual(existing_report, new_report)
-        return d.addCallback(cb)
+            self.assertNotEqual(new_report, None)
+            if existing_report is not None:
+                self.assertNotEqual(new_report.id, existing_report.id)
+            self.assertIn('Not allowed to execute', new_report.value)
+
+        return d.addCallback(check_new_oops_has_been_reported)
 
 def make_server_tests(base_suite, servers):
     from canonical.codehosting.tests.helpers import (
