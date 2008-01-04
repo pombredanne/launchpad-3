@@ -202,7 +202,13 @@ class ErrorReportingUtility:
         self.lastid_lock = threading.Lock()
 
     def _findLastOopsIdFilename(self, directory):
-        """XXX.
+        """Find details of the last OOPS reported in the given directory.
+
+        This function only considers OOPSes with the currently
+        configured oops_prefix.
+
+        :return: a tuple (oops_id, oops_filename), which will be (0,
+            None) if no OOPS is found.
         """
         prefix = config.launchpad.errorreports.oops_prefix
         lastid = 0
@@ -239,7 +245,17 @@ class ErrorReportingUtility:
             oops_report.close()
 
     def getLastOopsReport(self):
-        """XXX."""
+        """Return the last ErrorReport reported with the current config.
+
+        This should only be used in integration tests.
+
+        Note that this function only checks for OOPSes reported today
+        and yesterday (to avoid midnight bugs where an OOPS is logged
+        at 23:59:59 but not checked for until 0:00:01), and ignores
+        OOPSes recorded longer ago.
+
+        Returns None if no OOPS is found.
+        """
         now = datetime.datetime.now(UTC)
         directory = self.errordir(now)
         oopsid, filename = self._findLastOopsIdFilename(directory)
