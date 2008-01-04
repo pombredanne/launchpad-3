@@ -151,8 +151,8 @@ escaped. However, xhtml supports many more entities than xml, and Internet
 Explorer 7 does not allow a DTD to be specified in feeds which prevents the
 xhtml entities from easily being registered in the xml document. Therefore,
 the xhtml entities will be converted to valid UTF-8. Since some simplistic
-feed readers may expect ascii, we will use "html" as the content type
-in preference over "xhtml".
+feed readers may expect ascii, we prefer using "html" over "xhtml", however,
+we are testing xhtml encoding here in case we need it in the future.
 
     >>> xhtml = FeedTypedData("<b> and &nbsp; and &amp;</b><hr/>",
     ...               content_type="xhtml")
