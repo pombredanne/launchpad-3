@@ -61,7 +61,7 @@ class SourcePackageRelease(SQLBase):
     dsc = StringCol(dbName='dsc')
     copyright = StringCol(dbName='copyright', notNull=True)
     version = StringCol(dbName='version', notNull=True)
-    changelog = StringCol(dbName='changelog')
+    changelog_entry = StringCol(dbName='changelog')
     builddepends = StringCol(dbName='builddepends')
     builddependsindep = StringCol(dbName='builddependsindep')
     build_conflicts = StringCol(dbName='build_conflicts')
@@ -351,9 +351,9 @@ class SourcePackageRelease(SQLBase):
         # on Build table:
         # UNIQUE(distribution, architecturetag, sourcepackagerelease, archive)
         # we should use SelectOne (and, obviously, remove the orderBy).
-        # One detail that might influence in this strategy is automatic
-        # rebuild when we may have to consider rebuild_index in the
-        # constraint. See more information on bug #148195.
+        # One detail that might influence in this strategy is
+        # automatic-rebuild when we may have to consider rebuild_index in the
+        # constraint.  See more information on bug #148195.
         return Build.selectFirst(query, orderBy=['-datecreated'])
 
     def override(self, component=None, section=None, urgency=None):
@@ -401,7 +401,7 @@ class SourcePackageRelease(SQLBase):
         # this regex is copied from apt-listchanges.py courtesy of MDZ
         new_stanza_line = re.compile(
             '^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*')
-        logfile = StringIO(self.changelog)
+        logfile = StringIO(self.changelog_entry)
         change = ''
         top_stanza = False
         for line in logfile.readlines():
@@ -426,8 +426,7 @@ class SourcePackageRelease(SQLBase):
         filenames = [
             name for name in tarball.getnames()
             if name.startswith('source/') or name.startswith('./source/')
-            if name.endswith('.pot') or name.endswith('.po')
-            ]
+            if name.endswith('.pot') or name.endswith('.po')]
 
         if importer is None:
             importer = getUtility(ILaunchpadCelebrities).rosetta_experts

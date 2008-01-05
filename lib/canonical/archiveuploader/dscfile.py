@@ -523,7 +523,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             dsc_binaries=encoded['binary'],
             dsc_standards_version=encoded.get('standards-version'),
             component=self.component,
-            changelog=encoded.get('simulated_changelog'),
+            changelog_entry=encoded.get('simulated_changelog'),
             section=self.section,
             archive=self.policy.archive,
             copyright=encoded.get('copyright'),

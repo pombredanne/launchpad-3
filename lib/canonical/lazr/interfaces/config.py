@@ -5,13 +5,19 @@
 __metaclass__ = type
 
 __all__ = [
+    'ConfigErrors',
     'ConfigSchemaError',
+    'IConfig',
+    'IConfigLoader',
     'IConfigSchema',
     'InvalidSectionNameError',
+    'ISection',
     'ISectionSchema',
     'NoCategoryError',
     'RedefinedKeyError',
-    'RedefinedSectionError']
+    'RedefinedSectionError',
+    'UnknownKeyError',
+    'UnknownSectionError']
 
 from zope.interface import Interface, Attribute
 
@@ -36,9 +42,36 @@ class NoCategoryError(LookupError):
     """No `ISectionSchema`s belong to the category name."""
 
 
+class UnknownSectionError(ConfigSchemaError):
+    """The config has a section that is not in the schema."""
+
+
+class UnknownKeyError(ConfigSchemaError):
+    """The section has a key that is not in the schema."""
+
+
+class ConfigErrors(ConfigSchemaError):
+    """The errors in a Config.
+
+    The list of errors can be accessed via the errors attribute.
+    """
+
+    def __init__(self, message, errors=[]):
+        """Initialize the error with a message and errors.
+
+        :param message: a message string
+        :param errors: a list of errors in the config
+        """
+        self.message = message
+        self.errors = errors
+
+    def __str__(self):
+        return '%s: %s' % (self.__class__.__name__, self.message)
+
+
 class ISectionSchema(Interface):
     """Defines the valid keys and default values for a configuration group."""
-    name = Attribute("The section schema name.")
+    name = Attribute("The section name.")
     optional = Attribute("Is the section optional in the config?")
 
     def __iter__():
@@ -51,6 +84,27 @@ class ISectionSchema(Interface):
         """Return the default value of the key.
 
         :raise `KeyError`: if the key does not exist.
+        """
+
+
+class ISection(ISectionSchema):
+    """Defines the values for a configuration group."""
+    schema = Attribute("The ISectionSchema that defines this ISection.")
+
+
+class IConfigLoader(Interface):
+    """A configuration file loader."""
+
+    def load(filename):
+        """Load a configuration from the file at filename."""
+
+    def loadFile(source_file, filename=None):
+        """Load a configuration from the open source_file.
+
+        :param source_file: A file-like object that supports read() and
+            readline()
+        :param filename: The name of the configuration. If filename is None,
+            The name will be taken from source_file.name.
         """
 
 
@@ -70,7 +124,7 @@ class IConfigSchema(Interface):
     category_names = Attribute('The list of section category names.')
 
     def __iter__():
-        """Iterate over the `ISectionSchema`."""
+        """Iterate over the `ISectionSchema`s."""
 
     def __contains__(name):
         """Return True or False if the name matches a `ISectionSchema`."""
@@ -92,4 +146,20 @@ class IConfigSchema(Interface):
 
         :raise `CategoryNotFound`: if no sections have a name that starts
             with the category name.
+        """
+
+
+class IConfig(IConfigSchema):
+    """A process configuration.
+
+    See `IConfigSchema` for more information about the config file format.
+    """
+    schema = Attribute("The schema that defines the config.")
+    extends = Attribute("The configuration that this extends.")
+
+    def validate():
+        """Return True if the config is valid for the schema.
+
+        :raise `ConfigErrors`: if the are errors. A list of all schema
+            problems can be retrieved via the errors property.
         """
