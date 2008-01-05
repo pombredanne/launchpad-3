@@ -6,5 +6,5 @@
 
 <pre style="margin: 0"
      tal:attributes="id string:${context/name}_${context/version}"
-     tal:content="structure view/changelog" />
+     tal:content="structure view/changelog_entry" />
 </tal:root>

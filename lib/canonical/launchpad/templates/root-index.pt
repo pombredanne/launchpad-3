@@ -11,10 +11,6 @@
   <body>
     <div metal:fill-slot="main">
 
-      <link rel="alternate" type="application/atom+xml" 
-            title="All Announcements"
-            tal:attributes="href view/feed_url" />
-
   <div class="informational message" tal:condition="view/canRedirect">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
       <p>As a member of the Launchpad Beta Testers team, you would
