@@ -33,14 +33,17 @@ from canonical.config import config
 from canonical.launchpad.webapp import canonical_url, LaunchpadFormView, urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
-    IFeed, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
+    IFeed, IFeedEntry, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
 
 SUPPORTED_FEEDS = ('.atom', '.html')
 MINUTES = 60 # Seconds in a minute.
 
 
 class FeedBase(LaunchpadFormView):
-    """Base class for feeds."""
+    """See `IFeed`.
+
+    Base class for feeds.
+    """
 
     implements(IFeed)
 
@@ -188,7 +191,13 @@ class FeedBase(LaunchpadFormView):
 
 
 class FeedEntry:
-    """An entry for a feed."""
+    """See `IFeedEntry`.
+
+    An entry for a feed.
+    """
+
+    implements(IFeedEntry)
+
     def __init__(self,
                  title,
                  link_alternate,
