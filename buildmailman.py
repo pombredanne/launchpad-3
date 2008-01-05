@@ -71,9 +71,8 @@ def build_mailman():
 
     mailman_source = os.path.join('sourcecode', 'mailman')
 
-    # Build and install the Mailman software.  Note that we don't care
-    # about --with-mail-gid or --with-cgi-gid because we're not going to
-    # use those Mailman subsystems.
+    # Build and install the Mailman software.  Note that we don't care about
+    # --with-cgi-gid because we're not going to use that Mailman subsystem.
     configure_args = (
         './configure',
         '--prefix', mailman_path,
@@ -81,6 +80,7 @@ def build_mailman():
         '--with-python=' + sys.executable,
         '--with-username=' + user,
         '--with-groupname=' + group,
+        '--with-mail-gid=' + group,
         '--with-mailhost=' + config.mailman.build.host_name,
         )
     retcode = subprocess.call(configure_args, cwd=mailman_source)

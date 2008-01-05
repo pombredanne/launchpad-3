@@ -325,7 +325,7 @@ Retrive the just-inserted SourcePackageRelease correspondent to 'ed'
 Check if we have rebuid the change's author line properly (as
 mentioned in bug # 30621)
 
-  >>> print ed_spr.changelog
+  >>> print ed_spr.changelog_entry
   ed (0.2-20) unstable; urgency=low
   ...
    -- James Troup <james@nocrew.org>  Wed,  2 Apr 2003 17:19:47 +0100
