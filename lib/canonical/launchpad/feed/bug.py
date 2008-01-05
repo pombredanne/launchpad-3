@@ -93,7 +93,7 @@ class BugsFeedBase(FeedBase):
             status = True)
 
     @property
-    def url(self):
+    def link_self(self):
         """See `IFeed`."""
         return "%s/%s.%s" % (
             canonical_url(self.context), self.feedname, self.format)
@@ -166,7 +166,7 @@ class BugFeed(BugsFeedBase):
     def feed_id(self):
         """See `IFeed`."""
         datecreated = self.context.datecreated.date().isoformat()
-        url_path = urlparse(self.alternate_url)[2]
+        url_path = urlparse(self.link_alternate)[2]
         id_ = 'tag:launchpad.net,%s:%s' % (
             datecreated,
             url_path)
@@ -210,7 +210,7 @@ class BugTargetBugsFeed(BugsFeedBase):
             datecreated = self.context.datecreated.date().isoformat()
         else:
             datecreated = '2008'
-        url_path = urlparse(self.alternate_url)[2]
+        url_path = urlparse(self.link_alternate)[2]
         id_ = 'tag:launchpad.net,%s:/%s%s' % (
             datecreated,
             self.rootsite,
@@ -272,13 +272,13 @@ class SearchBugsFeed(BugsFeedBase):
         return "Bugs from custom search"
 
     @property
-    def url(self):
+    def link_self(self):
         """See `IFeed`."""
         return "%s?%s" % (self.request.getURL(),
                           self.request.get('QUERY_STRING'))
 
     @property
-    def alternate_url(self):
+    def link_alternate(self):
         """See `IFeed`."""
         return "%s/bugs/%s?%s" % (self.site_url, self.feedname,
                              self.request.get('QUERY_STRING'))
@@ -289,7 +289,7 @@ class SearchBugsFeed(BugsFeedBase):
         # We don't track the creation date for any given search query so we'll
         # just use a fixed, abbreviated date, which is allowed by the RFC.
         datecreated = "2008"
-        full_path = self.url[self.url.find('/+bugs'):]
+        full_path = self.link_self[self.link_self.find('/+bugs'):]
         id_ = 'tag:launchpad.net,%s:%s' % (
             datecreated,
             full_path)

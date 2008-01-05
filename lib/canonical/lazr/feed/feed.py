@@ -73,7 +73,7 @@ class FeedBase(LaunchpadFormView):
         raise NotImplementedError
 
     @property
-    def url(self):
+    def link_self(self):
         """See `IFeed`."""
         raise NotImplementedError
 
@@ -83,7 +83,7 @@ class FeedBase(LaunchpadFormView):
         return allvhosts.configs['mainsite'].rooturl[:-1]
 
     @property
-    def alternate_url(self):
+    def link_alternate(self):
         """See `IFeed`."""
         return canonical_url(self.context, rootsite=self.rootsite)
 
@@ -102,7 +102,7 @@ class FeedBase(LaunchpadFormView):
             datecreated = self.context.date_created.date().isoformat()
         else:
             datecreated = "2008"
-        url_path = urlparse(self.alternate_url)[2]
+        url_path = urlparse(self.link_alternate)[2]
         if self.rootsite != 'mainsite':
             id_ = 'tag:launchpad.net,%s:/%s%s' % (
                 datecreated,
@@ -193,7 +193,7 @@ class FeedBase(LaunchpadFormView):
 class FeedEntry:
     """See `IFeedEntry`.
 
-    An entry for a feed.
+    An individual entry for a feed.
     """
 
     implements(IFeedEntry)

@@ -13,7 +13,7 @@ __all__ = [
     'UnsupportedFeedFormat',
     ]
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Int, List, Text, TextLine, URI
 
 
@@ -63,9 +63,10 @@ class IFeed(Interface):
     # The URL for a feed identifies it uniquely and it should never change.
     # The latest bugs in Kubuntu is:
     # http://feeds.launchpad.net/kubuntu/latest-bugs.atom
-    url = TextLine(
+    link_self = TextLine(
         title=u"URL for the feed.",
-        description=u"The URL for the feed should be unique and permanent.")
+        description=u"The link_self URL for the feed should be "
+                     "unique and permanent.")
 
     # The site URL refers to the top-level page for the site serving the
     # feed.  For Launchpad the site_url should be the mainsite URL,
@@ -79,12 +80,12 @@ class IFeed(Interface):
     # location of the human-readable equivalent for the feed.  For Ubuntu
     # announcements the alternate location is
     # http://launchpad.net/ubuntu/+announcements.
-    alternate_url = TextLine(
+    link_alternate = TextLine(
         title=u"Alternate URL for the feed.",
         description=u"The URL to a resource that is the human-readable "
                      "equivalent of the feed.  So for: "
                      "http://feeds.launchpad.net/ubuntu/announcements.atom "
-                     "the alternate_url would be: "
+                     "the link_alternate would be: "
                      "http://launchpad.net/ubuntu/+announcements")
 
     # The feed ID is a permanent ID for the feed and it must be unique across
@@ -165,23 +166,80 @@ class IFeedEntry(Interface):
 
     """
 
+    # The title of the entry is prominently displayed in readers and should
+    # succinctly identify the entry, e.g. "Microsoft has a majority market
+    # share."
     title = TextLine(
         title=u"Title",
         description=u"The title of the entry")
 
+    # The link alternate is an URL specifying the location of the
+    # human-readable equivalent for the entry.  For a Ubuntu announcements, an
+    # example alternate location is
+    # http://launchpad.net/ubuntu/+announcement/4.
     link_alternate = TextLine(
         title=u"Alternate URL for the entry.",
         description=u"The URL to a resource that is the human-readable "
                      "equivalent of the entry, e.g. "
                      "http://launchpad.net/ubuntu/+announcement/1")
 
-    content = TextLine(
-        title=u"Content for entry.",
-        description=u"Descriptive content for the entry.  "
-                     "For an announcement, for example, the content "
-                     "is the text of the announcement.  It may be "
-                     "plain text or formatted html, as is done for "
-                     "bugs.")
+    # The actual content for the entry that is to be displayed in the feed
+    # reader.  It may be text or marked up HTML.  It should be an
+    # IFeedTypedData.
+    content = Attribute(
+        u"Content for the entry.  Descriptive content for the entry.  "
+        "For an announcement, for example, the content "
+        "is the text of the announcement.  It may be "
+        "plain text or formatted html, as is done for "
+        "bugs.")
+
+    # Date the entry was created in the system, without respect to the feed.
+    date_created = Datetime(
+        title=u"Date Created",
+        description=u"Date the entry was originally created in Launchpad.")
+    # Date any aspect of the entry was changed.
+    date_updated = Datetime(
+        title=u"Date Updated",
+        description=u"Date the entry was last updated.")
+    # Date the entry became published.
+    date_published = Datetime(
+        title=u"Date Published",
+        description=u"Date the entry was published.  "
+                     "For some content this date will be the same "
+                     "as the creation date.  For others, like an "
+                     "announcement, it will be the date the announcement "
+                     "became public.")
+    # The primary authors for the entry.
+    authors= Attribute(
+        "A list of IFeedPerson representing the authors for the entry.")
+    # People who contributed to the entry.  The line between authors and
+    # contributors is fuzzy.  For a bug, all comment writers could be
+    # considered authors.  Another interpretation would have the original
+    # filer as the author and all commenters as contributors.  Pick an
+    # approach and be consistent.
+    contributors = Attribute(
+        "A list of IFeedPerson representing the contributors for the entry.")
+    # The logo representing the entry.
+    # Not used and ignored.
+    logo  = TextLine(
+        title=u"Logo URL",
+        description=u"The URL for the entry logo."
+                     "Currently not used.")
+    # The icon representing the entry.
+    # Not used and ignored.
+    icon  = TextLine(
+        title=u"Icon URL",
+        description=u"The URL for the entry icon."
+                     "Currently not used.")
+    # The description of the program that generated the feed.  May include
+    # versioning information.  Useful for debugging purposes only.
+    # Not used and ignored.
+    generator = TextLine(
+        title=u"The generator of the feed.",
+        description=u"A description of the program generating the feed.  "
+                     "Analogous to a browser USER-AGENT string.  "
+                     "Currently not used.")
+
 
 class IFeedTypedData(Interface):
     """Interface for typed data in a feed."""

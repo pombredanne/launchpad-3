@@ -36,7 +36,7 @@ class AnnouncementsFeedBase(FeedBase):
         return url
 
     @property
-    def alternate_url(self):
+    def link_alternate(self):
         """See `IFeed`."""
         return "%s+announcements" % self.normalizedUrl(rootsite="mainsite")
 
@@ -51,11 +51,11 @@ class AnnouncementsFeedBase(FeedBase):
         """See `IFeed`."""
         title = self.entryTitle(announcement)
         entry_extra_path = "/+announcement/%d" % announcement.id
-        entry_alternate_url = "%s%s" % (
+        entry_link_alternate = "%s%s" % (
             canonical_url(announcement.target, rootsite=self.rootsite),
             entry_extra_path)
         entry = FeedEntry(title=title,
-                          link_alternate=entry_alternate_url,
+                          link_alternate=entry_link_alternate,
                           date_created=announcement.date_created,
                           date_updated=announcement.date_updated,
                           date_published=announcement.date_announced,
@@ -66,7 +66,7 @@ class AnnouncementsFeedBase(FeedBase):
         return entry
 
     @property
-    def url(self):
+    def link_self(self):
         """See `IFeed`."""
         return "%s%s.%s" % (
             self.normalizedUrl(), self.feedname, self.format)
