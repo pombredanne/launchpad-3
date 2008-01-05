@@ -150,3 +150,18 @@ They sure can:
   >>> browser.title
   'Mozilla Firefox by no-priv in Launchpad'
 
+
+== Display error when trying to remove all licenses ==
+
+After a product has one or more licenses selected, it can never
+again have zero licenses.
+
+  >>> browser.open('http://launchpad.dev/newproductname/+edit')
+  >>> browser.getControl(name='field.licenses').value = []
+  >>> browser.getControl('Change').click()
+  >>> print browser.url
+  http://launchpad.dev/newproductname/+edit
+  >>> get_feedback_messages(browser.contents)
+  [u'There is 1 error.',
+  u'Select all licenses for this software or select 
+  Other/Proprietary or Other/Open Source.']
