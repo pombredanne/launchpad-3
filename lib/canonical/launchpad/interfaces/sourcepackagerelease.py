@@ -121,13 +121,6 @@ class ISourcePackageRelease(Interface):
         "The LibraryFileAlias for the changesfile this package was uploaded "
         "with.")
 
-
-    # XXX Steve Alexander 2004-12-10:
-    #     What do the following methods and attributes do?
-    #     These were missing from the interfaces, but being used
-    #     in application code.
-    architecturesReleased = Attribute("XXX")
-
     def addFile(file):
         """Add the provided library file alias (file) to the list of files
         in this package.

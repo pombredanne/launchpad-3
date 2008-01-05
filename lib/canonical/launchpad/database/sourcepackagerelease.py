@@ -230,30 +230,6 @@ class SourcePackageRelease(SQLBase):
         return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
                 for pub in self.publishings]
 
-    def architecturesReleased(self, distroseries):
-        # The import is here to avoid a circular import. See top of module.
-        from canonical.launchpad.database.soyuz import DistroArchSeries
-        clauseTables = ['BinaryPackagePublishingHistory',
-                        'BinaryPackageRelease',
-                        'Build']
-        # XXX cprov 2006-08-23: Will distinct=True help us here?
-        archSerieses = sets.Set(DistroArchSeries.select(
-            """
-            BinaryPackagePublishingHistory.distroarchseries =
-               DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %d AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-               BinaryPackageRelease.id AND
-            BinaryPackageRelease.build = Build.id AND
-            Build.sourcepackagerelease = %d
-            """ % (distroseries,
-                   distroseries.distribution.all_distro_archive_ids,
-                   self),
-            clauseTables=clauseTables))
-
-        return archSerieses
-
     def addFile(self, file):
         """See ISourcePackageRelease."""
         determined_filetype = None
