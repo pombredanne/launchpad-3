@@ -88,7 +88,8 @@ from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget, ILanguage,
     ILaunchBag, IMailingListSet, IMilestoneSet, IPerson, IPersonSet,
-    IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
+    IPillarName, IProduct, IProductSeries, IProject, ISourcePackage,
+    ISpecification, ITeam,
     IUpstreamBugTask, LanguagePackType, MailingListStatus, PersonVisibility)
 
 from canonical.launchpad.webapp.vocabulary import (
@@ -289,6 +290,8 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
         """See `BranchVocabularyBase`."""
         if IProduct.providedBy(self.context):
             restrict_sql = self._restrictToProduct(self.context)
+        elif IProductSeries.providedBy(self.context):
+            restrict_sql = self._restrictToProduct(self.context.product)
         elif IBranch.providedBy(self.context):
             restrict_sql = self._restrictToProduct(self.context.product)
         else:
