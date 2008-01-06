@@ -36,6 +36,9 @@ class RcsTypeWidgetDisectionTestCase(unittest.TestCase):
             view.rcstype_none, 'radio', 'field.rcstype', '', checked=True)
         self.assertInputElement(
             view.rcstype_cvs, 'radio', 'field.rcstype',
+            RevisionControlSystems.BZR.name, checked=False)
+        self.assertInputElement(
+            view.rcstype_cvs, 'radio', 'field.rcstype',
             RevisionControlSystems.CVS.name, checked=False)
         self.assertInputElement(
             view.rcstype_svn, 'radio', 'field.rcstype',

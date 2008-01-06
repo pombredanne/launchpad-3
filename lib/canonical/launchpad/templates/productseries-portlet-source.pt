@@ -9,7 +9,7 @@
 
   <div class="portletBody">
     <div class="portletContent">
-      <div tal:condition="not:context/rcstype"
+      <div tal:condition="not: view/has_code_import"
            tal:define="branch context/series_branch">
         <tal:block condition="branch/required:launchpad.View">
           <b>Bazaar Branch:</b><br />
@@ -20,7 +20,7 @@
         </tal:block>
         <i tal:condition="not:branch/required:launchpad.View">None given</i>
       </div>
-      <tal:block condition="context/rcstype">
+      <tal:block condition="view/has_code_import">
         <tal:block condition="context/rcstype/enumvalue:CVS">
           <b>CVS Root:</b><br />
           <span tal:replace="context/cvsroot/fmt:shorten/25">cvsrt</span><br />

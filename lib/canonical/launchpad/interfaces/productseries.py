@@ -108,6 +108,12 @@ class RevisionControlSystems(DBEnumeratedType):
     revision control systems.
     """
 
+    BZR = DBItem(10, """
+        Bazaar
+
+        The Bazaar distributed revision control system.
+        """)
+
     CVS = DBItem(1, """
         Concurrent Version System
 
@@ -258,7 +264,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     user_branch = Choice(
         title=_('Branch'),
-        vocabulary='Branch',
+        vocabulary='BranchRestrictedOnProduct',
         required=False,
         description=_("The Bazaar branch for this series.  Leave blank "
                       "if this series is not maintained in Bazaar."))
