@@ -571,7 +571,8 @@
                 </div>
               </td>
 	      <td>
-		<span tal:content="structure view/widgets/tags_combinator" />
+		<tal:combinator
+                 replace="structure view/widgets/tags_combinator" />
 	      </td>
 	    </tr>
             <tr>

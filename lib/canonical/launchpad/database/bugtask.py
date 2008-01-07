@@ -1225,11 +1225,11 @@ class BugTaskSet:
         if params.tag:
             if zope_isinstance(params.tag, all):
                 # If the user chose to search for
-                # the presence of all specified bugs
-                # we must handle the search especially
+                # the presence of all specified bugs,
+                # we must handle the search differently.
                 tags_clauses = []
                 for tag in params.tag.query_values:
-                    tags_clauses.append( """
+                    tags_clauses.append("""
                     EXISTS(
                       SELECT *
                       FROM BugTag

@@ -1752,7 +1752,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
             # Tags require special handling, since they can be used
             # to search either inclusively or exclusively.
             # We take a look at the `tags_combinator` field, and wrap
-            # the tag list in the appropraite search directive (either
+            # the tag list in the appropriate search directive (either
             # `any` or `all`). If no value is supplied, we assume `any`,
             # in order to remain compatible with old saved search URLs.
             tags = data['tag']
