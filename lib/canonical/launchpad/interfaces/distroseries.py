@@ -408,7 +408,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def createUploadedSourcePackageRelease(
         sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
-        changelog, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
+        changelog_entry, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
         dsc_standards_version, dsc_format, dsc_binaries, archive, copyright,
         dateuploaded=None):
         """Create an uploads SourcePackageRelease
@@ -429,7 +429,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
          * dscsigningkey: IGPGKey used to sign the DSC file
          * dsc: string, original content of the dsc file
          * copyright: string, the original debian/copyright content
-         * changelog: string, changelog extracted from the changesfile
+         * changelog_entry: string, changelog extracted from the changesfile
          * architecturehintlist: string, DSC architectures
          * builddepends: string, DSC build dependencies
          * builddependsindep: string, DSC architecture independent build

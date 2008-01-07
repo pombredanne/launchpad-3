@@ -862,6 +862,22 @@ class IBugTaskSet(Interface):
         if the user doesn't have the permission to view this bug.
         """
 
+    def getMultiple(task_ids):
+        """Retrieve a dictionary of bug tasks for the given sequence of IDs.
+
+        :param task_ids: a sequence of bug task IDs.
+
+        :return: a dictionary mapping task IDs to tasks. The
+            dictionary contains an entry for every bug task ID in
+            the given sequence that also matches a bug task in the
+            database. The dictionary does not contain entries for
+            bug task IDs not present in the database.
+
+        :return: an empty dictionary if the given sequence of IDs
+            is empty, or if none of the specified IDs matches a bug
+            task in the database.
+        """
+
     def findSimilar(user, summary, product=None, distribution=None,
                     sourcepackagename=None):
         """Find bugs similar to the given summary.
