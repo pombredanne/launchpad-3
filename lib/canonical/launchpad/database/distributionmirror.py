@@ -192,16 +192,16 @@ class DistributionMirror(SQLBase):
                 return True
         return False
 
-    def disable(self, notify_owner):
+    def disable(self, notify_owner, log):
         """See IDistributionMirror"""
         assert self.last_probe_record is not None, (
             "This method can't be called on a mirror that has never been "
             "probed.")
         if self.enabled or self.all_probe_records.count() == 1:
-            self._sendFailureNotification(notify_owner)
+            self._sendFailureNotification(notify_owner, log)
         self.enabled = False
 
-    def _sendFailureNotification(self, notify_owner):
+    def _sendFailureNotification(self, notify_owner, log):
         """Send a failure notification to the distribution's mirror admins and
         to the mirror owner, in case notify_owner is True.
         """
@@ -213,14 +213,14 @@ class DistributionMirror(SQLBase):
             'distro': self.distribution.title,
             'mirror_name': self.name,
             'mirror_url': canonical_url(self),
+            'log_snippet': "\n".join(log.split('\n')[:20]),
             'logfile_url': self.last_probe_record.log_file.http_url}
         message = template % replacements
         subject = "Launchpad: Verification of %s failed" % self.name
 
         mirror_admin_address = contactEmailAddresses(
             self.distribution.mirror_admin)
-        simple_sendmail(
-            fromaddress, mirror_admin_address, subject, message)
+        simple_sendmail(fromaddress, mirror_admin_address, subject, message)
 
         if notify_owner:
             owner_address = contactEmailAddresses(self.owner)

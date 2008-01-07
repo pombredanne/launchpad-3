@@ -403,12 +403,18 @@ class IDistributionMirror(Interface):
         we don't have control over.
         """
 
-    def disable(notify_owner):
+    def disable(notify_owner, log):
         """Mark this mirror as disabled and notify the distributions's mirror
         admins by email.
 
-        if notify_owner is True, an identical notification is sent to the
+        @param notify_owner: If True, an identical notification is sent to the
         mirror owner.
+
+        @param log: The log of requests/responses from the last time this
+        mirror was probed.  This is only necessary because we want to include
+        a snippet of the log in the email notification but the content can
+        only be read back from the librarian after we commit the transaction
+        (and we really don't want to do it here).
 
         This method can't be called before a probe record has been created
         because we'll link to the latest probe record in the email we send to
