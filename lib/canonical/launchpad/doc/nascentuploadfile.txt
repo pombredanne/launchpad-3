@@ -409,8 +409,7 @@ disk:
   >>> [str(err) for err in errors]
   ['File ed_0.2-20.dsc mentioned in the changes has a checksum mismatch. de8b206f8fc57bd931f6226feac6644a != e31eeb0b6b3b87e1ea79378df864ffff']
 
-As a over-careful check it also verifies the file size when the
-checksum matches.
+It also verifies the file size when the checksum matches.
 
   >>> ed_broken_dsc = DSCFile(
   ...     datadir('ed_0.2-20.dsc'),
