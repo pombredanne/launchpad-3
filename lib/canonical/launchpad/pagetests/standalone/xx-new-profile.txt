@@ -95,7 +95,7 @@ We also explain the users what to write in each form:
 Now we fill the form and save it to create the new account.
 
     >>> browser.getControl('Display Name').value = 'My name'
-    >>> browser.getControl(name='field.password').value = 'aaa'
+    >>> browser.getControl('Create password').value = 'aaa'
     >>> browser.getControl(name='field.password_dupe').value = 'aaa'
     >>> browser.getControl('Continue').click()
 

@@ -11,6 +11,7 @@ __all__ = [
     'IAdminTeamMergeSchema',
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
+    'INewPersonForm',
     'IObjectReassignment',
     'IPerson',
     'IPersonChangePassword',
@@ -1246,6 +1247,18 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
         :target: An object providing `IBugTarget` to search within.
         """
+
+
+class INewPersonForm(IPerson):
+    """Interface used to create new Launchpad accounts.
+
+    The only change with `IPerson` is a customised Password field.
+    """
+
+    password = PasswordField(
+            title=_('Create password'), required=True, readonly=False,
+            description=_("Enter the same password in each field.")
+            )
 
 
 class ITeam(IPerson, IHasIcon):
