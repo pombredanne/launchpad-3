@@ -1614,6 +1614,7 @@ COMMENT ON COLUMN Archive.authorized_size IS 'Size in bytes allowed for this PPA
 COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventions made in the PPA configuration.';
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
+COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
