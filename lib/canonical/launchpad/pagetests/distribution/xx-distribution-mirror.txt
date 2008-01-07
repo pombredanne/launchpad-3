@@ -7,9 +7,33 @@ approval processes for them.
 
 == Mirror registration ==
 
-First of all we'll create a new mirror for the Ubuntu distribution...
+First of all we are going to create a new CD archive mirror for the
+Ubuntu distribution...
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/ubuntu/+newmirror')
+    >>> http_url = 'http://my.cdmirror.com/pub'
+    >>> browser.getControl('Description').value = 'My own CD mirror'
+    >>> browser.getControl('Link Speed').displayValue = ['1 Mbps']
+    >>> browser.getControl('Location').displayValue =  ['Antarctica']
+    >>> browser.getControl('Content').displayValue = ['CD Image']
+    >>> browser.getControl('HTTP URL').value = http_url
+    >>> browser.getControl('Create Mirror').click()
+ 
+    >>> browser.url
+    'http://launchpad.dev/ubuntu/+mirror/my.cdmirror.com-release'
+    >>> print extract_text(find_tag_by_id(browser.contents, 'mirror-details'))
+    Speed: 1 Mbps
+    Country: Antarctica
+    Content: CD Image
+
+Given that it's a CD mirror, it doesn't have sources list entries.
+
+    >>> print find_tag_by_id(browser.contents, 'sources-list-entries')
+    None
+
+Now, we create an archive mirror for Ubuntu distribution.
+
     >>> browser.open('http://launchpad.dev/ubuntu/+newmirror')
     >>> http_url = 'http://my.mirror.com/pub'
     >>> browser.getControl('Description').value = 'My own mirror'
@@ -25,6 +49,13 @@ First of all we'll create a new mirror for the Ubuntu distribution...
     Speed: 1 Mbps
     Country: Antarctica
     Content: Archive
+
+The archive mirror does have sources list entries.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'sources-list-entries'))
+    deb http://my.mirror.com/pub/ hoary main
+    deb-src http://my.mirror.com/pub/ hoary main
 
 
 == Updating a Mirror ==
