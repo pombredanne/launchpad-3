@@ -66,7 +66,7 @@ class RosettaLangPackExporter(LaunchpadCronScript):
         The lockfile name is unique to the script, distribution, and series.
         The script can run concurrently for different distroseries.
         """
-        lockfile_name = "launchpad-%s-%s-%s.lock" % (
+        lockfile_name = "launchpad-%s__%s__%s.lock" % (
             self.name, self.distribution_name, self.series_name)
         self.logger.info('Setting lockfile name to %s.' % lockfile_name)
         return lockfile_name

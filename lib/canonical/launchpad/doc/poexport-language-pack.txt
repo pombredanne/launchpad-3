@@ -38,7 +38,7 @@ Some initialisation tasks:
 
 == Base language pack export using Librarian ==
 
-When a new language pack export is requested, you can select to use
+When a new language pack export is requested, you can select to use the
 Librarian to store the language pack. That is noted with output_file
 set to None.
 
@@ -324,7 +324,7 @@ date after the last generated language pack.
 == Script arguments and concurrency ==
 
 The language-pack-exporter script requires two arguments to run: the
-distribution_name, and series name. The script promptly exits if the
+distribution name, and series name. The script promptly exits if the
 number of command-line arguments is wrong.
 
     >>> import subprocess
@@ -361,7 +361,7 @@ different distribution and series combinations.
     >>> (out, err) = proc.communicate()
     >>> print err
     INFO    Setting lockfile name to
-            launchpad-language-pack-exporter-ubuntu-hoary.lock.
+            launchpad-language-pack-exporter__ubuntu__hoary.lock.
     INFO    creating lockfile
     INFO    Exporting translations for series hoary of distribution ubuntu.
     INFO    Number of PO files to export: 12
