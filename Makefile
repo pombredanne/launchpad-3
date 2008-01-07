@@ -175,6 +175,15 @@ stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
 	    utilities/killservice.py librarian buildsequencer launchpad mailman
 
+shutdown: scheduleoutage stop
+	rm -f ${SRC}/+maintenancetime.txt
+
+scheduleoutage:
+	echo Scheduling outage in 15 mins
+	date --iso-8601=minutes -u -d +15mins > ${SRC}/+maintenancetime.txt
+	echo Sleeping 15 mins
+	sleep 900
+
 harness:
 	PYTHONPATH=lib $(PYTHON) -i lib/canonical/database/harness.py
 
