@@ -867,7 +867,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator,
-        urgency, changelog, dsc, dscsigningkey, section,
+        urgency, changelog_entry, dsc, dscsigningkey, section,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, dateuploaded=DEFAULT):
         """See IDistroSeries."""
@@ -876,8 +876,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             version=version, maintainer=maintainer, dateuploaded=dateuploaded,
             builddepends=builddepends, builddependsindep=builddependsindep,
             architecturehintlist=architecturehintlist, component=component,
-            creator=creator, urgency=urgency, changelog=changelog, dsc=dsc,
-            dscsigningkey=dscsigningkey, section=section,
+            creator=creator, urgency=urgency, changelog_entry=changelog_entry,
+            dsc=dsc, dscsigningkey=dscsigningkey, section=section,
             copyright=copyright, upload_archive=archive,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
@@ -1519,7 +1519,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasTranslationTemplates`."""
         result = POTemplate.selectBy(distroseries=self,
                                      orderBy=['-priority', 'name'])
-        return shortlist(result, 300)
+        return shortlist(result, 2000)
 
     def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -1532,7 +1532,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ''' % sqlvalues(self),
             clauseTables = ['DistroSeries', 'Distribution'],
             orderBy=['-priority', 'name'])
-        return shortlist(result, 300)
+        return shortlist(result, 2000)
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""

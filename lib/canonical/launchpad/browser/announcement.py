@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'HasAnnouncementsView',
     'AnnouncementAddView',
     'AnnouncementRetargetView',
     'AnnouncementPublishView',
@@ -13,7 +12,9 @@ __all__ = [
     'AnnouncementDeleteView',
     'AnnouncementEditView',
     'AnnouncementContextMenu',
+    'AnnouncementSetView',
     'AnnouncementSHP',
+    'HasAnnouncementsView',
     ]
 
 import cgi
@@ -26,7 +27,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad.interfaces import (
-    IAnnouncement, IAnnouncementSet, IHasAnnouncements, ILaunchpadRoot)
+    IAnnouncement, IAnnouncementSet)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import AnnouncementDate, Summary, Title
@@ -37,11 +38,12 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, LaunchpadView, LaunchpadFormView, Link
     )
 from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.browser.feeds import (
+    AnnouncementsFeedLink, FeedsMixin, RootAnnouncementsFeedLink)
 from canonical.launchpad.browser.launchpad import (
     StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.url import urlappend
 
 from canonical.widgets import AnnouncementDateWidget
 
@@ -234,19 +236,15 @@ class AnnouncementDeleteView(LaunchpadFormView):
         self.next_url = canonical_url(self.context.target)+'/+announcements'
 
 
-class HasAnnouncementsView(LaunchpadView):
+class HasAnnouncementsView(LaunchpadView, FeedsMixin):
     """A view class for pillars which have announcements."""
 
     @cachedproperty
     def feed_url(self):
-        base_url = allvhosts.configs['feeds'].rooturl
-        if IAnnouncementSet.providedBy(self.context):
-            return urlappend(base_url, 'announcements.atom')
-        elif ILaunchpadRoot.providedBy(self.context):
-            return urlappend(base_url, 'announcements.atom')
-        elif IHasAnnouncements.providedBy(self.context):
-            return urlappend(canonical_url(self.context, rootsite='feeds'),
-                             'announcements.atom')
+        if AnnouncementsFeedLink.usedfor.providedBy(self.context):
+            return AnnouncementsFeedLink(self.context).href
+        elif RootAnnouncementsFeedLink.usedfor.providedBy(self.context):
+            return RootAnnouncementsFeedLink(self.context).href
         else:
             raise AssertionError, 'Unknown feed source'
 
@@ -268,3 +266,14 @@ class HasAnnouncementsView(LaunchpadView):
             self.announcements, self.request,
             size=config.launchpad.default_batch_size)
 
+
+class AnnouncementSetView(HasAnnouncementsView):
+    """View a list of announcements.
+
+    All other feed links should be disabled on this page by
+    overriding the feed_types class variable.
+    """
+    feed_types = (
+        AnnouncementsFeedLink,
+        RootAnnouncementsFeedLink,
+        )

@@ -26,7 +26,6 @@ from canonical.launchpad.interfaces import (
     IBug, IBugTarget, IBugTaskSet, IMaloneApplication, IPerson)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
-from canonical.lazr.interfaces import IFeed
 
 
 def get_unique_bug_tasks(items):
@@ -137,7 +136,7 @@ class BugsFeedBase(FeedBase):
                           date_published=bugtask.datecreated,
                           authors=[FeedPerson(bug.owner, self.rootsite)],
                           content=FeedTypedData(content_view.render(),
-                                                content_type="xhtml"))
+                                                content_type="html"))
         return entry
 
     def renderHTML(self):
