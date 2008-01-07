@@ -31,7 +31,7 @@ from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
     CreateBugParams, IBugWatchSet, IDistribution, IExternalBugTracker,
-    ILaunchpadCelebrities, IMessageSet, IPersonSet, NotFoundError,
+    ILaunchpadCelebrities, IMessageSet, IPersonSet,
     PersonCreationRationale, ISupportsCommentImport,
     UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp.url import urlparse
@@ -108,7 +108,7 @@ def get_bugwatcherrortype_for_error(error):
         if isinstance(error, exc_type):
             return bugwatcherrortype
     else:
-        return None
+        return BugWatchErrorType.UNKNOWN
 
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
@@ -278,13 +278,14 @@ class ExternalBugTracker:
         try:
             self.initializeRemoteBugDB(bug_ids_to_update)
         except Exception, error:
-            # If the error is one recognised by BugWatchErrorType we
-            # record it against all the bugwatches that should have been
-            # updated before re-raising it.
+            # We record the error against all the bugwatches that should
+            # have been updated before re-raising it. We also update the
+            # bug watches' lastchecked dates so that checkwatches
+            # doesn't keep trying to update them every time it runs.
             errortype = get_bugwatcherrortype_for_error(error)
-            if errortype:
-                for bugwatch in bug_watches:
-                    bugwatch.last_error_type = errortype
+            for bugwatch in bug_watches:
+                bugwatch.lastchecked = UTC_NOW
+                bugwatch.last_error_type = errortype
             raise
 
         # Again, fixed order here to help with testing.
@@ -344,14 +345,16 @@ class ExternalBugTracker:
                 # bug watches will get recorded.
                 self.txn.abort()
                 self.txn.begin()
-                bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(bug_watch_ids)
+                bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
+                    bug_watch_ids)
 
-                # We record errors against the bug watches where
-                # possible.
+                # We record errors against the bug watches and update
+                # their lastchecked dates so that we don't try to
+                # re-check them every time checkwatches runs.
                 errortype = get_bugwatcherrortype_for_error(error)
-                if errortype:
-                    for bugwatch in bug_watches:
-                        bugwatch.last_error_type = errortype
+                for bugwatch in bug_watches:
+                    bugwatch.lastchecked = UTC_NOW
+                    bugwatch.last_error_type = errortype
 
                 log.error("Failure updating bug %r on %s (local bugs: %s)." %
                             (bug_id, bug_tracker_url, local_ids),
@@ -827,7 +830,13 @@ class DebBugs(ExternalBugTracker):
     def importBugComments(self, bug_watch):
         """Import the comments from a DebBugs bug."""
         debian_bug = self._findBug(bug_watch.remotebug)
-        self.debbugs_db.load_log(debian_bug)
+
+        try:
+            self.debbugs_db.load_log(debian_bug)
+        except debbugs.LogParseFailed:
+            log.warn("Unable to import comments for DebBugs bug #%s. "
+                "Could not parse comment log." %  bug_watch.remotebug)
+            return
 
         imported_comments = []
         for comment in debian_bug.comments:
@@ -868,7 +877,8 @@ class DebBugs(ExternalBugTracker):
                 # carry on.
                 log.warn("Unable to parse comment %s on Debian bug %s: "
                     "No valid sender address found." %
-                    (parsed_comment.get('message-id', ''), debian_bug.id))
+                    (parsed_comment.get('message-id', ''),
+                    bug_watch.remotebug))
                 return None
 
             display_name, email_addr = parseaddr(owner_email)
@@ -2016,7 +2026,7 @@ class RequestTracker(ExternalBugTracker):
         try:
             opener.open('%s/' % self.baseurl, urllib.urlencode(
                 self.credentials))
-        except (urrlib2.HTTPError, urllib2.URLError), error:
+        except (urllib2.HTTPError, urllib2.URLError), error:
             raise BugTrackerConnectError('%s/' % self.baseurl,
                 "Unable to authenticate with remote RT service: "
                 "Could not submit login form: " +
@@ -2075,7 +2085,7 @@ class RequestTracker(ExternalBugTracker):
             bug_data = self.urlopen(query_url, urllib.urlencode(
                 request_params))
         except urllib2.HTTPError, error:
-            raise BugTrackerConnectError(ticket_url, error.message)
+            raise BugTrackerConnectError(query_url, error.message)
 
         # We use the first line of the response to ensure that we've
         # made a successful request.

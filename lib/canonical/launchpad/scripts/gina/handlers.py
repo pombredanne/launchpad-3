@@ -1,11 +1,11 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-__metaclass__ = type
-
 """Gina db handlers.
 
 Classes to handle and create entries on launchpad db.
 """
+
+__metaclass__ = type
 
 __all__ = [
     'ImporterHandler',

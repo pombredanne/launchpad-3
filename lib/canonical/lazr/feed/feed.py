@@ -19,6 +19,8 @@ __all__ = [
 import operator
 import os
 import time
+from xml.sax.saxutils import escape as xml_escape
+from BeautifulSoup import BeautifulStoneSoup
 from datetime import datetime
 
 from zope.app.datetimeutils import rfc1123_date
@@ -48,6 +50,7 @@ class FeedBase(LaunchpadFormView):
     max_age = config.launchpad.max_feed_cache_minutes * MINUTES
     quantity = 25
     items = None
+    rootsite = 'mainsite'
     template_files = {'atom': 'templates/feed-atom.pt',
                       'html': 'templates/feed-html.pt'}
 
@@ -78,6 +81,11 @@ class FeedBase(LaunchpadFormView):
     def site_url(self):
         """See `IFeed`."""
         return allvhosts.configs['mainsite'].rooturl[:-1]
+
+    @property
+    def alternate_url(self):
+        """See `IFeed`."""
+        return canonical_url(self.context, rootsite=self.rootsite)
 
     def getItems(self):
         """See `IFeed`."""
@@ -199,10 +207,20 @@ class FeedTypedData:
     content_types = ['text', 'html', 'xhtml']
 
     def __init__(self, content, content_type='text'):
-        self.content = content
+        self._content = content
         if content_type not in self.content_types:
             raise UnsupportedFeedFormat("%s: is not valid" % content_type)
         self.content_type = content_type
+
+    @property
+    def content(self):
+        if self.content_type in ('text', 'html'):
+            return xml_escape(self._content)
+        elif self.content_type == 'xhtml':
+            soup = BeautifulStoneSoup(
+                self._content,
+                convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
+            return unicode(soup)
 
 
 class FeedPerson:

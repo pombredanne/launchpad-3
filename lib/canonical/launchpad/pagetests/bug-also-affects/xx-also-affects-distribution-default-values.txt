@@ -25,3 +25,7 @@ first source package found in the "Affects" list.
     >>> user_browser.getControl('Source Package').value
     'mozilla-firefox'
 
+The default value of the distribution drop-down list will be Ubuntu.
+
+    >>> user_browser.getControl('Distribution').value
+    ['ubuntu']

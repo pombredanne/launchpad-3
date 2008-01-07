@@ -88,7 +88,9 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 
 from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
-from canonical.launchpad.browser.feeds import FeedsMixin
+from canonical.launchpad.browser.feeds import (
+    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
+    PersonLatestBugsFeedLink)
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
@@ -844,6 +846,14 @@ class BugTaskEditView(LaunchpadEditFormView):
         return editable_field_names
 
     @property
+    def is_question(self):
+        """Return True or False if this bug was converted into a question.
+
+        Bugtasks cannot be edited if the bug was converted into a question.
+        """
+        return self.context.bug.getQuestionCreatedFromBug() is not None
+
+    @property
     def next_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
@@ -1527,6 +1537,12 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
 
 class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
     """View that renders a list of bugs for a given set of search criteria."""
+
+    # Only include <link> tags for bug feeds when using this view.
+    feed_types = (
+        BugTargetLatestBugsFeedLink,
+        PersonLatestBugsFeedLink,
+        )
 
     # These widgets are customised so as to keep the presentation of this view
     # and its descendants consistent after refactoring to use
