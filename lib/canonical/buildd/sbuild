@@ -569,6 +569,9 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	elsif (/^--comp=(.)/) {
 		$main::component=$1.$';
 	}
+        elsif (/^--purpose=(.)/) {
+                $main::purpose=$1.$';
+	}
 	elsif (/^-d/ || /^--dist/) {
 		if (/^-d(.)/ || /^--dist=(.)/) {
 			$main::distribution = $1.$';
@@ -677,8 +680,8 @@ $SIG{'TERM'} = \&shutdown;
 $SIG{'ALRM'} = \&shutdown;
 $SIG{'PIPE'} = \&shutdown;
 read_deps( map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV );
-if (-d "chroot-$main::distribution") {
-	$main::chroot_dir = "chroot-$main::distribution";
+if (-d "chroot-autobuild") {
+	$main::chroot_dir = "chroot-autobuild";
 	$main::chroot_build_dir = "$main::chroot_dir/build/$main::username/";
 	$conf::srcdep_lock_dir = "$main::chroot_dir/var/debbuild/srcdep-lock";
 	$main::ilock_file = "$conf::srcdep_lock_dir/install";
@@ -1140,6 +1143,8 @@ EOF
 	open CURRENT, ">$main::cwd/$main::chroot_dir/CurrentlyBuilding" or die "$main::cwd/$main::chroot_dir/CurrentlyBuilding open failed";
 	# Package: must be first
 	print CURRENT "Package: $pkg\nComponent: $main::component\n";
+	print CURRENT "Suite: $main::distribution\n" if $main::distribution;
+	print CURRENT "Purpose: $main::purpose\n" if $main::purpose;
 	close CURRENT;
 
 	$main::build_start_time = time;
