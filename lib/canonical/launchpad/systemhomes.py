@@ -18,6 +18,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.publisher.interfaces import IPublishTraverse, NotFound
 
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAuthServerApplication, IBazaarApplication, IBugSet,
@@ -26,8 +27,9 @@ from canonical.launchpad.interfaces import (
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication, IOpenIdApplication,
     IProductSet, IRegistryApplication, IRosettaApplication,
-    IShipItApplication, ITranslationGroupSet)
+    IShipItApplication, ITranslationGroupSet, IWebServiceApplication)
 
+from canonical.lazr.interfaces import (IHTTPResource)
 
 class AuthServerApplication:
     """AuthServer End-Point."""
@@ -186,3 +188,18 @@ class RosettaApplication:
 
 class HWDBApplication:
     implements(IHWDBApplication)
+
+
+class WebServiceApplication:
+    """See IWebServiceApplication."""
+    implements(IWebServiceApplication, IPublishTraverse, IHTTPResource)
+
+    def publishTraverse(self, request, name):
+        """In the final version, this method will return a CollectionResource
+        corresponding to one of the top-level collections.
+        """
+        raise NotFound(self, name)
+
+    def __call__(self):
+        import pdb; pdb.set_trace()
+        return "Hello, world!"

@@ -33,7 +33,7 @@ from canonical.lazr.interfaces import IFeed
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication,
-    IShipItApplication)
+    IShipItApplication, IWebServiceApplication)
 
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
@@ -874,7 +874,13 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
 # ---- web service
 
 class WebServicePublication(LaunchpadBrowserPublication):
-    """The publication used for Launchpad feed requests."""
+    """The publication used for Launchpad web service requests."""
+
+    root_object_interface = IWebServiceApplication
+
+    def getDefaultTraversal(self, request, ob):
+        return (ob, None)
+
 
 class WebServiceClientRequest(LaunchpadBrowserRequest):
     """Request type for a resource published through the web service."""
