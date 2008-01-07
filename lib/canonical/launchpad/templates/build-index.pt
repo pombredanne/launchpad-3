@@ -26,7 +26,7 @@
            tal:condition="view/user_can_retry_build">
          <p> You can <a href="+retry">retry</a> this build if you think
              the failure was transient. Be aware that the previous
-             buildlog will be purged.</p>
+             build log and timestamps will be purged.</p>
       </div>
 
       <div id="build-details" style="padding-top: 1em;">
@@ -53,7 +53,7 @@
               </a>
             </td>
             <td tal:condition="context/is_trusted">
-               <i><span tal:replace="context/distribution/name"/> archive</i>
+               <span tal:replace="context/distribution/name"/> archive
             </td>
           </tr>
 

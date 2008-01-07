@@ -29,7 +29,7 @@
         <a tal:content="context/distroarchseries/displayname"
            tal:attributes="href context/distroarchseries/fmt:url"
         >warty i386</a>
-       <td>
+      </td>
     </tr>
     <tr>
       <th>Status:</th>

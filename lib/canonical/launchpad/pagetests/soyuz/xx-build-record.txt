@@ -7,20 +7,13 @@ Relevant build details are listed in the page body.
     >>> build_details = extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'build-details'))
 
-XXX cprov 20080104: this function is required to present the contents
-of builf 17 page after filtered by 'extract_text', a simple 'print'
-results in a UnicodeDecodeError. Note that the usual procedure works
-fine for build 10 (see below in 'Builds created by Gina' section).
+The print_text function is required to present the contents
+of builf 17 page after it is filtered by 'extract_text', a simple
+'print' results in a UnicodeDecodeError. Note that the usual procedure
+works fine for build 10 (see below in 'Builds created by Gina' section).
 
     >>> def print_text(text):
-    ...     # Breaks the system ...
-    ...     #print text
-    ...     #return
-    ...     for l in text.splitlines():
-    ...         # world falls apart too
-    ...         #print l
-    ...         #continue
-    ...         print str(l)
+    ...     print str(text)
 
     >>> print_text(build_details)
     Changes file: not available
@@ -97,7 +90,7 @@ of this procedure.
     >>> print_text(
     ...     extract_text(find_main_content(admin_browser.contents)))
     Retry i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
-    i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE is
+    The status i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE is
     Failed to build.
     Retrying this build will destroy its history and logs.
     Are you sure ?
@@ -134,8 +127,8 @@ Clicking this should give a warning.
 == Build Rescoring ==
 
 Build rescoring feature (fixed bug #44227, we create build records
-when retrying a build, so there is not life-cycle for a pending build
-w/o build record anymore.)
+when retrying a build, so there is no life-cycle for a pending build
+without buildqueue record anymore.)
 
     >>> admin_browser.getLink("Rescore build").click()
     >>> admin_browser.getControl(name="SCORE").value = '100'
@@ -168,7 +161,7 @@ state.
 == Builds created by Gina ==
 
 Gina, when importing packages from debian, is allowed to create build
-records satisfy our DB model, however we don't populate most of the
+records to satisfy our DB model, however we don't populate most of the
 fields because they would not be accurate.
 
     >>> anon_browser.open("http://launchpad.dev/+builds/+build/10")
