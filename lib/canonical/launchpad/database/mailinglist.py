@@ -257,9 +257,9 @@ class MailingList(SQLBase):
                 (person.displayname, address.email))
         subscription.email_address = address
 
-    def getSubscribedAddresses(self):
-        """See `IMailingList`."""
-        subscriptions = MailingListSubscription.select(
+    def _getSubscriptions(self):
+        """Return the IMailingListSubscriptions for this mailing list."""
+        return MailingListSubscription.select(
             """mailing_list = %s AND
                TeamParticipation.team = %s AND
                MailingList.status <> %s AND
@@ -267,22 +267,17 @@ class MailingList(SQLBase):
                TeamParticipation.person = MailingListSubscription.person
             """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
             distinct=True, clauseTables=['TeamParticipation', 'MailingList'])
-        for subscription in subscriptions:
+
+    def getSubscribedAddresses(self):
+        """See `IMailingList`."""
+        for subscription in self._getSubscriptions():
             yield subscription.subscribed_address.email
 
     def getSenderAddresses(self):
         """See `IMailingList`."""
         # Make this more efficient.
-        subscriptions = MailingListSubscription.select(
-            """mailing_list = %s AND
-               TeamParticipation.team = %s AND
-               MailingList.status <> %s AND
-               MailingList.id = MailingListSubscription.mailing_list AND
-               TeamParticipation.person = MailingListSubscription.person
-            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
-            distinct=True, clauseTables=['TeamParticipation', 'MailingList'])
         email_addresses = set()
-        for subscription in subscriptions:
+        for subscription in self._getSubscriptions():
             preferred = subscription.person.preferredemail
             if preferred is not None:
                 email_addresses.add(preferred.email)

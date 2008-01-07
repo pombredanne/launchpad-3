@@ -23,9 +23,10 @@ from canonical.launchpad.xmlrpc import faults
 # 'make mailman_instance').  In that case, this import will fail, but in that
 # case just use the constant value directly.
 try:
-    from Mailman.MemberAdaptor import ENABLED
+    from Mailman.MemberAdaptor import ENABLED, BYUSER
 except ImportError:
     ENABLED = 0
+    BYUSER = 2
 
 
 class MailingListAPIView(LaunchpadXMLRPCView):
@@ -113,22 +114,38 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             mailing_list = listset.get(team_name)
             if mailing_list is None:
                 return faults.NoSuchTeamMailingList(team_name)
-            members = []
-            for address in mailing_list.getAddresses():
+            # Map {address -> (real_name, flags, status)}
+            members = {}
+            # Hard code flags to 0 currently, meaning the member will get
+            # regular (not digest) delivery, will not get post
+            # acknowledgements, will receive their own posts, and will not
+            # be moderated.  A future phase may change some of these
+            # values.
+            flags = 0
+            # Start by getting all addresses for all users who are subscribed.
+            # These are the addresses that are allowed to post to the mailing
+            # list, but may not get deliveries of posted messages.
+            for address in mailing_list.getSenderAddresses():
                 email_address = emailset.getByEmail(address)
                 real_name = email_address.person.displayname
-                # Hard code flags to 0 currently, meaning the member will get
-                # regular (not digest) delivery, will not get post
-                # acknowledgements, will receive their own posts, and will not
-                # be moderated.  A future phase may change some of these
-                # values.
-                flags = 0
-                # Hard code the status to ENABLED so that the member will
-                # receive list messages.  A future phase may change this when
-                # bounce processing is added.
-                status = ENABLED
-                members.append((address, real_name, flags, status))
-            response[team_name] = sorted(members, key=itemgetter(0))
+                # We'll mark the status of these addresses as disabled BYUSER,
+                # which seems like the closest mapping to the semantics we
+                # intend.  It doesn't /really/ matter as long as it's disabled
+                # because the reason is only evident in the Mailman web u/i,
+                # which we're not using.
+                members[address] = (real_name, flags, BYUSER)
+            # Now go through just the subscribed addresses, the main
+            # difference now being that these addresses are enabled for
+            # delivery.  If there are overlaps, the enabled flag wins.
+            for address in mailing_list.getSubscribedAddresses():
+                email_address = emailset.getByEmail(address)
+                real_name = email_address.person.displayname
+                members[address] = (real_name, flags, ENABLED)
+            # The response must be a list of tuples.
+            response[team_name] = [
+                (address, members[address][0],
+                 members[address][1], members[address][2])
+                for address in sorted(members)]
         return response
 
     def isRegisteredInLaunchpad(self, address):
