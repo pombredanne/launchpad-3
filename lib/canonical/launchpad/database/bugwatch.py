@@ -329,9 +329,23 @@ class BugWatchSet(BugSetBase):
 
     def parseRTURL(self, scheme, host, path, query):
         """Extract the RT base URL and bug ID."""
-        match = re.match(r'(.*/)Ticket/Display.html', path)
+
+        # We use per-host regular expressions to account for those RT
+        # hosts that we know use non-standard URLs for their tickets,
+        # allowing us to parse them properly.
+        host_expressions = {
+            'default': r'(.*/)(Bug|Ticket)/Display.html',
+            'rt.cpan.org': r'(.*/)Public/(Bug|Ticket)/Display.html'}
+
+        try:
+            expression = host_expressions[host]
+        except KeyError:
+            expression = host_expressions['default']
+
+        match = re.match(expression, path)
         if not match:
             return None
+
         base_path = match.group(1)
         remote_bug = query['id']
 
