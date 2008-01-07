@@ -380,7 +380,7 @@ class IPersonChangePassword(Interface):
             )
 
     password = PasswordField(
-            title=_('New Password'), required=True, readonly=False,
+            title=_('New password'), required=True, readonly=False,
             description=_("Enter the same password in each field.")
             )
 
@@ -425,7 +425,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "here.")
             )
     password = PasswordField(
-            title=_('Password'), required=True, readonly=False)
+            title=_('Password'), required=True, readonly=False,
+            description=_("Enter the same password in each field.")
+            )
     karma = Int(
             title=_('Karma'), readonly=False,
             description=_('The cached total karma for this person.')

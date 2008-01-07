@@ -82,8 +82,17 @@ process in order to validate that profile.
 We don't prefill the new account's display name because the one we have was
 not entered by the users themselves.
 
-    >>> browser.getControl('Display Name').value == ''
-    True
+    >>> browser.getControl('Display Name').value
+    ''
+
+We also explain the users what to write in each form:
+
+    >>> for tag in find_tags_by_class(browser.contents, 'formHelp'):
+    ...     print extract_text(tag)
+    Your name as you would like it displayed throughout Launchpad...
+    Enter the same password in each field.
+
+Now we fill the form and save it to create the new account.
 
     >>> browser.getControl('Display Name').value = 'My name'
     >>> browser.getControl(name='field.password').value = 'aaa'
