@@ -57,6 +57,7 @@ from canonical.launchpad.webapp.uri import URI
 
 from canonical.widgets import SinglePopupWidget
 from canonical.widgets.branch import TargetBranchWidget
+from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
 
 def quote(text):
@@ -632,6 +633,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                    'author']
 
     branch = None
+    custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
     @property
     def initial_values(self):

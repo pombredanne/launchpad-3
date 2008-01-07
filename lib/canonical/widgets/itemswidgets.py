@@ -16,6 +16,7 @@ import math
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser import MultiCheckBoxWidget
 from zope.app.form.browser.itemswidgets import DropdownWidget, RadioWidget
+from zope.app.form.browser.widget import renderElement
 
 
 class LaunchpadDropdownWidget(DropdownWidget):
@@ -91,6 +92,39 @@ class LaunchpadRadioWidget(RadioWidget):
             items.insert(0, option)
 
         return items
+
+
+class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
+
+    _joinButtonToMessageTemplate = u"<label>%s&nbsp;%s</label> - %s"
+
+    def renderItem(self, index, text, value, name, cssClass):
+        """Render an item of the list."""
+        description= self.vocabulary.getTermByToken(value).value.description
+
+        id = '%s.%s' % (name, index)
+        elem = renderElement(u'input',
+                             value=value,
+                             name=name,
+                             id=id,
+                             cssClass=cssClass,
+                             type='radio')
+        return self._joinButtonToMessageTemplate % (elem, text, description)
+
+    def renderSelectedItem(self, index, text, value, name, cssClass):
+        """Render a selected item of the list."""
+        description= self.vocabulary.getTermByToken(value).value.description
+
+        id = '%s.%s' % (name, index)
+        elem = renderElement(u'input',
+                             value=value,
+                             name=name,
+                             id=id,
+                             cssClass=cssClass,
+                             checked="checked",
+                             type='radio')
+        return self._joinButtonToMessageTemplate %(elem, text, description)
+
 
 class CheckBoxMatrixWidget(LabeledMultiCheckBoxWidget):
     """A CheckBox widget which organizes the inputs in a grid.
