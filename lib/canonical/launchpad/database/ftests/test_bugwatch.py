@@ -170,7 +170,7 @@ class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
 
 class RTExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.extractBugTrackerAndBug works with RoundUp URLs."""
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with RT URLs."""
 
     bugtracker_type = BugTrackerType.RT
     bug_url = 'http://some.host/Ticket/Display.html?id=2379'
@@ -179,7 +179,7 @@ class RTExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
 
 class CpanExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.extractBugTrackerAndBug works with RoundUp URLs."""
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with CPAN URLs."""
 
     bugtracker_type = BugTrackerType.RT
     bug_url = 'http://rt.cpan.org/Public/Bug/Display.html?id=2379'
