@@ -180,15 +180,14 @@ The getBy*Url methods return the corresponding mirrors:
 
 == Finding the best mirror for a given user ==
 
-In order to be able to guess what'd be the best mirror for a given user based
+In order to be able to guess what would be the best mirror for a given user based
 on his IP address, we provide simple API to find official mirrors of a given
 content type located on a given country (or any other country in its
-continent if the country doesn't have any). The main repository for that type
-is always appended to the end of the list.
+continent if the country doesn't have any).
 
-We have an official cdimage mirror in Germany, but no archive mirrors, so
-we'll suggest the french mirrors when asked about archive mirrors to be
-used in Germany.
+In Germany we have a single cdimage mirror, so the list will contain that
+mirror followed by the main cdimage repository (releases.ubuntu.com),
+which is always appended to the end of the list.
 
     >>> germany = getUtility(ICountrySet)['DE']
     >>> cdimage = MirrorContent.RELEASE
@@ -197,16 +196,15 @@ used in Germany.
     [(u'releases-mirror2', u'Germany'),
      (u'canonical-releases', u'United Kingdom')]
 
-Note that since Germany is in Europe (and so are France and the UK), the
-main mirror will be the first on the list instead of the last, since it's
-the fastest one and is in the same continet than the others.
+Since there are no archive mirrors in Germany, any user in that country
+will be directed to other mirrors in the same continet.
 
     >>> archive = MirrorContent.ARCHIVE
-    >>> [(mirror.name, mirror.country.name, mirror.speed.title)
-    ...  for mirror in mirrorset.getBestMirrorsForCountry(germany, archive)]
-    [(u'canonical-archive', u'United Kingdom', '100 Mbps'),
-     (u'archive-404-mirror', u'France', '512 Kbps'),
-     (u'archive-mirror', u'France', '128 Kbps')]
+    >>> mirrors = mirrorset.getBestMirrorsForCountry(germany, archive)
+    >>> sorted((mirror.name, mirror.country.name)
+    ...        for mirror in mirrors)
+    [(u'archive-404-mirror', u'France'), (u'archive-mirror', u'France'),
+    (u'canonical-archive', u'United Kingdom')]
 
 In brazil we don't have official archive or cdimage mirrors, so all we see is
 the main repository.
@@ -219,27 +217,12 @@ the main repository.
     ...  for mirror in mirrorset.getBestMirrorsForCountry(brazil, cdimage)]
     [(u'canonical-releases', u'United Kingdom')]
 
-When we have more than one mirror, they're ordered by speed.
-Note that even though the main mirror (located in the UK) is fastest than the
-French ones, it's still at the end of the list, since the other ones are
-probably closer to the requester and thus may be a better choice.
+If we fail to identify the user's country and pass None to
+getBestMirrorsForCountry() we'll get only the main repository as well.
 
-    >>> france = getUtility(ICountrySet)['FR']
-    >>> mirrors = mirrorset.getBestMirrorsForCountry(france, cdimage)
-    >>> [(mirror.name, mirror.country.name, mirror.speed.title)
-    ...  for mirror in mirrors]
-    [(u'releases-mirror', u'France', '2 Mbps'),
-     (u'unreachable-mirror', u'France', '512 Kbps'),
-     (u'canonical-releases', u'United Kingdom', '100 Mbps')]
-
-In France we also have some unofficial mirrors, but these are not included on
-the above list.
-
-    >>> unofficial_mirror = mirrorset.getByName('invalid-mirror')
-    >>> unofficial_mirror.country == france
-    True
-    >>> unofficial_mirror.isOfficial()
-    False
+    >>> [(mirror.name, mirror.country.name)
+    ...  for mirror in mirrorset.getBestMirrorsForCountry(None, archive)]
+    [(u'canonical-archive', u'United Kingdom')]
 
 
 == Probing the mirrors ==
