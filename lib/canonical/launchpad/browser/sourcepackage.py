@@ -31,8 +31,8 @@ from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage,
     PackagePublishingPocket)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, Link, redirection,
-    StandardLaunchpadFacets, stepto)
+    ApplicationMenu, enabled_with_permission, GetitemNavigation, Link,
+    redirection, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
@@ -140,6 +140,7 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
         text = 'See import queue'
         return Link('+imports', text)
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
         text = 'Download translations'
         enabled = (len(self.context.getCurrentTranslationTemplates()) > 0)

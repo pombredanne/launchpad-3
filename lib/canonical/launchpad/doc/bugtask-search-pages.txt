@@ -148,7 +148,7 @@ message.
     >>> distro_advanced_search_listingview = create_view(
     ...     debian, '+bugs', form_values)
 
-    >>> distro_advanced_search_listingview.getWidgetError('bug_reporter')
+    >>> distro_advanced_search_listingview.getFieldError('bug_reporter')
     u"There's no person with the name or email address 'invalid-reporter'."
 
 The same if we try with an invalid assignee.
@@ -162,7 +162,7 @@ The same if we try with an invalid assignee.
     >>> distro_advanced_search_listingview = create_view(
     ...     debian, '+bugs', form_values)
 
-    >>> distro_advanced_search_listingview.getWidgetError('assignee')
+    >>> distro_advanced_search_listingview.getFieldError('assignee')
     u"There's no person with the name or email address 'invalid-assignee'."
 
 Searching by component is possible, as long as the context has defined a
@@ -301,6 +301,7 @@ The simple search form returns only open bugtasks.
     >>> open_bugtasks = list(mozilla_search_listingview.search().batch)
     >>> for bugtask in open_bugtasks:
     ...     print bugtask.bug.id, bugtask.product.name, bugtask.status.name
+    15 thunderbird NEW
     5 firefox NEW
     4 firefox NEW
     1 firefox NEW
@@ -326,7 +327,7 @@ And the advanced form allows us to query for specific bug statuses.
     >>> invalid_bugtasks = list(mozilla_search_listingview.search().batch)
     >>> for bugtask in invalid_bugtasks:
     ...     print bugtask.bug.id, bugtask.product.name, bugtask.status.name
-    5 firefox INVALID
+    15 thunderbird INVALID
 
     >>> open_bugtasks[0].transitionToStatus(
     ...     previous_status, getUtility(ILaunchBag).user)

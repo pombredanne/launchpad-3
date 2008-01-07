@@ -32,11 +32,25 @@
 
   <h2>Publishing history</h2>
 
-  <div id="publishing_history">
-    <tal:publishing_history
-       repeat="publishing context/publishing_history"
-       replace="structure publishing/@@+listing-detailed" />
-  </div>
+    <table id="publishing-summary" class="listing">
+       <thead>
+         <tr>
+           <th></th>
+           <th>Date</th>
+           <th>Status</th>
+           <th>Target</th>
+           <th>Pocket</th>
+           <th>Component</th>
+           <th>Section</th>
+           <th>Version</th>
+         </tr>
+       </thead>
+       <tbody>
+         <tal:block repeat="publishing context/publishing_history"
+                    replace="structure publishing/@@+listing-summary">
+         </tal:block>
+       </tbody>
+    </table>
 
 </div>
 </body>

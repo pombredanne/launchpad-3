@@ -161,7 +161,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     architecturecount = Attribute("The number of architectures in this "
         "series.")
-    architectures = Attribute("The architectures in this series.")
+    architectures = Attribute("All architectures in this series.")
+    ppa_architectures = Attribute(
+        "All architectures in this series where PPA is supported.")
     nominatedarchindep = Attribute(
         "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")
@@ -262,7 +264,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "or obsolete.")
 
     def isUnstable():
-        """Return True if in unstable (or "development") phase, False otherwise.
+        """Whether or not a distroseries is unstable.
 
         The distribution is "unstable" until it is released; after that
         point, all development on the Release pocket is stopped and
@@ -358,6 +360,18 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         otherwise respect the given value.
         """
 
+    def getAllPublishedSources():
+        """Return all currently published sources for the distroseries.
+
+        Return publications in the main archives only.
+        """
+
+    def getAllPublishedBinaries():
+        """Return all currently published binaries for the distroseries.
+
+        Return publications in the main archives only.
+        """
+
     def getSourcesPublishedForAllArchives():
         """Return all sourcepackages published across all the archives.
 
@@ -394,7 +408,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def createUploadedSourcePackageRelease(
         sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
-        changelog, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
+        changelog_entry, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
         dsc_standards_version, dsc_format, dsc_binaries, archive, copyright,
         dateuploaded=None):
         """Create an uploads SourcePackageRelease
@@ -415,7 +429,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
          * dscsigningkey: IGPGKey used to sign the DSC file
          * dsc: string, original content of the dsc file
          * copyright: string, the original debian/copyright content
-         * changelog: string, changelog extracted from the changesfile
+         * changelog_entry: string, changelog extracted from the changesfile
          * architecturehintlist: string, DSC architectures
          * builddepends: string, DSC build dependencies
          * builddependsindep: string, DSC architecture independent build
@@ -516,7 +530,8 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         the changesfile is unsigned.
         """
 
-    def newArch(architecturetag, processorfamily, official, owner):
+    def newArch(architecturetag, processorfamily, official, owner,
+                ppa_supported=False):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
     def newMilestone(name, dateexpected=None, description=None):

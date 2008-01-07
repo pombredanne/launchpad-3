@@ -68,11 +68,11 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBinaryPackageName,
     IBuildSet, IDistroSeries, IDistroSeriesSet, IHasBuildRecords,
     IHasTranslationTemplates, IHasQueueItems, ILibraryFileAliasSet,
-    IPublishedPackageSet, ICanPublishPackages, ISourcePackage, ISourcePackageName,
-    ISourcePackageNameSet, LanguagePackType, NotFoundError,
-    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
-    SpecificationFilter, SpecificationGoalStatus, SpecificationSort,
-    SpecificationImplementationStatus)
+    IPublishedPackageSet, ICanPublishPackages, ISourcePackage,
+    ISourcePackageName, ISourcePackageNameSet, LanguagePackType,
+    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
+    PackageUploadStatus, SpecificationFilter, SpecificationGoalStatus,
+    SpecificationSort, SpecificationImplementationStatus)
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -156,6 +156,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Component.name != 'partner'
             """ % self.id,
             clauseTables=["ComponentSelection"])
+
+    @property
+    def ppa_architectures(self):
+        return DistroArchSeries.select("""
+        DistroArchSeries.distroseries = %s AND
+        DistroArchSeries.ppa_supported = True
+        """ % sqlvalues(self), orderBy='architecturetag')
 
     @property
     def all_milestones(self):
@@ -266,6 +273,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 ''' % sqlvalues(self.distribution.id, datereleased),
                 orderBy=['-datereleased'])
         return list(results)
+
+    @property
+    def bug_reporting_guidelines(self):
+        """See `IBugTarget`."""
+        return self.distribution.bug_reporting_guidelines
 
     def canUploadToPocket(self, pocket):
         """See IDistroSeries."""
@@ -683,6 +695,36 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             DistroSeriesStatus.EXPERIMENTAL,
         ]
 
+    def getAllPublishedSources(self):
+        """See `IDistroSeries`."""
+        # Consider main archives only, and return all sources in
+        # the PUBLISHED state.
+        archives = self.distribution.getArchiveIDList()
+        return SourcePackagePublishingHistory.select("""
+            distroseries = %s AND
+            status = %s AND
+            archive in %s
+            """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED,
+                            archives),
+            orderBy="id")
+
+    def getAllPublishedBinaries(self):
+        """See `IDistroSeries`."""
+        # Consider main archives only, and return all binaries in
+        # the PUBLISHED state.
+        archives = self.distribution.getArchiveIDList()
+        return BinaryPackagePublishingHistory.select("""
+            BinaryPackagePublishingHistory.distroarchseries =
+                DistroArchSeries.id AND
+            DistroArchSeries.distroseries = DistroSeries.id AND
+            DistroSeries.id = %s AND
+            BinaryPackagePublishingHistory.status = %s AND
+            BinaryPackagePublishingHistory.archive in %s
+            """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED,
+                            archives),
+            clauseTables=["DistroArchSeries", "DistroSeries"],
+            orderBy="BinaryPackagePublishingHistory.id")
+
     def getSourcesPublishedForAllArchives(self):
         """See IDistroSeries."""
         # Both, PENDING and PUBLISHED sources will be considered for
@@ -706,7 +748,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
             # XXX: this should come from a single location where this
             # is specified, not sprinkled around the code.
-            allow_release_builds = (ArchivePurpose.PPA, ArchivePurpose.PARTNER)
+            allow_release_builds = (
+                ArchivePurpose.PPA, ArchivePurpose.PARTNER)
 
             query += ("""AND (Archive.purpose in %s OR
                             SourcePackagePublishingHistory.pocket != %s)""" %
@@ -824,7 +867,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator,
-        urgency, changelog, dsc, dscsigningkey, section,
+        urgency, changelog_entry, dsc, dscsigningkey, section,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, dateuploaded=DEFAULT):
         """See IDistroSeries."""
@@ -833,11 +876,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             version=version, maintainer=maintainer, dateuploaded=dateuploaded,
             builddepends=builddepends, builddependsindep=builddependsindep,
             architecturehintlist=architecturehintlist, component=component,
-            creator=creator, urgency=urgency, changelog=changelog, dsc=dsc,
-            dscsigningkey=dscsigningkey, section=section,
-            dsc_maintainer_rfc822=dsc_maintainer_rfc822, dsc_format=dsc_format,
-            dsc_standards_version=dsc_standards_version, copyright=copyright,
-            dsc_binaries=dsc_binaries, upload_archive=archive)
+            creator=creator, urgency=urgency, changelog_entry=changelog_entry,
+            dsc=dsc, dscsigningkey=dscsigningkey, section=section,
+            copyright=copyright, upload_archive=archive,
+            dsc_maintainer_rfc822=dsc_maintainer_rfc822,
+            dsc_standards_version=dsc_standards_version,
+            dsc_format=dsc_format, dsc_binaries=dsc_binaries)
 
     def getComponentByName(self, name):
         """See IDistroSeries."""
@@ -988,12 +1032,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             distroseries=self,
             binarypackagename=drpc.binarypackagename) for drpc in drpcaches]
 
-    def newArch(self, architecturetag, processorfamily, official, owner):
+    def newArch(self, architecturetag, processorfamily, official, owner,
+                ppa_supported=False):
         """See IDistroSeries."""
-        dar = DistroArchSeries(architecturetag=architecturetag,
-            processorfamily=processorfamily, official=official,
-            distroseries=self, owner=owner)
-        return dar
+        distroarchseries = DistroArchSeries(
+            architecturetag=architecturetag, processorfamily=processorfamily,
+            official=official, distroseries=self, owner=owner,
+            ppa_supported=ppa_supported)
+        return distroarchseries
 
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IDistroSeries."""
@@ -1473,7 +1519,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasTranslationTemplates`."""
         result = POTemplate.selectBy(distroseries=self,
                                      orderBy=['-priority', 'name'])
-        return shortlist(result, 300)
+        return shortlist(result, 2000)
 
     def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -1486,7 +1532,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ''' % sqlvalues(self),
             clauseTables = ['DistroSeries', 'Distribution'],
             orderBy=['-priority', 'name'])
-        return shortlist(result, 300)
+        return shortlist(result, 2000)
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""

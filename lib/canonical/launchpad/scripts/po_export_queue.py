@@ -215,7 +215,10 @@ def process_queue(transaction_manager, logger):
     request_set = getUtility(IPOExportRequestSet)
 
     request = request_set.popRequest()
-    if request is None:
+
+    if None in request:
+        # Any value is None and we must have all values as not None to have
+        # something to process...
         return
 
     person, objects, format = request

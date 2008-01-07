@@ -1,5 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Interfaces for events."""
+
 __metaclass__ = type
 
 from zope.app.event.interfaces import (

@@ -52,16 +52,30 @@ class PackagingUtil:
 
     def createPackaging(self, productseries, sourcepackagename,
                         distroseries, packaging, owner):
-        """See IPackaging."""
+        """See `IPackaging`."""
         Packaging(productseries=productseries,
                   sourcepackagename=sourcepackagename,
                   distroseries=distroseries,
                   packaging=packaging,
                   owner=owner)
 
+    def deletePackaging(self, productseries, sourcepackagename, distroseries):
+        """See `IPackaging`."""
+        packaging = Packaging.selectOneBy(
+            productseries=productseries,
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries)
+        assert packaging is not None, (
+            "Tried to delete non-existent Packaging: "
+            "productseries=%s/%s, sourcepackagename=%s, distroseries=%s/%s"
+            % (productseries.name, productseries.product.name,
+               sourcepackagename.name,
+               distroseries.parent.name, distroseries.name))
+        packaging.destroySelf()
+
     def packagingEntryExists(self, productseries, sourcepackagename,
                              distroseries):
-        """See IPackaging."""
+        """See `IPackaging`."""
         result = Packaging.selectOneBy(
             productseries=productseries,
             sourcepackagename=sourcepackagename,

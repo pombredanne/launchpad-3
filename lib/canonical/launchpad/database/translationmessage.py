@@ -36,14 +36,8 @@ class TranslationMessageMixIn:
         if self.potmsgset.msgid_plural is None:
             # This message is a singular message.
             return 1
-        elif self.pofile.language.pluralforms is None:
-            # It's a plural form, but we don't know plural forms for this
-            # message. Fallback to '2'.
-            return 2
         else:
-            # It's a plural form, and we know it's number of entries for this
-            # language.
-            return self.pofile.language.pluralforms
+            return self.pofile.plural_forms
 
     def makeHTMLID(self, suffix=None):
         """See `ITranslationMessage`."""
@@ -157,7 +151,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             # change current one to non current before.
             current_translation_message = (
                 self.potmsgset.getCurrentTranslationMessage(
-                    self.pofile.language))
+                    self.pofile.language, self.pofile.variant))
             if current_translation_message is not None:
                 current_translation_message.is_current = False
                 # We need this syncUpdate so the old current one change is
@@ -183,7 +177,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
             # change current one to non current before.
             imported_translation_message = (
                 self.potmsgset.getImportedTranslationMessage(
-                    self.pofile.language))
+                    self.pofile.language, self.pofile.variant))
             if imported_translation_message is not None:
                 imported_translation_message.is_imported = False
                 # We need this syncUpdate so the old imported one change is

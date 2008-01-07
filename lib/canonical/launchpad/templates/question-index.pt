@@ -77,6 +77,15 @@
           define="global description context/description/fmt:obfuscate-email/fmt:text-to-html" />
       </tal:not-user>
 
+      <p id="original-bug"
+        tal:define="bug view/original_bug"
+        tal:condition="bug">
+        This question was originally filed as
+        <a href="#"
+          tal:attributes="href bug/fmt:url">bug
+          #<tal:num replace="bug/id" /></a>.
+      </p>
+
       <div
         class="report"
         tal:content="structure description"

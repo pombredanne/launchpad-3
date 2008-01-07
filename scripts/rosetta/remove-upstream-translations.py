@@ -72,7 +72,7 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
 
     items_deleted = 0
     # All changes should be logged as done by Rosetta Expert team.
-    rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
+    rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
     for potemplate in potemplates:
         if lang_code is None:
@@ -98,8 +98,8 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
                     pofile_items_deleted += 1
                 if active_changed:
                     message.pofile.date_changed = UTC_NOW
-                    message.pofile.lasttranslator = rosetta_expert
-                    message.reviewer = rosetta_expert
+                    message.pofile.lasttranslator = rosetta_experts
+                    message.reviewer = rosetta_experts
                     message.date_reviewed = UTC_NOW
 
             items_deleted += pofile_items_deleted

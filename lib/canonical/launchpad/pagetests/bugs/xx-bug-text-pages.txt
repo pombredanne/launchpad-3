@@ -74,7 +74,7 @@ all tasks related to that bug, presented in an easy-to-digest format:
     status: Fix Released
     date-created: Fri, 02 Jan 2004 03:49:22 -0000
     date-confirmed: ...
-    date-assigned: 2005-01-02 11:07:20.330975+00:00
+    date-assigned: Sun, 02 Jan 2005 11:07:20 -0000
     date-inprogress: ...
     date-closed: ...
     reporter: Sample Person (name12)
@@ -85,7 +85,7 @@ all tasks related to that bug, presented in an easy-to-digest format:
     task: mozilla-firefox (Ubuntu)
     status: New
     date-created: Sat, 17 Jan 2004 01:15:48 -0000
-    date-assigned: 2005-01-17 01:15:48.241836+00:00
+    date-assigned: Mon, 17 Jan 2005 01:15:48 -0000
     reporter: Foo Bar (name16)
     importance: Medium
     component: main
@@ -95,7 +95,7 @@ all tasks related to that bug, presented in an easy-to-digest format:
     task: mozilla-firefox (Debian)
     status: Confirmed
     date-created: Sun, 04 Jan 2004 03:49:22 -0000
-    date-assigned: 2005-01-04 11:07:20.584746+00:00
+    date-assigned: Tue, 04 Jan 2005 11:07:20 -0000
     reporter: Sample Person (name12)
     watch: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=304014
     importance: Low

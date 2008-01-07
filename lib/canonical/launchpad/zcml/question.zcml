@@ -26,8 +26,8 @@
       />
     <require
       permission="launchpad.AnyPerson"
-      attributes="requestInfo giveAnswer expireQuestion addComment linkFAQ
-                  subscribe unsubscribe"
+      attributes="requestInfo giveAnswer expireQuestion addComment
+                  addCommentWithoutNotify linkFAQ subscribe unsubscribe"
       set_attributes="title description datedue target language"
       />
     <require

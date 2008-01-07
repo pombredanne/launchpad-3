@@ -24,6 +24,10 @@
       template="../templates/sourcepackagepublishinghistory-listing-detailed.pt"
       />
     <browser:page
+      name="+listing-summary"
+      template="../templates/sourcepackagepublishinghistory-listing-summary.pt"
+      />
+    <browser:page
       name="+listing-ppa-detailed"
       template="../templates/sourcepackagepublishinghistory-listing-ppa-detailed.pt"
       />

@@ -3,15 +3,10 @@
 Only Launchpad members are allowed to post to team mailing lists.  A message
 by a sender who is not a Launchpad member will be summarily discarded.
 
-    # This test requires a us to start an SMTP server that accepts messages
+    # This test requires us to start an SMTP server that accepts messages
     # sent by Mailman's outgoing qrunner and stores these in a Unix mbox.
-    >>> import os
-    >>> import tempfile
-    >>> descriptor, mbox_filename = tempfile.mkstemp()
-    >>> os.close(descriptor)
-
     >>> import itest_helper
-    >>> smtpd = itest_helper.SMTPServer(mbox_filename)
+    >>> smtpd = itest_helper.SMTPServer()
     >>> smtpd.start()
 
     # Create a mailing list for this test.
@@ -23,10 +18,19 @@ by a sender who is not a Launchpad member will be summarily discarded.
     >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
     ...     'Open Team']
     >>> browser.getControl('Create').click()
+
+XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
+program in order to apply for mailing lists.  When mailing lists go public,
+this stanza can be removed.
+
+    >>> itest_helper.beta_program_enable('itest-one')
+
+    >>> browser.reload()
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
     >>> list_one = itest_helper.review_list('itest-one')
+    >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
@@ -56,7 +60,7 @@ Inject a message from a non-member into Mailman's incoming queue.
 To prove that the message was never posted, the mbox file should either be
 non-existent or empty.
 
-    >>> itest_helper.get_size(mbox_filename) <= 0
+    >>> smtpd.getMailboxSize() <= 0
     True
 
 
@@ -69,6 +73,8 @@ equivalent to making it unvalidated.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     get_alternative_email, new_person)
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')    
     >>> anne = new_person('Anne')
     >>> alternative_email = get_alternative_email(anne)
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
@@ -91,7 +97,7 @@ equivalent to making it unvalidated.
 
 As above, this message got summarily discarded.
 
-    >>> itest_helper.get_size(mbox_filename) <= 0
+    >>> smtpd.getMailboxSize() <= 0
     True
 
 
@@ -119,7 +125,7 @@ auto discard notification sent to the team's owner.  The message is discarded
 by Mailman's privacy handler because the poster is not a member of the mailing
 list.
 
-    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
+    >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
     >>> message = messages[0]
@@ -154,6 +160,7 @@ to the mailing list.
     # Subscribe Anne with her preferred address.
     >>> anne.join(team_one)
     >>> list_one.subscribe(anne)
+    >>> logout()
     >>> commit()
     >>> itest_helper.wait_for_mailman()
 
@@ -174,7 +181,7 @@ To show that this message will make it through by reading the mbox file.
 There are now two messages in the mbox file, the previous auto-discard notice,
 and the newly posted message.
 
-    >>> messages = list(itest_helper.mbox_iterator(mbox_filename))
+    >>> messages = smtpd.getMessages()
     >>> len(messages)
     2
     >>> message = messages[1]

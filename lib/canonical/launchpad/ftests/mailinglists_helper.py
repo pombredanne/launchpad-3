@@ -3,18 +3,23 @@
 """Helper functions for testing XML-RPC services."""
 
 __all__ = [
+    'beta_program_enable',
     'fault_catcher',
     'get_alternative_email',
     'new_person',
     'new_team',
     'print_actions',
     'print_info',
+    'review_list',
     ]
 
 import xmlrpclib
 
 from zope.component import getUtility
 
+from canonical.config import config
+from canonical.launchpad.database import MailingListSet
+from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities,
     IMailingListSet, IPersonSet, MailingListStatus, PersonCreationRationale,
@@ -142,6 +147,36 @@ def new_person(first_name):
     return person
 
 
+def new_list_for_team(team_name, make_contact_address=False):
+    """Create a mailing list for the named team.
+
+    :param team_name: The name of the team for which to create a list.
+    :param make_contact_address: If True, the newly created list will be
+           made the team's contact address.
+
+    DO NOT use this in a non-pagetest.
+    """
+    login('foo.bar@canonical.com')
+    list_set = MailingListSet()
+    team = getUtility(IPersonSet).getByName(team_name)
+    mailing_list = list_set.new(team)
+
+    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    admin = list(experts.allmembers)[0]
+    mailing_list = list_set.get(team_name)
+    mailing_list.review(admin, MailingListStatus.APPROVED)
+    mailing_list.syncUpdate()
+    mailing_list.startConstructing()
+    mailing_list.syncUpdate()
+    mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
+    mailing_list.syncUpdate()
+
+    if make_contact_address:
+        team.setContactAddress(
+            getUtility(IEmailAddressSet).getByEmail(mailing_list.address))
+    logout()
+
+
 def get_alternative_email(person):
     """Return a non-preferred IEmailAddress for a person.
 
@@ -152,3 +187,41 @@ def get_alternative_email(person):
     assert len(alternatives) == 1, (
         'Unexpected email count: %d' % len(alternatives))
     return alternatives[0]
+
+
+def review_list(list_name, status=None):
+    """Review a mailing list application.
+
+    :param list_name: The name of the mailing list to review.  This is
+        equivalent to the name of the team that the mailing list is
+        associated with.
+    :param status: The status applied to the reviewed mailing list.  This must
+        be either MailingListStatus.APPROVED or MailingListStatus.DECLINED
+        with the former being used if `status` is not given.
+    """
+    if status is None:
+        status = MailingListStatus.APPROVED
+    # Any Mailing List Expert will suffice for approving the registration.
+    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+    lpadmin = list(experts.allmembers)[0]
+    # Review and approve the mailing list registration.
+    list_set = getUtility(IMailingListSet)
+    mailing_list = list_set.get(list_name)
+    mailing_list.review(lpadmin, status)
+
+
+def beta_program_enable(team_name):
+    """Join a team to the mailing list beta program team.
+
+    This allows the team to apply for mailing lists.
+
+    XXX BarryWarsaw 06-Dec-2007 This function can go away when mailing lists
+    go public.  Also, DO NOT use this in a non-pagetest!
+    """
+    login('foo.bar@canonical.com')
+    person_set = getUtility(IPersonSet)
+    testers_team = person_set.getByName(config.mailman.beta_testers_team)
+    target_team = person_set.getByName(team_name)
+    reviewer = testers_team.teamowner
+    testers_team.addMember(target_team, reviewer, force_team_add=True)
+    logout()

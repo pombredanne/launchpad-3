@@ -1,0 +1,107 @@
+= The SinglePopupView =
+
+This is the view used by the page rendered inside the popup windows we use
+for fields which have an IHugeVocabulary.
+
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> bugtask = getUtility(IBugTaskSet).get(2)
+    >>> form = dict(vocabulary='Product', field='field.product')
+    >>> view = create_view(bugtask, 'popup-window', form=form)
+    >>> view.title()
+    'Select a project'
+    >>> view.vocabulary()
+     <canonical.launchpad.vocabularies.dbobjects.ProductVocabulary...
+
+We didn't provide any search terms, so there will be no items to display.
+
+    >>> batch = view.search()
+    >>> print len(batch.batch)
+    0
+
+If we do provide some search text, though, we'll see all items that match
+our search.
+
+    >>> form['search'] = 'firefox'
+    >>> view = create_view(bugtask, 'popup-window', form=form)
+    >>> batch = view.search()
+    >>> print len(batch.batch)
+    1
+    >>> [item.title for item in batch.batch]
+    [u'Mozilla Firefox']
+
+== The SearchForUpstreamPopupView ==
+
+This is a specialized version of SinglePopupView which also includes a link
+for the user to register a new Product, in case the one he's looking for is
+not yet registered.  Since this page opens in a popup window, this link's
+target will be the parent window.  Also, this link is only shown when a
+non-empty string was used for the search.
+
+    >>> form['search'] = ''
+    >>> view = create_view(bugtask, 'popup-search-upstream', form=form)
+    >>> batch = view.search()
+    >>> view.extra_bottom
+    ''
+
+    >>> form['search'] = 'fooo'
+    >>> view = create_view(bugtask, 'popup-search-upstream', form=form)
+    >>> batch = view.search()
+    >>> print view.extra_bottom
+    Didn't find the project you were looking for?
+    <a href="http://bugs.launchpad.dev/firefox/+bug/1/+affects-new-product"
+       target="_parent">Register it</a>.
+
+== Error handling ==
+
+There are a few situations which we need to be careful about.
+
+1. When somebody hits that page directly, without any form arguments:
+
+    >>> from canonical.launchpad.webapp.publisher import rootObject
+    >>> from canonical.widgets.popup import SinglePopupView
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://127.0.0.1/@@popup-window', form={})
+    >>> SinglePopupView(rootObject, request)
+    Traceback (most recent call last):
+    ...
+    NotFound: ...
+
+2. When someone tries using that page for a vocabulary which doesn't
+implement IHugeVocabulary.
+
+    >>> form = {
+    ...     'vocabulary': 'Distribution', 'field':'field.distribution'}
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://127.0.0.1/@@popup-window', form=form)
+    >>> popup_view = SinglePopupView(rootObject, request)
+    >>> popup_view.vocabulary()
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: Non-huge vocabulary Distribution
+
+3. When someone specifies an unknown vocabulary name.
+
+    >>> form = {
+    ...     'vocabulary': 'FooBar', 'field':'field.distribution'}
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://127.0.0.1/@@popup-window', form=form)
+    >>> popup_view = SinglePopupView(rootObject, request)
+    >>> popup_view.vocabulary()
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: Unknown vocabulary FooBar
+
+4. When someone specifies an empty vocabulary name.
+
+    >>> form = {
+    ...     'vocabulary': '', 'field':'field.distribution'}
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://127.0.0.1/@@popup-window', form=form)
+    >>> popup_view = SinglePopupView(rootObject, request)
+    >>> popup_view.vocabulary()
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: No vocabulary specified
+

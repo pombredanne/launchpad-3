@@ -142,6 +142,16 @@ class IPOFile(IRosettaStats):
         'All `ITranslationMessage` objects related to this translation file.'
         ))
 
+    plural_forms = Int(
+        title=_('Number of plural forms for the language of this PO file.'),
+        description=_('''
+            Number of plural forms is a number of translations provided for
+            each plural form message.  If `IPOFile.language` does not specify
+            plural forms, it defaults to 2, which is the most common number
+            of plural forms.
+            '''),
+        required=True, readonly=True)
+
     def translatedCount():
         """
         Returns the number of message sets which this PO file has current
@@ -165,7 +175,8 @@ class IPOFile(IRosettaStats):
         """
 
     def __iter__():
-        """Return an iterator over Current `IPOMessageSets` in this PO file."""
+        """Return an iterator over Current `IPOMessageSets` in this PO file.
+        """
 
     def getHeader():
         """Return an `ITranslationHeaderData` representing its header."""
@@ -256,14 +267,15 @@ class IPOFile(IRosettaStats):
     def getStatistics():
         """Summarize this file's cached translation statistics.
 
-        Returns tuple of (currentcount, updatescount, rosettacount,
-        unreviewed_count).
+        :return: tuple of (`currentcount`, `updatescount`, `rosettacount`,
+            `unreviewed_count`), as collected by `updateStatistics`.
         """
 
     def updateStatistics():
-        """Update the statistics fields - rosettaCount, updatesCount and
-        currentCount - from the messages currently known.
-        Return a tuple (rosettaCount, updatesCount, currentCount)."""
+        """Update the cached statistics fields.
+
+        :return: a tuple (`currentcount`, `updatescount`, `rosettacount`,
+            `unreviewed_count`), as for `getStatistics`."""
 
     def updateHeader(new_header):
         """Update the header information.
@@ -274,32 +286,25 @@ class IPOFile(IRosettaStats):
     def isTranslationRevisionDateOlder(header):
         """Whether given header revision date is newer then self one."""
 
-    def getNextToImport():
-        """Return the next entry on the import queue to be imported."""
+    def setPathIfUnique(path):
+        """Set path to given one, provided it's a valid, unique path.
 
-    def importFromQueue(logger=None):
-        """Execute the import of the next entry on the queue, if needed.
+        A `POFile`'s path must be unique within its context, i.e. for either
+        the same `DistroSeries` and `SourcePackageName`, or for the same
+        `ProductSeries`, depending on which the `POFile` is attached to.
 
-        If a logger argument is given, any problem found with the
-        import will be logged there.
+        If the new path is not unique, the old path will be retained instead.
         """
 
-    def getCurrentSuggestions(potmsgsets):
-        """Return a dictionary with all suggestions per potmsgset.
+    def importFromQueue(entry_to_import, logger=None):
+        """Import given queue entry.
 
-        :param potmsgsets: A list of `IPOTMsgSet` objects.
-        :param language: Language we are interested on for the suggestions.
-        :return: A dictionary indexed by potmsgset of all suggestions that are
-            done in other contexts and are used right now.
-        """
+        :param entry_to_import: `TranslationImportQueueEntry` specifying an
+            approved import for this `POFile`
+        :param logger: optional logger to report problems to.
 
-    def getExternalSuggestions(potmsgsets):
-        """Return a dictionary with all suggestions used per potmsgset.
-
-        :param potmsgsets: A list of `IPOTMsgSet` objects.
-        :param language: Language we are interested on for the suggestions.
-        :return: A dictionary indexed by potmsgset of all suggestions that are
-            done in other contexts but are not yet used.
+        :return: a tuple of the subject line and body for a notification email
+            to be sent to the uploader.
         """
 
 

@@ -42,6 +42,25 @@ The link takes you to the list of the bugs fixed elsewhere.
     ...
 
 
+== Expirable Bugs ==
+
+The bugs page displays the number of Incomplete, unattended bugs that
+can expire when the project has enabled bug expiration.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/warty')
+    >>> expirable_bugs_link = anon_browser.getLink(
+    ...     'incomplete bugs can expire')
+    >>> expirable_bugs_link.text
+    '0 incomplete bugs can expire'
+
+The link goes to the expirable bugs page, where the anonymous user can
+see which bugs will expire if they are not confirmed.
+
+    >>> expirable_bugs_link.click()
+    >>> anon_browser.title
+    'Bugs that can expire in The Warty Warthog Release'
+
+
 == Bugs Statistics ==
 
 There's also some statistics about the open and fixed bugs. This is

@@ -105,10 +105,7 @@ class LoginToken(SQLBase):
         token_text = template % replacements
         salutation = 'Hello,\n\n'
         instructions = ''
-        closing = """
-Thanks,
-
-The Launchpad Team"""
+        closing = "Thanks,\n\nThe Launchpad Team"
 
         # Encrypt this part's content if requested.
         if key.can_encrypt:
@@ -223,6 +220,22 @@ The Launchpad Team"""
         message = template % replacements
 
         subject = "Launchpad: Claim Profile"
+        simple_sendmail(fromaddress, str(self.email), subject, message)
+
+    def sendClaimTeamEmail(self):
+        """See `ILoginToken`."""
+        template = get_email_template('claim-team.txt')
+        fromaddress = format_address("Launchpad", config.noreply_from_address)
+        profile = getUtility(IPersonSet).getByEmail(self.email)
+        replacements = {'profile_name': (
+                            "%s (%s)" % (profile.browsername, profile.name)),
+                        'requester_name': (
+                            "%s (%s)" % (self.requester.browsername,
+                                         self.requester.name)),
+                        'email': self.email,
+                        'token_url': canonical_url(self)}
+        message = template % replacements
+        subject = "Launchpad: Claim existing team"
         simple_sendmail(fromaddress, str(self.email), subject, message)
 
 

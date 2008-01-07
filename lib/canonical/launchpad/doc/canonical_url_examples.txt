@@ -73,7 +73,7 @@ An IPerson.
 
 An ITeam.
 
-    >>> canonical_url(celebs.rosetta_expert)
+    >>> canonical_url(celebs.rosetta_experts)
     u'http://launchpad.dev/~rosetta-admins'
 
 An ICodeOfConductSet

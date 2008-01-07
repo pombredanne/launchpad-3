@@ -252,6 +252,18 @@ distroseries
     ...     distroseries=g2k5)
     True
 
+Packaging entries can be deleted using PackagingUtil.deletePackaging.
+
+    >>> PackagingUtil().deletePackaging(
+    ...     productseries=sp.productseries,
+    ...     sourcepackagename=a52dec,
+    ...     distroseries=g2k5)
+    >>> PackagingUtil().packagingEntryExists(
+    ...     productseries=sp.productseries,
+    ...     sourcepackagename=a52dec,
+    ...     distroseries=g2k5)
+    False
+
 Linkified changelogs are available through SourcePackageReleaseView:
 XXX julian 2007-09-17
 This is duplicating the page test. Instead it should be more like the bug
@@ -264,12 +276,12 @@ number linkification just below.
     >>> sp = SourcePackage(sourcepackagename=pmount, distroseries=hoary)
     >>> spr = sp['0.1-2']
     >>> spr_view = queryView(spr, "+changelog", request)
-    >>> print spr_view.changelog
+    >>> print spr_view.changelog_entry
     This is a placeholder changelog for pmount 0.1-2
 
     >>> spr = sp['0.1-1']
     >>> spr_view = queryView(spr, "+changelog", request)
-    >>> print spr_view.changelog
+    >>> print spr_view.changelog_entry
     pmount (0.1-1) hoary; urgency=low
     <BLANKLINE>
      * Fix description (Malone #1)

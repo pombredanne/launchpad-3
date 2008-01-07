@@ -143,7 +143,7 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...         builddepends=None,
   ...         dsc=None,
   ...         copyright='placeholder ...',
-  ...         changelog=None,
+  ...         changelog_entry=None,
   ...         dscsigningkey=None,
   ...         dsc_format="1.0",
   ...         dsc_maintainer_rfc822="mark <mark@mark.com>",
@@ -345,14 +345,13 @@ marked as NEEDSBUILD we can create BuildQueue entries for it
   >>> print BuildQueue.select().count() - len(old_jobs)
   8
 
-A separate method, sanitiseAndScoreCandidates, is responsible for
-cleaning up the BuildQueue and scroring the jobs properly. Since we
-haven't run it yet, we'll see that the new entries we've created have
-the default score value of 0:
+The BuildQueue entries created are already 'scored', it means that the job
+can be already dispatched once operation is commited, i.e.,
+dispatching can happen in parallel with build creation.
 
   >>> bq = BuildQueue.select(orderBy='id')[len(old_jobs)]
   >>> bq.lastscore
-  0
+  1005
 
 Check the published component name retriever, they might be different,
 i.e., the published component can be different than the original component.
@@ -362,32 +361,38 @@ i.e., the published component can be different than the original component.
   >>> bq.build.sourcepackagerelease.component.name
   u'main'
 
-Sanitise the queue
-------------------
+== Re-scoring all pending builds ==
 
-After sanitising the jobs, only the ones containing
-sourcepackagerelease files should remain:
+In order to test the "re-scoring" procedure we will change the source
+package urgency related to a specific item, then we can see it getting a
+different score (for more information on scoring check
+buildd-scoring.txt):
 
-  >>> jobs = bm.sanitiseAndScoreCandidates()
+  >>> bq.lastscore
+  1005
 
-  >>> new_jobs = [job for job in jobs if job not in old_jobs]
+  >>> from canonical.launchpad.interfaces import SourcePackageUrgency
+  >>> bq.build.sourcepackagerelease.urgency = SourcePackageUrgency.EMERGENCY
+  >>> flush_database_updates()
+
+All pending queued records will be simply 're-scored'.
+
+  >>> bm.scoreCandidates()
+
+  >>> new_jobs = [job for job in BuildQueue.select(orderBy='id')
+  ...             if job not in old_jobs]
   >>> len(new_jobs)
   8
 
+As we expected, you can clearly verify that the queued record modified
+above was 're-scored' due to its higher score value.
+
   >>> job = new_jobs[0]
-  >>> job.build.sourcepackagerelease.name
-  u'test-buildd'
-
-And we grant some score depending on: time pending on the buildqueue,
-component the package belongs to, and the urgency of the upload.
-There is still some work to do here, for further information see the
-buildmaster/master.py code. The job presented should won
-exactly ** 1005 ** points last turn (5 for the default urgency 'LOW'
-and 1000 for the 'Main' component, further tests for scoring are in
-buildd-scoring.txt)
-
+  >>> job.id == bq.id
+  True
   >>> job.lastscore
-  1005
+  1020
+
 
 == PPA work ==
 
@@ -410,6 +415,36 @@ the sample data:
   >>> spr_hoary_ppa, pub_hoary_ppa = createPackageAndPublication(
   ...     name6, hoary, "i386 hppa", archive=cprov.archive)
 
+Only the architecture with established support for PPA will be
+considered when creating PPA builds. See distroarchseries.txt for
+further information.
+
+  >>> legal_archs = set(hoary.architectures)
+  >>> [a.architecturetag for a in
+  ...      determineArchitecturesToBuild(pub_hoary_ppa, legal_archs, hoary)]
+  [u'i386']
+
+PPA builds are not affected by P-a-s restrictions, i.e., they will
+build for all requested architectures currently supported in the PPA
+subsystem.
+
+  >>> pas_verify = getPASVerifier("%test-ppa: hppa")
+  >>> [a.architecturetag for a in
+  ...      determineArchitecturesToBuild(pub_hoary_ppa, legal_archs,
+  ...                                    hoary, pas_verify)]
+  [u'i386']
+
+  >>> pas_verify = getPASVerifier("%test-ppa: !i386")
+  >>> [a.architecturetag for a in
+  ...      determineArchitecturesToBuild(pub_hoary_ppa, legal_archs,
+  ...                                    hoary, pas_verify)]
+  [u'i386']
+
+XXX cprov 20071211: we can't properly test PPA binary-PAS right now
+because there is no binary package published in PPA. The way the P-a-s
+component is completely ignored for PPAs indicates that we are safe,
+however, for now, we have to rely on the previous primary-archive tests.
+
 Now we create builds and buildqueues and check their contents:
 
   >>> for dr in distroserieses:
@@ -423,16 +458,13 @@ Check that we only created new Build entry for ppa publication:
   ...   print build.title
   i386 build of test-ppa 674 in ubuntu hoary UPDATES
 
-Note that it did not create a build for 'hppa' as is requested in the
-given 'architeturehintlist' ('i386 hppa'). Only 'i386' and 'amd64' are
-allowed for PPA (see further comments in buildmaster/master.py).
-
 Check if BuildQueue are also created for ppa_builds:
 
   >>> bm.addMissingBuildQueueEntries()
-  >>> jobs = bm.sanitiseAndScoreCandidates()
+  >>> bm.scoreCandidates()
 
-  >>> new_jobs = [job for job in jobs if job not in old_jobs]
+  >>> new_jobs = [job for job in BuildQueue.select(orderBy='id')
+  ...             if job not in old_jobs]
   >>> len(new_jobs)
   1
 

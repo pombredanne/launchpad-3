@@ -5,21 +5,32 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugFeedLink',
+    'BugTargetLatestBugsFeedLink',
+    'FeedLinkBase',
+    'FeedsMixin',
     'FeedsNavigation',
-    'FeedsRootUrlData'
+    'FeedsRootUrlData',
+    'PersonLatestBugsFeedLink',
     ]
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugTaskSet, IFeedsApplication, IPersonSet, IPillarNameSet,
-    NotFoundError)
+    IAnnouncementSet, IBugSet, IBugTaskSet, IFeedsApplication,
+    IPersonSet, IPillarNameSet, NotFoundError)
+from canonical.launchpad.interfaces import (
+    IBugTask, IBugTarget, IHasAnnouncements, ILaunchpadRoot, IPerson)
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp import (
     canonical_name, canonical_url, Navigation, stepto)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.webapp.url import urlappend
 
 
 class FeedsRootUrlData:
@@ -60,9 +71,6 @@ class FeedsNavigation(Navigation):
         If a query string is provided it is normalized.  'bugs' paths and
         persons ('~') are special cased.
         """
-        # XXX: statik 2007-10-09 bug 150941
-        # Need to block pages not registered on the FeedsLayer
-
         # Normalize the query string so caching is more effective.  This is
         # done by simply sorting the entries.
 
@@ -90,7 +98,10 @@ class FeedsNavigation(Navigation):
             stack = self.request.getTraversalStack()
             bug_id = stack.pop()
             if bug_id.startswith('+'):
-                return getUtility(IBugTaskSet)
+                if config.launchpad.is_bug_search_feed_active:
+                    return getUtility(IBugTaskSet)
+                else:
+                    raise Unauthorized("Bug search feed deactivated")
             else:
                 self.request.stepstogo.consume()
                 return getUtility(IBugSet).getByNameOrID(bug_id)
@@ -118,3 +129,116 @@ class FeedsNavigation(Navigation):
 
         except NotFoundError:
             return None
+
+
+class FeedLinkBase:
+    """Base class for formatting an Atom <link> tag.
+
+    Subclasses must override:
+        href: Url pointing to atom feed.
+
+    Subclasses can override:
+        title: The name of the feed as it appears in a browser.
+    """
+    title = 'Atom Feed'
+    href = None
+    rooturl = allvhosts.configs['feeds'].rooturl
+
+    def __init__(self, context):
+        self.context = context
+        assert self.usedfor.providedBy(context), (
+            "Context %r does not provide interface %r"
+            % (context, self.usedfor))
+
+    def render(self):
+        return ('<link rel="alternate" type="application/atom+xml"'
+                ' title="%s" href="%s"/>\n' % (self.title, self.href))
+
+
+class BugFeedLink(FeedLinkBase):
+    usedfor = IBugTask
+
+    @property
+    def title(self):
+        return 'Bug %s Feed' % self.context.bug.id
+
+    @property
+    def href(self):
+        return urlappend(self.rooturl,
+                         'bugs/' + str(self.context.bug.id) + '/bug.atom')
+
+
+class BugTargetLatestBugsFeedLink(FeedLinkBase):
+    usedfor = IBugTarget
+
+    @property
+    def title(self):
+        return 'Latest Bugs for %s' % self.context.displayname
+
+    @property
+    def href(self):
+        return urlappend(canonical_url(self.context, rootsite='feeds'),
+                         'latest-bugs.atom')
+
+
+class PersonLatestBugsFeedLink(BugTargetLatestBugsFeedLink):
+    """Child class of BugTargetLatestBugsFeedLink.
+
+    This uses the same title and href attributes as the superclass.
+    The canonical_url takes care of the differences between the classes.
+    """
+    usedfor = IPerson
+
+
+class AnnouncementsFeedLink(FeedLinkBase):
+    usedfor = IHasAnnouncements
+
+    @property
+    def title(self):
+        if IAnnouncementSet.providedBy(self.context):
+            return 'All Announcements'
+        else:
+            return 'Announcements for %s' % self.context.displayname
+
+    @property
+    def href(self):
+        if IAnnouncementSet.providedBy(self.context):
+            return urlappend(self.rooturl, 'announcements.atom')
+        else:
+            return urlappend(canonical_url(self.context, rootsite='feeds'),
+                             'announcements.atom')
+
+class RootAnnouncementsFeedLink(AnnouncementsFeedLink):
+    usedfor = ILaunchpadRoot
+
+    @property
+    def title(self):
+        return 'All Announcements'
+
+    @property
+    def href(self):
+        return urlappend(self.rooturl, 'announcements.atom')
+
+
+class FeedsMixin:
+    """Mixin which adds the feed_links attribute to a view object.
+
+    feed_types: This class attribute can be overridden to reduce the
+        feed links that are added to the page.
+
+    feed_links: Returns a list of objects subclassed from FeedLinkBase.
+    """
+    feed_types = (
+        AnnouncementsFeedLink,
+        RootAnnouncementsFeedLink,
+        BugFeedLink,
+        BugTargetLatestBugsFeedLink,
+        PersonLatestBugsFeedLink,
+        )
+
+    @property
+    def feed_links(self):
+        return [feed_type(self.context)
+                for feed_type in self.feed_types
+                if feed_type.usedfor.providedBy(self.context)]
+

@@ -22,17 +22,7 @@
 
   <h2>Download source</h2>
 
-   <div  tal:define="files context/sourcepackagerelease/files">
-     <ul tal:condition="files">
-        <li tal:repeat="file files">
-          <a
-            tal:content="file/libraryfile/filename"
-            tal:attributes="href file/libraryfile/http_url">evolution_2.tar.gz</a>
-          (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
-        </li>
-     </ul>
-     <i tal:condition="not:files">No files available for download.</i>
-   </div>
+   <div id="files" tal:content="structure context/sourcepackagerelease/@@+files" />
 
   <tal:has_packages condition="context/sample_binary_packages">
     <p>

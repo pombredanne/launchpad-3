@@ -5,9 +5,8 @@ Karl will join the newly created team.
     >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'subscription_policy'))
-    Open Team:
-    Any user can join and no approval is required.
+    ...     find_tag_by_id(browser.contents, 'subscription-policy'))
+    Open Team
 
     >>> browser.getLink('Join the team').click()
     >>> browser.url
@@ -56,10 +55,8 @@ approved, though.
     ...     auth='Basic james.blackwell@ubuntulinux.com:jblack')
     >>> browser.open('http://launchpad.dev/~myemail')
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'subscription_policy'))
-    Moderated Team:
-    All subscriptions for this team are subject to approval by one of
-    the team's administrators.
+    ...     find_tag_by_id(browser.contents, 'subscription-policy'))
+    Moderated Team
 
     >>> browser.getLink('Join the team').click()
     >>> browser.url
@@ -101,9 +98,8 @@ If it was a restricted team, users wouldn't even see a link to join the team.
     >>> browser.url
     'http://launchpad.dev/~myemail'
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'subscription_policy'))
-    Restricted Team:
-    New members can only be added by one of the team's administrators.
+    ...     find_tag_by_id(browser.contents, 'subscription-policy'))
+    Restricted Team
 
     >>> browser.getLink('Join the team')
     Traceback (most recent call last):

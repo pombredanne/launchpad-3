@@ -26,7 +26,7 @@ class ISourcePackageRelease(Interface):
     dscsigningkey = Attribute("DSC Signing Key")
     component = Attribute("Source Package Component")
     format = Attribute("The Source Package Format")
-    changelog = Attribute("Source Package Change Log")
+    changelog_entry = Attribute("Source Package Change Log Entry")
     change_summary = Attribute(
         "The message on the latest change in this release. This is usually "
         "a snippet from the changelog")
@@ -84,8 +84,8 @@ class ISourcePackageRelease(Interface):
         "release, or None")
     failed_builds = Attribute("A (potentially empty) list of build "
         "failures that happened for this source package " "release, or None")
-    needs_building = Attribute("A boolean that indicates whether this package "
-        "still needs to be built (on any architecture)")
+    needs_building = Attribute("A boolean that indicates whether this "
+        "package still needs to be built (on any architecture)")
 
     sourcepackage = Attribute(
         "The magic SourcePackage for the sourcepackagename and "
@@ -102,7 +102,8 @@ class ISourcePackageRelease(Interface):
     upload_archive = Attribute(
         "The archive for which this package was first uploaded in Launchpad")
     upload_changesfile = Attribute(
-        'The LibraryFileAlias for the changesfile this package was uploaded with')
+        'The LibraryFileAlias for the changesfile this package was uploaded '
+        'with')
 
 
     # XXX Steve Alexander 2004-12-10:

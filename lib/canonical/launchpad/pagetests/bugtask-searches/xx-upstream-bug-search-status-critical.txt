@@ -1,9 +1,0 @@
-A list of critical bugs reported in a given upstream can be viewed by
-clicking the "critical" quick search link.
-  >>> print http(r"""
-  ... GET /firefox/+bugs?search=Search&field.importance=Critical&field.status=New&field.status=Confirmed&field.status=In+Progress&field.status=Incomplete&field.status=Fix+Committed HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...1 result...
-  ...5...

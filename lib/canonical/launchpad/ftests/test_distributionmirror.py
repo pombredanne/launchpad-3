@@ -13,7 +13,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     IDistributionSet, IDistributionMirrorSet, ILibraryFileAliasSet,
-    MirrorStatus, PackagePublishingPocket)
+    MirrorFreshness, PackagePublishingPocket)
 from canonical.launchpad.mail import stub
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -32,24 +32,24 @@ class TestDistributionMirror(unittest.TestCase):
         self.hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
         self.hoary_i386 = self.hoary['i386']
 
-    def _create_source_mirror(self, distroseries, pocket, component, status):
+    def _create_source_mirror(
+            self, distroseries, pocket, component, freshness):
         source_mirror1 = self.archive_mirror.ensureMirrorDistroSeriesSource(
             distroseries, pocket, component)
-        removeSecurityProxy(source_mirror1).status = status
+        removeSecurityProxy(source_mirror1).freshness = freshness
 
-    def _create_bin_mirror(self, archseries, pocket, component, status):
+    def _create_bin_mirror(self, archseries, pocket, component, freshness):
         bin_mirror = self.archive_mirror.ensureMirrorDistroArchSeries(
             archseries, pocket, component)
-        removeSecurityProxy(bin_mirror).status = status
-        return bin_mirror
+        removeSecurityProxy(bin_mirror).freshness = freshness
 
     def test_archive_mirror_without_content_should_be_disabled(self):
         self.failUnless(self.archive_mirror.shouldDisable())
 
     def test_archive_mirror_with_any_content_should_not_be_disabled(self):
-        src_mirror1 = self._create_source_mirror(
+        self._create_source_mirror(
             self.hoary, PackagePublishingPocket.RELEASE,
-            self.hoary.components[0], MirrorStatus.UP)
+            self.hoary.components[0], MirrorFreshness.UP)
         flush_database_updates()
         self.failIf(self.archive_mirror.shouldDisable())
 
@@ -61,63 +61,70 @@ class TestDistributionMirror(unittest.TestCase):
 
     def test_cdimage_mirror_missing_content_should_be_disabled(self):
         expected_file_count = 1
-        self.failUnless(self.cdimage_mirror.shouldDisable(expected_file_count))
+        self.failUnless(
+            self.cdimage_mirror.shouldDisable(expected_file_count))
 
     def test_delete_all_mirror_cdimage_serieses(self):
         mirror = self.cdimage_mirror.ensureMirrorCDImageSeries(
             self.hoary, flavour='ubuntu')
         mirror = self.cdimage_mirror.ensureMirrorCDImageSeries(
             self.hoary, flavour='edubuntu')
-        self.failUnless(self.cdimage_mirror.cdimage_serieses.count() == 2)
+        self.failUnlessEqual(
+            self.cdimage_mirror.cdimage_serieses.count(), 2)
         self.cdimage_mirror.deleteAllMirrorCDImageSerieses()
-        self.failUnless(self.cdimage_mirror.cdimage_serieses.count() == 0)
+        self.failUnlessEqual(
+            self.cdimage_mirror.cdimage_serieses.count(), 0)
 
-    def test_archive_mirror_without_content_status(self):
+    def test_archive_mirror_without_content_freshness(self):
         self.failIf(self.archive_mirror.source_serieses or
                     self.archive_mirror.arch_serieses)
-        self.failUnless(
-            self.archive_mirror.getOverallStatus() == MirrorStatus.UNKNOWN)
+        self.failUnlessEqual(
+            self.archive_mirror.getOverallFreshness(),
+            MirrorFreshness.UNKNOWN)
 
-    def test_archive_mirror_with_source_content_status(self):
-        src_mirror1 = self._create_source_mirror(
+    def test_archive_mirror_with_source_content_freshness(self):
+        self._create_source_mirror(
             self.hoary, PackagePublishingPocket.RELEASE,
-            self.hoary.components[0], MirrorStatus.UP)
-        src_mirror2 = self._create_source_mirror(
+            self.hoary.components[0], MirrorFreshness.UP)
+        self._create_source_mirror(
             self.hoary, PackagePublishingPocket.RELEASE,
-            self.hoary.components[1], MirrorStatus.TWODAYSBEHIND)
+            self.hoary.components[1], MirrorFreshness.TWODAYSBEHIND)
         flush_database_updates()
-        self.failUnless(
-            self.archive_mirror.getOverallStatus() == MirrorStatus.TWODAYSBEHIND)
+        self.failUnlessEqual(
+            self.archive_mirror.getOverallFreshness(),
+            MirrorFreshness.TWODAYSBEHIND)
 
-    def test_archive_mirror_with_binary_content_status(self):
-        bin_mirror1 = self._create_bin_mirror(
+    def test_archive_mirror_with_binary_content_freshness(self):
+        self._create_bin_mirror(
             self.hoary_i386, PackagePublishingPocket.RELEASE,
-            self.hoary.components[0], MirrorStatus.UP)
-        bin_mirror2 = self._create_bin_mirror(
+            self.hoary.components[0], MirrorFreshness.UP)
+        self._create_bin_mirror(
             self.hoary_i386, PackagePublishingPocket.RELEASE,
-            self.hoary.components[1], MirrorStatus.ONEHOURBEHIND)
+            self.hoary.components[1], MirrorFreshness.ONEHOURBEHIND)
         flush_database_updates()
-        self.failUnless(
-            self.archive_mirror.getOverallStatus() == MirrorStatus.ONEHOURBEHIND)
+        self.failUnlessEqual(
+            self.archive_mirror.getOverallFreshness(),
+            MirrorFreshness.ONEHOURBEHIND)
 
-    def test_archive_mirror_with_binary_and_source_content_status(self):
-        bin_mirror1 = self._create_bin_mirror(
+    def test_archive_mirror_with_binary_and_source_content_freshness(self):
+        self._create_bin_mirror(
             self.hoary_i386, PackagePublishingPocket.RELEASE,
-            self.hoary.components[0], MirrorStatus.UP)
-        bin_mirror2 = self._create_bin_mirror(
+            self.hoary.components[0], MirrorFreshness.UP)
+        self._create_bin_mirror(
             self.hoary_i386, PackagePublishingPocket.RELEASE,
-            self.hoary.components[1], MirrorStatus.ONEHOURBEHIND)
+            self.hoary.components[1], MirrorFreshness.ONEHOURBEHIND)
 
-        src_mirror1 = self._create_source_mirror(
+        self._create_source_mirror(
             self.hoary, PackagePublishingPocket.RELEASE,
-            self.hoary.components[0], MirrorStatus.UP)
-        src_mirror2 = self._create_source_mirror(
+            self.hoary.components[0], MirrorFreshness.UP)
+        self._create_source_mirror(
             self.hoary, PackagePublishingPocket.RELEASE,
-            self.hoary.components[1], MirrorStatus.TWODAYSBEHIND)
+            self.hoary.components[1], MirrorFreshness.TWODAYSBEHIND)
         flush_database_updates()
 
-        self.failUnless(
-            self.archive_mirror.getOverallStatus() == MirrorStatus.TWODAYSBEHIND)
+        self.failUnlessEqual(
+            self.archive_mirror.getOverallFreshness(),
+            MirrorFreshness.TWODAYSBEHIND)
 
     def _create_probe_record(self, mirror):
         log_file = StringIO()

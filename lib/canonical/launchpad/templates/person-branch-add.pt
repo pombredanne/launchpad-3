@@ -12,23 +12,10 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h1>Register a branch</h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
+  <h1>Register a branch</h1>
 
   <div metal:use-macro="context/@@launchpad_form/form">
-
-    <p metal:fill-slot="extra_info">
-      Register a new Bazaar branch whose author is
-      <tal:author replace="context/browsername">Person</tal:author>.
-      (<a href="/bazaar">What is Bazaar?</a>)
-    </p>
-
   </div>
 
   <metal:javascript
