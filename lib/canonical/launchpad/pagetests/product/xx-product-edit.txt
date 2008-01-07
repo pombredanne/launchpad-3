@@ -127,7 +127,7 @@ be accepted because there is no product called newproductname3
 
 == Registry Experts ==
 
-Regular joes can't edit any old project:
+Regular Joes can't edit any old project:
 
     >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> browser.open('http://launchpad.dev/firefox/+edit')

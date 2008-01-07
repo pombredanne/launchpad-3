@@ -52,7 +52,7 @@ And just 'http://' for the url
     There is 1 error.
     http URIs must have a host name
 
-Test that the validator for requires a license works:
+Test that the validator requires a license to be selected in the form:
 
     >>> user_browser.getControl('Homepage URL').value = 'http://www.test.test.com/'
     >>> user_browser.getControl(name='field.licenses').value = []
