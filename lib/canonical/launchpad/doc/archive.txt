@@ -404,8 +404,8 @@ and 'exact_match' flag:
 == Package Counters ==
 
 IArchive provides properties to calculate the number and the size of
-the packages (sources and binaries) present in the archive. They are
-based in the publication lookup methods.
+the packages (sources and binaries) currently published in the
+archive. They are based in the publication lookup methods.
 
     >>> cprov_archive.number_of_sources
     3
@@ -480,6 +480,34 @@ computed again in the archive total size.
 
     >>> estimated_size == cprov_archive.estimated_size
     True
+
+As mentioned before the package counters do not include non-PUBLISHED
+packages, to verify this we will mark some package as SUPERSEDED and
+see if the counter decreases.
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+
+Superseding a source package and verifying that the source counter
+decreases.
+
+    >>> cprov_archive.number_of_sources
+    3
+    >>> unused = cprov_archive.getPublishedSources(
+    ...     name='cdrkit')[0].supersede()
+    >>> flush_database_updates()
+    >>> cprov_archive.number_of_sources
+    2
+
+Superseding a binary package and verifying that the binary counter
+decreases.
+
+    >>> cprov_archive.number_of_binaries
+    3
+    >>> unused = cprov_archive.getAllPublishedBinaries(
+    ...     name='mozilla-firefox')[0].supersede()
+    >>> flush_database_updates()
+    >>> cprov_archive.number_of_binaries
+    2
 
 
 == Build Lookup ==
