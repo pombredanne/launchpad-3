@@ -26,8 +26,7 @@ from zope.schema import Choice, TextLine
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
-from canonical.launchpad.interfaces import (
-    IAnnouncement, IAnnouncementSet)
+from canonical.launchpad.interfaces import IAnnouncement
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import AnnouncementDate, Summary, Title
@@ -37,7 +36,6 @@ from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadView, LaunchpadFormView, Link
     )
-from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.browser.feeds import (
     AnnouncementsFeedLink, FeedsMixin, RootAnnouncementsFeedLink)
 from canonical.launchpad.browser.launchpad import (
