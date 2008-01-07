@@ -82,7 +82,8 @@ class BugWatchUpdater(object):
 
     def _getExternalBugTracker(self, bug_tracker):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
-        return externalbugtracker.get_external_bugtracker(bug_tracker)
+        return externalbugtracker.get_external_bugtracker(
+            self.txn, bug_tracker)
 
     def updateBugTracker(self, bug_tracker):
         """Updates the given bug trackers's bug watches."""

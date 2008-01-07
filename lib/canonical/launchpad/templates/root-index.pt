@@ -11,9 +11,6 @@
   <body>
     <div metal:fill-slot="main">
 
-      <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
-            tal:attributes="href view/feed_url" />
-
   <div class="informational message" tal:condition="view/canRedirect">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
       <p>As a member of the Launchpad Beta Testers team, you would
@@ -73,9 +70,19 @@
               <tr>
                 <td><img src="/@@/news" alt="" /></td>
                 <td>
+                  <a href="https://help.launchpad.net/Feeds">
+                    <strong>Bug feeds</strong><br />
+                    Subscribe to all bugs relating to a distribution, project,
+                    team or person.
+                  </a>
+                </td>
+              </tr>
+              <tr>
+                <td><img src="/@@/news" alt="" /></td>
+                <td>
                   <a href="https://help.launchpad.net/ProjectAnnouncements">
-                    <strong>Project announcements:</strong><br />
-                    Publish your news in Launchpad and via Atom / RSS feeds.</a>
+                    <strong>Project announcements</strong><br />
+                    Publish your news in Launchpad and via Atom feeds.</a>
                     <a href="http://feeds.launchpad.net/announcements.atom">
                       <img src="/@@/rss" alt="RSS" />
                     </a>
@@ -85,41 +92,25 @@
                 <td><img src="/@@/news" alt="" /></td>
                 <td>
                   <a
-                    href="http://news.launchpad.net/general/zope-2-switches-to-launchpad">
-                    <strong>CMF adopts Launchpad:</strong><br />
+                    href="http://news.launchpad.net/?p=38">
+                    <strong>CMF adopts Launchpad</strong><br />
                     Easy collaboration between Zope and CMF.</a>
                 </td>
               </tr>
               <tr>
                 <td><img src="/@@/news" alt="" /></td>
                 <td>
-                 <a href="https://help.launchpad.net/PPAQuickStart">
-                   <strong>Personal Package Archives for everyone!</strong> Build
-                   and host Ubuntu packages in your own apt repository.
-                 </a>
-                </td>
-              </tr>
-              <tr>
-                <td><img src="/@@/news" alt="" /></td>
-                <td>
-                  <a
-                    href="http://news.launchpad.net/general/come-and-learn-more-about-launchpad">
-                    <strong>Come learn more:</strong><br />
-                    Introductory IRC tutorial sessions about Launchpad.</a>
-                </td>
-              </tr>
-              <tr tal:condition="not: view/isBetaUser">
-                <td><img src="/@@/news" alt="" /></td>
-                <td>
-                 <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters">
-                   <strong>Launchpad beta:</strong> join our beta team to get
-                   access to pre-release features</a>
-                </td>
+                  <a href="https://help.launchpad.net/BugReportingGuidelines">
+                    <strong>Better quality bug reports</strong><br />
+                    Display your project's bug reporting guidelines to bug
+                    reporters.
+                  </a>
+                 </td>
               </tr>
             </tbody>
           </table>
           <div class="discreet" style="text-align: right">
-            Updated 2007-11-22.
+            Updated 2007-12-20.
             <a href="http://news.launchpad.net">More...</a>
           </div>
         </div>

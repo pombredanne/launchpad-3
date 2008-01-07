@@ -61,7 +61,8 @@ the .watches attribute.
     >>> bugtrackerset = getUtility(IBugTrackerSet)
     >>> debbugs = bugtrackerset['debbugs']
     >>> sorted([(watch.bug.id, watch.remotebug) for watch in debbugs.watches])
-    [(1, u'304014'), (2, u'327452'), (3, u'327549'), (7, u'280883')]
+    [(1, u'304014'), (2, u'327452'), (3, u'327549'), (7, u'280883'),
+     (15, u'308994')]
     >>> mozilla_bugtracker = bugtrackerset['mozilla.org']
     >>> sorted([(watch.bug.id, watch.remotebug) for watch in
     ...     mozilla_bugtracker.watches])
@@ -356,3 +357,67 @@ The Bug Watch Updater can transition a bug to any status or importance:
 
     >>> for importance in BugTaskImportance.items:
     ...     debian_bugwatch.updateImportance(u'nothing', importance)
+
+
+== BugWatches against BugTasks with conjoined masters ==
+
+A conjoined bugtask involves a master and slave in in a conjoined
+relationship. The slave is a generic product or distribution task; the
+master is a series-specific task. If a BugWatch is linked to a BugTask
+with a conjoined master, that bug task will not be updated when the
+BugWatch's status or importance are updated. We can demonstrate this by
+creating a bug task with a conjoined master.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import (
+    ...     CreateBugParams, BugTrackerType, IBugTaskSet,
+    ...     IBugTrackerSet, IDistributionSet)
+
+    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> firefox = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> bug = firefox.createBug(CreateBugParams(
+    ...     owner=sample_person, title='Yet another test bug',
+    ...     comment="A sample bug for conjoined master tests."))
+
+    >>> targeted_bugtask = getUtility(IBugTaskSet).createTask(
+    ...     bug=bug, owner=sample_person,
+    ...     distroseries=ubuntu.currentseries,
+    ...     sourcepackagename=firefox.sourcepackagename)
+
+    >>> targeted_bugtask.conjoined_master is None
+    True
+
+    >>> targeted_bugtask.conjoined_slave == bug.bugtasks[0]
+    True
+
+We use ensureBugTracker() to populate in the parameters that we don't
+specifiy, such as the bug tracker's name.
+
+    >>> bug_tracker = getUtility(IBugTrackerSet).ensureBugTracker(
+    ...     bugtrackertype=BugTrackerType.ROUNDUP,
+    ...     owner=sample_person, baseurl='http://some.where')
+    >>> bug_watch = bug.addWatch(
+    ...     bugtracker=bug_tracker, remotebug='1', owner=sample_person)
+
+    >>> bug.bugtasks[0].bugwatch = bug_watch
+    >>> flush_database_updates()
+
+Now that we have our conjoined bug tasks we can use a test
+implementation of the Roundup ExternalBugTracker to try and update
+them. In fact, updating the bug watch will do nothing to the bug task to
+which it is linked since that bug task is a conjoined slave. Conjoined
+slaves must be updated through their conjoined master.
+
+    >>> bug.bugtasks[0].status.title
+    'New'
+
+    >>> import transaction
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestRoundup)
+    >>> external_bugtracker = TestRoundup(transaction, bug_tracker)
+    >>> external_bugtracker.updateBugWatches([bug_watch])
+
+    >>> bug.bugtasks[0].status.title
+    'New'
+

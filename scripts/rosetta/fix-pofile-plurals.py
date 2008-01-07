@@ -25,7 +25,6 @@ class FixPOFilePluralFormsScript(LaunchpadScript):
     loglevel = logging.INFO
 
     def main(self):
-        execute_zcml_for_scripts()
         fix_plurals_in_all_pofiles(self.txn, self.logger)
 
 if __name__ == '__main__':

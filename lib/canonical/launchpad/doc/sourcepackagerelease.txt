@@ -166,7 +166,7 @@ The other argurments are strings:
   >>> version = '0.0.99'
   >>> dsc = 'smashed dsc...'
   >>> copyright = 'smashed debian/copyright ...'
-  >>> changelog = 'contigous text....'
+  >>> changelog_entry = 'contigous text....'
   >>> archhintlist = 'any'
   >>> builddepends = 'cdbs, debhelper (>= 4.1.0), libsysfs-dev, libhal-dev'
   >>> builddependsindep = ''
@@ -183,7 +183,7 @@ ISourcePackageRelease, it will automatically set the
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
   ...     arg_name, version, arg_maintainer,
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
-  ...     arg_urgency, changelog, dsc, arg_key, arg_sect,
+  ...     arg_urgency, changelog_entry, dsc, arg_key, arg_sect,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
   ...     dsc_binaries, archive, copyright=copyright)
 

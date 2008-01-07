@@ -24,9 +24,6 @@
 
   <h1>News and announcements</h1>
 
-  <link rel="alternate" type="application/atom+xml" title="Atom 1.0"
-        tal:attributes="href view/feed_url" />
-
   <p tal:condition="not: view/announcement_nav/batch/listlength">
     There are no announcements for this project.
   </p>
