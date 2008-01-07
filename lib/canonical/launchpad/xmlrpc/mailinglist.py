@@ -8,7 +8,6 @@ __all__ = [
     ]
 
 
-from operator import itemgetter
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -23,6 +22,7 @@ from canonical.launchpad.xmlrpc import faults
 # 'make mailman_instance').  In that case, this import will fail, but in that
 # case just use the constant value directly.
 try:
+    # pylint: disable-msg=F0401
     from Mailman.MemberAdaptor import ENABLED, BYUSER
 except ImportError:
     ENABLED = 0
