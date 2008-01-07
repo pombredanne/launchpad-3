@@ -559,6 +559,8 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     field_names = ['product', 'private', 'url', 'name', 'title', 'summary',
                    'lifecycle_status', 'whiteboard', 'home_page', 'author']
 
+    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
+
     def setUpFields(self):
         LaunchpadFormView.setUpFields(self)
         # This is to prevent users from converting push/import
