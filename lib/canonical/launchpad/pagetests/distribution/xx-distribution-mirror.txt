@@ -32,7 +32,35 @@ Given that it's a CD mirror, it doesn't have sources list entries.
     >>> print find_tag_by_id(browser.contents, 'sources-list-entries')
     None
 
-Now, we create an archive mirror for Ubuntu distribution.
+Now, we create an archive mirror for Ubuntu distribution that
+is only available using FTP.
+
+    >>> browser.open('http://launchpad.dev/ubuntu/+newmirror')
+    >>> ftp_url = 'ftp://my.ftpmirror.com/pub'
+    >>> browser.getControl('Description').value = 'My own FTP mirror'
+    >>> browser.getControl('Link Speed').displayValue = ['1 Mbps']
+    >>> browser.getControl('Location').displayValue =  ['Antarctica']
+    >>> browser.getControl('Content').displayValue = ['Archive']
+    >>> browser.getControl('FTP URL').value = ftp_url
+    >>> browser.getControl('Create Mirror').click()
+ 
+    >>> browser.url
+    'http://launchpad.dev/ubuntu/+mirror/my.ftpmirror.com-archive'
+    >>> print extract_text(find_tag_by_id(browser.contents, 'mirror-details'))
+    Speed: 1 Mbps
+    Country: Antarctica
+    Content: Archive
+
+The archive mirror does have sources list entries pointing to the
+FTP server.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'sources-list-entries'))
+    deb ftp://my.ftpmirror.com/pub/ hoary main
+    deb-src ftp://my.ftpmirror.com/pub/ hoary main
+
+Finally, we create an archive mirror for Ubuntu distribution that uses
+HTTP server.
 
     >>> browser.open('http://launchpad.dev/ubuntu/+newmirror')
     >>> http_url = 'http://my.mirror.com/pub'
