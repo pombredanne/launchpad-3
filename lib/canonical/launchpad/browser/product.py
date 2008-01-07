@@ -34,6 +34,7 @@ __all__ = [
     'ProductSetNavigation',
     'ProductSetContextMenu',
     'ProductSetView',
+    'ProductBranchOverviewView',
     'ProductBranchesView',
     'PillarSearchItem',
     ]
@@ -1260,6 +1261,28 @@ class ProductShortLink(DefaultShortLink):
 
     def getLinkText(self):
         return self.context.displayname
+
+
+class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin):
+    """View for the product code overview."""
+
+    __used_for__ = IProduct
+
+    @cachedproperty
+    def recent_revision_branches(self):
+        branch_set = getUtility(IBranchSet)
+        return branch_set.getBranchesWithRecentRevisionsForProduct(
+            self.context, 5, self.user)
+
+    @property
+    def codebrowse_root(self):
+        """Return the link to codebrowse for this branch."""
+        return config.codehosting.codebrowse_root
+
+    @cachedproperty
+    def recent_revisions(self):
+        return [branch.getBranchRevision(branch.revision_count)
+                for branch in self.recent_revision_branches]
 
 
 class ProductBranchesView(BranchListingView):

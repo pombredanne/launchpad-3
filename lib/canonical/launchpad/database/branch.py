@@ -1104,6 +1104,48 @@ class BranchSet:
             limit=quantity,
             orderBy=['-date_created', '-id'])
 
+    def getBranchesWithRecentRevisionsForProduct(self, product, quantity,
+                                                 visible_by_user=None):
+        """See `IBranchSet`."""
+        assert product is not None, "Must have a valid product."
+        # XXX thumper 2008-01-07
+        # This is a slight bastardisation due to a SQLObject limitation.
+        # Here we have the same problem as the generalised sorting problem
+        # where we want to order the results based on a field that is not
+        # visible.  When we get stormified we can fix this, but I don't
+        # think it is worthwile blocking this feature on storm.
+
+        query = """
+            select branch.id
+            from branch, revision, branchrevision
+            where branch.id = branchrevision.branch
+            and branchrevision.revision = revision.id
+            and branchrevision.sequence = branch.revision_count
+            and branch.product = %s
+            """ % product.id
+        query = """
+            %s order by revision.revision_date desc
+            limit %s
+            """ % (self._generateBranchClause(query, visible_by_user),
+                   quantity)
+        cur = cursor()
+        cur.execute(query)
+
+        branch_ids = [id for (id,) in cur.fetchall()]
+        # Now get the branches for these id's and sort them so they
+        # are in the same order.
+
+        # If there are no branch_ids, then return an empty list.
+        if len(branch_ids) == 0:
+            return []
+
+        # Use a dictionary as a hash search for our insertion sort.
+        branches = {}
+        for branch in Branch.select('id in %s' % quote(branch_ids)):
+            branches[branch.id] = branch
+
+        return [branches[id] for id in branch_ids]
+
     def getPullQueue(self, branch_type):
         """See `IBranchSet`."""
         return Branch.select(

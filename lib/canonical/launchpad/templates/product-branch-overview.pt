@@ -1,0 +1,65 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1>Code overview for <tal:project-name replace="context/displayname"/></h1>
+
+
+  <div class="left">
+    <div class="section portlet">
+
+      <h2>Main branches</h2>
+
+      <div class="project series"
+           tal:repeat="series view/sorted_series_list">
+        <div tal:define="is_focus python:context.development_focus == series"
+             tal:attributes="class python:is_focus and 'highlighted' or 'unhighlighted'">
+          <metal:series use-macro="series/@@+macros/branch_display" />
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="section portlet">
+      <h2>Recent revisions</h2>
+
+      <div class="revision"
+           tal:repeat="rev_no view/recent_revisions">
+
+        <tal:branch replace="structure rev_no/branch/fmt:link"/>
+        <dl>
+          <dd>
+        <tal:revision define="codebrowse string:${view/codebrowse_root}${rev_no/branch/unique_name}">
+        <metal:landing-target use-macro="rev_no/branch/@@+macros/revision-text"/>
+        </tal:revision>
+          </dd>
+        </dl>
+      </div>
+
+    </div>
+
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestbranches"
+        />
+
+  </div>
+
+</div>
+
+</body>
+</html>

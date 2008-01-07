@@ -948,6 +948,20 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
+    def getBranchesWithRecentRevisionsForProduct(product, quantity,
+                                                 visible_by_user=None):
+        """Return the product's branches that have the most recent revisions.
+
+        At most `quantity` branches are returned.
+
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
+        """
+
     def getPullQueue(branch_type):
         """Return a queue of branches to mirror using the puller.
 
