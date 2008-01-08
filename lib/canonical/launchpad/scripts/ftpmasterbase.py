@@ -121,7 +121,7 @@ class PackageLocation:
         return False
 
     def __str__(self):
-        return '%s: %s-%s' % (self.archive.title,
+        return '%s: %s-%s' % (self.archive.owner.name,
                              self.distroseries.name, self.pocket.name)
 
 
