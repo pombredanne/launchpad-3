@@ -12,6 +12,7 @@ __all__ = [
     'SectionSchema',]
 
 from ConfigParser import NoSectionError, SafeConfigParser
+import copy
 import os
 import re
 import StringIO
@@ -201,10 +202,11 @@ class ConfigSchema:
         return sections
 
 
-    def _getExtendedConfs(self, conf_name, conf_data):
+    def _getExtendedConfs(self, conf_filename, conf_data, confs=None):
         """Return a list of 2-tuple config name and unparsed config.
 
-        :param config_data: unparsed config data.
+        :param conf_filename: The path and name the conf file.
+        :param conf_data: unparsed config data.
         :param confs: A list of confs that extend filename.
         :raises IOError: if filename cannot be read.
 
@@ -214,8 +216,38 @@ class ConfigSchema:
         to itself.
         """
         # XXX sinzui 2008-01-07: This method is not complete.
-        return [(conf_name, conf_data)]
+        if confs is None:
+            confs = []
+        confs.append((conf_filename, conf_data))
+        extends_name = self._findExtendedConf(conf_data)
+        if extends_name is not None:
+            extends_filename = os.path.abspath('%s/%s' % (
+                os.path.dirname(conf_filename), extends_name))
+            extends_data = read_content(extends_filename)
+            self._getExtendedConfs(extends_filename, extends_data, confs)
+        return confs
 
+    def _findExtendedConf(self, conf_data):
+        """Return the name of the extended conf."""
+        extends_name = None
+        in_meta_section = False
+        for line in StringIO.StringIO(conf_data):
+            line.strip()
+            if line.startswith('[meta]'):
+                # Only search the meta section for the extends key.
+                in_meta_section = True
+            elif in_meta_section and line.startswith('['):
+                # There was no extends key in the meta section.
+                break
+            elif in_meta_section and line.startswith('extends'):
+                # Found the extends key in the meta section.
+                tokens = line.split(':', 1)
+                extends_name = tokens[-1].strip()
+                break
+            else:
+                # This line is not interesting.
+                pass
+        return extends_name
 
 class ConfigData:
     """See `IConfigData`."""
@@ -298,14 +330,6 @@ class Config:
         self.name = schema.name
         self._overlays = [config_data]
 
-#    def _getRequiredSectionsFromSchema(self):
-#        """return a dict of `Section`s from the required `SectionSchemas`."""
-#        sections = {}
-#        for section_schema in self.schema:
-#            if not section_schema.optional:
-#                sections[section_schema.name] = Section(section_schema)
-#        return sections
-
     def _verifyEncoding(self, config_data):
         """Verify that the data is ASCII encoded.
 
@@ -329,8 +353,11 @@ class Config:
         :return: a list of parsing errors. If there are no errors, an empty
             list is returned.
         """
-        sections = dict(self._config_data._sections)
+        sections = {}
+        for section in self._config_data:
+            sections[section.name] = section.clone()
         errors = list(self._config_data._errors)
+        extends = None
         encoding_errors = self._verifyEncoding(config_data)
         errors.extend(encoding_errors)
         parser = SafeConfigParser()
@@ -346,7 +373,7 @@ class Config:
                     self.schema.name, section_name)
                 errors.append(UnknownSectionError(msg))
                 continue
-            if section_name not in self._config_data._sections:
+            if section_name not in self._config_data:
                 # Create the optional section from the schema.
                 section_schema = self.schema[section_name]
                 sections[section_name] = Section(section_schema)
@@ -377,9 +404,12 @@ class Config:
     @property
     def extends(self):
         """See `IStackableConfig`."""
-        if len(self.overlays) > 0:
-            return self.overlays[-1]
+        # XXX sinzui 2008-01-08: This is flawed because conf data can be
+        # pushed for other reasons than extends.
+        if len(self.overlays) > 1:
+            return self.overlays[-2]
         else:
+            # The first item in overlays was made from the schema.
             return None
 
     @property
@@ -395,18 +425,15 @@ class Config:
     def pop(self, conf_name):
         """See `IStackableConfig`."""
         index = None
-
         for index, overlay in enumerate(self.overlays):
             if overlay.name == conf_name:
                 break
         if index is None:
             raise KeyError("No config by the name.")
-        removed_overlays = self.overlays[index:]
-        self._restore_state(self.overlays[index - 1])
+        removed_overlays = self.overlays[index - 1:]
+        self._overlays = self.overlays[0:index - 1]
+        self._config_data = self._overlays[-1]
         return removed_overlays
-
-    def _restore_state(self, overlay):
-        """Update the config's attributes from the overlay."""
 
 
 class SectionSchema:
@@ -471,3 +498,10 @@ class Section:
                 msg = "%s does not have a %s key." % (self.name, key)
                 errors.append(UnknownKeyError(msg))
         return errors
+
+    def clone(self):
+        """Return a copy of this section.
+
+        This method is required by the extension mechanism.
+        """
+        return copy.deepcopy(self)

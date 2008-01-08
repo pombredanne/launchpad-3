@@ -297,7 +297,6 @@ does not have a name attribute.
     >>> import StringIO
     >>> bad_data = '\n'.join([
     ...     "[meta]",
-    ...     "extends: base.conf",
     ...     "metakey: unsupported",
     ...     "[unknown-section]",
     ...     "key1 = value1",
@@ -571,11 +570,11 @@ represents the state of a config. The overlays property is a stack of
 ConfigData as it was constructed from the schema's config to the last
 config file that was loaded.
 
-    >>> for overlay in config.overlays:
-    ...     print overlay.name
-    'base.conf'
-    'shared.conf'
-    'local.conf'
+    >>> for confdata in config.overlays:
+    ...     print confdata.name
+    base.conf
+    shared.conf
+    local.conf
 
 Raw config data can be merged with the config to create a new overlay
 for testing. The push() method accepts a string of config data. The
@@ -620,27 +619,27 @@ schema in this example.
     True
     >>> for key in sorted(config['section-3.app-a']):
     ...     print key, ':', config['section-3.app-a'][key]
-    key1: 17
-    key2: 3.1415
+    key1 : 17
+    key2 : 3.1415
 
     >>> for key in sorted(config.schema['section-3.app-a']):
     ...     print key, ':', config.schema['section-3.app-a'][key]
-    key1: 17
-    key2: 3.1415
+    key1 : 17
+    key2 : 3.1415
 
 The config's name and overlays are updated by push().
 
     >>> config.name
-    'test-app-a'
-    >>> config.filename
-    'test-app-a'
-    >>> for overlay in config.overlays:
-    ...     print overlay.name
-    'base.conf'
-    'shared.conf'
-    'local.conf'
-    'test config'
     'test app-a'
+    >>> config.filename
+    'test app-a'
+    >>> for confdata in config.overlays:
+    ...     print confdata.name
+    base.conf
+    shared.conf
+    local.conf
+    test config
+    test app-a
 
 The config's sections are updated with 'section-3.app-a' too.
 
@@ -652,9 +651,9 @@ The config's sections are updated with 'section-3.app-a' too.
     section-3.app-b
     section-5
 
-ConfigData (and all the ConfigDatas that extend it), can be removed
-removed from the stack of overlays using the pop() method. The methods
-returns the list of ConfigDatas that were removed.
+Configdata can be removed removed from the stack of overlays using the
+pop() method. The methods returns the list of ConfigData that was
+removed--a slice from the specified configdata to the top of the stack.
 
     >>> overlays = config.pop('test-config')
     >>> for overlay in overlays:
@@ -662,11 +661,11 @@ returns the list of ConfigDatas that were removed.
     'test config'
     'test app-a'
 
-    >>> for overlay in config.overlays:
-    ...     print overlay.name
-    'base.conf'
-    'shared.conf'
-    'local.conf'
+    >>> for confdata in config.overlays:
+    ...     print confdata.name
+    base.conf
+    shared.conf
+    local.conf
 
 The config's state was restored to the ConfigData that is top of the
 overlay stack. Section 'section-3.app-a' was removed completely. The
