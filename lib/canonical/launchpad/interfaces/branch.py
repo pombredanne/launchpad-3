@@ -308,7 +308,10 @@ class IBranch(IHasOwner):
     # Personally I'd like a LAZR way to do number 2.
     branch_type = Choice(
         title=_("Branch Type"), required=True,
-        vocabulary=UICreatableBranchType)
+        vocabulary=UICreatableBranchType,
+        description=_("The branch type defines whether or not a branch "
+                      "can be pushed to the Launchpad codehosting service, "
+                      "and whether the branch is able to be branched from."))
 
     name = TextLine(
         title=_('Name'), required=True, description=_("Keep very "
@@ -380,7 +383,8 @@ class IBranch(IHasOwner):
     # Stats and status attributes
     lifecycle_status = Choice(
         title=_('Status'), vocabulary=BranchLifecycleStatus,
-        default=BranchLifecycleStatus.NEW)
+        default=BranchLifecycleStatus.NEW,
+        description=_("The author's assessment of the branch's maturity."))
 
     # Mirroring attributes
     last_mirrored = Datetime(
