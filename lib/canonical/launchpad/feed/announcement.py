@@ -101,6 +101,8 @@ class AnnouncementsFeedBase(FeedBase):
         whether a trailing '/' is present.  Normalize the results by ensuring
         a trailing '/' is at the end of the URL.
         """
+        # XXX: Brad Crittenden 2008-01-08 bug=181238: canonical_url needs to
+        # be fixed to never return a trailing '/'.
         url = canonical_url(self.context, rootsite=rootsite)
         if not url.endswith('/'):
             url += '/'
