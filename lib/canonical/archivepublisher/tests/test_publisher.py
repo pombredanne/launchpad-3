@@ -445,6 +445,7 @@ class TestPublisher(TestNativePublishingBase):
             ['Package: foo',
              'Binary: foo-bin',
              'Version: 666',
+             'Section: base',
              'Maintainer: Foo Bar <foo@bar.com>',
              'Architecture: all',
              'Standards-Version: 3.6.2',
@@ -463,6 +464,7 @@ class TestPublisher(TestNativePublishingBase):
 
         self.assertEqual(
             ['Package: foo-bin',
+             'Source: foo',
              'Priority: standard',
              'Section: base',
              'Installed-Size: 100',
@@ -682,8 +684,8 @@ class TestPublisher(TestNativePublishingBase):
         plain_sources_md5_line = release_contents[md5_header_index + 7]
         self.assertEqual(
             plain_sources_md5_line,
-            (' 77b1655f4038b2f4e95c29429c3981bd              '
-             '211 main/source/Sources'))
+            (' 9ad2cacef12faa78e4962e5c2c14e07e              '
+             '225 main/source/Sources'))
         release_md5_line = release_contents[md5_header_index + 8]
         self.assertEqual(
             release_md5_line,
@@ -701,8 +703,8 @@ class TestPublisher(TestNativePublishingBase):
         plain_sources_sha1_line = release_contents[sha1_header_index + 7]
         self.assertEqual(
             plain_sources_sha1_line,
-            (' db70d9d7421a78b2e009be3d8f2546678beb734c              '
-             '211 main/source/Sources'))
+            (' 9f6692bb1c7303f2db622ba427dc4b2b727e669d              '
+             '225 main/source/Sources'))
         release_sha1_line = release_contents[sha1_header_index + 8]
         self.assertEqual(
             release_sha1_line,
@@ -719,8 +721,8 @@ class TestPublisher(TestNativePublishingBase):
         plain_sources_sha256_line = release_contents[sha256_header_index + 7]
         self.assertEqual(
             plain_sources_sha256_line,
-            (' 1ad45a96a6c7b35145a52fddc3c60daea9791fdde6639425289e58'
-             'cf3be3813a              211 main/source/Sources'))
+            (' b9c81f94140a3318667966d8208bccbf37ca823e2fb3a36beeaad58'
+             '12a5b45db              225 main/source/Sources'))
         release_sha256_line = release_contents[sha256_header_index + 8]
         self.assertEqual(
             release_sha256_line,
