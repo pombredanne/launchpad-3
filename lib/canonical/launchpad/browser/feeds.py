@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'AnnouncementsFeedLink',
     'BugFeedLink',
     'BugTargetLatestBugsFeedLink',
     'FeedLinkBase',
@@ -12,6 +13,7 @@ __all__ = [
     'FeedsNavigation',
     'FeedsRootUrlData',
     'PersonLatestBugsFeedLink',
+    'RootAnnouncementsFeedLink',
     ]
 
 from zope.component import getUtility
@@ -20,15 +22,17 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugTaskSet, IFeedsApplication, IPersonSet, IPillarNameSet,
-    NotFoundError)
-from canonical.launchpad.interfaces import IBugTask, IBugTarget, IPerson
+    IAnnouncementSet, IBugSet, IBugTaskSet, IFeedsApplication,
+    IPersonSet, IPillarNameSet, NotFoundError)
+from canonical.launchpad.interfaces import (
+    IBugTask, IBugTarget, IHasAnnouncements, ILaunchpadRoot, IPerson)
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp import (
     Navigation, canonical_name, canonical_url, stepto, urljoin)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.webapp.url import urlappend
 
 
 class FeedsRootUrlData:
@@ -162,9 +166,8 @@ class BugFeedLink(FeedLinkBase):
 
     @property
     def href(self):
-        return urljoin(
-            self.rooturl,
-            'bugs/' + str(self.context.bug.id) + '/bug.atom')
+        return urlappend(self.rooturl,
+                         'bugs/' + str(self.context.bug.id) + '/bug.atom')
 
 
 class BugTargetLatestBugsFeedLink(FeedLinkBase):
@@ -176,8 +179,8 @@ class BugTargetLatestBugsFeedLink(FeedLinkBase):
 
     @property
     def href(self):
-        return (canonical_url(self.context, rootsite='feeds')
-               + '/latest-bugs.atom')
+        return urlappend(canonical_url(self.context, rootsite='feeds'),
+                         'latest-bugs.atom')
 
 
 class PersonLatestBugsFeedLink(BugTargetLatestBugsFeedLink):
@@ -189,6 +192,36 @@ class PersonLatestBugsFeedLink(BugTargetLatestBugsFeedLink):
     usedfor = IPerson
 
 
+class AnnouncementsFeedLink(FeedLinkBase):
+    usedfor = IHasAnnouncements
+
+    @property
+    def title(self):
+        if IAnnouncementSet.providedBy(self.context):
+            return 'All Announcements'
+        else:
+            return 'Announcements for %s' % self.context.displayname
+
+    @property
+    def href(self):
+        if IAnnouncementSet.providedBy(self.context):
+            return urlappend(self.rooturl, 'announcements.atom')
+        else:
+            return urlappend(canonical_url(self.context, rootsite='feeds'),
+                             'announcements.atom')
+
+class RootAnnouncementsFeedLink(AnnouncementsFeedLink):
+    usedfor = ILaunchpadRoot
+
+    @property
+    def title(self):
+        return 'All Announcements'
+
+    @property
+    def href(self):
+        return urlappend(self.rooturl, 'announcements.atom')
+
+
 class FeedsMixin:
     """Mixin which adds the feed_links attribute to a view object.
 
@@ -198,6 +231,8 @@ class FeedsMixin:
     feed_links: Returns a list of objects subclassed from FeedLinkBase.
     """
     feed_types = (
+        AnnouncementsFeedLink,
+        RootAnnouncementsFeedLink,
         BugFeedLink,
         BugTargetLatestBugsFeedLink,
         PersonLatestBugsFeedLink,

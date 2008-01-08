@@ -3,7 +3,7 @@
 all: deb
 
 deb: clean
-	dpkg-buildpackage -rfakeroot -b
+	dpkg-buildpackage -rfakeroot -uc -us -b
 
 clean:
 	fakeroot debian/rules clean

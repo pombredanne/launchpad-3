@@ -276,12 +276,12 @@ number linkification just below.
     >>> sp = SourcePackage(sourcepackagename=pmount, distroseries=hoary)
     >>> spr = sp['0.1-2']
     >>> spr_view = queryView(spr, "+changelog", request)
-    >>> print spr_view.changelog
+    >>> print spr_view.changelog_entry
     This is a placeholder changelog for pmount 0.1-2
 
     >>> spr = sp['0.1-1']
     >>> spr_view = queryView(spr, "+changelog", request)
-    >>> print spr_view.changelog
+    >>> print spr_view.changelog_entry
     pmount (0.1-1) hoary; urgency=low
     <BLANKLINE>
      * Fix description (Malone #1)

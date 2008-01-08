@@ -3,7 +3,7 @@
     xmlns:tal="http://xml.zope.org/namespaces/tal"
     xmlns:lp="http://api.launchpad.net/schema"
     xmlns:metal="http://xml.zope.org/namespaces/metal">
-    <title tal:content="entry/title/content"
+    <title tal:content="structure entry/title/content"
            tal:attributes="type entry/title/content_type" />
     <link rel="alternate" tal:condition="entry/link_alternate"
           tal:attributes="href entry/link_alternate" />
@@ -13,13 +13,11 @@
     <updated tal:content="entry/date_updated/fmt:isodate" />
     <id tal:content="entry/id">tag:launchpad.net,2007-11-25:/ubuntu/+announcement/1</id>
     <author tal:repeat="author entry/authors">
-        <tal:name tal:condition="author/name">
-            <name tal:content="author/name" />
-            <uri tal:condition="author/uri"
-                 tal:content="author/uri" />
-            <email tal:condition="author/email"
-                   tal:content="author/email" />
-        </tal:name>
+      <name tal:content="author/name" />
+      <uri tal:condition="author/uri"
+           tal:content="author/uri" />
+      <email tal:condition="author/email"
+             tal:content="author/email" />
     </author>
     <content tal:condition="entry/content"
              tal:content="structure entry/content/content"

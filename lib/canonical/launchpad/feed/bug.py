@@ -125,7 +125,7 @@ class BugsFeedBase(FeedBase):
                           date_published=bugtask.datecreated,
                           authors=[FeedPerson(bug.owner, self.rootsite)],
                           content=FeedTypedData(content_view.render(),
-                                                content_type="xhtml"))
+                                                content_type="html"))
         return entry
 
     def renderHTML(self):
