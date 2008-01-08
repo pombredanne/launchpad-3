@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<tal:block condition="not: view/has_code_import">
+<tal:block condition="not: context/rcstype">
 <tal:block condition="not: view/user_branch_visible">
   <div id="branch-details">
   <p id="no-rcs-details">
@@ -28,7 +28,7 @@
       tal:content="structure context/user_branch/@@+product-summary-listing" />
 </tal:block>
 
-<tal:block tal:condition="view/has_code_import">
+<tal:block tal:condition="context/rcstype">
 
   <table>
     <tbody>
