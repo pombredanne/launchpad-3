@@ -14,18 +14,19 @@ time.
 Define a helper function for parsing the entries:
 
     >>> def parse_entries(contents):
-    ...     entries = [tag for tag in BSS(browser.contents,
+    ...     entries = [tag for tag in BSS(contents,
     ...                parseOnlyThese=SoupStrainer('entry'))]
     ...     return entries
 
-Define a helper function for parsing alternate links:
+Define a helper function for parsing links:
 
-    >>> def parse_alternate_links(contents):
-    ...     strainer = SoupStrainer('link', rel='alternate')
-    ...     entries = [tag for tag in BSS(browser.contents,
+    >>> def parse_links(contents, rel):
+    ...     strainer = SoupStrainer('link', rel=rel)
+    ...     entries = [tag for tag in BSS(contents,
     ...                parseOnlyThese=strainer,
     ...                selfClosingTags=['link'])]
     ...     return entries
+
 
 == Latest bugs for a product ==
 
@@ -43,13 +44,18 @@ point to the bugs themselves.
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
-    http://feeds.launchpad.dev/jokosher/latest-bugs.atom
-    >>> alternate_links = parse_alternate_links(browser.contents)
+    tag:launchpad.net,2007-03-15:/bugs/jokosher
+    >>> alternate_links = parse_links(browser.contents, 'alternate')
     >>> for link in alternate_links:
     ...     print link
     <link rel="alternate" href="http://bugs.launchpad.dev/jokosher" />
     <link rel="alternate" href="http://bugs.launchpad.dev/jokosher/+bug/12" />
     <link rel="alternate" href="http://bugs.launchpad.dev/jokosher/+bug/11" />
+
+    >>> self_links = parse_links(browser.contents, 'self')
+    >>> for link in self_links:
+    ...     print link
+    <link rel="self" href="http://feeds.launchpad.dev/jokosher/latest-bugs.atom" />
 
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
@@ -61,6 +67,8 @@ point to the bugs themselves.
     Foo Bar
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name16
+    >>> print extract_text(entry.id)
+    tag:launchpad.net,2007-03-15:/+bug/12
 
     >>> entry = entries[1]
     >>> print extract_text(entry.title)
@@ -69,6 +77,8 @@ point to the bugs themselves.
     Foo Bar
     >>> print extract_text(entry.author('uri')[0])
     http://bugs.launchpad.dev/~name16
+    >>> print extract_text(entry.id)
+    tag:launchpad.net,2007-03-15:/+bug/11
 
 
 == Latest bugs for a project ==
@@ -84,7 +94,7 @@ as the latest bugs feed for a product.
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
-    http://feeds.launchpad.dev/mozilla/latest-bugs.atom
+    tag:launchpad.net,2004-09-24:/bugs/mozilla
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     5
@@ -115,7 +125,7 @@ as the latest bugs feed for a product.
 
 == Latest bugs for a distro ==
 
-This feed gets the latest bugs for a distribution, and has the same type 
+This feed gets the latest bugs for a distribution, and has the same type
 of content as the latest bugs feed for a product.
 
     >>> browser.open('http://feeds.launchpad.dev/ubuntu/latest-bugs.atom')
@@ -126,7 +136,7 @@ of content as the latest bugs feed for a product.
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
-    http://feeds.launchpad.dev/ubuntu/latest-bugs.atom
+    tag:launchpad.net,2006-10-16:/bugs/ubuntu
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     4
@@ -141,7 +151,7 @@ of content as the latest bugs feed for a product.
 
 == Latest bugs for a source package ==
 
-This feed gets the latest bugs for a source package, and has the same 
+This feed gets the latest bugs for a source package, and has the same
 type of content as the latest bugs feed for a product.
 
     >>> browser.open(
@@ -153,7 +163,7 @@ type of content as the latest bugs feed for a product.
     'http://feeds.launchpad.dev/ubuntu/+source/thunderbird/latest-bugs.atom'
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
-    http://feeds.launchpad.dev/ubuntu/+source/thunderbird/latest-bugs.atom
+    tag:launchpad.net,2008:/bugs/ubuntu/+source/thunderbird
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     1
@@ -168,7 +178,7 @@ type of content as the latest bugs feed for a product.
 
 == Latest bugs for a distroseries ==
 
-This feed gets the latest bugs for a distribution series, and has the same 
+This feed gets the latest bugs for a distribution series, and has the same
 type of content as the latest bugs feed for a product.
 
     >>> browser.open(
@@ -180,7 +190,8 @@ type of content as the latest bugs feed for a product.
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
-    http://feeds.launchpad.dev/ubuntu/hoary/latest-bugs.atom
+    tag:launchpad.net,2006-10-16:/bugs/ubuntu/hoary
+
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     1
@@ -195,7 +206,7 @@ type of content as the latest bugs feed for a product.
 
 == Latest bugs for a product series ==
 
-This feed gets the latest bugs for a product series, and has the same 
+This feed gets the latest bugs for a product series, and has the same
 type of content as the latest bugs feed for a product.
 
     >>> browser.open(
@@ -207,7 +218,7 @@ type of content as the latest bugs feed for a product.
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
-    http://feeds.launchpad.dev/firefox/1.0/latest-bugs.atom
+    tag:launchpad.net,2005-06-06:/bugs/firefox/1.0
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     1
@@ -233,7 +244,7 @@ This feed gets the latest bugs for a person.
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
-    http://feeds.launchpad.dev/~name16/latest-bugs.atom
+    tag:launchpad.net,2005-06-06:/bugs/~name16
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     7
@@ -295,7 +306,7 @@ some results.
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
-    http://feeds.launchpad.dev/~simple-team/latest-bugs.atom
+    tag:launchpad.net,2007-02-21:/bugs/~simple-team
 
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
@@ -318,7 +329,7 @@ performance problem in production.
     >>> from zope.security.interfaces import Unauthorized
     >>> from canonical.config import config
     >>> config.launchpad.is_bug_search_feed_active = False
-    >>> try: 
+    >>> try:
     ...     browser.open(url)
     ... except Unauthorized, info:
     ...     print Unauthorized, info
@@ -336,7 +347,7 @@ to True.
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> feed_id = extract_text(soup.find('id'))
     >>> print feed_id
-    http://feeds.launchpad.dev/bugs/+bugs.atom?field.scope.target=&amp;field.scope=all&amp;field.searchtext=&amp;search=Search+Bug+Reports
+    tag:launchpad.net,2008:/+bugs.atom?field.scope.target=&amp;field.scope=all&amp;field.searchtext=&amp;search=Search+Bug+Reports
 
     >>> print cgi.escape(browser.url)
     http://feeds.launchpad.dev/bugs/+bugs.atom?field.scope.target=&amp;field.scope=all&amp;field.searchtext=&amp;search=Search+Bug+Reports

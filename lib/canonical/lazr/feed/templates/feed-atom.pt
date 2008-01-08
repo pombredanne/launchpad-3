@@ -6,15 +6,15 @@
 
   <title tal:content="view/title">Recently opened bugs</title>
 
-  <id tal:content="view/url">http://feeds.launchpad.net/bugs/</id>
-  <link rel="self" tal:attributes="href view/url" />
-  <link rel="alternate" tal:attributes="href view/alternate_url" />
+    <id tal:content="view/feed_id">tag:launchpad.net,2008-01-02:/bugs/ubuntu</id>
+    <link rel="self" tal:attributes="href view/link_self" />
+    <link rel="alternate" tal:attributes="href view/link_alternate" />
   <logo tal:condition="view/logo"
         tal:content="view/logo" />
   <icon tal:condition="view/icon"
         tal:content="view/icon" />
-  <updated tal:content="view/date_updated/fmt:isodate"
-        >2007-05-26T12:45:01Z</updated>
+    <updated tal:content="view/date_updated/fmt:isodate">
+          2007-05-26T12:45:01Z</updated>
 
   <entry tal:repeat="entry view/getItems">
       <metal:entry metal:use-macro="entry/@@feed-entry-atom/feed-entry" />
