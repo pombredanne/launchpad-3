@@ -39,7 +39,7 @@ class IArchive(IHasOwner):
 
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
-        description=_("Maximum size, in bytes, allowed for this PPA."))
+        description=_("Maximum size, in Mbytes, allowed for this PPA."))
 
     whiteboard = Text(
         title=_("Whiteboard"), required=False,

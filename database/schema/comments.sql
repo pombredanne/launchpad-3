@@ -1610,7 +1610,7 @@ COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''
 COMMENT ON COLUMN Archive.owner IS 'Identifies the PPA owner when it has one.';
 COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs content.';
 COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
-COMMENT ON COLUMN Archive.authorized_size IS 'Size in bytes allowed for this PPA.';
+COMMENT ON COLUMN Archive.authorized_size IS 'Size in Mbytes allowed for this PPA.';
 COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventions made in the PPA configuration.';
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
