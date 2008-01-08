@@ -298,9 +298,9 @@ class TestQueueTool(TestQueueBase):
         # The upload wants to close bug 6:
         bugs_fixed_header = bar2_src.changes._dict['launchpad-bugs-fixed']
         self.assertEqual(
-            bugs_fixed_header, '6',
-            'Expected bug 6 in launchpad-bugs-fixed, got %s'
-                % bugs_fixed_header)
+            bugs_fixed_header, str(the_bug_id),
+            'Expected bug %s in launchpad-bugs-fixed, got %s'
+                % (the_bug_id, bugs_fixed_header))
 
         # The upload should be in the DONE state:
         item_status = bar2_src.queue_root.status.name
