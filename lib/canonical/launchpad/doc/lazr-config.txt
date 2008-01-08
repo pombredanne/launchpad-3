@@ -270,7 +270,7 @@ ConfigSchema implements the two methods in the IConfigLoader interface.
 A Config is created by a schema using either the load() or loadFile()
 methods to return a Config instance.
 
-    >>> from canonical.lazr.interfaces import IConfig, IConfigLoader
+    >>> from canonical.lazr.interfaces import IConfigData, IConfigLoader
     >>> verifyObject(IConfigLoader, schema)
     True
 
@@ -280,7 +280,7 @@ The load() method accepts a filename.
     >>> config = schema.load(local_conf)
 
     >>> from canonical.lazr.config import Config
-    >>> verifyObject(IConfig, config)
+    >>> verifyObject(IConfigData, config)
     True
 
 Passing a filename to a non-existent file will raise an IOError.
@@ -313,7 +313,7 @@ does not have a name attribute.
 
     >>> bad_config = schema.loadFile(
     ...     StringIO.StringIO(bad_data), 'bad conf')
-    >>> verifyObject(IConfig, bad_config)
+    >>> verifyObject(IConfigData, bad_config)
     True
 
 The bad_config example will be used for validation tests.
@@ -366,13 +366,6 @@ the configuration.
     'local.conf'
     >>> config.filename
     '...ftests/testfiles/local.conf'
-
-A conf file may contains a meta section that is used by the config
-system. The config can access the config it extended using the extends
-property.
-
-    >>> config.extends.name
-    'shared.conf'
 
 The config can access the schema via the schema property.
 
@@ -565,6 +558,13 @@ errors in the config.
 
 == Config overlays ==
 
+A conf file may contains a meta section that is used by the config
+system. The config can access the config it extended using the extends
+property.
+
+    >>> config.extends.name
+    'shared.conf'
+
 As Config supports inheritance through the extends key, each conf file
 produces instance of ConfigData, called an overlay. ConfigData
 represents the state of a config. The overlays property is a stack of
@@ -606,7 +606,7 @@ updated when the unparsed data is pushed onto the config.
 
 Besides updating section keys, optional sections can be enabled too.
 The 'section-3.app-a' section is enabled with the default keys from the
-schema.
+schema in this example.
 
     >>> config.schema['section-3.app-a'].optional
     True
@@ -654,7 +654,7 @@ The config's sections are updated with 'section-3.app-a' too.
 
 ConfigData (and all the ConfigDatas that extend it), can be removed
 removed from the stack of overlays using the pop() method. The methods
-returns the list of ConfigData that was removed. 
+returns the list of ConfigDatas that were removed.
 
     >>> overlays = config.pop('test-config')
     >>> for overlay in overlays:

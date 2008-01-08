@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'Config',
+    'ConfigData',
     'ConfigSchema',
     'Section',
     'SectionSchema',]
@@ -18,9 +19,10 @@ import StringIO
 from zope.interface import implements
 
 from canonical.lazr.interfaces import (
-    ConfigErrors, IConfig, IConfigLoader, IConfigSchema,
-    InvalidSectionNameError, ISection, ISectionSchema, NoCategoryError,
-    RedefinedSectionError, UnknownKeyError, UnknownSectionError)
+    ConfigErrors, IConfigData, IConfigLoader, IConfigSchema,
+    InvalidSectionNameError, ISection, ISectionSchema, IStackableConfig,
+    NoCategoryError, RedefinedSectionError, UnknownKeyError,
+    UnknownSectionError)
 from canonical.lp import decorates
 
 
@@ -166,42 +168,71 @@ class ConfigSchema:
 
     def load(self, filename):
         """See `IConfigLoader`."""
-        config_data = read_content(filename)
-        return Config(filename, config_data, self)
+        conf_data = read_content(filename)
+        return self._load(filename, conf_data)
 
     def loadFile(self, source_file, filename=None):
         """See `IConfigLoader`."""
-        config_data = source_file.read()
+        conf_data = source_file.read()
         if filename is None:
             filename = getattr(source_file, 'name')
             assert filename is not None, (
                 'filename must be provided if the file-like object '
                 'does not have a name attribute.')
-        return Config(filename, config_data, self)
+        return self._load(filename, conf_data)
 
+    def _load(self, filename, conf_data):
+        """Return a Config parsed from conf_data."""
+        confs = self._getExtendedConfs(filename, conf_data)
+        confs.reverse()
+        sections = self._getRequiredSections()
+        config_data = ConfigData(self, self.filename, sections)
+        config = Config(self, config_data)
+        for conf_name, conf_data in confs:
+            config.push(conf_name, conf_data)
+        return config
 
-class Config:
-    """see `IConfig`."""
-    implements(IConfig)
-
-    def __init__(self, filename, config_data, schema):
-        """Set the schema and configuration."""
-        self.filename = filename
-        self.name = os.path.basename(filename)
-        self.schema = schema
-        self._sections = self._getRequiredSectionsFromSchema()
-        self._category_names = self._getCategoryNames()
-        self._extends = None
-        self._errors = []
-        self._loadConfigData(config_data, filename)
-
-    def _getRequiredSectionsFromSchema(self):
+    def _getRequiredSections(self):
         """return a dict of `Section`s from the required `SectionSchemas`."""
         sections = {}
-        for section_schema in self.schema:
+        for section_schema in self:
             if not section_schema.optional:
                 sections[section_schema.name] = Section(section_schema)
         return sections
+
+
+    def _getExtendedConfs(self, conf_name, conf_data):
+        """Return a list of 2-tuple config name and unparsed config.
+
+        :param config_data: unparsed config data.
+        :param confs: A list of confs that extend filename.
+        :raises IOError: if filename cannot be read.
+
+        This method recursively constructs a list of all unparsed config data.
+        It scans the config data for the extends key in the meta section. It
+        reads the unparsed config_data from the extended file and passes that
+        to itself.
+        """
+        # XXX sinzui 2008-01-07: This method is not complete.
+        return [(conf_name, conf_data)]
+
+
+class ConfigData:
+    """See `IConfigData`."""
+    implements(IConfigData)
+
+    def __init__(self, schema, filename, sections, extends=None, errors=None):
+        """Set the schema and configuration data."""
+        self.schema = schema
+        self.filename = filename
+        self.name = os.path.basename(filename)
+        self._sections = sections
+        self._category_names = self._getCategoryNames()
+        self._extends = extends
+        if errors is None:
+            self._errors = []
+        else:
+            self._errors = errors
 
     def _getCategoryNames(self):
         """Return a tuple of category names that the `Section`s belong to."""
@@ -210,6 +241,70 @@ class Config:
             if '.' in section_name:
                 category_names.add(section_name.split('.')[0])
         return tuple(category_names)
+
+    @property
+    def extends(self):
+        """See `IConfigData`."""
+        return self._extends
+
+    @property
+    def category_names(self):
+        """See `IConfigData`."""
+        return self._category_names
+
+    def __iter__(self):
+        """See `IConfigData`."""
+        return self._sections.itervalues()
+
+    def __contains__(self, name):
+        """See `IConfigData`."""
+        return name in self._sections.keys()
+
+    def __getitem__(self, name):
+        """See `IConfigData`."""
+        try:
+            return self._sections[name]
+        except KeyError:
+            raise NoSectionError(name)
+
+    def getByCategory(self, name):
+        """See `IConfigData`."""
+        sections = []
+        for key in self._sections:
+            if key.startswith(name):
+                sections.append(self._sections[key])
+        if len(sections) == 0:
+            raise NoCategoryError(name)
+        return sections
+
+    def validate(self):
+        """See `IConfigData`."""
+        if len(self._errors) > 0:
+            message = "%s is not valid." % self.name
+            raise ConfigErrors(message, errors=self._errors)
+        return True
+
+
+class Config:
+    """See `IStackableConfig`."""
+    implements(IStackableConfig)
+    decorates(IConfigData, context='_config_data')
+
+    def __init__(self, schema, config_data):
+        """Set the schema and configuration."""
+        self._config_data = config_data
+        self.schema = schema
+        self.filename = schema.filename
+        self.name = schema.name
+        self._overlays = [config_data]
+
+#    def _getRequiredSectionsFromSchema(self):
+#        """return a dict of `Section`s from the required `SectionSchemas`."""
+#        sections = {}
+#        for section_schema in self.schema:
+#            if not section_schema.optional:
+#                sections[section_schema.name] = Section(section_schema)
+#        return sections
 
     def _verifyEncoding(self, config_data):
         """Verify that the data is ASCII encoded.
@@ -224,7 +319,7 @@ class Config:
             errors.append(error)
         return errors
 
-    def _loadConfigData(self, config_data, filename):
+    def _loadConfigData(self, filename, config_data):
         """Set the Sections and category_names from the config data.
 
         New _sections, _category_names, and _errors are created from copies
@@ -234,15 +329,15 @@ class Config:
         :return: a list of parsing errors. If there are no errors, an empty
             list is returned.
         """
-        sections = dict(self._sections)
-        errors = list(self._errors)
+        sections = dict(self._config_data._sections)
+        errors = list(self._config_data._errors)
         encoding_errors = self._verifyEncoding(config_data)
         errors.extend(encoding_errors)
         parser = SafeConfigParser()
         parser.readfp(StringIO.StringIO(config_data), filename)
         for section_name in parser.sections():
             if section_name == 'meta':
-                meta_errors = self._loadMetaData(parser)
+                extends, meta_errors = self._loadMetaData(parser)
                 errors.extend(meta_errors)
                 continue
             if section_name not in self.schema:
@@ -251,7 +346,7 @@ class Config:
                     self.schema.name, section_name)
                 errors.append(UnknownSectionError(msg))
                 continue
-            if section_name not in self._sections:
+            if section_name not in self._config_data._sections:
                 # Create the optional section from the schema.
                 section_schema = self.schema[section_name]
                 sections[section_name] = Section(section_schema)
@@ -259,9 +354,7 @@ class Config:
             items = parser.items(section_name)
             section_errors = sections[section_name].update(items)
             errors.extend(section_errors)
-        self._sections = sections
-        self._errors = errors
-        self._category_names = self._getCategoryNames()
+        return ConfigData(self.schema, filename, sections, extends, errors)
 
     def _loadMetaData(self, parser):
         """Load the config meta data from the ConfigParser.
@@ -270,57 +363,50 @@ class Config:
 
         :return: a list of errors if there are errors, or an empty list.
         """
+        extends = None
         errors = []
         for key in parser.options('meta'):
             if key == "extends":
-                self._extends = parser.get('meta', 'extends')
+                extends = parser.get('meta', 'extends')
             else:
                 # Any other key is an error.
                 msg = "The meta section does not have a %s key." % key
                 errors.append(UnknownKeyError(msg))
-        return errors
+        return (extends, errors)
 
     @property
     def extends(self):
-        """See `IConfig`."""
-        return self._extends
+        """See `IStackableConfig`."""
+        if len(self.overlays) > 0:
+            return self.overlays[-1]
+        else:
+            return None
 
     @property
-    def category_names(self):
-        """See `IConfig`."""
-        return self._category_names
+    def overlays(self):
+        """See `IStackableConfig`."""
+        return self._overlays
 
-    def __iter__(self):
-        """See `IConfig`."""
-        return self._sections.itervalues()
+    def push(self, conf_name, conf_data):
+        """See `IStackableConfig`."""
+        self._config_data = self._loadConfigData(conf_name, conf_data)
+        self._overlays.append(self._config_data)
 
-    def __contains__(self, name):
-        """See `IConfig`."""
-        return name in self._sections.keys()
+    def pop(self, conf_name):
+        """See `IStackableConfig`."""
+        index = None
 
-    def __getitem__(self, name):
-        """See `IConfig`."""
-        try:
-            return self._sections[name]
-        except KeyError:
-            raise NoSectionError(name)
+        for index, overlay in enumerate(self.overlays):
+            if overlay.name == conf_name:
+                break
+        if index is None:
+            raise KeyError("No config by the name.")
+        removed_overlays = self.overlays[index:]
+        self._restore_state(self.overlays[index - 1])
+        return removed_overlays
 
-    def getByCategory(self, name):
-        """See `IConfig`."""
-        sections = []
-        for key in self._sections:
-            if key.startswith(name):
-                sections.append(self._sections[key])
-        if len(sections) == 0:
-            raise NoCategoryError(name)
-        return sections
-
-    def validate(self):
-        """See `IConfig`."""
-        if len(self._errors) > 0:
-            message = "%s is not valid." % self.name
-            raise ConfigErrors(message, errors=self._errors)
-        return True
+    def _restore_state(self, overlay):
+        """Update the config's attributes from the overlay."""
 
 
 class SectionSchema:
