@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+__all__ = ['upload_bar_source']
+
 import os
 import shutil
 import tempfile
@@ -32,6 +34,18 @@ from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.librarian.utils import filechunks
+
+
+def upload_bar_source():
+    """Convenience function to upload a source, 'bar'."""
+    sync_policy = getPolicy(
+        name='sync', distro='ubuntu', distroseries='breezy-autotest')
+    bar_src = NascentUpload(
+        datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+        sync_policy, mock_logger_quiet)
+    bar_src.process()
+    bar_src.do_accept()
+    return bar_src
 
 
 class TestQueueBase(TestCase):
@@ -214,13 +228,7 @@ class TestQueueTool(TestQueueBase):
         # sample data is horribly broken with published sources also in
         # the NEW queue.  Doing it this way guarantees a nice set of data.
         LaunchpadZopelessLayer.switchDbUser("testadmin")
-        sync_policy = getPolicy(
-            name='sync', distro='ubuntu', distroseries='breezy-autotest')
-        bar_src = NascentUpload(
-            datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-            sync_policy, mock_logger_quiet)
-        bar_src.process()
-        bar_src.do_accept()
+        upload_bar_source()
         # Swallow email generated at the upload stage.
         stub.test_emails.pop()
         LaunchpadZopelessLayer.txn.commit()

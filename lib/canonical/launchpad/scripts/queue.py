@@ -30,8 +30,6 @@ from canonical.launchpad.interfaces import (
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.scripts.processaccepted import (
-    close_bugs_for_queue_item)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
 
@@ -487,21 +485,6 @@ class QueueActionAccept(QueueAction):
                 self.display('** %s could not be accepted due to %s'
                              % (queue_item.displayname, info))
                 continue
-
-            # If this is a single source upload we can create the
-            # publishing records now so that the user doesn't have to
-            # wait for a publisher cycle (which calls process-accepted
-            # to do this).
-            if ((queue_item.sources.count() == 1) and
-                (queue_item.builds.count() == 0) and
-                (queue_item.customfiles.count() == 0)):
-                self.display("Creating PENDING publishing record for "
-                    "%s." % queue_item.displayname)
-                queue_item.realiseUpload()
-
-            # When accepting packages, we must also check the changes file
-            # for bugs to close automatically.
-            close_bugs_for_queue_item(queue_item)
 
         self.displayRule()
         self.displayBottom()
