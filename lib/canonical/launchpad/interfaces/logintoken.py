@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Login token interfaces."""
 
@@ -91,6 +92,13 @@ class LoginTokenType(DBEnumeratedType):
         people who don't use Launchpad. The person that a given profile
         represents has to first use the token to finish the registration
         process in order to be able to login with that profile.
+        """)
+
+    TEAMCLAIM = DBItem(10, """
+        Turn an unvalidated Launchpad profile into a team.
+
+        A user has found an unvalidated profile in Launchpad and is trying
+        to turn it into a team.
         """)
 
 
@@ -224,6 +232,9 @@ class ILoginToken(Interface):
         """Send an email to self.email with instructions on how to finish
         claiming the profile that owns self.email.
         """
+
+    def sendClaimTeamEmail():
+        """E-mail instructions for claiming a team to self.email."""
 
 
 class ILoginTokenSet(Interface):

@@ -13,12 +13,11 @@ with the ids between 130 and 151 and, by default, the batch are of 10 items.
   >>> def print_shown_messages(browser):
   ...     """Print the id/value of all shown translations on the page."""
   ...     import re
-  ...     from BeautifulSoup import BeautifulSoup
   ...
   ...     # Map msgset_ids to HTML tags
   ...     translations = {}
   ...
-  ...     soup = BeautifulSoup(browser.contents)
+  ...     soup = find_main_content(browser.contents)
   ...     for tag in soup.findAll('label'):
   ...         id = tag.get('id')
   ...         if id is not None:
@@ -193,31 +192,28 @@ alternative suggestion languages.
   >>> user_browser.getControl(name='select_alternate_language').click()
 
   >>> user_browser.getControl(
-  ...     name='msgset_161_zh_CN_translation_0_radiobutton').value = [
-  ...         'msgset_161_zh_CN_translation_0_new']
+  ...     name='msgset_130_zh_CN_translation_0_radiobutton').value = [
+  ...         'msgset_130_zh_CN_translation_0_new']
   >>> user_browser.getControl(
-  ...     name='msgset_161_zh_CN_translation_0_new').value = 'Chinese!'
+  ...     name='msgset_130_zh_CN_translation_0_new').value = 'Chinese!'
   >>> user_browser.getControl(name='submit_translations').click()
 
 If we browse back to the page we just submitted translations for, we don't
 see our own translation since we are only showing untranslated strings.
 
   >>> user_browser.getLink("Previous").click()
-
-  >>> text = extract_text(find_main_content(user_browser.contents))
-  >>> import re
-  >>> re.search('Chinese!', text) == None
-  True
+  >>> print find_tag_by_id(
+  ...     user_browser.contents, 'msgset_130_zh_CN_translation_0')
+  None
 
 We do, however, see Spanish suggestions.
 
-  >>> print text
+  >>> text = extract_text(find_main_content(user_browser.contents))
+  >>> print text.encode('UTF-8')
   Template ...
-  English: evolution addressbook
+  English: current addressbook folder
   Current Chinese (China): (no translation yet)
   Suggestions:
-  ...
-  libreta de direcciones de Evolution
+  carpeta de libretas de direcciones actual
   Spanish
   ...
-

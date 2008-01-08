@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:block condition="not: context/rcstype">
 <tal:block condition="not: view/user_branch_visible">
   <div id="branch-details">
@@ -88,3 +94,4 @@
     </tbody>
   </table>
 </tal:block>
+</tal:root>

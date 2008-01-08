@@ -20,17 +20,15 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.lp import dbschema
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.interfaces import (
-    BuildDaemonError, IBuildQueueSet, BuildJobMismatch, IBuildSet, IBuilderSet,
-    NotFoundError, pocketsuffix
+    BuildDaemonError, BuildStatus, IBuildQueueSet, BuildJobMismatch, IBuildSet,
+    IBuilderSet, NotFoundError, pocketsuffix
     )
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache, cursor)
-from canonical.buildd.slave import BuilderStatus
 
 
 class BuilderGroup:
@@ -65,7 +63,6 @@ class BuilderGroup:
 
         # Commit the updates made to the builders.
         self.commit()
-        self.updateOkSlaves()
 
     def updateBuilderStatus(self, builder, arch):
         """Update the status for a builder by probing it.
@@ -77,6 +74,7 @@ class BuilderGroup:
         try:
             builder.checkSlaveAlive()
             builder.checkCanBuildForDistroArchSeries(arch)
+            self.rescueBuilderIfLost(builder)
         # Catch only known exceptions.
         # XXX cprov 2007-06-15 bug=120571: ValueError & TypeError catching is
         # disturbing in this context. We should spend sometime sanitizing the
@@ -84,15 +82,10 @@ class BuilderGroup:
         # main refactoring of this area.
         except (ValueError, TypeError, xmlrpclib.Fault,
                 socket.error, BuildDaemonError), reason:
-            # XXX cprov 2007-06-15: repr() is required for socket.error,
-            # however it's not producing anything 'readable' on
-            # Builder.failurenotes. it need attention at some point.
-            builder.failbuilder(repr(reason))
-            self.logger.debug("Builder on %s marked as failed due to: %r",
-                              builder.url, reason, exc_info=True)
-        else:
-            # Verify if the builder slave is working with sane information.
-            self.rescueBuilderIfLost(builder)
+            builder.failbuilder(str(reason))
+            self.logger.warn(
+                "%s (%s) marked as failed due to: %s",
+                builder.name, builder.url, builder.failnotes, exc_info=True)
 
     def rescueBuilderIfLost(self, builder):
         """Reset Builder slave if job information doesn't match with DB.
@@ -142,23 +135,10 @@ class BuilderGroup:
             self.logger.warn("Builder '%s' rescued from '%s-%s: %s'" % (
                 builder.name, build_id, queue_item_id, reason))
 
-    def updateOkSlaves(self):
-        """Build the 'okslaves' list
-
-        'okslaves' will contains the list of builder instances signed with
-        builder.builderok == true. Emits a log.warn message if no builder
-        were found.
-        """
-        self.okslaves = [builder for builder in self.builders
-                         if builder.builderok]
-        if not self.okslaves:
-            self.logger.warn("No builders are available")
-
     def failBuilder(self, builder, reason):
         """Mark builder as failed.
 
-        Set builderok as False, store the reason in failnotes and update
-        the list of working builders (self.okslaves).
+        Set builderok as False, store the reason in failnotes.
         """
         # XXX cprov 2007-04-17: ideally we should be able to notify the
         # the buildd-admins about FAILED builders. One alternative is to
@@ -166,7 +146,6 @@ class BuilderGroup:
         # with error, for those cases buildd-sequencer automatically sends
         # an email to admins with the script output.
         builder.failbuilder(reason)
-        self.updateOkSlaves()
 
     def getLogFromSlave(self, queueItem):
         """Get last buildlog from slave.
@@ -425,11 +404,11 @@ class BuilderGroup:
         # also contain the information required to manually reprocess the
         # binary upload when it was the case.
         build = getUtility(IBuildSet).getByBuildID(queueItem.build.id)
-        if (build.buildstate != dbschema.BuildStatus.FULLYBUILT or
+        if (build.buildstate != BuildStatus.FULLYBUILT or
             len(build.binarypackages) == 0):
             self.logger.debug("Build %s upload failed." % build.id)
             # update builder
-            queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOUPLOAD
+            queueItem.build.buildstate = BuildStatus.FAILEDTOUPLOAD
             # Retrieve log file content.
             possible_locations = (
                 'failed', 'failed-to-move', 'rejected', 'accepted')
@@ -468,7 +447,7 @@ class BuilderGroup:
         set the job status as FAILEDTOBUILD, store available info and
         remove Buildqueue entry.
         """
-        queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOBUILD
+        queueItem.build.buildstate = BuildStatus.FAILEDTOBUILD
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         queueItem.builder.cleanSlave()
         queueItem.build.notify()
@@ -482,7 +461,7 @@ class BuilderGroup:
         MANUALDEPWAIT, store available information, remove BuildQueue
         entry and release builder slave for another job.
         """
-        queueItem.build.buildstate = dbschema.BuildStatus.MANUALDEPWAIT
+        queueItem.build.buildstate = BuildStatus.MANUALDEPWAIT
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         self.logger.critical("***** %s is MANUALDEPWAIT *****"
                              % queueItem.builder.name)
@@ -497,7 +476,7 @@ class BuilderGroup:
         job as CHROOTFAIL, store available information, remove BuildQueue
         and release the builder.
         """
-        queueItem.build.buildstate = dbschema.BuildStatus.CHROOTWAIT
+        queueItem.build.buildstate = BuildStatus.CHROOTWAIT
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         self.logger.critical("***** %s is CHROOTWAIT *****" %
                              queueItem.builder.name)
@@ -519,7 +498,7 @@ class BuilderGroup:
                          ("Builder returned BUILDERFAIL when asked "
                           "for its status"))
         # simply reset job
-        queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
+        queueItem.build.buildstate = BuildStatus.NEEDSBUILD
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         queueItem.builder = None
         queueItem.buildstart = None
@@ -534,7 +513,7 @@ class BuilderGroup:
         """
         self.logger.warning("***** %s is GIVENBACK by %s *****"
                             % (buildid, queueItem.builder.name))
-        queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
+        queueItem.build.buildstate = BuildStatus.NEEDSBUILD
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         # XXX cprov 2006-05-30: Currently this information is not
         # properly presented in the Web UI. We will discuss it in
@@ -545,37 +524,5 @@ class BuilderGroup:
         queueItem.buildstart = None
         queueItem.logtail = None
         queueItem.lastscore = 0
-
-    def firstAvailable(self, is_trusted=False):
-        """Return the first available builder slave.
-
-        Refuse failed and MANUAL MODE slaves.
-        Control whether or not the builder should be *trusted* via
-        'is_trusted' given argument, by default *untrusted* build
-        are returned.
-        Return None if there is none available.
-        """
-        for builder in self.builders:
-            #self.logger.debug('Probing: %s' % builder.url)
-            if not builder.builderok:
-                #self.logger.debug('builder not OK')
-                continue
-            if builder.manual:
-                #self.logger.debug('builder in MANUAL')
-                continue
-            if builder.trusted != is_trusted:
-                #self.logger.debug('builder INCOMPATIBLE')
-                continue
-            try:
-                slavestatus = builder.slaveStatusSentence()
-            except (xmlrpclib.Fault, socket.error), info:
-                #self.logger.debug('builder DEAD')
-                continue
-            if slavestatus[0] != BuilderStatus.IDLE:
-                #self.logger.debug('builder not IDLE')
-                continue
-            return builder
-
-        return None
 
 

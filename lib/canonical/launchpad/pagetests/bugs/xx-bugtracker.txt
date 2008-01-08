@@ -29,15 +29,17 @@ and SourceForge because there is only one instance (SourceForge.net).
   Roundup
   Trac
   Mantis
+  Request Tracker (RT)
 
 The bug tracker name is used in URLs and certain characters (like '!')
 aren't allowed.
 
-  >>> user_browser.getControl('Name').value = 'testttrac!'
-  >>> user_browser.getControl('Bug Tracker Type').getControl('Trac').click()
-  >>> user_browser.getControl('Title').value = 'Test Trac Tracker'
-  >>> user_browser.getControl('Summary').value = 'This is a test TRAC tracker.'
-  >>> url = 'http://trac.testing.org/tickets'
+  >>> user_browser.getControl('Name').value = 'testmantis!'
+  >>> user_browser.getControl('Bug Tracker Type').getControl('Mantis').click()
+  >>> user_browser.getControl('Title').value = 'Test Mantis Tracker'
+  >>> user_browser.getControl('Summary').value = (
+  ...     'This is a test MANTIS tracker.')
+  >>> url = 'http://mantis.testing.org/'
   >>> user_browser.getControl('Base URL').value = url
   >>> user_browser.getControl('Contact details').value = 'blah blah'
   >>> user_browser.getControl('Add').click()
@@ -46,15 +48,16 @@ aren't allowed.
   'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
   >>> for message in find_tags_by_class(user_browser.contents, 'message'):
   ...     print extract_text(message)
-  An error occurred.
-  Invalid name 'testttrac!'. Names must start with a letter or number
-  and be lowercase. The characters +, - and . are also allowed after the
+  There is 1 error.
+  Invalid name 'testmantis!'. Names must start with a letter or
+  number and be lowercase. The characters +,
+  - and . are also allowed after the
   first character.
 
 If a bug tracker is already registered with the same URL, the user is
 informed about it.
 
-  >>> user_browser.getControl('Name').value = 'testtrac'
+  >>> user_browser.getControl('Name').value = 'testmantis'
   >>> user_browser.getControl('Base URL').value = 'http://bugzilla.mozilla.org/'
   >>> user_browser.getControl('Add').click()
 
@@ -62,24 +65,46 @@ informed about it.
   'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
   >>> for message in find_tags_by_class(user_browser.contents, 'message'):
   ...     print extract_text(message)
-  An error occurred.
+  There is 1 error.
   http://bugzilla.mozilla.org/ is already registered in Launchpad.
 
-After successfully registering the bug tracker, the user is redirect to
-the bug tracker page.
+The same happens if the requested URL is aliased to another bug
+tracker. Aliases can be edited once a bug tracker has been added, but
+for now we'll dig directly to the database.
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import BugTrackerType, IBugTrackerSet
+  >>> from canonical.launchpad.ftests import login, logout
+  >>> login('test@canonical.com')
+  >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
+  >>> gnome_bugzilla.aliases = ['http://alias.example.com/']
+  >>> logout()
+
+  >>> user_browser.getControl('Base URL').value = 'http://alias.example.com/'
+  >>> user_browser.getControl('Add').click()
+
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
+  >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+  ...     print extract_text(message)
+  There is 1 error.
+  http://alias.example.com/ is already registered in Launchpad.
+
+After successfully registering the bug tracker, the user is redirected
+to the bug tracker page.
 
   >>> user_browser.getControl('Base URL').value = url
   >>> user_browser.getControl('Add').click()
 
   >>> user_browser.url
-  'http://bugs.launchpad.dev/bugs/bugtrackers/testtrac'
+  'http://bugs.launchpad.dev/bugs/bugtrackers/testmantis'
 
   >>> user_browser.title
-  'Bug tracker \xe2\x80\x9cTest Trac Tracker\xe2\x80\x9d'
+  'Bug tracker \xe2\x80\x9cTest Mantis Tracker\xe2\x80\x9d'
 
-  >>> 'Test Trac Tracker' in user_browser.contents
+  >>> 'Test Mantis Tracker' in user_browser.contents
   True
-  >>> 'This is a test TRAC tracker.' in user_browser.contents
+  >>> 'This is a test MANTIS tracker.' in user_browser.contents
   True
 
 The `Summary` and `Contact Details` fields are optional - creating a
@@ -94,14 +119,10 @@ bugtracker without them is acceptable.
   >>> user_browser.url
   'http://launchpad.dev/bugs/bugtrackers/test-bugzilla'
 
-  >>> from zope.component import getUtility
-  >>> from canonical.lp.dbschema import BugTrackerType
-  >>> from canonical.launchpad.interfaces import IBugTrackerSet
-  >>> from canonical.launchpad.ftests import login, logout
   >>> login('test@canonical.com')
   >>> bugtrackerset = getUtility(IBugTrackerSet)
-  >>> test_tracker = bugtrackerset.getByName('testtrac')
-  >>> test_tracker.bugtrackertype == BugTrackerType.TRAC
+  >>> test_tracker = bugtrackerset.getByName('testmantis')
+  >>> test_tracker.bugtrackertype == BugTrackerType.MANTIS
   True
 
   >>> logout()
@@ -111,29 +132,29 @@ a nice error message.
 
   >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/+newbugtracker')
 
-  >>> user_browser.getControl('Name').value = 'testtrac'
-  >>> user_browser.getControl('Bug Tracker Type').getControl('Trac').click()
-  >>> user_browser.getControl('Title').value = 'Test Trac Tracker'
+  >>> user_browser.getControl('Name').value = 'testmantis'
+  >>> user_browser.getControl('Bug Tracker Type').getControl('Mantis').click()
+  >>> user_browser.getControl('Title').value = 'Test Mantis Tracker'
   >>> user_browser.getControl('Summary').value = 'This is a test TRAC tracker.'
   >>> url = 'http://trac.example.org/tickets'
   >>> user_browser.getControl('Base URL').value = url
   >>> user_browser.getControl('Contact details').value = 'blah blah'
   >>> user_browser.getControl('Add').click()
 
-  >>> message = 'testtrac is already in use by another bugtracker.'
+  >>> message = 'testmantis is already in use by another bugtracker.'
   >>> message in user_browser.contents
   True
 
 We can edit the details of the newly added bugtracker.
 
-  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/testtrac/')
+  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/testmantis/')
   >>> user_browser.getLink('Change details').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/testtrac/+edit'
+  'http://launchpad.dev/bugs/bugtrackers/testmantis/+edit'
 
   >>> user_browser.title
-  'Change details for \xe2\x80\x9cTest Trac Tracker\xe2\x80\x9d bug tracker'
+  'Change details for \xe2\x80\x9cTest Mantis Tracker\xe2\x80\x9d bug tracker'
 
   >>> user_browser.getControl('Name').value = 'testbugzilla'
   >>> user_browser.getControl('Title').value = 'A test Bugzilla Tracker'
@@ -144,12 +165,13 @@ We can edit the details of the newly added bugtracker.
 It's not possible to change the base URL to something that another bug
 tracker uses.
 
-  >>> user_browser.getControl('Base URL').value = 'http://bugzilla.mozilla.org/'
+  >>> user_browser.getControl('Base URL', index=0).value = (
+  ...     'http://bugzilla.mozilla.org/')
   >>> user_browser.getControl('Change').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/testtrac/+edit'
-  >>> for message in get_feedback_messages(user_browser):
+  'http://launchpad.dev/bugs/bugtrackers/testmantis/+edit'
+  >>> for message in get_feedback_messages(user_browser.contents):
   ...     print message
   There is 1 error.
   http://bugzilla.mozilla.org/ is already registered in Launchpad.
@@ -158,7 +180,7 @@ After successfully editing the bug tracker information, the user is
 redirected to the bug tracker page. Note that the change we made to
 the bugtracker name is reflected in the url.
 
-  >>> user_browser.getControl('Base URL').value = url
+  >>> user_browser.getControl('Base URL', index=0).value = url
   >>> user_browser.getControl('Change').click()
 
   >>> user_browser.url
@@ -177,6 +199,60 @@ And now the test tracker should have been updated:
   True
 
   >>> logout()
+
+
+== Aliases ==
+
+We can associate multiple URLs with a bug tracker. An alias can
+represent another valid URL for a bug tracker, or just a commonly seen
+typo. Aliases are used to catch user mistakes; only the Base URL is
+used to access the remote bug tracker.
+
+They're added on the normal Change Details page.
+
+  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/testbugzilla')
+  >>> user_browser.getLink('Change details').click()
+
+  >>> user_browser.getControl('Base URL aliases').value = (
+  ...     'http://pseudonym.example.com/')
+  >>> user_browser.getControl('Change').click()
+
+  >>> bugtracker_url_list = find_tag_by_id(
+  ...     user_browser.contents, 'bugtracker-urls')
+  >>> print extract_text(bugtracker_url_list)
+  http://trac.example.org/tickets (Base URL)
+  http://pseudonym.example.com/ (Alias)
+
+It's not possible to add an alias that already refers to another
+bugtracker.
+
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/testbugzilla/+edit')
+  >>> user_browser.getControl('Base URL aliases').value = (
+  ...     'http://bugzilla.mozilla.org/')
+  >>> user_browser.getControl('Change').click()
+
+  >>> for message in get_feedback_messages(user_browser.contents):
+  ...     print message
+  There is 1 error.
+  http://bugzilla.mozilla.org/ already refers to The Mozilla.org Bug Tracker
+
+Multiple aliases can be entered by separating URLs with whitespace.
+
+  >>> user_browser.getControl('Base URL aliases').value = (
+  ...     '    http://wolverhampton.example.com/    '
+  ...     '  http://toadhall.example.com/      \n'
+  ...     ' https://wibble.example.com/   \n\n\n')
+  >>> user_browser.getControl('Change').click()
+
+  >>> bugtracker_url_list = find_tag_by_id(
+  ...     user_browser.contents, 'bugtracker-urls')
+  >>> print extract_text(bugtracker_url_list)
+  http://trac.example.org/tickets (Base URL)
+  http://toadhall.example.com/ (Alias)
+  http://wolverhampton.example.com/ (Alias)
+  https://wibble.example.com/ (Alias)
+
 
 == Related projects portlet ==
 

@@ -46,7 +46,7 @@ bug watch.
     >>> user_browser.url
     'http://.../ubuntu/+source/evolution/+bug/6/+choose-affected-product'
 
-    >>> print get_feedback_messages(user_browser)
+    >>> print get_feedback_messages(user_browser.contents)
     [u"Mozilla Thunderbird doesn't use Launchpad as its bug tracker...]
 
 Let's confirm adding the task.
@@ -86,7 +86,7 @@ If we try to add an upstream task without specifying a product:
 
 We get a nice error message.
 
-    >>> print get_feedback_messages(user_browser)
+    >>> print get_feedback_messages(user_browser.contents)
     [u'There is 1 error.', u'Required input is missing.']
 
 If we enter a product name that doesn't exist, we inform the user
@@ -96,13 +96,13 @@ about this and ask him to search for the product.
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
     'http://.../debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
-    >>> print get_feedback_messages(user_browser)
+    >>> print get_feedback_messages(user_browser.contents)
     [u'There is 1 error.',
      u'There is no project in Launchpad named "no-such-product"...]
 
     >>> search_link = user_browser.getLink('search for it')
     >>> search_link.url
-    "javascript:popup_window('@@popup-window?vocabulary=Product&field=field.product&search='+escape(document.getElementById('field.product').value),'field.product','300','420')"
+    "javascript:popup_window('@@popup-search-upstream?vocabulary=Product&field=field.product&search='+escape(document.getElementById('field.product').value),'field.product','300','420')"
 
 Since the link is a javascript popup, we can't follow the link directly,
 so let's extract the real URL and open it manually.
@@ -116,21 +116,6 @@ so let's extract the real URL and open it manually.
     >>> user_browser.title
     'Select a project'
 
-If we go back again, we see that we also give the user the possibility
-to register the product if he doesn't find it.
-
-    >>> user_browser.open(
-    ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/'
-    ...     '+choose-affected-product')
-    >>> user_browser.getControl('Project').value = 'no-such-product'
-    >>> user_browser.getControl('Continue').click()
-    >>> user_browser.url
-    'http://.../debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
-
-    >>> user_browser.getLink('register it').click()
-    >>> user_browser.title
-    'Register a project in Launchpad'
-
 Since we don't restrict the input, the user can write anything, so we
 need to make sure that everything is quoted before displaying the input.
 
@@ -142,7 +127,7 @@ need to make sure that everything is quoted before displaying the input.
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
     'http://.../debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
-    >>> print get_feedback_messages(user_browser)
+    >>> print get_feedback_messages(user_browser.contents)
     [u'There is 1 error.',
      u'There is no project in Launchpad named "N\xf6 Such Product&amp;&lt...]
 
@@ -191,7 +176,7 @@ And now we try to add the same upstream again.
 
 We get a nice error message.
 
-    >>> print get_feedback_messages(user_browser)
+    >>> print get_feedback_messages(user_browser.contents)
     [u'There is 1 error.',
      u'A fix for this bug has already been requested for alsa-utils']
 
@@ -213,6 +198,6 @@ our validator springs into action.
     >>> user_browser.getControl('Save Changes').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/3/+editstatus'
-    >>> print get_feedback_messages(user_browser)
+    >>> print get_feedback_messages(user_browser.contents)
      [u'There is 1 error in the data you entered...
       u'A fix for this bug has already been requested for alsa-utils']

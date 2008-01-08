@@ -9,8 +9,7 @@ The communication pattern is initiated by Mailman in all cases; in other
 words, Mailman polls Launchpad to see if there is any work for Mailman to do.
 
     >>> # Note that this test is run multiple times, with the harness
-    >>> # providing several globals including `mailinglist_api`,
-    >>> # `print_actions`, `new_team`, and `commit`.
+    >>> # providing `mailinglist_api` and `commit` for impedance matching.
 
 
 == Requesting membership information ==
@@ -18,6 +17,8 @@ words, Mailman polls Launchpad to see if there is any work for Mailman to do.
 Mailman requests membership information for specific list of teams.  Let's
 create and populate some teams to demonstrate.
 
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     new_team, new_person)
     >>> team_one, list_one = new_team('team-one', with_list=True)
     >>> anne = new_person('Anne')
     >>> bart = new_person('Bart')
@@ -37,6 +38,7 @@ Asking for the membership information for team-one's list returns all the
 above people.
 
     >>> info = mailinglist_api.getMembershipInformation(('team-one',))
+    >>> from canonical.launchpad.ftests.mailinglists_helper import print_info
     >>> print_info(info)
     team-one
         anne.person@example.com Anne Person 0 0

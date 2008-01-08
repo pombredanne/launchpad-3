@@ -12,20 +12,20 @@ from sha import sha
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.archiveuploader.tests import datadir
+from canonical.archiveuploader.tests import (
+    insertFakeChangesFileForAllPackageUploads)
 from canonical.config import config
 from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.database import PackageUploadBuild
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IDistributionSet, IPackageUploadSet)
+    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
+    IPackageUploadSet, PackagePublishingStatus, PackagePublishingPocket,
+    PackageUploadStatus)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
 from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
-from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingStatus, PackagePublishingPocket,
-    PackageUploadStatus, DistroSeriesStatus)
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.librarian.utils import filechunks
 
@@ -83,11 +83,7 @@ class TestQueueTool(TestQueueBase):
         # the /wrong/ changes file for the package in the upload queue,
         # but that doesn't matter as only email addresses are parsed out
         # of it.
-        changes_file_obj = open(
-            datadir('ed-0.2-21/ed_0.2-21_source.changes'), 'r')
-        self.test_changes_file = changes_file_obj.read()
-        changes_file_obj.close()
-        fillLibrarianFile(1, content=self.test_changes_file)
+        insertFakeChangesFileForAllPackageUploads()
         TestQueueBase.setUp(self)
 
     def tearDown(self):
@@ -114,7 +110,8 @@ class TestQueueTool(TestQueueBase):
             ['Running: "help"',
              '\tinfo : Present the Queue item including its contents. ',
              '\taccept : Accept the contents of a queue item. ',
-             '\treport : Present a report about the size of available queues ',
+             '\treport : Present a report about the size of available '
+                  'queues ',
              '\treject : Reject the contents of a queue item. ',
              '\toverride : Override information in a queue item content. ',
              '\tfetch : Fetch the contents of a queue item. '],
@@ -209,12 +206,12 @@ class TestQueueTool(TestQueueBase):
 
     def testAcceptingSourceGeneratesEmail(self):
         """Check if accepting a source package generates an email."""
-        queue_action = self.execute_command('accept alsa-utils', no_mail=False)
+        queue_action = self.execute_command(
+            'accept alsa-utils', no_mail=False)
         self.assertEqual(1, queue_action.items_size)
         self.assertEqual(2, len(stub.test_emails))
-        # Second email sent (first to pop from queue) is the announcement:
+        # Emails sent are the announcement and the uploader's notification:
         self.assertEmail(['autotest_changes@ubuntu.com'])
-        # First email sent (second to pop) is the uploader's notification:
         self.assertEmail(
             ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
 
@@ -387,6 +384,14 @@ class TestQueueTool(TestQueueBase):
             expected_length,
             distro_series.getQueueItems(status=status, name=name).count())
 
+    def assertErrorAcceptingDuplicate(self):
+        self.assertTrue(
+            '** cnews could not be accepted due '
+            'The source cnews - 1.0 is already accepted in ubuntu/'
+            'breezy-autotest and you cannot upload the same version '
+            'within the same distribution. You have to modify the source '
+            'version and re-upload.' in self.test_output)
+
     def testAcceptanceWorkflowForDuplications(self):
         """Check how queue tool behaves dealing with duplicated entries.
 
@@ -411,24 +416,21 @@ class TestQueueTool(TestQueueBase):
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
 
-        # certify we have a 'cnews' upload duplication in UNAPPROVED
+        # Certify we have a 'cnews' upload duplication in UNAPPROVED.
         self.assertQueueLength(
             2, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
-        # Step 1: try to accept both
+        # Step 1: try to accept both.
         queue_action = self.execute_command(
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
 
-        # the first is in accepted.
+        # The first is in accepted.
         self.assertQueueLength(
             1, breezy_autotest, PackageUploadStatus.ACCEPTED, "cnews")
 
-        # the last can't be accepted and remains in UNAPPROVED
-        self.assertTrue(
-            ('** cnews could not be accepted due This '
-             'sourcepackagerelease is already accepted in breezy-autotest.')
-            in self.test_output)
+        # The last can't be accepted and remains in UNAPPROVED.
+        self.assertErrorAcceptingDuplicate()
         self.assertQueueLength(
             1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
@@ -436,14 +438,11 @@ class TestQueueTool(TestQueueBase):
         queue_action = self.execute_command(
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
-        self.assertTrue(
-            ('** cnews could not be accepted due This '
-             'sourcepackagerelease is already accepted in breezy-autotest.')
-            in self.test_output)
+        self.assertErrorAcceptingDuplicate()
         self.assertQueueLength(
             1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
-        # simulate a publication of the accepted item, now it is in DONE
+        # Simulate a publication of the accepted item, now it is in DONE.
         accepted_item = breezy_autotest.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="cnews")[0]
 
@@ -453,19 +452,16 @@ class TestQueueTool(TestQueueBase):
             1, breezy_autotest, PackageUploadStatus.DONE, "cnews")
 
         # Step 3: try to accept the remaining item in UNAPPROVED with the
-        # duplication already in DONE
+        # duplication already in DONE.
         queue_action = self.execute_command(
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
-        # it failed and te item remains in UNAPPROVED
-        self.assertTrue(
-            ('** cnews could not be accepted due This '
-             'sourcepackagerelease is already accepted in breezy-autotest.')
-            in self.test_output)
+        # It failed and te item remains in UNAPPROVED.
+        self.assertErrorAcceptingDuplicate()
         self.assertQueueLength(
             1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
-        # Step 4: The only possible destiny for the remaining item it REJECT
+        # Step 4: The only possible destiny for the remaining item it REJECT.
         queue_action = self.execute_command(
             'reject cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
@@ -497,9 +493,6 @@ class TestQueueTool(TestQueueBase):
         We can specify multiple items to reject, even mixing IDs and names.
         e.g. queue reject alsa-utils 1 3
         """
-        # An additional librarian file is needed for queue item with ID 1
-        # because in the sample data it points to library file alias 52.
-        fillLibrarianFile(52, content=self.test_changes_file)
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
 
@@ -717,8 +710,8 @@ class TestQueueTool(TestQueueBase):
             IDistributionSet)['ubuntu']['breezy-autotest']
         # Test that it changes to partner when required.
         self.assertRaises(
-            CommandRunnerError, self.execute_command, 'override binary pmount',
-            component_name='partner')
+            CommandRunnerError, self.execute_command,
+            'override binary pmount', component_name='partner')
 
 
 class TestQueueToolInJail(TestQueueBase):

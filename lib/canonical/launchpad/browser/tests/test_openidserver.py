@@ -8,6 +8,8 @@ __all__ = []
 
 import unittest
 
+from openid.message import Message
+
 from zope.component import getUtility
 from zope.testing import doctest
 
@@ -36,11 +38,11 @@ class SimpleRegistrationTestCase(unittest.TestCase):
             description='Description',
             allowed_sreg=['email', 'fullname', 'postcode'])
         class FieldNameTest(OpenIdMixin):
-            openid_parameters = {
-                'openid.sreg.required': 'email,country,nickname',
-                'openid.sreg.optional': 'fullname'}
             class openid_request:
                 trust_root = 'fake-trust-root'
+                message = Message.fromPostArgs({
+                    'openid.sreg.required': 'email,country,nickname',
+                    'openid.sreg.optional': 'fullname'})
         view = FieldNameTest(None, None)
         # Note that country and nickname are not returned since they
         # are not included in the policy.  Similarly, postcode is not

@@ -1,10 +1,12 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistroSeries."""
 
 __metaclass__ = type
 
 __all__ = [
+    'DistroSeriesStatus',
     'IDistroSeries',
     'IDistroSeriesSet',
     ]
@@ -23,6 +25,72 @@ from canonical.launchpad.interfaces.specificationtarget import (
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad import _
+
+from canonical.lazr import DBEnumeratedType, DBItem
+
+class DistroSeriesStatus(DBEnumeratedType):
+    """Distribution Release Status
+
+    A DistroSeries (warty, hoary, or grumpy for example) changes state
+    throughout its development. This schema describes the level of
+    development of the distroseries. The typical sequence for a
+    distroseries is to progress from experimental to development to
+    frozen to current to supported to obsolete, in a linear fashion.
+    """
+
+    EXPERIMENTAL = DBItem(1, """
+        Experimental
+
+        This distroseries contains code that is far from active
+        release planning or management. Typically, distroseriess
+        that are beyond the current "development" release will be
+        marked as "experimental". We create those so that people
+        have a place to upload code which is expected to be part
+        of that distant future release, but which we do not want
+        to interfere with the current development release.
+        """)
+
+    DEVELOPMENT = DBItem(2, """
+        Active Development
+
+        The distroseries that is under active current development
+        will be tagged as "development". Typically there is only
+        one active development release at a time. When that freezes
+        and releases, the next release along switches from "experimental"
+        to "development".
+        """)
+
+    FROZEN = DBItem(3, """
+        Pre-release Freeze
+
+        When a distroseries is near to release the administrators
+        will freeze it, which typically means that new package uploads
+        require significant review before being accepted into the
+        release.
+        """)
+
+    CURRENT = DBItem(4, """
+        Current Stable Release
+
+        This is the latest stable release. Normally there will only
+        be one of these for a given distribution.
+        """)
+
+    SUPPORTED = DBItem(5, """
+        Supported
+
+        This distroseries is still supported, but it is no longer
+        the current stable release. In Ubuntu we normally support
+        a distroseries for 2 years from release.
+        """)
+
+    OBSOLETE = DBItem(6, """
+        Obsolete
+
+        This distroseries is no longer supported, it is considered
+        obsolete and should not be used on production systems.
+        """)
+
 
 class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                      ISpecificationGoal):
@@ -61,9 +129,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     sections = Attribute("The series sections.")
     status = Choice(
         title=_("Status"), required=True,
-        vocabulary='DistroSeriesStatus')
+        vocabulary=DistroSeriesStatus)
     datereleased = Attribute("The datereleased.")
-    parentseries = Choice(
+    parent_series = Choice(
         title=_("Parent series"),
         description=_("The series from which this one was branched."),
         required=True,
@@ -90,14 +158,14 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         required=True
         )
     binarycount = Attribute("Binary Packages Counter")
-    potemplates = Attribute("The set of potemplates in the series")
-    currentpotemplates = Attribute("The set of potemplates in the series "
-        "with the iscurrent flag set")
+
     architecturecount = Attribute("The number of architectures in this "
         "series.")
-    architectures = Attribute("The architectures in this series.")
+    architectures = Attribute("All architectures in this series.")
+    ppa_architectures = Attribute(
+        "All architectures in this series where PPA is supported.")
     nominatedarchindep = Attribute(
-        "DistroArchRelease designed to build architecture-independent "
+        "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")
     milestones = Attribute(_(
         "The visible milestones associated with this series, "
@@ -196,7 +264,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "or obsolete.")
 
     def isUnstable():
-        """Return True if in unstable (or "development") phase, False otherwise.
+        """Whether or not a distroseries is unstable.
 
         The distribution is "unstable" until it is released; after that
         point, all development on the Release pocket is stopped and
@@ -292,6 +360,18 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         otherwise respect the given value.
         """
 
+    def getAllPublishedSources():
+        """Return all currently published sources for the distroseries.
+
+        Return publications in the main archives only.
+        """
+
+    def getAllPublishedBinaries():
+        """Return all currently published binaries for the distroseries.
+
+        Return publications in the main archives only.
+        """
+
     def getSourcesPublishedForAllArchives():
         """Return all sourcepackages published across all the archives.
 
@@ -328,38 +408,42 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def createUploadedSourcePackageRelease(
         sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
-        changelog, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
+        changelog_entry, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
         dsc_standards_version, dsc_format, dsc_binaries, archive, copyright,
-        dateuploaded=None):
-        """Create an uploads SourcePackageRelease
+        build_conflicts, build_conflicts_indep, dateuploaded=None):
+        """Create an uploads `SourcePackageRelease`.
 
         Set this distroseries set to be the uploadeddistroseries.
 
         All arguments are mandatory, they are extracted/built when
         processing and uploaded source package:
 
-         * dateuploaded: timestamp, if not provided will be UTC_NOW
-         * sourcepackagename: ISourcePackageName
-         * version: string, a debian valid version
-         * maintainer: IPerson designed as package maintainer
-         * creator: IPerson, package uploader
-         * component: IComponent
-         * section: ISection
-         * urgency: dbschema.SourcePackageUrgency
-         * dscsigningkey: IGPGKey used to sign the DSC file
-         * dsc: string, original content of the dsc file
-         * copyright: string, the original debian/copyright content
-         * changelog: string, changelog extracted from the changesfile
-         * architecturehintlist: string, DSC architectures
-         * builddepends: string, DSC build dependencies
-         * builddependsindep: string, DSC architecture independent build
-           dependencies.
-         * dsc_maintainer_rfc822: string, DSC maintainer field
-         * dsc_standards_version: string, DSC standards version field
-         * dsc_format: string, DSC format version field
-         * dsc_binaries:  string, DSC binaries field
-         * archive: IArchive to where the upload was targeted
-         * dateuploaded: optional datetime, if omitted assumed nowUTC
+         :param dateuploaded: timestamp, if not provided will be UTC_NOW
+         :param sourcepackagename: `ISourcePackageName`
+         :param version: string, a debian valid version
+         :param maintainer: IPerson designed as package maintainer
+         :param creator: IPerson, package uploader
+         :param component: IComponent
+         :param section: ISection
+         :param urgency: dbschema.SourcePackageUrgency
+         :param dscsigningkey: IGPGKey used to sign the DSC file
+         :param dsc: string, original content of the dsc file
+         :param copyright: string, the original debian/copyright content
+         :param changelog: string, changelog extracted from the changesfile
+         :param architecturehintlist: string, DSC architectures
+         :param builddepends: string, DSC build dependencies
+         :param builddependsindep: string, DSC architecture independent build
+                                   dependencies.
+         :param build_conflicts: string, DSC Build-Conflicts content
+         :param build_conflicts_indep: string, DSC Build-Conflicts-Indep
+                                       content
+         :param dsc_maintainer_rfc822: string, DSC maintainer field
+         :param dsc_standards_version: string, DSC standards version field
+         :param dsc_format: string, DSC format version field
+         :param dsc_binaries:  string, DSC binaries field
+         :param archive: IArchive to where the upload was targeted
+         :param dateuploaded: optional datetime, if omitted assumed nowUTC
+         :return: the just creates `SourcePackageRelease`
         """
 
     def getComponentByName(name):
@@ -450,7 +534,8 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         the changesfile is unsigned.
         """
 
-    def newArch(architecturetag, processorfamily, official, owner):
+    def newArch(architecturetag, processorfamily, official, owner,
+                ppa_supported=False):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
     def newMilestone(name, dateexpected=None, description=None):
@@ -541,5 +626,5 @@ class IDistroSeriesSet(Interface):
         """
 
     def new(distribution, name, displayname, title, summary, description,
-            version, parentseries, owner):
+            version, parent_series, owner):
         """Creates a new distroseries"""

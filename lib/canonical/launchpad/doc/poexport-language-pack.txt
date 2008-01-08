@@ -15,6 +15,7 @@ Some initialisation tasks:
     >>> from canonical.launchpad.scripts.language_pack import \
     ...    export_language_pack
     >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from canonical.database.sqlbase import flush_database_caches
     >>> login("daf@canonical.com")
 
     # This is a dummy logger class to capture the export's log messages.
@@ -37,8 +38,9 @@ Some initialisation tasks:
 
 == Base language pack export using Librarian ==
 
-When a new language pack export is requested, you can select to use Librarian
-to store the language pack. That is noted with output_file set to None.
+When a new language pack export is requested, you can select to use the
+Librarian to store the language pack. That is noted with output_file
+set to None.
 
     >>> logger = FakeLogger()
     >>> language_pack = export_language_pack(
@@ -95,17 +97,16 @@ And one of the included .po files look like what we expected.
 
 == Base language pack export using Librarian with date limits ==
 
-Launchpad is also able to generate a tarball of all files for a distribution
-series that only includes translation files which have been changed since a
-certain date.
+Launchpad is also able to generate a tarball of all files for a
+distribution series that only includes translation files which have
+been changed since a certain date.
 
-First we need to set up some data to test with, and for this we need some DB
-classes.
+First we need to set up some data to test with, and for this we need
+some DB classes.
 
     >>> from StringIO import StringIO
     >>> from canonical.launchpad.database import DistroSeries
     >>> from canonical.launchpad.database import SourcePackageName
-    >>> from canonical.launchpad.database import POTemplateName
     >>> from canonical.launchpad.database import POTemplate
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet)
@@ -136,14 +137,13 @@ creating.
 
 Create a PO template and put a single message set in it.
 
-    >>> ptn = POTemplateName(
-    ...     name='test', translationdomain='test', title='test')
     >>> pot_header = 'Content-Type: text/plain; charset=UTF-8\n'
     >>> template = POTemplate(
-    ...     potemplatename=ptn, distroseries=series, sourcepackagename=spn,
+    ...     name='test', translation_domain='test',
+    ...     distroseries=series, sourcepackagename=spn,
     ...     owner=mark, languagepack=True, path='po/test.pot',
     ...     header=pot_header)
-    >>> potmsgset = template.createMessageSetFromText(u'blah')
+    >>> potmsgset = template.createMessageSetFromText(u'blah', None)
     >>> potmsgset.sequence = 1
 
 Get some dates.
@@ -153,25 +153,25 @@ Get some dates.
     >>> d2000_01_02 = datetime.datetime(year=2000, month=1, day=2, tzinfo=UTC)
     >>> d2000_01_03 = datetime.datetime(year=2000, month=1, day=3, tzinfo=UTC)
 
-Create a Spanish PO file, with an active translation submission created on
-2000/01/01.
+Create a Spanish PO file, with an active translation submission created
+on 2000/01/01.
 
     >>> pofile_es = template.newPOFile('es')
-    >>> pomsgset_es = pofile_es.createMessageSetFromMessageSet(potmsgset)
     >>> translations = { 0: u'blah (es)' }
-    >>> pomsgset_es.updateTranslationSet(mark, translations, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> pomsgset_es.date_reviewed = d2000_01_01
+    >>> new_translation_message = potmsgset.updateTranslation(
+    ...     pofile_es, mark, translations, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> new_translation_message.date_reviewed = d2000_01_01
 
 Create a Welsh PO file, with an active translation submission created on
 2000/01/03.
 
     >>> pofile_cy = template.newPOFile('cy')
-    >>> pomsgset_cy = pofile_cy.createMessageSetFromMessageSet(potmsgset)
     >>> translations = { 0: u'blah (cy)' }
-    >>> pomsgset_cy.updateTranslationSet(mark, translations, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> pomsgset_cy.date_reviewed = d2000_01_03
+    >>> new_translation_message = potmsgset.updateTranslation(
+    ...     pofile_cy, mark, translations, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> new_translation_message.date_reviewed = d2000_01_03
     >>> transaction.commit()
 
 This is handy for examining the tar files that are generated.
@@ -184,12 +184,13 @@ This is handy for examining the tar files that are generated.
     ...             lines = 0
     ...         print "| %5d | %s" % (lines, member.name)
 
-First, export without any existing base language pack: should get both PO
-files.
+First, export without any existing base language pack: should get both
+PO files.
 
     >>> print series.language_pack_base
     None
     >>> logger = FakeLogger()
+    >>> flush_database_caches()
     >>> language_pack = export_language_pack(
     ...     distribution_name='ubuntu',
     ...     series_name='grumpy',
@@ -232,10 +233,10 @@ Check that the log looks ok.
 Check the files look OK.
 
     >>> fh = tarfile.extractfile('rosetta-grumpy/es/LC_MESSAGES/test.po')
-    >>> print fh.read()
+    >>> print fh.read().decode('UTF-8')
     # Spanish translation for evolution
     # Copyright (c) ... Rosetta Contributors and Canonical Ltd ...
-    # This file is distributed under the same license as the evolution package.
+    # This file is distributed under the same license as the evolution pack...
     # FIRST AUTHOR <EMAIL@ADDRESS>, ...
     #
     msgid ""
@@ -256,10 +257,10 @@ Check the files look OK.
     msgstr "blah (es)"
 
     >>> fh = tarfile.extractfile('rosetta-grumpy/cy/LC_MESSAGES/test.po')
-    >>> print fh.read()
+    >>> print fh.read().decode('UTF-8')
     # Welsh translation for evolution
     # Copyright (c) ... Rosetta Contributors and Canonical Ltd ...
-    # This file is distributed under the same license as the evolution package.
+    # This file is distributed under the same license as the evolution pack...
     # FIRST AUTHOR <EMAIL@ADDRESS>, ...
     #
     msgid ""
@@ -279,24 +280,23 @@ Check the files look OK.
     msgid "blah"
     msgstr "blah (cy)"
 
-We set this langauge pack as the base package for the distroseries. Next
+We set this language pack as the base package for the distroseries. Next
 export will be a delta based on that one.
 
     >>> series.language_pack_base = language_pack
 
-This is needed to make the PO export cache work, since it uses the Librarian.
+This is needed to make the PO export cache work, since it uses the
+Librarian.
 
     >>> transaction.commit()
 
 Then, export with a date limit: we should only get the second PO file.
 The way to set date limits is setting when the base language pack was
-exported, thus, we set it and request an update export, which means we should
-get only files that where updated after 2000-01-02.
+exported, thus, we set it and request an update export, which means we
+should get only files that where updated after 2000-01-02.
 
     >>> series.language_pack_base.date_exported = d2000_01_02
-    >>> transaction.commit()
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
+    >>> flush_database_caches()
     >>> language_pack = export_language_pack(
     ...     distribution_name='ubuntu',
     ...     series_name='grumpy',
@@ -309,8 +309,8 @@ get only files that where updated after 2000-01-02.
     # Get the generated tarball.
     >>> tarfile = string_to_tarfile(language_pack.file.read())
 
-Now, there is only one file exported, the one that had the modification date
-after the last generated language pack.
+Now, there is only one file exported, the one that had the modification
+date after the last generated language pack.
 
     >>> examine_tarfile(tarfile)
     |     0 | rosetta-grumpy/
@@ -319,3 +319,59 @@ after the last generated language pack.
     |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
     |     1 | rosetta-grumpy/timestamp.txt
     |     1 | rosetta-grumpy/mapping.txt
+
+
+== Script arguments and concurrency ==
+
+The language-pack-exporter script requires two arguments to run: the
+distribution name, and series name. The script promptly exits if the
+number of command-line arguments is wrong.
+
+    >>> import subprocess
+    >>> def get_subprocess(command):
+    ...     return subprocess.Popen(
+    ...         command, shell=True,
+    ...         stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...         stderr=subprocess.PIPE)
+
+    >>> proc = get_subprocess('cronscripts/language-pack-exporter.py')
+    >>> (out, err) = proc.communicate()
+    >>> print err
+    Traceback (most recent call last):
+     ...
+    canonical.launchpad.scripts.base.LaunchpadScriptFailure:
+    Wrong number of arguments: should include distribution and series name.
+
+    >>> proc.returncode
+    1
+
+The script runs when 'ubuntu' and 'hoary' are passed as the distribution
+and series names.
+
+Several instances of the language-pack-exporter script can be run
+concurrently so long as each instance is exporting a different
+combination of distribution and series. LaunchpadScript instanced uses
+the lockfilename to prevent the script from running concurrently.
+RosettaLangPackExporter incorporates the distribution and series names
+into the lockfilename to allow multiple exports to run concurrently for
+different distribution and series combinations.
+
+    >>> proc = get_subprocess(
+    ...     'cronscripts/language-pack-exporter.py ubuntu hoary')
+    >>> (out, err) = proc.communicate()
+    >>> print err
+    INFO    Setting lockfile name to
+            launchpad-language-pack-exporter__ubuntu__hoary.lock.
+    INFO    creating lockfile
+    INFO    Exporting translations for series hoary of distribution ubuntu.
+    INFO    Number of PO files to export: 12
+    INFO    Adding timestamp file
+    INFO    Adding mapping file
+    INFO    Done.
+    INFO    Registered the language pack.
+
+    >>> print out
+    <BLANKLINE>
+
+    >>> proc.returncode
+    0

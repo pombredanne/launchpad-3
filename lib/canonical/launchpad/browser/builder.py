@@ -25,11 +25,12 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.launchpad.browser.build import BuildRecordsView
 
-from canonical.launchpad.interfaces import (
-    IPerson, IBuilderSet, IBuilder, IBuildSet, NotFoundError
-    )
+from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.helpers import shortlist
 
-from canonical.lp.dbschema import BuildStatus
+from canonical.launchpad.interfaces import (
+    BuildStatus, IPerson, IBuilderSet, IBuilder, IBuildSet, NotFoundError
+    )
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, Navigation, stepthrough, Link,
@@ -138,6 +139,14 @@ class BuilderSetView(CommonBuilderView):
     Simply provides CommonBuilderView for the BuilderSet pagetemplate.
     """
     __used_for__ = IBuilderSet
+
+    @cachedproperty
+    def buildQueueDepthByArch(self):
+        return shortlist(self.context.getBuildQueueDepthByArch())
+
+    @cachedproperty
+    def hasQueuedBuilds(self):
+        return bool(self.buildQueueDepthByArch)
 
 
 class BuilderView(CommonBuilderView, BuildRecordsView):

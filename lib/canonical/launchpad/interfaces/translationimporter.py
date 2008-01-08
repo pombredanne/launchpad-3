@@ -1,4 +1,5 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces to handle translation files imports."""
 
@@ -14,7 +15,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Bool, Choice, Int, List, TextLine
+from zope.schema import Bool, Int, List, TextLine
 
 from canonical.launchpad.interfaces.translationcommonformat import (
     TranslationImportExportBaseException)
@@ -157,17 +158,18 @@ class ITranslationFormatImporter(Interface):
         required=True, readonly=True)
 
     def parse(translation_import_queue_entry):
-        """Parse an `ITranslationImportQueueEntry` into an `ITranslationFile`.
+        """Parse an `ITranslationImportQueueEntry` into an
+        `ITranslationFileData`.
 
         :param translation_import_queue: An `ITranslationImportQueueEntry` to
             parse.
-        :return: An `ITranslationFile` representing the parsed file.
+        :return: An `ITranslationFileData` representing the parsed file.
         """
 
     def getHeaderFromString(header_string):
-        """Return the `ITranslationHeader` for the given header string.
+        """Return the `ITranslationHeaderData` for the given header string.
 
         :param header_string: A text representing a header for this concrete
             file format.
-        :return: An `ITranslationHeader` based on the header string.
+        :return: An `ITranslationHeaderData` based on the header string.
         """

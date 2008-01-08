@@ -52,7 +52,7 @@ class TranslationsCopier(LaunchpadScript):
         #
         # Finally, we changed many things related with cached statistics, so
         # we may want to update those.
-        # self.logger.info('Updating DistroRelease statistics...')
+        # self.logger.info('Updating DistroSeries statistics...')
         # series.updateStatistics(self.txn)
         self.logger.info('Done...')
 

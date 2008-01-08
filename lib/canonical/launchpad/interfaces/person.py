@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Person interfaces."""
 
@@ -11,17 +12,18 @@ __all__ = [
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'IObjectReassignment',
+    'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
     'IPersonSet',
-    'IPerson',
     'IRequestPeopleMerge',
+    'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
-    'ITeam',
     'JoinNotAllowed',
     'PersonCreationRationale',
+    'PersonVisibility',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamMembershipStatus',
@@ -201,6 +203,13 @@ class PersonCreationRationale(DBEnumeratedType):
         hardware database.
         """)
 
+    BUGWATCH = DBItem(15, """
+        Created by the updating of a bug watch.
+
+        A watch was made against a remote bug that the user submitted or
+        commented on.
+        """)
+
 class TeamMembershipRenewalPolicy(DBEnumeratedType):
     """TeamMembership Renewal Policy.
 
@@ -316,6 +325,34 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
         Restricted Team
 
         New members can only be added by one of the team's administrators.
+        """)
+
+
+class PersonVisibility(DBEnumeratedType):
+    """The visibility level of person or team objects.
+
+    Currently, only teams can have their visibility set to something
+    besides PUBLIC.
+    """
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Everyone can view all the attributes of this person.
+        """)
+
+    PRIVATE_MEMBERSHIP = DBItem(20, """
+        Private Membership
+
+        Only launchpad admins and team members can view the
+        membership list for this team.
+        """)
+
+    PRIVATE = DBItem(30, """
+        Private
+
+        Only launchpad admins and team members can see that
+        this team even exists in launchpad.
         """)
 
 
@@ -633,6 +670,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
                       "we'll use to communicate with them."),
         readonly=True)
 
+    safe_email_or_blank = TextLine(
+        title=_("Safe email for display"),
+        description=_("The person's preferred email if they have"
+                      "one and do not choose to hide it. Otherwise"
+                      "the empty string."),
+        readonly=True)
+
     preferredemail_sha1 = TextLine(
         title=_("SHA-1 Hash of Preferred Email"),
         description=_("The SHA-1 hash of the preferred email address and "
@@ -709,6 +753,11 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     entitlements = Attribute("List of Entitlements for this person or team.")
 
+    visibility = Choice(
+        title=_("Teams may be Public, Private Membership, or Private."),
+        required=True, vocabulary=PersonVisibility,
+        default=PersonVisibility.PUBLIC)
+
     @invariant
     def personCannotHaveIcon(person):
         """Only Persons can have icons."""
@@ -746,6 +795,15 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             or (renewal_period is not None and renewal_period <= 0)):
             raise Invalid(
                 'You must specify a default renewal period greater than 0.')
+
+    def convertToTeam(team_owner):
+        """Convert this person into a team owned by the given team_owner.
+
+        Also adds the given team owner as an administrator of the team.
+
+        Only Person entries whose account_status is NOACCOUNT and which are
+        not teams can be converted into teams.
+        """
 
     def getActiveMemberships():
         """Return all active TeamMembership objects of this team.
@@ -830,6 +888,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
 
+    # XXX BarryWarsaw 29-Nov-2007 I'd prefer for this to be an Object() with a
+    # schema of IMailingList, but setting that up correctly causes a circular
+    # import error with interfaces.mailinglists that is too difficult to
+    # unfunge for this one attribute.
+    mailing_list = Attribute(
+        _("The team's mailing list, if it has one, otherwise None."))
+
     def getProjectsAndCategoriesContributedTo(limit=10):
         """Return a list of dicts with projects and the contributions made
         by this person on that project.
@@ -877,6 +942,16 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
+
+        <team> can be the id of a team, an SQLObject representing the
+        ITeam, or the name of the team.
+        """
+
+    def clearInTeamCache():
+        """Clears the person's inTeam cache.
+
+        To be used when membership changes are enacted. Only meant to be
+        used between TeamMembership and Person objects.
         """
 
     def lastShippedRequest():
@@ -1143,6 +1218,31 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         state, as well as, those not owned by the person but on which the
         person requested for more information or gave an answer and that are
         back in the OPEN state.
+        """
+
+    def isBugContributor(user):
+        """Is the person a contributer to bugs in Launchpad?
+
+        Return True if the user has any bugs assigned to him, either
+        directly or by team participation.
+
+        :user: The user doing the search. Private bugs that this
+        user doesn't have access to won't be included in the
+        count.
+        """
+
+    def isBugContributorInTarget(user, target):
+        """Is the person a contributor to bugs in `target`?
+
+        Return True if the user has any bugs assigned to him in the
+        context of a specific target, either directly or by team
+        participation.
+
+        :user: The user doing the search. Private bugs that this
+        user doesn't have access to won't be included in the
+        count.
+
+        :target: An object providing `IBugTarget` to search within.
         """
 
 

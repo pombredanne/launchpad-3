@@ -117,7 +117,7 @@ This one matches, so we subscribe.
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1
 
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     You have been subscribed to this bug.
 

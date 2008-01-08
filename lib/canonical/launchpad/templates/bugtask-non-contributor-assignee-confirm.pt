@@ -1,0 +1,45 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+  >
+<body>
+
+  <metal:heading fill-slot="pageheading">
+    <h1>Confirm bug assignment</h1>
+  </metal:heading>
+
+  <metal:portlets fill-slot="portlets">
+      <tal:portlet />
+      <tal:portlet tal:replace="structure context/owner/@@+portlet-details" />
+  </metal:portlets>
+
+  <div metal:fill-slot="main">
+    <tal:p tal:content="structure view/message"/>
+    <br /><br />
+    <form name="confirmation" method="POST"
+	  id="confirmation_form"
+	  tal:attributes="action view/form_action">
+
+      <input tal:repeat="field view/form_fields"
+	     tal:attributes="name field/name ; value field/value"
+	     type="hidden" />
+      <input type="submit"
+	     name="confirm_non_contributor"
+	     value="Continue" />
+      or
+      <a tal:attributes="href view/reentry_url">
+	Choose someone else...
+      </a>
+    </form>
+
+  </div>
+
+</body>
+</html>

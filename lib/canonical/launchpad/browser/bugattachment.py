@@ -10,14 +10,11 @@ __all__ = [
 from cStringIO import StringIO
 
 from zope.component import getUtility
-from zope.interface import implements
 
-from canonical.lp.dbschema import BugAttachmentType
 from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 from canonical.launchpad.interfaces import (
-    IBugAttachmentSet, ILibraryFileAliasSet,
+    BugAttachmentType, IBugAttachmentSet, ILibraryFileAliasSet,
     IBugAttachmentEditForm, ILaunchBag)
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadFormView)
 

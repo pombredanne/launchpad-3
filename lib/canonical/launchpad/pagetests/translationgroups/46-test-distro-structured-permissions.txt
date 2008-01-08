@@ -1,24 +1,42 @@
-First, we set the 'structured' permission for the netapplet product
-translations and its associated project, GNOME.
+First, we state that netapplet is using Launchpad Translations.
+
+
+    >>> admin_browser.open('http://launchpad.dev/netapplet')
+    >>> admin_browser.getLink('Change details').click()
+    >>> admin_browser.getControl(
+    ...     'Translations for this project are done in Launchpad'
+    ...     ).selected = True
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.title
+    Network Applet in Launchpad
+
+We set the 'Structured' permission and select the 'Just a testing team'
+as the translation group for the netapplet product...
+
+    >>> admin_browser.getLink('Translations').click()
+    >>> admin_browser.getLink('Change translators').click()
+    >>> admin_browser.getControl('Translation group').displayOptions
+    ['(no value)', 'Single-language Translators',
+     'The PolyGlot Translation Group', 'Just a testing team']
+    >>> admin_browser.getControl('Translation group').displayValue = [
+    ...     'Just a testing team']
+    >>> admin_browser.getControl(
+    ...     'Translation Permission System').displayValue = ['Structured']
+    >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.title
+    Translations of Network Applet in Launchpad
+
+... and its associated project, GNOME.
 
     >>> admin_browser.open(
-    ...     'http://translations.launchpad.dev/netapplet/+changetranslators')
-    >>> admin_browser.getControl(
-    ...     name='field.translationgroup').value = ['renamed-group']
-    >>> admin_browser.getControl(
-    ...     name='field.translationpermission').value = ['Structured']
-    >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.url
-    http://translations.launchpad.dev/netapplet
-    >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/gnome/+changetranslators')
+    >>> admin_browser.getControl('Translation group').displayValue = [
+    ...     'Just a testing team']
     >>> admin_browser.getControl(
-    ...     name='field.translationgroup').value = ['renamed-group']
-    >>> admin_browser.getControl(
-    ...     name='field.translationpermission').value = ['Structured']
+    ...     'Translation Permission System').displayValue = ['Structured']
     >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.url
-    http://translations.launchpad.dev/gnome/+changetranslators
+    >>> print admin_browser.title
+    Set translation group for The GNOME Project
     >>> for tag in find_tags_by_class(
     ...     admin_browser.contents, 'informational message'):
     ...     print tag.renderContents()

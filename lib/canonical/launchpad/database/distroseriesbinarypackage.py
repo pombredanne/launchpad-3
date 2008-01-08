@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -8,7 +9,9 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.interfaces import IDistroSeriesBinaryPackage
+
+from canonical.launchpad.interfaces import (
+    IDistroSeriesBinaryPackage, PackagePublishingStatus)
 from canonical.launchpad.database.distroseriespackagecache import (
     DistroSeriesPackageCache)
 from canonical.launchpad.database.publishing import (
@@ -50,7 +53,7 @@ class DistroSeriesBinaryPackage:
     def cache(self):
         """See IDistroSeriesBinaryPackage."""
         return DistroSeriesPackageCache.selectOne("""
-            distrorelease = %s AND
+            distroseries = %s AND
             binarypackagename = %s
             """ % sqlvalues(self.distroseries.id, self.binarypackagename.id))
 
@@ -74,9 +77,9 @@ class DistroSeriesBinaryPackage:
     def current_publishings(self):
         """See IDistroSeriesBinaryPackage."""
         ret = BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchrelease =
-                DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.distroarchseries =
+                DistroArchSeries.id AND
+            DistroArchSeries.distroseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
@@ -87,7 +90,7 @@ class DistroSeriesBinaryPackage:
                     self.distroseries.distribution.all_distro_archive_ids,
                     self.binarypackagename),
             orderBy=['-datecreated'],
-            clauseTables=['DistroArchRelease', 'BinaryPackageRelease'])
+            clauseTables=['DistroArchSeries', 'BinaryPackageRelease'])
         return sorted(ret, key=lambda a: (
             a.distroarchseries.architecturetag,
             a.datecreated))

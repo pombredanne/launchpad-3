@@ -13,14 +13,14 @@ the Firefox product which was filed by 'Sample Person'.
 
     # Define some utility functions to retrieve easily the last comment
     # added and the status of the question.
-    >>> from BeautifulSoup import BeautifulSoup
     >>> def find_request_status(contents):
-    ...     soup = BeautifulSoup(contents)
+    ...     soup = find_tag_by_id(contents, 'portlet-details')
     ...     return soup.find('b', text='Status:').next.strip()
     ...
     >>> def  find_last_comment(contents):
-    ...     soup = BeautifulSoup(contents)
+    ...     soup = find_main_content(contents)
     ...     return soup.fetch('div', 'boardCommentBody')[-1]
+
 
 == Logging In ==
 
@@ -70,7 +70,7 @@ Of course, if you don't add a message, clicking on the button will give
 you an error.
 
     >>> support_browser.getControl('Add Information Request').click()
-    >>> soup = BeautifulSoup(support_browser.contents)
+    >>> soup = find_main_content(support_browser.contents)
     >>> print soup.first('div', 'message').renderContents()
     Please enter a message.
 
@@ -138,7 +138,7 @@ When the owner comes back on the question page, he will now see a new
 
     >>> owner_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_main_content(owner_browser.contents)
     >>> soup.fetch('div', 'boardComment')[-1].first('input', type='submit')
     <input type="submit" name="field.actions.confirm"
      value="This Solved My Problem" />
@@ -164,7 +164,7 @@ This changes the status of the question to 'Solved' and mark
 
     >>> print find_request_status(owner_browser.contents)
     Solved
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_tag_by_id(owner_browser.contents, 'portlet-details')
     >>> np = 'No Privileges Person'
     >>> np in extract_text(soup.first('b', text='Solved by:').findNext('a'))
     True
@@ -177,6 +177,7 @@ confirmation message was appended to the question discussion:
 
 The confirmed answer is also highlighted.
 
+    >>> soup = find_main_content(owner_browser.contents)
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-2]
     >>> print bestAnswer.first('img')
     <img src="/@@/favourite-yes" ... title="Marked as best answer" />
@@ -233,7 +234,7 @@ its status back to 'Open'.
 This also removes the highlighting from the previous answer and sets
 the answerer back to None.
 
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_main_content(owner_browser.contents)
     >>> soup.first('b', text='Solved by:') is None
     True
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-4]
@@ -270,9 +271,10 @@ message as the "Best answer".
 
     >>> print find_request_status(owner_browser.contents)
     Solved
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_tag_by_id(owner_browser.contents, 'portlet-details')
     >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
     Sample Person
+    >>> soup = find_main_content(owner_browser.contents)
     >>> bestAnswer = soup.first('img', {'title': 'Marked as best answer'})
     >>> None == bestAnswer
     True
@@ -292,12 +294,13 @@ is attributed as the answerer.
     >>> owner_browser.getControl('This Solved My Problem').click()
     >>> print find_request_status(owner_browser.contents)
     Solved
-    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> soup = find_tag_by_id(owner_browser.contents, 'portlet-details')
     >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
     No Privileges Person
 
 The answer's message is also highlighted as the best answer.
 
+    >>> soup = find_main_content(owner_browser.contents)
     >>> bestAnswer = soup.find('img', {'title' : 'Marked as best answer'})
     >>> print bestAnswer
     <img src="/@@/favourite-yes" ... title="Marked as best answer" />
@@ -323,7 +326,7 @@ The history of the question is available on the 'History' page.
 
 It lists all the actions performed through workflow on the question:
 
-    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> soup = find_main_content(anon_browser.contents)
     >>> action_listing = soup.first('table', 'listing')
     >>> for header in action_listing.fetch('th'):
     ...     print header.renderContents()

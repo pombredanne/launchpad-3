@@ -43,13 +43,14 @@ class BranchListingItem(BranchBadges):
     decorates(IBranch, 'branch')
 
     def __init__(self, branch, last_commit, now, role, show_bug_badge,
-                 show_blueprint_badge):
+                 show_blueprint_badge, is_dev_focus):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
         self.show_blueprint_badge = show_blueprint_badge
         self.role = role
         self._now = now
+        self.is_development_focus = is_dev_focus
 
     @property
     def elapsed_time(self):
@@ -76,7 +77,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     def __init__(self, view):
         TableBatchNavigator.__init__(
-            self, view._branches(), view.request,
+            self, view.getVisibleBranchesForUser(), view.request,
             columns_to_show=view.extra_columns,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
@@ -115,9 +116,18 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         show_bug_badge = branch.id in self.has_bug_branch_links
         show_blueprint_badge = branch.id in self.has_branch_spec_links
         role = self.view.roleForBranch(branch)
+        # XXX thumper 2007-11-14
+        # We can't do equality checks here due to BranchWithSortKeys
+        # being constructed from the BranchSet queries, and the development
+        # focus branch being an actual Branch instance.
+        if self.view.development_focus_branch is None:
+            is_dev_focus = False
+        else:
+            is_dev_focus = (
+                branch.id == self.view.development_focus_branch.id)
         return BranchListingItem(
             branch, last_commit, self._now, role, show_bug_badge,
-            show_blueprint_badge)
+            show_blueprint_badge, is_dev_focus)
 
     def branches(self):
         """Return a list of BranchListingItems."""
@@ -142,18 +152,19 @@ class BranchListingView(LaunchpadFormView):
     """A base class for views of branch listings."""
     schema = IBranchListingFilter
     field_names = ['lifecycle', 'sort_by']
+    development_focus_branch = None
     custom_widget('lifecycle', LaunchpadDropdownWidget)
     custom_widget('sort_by', LaunchpadDropdownWidget)
     extra_columns = []
-    title_prefix = 'Bazaar'
+    heading_template = 'Bazaar branches for %(displayname)s'
     # no_sort_by is a sequence of items from the BranchListingSort
     # enumeration to not offer in the sort_by widget.
     no_sort_by = ()
 
     @property
-    def page_title(self):
-        return '%s branches for %s' % (
-            self.title_prefix, self.context.displayname)
+    def heading(self):
+        return self.heading_template % {
+            'displayname': self.context.displayname}
 
     @property
     def initial_values(self):
@@ -182,6 +193,26 @@ class BranchListingView(LaunchpadFormView):
         # Separate the public property from the underlying virtual method.
         return BranchListingBatchNavigator(self)
 
+    def getVisibleBranchesForUser(self):
+        """Get branches visible to the user.
+
+        This method is called from the `BranchListingBatchNavigator` to
+        get the branches to show in the listing.
+        """
+        return self._branches(self.selected_lifecycle_status)
+
+    def hasAnyBranchesVisibleByUser(self):
+        """Does the context have any branches that are visible to the user?"""
+        return self._branches(None).count() > 0
+
+    def _branches(self, lifecycle_status):
+        """Return a sequence of branches.
+
+        This method is overridden in the derived classes to perform the
+        specific query.
+        """
+        raise NotImplementedError("Derived classes must implement _branches.")
+
     def roleForBranch(self, branch):
         """Overridden by derived classes to display something in
         the role column if the role column is visible."""
@@ -191,11 +222,12 @@ class BranchListingView(LaunchpadFormView):
     def no_branch_message(self):
         """This may also be overridden in derived classes to provide
         context relevant messages if there are no branches returned."""
-        if self.selected_lifecycle_status is not None:
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
             message = (
-                'There may be branches related to %s '
-                'but none of them match the current filter criteria '
-                'for this page. Try filtering on "Any Status".')
+                'There are branches related to %s but none of them match the '
+                'current filter criteria for this page. '
+                'Try filtering on "Any Status".')
         else:
             message = (
                 'There are no branches related to %s '
@@ -287,10 +319,10 @@ class RecentlyRegisteredBranchesView(NoContextBranchListingView):
 
     page_title = 'Recently registered branches'
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         """Return the branches ordered by date created."""
         return getUtility(IBranchSet).getRecentlyRegisteredBranches(
-            lifecycle_statuses=self.selected_lifecycle_status,
+            lifecycle_statuses=lifecycle_status,
             visible_by_user=self.user)
 
 
@@ -300,20 +332,20 @@ class RecentlyImportedBranchesView(NoContextBranchListingView):
     page_title = 'Recently imported branches'
     extra_columns = ('product', 'date_created')
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         """Return imported branches ordered by last update."""
         return getUtility(IBranchSet).getRecentlyImportedBranches(
-            lifecycle_statuses=self.selected_lifecycle_status,
+            lifecycle_statuses=lifecycle_status,
             visible_by_user=self.user)
 
 
 class RecentlyChangedBranchesView(NoContextBranchListingView):
-    """A batched view of non-imported branches ordered by last scanned time."""
+    """Batched view of non-imported branches ordered by last scanned time."""
 
     page_title = 'Recently changed branches'
 
-    def _branches(self):
+    def _branches(self, lifecycle_status):
         """Return non-imported branches orded by last commit."""
         return getUtility(IBranchSet).getRecentlyChangedBranches(
-            lifecycle_statuses=self.selected_lifecycle_status,
+            lifecycle_statuses=lifecycle_status,
             visible_by_user=self.user)

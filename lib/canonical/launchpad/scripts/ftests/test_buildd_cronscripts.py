@@ -9,19 +9,22 @@ import sys
 from unittest import TestCase, TestLoader
 
 from canonical.config import config
-from canonical.buildmaster.master import (
-    BuilddMaster, BUILDMASTER_ADVISORY_LOCK_KEY, BUILDMASTER_LOCKFILENAME)
-from canonical.database.sqlbase import cursor
-from canonical.database.postgresql import (
-    acquire_advisory_lock, clear_all_advisory_locks)
+from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.database.build import Build
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
-from canonical.launchpad.scripts.base import LOCK_PATH
+from canonical.launchpad.interfaces import BuildStatus
+from canonical.launchpad.scripts import FakeLogger
+from canonical.launchpad.scripts.buildd import RetryDepwait
+from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.testing import LaunchpadLayer
 
-from contrib.glock import GlobalLock
 
+class TestCronscriptBase(TestCase):
+    """Buildd cronscripts test classes."""
+    layer = LaunchpadLayer
 
-class TestBuilddCronscriptBase(TestCase):
+    def setUp(self):
+        self.layer.setUp()
 
     def runCronscript(self, name, extra_args):
         """Run given cronscript, returning the result and output.
@@ -46,97 +49,89 @@ class TestBuilddCronscriptBase(TestCase):
             extra_args = []
         return self.runCronscript("buildd-slave-scanner.py", extra_args)
 
-    def getBuilddMasterLock(self):
-        """Returns a GlobalLock instance for build-master default lockfile."""
-        lockfile_path = os.path.join(LOCK_PATH, BUILDMASTER_LOCKFILENAME)
-        return GlobalLock(lockfile_path)
+    def runBuilddRetryDepwait(self, extra_args=None):
+        if extra_args is None:
+            extra_args = []
+        return self.runCronscript("buildd-retry-depwait.py", extra_args)
 
-    def assertRuns(self, runner, **kw_args):
+    def assertRuns(self, runner, *args):
         """Invokes given runner with given arguments.
 
         Asserts the result code is 0 (zero) and returns a triple containing:
         (result_code, standart_output, error_output).
         """
-        rc, out, err = runner(**kw_args)
+        rc, out, err = runner()
         self.assertEqual(0, rc, "Err:\n%s" % err)
         return rc, out, err
-
-    def assertLocked(self, runner, **kw_args):
-        """Acquire build-master lockfile and run the given runner.
-
-        Asserts the output mentions only the lockfile conflict.
-        Before return releases the locally acquired lockfile.
-        """
-        lock = self.getBuilddMasterLock(**kw_args)
-        lock.acquire()
-        rc, out, err = self.assertRuns(runner,  **kw_args)
-        self.assertEqual(
-            ['INFO    creating lockfile',
-             'INFO    Lockfile /var/lock/build-master in use'],
-            err.strip().splitlines(),
-            "Not expected output:\n%s" % err)
-        lock.release()
-
-
-class TestBuilddCronscripts(TestBuilddCronscriptBase):
-    """Buildd cronscripts test classes."""
-    layer = LaunchpadLayer
-
-    def setUp(self):
-        self.layer.setUp()
 
     def testRunSlaveScanner(self):
         """Check if buildd-slave-scanner runs without errors."""
         self.assertRuns(runner=self.runBuilddSlaveScanner)
 
-    def testRunSlaveScannerLocked(self):
-        """Check if buildd-slave-scanner.py respects build-master lock."""
-        self.assertLocked(runner=self.runBuilddSlaveScanner)
-
     def testRunQueueBuilder(self):
         """Check if buildd-queue-builder runs without errors."""
         self.assertRuns(runner=self.runBuilddQueueBuilder)
 
-    def testDryRunQueueBuilder(self):
-        """Check if buildd-queue-builder runs in 'dry-run' mode."""
-        self.assertRuns(runner=self.runBuilddQueueBuilder, extra_args=['-n'])
-
-    def testRunQueueBuilderLocked(self):
-        """Check if buildd-queue-builder.py respects build-master lock."""
-        self.assertLocked(runner=self.runBuilddQueueBuilder)
+    def testRunRetryDepwait(self):
+        """Check if buildd-retry-depwait runs without errors."""
+        self.assertRuns(runner=self.runBuilddRetryDepwait)
 
 
-class TestBuilddCronscriptsAdvisoryLock(
-    TestBuilddCronscriptBase, LaunchpadZopelessTestCase):
+class TestRetryDepwait(LaunchpadZopelessTestCase):
+    """Test RetryDepwait buildd script class."""
 
     def setUp(self):
-        """Setup a database cursor."""
-        self.local_cursor = cursor()
+        """Store the number of pending builds present before run the tests."""
+        self.number_of_pending_builds = self.getPendingBuilds().count()
 
-    def tearDown(self):
-        """Ensure all advisory locks aquired in during tests are released."""
-        clear_all_advisory_locks(self.local_cursor)
+    def getPendingBuilds(self):
+        return Build.selectBy(buildstate=BuildStatus.NEEDSBUILD)
 
-    def acquireBuilddmasterAdvisoryLock(self):
-        """Acquire builddmaster postgres advisory lock."""
-        lock_acquired = acquire_advisory_lock(
-            self.local_cursor, BUILDMASTER_ADVISORY_LOCK_KEY)
-        self.assertTrue(lock_acquired)
+    def getRetryDepwait(self, distribution=None):
+        test_args = ['-n']
+        if distribution is not None:
+            test_args.extend(['-d', distribution])
 
-    def testAdvisoryLockForQueueBuilder(self):
-        """buildd-queue-builder respects buildmaster advisory lock."""
-        self.acquireBuilddmasterAdvisoryLock()
-        rc, out, err = self.runBuilddQueueBuilder()
-        self.assertEqual(rc, 1)
-        self.assertTrue('script is already running' in err)
+        retry_depwait = RetryDepwait(
+            name='retry-depwait', test_args=test_args)
+        # Swallowing all log messages.
+        retry_depwait.logger = FakeLogger()
+        def message(self, prefix, *stuff, **kw):
+            pass
+        retry_depwait.logger.message = message
+        return retry_depwait
 
-    def testAdvisoryLockForSlaveScanner(self):
-        """buildd-slave-scanner respects buildmaster advisory lock."""
-        self.acquireBuilddmasterAdvisoryLock()
-        rc, out, err = self.runBuilddSlaveScanner()
-        self.assertEqual(rc, 1)
-        self.assertTrue('script is already running' in err)
+    def testUnknownDistribution(self):
+        """A error is raised on unknown distributions."""
+        retry_depwait = self.getRetryDepwait(distribution='foobar')
+        self.assertRaises(LaunchpadScriptFailure, retry_depwait.main)
 
+    def testEmptyRun(self):
+        """Check the results of a run against pristine sampledata.
+
+        Since the only record in MANUALDEPWAIT in sampledata can't be
+        satisfied we expect the number of pending builds to be constant.
+        """
+        retry_depwait = self.getRetryDepwait()
+        retry_depwait.main()
+        self.assertEqual(
+            self.number_of_pending_builds, self.getPendingBuilds().count())
+
+    def testWorkingRun(self):
+        """Modify sampledata and expects a new pending build to be created."""
+        depwait_build = Build.get(12)
+        depwait_build.dependencies = 'pmount'
+        flush_database_updates()
+
+        retry_depwait = self.getRetryDepwait()
+        retry_depwait.main()
+        self.layer.commit()
+
+        self.assertEqual(
+            self.number_of_pending_builds + 1,
+            self.getPendingBuilds().count())
+        self.assertEqual(depwait_build.buildstate.name, 'NEEDSBUILD')
+        self.assertEqual(depwait_build.buildqueue_record.lastscore, 1005)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

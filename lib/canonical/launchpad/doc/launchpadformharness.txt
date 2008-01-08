@@ -67,20 +67,20 @@ We can also check for per-widget errors:
   ...                           'field.number': 'not a number' })
   >>> harness.hasErrors()
   True
-  >>> print harness.getWidgetError('string')
+  >>> print harness.getFieldError('string')
   <BLANKLINE>
-  >>> print harness.getWidgetError('number')
+  >>> print harness.getFieldError('number')
   Invalid integer data
 
 
-The getWidgetError() method will also return custom error messages set
+The getFieldError() method will also return custom error messages set
 by setFieldError():
 
   >>> harness.submit('submit', {'field.string': 'abcdef',
   ...                           'field.number': '7' })
   >>> harness.hasErrors()
   True
-  >>> print harness.getWidgetError('number')
+  >>> print harness.getFieldError('number')
   number can not be 7
 
 

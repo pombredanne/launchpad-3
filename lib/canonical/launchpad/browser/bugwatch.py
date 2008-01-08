@@ -5,14 +5,21 @@
 __metaclass__ = type
 __all__ = [
     'BugWatchSetNavigation',
-    'BugWatchEditView']
-
+    'BugWatchEditView',
+    'BugWatchView']
 
 from zope.component import getUtility
+from zope.interface import Interface
+from zope.schema import TextLine
 
-from canonical.launchpad.interfaces import IBugWatch, IBugWatchSet, ILaunchBag
+from canonical.launchpad import _
+from canonical.launchpad.browser import get_comments_for_bugtask
+from canonical.launchpad.interfaces import (
+    IBugWatch, IBugWatchSet, ILaunchBag, ILaunchpadCelebrities,
+    NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadEditFormView)
+    GetitemNavigation, LaunchpadFormView, LaunchpadView, action,
+    canonical_url)
 
 
 class BugWatchSetNavigation(GetitemNavigation):
@@ -20,15 +27,69 @@ class BugWatchSetNavigation(GetitemNavigation):
     usedfor = IBugWatchSet
 
 
-class BugWatchEditView(LaunchpadEditFormView):
-    """View for editing a bug watch."""
+class BugWatchView(LaunchpadView):
+    """View for displaying a bug watch."""
 
     schema = IBugWatch
-    field_names = ['bugtracker', 'remotebug']
+
+    @property
+    def comments(self):
+        """Return the comments to be displayed for a bug watch.
+
+        If the current user is not a member of the Launchpad developers
+        team, no comments will be returned.
+        """
+        user = getUtility(ILaunchBag).user
+        lp_developers = getUtility(ILaunchpadCelebrities).launchpad_developers
+        if not user.inTeam(lp_developers):
+            return []
+
+        bug_comments = get_comments_for_bugtask(self.context.bug.bugtasks[0],
+            truncate=True)
+
+        # Filter out those comments that don't pertain to this bug
+        # watch.
+        displayed_comments = []
+        for bug_comment in bug_comments:
+            if bug_comment.bugwatch == self.context:
+                bug_comment.display_if_from_bugwatch = True
+                displayed_comments.append(bug_comment)
+
+        return displayed_comments
+
+
+class BugWatchEditForm(Interface):
+    """Form definition for the bug watch edit view."""
+
+    url = TextLine(title=_('URL'), required=True,
+        description=_("The URL at which to view the remote bug."))
+
+
+class BugWatchEditView(LaunchpadFormView):
+    """View for editing a bug watch."""
+
+    schema = BugWatchEditForm
+    field_names = ['url']
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        return {'url' : self.context.url}
+
+    def validate(self, data):
+        """See `LaunchpadFormView.`"""
+        try:
+            bugtracker, bug = getUtility(
+                IBugWatchSet).extractBugTrackerAndBug(data['url'])
+        except (NoBugTrackerFound, UnrecognizedBugTrackerURL):
+            self.setFieldError('url', 'Invalid bug tracker URL.')
 
     @action('Change', name='change')
     def change_action(self, action, data):
-        self.updateContextFromData(data)
+        bugtracker, remote_bug = getUtility(
+            IBugWatchSet).extractBugTrackerAndBug(data['url'])
+        self.context.bugtracker = bugtracker
+        self.context.remotebug = remote_bug
 
     def bugWatchIsUnlinked(self, action):
         """Return whether the bug watch is unlinked."""

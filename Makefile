@@ -37,6 +37,12 @@ check_sourcecode_dependencies:
 	$(MAKE) -C sourcecode check_for_launchpad PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
+check_loggerhead_on_merge:
+	# Loggerhead doesn't depend on anything else in rocketfuel and nothing
+	# depends on it (yet).
+	make -C sourcecode/loggerhead check PYTHON=${PYTHON} \
+		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
+
 dbfreeze_check:
 	[ ! -f database-frozen.txt -o `PYTHONPATH= bzr status | \
 	    grep database/schema/ | grep -v pending | grep -v security.cfg | \
@@ -79,6 +85,9 @@ check: build
 lint:
 	@bash ./utilities/lint.sh
 
+lint-verbose:
+	@bash ./utilities/lint.sh -v
+
 check-configs:
 	${PYTHON} utilities/check-configs.py 'canonical/pid_dir=/tmp'
 
@@ -90,8 +99,6 @@ inplace: build
 build:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
-
-mailman_instance: build
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
 		 $(PYTHON) -t buildmailman.py
 
@@ -166,7 +173,7 @@ start: inplace stop bzr_version_info
 # so killing them after is a race condition.
 stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
-	    utilities/killservice.py librarian buildsequencer launchpad
+	    utilities/killservice.py librarian buildsequencer launchpad mailman
 
 harness:
 	PYTHONPATH=lib $(PYTHON) -i lib/canonical/database/harness.py
@@ -220,5 +227,5 @@ tags:
 		ftest_build ftest_inplace test_build test_inplace pagetests \
 		check importdcheck check_merge schema default launchpad.pot \
 		check_launchpad_on_merge check_merge_ui pull rewritemap scan \
-		sync_branches
+		sync_branches check_loggerhead_on_merge
 

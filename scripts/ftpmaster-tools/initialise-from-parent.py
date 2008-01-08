@@ -22,10 +22,9 @@ from canonical.config import config
 from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.lp import initZopeless
-from canonical.lp.dbschema import (
-    PackageUploadStatus, BuildStatus, PackagePublishingPocket)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+    BuildStatus, IDistributionSet, NotFoundError, PackageUploadStatus,
+    PackagePublishingPocket)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 
@@ -104,7 +103,7 @@ def check_builds(distroseries):
     Only cares about the RELEASE pocket, which is the only one inherited
     via initialiseFromParent method.
     """
-    parentseries = distroseries.parentseries
+    parentseries = distroseries.parent_series
 
     # only the RELEASE pocket is inherited, so we only check
     # pending build records for it.
@@ -120,7 +119,7 @@ def check_queue(distroseries):
     Only cares about the RELEASE pocket, which is the only one inherited
     via initialiseFromParent method.
     """
-    parentseries = distroseries.parentseries
+    parentseries = distroseries.parent_series
 
     # only the RELEASE pocket is inherited, so we only check
     # queue items for it.
@@ -152,16 +151,16 @@ def copy_architectures(distroseries):
     flush_database_updates()
     cur = cursor()
     cur.execute("""
-    INSERT INTO DistroArchRelease
-          (distrorelease, processorfamily, architecturetag, owner, official)
+    INSERT INTO DistroArchSeries
+          (distroseries, processorfamily, architecturetag, owner, official)
     SELECT %s, processorfamily, architecturetag, %s, official
-    FROM DistroArchRelease WHERE distrorelease = %s
+    FROM DistroArchSeries WHERE distroseries = %s
     """ % sqlvalues(distroseries, distroseries.owner,
-                    distroseries.parentseries))
+                    distroseries.parent_series))
     flush_database_caches()
 
     distroseries.nominatedarchindep = distroseries[
-        distroseries.parentseries.nominatedarchindep.architecturetag]
+        distroseries.parent_series.nominatedarchindep.architecturetag]
 
 
 if __name__ == '__main__':

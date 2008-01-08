@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <div class="portlet" id="portlet-details">
   <div class="portletBody portletContent">
     <table class="summary">
@@ -38,7 +44,7 @@
             <a
               tal:condition="context/bugtracker"
               tal:content="context/bugtracker/title"
-              al:attributes="href context/bugtracker/fmt:url"
+              tal:attributes="href context/bugtracker/fmt:url"
             >tracker title</a>
             <tal:none condition="not:context/bugtracker">None specified</tal:none>
           </td>
@@ -47,3 +53,4 @@
     </table>
   </div>
 </div>
+</tal:root>

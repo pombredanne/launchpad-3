@@ -7,6 +7,7 @@ import grp
 import pwd
 import sys
 import errno
+import tempfile
 import subprocess
 
 from canonical.config import config
@@ -18,6 +19,10 @@ basepath = filter(None, sys.path)
 
 def build_mailman():
     # Build and install Mailman if it is enabled and not yet built.
+    if config.mailman is None or config.mailman.build is None:
+        # There is no <mailman> or <mailman-build> section in the
+        # configuration file, so there's nothing to build.
+        return 0
     mailman_path = config.mailman.build.prefix
     mailman_bin = os.path.join(mailman_path, 'bin')
     var_dir = os.path.abspath(config.mailman.build.var_dir)
@@ -41,8 +46,16 @@ def build_mailman():
     # permissions, otherwise configure will complain.
     user, group = config.mailman.build.user_group
     # Now work backwards to get the uid and gid
-    uid = pwd.getpwnam(user).pw_uid
-    gid = grp.getgrnam(group).gr_gid
+    try:
+        uid = pwd.getpwnam(user).pw_uid
+    except KeyError:
+        print >> sys.stderr, 'No user found:', user
+        sys.exit(1)
+    try:
+        gid = grp.getgrnam(group).gr_gid
+    except KeyError:
+        print >> sys.stderr, 'No group found:', group
+        sys.exit(1)
 
     # Ensure that the var_dir exists, is owned by the user:group, and has
     # the necessary permissions.  Set the mode separately after the
@@ -58,9 +71,8 @@ def build_mailman():
 
     mailman_source = os.path.join('sourcecode', 'mailman')
 
-    # Build and install the Mailman software.  Note that we don't care
-    # about --with-mail-gid or --with-cgi-gid because we're not going to
-    # use those Mailman subsystems.
+    # Build and install the Mailman software.  Note that we don't care about
+    # --with-cgi-gid because we're not going to use that Mailman subsystem.
     configure_args = (
         './configure',
         '--prefix', mailman_path,
@@ -68,6 +80,7 @@ def build_mailman():
         '--with-python=' + sys.executable,
         '--with-username=' + user,
         '--with-groupname=' + group,
+        '--with-mail-gid=' + group,
         '--with-mailhost=' + config.mailman.build.host_name,
         )
     retcode = subprocess.call(configure_args, cwd=mailman_source)
@@ -117,6 +130,12 @@ def build_mailman():
             print >> sys.stderr, 'Could not create site list'
             return retcode
 
+    retcode = configure_site_list(
+        mailman_bin, Mailman.mm_cfg.MAILMAN_SITE_LIST)
+    if retcode:
+        print >> sys.stderr, 'Could not configure site list'
+        return retcode
+
     # Create a directory to hold the gzip'd tarballs for the directories of
     # deactivated lists.
     try:
@@ -126,6 +145,26 @@ def build_mailman():
             raise
 
     return 0
+
+
+def configure_site_list(mailman_bin, site_list_name):
+    """Configure the site list.
+
+    Currently, the only thing we want to set is to not advertise the site list.
+    """
+    fd, config_file_name = tempfile.mkstemp()
+    try:
+        os.close(fd)
+        config_file = open(config_file_name, 'w')
+        try:
+            print >> config_file, 'advertised = False'
+        finally:
+            config_file.close()
+        return subprocess.call(
+            ('./config_list', '-i', config_file_name, site_list_name),
+            cwd=mailman_bin)
+    finally:
+        os.remove(config_file_name)
 
 
 def main():

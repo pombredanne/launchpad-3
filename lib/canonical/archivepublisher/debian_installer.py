@@ -49,8 +49,8 @@ class DebianInstallerUpload(CustomUpload):
 
     A 'current' symbolic link points to the most recent version.
     """
-    def __init__(self, archive_root, tarfile_path, distrorelease):
-        CustomUpload.__init__(self, archive_root, tarfile_path, distrorelease)
+    def __init__(self, archive_root, tarfile_path, distroseries):
+        CustomUpload.__init__(self, archive_root, tarfile_path, distroseries)
 
         tarfile_base = os.path.basename(tarfile_path)
         components = tarfile_base.split('_')
@@ -64,7 +64,7 @@ class DebianInstallerUpload(CustomUpload):
             build_type = 'daily-installer'
 
         self.targetdir = os.path.join(
-            archive_root, 'dists', distrorelease, 'main',
+            archive_root, 'dists', distroseries, 'main',
             '%s-%s' % (build_type, self.arch))
 
         if os.path.exists(os.path.join(self.targetdir, self.version)):
@@ -84,12 +84,12 @@ class DebianInstallerUpload(CustomUpload):
         return filename.startswith('%s/' % self.version)
 
 
-def process_debian_installer(archive_root, tarfile_path, distrorelease):
+def process_debian_installer(archive_root, tarfile_path, distroseries):
     """Process a raw-installer tarfile.
 
-    Unpacking it into the given archive for the given distrorelease.
+    Unpacking it into the given archive for the given distroseries.
     Raises CustomUploadError (or some subclass thereof) if anything goes
     wrong.
     """
-    upload = DebianInstallerUpload(archive_root, tarfile_path, distrorelease)
+    upload = DebianInstallerUpload(archive_root, tarfile_path, distroseries)
     upload.process()

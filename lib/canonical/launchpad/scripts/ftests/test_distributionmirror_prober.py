@@ -18,7 +18,7 @@ from sqlobject import SQLObjectNotFound
 
 import canonical
 from canonical.config import config
-from canonical.lp.dbschema import PackagePublishingPocket
+from canonical.launchpad.interfaces import PackagePublishingPocket
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroSeries

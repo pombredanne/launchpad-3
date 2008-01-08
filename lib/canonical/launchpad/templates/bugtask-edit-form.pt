@@ -101,7 +101,7 @@
     <table>
       <tal:distrotask
         condition="python:context.distribution or context.distroseries"
-        define="error python:view.getWidgetError('sourcepackagename')"
+        define="error python:view.getFieldError('sourcepackagename')"
       >
         <tr>
           <td>
@@ -125,7 +125,7 @@
       <tal:upstreamtask
           condition="python:context.product"
           define="omit_required default;
-                  error python:view.getWidgetError('product')">
+                  error python:view.getFieldError('product')">
         <tr>
           <td colspan="2">
             <label style="font-weight: bold"

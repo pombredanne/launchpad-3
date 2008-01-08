@@ -10,6 +10,7 @@ import os
 
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.archivepublisher import ELIGIBLE_DOMINATION_STATES
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.diskpool import DiskPool
 
@@ -20,15 +21,8 @@ from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, SecureSourcePackagePublishingHistory,
     BinaryPackageFilePublishing, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
-    NotInPool, ISecureSourcePackagePublishingHistory,
-    ISecureBinaryPackagePublishingHistory)
-from canonical.lp.dbschema import PackagePublishingStatus, ArchivePurpose
-
-
-condemned_states = [
-    PackagePublishingStatus.SUPERSEDED,
-    PackagePublishingStatus.DELETED,
-    ]
+    ArchivePurpose, ISecureSourcePackagePublishingHistory,
+    ISecureBinaryPackagePublishingHistory, NotInPool)
 
 
 def getDeathRow(archive, log, pool_root_override):
@@ -114,7 +108,8 @@ class DeathRow:
             SourcePackagePublishingHistory.scheduleddeletiondate
                  is not NULL AND
             SourcePackagePublishingHistory.scheduleddeletiondate <= %s
-            """ % sqlvalues(condemned_states, self.archive, UTC_NOW),
+            """ % sqlvalues(ELIGIBLE_DOMINATION_STATES, self.archive,
+                            UTC_NOW),
             clauseTables=['SourcePackagePublishingHistory'],
             orderBy="id")
 
@@ -129,7 +124,8 @@ class DeathRow:
             BinaryPackagePublishingHistory.scheduleddeletiondate
                  is not NULL AND
             BinaryPackagePublishingHistory.scheduleddeletiondate <= %s
-            """ % sqlvalues(condemned_states, self.archive, UTC_NOW),
+            """ % sqlvalues(ELIGIBLE_DOMINATION_STATES, self.archive,
+                            UTC_NOW),
             clauseTables=['BinaryPackagePublishingHistory'],
             orderBy="id")
 
@@ -185,7 +181,10 @@ class DeathRow:
         right_now = datetime.datetime.now(pytz.timezone('UTC'))
         for pub in all_publications:
             # Deny removal if any reference is still active.
-            if pub.status not in condemned_states:
+            if pub.status not in ELIGIBLE_DOMINATION_STATES:
+                return False
+            # Deny removal if any reference wasn't dominated yet.
+            if pub.scheduleddeletiondate is None:
                 return False
             # Deny removal if any reference is still in 'quarantine'.
             # See PubConfig.pendingremovalduration value.

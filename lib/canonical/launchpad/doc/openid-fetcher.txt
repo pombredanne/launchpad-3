@@ -1,0 +1,60 @@
+= Zope Publisher integration with openid.fetchers =
+
+To aid in tests of OpenID discovery, we provide a special
+implementation of the openid.fetchers module that talks to the Zope
+publisher directly.
+
+It can be installed with the following commands:
+
+    >>> from openid.fetchers import setDefaultFetcher
+    >>> from canonical.launchpad.ftests.openidhelpers import PublisherFetcher
+    >>> setDefaultFetcher(PublisherFetcher())
+
+
+== Fetching Documents ==
+
+Once the fetcher is installed, we can talk directly to the Zope
+publisher:
+
+    >>> from openid.fetchers import fetch
+    >>> response = fetch('http://launchpad.dev/')
+    >>> response
+    <...HTTPResponse...>
+    >>> response.status
+    200
+    >>> 'content-type' in response.headers
+    True
+    >>> response.headers['content-type']
+    'text/html;charset=utf-8'
+    >>> '<html' in response.body
+    True
+
+
+== Redirects ==
+
+The fetch() interface expects HTTP redirects to be followed, which is
+handled by the PublisherFetcher:
+
+    >>> response = fetch('http://launchpad.dev/products/firefox')
+    >>> response.status
+    200
+    >>> response.final_url
+    'http://launchpad.dev/firefox'
+
+
+== 404 Errors ==
+
+Not found errors are handled by the publisher and return a 404
+response:
+
+    >>> response = fetch('http://launchpad.dev/no-such-file')
+    >>> response.status
+    404
+
+== Uninstalling the Fetcher ==
+
+Uninstalling the fetcher is achieved with another call to
+setDefaultFetcher():
+
+    >>> setDefaultFetcher(None)
+

@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <metal:detailed_display define-macro="detailed_display">
   <tal:comment replace="nothing">
     This macro expects two variables to be defined:
@@ -11,7 +17,7 @@
       1.0
     </a>
   </strong>
-  <i tal:condition="is_focus">Current development focus</i>
+  <em tal:condition="is_focus">Current development focus</em>
   <div tal:condition="series/releases">
     Releases:
     <tal:release repeat="release series/releases">
@@ -28,3 +34,4 @@
   </div>
   <metal:extra define-slot="extra" />
 </metal:detailed_display>
+</tal:root>

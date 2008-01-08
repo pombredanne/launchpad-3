@@ -12,7 +12,6 @@ __all__ = [
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
-    'LaunchpadRootIndexView',
     'OneZeroTemplateStatus',
     'IcingFolder',
     'StructuralHeaderPresentationView',
@@ -49,6 +48,7 @@ import canonical.launchpad.layers
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
+    IAnnouncementSet,
     IAppFrontPageSearchForm,
     IBazaarApplication,
     IBinaryPackageNameSet,
@@ -72,7 +72,6 @@ from canonical.launchpad.interfaces import (
     IMentoringOfferSet,
     IPersonSet,
     IPillarNameSet,
-    IPOTemplateNameSet,
     IProductSet,
     IProjectSet,
     IQuestionSet,
@@ -85,7 +84,6 @@ from canonical.launchpad.interfaces import (
     IStructuralHeaderPresentation,
     ITranslationGroupSet,
     ITranslationImportQueue,
-    NotFoundError,
     )
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
@@ -419,6 +417,7 @@ class LaunchpadRootNavigation(Navigation):
             'https://help.launchpad.net/Feedback', status=301)
 
     stepto_utilities = {
+        '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
         'bounties': IBountySet,
         'bugs': IMaloneApplication,
@@ -433,7 +432,6 @@ class LaunchpadRootNavigation(Navigation):
         '+languages': ILanguageSet,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
-        'potemplatenames': IPOTemplateNameSet,
         'projects': IProductSet,
         'projectgroups': IProjectSet,
         'registry': IRegistryApplication,
@@ -483,18 +481,23 @@ class LaunchpadRootNavigation(Navigation):
         if name == 'bazaar' and IXMLRPCRequest.providedBy(self.request):
             return getUtility(IBazaarApplication)
 
-        try:
-            # account for common typing mistakes
-            if canonical_name(name) != name:
-                if self.request.method == 'POST':
-                    raise POSTToNonCanonicalURL
-                return self.redirectSubTree(
-                    canonical_url(self.context) + canonical_name(name),
-                    status=301)
-            else:
-                return getUtility(IPillarNameSet)[name]
-        except NotFoundError:
-            return None
+        # account for common typing mistakes
+        if canonical_name(name) != name:
+            if self.request.method == 'POST':
+                raise POSTToNonCanonicalURL
+            return self.redirectSubTree(
+                canonical_url(self.context) + canonical_name(name),
+                status=301)
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        user = getUtility(ILaunchBag).user
+        ignore_inactive = True
+        if user and user.inTeam(admins):
+            # Admins should be able to access deactivated projects too
+            ignore_inactive = False
+        pillar = getUtility(IPillarNameSet).getByName(
+            name, ignore_inactive=ignore_inactive)
+        return pillar
 
     def _getBetaRedirectionView(self):
         # If the inhibit_beta_redirect cookie is set, don't redirect:
@@ -570,22 +573,6 @@ class SoftTimeoutView(LaunchpadView):
         return (
             'Soft timeout threshold is set to %s ms. This page took'
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
-
-
-class LaunchpadRootIndexView(LaunchpadView):
-    """An view for the default view of the LaunchpadRoot."""
-
-    def isRedirectInhibited(self):
-        """Returns True if redirection has been inhibited."""
-        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
-
-    def isBetaUser(self):
-        """Return True if the user is in the beta testers team."""
-        if config.launchpad.beta_testers_redirection_host is None:
-            return False
-
-        return self.user is not None and self.user.inTeam(
-            getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
 
 
 class ObjectForTemplate:
@@ -980,7 +967,7 @@ class AppFrontPageSearchView(LaunchpadFormView):
     @property
     def scope_error(self):
         """The error message for the scope widget."""
-        return self.getWidgetError('scope')
+        return self.getFieldError('scope')
 
 
 class BrowserWindowDimensions(LaunchpadView):

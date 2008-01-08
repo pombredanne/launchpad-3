@@ -373,13 +373,12 @@ priority requests.
                Ship to email address: jordi@ubuntu.com
              ship Ubuntu quantity PC: 0
       ship Ubuntu quantity 64-bit PC: 0
-            ship Ubuntu quantity Mac: 0
             ship Kubuntu quantity PC: 5
      ship Kubuntu quantity 64-bit PC: 0
-           ship Kubuntu quantity Mac: 0
            ship Edubuntu quantity PC: 5
     ship Edubuntu quantity 64-bit PC: 0
-          ship Edubuntu quantity Mac: 0
+             ship Server quantity PC: 0
+      ship Server quantity 64-bit PC: 0
                                token: ...
                             Ship via: TNT
                              display: 0

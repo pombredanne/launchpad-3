@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'SprintAddView',
+    'SprintAttendeesCsvExportView',
     'SprintBrandingView',
     'SprintEditView',
     'SprintFacets',
@@ -22,7 +23,9 @@ __all__ = [
     'SprintView',
     ]
 
+import csv
 import pytz
+from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
@@ -86,7 +89,8 @@ class SprintOverviewMenu(ApplicationMenu):
 
     usedfor = ISprint
     facet = 'overview'
-    links = ['attendance', 'registration', 'edit', 'branding']
+    links = ['attendance', 'registration', 'attendee_export', 'edit',
+             'branding']
 
     def attendance(self):
         text = 'Register yourself'
@@ -97,6 +101,12 @@ class SprintOverviewMenu(ApplicationMenu):
         text = 'Register someone else'
         summary = 'Register someone else to attend the meeting'
         return Link('+register', text, summary, icon='add')
+
+    @enabled_with_permission('launchpad.View')
+    def attendee_export(self):
+        text = 'Export attendees to CSV'
+        summary = 'Export attendee contact information to CSV format'
+        return Link('+attendees-csv', text, summary, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -490,3 +500,54 @@ class SprintSetView(LaunchpadView):
     def all_batched(self):
         return BatchNavigator(self.context.all, self.request)
 
+
+class SprintAttendeesCsvExportView(LaunchpadView):
+    """View for exporting the attendees for a sprint as CSV."""
+
+    def encode_value(self, value):
+        """Encode a value for CSV.
+        
+        Return the string representation of `value` encoded as UTF-8,
+        or the empty string if value is None."""
+        if value is not None:
+            return unicode(value).encode('utf-8')
+        else:
+            return ''
+
+    def render(self):
+        """Render a CSV output of all the attendees for a sprint."""
+        rows = [('Launchpad username',
+                 'Display name',
+                 'Email',
+                 'Phone',
+                 'Organization',
+                 'City',
+                 'Country',
+                 'Timezone',
+                 'Arriving',
+                 'Leaving')]
+        for attendance in self.context.attendances:
+            rows.append(
+                (attendance.attendee.name,
+                 attendance.attendee.displayname,
+                 attendance.attendee.safe_email_or_blank,
+                 attendance.attendee.phone,
+                 attendance.attendee.organization,
+                 attendance.attendee.city,
+                 attendance.attendee.country, 
+                 attendance.attendee.timezone,
+                 attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                 attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ')))
+        # CSV can't handle unicode, so we force encoding
+        # everything as UTF-8
+        rows = [[self.encode_value(column)
+                 for column in row]
+                for row in rows]
+        self.request.response.setHeader('Content-type', 'text/csv')
+        self.request.response.setHeader(
+            'Content-disposition',
+            'attachment; filename=%s-attendees.csv' % self.context.name)
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerows(rows)
+        return output.getvalue()

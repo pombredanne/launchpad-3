@@ -31,31 +31,29 @@ from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
-from canonical.launchpad.helpers import browserLanguages, is_tar_filename
-from canonical.launchpad.interfaces import (
-    ICountry, ILaunchpadCelebrities, IPOTemplateSet, IProductSeries,
-    IProductSeriesSet, ISourcePackageNameSet, ITranslationImportQueue,
-    ITranslationImporter, ImportStatus, NotFoundError, RevisionControlSystems)
+from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.launchpad import (
-    StructuralObjectPresentation, DefaultShortLink)
+    DefaultShortLink, StructuralObjectPresentation)
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
+from canonical.launchpad.helpers import browserLanguages, is_tar_filename
+from canonical.launchpad.interfaces import (
+    ICountry, ILaunchpadCelebrities, ImportStatus, IPOTemplateSet,
+    IProductSeries, IProductSeriesSet, ISourcePackageNameSet,
+    ITranslationImporter, ITranslationImportQueue, NotFoundError,
+    RevisionControlSystems)
 from canonical.launchpad.webapp import (
-    Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
-    canonical_url, LaunchpadView, StandardLaunchpadFacets,
-    LaunchpadEditFormView, action, custom_widget
-    )
-from canonical.launchpad.webapp.batching import BatchNavigator
+    action, ApplicationMenu, canonical_url, custom_widget,
+    enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
+    Link, Navigation, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu
-
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
-
-from canonical.launchpad import _
 
 
 def quote(text):
@@ -152,6 +150,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def add_release(self):
         text = 'Register a release'
         return Link('+addrelease', text, icon='add')
@@ -261,12 +260,13 @@ class ProductSeriesTranslationsExportView(BaseExportView):
     def processForm(self):
         """Process form submission requesting translations export."""
         pofiles = []
-        for potemplate in self.context.potemplates:
-            pofiles += list(potemplate.pofiles)
-        return (self.context.potemplates, pofiles)
+        translation_templates = self.context.getCurrentTranslationTemplates()
+        for translation_template in translation_templates:
+            pofiles += list(translation_template.pofiles)
+        return (translation_templates, pofiles)
 
     def getDefaultFormat(self):
-        templates = self.context.potemplates
+        templates = self.context.getCurrentTranslationTemplates()
         if len(templates) == 0:
             return None
         return templates[0].source_file_format
@@ -298,7 +298,8 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         self.has_errors = False
 
         # Whether there is more than one PO template.
-        self.has_multiple_templates = len(self.context.currentpotemplates) > 1
+        self.has_multiple_templates = len(
+            self.context.getCurrentTranslationTemplates()) > 1
 
         # let's find out what source package is associated with this
         # productseries in the current release of ubuntu
@@ -594,13 +595,13 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
             cvsbranch = data.get('cvsbranch')
             # Make sure there is an error set for these fields if they
             # are unset.
-            if not (cvsroot or self.getWidgetError('cvsroot')):
+            if not (cvsroot or self.getFieldError('cvsroot')):
                 self.setFieldError('cvsroot',
                                    'Enter a CVS root.')
-            if not (cvsmodule or self.getWidgetError('cvsmodule')):
+            if not (cvsmodule or self.getFieldError('cvsmodule')):
                 self.setFieldError('cvsmodule',
                                    'Enter a CVS module.')
-            if not (cvsbranch or self.getWidgetError('cvsbranch')):
+            if not (cvsbranch or self.getFieldError('cvsbranch')):
                 self.setFieldError('cvsbranch',
                                    'Enter a CVS branch.')
             if cvsroot and cvsmodule and cvsbranch:
@@ -616,7 +617,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
 
         elif rcstype == RevisionControlSystems.SVN:
             svnrepository = data.get('svnrepository')
-            if not (svnrepository or self.getWidgetError('svnrepository')):
+            if not (svnrepository or self.getFieldError('svnrepository')):
                 self.setFieldError('svnrepository',
                     "Enter the URL of a Subversion branch.")
             if svnrepository:
@@ -674,8 +675,8 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     def allowCertify(self, action):
         return self.isAdmin() and not self.context.syncCertified()
 
-    @action(_('Approve import for production and publication'), name='certify',
-            condition=allowCertify)
+    @action(_('Approve import for production and publication'),
+            name='certify', condition=allowCertify)
     def certify_action(self, action, data):
         self.updateContextFromData(data)
         self.context.certifyForSync()

@@ -12,7 +12,6 @@
 <body>
 
     <metal:heading fill-slot="pageheading">
-      <h1><span tal:replace="context/title"/> builds</h1>
     </metal:heading>
 
     <metal:leftportlets fill-slot="portlets_one">

@@ -22,3 +22,15 @@ Check the overview-menu for authorized access (admins member)
   >>> admin_browser.open("http://localhost/+builds/+index")
   >>> admin_browser.getLink("Add builder")
   <Link text=...>
+
+
+There should also be a portlet showing the depth of the build queue on the
+builders listing page:
+
+  >>> anon_browser.open('http://launchpad.dev/+builds')
+  >>> portlet = find_portlet(anon_browser.contents, 'Build queue depth')
+  >>> for td in portlet.fetch('td'):
+  ...     print extract_text(td)
+  i386
+  2
+

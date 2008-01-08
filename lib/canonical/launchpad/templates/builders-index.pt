@@ -19,6 +19,21 @@
     <meta http-equiv="refresh" content="300" />
 </metal:block>
 
+<metal:portlets fill-slot="portlets">
+  <div class="portlet" id="portlet-build-queue-depth"
+       tal:condition="view/hasQueuedBuilds">
+    <h2>Build queue depth</h2>
+    <div class="portletBody">
+      <table width="100%">
+        <tbody>
+          <tr tal:repeat="arch view/buildQueueDepthByArch">
+            <td tal:repeat="value arch" tal:content="value" />
+          </tr>
+        </tbody>
+    </div>
+  </div>
+</metal:portlets>
+
   <div metal:fill-slot="main">
 
       <table class="listing sortable" tal:attributes="id string:builders">

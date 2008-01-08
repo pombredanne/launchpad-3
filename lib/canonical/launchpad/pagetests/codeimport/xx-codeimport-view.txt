@@ -114,7 +114,8 @@ If we create a lot of imports, the listing view will be batched.
     >>> from canonical.launchpad.interfaces import (
     ...     IBranchSet, ICodeImportSet, ILaunchpadCelebrities,
     ...     IPersonSet, IProductSet, BranchType)
-    >>> from canonical.launchpad.interfaces import RevisionControlSystems
+    >>> from canonical.launchpad.interfaces import (
+    ...     License, RevisionControlSystems)
 
     >>> login('david.allouche@canonical.com')
 
@@ -125,7 +126,7 @@ If we create a lot of imports, the listing view will be batched.
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     >>> def import_branch_for_new_product(name):
     ...     product = getUtility(IProductSet).createProduct(
-    ...         nopriv, name, name, name, name, name)
+    ...         nopriv, name, name, name, name, name, licenses=[License.GPL])
     ...     return getUtility(IBranchSet).new(
     ...         BranchType.IMPORTED, 'trunk', vcs_imports, vcs_imports,
     ...         product, None, 'Import branch')

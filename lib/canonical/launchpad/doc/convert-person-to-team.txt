@@ -1,0 +1,38 @@
+= Converting people into teams =
+
+There's a script which allows us to turn any person whose account_status is
+NOACCOUNT (which means the person has never actually logged into Launchpad)
+into a team.  The script takes the name of the person to be converted into a
+team and the name of the team owner as arguments.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> spiv = getUtility(IPersonSet).getByName('spiv')
+    >>> spiv.isTeam()
+    False
+    >>> spiv.account_status
+    <DBItem AccountStatus.NOACCOUNT...
+
+    >>> from subprocess import Popen, PIPE
+    >>> process = Popen(
+    ...     'scripts/convert-person-to-team.py -q spiv sabdfl',
+    ...     shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    >>> (out, err) = process.communicate()
+    >>> out, err
+    ('', '')
+    >>> process.returncode
+    0
+
+    # The script already committed its transaction but this test runs
+    # the LaunchpadFunctionalLayer which, in turn, uses the SERIALIZABLE
+    # isolation level, so we need to forcibly begin another transaction here.
+    >>> import transaction; transaction.abort()
+
+    # Flush the caches because our objects were changed in another
+    # transaction.
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+
+    >>> spiv = getUtility(IPersonSet).getByName('spiv')
+    >>> spiv.isTeam()
+    True

@@ -8,7 +8,8 @@ __all__ = ['BugCommentView', 'BugComment', 'build_comments_from_chunks']
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import ILaunchBag, IBugComment
+from canonical.launchpad.interfaces import (IBugComment,
+    IBugMessageSet, ILaunchBag, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import LaunchpadView
 
 from canonical.config import config
@@ -20,9 +21,12 @@ def build_comments_from_chunks(chunks, bugtask, truncate=False):
     index = 0
     for chunk in chunks:
         message_id = chunk.message.id
+        bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
+            bugtask.bug, chunk.message)
         bug_comment = comments.get(message_id)
         if bug_comment is None:
-            bug_comment = BugComment(index, chunk.message, bugtask)
+            bug_comment = BugComment(index, chunk.message, bugtask,
+                bug_message.bugwatch)
             comments[message_id] = bug_comment
             index += 1
         bug_comment.chunks.append(chunk)
@@ -46,17 +50,29 @@ class BugComment:
     """
     implements(IBugComment)
 
-    def __init__(self, index, message, bugtask):
+    def __init__(self, index, message, bugtask, bugwatch=None):
         self.index = index
         self.bugtask = bugtask
+        self.bugwatch = bugwatch
 
         self.title = message.title
         self.display_title = False
         self.datecreated = message.datecreated
         self.owner = message.owner
+        self.rfc822msgid = message.rfc822msgid
 
         self.chunks = []
         self.bugattachments = []
+
+        self.display_if_from_bugwatch = config.malone.show_imported_comments
+
+    @property
+    def can_be_shown(self):
+        """Return whether or not the BugComment can be shown."""
+        if self.bugwatch and not self.display_if_from_bugwatch:
+            return False
+        else:
+            return True
 
     def setupText(self, truncate=False):
         """Set the text for display and truncate it if necessary.
@@ -113,4 +129,10 @@ class BugCommentView(LaunchpadView):
         bugtask = getUtility(ILaunchBag).bugtask
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
+
+    @property
+    def display_comment(self):
+        """Return True if the comment can be shown, False otherwise."""
+        return self.comment.can_be_shown or self.user.inTeam(
+            getUtility(ILaunchpadCelebrities).launchpad_developers)
 

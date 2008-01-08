@@ -87,7 +87,7 @@ component 'universe':
   DEBUG   Initialising connection.
   INFO    Override Component to: 'main'
   INFO    Override Section to: 'base'
-  INFO    'mozilla-firefox/main/base' source overridden
+  INFO    'mozilla-firefox - 0.9/main/base' source overridden
   INFO    Commiting transaction, changes will be visible after next publisher run.
   <BLANKLINE>
 
@@ -104,7 +104,7 @@ moving to component 'universe':
   >>> process.returncode
   0
 
-It will only override binaries currently published from that source package 
+It will only override binaries currently published from that source package
 version.  In the sample data, mozilla-firefox source gives mozilla-firefox
 binary version 0.9.  The 1.0 version comes from the "iceweasel" source, so
 only the 0.9 version is overridden:
@@ -133,7 +133,7 @@ to component 'main':
   DEBUG   Initialising connection.
   INFO    Override Component to: 'main'
   INFO    Override Section to: 'editors'
-  INFO    'pmount/main/editors' source overridden
+  INFO    'pmount - 0.1-2/main/editors' remained the same
   WARNING 'pmount' has no binaries published in hoary
   INFO    Commiting transaction, changes will be visible after next publisher run.
   <BLANKLINE>

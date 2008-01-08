@@ -1,12 +1,12 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-
-__metaclass__ = type
-
 """Package information classes.
 
 This classes are responsable for fetch and hold the information inside
 the sources and binarypackages.
 """
+
+__metaclass__ = type
+
 
 __all__ = ['AbstractPackageData', 'SourcePackageData', 'BinaryPackageData']
 
@@ -23,10 +23,9 @@ from canonical.archivepublisher.diskpool import poolify
 from canonical.launchpad.scripts.gina.changelog import parse_changelog
 
 from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import (
-    PackagePublishingPriority, SourcePackageUrgency)
 
-from canonical.launchpad.interfaces import GPGKeyAlgorithm
+from canonical.launchpad.interfaces import (
+    GPGKeyAlgorithm, PackagePublishingPriority, SourcePackageUrgency)
 from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina import call
 
@@ -130,7 +129,8 @@ def read_dsc(package, version, component, archive_root):
         copyright = open(fullpath).read().strip()
 
     if copyright is None:
-        log.warn("No copyright file found for %s in %s" % (package, source_dir))
+        log.warn(
+            "No copyright file found for %s in %s" % (package, source_dir))
         copyright = ''
 
     return dsc, changelog, copyright
@@ -301,6 +301,8 @@ class SourcePackageData(AbstractPackageData):
     # Defaults, potentially overwritten by __init__
     build_depends = ""
     build_depends_indep = ""
+    build_conflicts = ""
+    build_conflicts_indep = ""
     # XXX kiko 2005-10-30: This isn't stored at all.
     standards_version = ""
     section = None
@@ -359,8 +361,8 @@ class SourcePackageData(AbstractPackageData):
         if self.section is None:
             # XXX kiko 2005-11-05: Untested and disabled.
             # if kdb:
-            #     log.warn("Source package %s lacks section, looking it up..." %
-            #              self.package)
+            #     log.warn("Source package %s lacks section, "
+            #              "looking it up..." % self.package)
             #     self.section = kdb.getSourceSection(self.package)
             self.section = 'misc'
             log.warn("Source package %s lacks section, assumed %r" %
@@ -460,6 +462,9 @@ class BinaryPackageData(AbstractPackageData):
     conflicts = ""
     replaces = ""
     provides = ""
+    pre_depends = ""
+    enhances = ""
+    breaks = ""
     essential = False
 
     # Overwritten in do_package, optionally
@@ -520,9 +525,11 @@ class BinaryPackageData(AbstractPackageData):
         if (self.source_version is None or
             self.source_version != self.version and
             not valid_debian_version(self.source_version)):
-            raise InvalidSourceVersionError("Binary package %s (%s) "
-                "refers to source package %s with invalid version: %s" %
-                (self.package, self.version, self.source, self.source_version))
+            raise InvalidSourceVersionError(
+                "Binary package %s (%s) refers to source package %s "
+                "with invalid version: %s" %
+                (self.package, self.version, self.source,
+                 self.source_version))
 
         if self.section is None:
             self.section = 'misc'

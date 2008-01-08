@@ -313,7 +313,7 @@ Completing the "edit status" form allows us to add the bug task to the
 milestone:
 
     >>> browser.getControl('Milestone').displayValue = [milestone]
-    >>> browser.getControl('Importance').value = ['Critical']
+    >>> browser.getControl('Importance').value = ['CRITICAL']
     >>> browser.getControl('Save Changes').click()
 
     >>> print extract_text(first_tag_by_class(browser.contents, 'listing'))
@@ -326,7 +326,7 @@ method. However this time we'll use a different importance:
     >>> edit_status_url = re.compile(r'2.0/\+bug/[0-9]+/\+editstatus')
     >>> browser.getLink(url=edit_status_url).click()
     >>> browser.getControl('Milestone').displayValue = [milestone]
-    >>> browser.getControl('Importance').value = ['High']
+    >>> browser.getControl('Importance').value = ['HIGH']
     >>> browser.getControl('Save Changes').click()
 
     >>> print extract_text(first_tag_by_class(browser.contents, 'listing'))

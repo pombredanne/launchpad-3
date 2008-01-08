@@ -25,16 +25,22 @@ details about the team.
     My name (spiv)
 
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'membership-summary'))
-    Team and membership summary
-    Team owner:
-    Mark Shuttleworth
-    Membership:
-    ...
-    Wiki:
-    https://wiki.ubuntu.com/UbuntuTeam
+    ...     find_tag_by_id(browser.contents, 'portlet-details'))
+    Summary
+    Team owner: Mark Shuttleworth
+    Created on: 2005-06-06
     Moderated Team:
-    ...
+        All subscriptions for this team are subject to approval by one
+        of the team's administrators.
+    Membership: 10 active members
+                 2 proposed members
+                 1 invited members
+
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'contact-details'))
+    Contact details
+    Email: Log in for email information.
+    Wiki: https://wiki.ubuntu.com/UbuntuTeam
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'subteam-of'))

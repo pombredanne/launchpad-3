@@ -417,7 +417,7 @@ informational messages and error messages, based on the CSS class.
   ...   <div class="error message">Red Alert!</div>
   ... </html>'''
 
-  >>> get_feedback_messages(browser)
+  >>> get_feedback_messages(browser.contents)
   [u'1 file has been deleted.', u'Red Alert!']
 
 The helper extracts the text of the messages, which makes a difference
@@ -433,5 +433,6 @@ if the messages contain html elements.
   ...   </div>
   ... </html>'''
 
-  >>> get_feedback_messages(browser)
+  >>> get_feedback_messages(browser.contents)
   [u'1 file has been deleted.', u'Red Alert!  There are more details.']
+

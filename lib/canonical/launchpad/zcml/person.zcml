@@ -29,8 +29,81 @@
     />
 
   <content class="canonical.launchpad.database.Person">
-    <allow interface="canonical.launchpad.interfaces.IPerson" />
+    <allow attributes="account_status account_status_comment activesignatures
+      addLanguage addressline1 addressline2 allwikis
+      approver_specs archive assignKarma
+      assigned_specs assigned_specs_in_progress authored_branches
+      branches browsername city
+      claimedBounties clearInTeamCache convertToTeam country created_specs
+      creation_comment creation_rationale currentShipItRequest
+      datecreated defaultRenewalPeriodIsRequiredForSomeTeams
+      defaultexpirationdate
+      defaultmembershipperiod defaultrenewalperiod
+      defaultrenewedexpirationdate
+      displayname drafted_specs entitlements
+      feedback_specs findPathToTeam getActiveMemberships
+      getAdministratedTeams getBranch getBugContactOpenBugCounts
+      getBugContactPackages getDirectAnswerQuestionTargets
+      getInactiveMemberships
+      getInvitedMemberships getLatestApprovedMembershipsForPerson
+      getLatestMaintainedPackages
+      getLatestUploadedButNotMaintainedPackages getLatestUploadedPPAPackages
+      getOwnedOrDrivenPillars
+      getProjectsAndCategoriesContributedTo getProposedMemberships
+      getSuperTeams
+      getTeamAdminsEmailAddresses getTeamAnswerQuestionTargets gpgkeys
+      guessedemails hasParticipationEntryFor hide_email_addresses
+      homepage_content id inTeam
+      inactivegpgkeys inactivesignatures ircnicknames isBugContributor
+      isBugContributorInTarget
+      isTeam isUploader is_openid_enabled
+      is_trusted_on_shipit is_ubuntero is_valid_person
+      is_valid_person_or_team iterTopProjectsContributedTo jabberids
+      join karma karma_category_caches
+      languages lastShippedRequest latestKarma
+      leave mailing_list merged
+      myactivememberships name open_membership_invitations
+      openid_identifier organization otherwikis
+      ownedBounties password pastShipItRequests
+      pendinggpgkeys personCannotHaveIcon phone
+      postcode preferredemail preferredemail_sha1
+      province registered_branches registrant
+      removeLanguage renewal_policy reviewerBounties
+      safe_email_or_blank searchTasks setContactAddress
+      setMembershipData setPreferredEmail
+      shippedShipItRequestsOfCurrentSeries
+      signedcocs sshkeys subscribedBounties
+      subscribed_branches subscribed_specs subscriptionpolicy
+      team_mentorships teamdescription teamowner
+      teamownerID teams_indirectly_participated_in teams_participated_in
+      teams_with_icons timezone title
+      translatable_languages translation_groups translation_history
+      ubuntuwiki unique_displayname unvalidatedemails
+      validateAndEnsurePreferredEmail validatedemails visibility"
+      />
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+    <allow interface="canonical.launchpad.interfaces.IHasSpecifications"/>
+    <allow interface="canonical.launchpad.interfaces.IHasMentoringOffers"/>
+    <allow interface="canonical.launchpad.interfaces.IQuestionCollection"/>
+    <allow interface="canonical.launchpad.interfaces.IHasLogo"/>
+    <allow interface="canonical.launchpad.interfaces.IHasMugshot"/>
+    <allow interface="canonical.launchpad.interfaces.IHasIcon"/>
+
+    <require
+      permission="launchpad.View"
+      attributes="
+        active_member_count activemembers adminmembers all_member_count
+        allmembers approvedmembers deactivated_member_count
+        deactivatedmembers expired_member_count expiredmembers
+        getDirectAdministrators getMembersByStatus getSubTeams
+        inactive_member_count inactivemembers invited_member_count
+        invited_members pendingmembers proposed_member_count
+        proposedmembers"
+      />
+    <require
+      permission="launchpad.Edit"
+      attributes="addMember"
+      />
     <require
       permission="launchpad.Edit"
       set_schema="canonical.launchpad.interfaces.IPerson"
@@ -108,6 +181,14 @@
   </browser:editform>
 
   <browser:page
+    name="+claimteam"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.BeginTeamClaimView"
+    permission="launchpad.AnyPerson"
+    template="../templates/person-claim-team.pt"
+    />
+
+  <browser:page
     name="+claim"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonClaimView"
@@ -159,10 +240,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonView">
-    <browser:page
-      name="+index"
-      template="../templates/person-index.pt"
-      />
+
     <browser:page
       name="+ask-a-question-button"
       template="../templates/null.pt"
@@ -200,11 +278,33 @@
       name="+portlet-details"
       template="../templates/person-portlet-details.pt"
       />
+    <browser:page
+      name="+pagelet-details"
+      template="../templates/person-pagelet-details.pt"
+      />
+    <browser:page
+      name="+pagelet-contact-details"
+      template="../templates/person-pagelet-contact-details.pt"
+      />
     <!-- this should be on IPerson because we don't always know if it is a
     team or a person -->
     <browser:page
       name="+teamlist"
       template="../templates/team-listing.pt"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonIndexView">
+    <browser:page
+      name="+index"
+      template="../templates/person-index.pt"
+      />
+    <browser:page
+      name="+xrds"
+      attribute="xrds"
       />
   </browser:pages>
 
@@ -519,6 +619,14 @@
     class="canonical.launchpad.browser.TeamContactAddressView"
     name="+contactaddress"
     template="../templates/team-contactaddress.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.TeamMailingListConfigurationView"
+    name="+mailinglist"
+    template="../templates/team-mailinglist.pt"
     />
 
   <browser:page
@@ -882,6 +990,12 @@
   <browser:menus
     module="canonical.launchpad.browser"
     classes="PersonAnswersMenu"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.RestrictedMembershipsPersonView"
+    name="+restricted-membership"
+    permission="zope.Public"
     />
 </facet>
 

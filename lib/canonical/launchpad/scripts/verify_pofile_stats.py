@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0703
 
 """Verify (and refresh) `POFile`s' cached statistics."""
 

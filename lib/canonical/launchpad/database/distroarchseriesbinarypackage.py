@@ -1,5 +1,6 @@
 
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Classes to represent a binary package in a distroarchseries."""
 
@@ -12,7 +13,6 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.lp.dbschema import PackagePublishingStatus
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease
     )
@@ -26,7 +26,7 @@ from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory
     )
 from canonical.launchpad.interfaces import (
-    IDistroArchSeriesBinaryPackage,NotFoundError
+    IDistroArchSeriesBinaryPackage, NotFoundError, PackagePublishingStatus
     )
 
 
@@ -103,7 +103,7 @@ class DistroArchSeriesBinaryPackage:
     def __getitem__(self, version):
         """See IDistroArchSeriesBinaryPackage."""
         query = """
-        BinaryPackagePublishingHistory.distroarchrelease = %s AND
+        BinaryPackagePublishingHistory.distroarchseries = %s AND
         BinaryPackagePublishingHistory.archive IN %s AND
         BinaryPackagePublishingHistory.binarypackagerelease =
             BinaryPackageRelease.id AND
@@ -130,7 +130,7 @@ class DistroArchSeriesBinaryPackage:
     def releases(self):
         """See IDistroArchSeriesBinaryPackage."""
         ret = BinaryPackageRelease.select("""
-            BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.distroarchseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
@@ -160,7 +160,7 @@ class DistroArchSeriesBinaryPackage:
             BinaryPackageRelease.binarypackagename = %s AND
             BinaryPackageRelease.id =
                 BinaryPackagePublishingHistory.binarypackagerelease AND
-            BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.distroarchseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.status = %s
             """ % sqlvalues(
@@ -183,7 +183,7 @@ class DistroArchSeriesBinaryPackage:
     def publishing_history(self):
         """See IDistroArchSeriesBinaryPackage."""
         return BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.distroarchseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
@@ -200,7 +200,7 @@ class DistroArchSeriesBinaryPackage:
     def current_published(self):
         """See IDistroArchSeriesBinaryPackage."""
         current = BinaryPackagePublishingHistory.selectFirst("""
-            BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.distroarchseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND

@@ -23,9 +23,8 @@ cleanup () {
 
 trap cleanup EXIT
 
-## XXX cprov 20060609: We need to retrieve 'development' distrorelease
-## from helper script. See bug # 49174
-suite=gutsy
+LAUNCHPADROOT=/srv/launchpad.net/codelines/current
+suite=`$LAUNCHPADROOT/scripts/ftpmaster-tools/lp-query-distro.py development`
 
 echo -n "Running germinate... "
 cd $GERMINATEROOT

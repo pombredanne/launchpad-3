@@ -303,7 +303,7 @@ div.revision p {
 
   <tal:has-related-bugs condition="context/related_bugs">
     <div id="related-bugs">
-      <h2>Related Bugs</h2>
+      <h2>Related bugs</h2>
       <tal:bugs tal:define="branch context;
                             show_edit python:True;
                             show_whiteboard python:True;">

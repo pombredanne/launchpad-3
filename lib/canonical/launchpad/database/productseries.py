@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
@@ -29,12 +30,13 @@ from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    IProductSeries, IProductSeriesSet, IProductSeriesSourceAdmin,
-    ImportStatus, NotFoundError, PackagingType, RevisionControlSystems,
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationImplementationStatus,
-    SpecificationSort)
+    IHasTranslationTemplates, ImportStatus, IProductSeries, IProductSeriesSet,
+    IProductSeriesSourceAdmin, NotFoundError, PackagingType,
+    RevisionControlSystems, SpecificationSort, SpecificationGoalStatus,
+    SpecificationFilter, SpecificationDefinitionStatus,
+    SpecificationImplementationStatus)
 
 
 class NoImportBranchError(Exception):
@@ -58,7 +60,9 @@ class DatePublishedSyncError(Exception):
 class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     HasTranslationImportsMixin):
     """A series of product releases."""
-    implements(IProductSeries, IProductSeriesSourceAdmin)
+    implements(
+        IProductSeries, IProductSeriesSourceAdmin, IHasTranslationTemplates)
+
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
@@ -124,7 +128,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def milestones(self):
         """See IProductSeries."""
         return Milestone.selectBy(
-            productseries=self, visible=True, orderBy=['dateexpected', 'name'])
+            productseries=self, visible=True,
+            orderBy=['dateexpected', 'name'])
 
     @property
     def parent(self):
@@ -167,25 +172,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return self.user_branch
         return self.import_branch
 
-    @property
-    def potemplates(self):
-        result = POTemplate.selectBy(productseries=self)
-        result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
-
-    @property
-    def currentpotemplates(self):
-        result = POTemplate.selectBy(productseries=self, iscurrent=True)
-        result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
-
     def getPOTemplate(self, name):
         """See IProductSeries."""
         return POTemplate.selectOne(
-            "POTemplate.productseries = %s AND "
-            "POTemplate.potemplatename = POTemplateName.id AND "
-            "POTemplateName.name = %s" % sqlvalues(self.id, name),
-            clauseTables=['POTemplateName'])
+            "productseries = %s AND name = %s" % sqlvalues(self.id, name))
 
     @property
     def title(self):
@@ -196,6 +186,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
              DeprecationWarning)
         return self.summary
     shortdesc = property(shortdesc)
+
+    @property
+    def bug_reporting_guidelines(self):
+        """See `IBugTarget`."""
+        return self.product.bug_reporting_guidelines
 
     @property
     def sourcepackages(self):
@@ -323,9 +318,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += (' AND Specification.definition_status NOT IN ( %s, %s ) '
-                      % sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                                  SpecificationDefinitionStatus.SUPERSEDED))
+            query += (
+                ' AND Specification.definition_status NOT IN ( %s, %s ) '
+                % sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                            SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -531,6 +527,37 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return Milestone(
             name=name, dateexpected=dateexpected, description=description,
             product=self.product, productseries=self)
+
+    def getTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.selectBy(productseries=self,
+                                     orderBy=['-priority','name'])
+        return shortlist(result, 300)
+
+    def getCurrentTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.select('''
+            productseries = %s AND
+            productseries = ProductSeries.id AND
+            iscurrent IS TRUE AND
+            ProductSeries.product = Product.id AND
+            Product.official_rosetta IS TRUE
+            ''' % sqlvalues(self),
+            orderBy=['-priority','name'],
+            clauseTables = ['ProductSeries', 'Product'])
+        return shortlist(result, 300)
+
+    def getObsoleteTranslationTemplates(self):
+        """See `IHasTranslationTemplates`."""
+        result = POTemplate.select('''
+            productseries = %s AND
+            productseries = ProductSeries.id AND
+            ProductSeries.product = Product.id AND
+            (iscurrent IS FALSE OR Product.official_rosetta IS FALSE)
+            ''' % sqlvalues(self),
+            orderBy=['-priority','name'],
+            clauseTables = ['ProductSeries', 'Product'])
+        return shortlist(result, 300)
 
 
 class ProductSeriesSet:

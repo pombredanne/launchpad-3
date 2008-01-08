@@ -1,9 +1,8 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0613,E0201,R0911
+# pylint: disable-msg=C0103,W0613,R0911
 #
-"""Implementation of the lp: htmlform: fmt: namespaces in TALES.
+"""Implementation of the lp: htmlform: fmt: namespaces in TALES."""
 
-"""
 __metaclass__ = type
 
 import bisect
@@ -30,14 +29,17 @@ import pytz
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
+    BuildStatus,
     IBug,
     IBugAttachment,
     IBugNomination,
     IBugSet,
+    IFAQSet,
     IHasIcon,
     IHasLogo,
     IHasMugshot,
     IPerson,
+    IPersonSet,
     IProduct,
     IProject,
     ISprint,
@@ -47,8 +49,8 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.webapp.interfaces import (
     IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
+from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
-from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, nearest_context_with_adapter, nearest_adapter)
 from canonical.launchpad.webapp.uri import URI
@@ -165,7 +167,7 @@ class CountAPI:
 
 
 class EnumValueAPI:
-    """Namespace to test whether an EnumeratedType Item has a particular value.
+    """Namespace to test the value of an EnumeratedType Item.
 
     The value is given in the next path step.
 
@@ -182,7 +184,8 @@ class EnumValueAPI:
         if self.item.name == name:
             return True
         else:
-            # Check whether this was an allowed value for this enumerated type.
+            # Check whether this was an allowed value for this
+            # enumerated type.
             enum = self.item.enum
             try:
                 enum.getTermByToken(name)
@@ -312,6 +315,7 @@ class NoneFormatter:
         'date',
         'datetime',
         'displaydate',
+        'isodate',
         'email-to-html',
         'exactduration',
         'lower',
@@ -339,7 +343,7 @@ class NoneFormatter:
         elif name in self.allowed_names:
             return ''
         else:
-            raise TraversalError, name
+            raise TraversalError(name)
 
 
 class ObjectFormatterAPI:
@@ -380,8 +384,8 @@ class ObjectFormatterExtendedAPI(ObjectFormatterAPI):
             raise TraversalError, name
 
     def link(self, extra_path):
-        """Return an HTML link to the person's page containing an icon
-        followed by the person's name.
+        """Return an HTML link to the object's page containing an icon
+        followed by the object's name.
         """
         raise NotImplemented
 
@@ -451,7 +455,7 @@ class ObjectImageDisplayAPI:
             return '/@@/meeting-mugshot'
         return '/@@/nyet-mugshot'
 
-    def icon(self):
+    def icon(self, rootsite=None):
         """Return the appropriate <img> tag for this object's icon."""
         context = self._context
         if context is None:
@@ -460,7 +464,11 @@ class ObjectImageDisplayAPI:
         if IHasIcon.providedBy(context) and context.icon is not None:
             url = context.icon.getURL()
         else:
-            url = self.default_icon_resource(context)
+            if rootsite is None:
+                root_url = ''
+            else:
+                root_url = allvhosts.configs[rootsite].rooturl[:-1]
+            url = root_url + self.default_icon_resource(context)
         icon = '<img alt="" width="14" height="14" src="%s" />'
         return icon % url
 
@@ -515,12 +523,33 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     Used for image:icon.
     """
+    implements(ITraversable)
 
     icon_template = (
         '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
 
-    def icon(self):
-        # The icon displayed is dependent on the IBugTask.importance.
+    linked_icon_template = (
+        '<a href="%s"><img height="14" width="14"'
+        ' alt="%s" title="%s" src="%s" /></a>')
+
+    def traverse(self, name, furtherPath):
+        """Special-case traversal for icons with an optional rootsite."""
+        if name == 'icon':
+            return self.icon()
+        elif name.startswith('icon:'):
+            rootsite = name.split(':', 1)[1]
+            return self.icon(rootsite=rootsite)
+        elif name == 'badges':
+            return self.badges()
+        else:
+            return None
+
+    def icon(self, rootsite=None):
+        """Display the icon dependent on the IBugTask.importance."""
+        if rootsite is not None:
+            root_url = allvhosts.configs[rootsite].rooturl[:-1]
+        else:
+            root_url = ''
         if self._context.importance:
             importance = self._context.importance.title.lower()
             alt = "(%s)" % importance
@@ -529,35 +558,44 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
                 # The other status names do not make a lot of sense on
                 # their own, so tack on a noun here.
                 title += " importance"
-            src = "/@@/bug-%s" % importance
+            src = "%s/@@/bug-%s" % (root_url, importance)
         else:
             alt = ""
             title = ""
-            src = "/@@/bug"
+            src = "%s/@@/bug" % root_url
 
         return self.icon_template % (alt, title, src)
 
 
     def badges(self):
 
-        badges = ''
+        badges = []
         if self._context.bug.private:
-            badges += self.icon_template % (
-                "private", "Private","/@@/private")
+            badges.append(self.icon_template % (
+                "private", "Private","/@@/private"))
 
         if self._context.bug.mentoring_offers.count() > 0:
-            badges += self.icon_template % (
-                "mentoring", "Mentoring offered", "/@@/mentoring")
+            badges.append(self.icon_template % (
+                "mentoring", "Mentoring offered", "/@@/mentoring"))
 
         if self._context.bug.bug_branches.count() > 0:
-            badges += self.icon_template % (
-                "branch", "Branch exists", "/@@/branch")
+            badges.append(self.icon_template % (
+                "branch", "Branch exists", "/@@/branch"))
 
         if self._context.bug.specifications.count() > 0:
-            badges += self.icon_template % (
-                "blueprint", "Related to a blueprint", "/@@/blueprint")
+            badges.append(self.icon_template % (
+                "blueprint", "Related to a blueprint", "/@@/blueprint"))
 
-        return badges
+        if self._context.milestone:
+            milestone_text = "milestone %s" % self._context.milestone.name
+            badges.append(self.linked_icon_template % (
+                canonical_url(self._context.milestone),
+                milestone_text , "Linked to %s" % milestone_text,
+                "/@@/milestone"))
+
+        # Join with spaces to avoid the icons smashing into each other
+        # when multiple ones are presented.
+        return " ".join(badges)
 
 
 class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
@@ -652,14 +690,14 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
     def icon(self):
         """Return the appropriate <img> tag for the build icon."""
         icon_map = {
-            dbschema.BuildStatus.NEEDSBUILD: "/@@/build-needed",
-            dbschema.BuildStatus.FULLYBUILT: "/@@/build-success",
-            dbschema.BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
-            dbschema.BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
-            dbschema.BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
-            dbschema.BuildStatus.SUPERSEDED: "/@@/build-superseded",
-            dbschema.BuildStatus.BUILDING: "/@@/build-building",
-            dbschema.BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
+            BuildStatus.NEEDSBUILD: "/@@/build-needed",
+            BuildStatus.FULLYBUILT: "/@@/build-success",
+            BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
+            BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
+            BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
+            BuildStatus.SUPERSEDED: "/@@/build-superseded",
+            BuildStatus.BUILDING: "/@@/build-building",
+            BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
             }
 
         alt = '[%s]' % self._context.buildstate.name
@@ -691,19 +729,61 @@ class BadgeDisplayAPI:
 
 
 class PersonFormatterAPI(ObjectFormatterExtendedAPI):
-    """Adapter for IPerson objects to a formatted string."""
+    """Adapter for `IPerson` objects to a formatted string."""
 
-    def link(self, extra_path):
+    implements(ITraversable)
+
+    allowed_names = set([
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        """Special-case traversal for links with an optional rootsite."""
+        extra_path = '/'.join(reversed(furtherPath))
+        if name == 'link':
+            # Remove remaining entries in furtherPath so that traversal
+            # stops here.
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name.startswith('link:'):
+            # Remove remaining entries in furtherPath so that traversal
+            # stops here.
+            del furtherPath[:]
+            rootsite = name.split(':')[1]
+            return self.link(extra_path, rootsite=rootsite)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError(name)
+
+    def link(self, extra_path, rootsite=None):
         """Return an HTML link to the person's page containing an icon
         followed by the person's name.
         """
         person = self._context
-        url = canonical_url(person)
+        url = canonical_url(person, rootsite=rootsite)
         if extra_path:
             url = '%s/%s' % (url, extra_path)
-        image_html = ObjectImageDisplayAPI(person).icon()
+        image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
         return '<a href="%s">%s&nbsp;%s</a>' % (
             url, image_html, person.browsername)
+
+
+class PillarFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for IProduct, IDistribution and IProject objects to a
+    formatted string."""
+
+    def link(self, extra_path):
+        """Return an HTML link to the pillar page containing an icon
+        followed by the pillar's display name.
+        """
+        pillar = self._context
+        url = canonical_url(pillar)
+        icon_html = ObjectImageDisplayAPI(pillar).icon()
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        return ('<a href="%s">%s&nbsp;%s</a>' % (
+                          url, icon_html, pillar.displayname))
 
 
 class BranchFormatterAPI(ObjectFormatterExtendedAPI):
@@ -718,7 +798,8 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
         if extra_path:
             url = '%s/%s' % (url, extra_path)
         return ('<a href="%s" title="%s"><img src="/@@/branch" alt=""/>'
-                '&nbsp;%s</a>' % (url, branch.displayname, branch.unique_name))
+                '&nbsp;%s</a>' % (
+                    url, branch.displayname, branch.unique_name))
 
 
 class BugFormatterAPI(ObjectFormatterExtendedAPI):
@@ -800,27 +881,24 @@ class DateTimeFormatterAPI:
             value = value.astimezone(getUtility(ILaunchBag).timezone)
         return value.strftime('%Y-%m-%d')
 
-    def displaydate(self):
+    def _now(self):
+        # This method exists to be overridden in tests.
         if self._datetime.tzinfo:
             # datetime is offset-aware
-            now = datetime.now(pytz.timezone('UTC'))
+            return datetime.now(pytz.timezone('UTC'))
         else:
             # datetime is offset-naive
-            now = datetime.utcnow()
-        delta = abs(now - self._datetime)
+            return datetime.utcnow()
+
+    def displaydate(self):
+        delta = abs(self._now() - self._datetime)
         if delta > timedelta(1, 0, 0):
             # far in the past or future, display the date
             return 'on ' + self.date()
         return self.approximatedate()
 
     def approximatedate(self):
-        if self._datetime.tzinfo:
-            # datetime is offset-aware
-            now = datetime.now(pytz.timezone('UTC'))
-        else:
-            # datetime is offset-naive
-            now = datetime.utcnow()
-        delta = now - self._datetime
+        delta = self._now() - self._datetime
         if abs(delta) > timedelta(1, 0, 0):
             # far in the past or future, display the date
             return self.date()
@@ -831,20 +909,23 @@ class DateTimeFormatterAPI:
         minutes = (delta.seconds - (3600*hours)) / 60
         seconds = delta.seconds % 60
         result = ''
-        comma = ''
         if future:
             result += 'in '
         if days != 0:
-            result += '%d days' % days
-            comma = ', '
-        if days == 0 and hours != 0:
-            result += '%s%d hours' % (comma, hours)
-            comma = ', '
-        if days == 0 and hours == 0 and minutes != 0:
-            result += '%s%d minutes' % (comma, minutes)
-            comma = ', '
-        if days == 0 and hours == 0 and minutes == 0:
-            result += '%s%d seconds' % (comma, seconds)
+            amount = days
+            unit = 'day'
+        elif hours != 0:
+            amount = hours
+            unit = 'hour'
+        elif minutes != 0:
+            amount = minutes
+            unit = 'minute'
+        else:
+            amount = seconds
+            unit = 'second'
+        if amount != 1:
+            unit += 's'
+        result += '%s %s' % (amount, unit)
         if not future:
             result += ' ago'
         return result
@@ -855,6 +936,9 @@ class DateTimeFormatterAPI:
     def rfc822utcdatetime(self):
         return formatdate(
             rfc822.mktime_tz(self._datetime.utctimetuple() + (0,)))
+
+    def isodate(self):
+        return self._datetime.isoformat()
 
 
 class DurationFormatterAPI:
@@ -1267,10 +1351,23 @@ class FormattersAPI:
                 url = url[:-len(trailers)]
             else:
                 trailers = ''
+            # We use nofollow for these links to reduce the value of
+            # adding spam URLs to our comments; it's a way of moderately
+            # devaluing the return on effort for spammers that consider
+            # using Launchpad.
             return '<a rel="nofollow" href="%s">%s</a>%s' % (
                 cgi.escape(url, quote=True),
                 add_word_breaks(cgi.escape(url)),
                 cgi.escape(trailers))
+        elif match.group('faq') is not None:
+            text = match.group('faq')
+            faqnum = match.group('faqnum')
+            faqset = getUtility(IFAQSet)
+            faq = faqset.getFAQ(faqnum)
+            if not faq:
+                return text
+            url = canonical_url(faq)
+            return '<a href="%s">%s</a>' % (url, text)
         elif match.group('oops') is not None:
             text = match.group('oops')
 
@@ -1283,7 +1380,7 @@ class FormattersAPI:
                 root_url += '/'
 
             url = root_url + match.group('oopscode')
-            return '<a rel="nofollow" href="%s">%s</a>' % (url, text)
+            return '<a href="%s">%s</a>' % (url, text)
         else:
             raise AssertionError("Unknown pattern matched.")
 
@@ -1393,6 +1490,10 @@ class FormattersAPI:
       (?P<bug>
         \bbug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
         0*(?P<bugnum>\d+)
+      ) |
+      (?P<faq>
+        \bfaq(?:\s|<br\s*/>)*(?:\#|item|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
+        0*(?P<faqnum>\d+)
       ) |
       (?P<oops>
         \boops\s*-?\s*
@@ -1543,7 +1644,8 @@ class FormattersAPI:
                 # This line is a paragraph with a signature or PGP inclusion.
                 # Start a foldable paragraph.
                 in_fold = True
-                line = '<p>%s%s' % (start_fold_markup, strip_leading_p_tag(line))
+                line = '<p>%s%s' % (start_fold_markup,
+                                    strip_leading_p_tag(line))
             elif (not in_fold and line.startswith('<p>')
                 and is_quoted(strip_leading_p_tag(line))):
                 # The paragraph starts with quoted marks.
@@ -1639,6 +1741,31 @@ class FormattersAPI:
             "<<email address hidden>>", "<email address hidden>")
         return text
 
+    def linkify_email(self):
+        """Linkify any email address recognised in Launchpad.
+
+        If an email address is recognised as one registered in Launchpad,
+        it is linkified to point to the profile page for that person.
+
+        Note that someone could theoretically register any old email
+        address in Launchpad and then have it linkified.  This may or not
+        may be a concern but is noted here for posterity anyway.
+        """
+        text = self._stringtoformat
+
+        matches = re.finditer(self._re_email, text)
+        for match in matches:
+            address = match.group()
+            person = getUtility(IPersonSet).getByEmail(address)
+            # Only linkify if person exists and does not want to hide
+            # their email addresses.
+            if person is not None and not person.hide_email_addresses:
+                person_formatter = PersonFormatterAPI(person)
+                image_html = ObjectImageDisplayAPI(person).icon()
+                text = text.replace(address, '<a href="%s">%s&nbsp;%s</a>' % (
+                    canonical_url(person), image_html, address))
+        return text
+
     def lower(self):
         """Return the string in lowercase"""
         return self._stringtoformat.lower()
@@ -1665,6 +1792,8 @@ class FormattersAPI:
             return self.email_to_html()
         elif name == 'obfuscate-email':
             return self.obfuscate_email()
+        elif name == 'linkify-email':
+            return self.linkify_email()
         elif name == 'shorten':
             if len(furtherPath) == 0:
                 raise TraversalError(

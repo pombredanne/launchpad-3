@@ -147,7 +147,8 @@ Open the edit form for the third entry.
 
 And associate this import to the right IPOFile.
 
-  >>> browser.getControl('Template Name').value = 'pkgconf-mozilla'
+  >>> browser.getControl('Template name').value = 'pkgconf-mozilla'
+  >>> browser.getControl('Translation domain').value = 'pkgconf-mozilla'
   >>> browser.getControl('Path').value = ''
   >>> browser.getControl('Language').value = ['es']
   >>> browser.getControl('Variant').value = ''

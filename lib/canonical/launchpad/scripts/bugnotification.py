@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
 
 """Functions related to sending bug notifications."""
 

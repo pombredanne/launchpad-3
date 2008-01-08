@@ -1,12 +1,23 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
-"""Interfaces for efficient PO file exports."""
+"""Interfaces for efficient translation file exports."""
 
 __metaclass__ = type
 
-__all__ = ('IVPOExportSet', 'IVPOExport')
+__all__ = [
+    'IVPOExportSet',
+    'IVPOExport',
+    ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
+from zope.schema import Bool, Int, Object, Text
+
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.language import ILanguage
+from canonical.launchpad.interfaces.pofile import IPOFile
+from canonical.launchpad.interfaces.potemplate import IPOTemplate
+
 
 class IVPOExportSet(Interface):
     """A collection of IVPOExport-providing rows."""
@@ -53,47 +64,93 @@ class IVPOExportSet(Interface):
 class IVPOExport(Interface):
     """Database view for efficient PO exports."""
 
-    name = Attribute("See IPOTemplateName.name")
-    translationdomain = Attribute("See IPOTemplateName.translationdomain")
+    potemplate = Object(
+        title=u"See `IPOTemplate`",
+        required=True, readonly=True, schema=IPOTemplate)
 
-    potemplate = Attribute("See IPOTemplate")
-    distroseries = Attribute("See IPOTemplate.distroseries")
-    sourcepackagename = Attribute("See IPOTemplate.sourcepackagename")
-    productseries = Attribute("See IPOTemplate.productseries")
-    potheader = Attribute("See IPOTemplate.header")
-    languagepack = Attribute("See IPOTemplate.languagepack")
+    template_header = Text(
+        title=u"See `IPOTemplate`.header",
+        required=True, readonly=True)
 
-    pofile = Attribute("See IPOFile")
-    language = Attribute("See IPOFile.language")
-    variant = Attribute("See IPOFile.variant")
-    potopcomment = Attribute("See IPOFile.topcomment")
-    poheader = Attribute("See IPOFile.header")
-    pofuzzyheader = Attribute("See IPOFile.fuzzyheader")
-    popluralforms = Attribute("See IPOFile.pluralforms")
+    pofile = Object(
+        title=u"See `IPOFile`",
+        required=True, readonly=True, schema=IPOFile)
 
-    potmsgset = Attribute("See IPOTMsgSet.id")
-    potsequence = Attribute("See IPOTMsgSet.sequence")
-    potcommenttext = Attribute("See IPOTMsgSet.commenttext")
-    sourcecomment = Attribute("See IPOTMsgSet.sourcecomment")
-    flagscomment = Attribute("See IPOTMsgSet.flagscomment")
-    filereferences = Attribute("See IPOTMsgSet.filereferences")
+    language = Object(
+        title=u"See `ILanguage`",
+        required=True, readonly=True, schema=ILanguage)
 
-    pomsgset = Attribute("See IPOMsgSet.id")
-    posequence = Attribute("See IPOMsgSet.sequence")
-    iscomplete = Attribute("See IPOMsgSet.iscomplete")
-    obsolete = Attribute("See IPOMsgSet.obsolete")
-    isfuzzy = Attribute("See IPOMsgSet.isfuzzy")
-    pocommenttext = Attribute("See IPOMsgSet.commenttext")
+    variant = Text(
+        title=u"See IPOFile.variant",
+        required=False, readonly=True)
 
-    msgidpluralform = Attribute("See IPOMsgIDSighting.pluralform")
+    translation_file_comment = Text(
+        title=u"See IPOFile.topcomment",
+        required=False, readonly=True)
 
-    translationpluralform = Attribute("See IPOSubmission.pluralform")
-    activesubmission = Attribute(
-        "See IPOSubmission.id and IPOSubmission.active")
+    translation_header = Text(
+        title=u"See IPOFile.header",
+        required=True, readonly=True)
 
-    context = Attribute("See IPOTMsgSet.context")
-    msgid = Attribute("See IPOMsgID.pomsgid")
+    is_translation_header_fuzzy = Bool(
+        title=u"See IPOFile.fuzzyheader",
+        required=True, readonly=True)
 
-    translation = Attribute("See IPOTranslation.translation")
+    sequence = Int(
+        title=u"See IPOTMsgSet.sequence",
+        required=True, readonly=True)
 
+    comment = Text(
+        title=u"See IPOTMsgSet.commenttext",
+        required=False, readonly=True)
 
+    source_comment = Text(
+        title=u"See IPOTMsgSet.sourcecomment",
+        required=False, readonly=True)
+
+    file_references = Text(
+        title=u"See IPOTMsgSet.filereferences",
+        required=False, readonly=True)
+
+    flags_comment = Text(
+        title=u"See IPOTMsgSet.flagscomment",
+        required=False, readonly=True)
+
+    context = Text(
+        title=u"See IPOTMsgSet.context", readonly=True, required=False)
+
+    msgid_singular = Text(
+        title=u"See `IPOMsgID`.pomsgid",
+        required=True, readonly=True)
+
+    msgid_plural = Text(
+        title=u"See `IPOMsgID`.pomsgid",
+        required=False, readonly=True)
+
+    is_fuzzy = Bool(
+        title=u"See ITranslationMessage.is_fuzzy",
+        readonly=True, required=False)
+
+    is_current = Bool(
+        title=_("Whether this message is currently used in Launchpad"),
+        readonly=True, required=True)
+
+    is_imported = Bool(
+        title=_("Whether this message was imported"),
+        readonly=True, required=True)
+
+    translation0 = Text(
+        title=u"See ITranslationMessage.msgstr0",
+        readonly=True, required=False)
+
+    translation1 = Text(
+        title=u"See ITranslationMessage.msgstr1",
+        readonly=True, required=False)
+
+    translation2 = Text(
+        title=u"See ITranslationMessage.msgstr2",
+        readonly=True, required=False)
+
+    translation3 = Text(
+        title=u"See ITranslationMessage.msgstr3",
+        readonly=True, required=False)

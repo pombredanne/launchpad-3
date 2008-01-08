@@ -100,6 +100,7 @@
     tal:content="structure context/@@+portlet-navigation"
   />
   </tr>
+  </tbody>
   </table>  
   
 </div>

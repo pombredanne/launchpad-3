@@ -18,7 +18,7 @@ from canonical.config import config
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IPOExportRequestSet, IPOTemplate,
-    ITranslationExporter, ITranslationFile)
+    ITranslationExporter, ITranslationFileData)
 from canonical.launchpad.mail import simple_sendmail
 
 
@@ -166,7 +166,7 @@ def process_request(person, objects, format, logger):
                 'Exporting objects for %s, related to template %s'
                 % (person.displayname, template_name))
             last_template_name = template_name
-        translation_file_list.append(ITranslationFile(obj))
+        translation_file_list.append(ITranslationFileData(obj))
 
     try:
         exported_file = translation_format_exporter.exportTranslationFiles(
@@ -209,31 +209,30 @@ def process_request(person, objects, format, logger):
 def process_queue(transaction_manager, logger):
     """Process each request in the translation export queue.
 
-    Each item is removed from the queue as it is processed, so the queue will
-    be empty when this function returns.
+    Each item is removed from the queue as it is processed, we only handle
+    one request with each function call.
     """
     request_set = getUtility(IPOExportRequestSet)
 
     request = request_set.popRequest()
-    while request is not None:
-        person, objects, format = request
 
-        try:
-            process_request(person, objects, format, logger)
-        except psycopg.Error:
-            # We had a DB error, we don't try to recover it here, just exit
-            # from the script and next run will retry the export.
-            logger.error(
-                "A DB exception was raised when exporting files for %s" % (
-                    person.displayname),
-                exc_info=True)
-            transaction_manager.abort()
-            break
+    if None in request:
+        # Any value is None and we must have all values as not None to have
+        # something to process...
+        return
 
-        # This is here in case we need to process the same file twice in the
-        # same queue run. If we try to do that all in one transaction, the
-        # second time we get to the file we'll get a Librarian lookup error
-        # because files are not accessible in the same transaction as they're
-        # created.
+    person, objects, format = request
+
+    try:
+        process_request(person, objects, format, logger)
+    except psycopg.Error:
+        # We had a DB error, we don't try to recover it here, just exit
+        # from the script and next run will retry the export.
+        logger.error(
+            "A DB exception was raised when exporting files for %s" % (
+                person.displayname),
+            exc_info=True)
+        transaction_manager.abort()
+    else:
+        # Apply all changes.
         transaction_manager.commit()
-        request = request_set.popRequest()

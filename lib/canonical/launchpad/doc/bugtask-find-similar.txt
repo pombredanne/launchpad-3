@@ -84,7 +84,8 @@ allowed to view it, only the Thunderbird bug will be returned this time.
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> login('test@canonical.com')
     >>> firefox_svg_bug = getUtility(IBugSet).get(1)
-    >>> firefox_svg_bug.private = True
+    >>> firefox_svg_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(firefox_svg_bug)
 
     >>> from canonical.launchpad.webapp.authorization import check_permission
@@ -100,7 +101,8 @@ allowed to view it, only the Thunderbird bug will be returned this time.
     Thunderbird crashes
 
     >>> login('test@canonical.com')
-    >>> firefox_svg_bug.private = False
+    >>> firefox_svg_bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(firefox_svg_bug)
 
 

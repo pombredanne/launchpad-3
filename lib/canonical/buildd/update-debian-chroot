@@ -12,6 +12,15 @@
 SUDO=/usr/bin/sudo
 CHAPTGET=/usr/bin/chapt-get
 BUILDID="$1"
+if [ -f /etc/launchpad-buildd/default ]; then
+  eval `grep architecturetag /etc/launchpad-buildd/default | sed 's/ //g'`
+fi
+if [ -n "$architecturetag" ]; then
+  OPTIONS="-o APT::Architecture=$architecturetag"
+  if [ "$architecturetag" != "`dpkg --print-installation-architecture`" ]; then
+    OPTIONS=$OPTIONS" -o DPkg::Options::=--force-architecture"
+  fi
+fi
 
 set -e
 
@@ -19,6 +28,6 @@ exec 2>&1
 
 echo "Updating debian chroot for build $BUILDID"
 
-$SUDO $CHAPTGET "$HOME/build-$BUILDID/chroot-autobuild" -uy update
-$SUDO $CHAPTGET "$HOME/build-$BUILDID/chroot-autobuild" -uy dist-upgrade 
+$SUDO $CHAPTGET "$HOME/build-$BUILDID/chroot-autobuild" $OPTIONS -uy update
+$SUDO $CHAPTGET "$HOME/build-$BUILDID/chroot-autobuild" $OPTIONS -uy dist-upgrade 
 

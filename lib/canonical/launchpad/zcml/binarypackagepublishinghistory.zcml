@@ -9,7 +9,6 @@
   <!-- BinaryPackagePublishingHistory -->
   <content class="canonical.launchpad.database.BinaryPackagePublishingHistory">
     <allow interface="canonical.launchpad.interfaces.IBinaryPackagePublishingHistory" />
-    <allow interface="canonical.launchpad.interfaces.IArchivePublisher" />
   </content>
 
   <browser:pages
@@ -21,6 +20,10 @@
       template="../templates/binarypackagepublishinghistory-listing-detailed.pt"
       />
     <browser:page
+      name="+listing-summary"
+      template="../templates/binarypackagepublishinghistory-listing-summary.pt"
+      />
+    <browser:page
       name="+record-details"
       template="../templates/packagepublishing-details.pt"
       />
@@ -30,7 +33,6 @@
   <content class="canonical.launchpad.database.BinaryPackageFilePublishing">
     <allow
      interface="canonical.launchpad.interfaces.IBinaryPackageFilePublishing"/>
-    <allow interface="canonical.launchpad.interfaces.IArchiveFilePublisher" />
     <!-- XXX cprov 2006-06-14: missing security adapter -->
   </content>
 

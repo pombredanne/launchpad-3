@@ -73,7 +73,7 @@ An IPerson.
 
 An ITeam.
 
-    >>> canonical_url(celebs.rosetta_expert)
+    >>> canonical_url(celebs.rosetta_experts)
     u'http://launchpad.dev/~rosetta-admins'
 
 An ICodeOfConductSet
@@ -237,7 +237,8 @@ private.)
     >>> current_user = getUtility(ILaunchBag).user
     >>> subscription = distro_series_task.bug.subscribe(current_user)
 
-    >>> distro_series_task.bug.private = True
+    >>> distro_series_task.bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
 
     >>> login(ANONYMOUS)
 
@@ -250,7 +251,8 @@ A private bugtask, as an anonymous user.
     u'http://bugs.launchpad.dev/ubuntu/warty/+source/mozilla-firefox/+bug/5'
 
     >>> login("foo.bar@canonical.com")
-    >>> distro_series_task.bug.private = False
+    >>> distro_series_task.bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
     >>> distro_series_task.bug.unsubscribe(current_user)
 
 An IBugWatchSet.
@@ -314,7 +316,8 @@ An IBranch.
 An IBugBranch.
 
     >>> bug = getUtility(IBugSet).get(1)
-    >>> bug_branch = bug.addBranch(branch)
+    >>> bug_branch = bug.addBranch(
+    ...     branch, getUtility(IPersonSet).getByName('sabdfl'))
 
     >>> canonical_url(bug_branch)
     u'http://launchpad.dev/~sabdfl/firefox/release-0.9.2/+bug/1'
@@ -353,18 +356,21 @@ And we can get a particular PO file for this PO template by its language code.
     >>> canonical_url(pofile)
     u'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
 
-Also, we can get the url to a PO msgset
+Also, we can get the url to a translation message.
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
-    >>> pomsgset = potmsgset.getPOMsgSet('es')
-    >>> canonical_url(pomsgset)
-    u'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1'
+    >>> translationmessage = potmsgset.getCurrentTranslationMessage(
+    ...     pofile.language)
+    >>> print canonical_url(translationmessage)
+    http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1
 
-Even for a dummy PO msgset
+Even for a dummy one.
 
-    >>> pomsgset = potmsgset.getDummyPOMsgSet('es_ES')
-    >>> canonical_url(pomsgset)
-    u'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es_ES/1'
+    >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
+    >>> translationmessage = potmsgset.getCurrentDummyTranslationMessage(
+    ...     pofile.language)
+    >>> print canonical_url(translationmessage)
+    http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/20
 
 Upstream POTemplateSubsets work in much the same way, except they hang off a
 product series.  Let's get a product series.
@@ -382,18 +388,21 @@ with the distro subset.
     >>> canonical_url(pofile)
     u'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/es'
 
-Also, we can get the url to a PO msgset
+Also, we can get the url to a dummy one
 
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
-    >>> pomsgset = potmsgset.getPOMsgSet('es')
-    >>> canonical_url(pomsgset)
-    u'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/1'
+    >>> translationmessage = potmsgset.getCurrentTranslationMessage(
+    ...     pofile.language)
+    >>> print canonical_url(translationmessage)
+    http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/1
 
 Even for a dummy PO msgset
 
-    >>> pomsgset = potmsgset.getDummyPOMsgSet('es_ES')
-    >>> canonical_url(pomsgset)
-    u'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/es_ES/1'
+    >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
+    >>> translationmessage = potmsgset.getCurrentDummyTranslationMessage(
+    ...     pofile.language)
+    >>> print canonical_url(translationmessage)
+    http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/20
 
 Rosetta also has translation groups.
 

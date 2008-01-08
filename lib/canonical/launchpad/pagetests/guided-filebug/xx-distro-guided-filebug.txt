@@ -34,7 +34,7 @@ Subscribing to one of the similar bugs takes us to the bug page.
     >>> print user_browser.url
     http://bugs.launchpad.dev/thunderbird/+bug/9
 
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     You have been subscribed to this bug.
 
@@ -60,10 +60,9 @@ filing a bug, but it is optional when subscribing to a similar
 bug. Nevertheless, we don't show an "(Optional)" hint next to the
 description.
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> import re
 
-    >>> page_soup = BeautifulSoup(user_browser.contents)
+    >>> page_soup = find_main_content(user_browser.contents)
     >>> field_labels = page_soup.findAll(
     ...     'label', text=re.compile('Further information'))
     >>> for field_label in field_labels:

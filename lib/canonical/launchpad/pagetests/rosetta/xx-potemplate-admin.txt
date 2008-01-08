@@ -23,7 +23,7 @@ page.
 Now, we should be sure that the admin form gets all required fields to allow
 a Rosetta Expert to administrate it.
 
-  >>> browser.getControl(name='field.potemplatename').value
+  >>> browser.getControl(name='field.name').value
   'evolution-2.2'
   >>> browser.getControl(name='field.description').value
   'Template for evolution in hoary'
@@ -69,7 +69,7 @@ Check to be sure that an admin can reach the POTemplate admin page.
 Now, we should be sure that the admin form gets all required fields to allow
 an admin to administrate it.
 
-  >>> admin_browser.getControl(name='field.potemplatename').value
+  >>> admin_browser.getControl(name='field.name').value
   'evolution-2.2'
   >>> admin_browser.getControl(name='field.description').value
   'Template for evolution in hoary'
@@ -111,21 +111,6 @@ And that we are able to POST it.
   >>> print admin_browser.url
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2
 
-Lets create a new template to rename evolution-2.2 to.
-
-  >>> admin_browser.open(
-  ...     'http://translations.launchpad.dev/potemplatenames/+add')
-  >>> print admin_browser.url
-  http://translations.launchpad.dev/potemplatenames/+add
-  >>> admin_browser.getControl(name='field.name').value = 'evolution-renamed'
-  >>> admin_browser.getControl(name='field.title').value = 'evolution-renamed'
-  >>> admin_browser.getControl(name='field.translationdomain').value = 'evolution-renamed'
-  >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
-  >>> 'Template name details' in admin_browser.contents
-  True
-  >>> 'evolution-renamed' in admin_browser.contents
-  True
-
 Finally, lets rename 'evolution-2.2' to 'evolution-renamed'.
 
   >>> admin_browser.open(
@@ -140,7 +125,7 @@ above.
 
 And now lets get back to renaming.
 
-  >>> admin_browser.getControl(name='field.potemplatename').value = 'evolution-renamed'
+  >>> admin_browser.getControl(name='field.name').value = 'evolution-renamed'
   >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
   >>> print admin_browser.url
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-renamed

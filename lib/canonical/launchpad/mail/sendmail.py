@@ -19,7 +19,7 @@ __all__ = [
     'raw_sendmail']
 
 import sets
-from email.Utils import make_msgid, formatdate, parseaddr, formataddr
+from email.Utils import make_msgid, formatdate, formataddr
 from email.Message import Message
 from email.Header import Header
 from email.MIMEText import MIMEText
@@ -231,7 +231,9 @@ def sendmail(message, to_addrs=None):
                 # way similar to mailing list software.
                 smtp.sendmail(config.bounce_address, to_addrs, raw_message)
                 smtp.quit()
-        return message['message-id']
+        # Strip the angle brackets to the return a Message-Id consistent with
+        # raw_sendmail (which doesn't include them).
+        return message['message-id'][1:-1]
     else:
         # The "MAIL FROM" is set to the bounce address, to behave in a way
         # similar to mailing list software.

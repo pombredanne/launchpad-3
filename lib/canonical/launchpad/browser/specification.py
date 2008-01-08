@@ -205,7 +205,7 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
         target = data.get('target')
         if name is not None and target is not None:
             if target.getSpecification(name):
-                errormessage = self.schema['name'].errormessage
+                errormessage = INewSpecification['name'].errormessage
                 self.setFieldError('name', errormessage % name)
 
 
@@ -1043,6 +1043,7 @@ class SpecificationLinkBranchView(LaunchpadFormView):
     @action(_('Link to Specification'), name='link')
     def link_action(self, action, data):
         self.context.linkBranch(branch=data['branch'],
+                                registrant=self.user,
                                 summary=data['summary'])
 
     @property

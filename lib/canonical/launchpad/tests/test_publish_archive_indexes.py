@@ -27,13 +27,20 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
         Also contains the paths and checksums for the files included in
         the package in question.
         """
-        pub_source = self.getPubSource()
+        pub_source = self.getPubSource(
+            builddepends='fooish', builddependsindep='pyfoo',
+            build_conflicts='bar', build_conflicts_indep='pybar')
 
         self.assertEqual(
             [u'Package: foo',
              u'Binary: foo-bin',
              u'Version: 666',
+             u'Section: base',
              u'Maintainer: Foo Bar <foo@bar.com>',
+             u'Build-Depends: fooish',
+             u'Build-Depends-Indep: pyfoo',
+             u'Build-Conflicts: bar',
+             u'Build-Conflicts-Indep: pybar',
              u'Architecture: all',
              u'Standards-Version: 3.6.2',
              u'Format: 1.0',
@@ -48,16 +55,30 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
         See also testSourceStanza, it must present something similar for
         binary packages.
         """
-        pub_binary = self.getPubBinary()
+        pub_binary = self.getPubBinaries(
+            depends='biscuit', recommends='foo-dev', suggests='pyfoo',
+            conflicts='old-foo', replaces='old-foo', provides='foo-master',
+            pre_depends='master-foo', enhances='foo-super', breaks='old-foo'
+            )[0]
         self.assertEqual(
             [u'Package: foo-bin',
+             u'Source: foo',
              u'Priority: standard',
              u'Section: base',
              u'Installed-Size: 100',
              u'Maintainer: Foo Bar <foo@bar.com>',
              u'Architecture: all',
              u'Version: 666',
-             u'Filename: pool/main/f/foo/foo-bin.deb',
+             u'Recommends: foo-dev',
+             u'Replaces: old-foo',
+             u'Suggests: pyfoo',
+             u'Provides: foo-master',
+             u'Depends: biscuit',
+             u'Conflicts: old-foo',
+             u'Pre-Depends: master-foo',
+             u'Enhances: foo-super',
+             u'Breaks: old-foo',
+             u'Filename: pool/main/f/foo/foo-bin_all.deb',
              u'Size: 18',
              u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              u'Description: Foo app is great',
@@ -89,18 +110,19 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
             "Normal\nNormal"
             "\n.\n.\n."
             "\n %s" % ('x' * 100))
-        pub_binary = self.getPubBinary(
-            description=description)
+        pub_binary = self.getPubBinaries(
+            description=description)[0]
 
         self.assertEqual(
             [u'Package: foo-bin',
+             u'Source: foo',
              u'Priority: standard',
              u'Section: base',
              u'Installed-Size: 100',
              u'Maintainer: Foo Bar <foo@bar.com>',
              u'Architecture: all',
              u'Version: 666',
-             u'Filename: pool/main/f/foo/foo-bin.deb',
+             u'Filename: pool/main/f/foo/foo-bin_all.deb',
              u'Size: 18',
              u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              u'Description: Foo app is great',
@@ -109,7 +131,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u' .',
              u' .',
              u' .',
-             u'  %s' % ('x' * 100)
+             u' %s' % ('x' * 100)
              ],
             pub_binary.getIndexStanza().splitlines())
 
@@ -123,18 +145,19 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
         'utf-8' for disk writing.
         """
         description = u'Using non-ascii as: \xe7\xe3\xe9\xf3'
-        pub_binary = self.getPubBinary(
-            description=description)
+        pub_binary = self.getPubBinaries(
+            description=description)[0]
 
         self.assertEqual(
             [u'Package: foo-bin',
+             u'Source: foo',
              u'Priority: standard',
              u'Section: base',
              u'Installed-Size: 100',
              u'Maintainer: Foo Bar <foo@bar.com>',
              u'Architecture: all',
              u'Version: 666',
-             u'Filename: pool/main/f/foo/foo-bin.deb',
+             u'Filename: pool/main/f/foo/foo-bin_all.deb',
              u'Size: 18',
              u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              u'Description: Foo app is great',
@@ -144,7 +167,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
 
     def testBinaryStanzaWithApt(self):
         """Check a binary stanza with APT parser."""
-        pub_binary = self.getPubBinary()
+        pub_binary = self.getPubBinaries()[0]
 
         index_filename = tempfile.mktemp()
         index_file = open(index_filename, 'w')

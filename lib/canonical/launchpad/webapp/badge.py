@@ -15,7 +15,7 @@ __all__ = [
     'STANDARD_BADGES',
     ]
 
-from zope.interface import Attribute, implements, Interface
+from zope.interface import implements, Interface
 
 
 class Badge:
@@ -122,3 +122,4 @@ class HasBadgeBase:
         """Return the badge instance for the name specified."""
         # Can be overridden to provide non-standard badges.
         return STANDARD_BADGES.get(badge_name)
+

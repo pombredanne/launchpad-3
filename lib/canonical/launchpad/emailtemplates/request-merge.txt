@@ -1,12 +1,12 @@
 
 Hello
 
-We received a request to merge the Launchpad account named 
-'%(dupename)s' -- which have registered the email address 
+We received a request to merge the Launchpad account named
+'%(dupename)s' -- which have registered the email address
 '%(toaddress)s' -- into the account named '%(requester)s'.
 
 If you made this request, please click on the link below
-and complete the process to merge the '%(dupename)s' 
+and complete the process to merge the '%(dupename)s'
 account into your existing Launchpad account.
 
     %(token_url)s

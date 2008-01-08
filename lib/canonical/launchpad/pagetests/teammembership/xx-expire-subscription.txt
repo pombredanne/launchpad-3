@@ -6,38 +6,42 @@ We can't use the browser instance to test this directly because the form
 value for the year 2000 is not available in HTML, but we can encode the
 variables:
 
-  >>> import urllib
-  >>> browser = setupBrowser(auth="Basic mark@hbd.com:test")
-  >>> browser.open("http://launchpad.dev/~name20/+member/name12",
-  ...              urllib.urlencode(dict(
-  ...                   admin="no",
-  ...                   day=1,
-  ...                   month=1,
-  ...                   year=2000,
-  ...                   comment="",
-  ...                   change="Change",
-  ...                   editactive=1)))
-  >>> browser.contents
-  <BLANKLINE>
-  ...
-  ...Invalid expiration: date provided is in the past...
-  ...
+    >>> import urllib
+    >>> browser = setupBrowser(auth="Basic mark@hbd.com:test")
+    >>> browser.open("http://launchpad.dev/~name20/+member/name12",
+    ...              urllib.urlencode(dict(
+    ...                   admin="no",
+    ...                   day=1,
+    ...                   month=1,
+    ...                   year=2000,
+    ...                   comment="",
+    ...                   change="Change",
+    ...                   editactive=1)))
+    >>> browser.contents
+    <BLANKLINE>
+    ...
+    ...Invalid expiration: date provided is in the past...
+    ...
 
 Let's do it under the wraps:
 
-  >>> from canonical.launchpad.database import Person, TeamMembership
-  >>> from canonical.launchpad.interfaces import TeamMembershipStatus
-  >>> sampleperson = Person.byName('name12')
-  >>> team = Person.byName('name20')
-  >>> tm = TeamMembership.selectOneBy(personID=sampleperson.id, teamID=team.id)
-  >>> tm.setStatus(TeamMembershipStatus.EXPIRED, reviewer=team.teamowner)
+    >>> from canonical.launchpad.database import Person, TeamMembership
+    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
+    >>> sampleperson = Person.byName('name12')
+    >>> team = Person.byName('name20')
+    >>> tm = TeamMembership.selectOneBy(
+    ...     personID=sampleperson.id, teamID=team.id)
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(ANONYMOUS) # login() because we need a zope interaction.
+    >>> tm.setStatus(TeamMembershipStatus.EXPIRED, reviewer=team.teamowner)
+    >>> logout()
 
 Persist the change:
 
-  >>> tm.syncUpdate()
+    >>> tm.syncUpdate()
 
 And make sure that Sample Person is now an EXPIRED member of this team.
 
-  >>> sampleperson in team.expiredmembers
-  True
+    >>> sampleperson in team.expiredmembers
+    True
 

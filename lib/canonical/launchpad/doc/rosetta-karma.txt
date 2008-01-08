@@ -12,10 +12,11 @@ like SQLObjects are not persistent between transactions.
     ...     ILaunchpadCelebrities)
     >>> from canonical.launchpad.database import POTemplate
     >>> from canonical.launchpad.interfaces import RosettaImportStatus
+    >>> from canonical.database.sqlbase import flush_database_caches
 
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
     >>> karma_action_set = getUtility(IKarmaActionSet)
-    >>> rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
 Setup an event listener to help ensure karma is assigned when it should.
 
@@ -55,9 +56,10 @@ Do the import.
     >>> comes_from_upstream = True
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     potemplate.path, potemplate_contents, comes_from_upstream,
-    ...     rosetta_expert, productseries=potemplate.productseries,
+    ...     rosetta_experts, productseries=potemplate.productseries,
     ...     potemplate=potemplate)
     >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
 to make sure it's stored properly.
@@ -67,8 +69,9 @@ to make sure it's stored properly.
 We tell the PO template to import from the file data it has.  If any karma is
 assigned to the team, our karma_helper will print it out here.
 
+    >>> entry = translation_import_queue[entry_id]
     >>> potemplate = POTemplate.get(1)
-    >>> potemplate.importFromQueue()
+    >>> (subject, message) = potemplate.importFromQueue(entry)
 
 (Nothing printed means no karma was assigned)
 
@@ -88,6 +91,7 @@ Do the import.
     ...     foo_bar, productseries=potemplate.productseries,
     ...     potemplate=potemplate)
     >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
 to make sure it's stored properly.
@@ -97,8 +101,9 @@ to make sure it's stored properly.
 Tell the PO template to import from the file data it has, and see the karma
 being assigned.
 
+    >>> entry = translation_import_queue[entry_id]
     >>> potemplate = POTemplate.get(1)
-    >>> potemplate.importFromQueue()
+    >>> (subject, message) = potemplate.importFromQueue(entry)
     Karma added: action=translationtemplateimport, product=evolution
     >>> transaction.commit()
 
@@ -139,9 +144,10 @@ Do the import.
 
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, comes_from_upstream,
-    ...     rosetta_expert, productseries=potemplate.productseries,
+    ...     rosetta_experts, productseries=potemplate.productseries,
     ...     potemplate=potemplate, pofile=pofile)
     >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
 to make sure it's stored properly.
@@ -152,8 +158,9 @@ Tell the PO template to import from the file data it has.  If any karma is
 assigned to the team, our karma_helper will print it out here.
 
     >>> potemplate = POTemplate.get(1)
+    >>> entry = translation_import_queue[entry_id]
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> pofile.importFromQueue()
+    >>> (subject, message) = pofile.importFromQueue(entry)
     >>> transaction.commit()
 
 
@@ -167,6 +174,7 @@ will give karma only for the upload action.
     ...     productseries=potemplate.productseries, potemplate=potemplate,
     ...     pofile=pofile)
     >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
 to make sure it's stored properly.
@@ -176,8 +184,9 @@ to make sure it's stored properly.
 Tell the PO file to import from the file data it has.
 
     >>> potemplate = POTemplate.get(1)
+    >>> entry = translation_import_queue[entry_id]
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> pofile.importFromQueue()
+    >>> (subject, message) = pofile.importFromQueue(entry)
     Karma added: action=translationimportupstream, product=evolution
 
 Now, the user is going to upload a local edition of the .po file. In this
@@ -202,6 +211,7 @@ We attach the new file as not comming from upstream.
     ...     productseries=potemplate.productseries, potemplate=potemplate,
     ...     pofile=pofile)
     >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
 to make sure it's stored properly.
@@ -215,8 +225,9 @@ his own translations. IOW, he'll only get karma for his suggestion being
 approved.
 
     >>> potemplate = POTemplate.get(1)
+    >>> entry = translation_import_queue[entry_id]
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> pofile.importFromQueue()
+    >>> (subject, message) = pofile.importFromQueue(entry)
     Karma added: action=translationsuggestionapproved, product=evolution
     >>> transaction.commit()
 
@@ -232,6 +243,7 @@ We import it again without changes and see that we don't get karma changes.
     ...     productseries=potemplate.productseries, potemplate=potemplate,
     ...     pofile=pofile)
     >>> entry.status = RosettaImportStatus.APPROVED
+    >>> entry_id = entry.id
 
 The file data is stored in the Librarian, so we have to commit the transaction
 to make sure it's stored properly.
@@ -242,8 +254,9 @@ Tell the PO file to import from the file data it has and see that no karma is
 assigned.  If it was, it'd be printed after the call to importFromQueue().
 
     >>> potemplate = POTemplate.get(1)
+    >>> entry = translation_import_queue[entry_id]
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> pofile.importFromQueue()
+    >>> (subject, message) = pofile.importFromQueue(entry)
     >>> transaction.commit()
 
 
@@ -276,7 +289,7 @@ No Privileges Person is a translator that fits this requirement.
 We are going to add a suggestion that already exists from other user,
 that should not add any kind of karma to this user.
 
-    >>> pomsgset = pofile.getPOMsgSet(u'foo')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: 'bar'}
     >>> fuzzy = False
     >>> published = False
@@ -284,10 +297,10 @@ that should not add any kind of karma to this user.
 And we can see as he won't get any karma activity from that, otherwise it'd be
 printed after the call to updateTranslationSet().
 
-    >>> pomsgset.updateTranslationSet(
-    ...     no_priv, new_translations, fuzzy, published,
+    >>> translationmessage = potmsgset.updateTranslation(
+    ...     pofile, no_priv, new_translations, fuzzy, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
-    >>> transaction.commit()
+    >>> flush_database_caches()
 
 But now, he will provide a new suggestion.
 
@@ -298,9 +311,9 @@ At this moment, karma is assigned and thus is printed here.
     >>> no_priv = personset.getByEmail('no-priv@canonical.com')
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> pomsgset = pofile.getPOMsgSet(u'foo')
-    >>> pomsgset.updateTranslationSet(
-    ...     no_priv, new_translations, fuzzy, published,
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
+    >>> translationmessage = potmsgset.updateTranslation(
+    ...     pofile, no_priv, new_translations, fuzzy, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionadded, product=evolution
     >>> transaction.commit()
@@ -316,10 +329,10 @@ being approved.
 
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> pomsgset = pofile.getPOMsgSet(u'foo')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: u'somethingelse'}
-    >>> pomsgset.updateTranslationSet(
-    ...     kurem, new_translations, fuzzy, published,
+    >>> translationmessage = potmsgset.updateTranslation(
+    ...     pofile, kurem, new_translations, fuzzy, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionapproved, product=evolution
     Karma added: action=translationreview, product=evolution
@@ -331,10 +344,10 @@ get karma for his autoapproved translation.
     >>> kurem = personset.getByEmail('kurem@debian.cz')
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByLang('es')
-    >>> pomsgset = pofile.getPOMsgSet(u'foo')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'foo')
     >>> new_translations = {0: u'changed again'}
-    >>> pomsgset.updateTranslationSet(
-    ...     kurem, new_translations, fuzzy, published,
+    >>> translationmessage = potmsgset.updateTranslation(
+    ...     pofile, kurem, new_translations, fuzzy, published,
     ...     lock_timestamp=datetime.datetime.now(UTC))
     Karma added: action=translationsuggestionapproved, product=evolution
     >>> transaction.commit()
