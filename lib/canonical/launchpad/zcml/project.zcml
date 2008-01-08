@@ -102,9 +102,9 @@
             template="../templates/object-portlet-bounties.pt"
             />
        <browser:page
-            name="+portlet-details"
+            name="+details"
             facet="overview"
-            template="../templates/project-portlet-details.pt"
+            template="../templates/project-details.pt"
             />
        <browser:page
             name="+portlet-lifecycle"

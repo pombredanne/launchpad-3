@@ -46,7 +46,7 @@ Let's take a look at what the notification email looks like:
 
     >>> subject, body = generate_bug_add_email(bug_four)
     >>> subject
-    u'[Bug 4] Reflow problems with complex page layouts'
+    u'[Bug 4] [NEW] Reflow problems with complex page layouts'
     >>> print body
     Public bug reported:
     <BLANKLINE>
@@ -67,7 +67,7 @@ as well.
 
     >>> subject, body = generate_bug_add_email(bug_four)
     >>> subject
-    u'[Bug 4] Reflow problems with complex page layouts'
+    u'[Bug 4] [NEW] Reflow problems with complex page layouts'
     >>> print body
     Public bug reported:
     <BLANKLINE>
