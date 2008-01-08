@@ -12,9 +12,12 @@ from canonical.lazr.interfaces import IHTTPResource
 
 class HTTPResource:
     implements(IHTTPResource)
+    """See `IHTTPResource`."""
 
     def __init__(self, request):
+        """Store the request for later processing."""
         self.request = request
 
     def __call__(self):
+        """See `IHTTPResource`."""
         pass
