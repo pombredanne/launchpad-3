@@ -362,7 +362,12 @@ class HasSpecificationsView(LaunchpadView):
             for spec in specs:
                 if spec in plan:
                     continue
-                if not spec.dependencies:
+                spec_has_dependencies = False
+                for spec_id, dep_id in dependencies:
+                    if spec_id == spec.id:
+                        spec_has_dependencies = True
+                        break
+                if not spec_has_dependencies:
                     found_spec = True
                     plan.append(spec)
                     continue
