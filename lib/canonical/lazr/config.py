@@ -13,7 +13,7 @@ __all__ = [
 
 from ConfigParser import NoSectionError, SafeConfigParser
 import copy
-import os
+from os.path import abspath, basename, dirname
 import re
 import StringIO
 
@@ -54,7 +54,7 @@ class ConfigSchema:
         # SafeConfigParser permits redefinition and non-ascii characters.
         # The raw schema data is examined before creating a config.
         self.filename = filename
-        self.name = os.path.basename(filename)
+        self.name = basename(filename)
         self._section_schemas = {}
         self._category_names = []
         raw_schema = self._getRawSchema(filename)
@@ -185,49 +185,39 @@ class ConfigSchema:
     def _load(self, filename, conf_data):
         """Return a Config parsed from conf_data."""
         confs = self._getExtendedConfs(filename, conf_data)
-        confs.reverse()
-        sections = self._getRequiredSections()
-        config_data = ConfigData(self, self.filename, sections)
-        config = Config(self, config_data)
+        #confs.reverse()
+        config = Config(self)
         for conf_name, conf_data in confs:
             config.push(conf_name, conf_data)
         return config
-
-    def _getRequiredSections(self):
-        """return a dict of `Section`s from the required `SectionSchemas`."""
-        sections = {}
-        for section_schema in self:
-            if not section_schema.optional:
-                sections[section_schema.name] = Section(section_schema)
-        return sections
-
 
     def _getExtendedConfs(self, conf_filename, conf_data, confs=None):
         """Return a list of 2-tuple config name and unparsed config.
 
         :param conf_filename: The path and name the conf file.
-        :param conf_data: unparsed config data.
+        :param conf_data: Unparsed config data.
         :param confs: A list of confs that extend filename.
-        :raises IOError: if filename cannot be read.
+        :return: A list of confs order from extendee to extender.
+        :raises IOError: If filename cannot be read.
 
         This method recursively constructs a list of all unparsed config data.
         It scans the config data for the extends key in the meta section. It
         reads the unparsed config_data from the extended file and passes that
         to itself.
         """
-        # XXX sinzui 2008-01-07: This method is not complete.
         if confs is None:
             confs = []
-        confs.append((conf_filename, conf_data))
-        extends_name = self._findExtendedConf(conf_data)
+        # Insert the conf before the conf that provides the extension.
+        confs.insert(0, (conf_filename, conf_data))
+        extends_name = self._findExtendsName(conf_data)
         if extends_name is not None:
-            extends_filename = os.path.abspath('%s/%s' % (
-                os.path.dirname(conf_filename), extends_name))
+            base_path = dirname(conf_filename)
+            extends_filename = abspath('%s/%s' % (base_path, extends_name))
             extends_data = read_content(extends_filename)
             self._getExtendedConfs(extends_filename, extends_data, confs)
         return confs
 
-    def _findExtendedConf(self, conf_data):
+    def _findExtendsName(self, conf_data):
         """Return the name of the extended conf."""
         extends_name = None
         in_meta_section = False
@@ -257,7 +247,7 @@ class ConfigData:
         """Set the schema and configuration data."""
         self.schema = schema
         self.filename = filename
-        self.name = os.path.basename(filename)
+        self.name = basename(filename)
         self._sections = sections
         self._category_names = self._getCategoryNames()
         self._extends = extends
@@ -322,46 +312,55 @@ class Config:
     implements(IStackableConfig)
     decorates(IConfigData, context='_config_data')
 
-    def __init__(self, schema, config_data):
+    def __init__(self, schema):
         """Set the schema and configuration."""
-        self._config_data = config_data
+        sections = self._getRequiredSections(schema)
+        self._config_data = ConfigData(schema, schema.filename, sections)
         self.schema = schema
         self.filename = schema.filename
         self.name = schema.name
-        self._overlays = [config_data]
+        self._overlays = [self._config_data]
 
-    def _verifyEncoding(self, config_data):
-        """Verify that the data is ASCII encoded.
+    def _getRequiredSections(self, schema):
+        """return a dict of `Section`s from the required `SectionSchemas`."""
+        sections = {}
+        for section_schema in schema:
+            if not section_schema.optional:
+                sections[section_schema.name] = Section(section_schema)
+        return sections
 
-        :return: a list of UnicodeDecodeError errors. If there are no
-            errors, return an empty list.
-        """
-        errors = []
-        try:
-            config_data.encode('ascii', 'ignore')
-        except UnicodeDecodeError, error:
-            errors.append(error)
-        return errors
+    @property
+    def extends(self):
+        """See `IStackableConfig`."""
+        # XXX sinzui 2008-01-08: This is flawed because conf data can be
+        # pushed for other reasons than extends.
+        if len(self.overlays) > 1:
+            return self.overlays[-2]
+        else:
+            # The first item in overlays was made from the schema.
+            return None
 
-    def _loadConfigData(self, filename, config_data):
-        """Set the Sections and category_names from the config data.
+    @property
+    def overlays(self):
+        """See `IStackableConfig`."""
+        return self._overlays
 
-        New _sections, _category_names, and _errors are created from copies
+    def push(self, conf_name, conf_data):
+        """See `IStackableConfig`.
+
+        New sections, category_names, and errors are created from copied
         of the current objects instead of making updates. This allows
         overlaid configs to retain their state.
-
-        :return: a list of parsing errors. If there are no errors, an empty
-            list is returned.
         """
         sections = {}
         for section in self._config_data:
             sections[section.name] = section.clone()
         errors = list(self._config_data._errors)
         extends = None
-        encoding_errors = self._verifyEncoding(config_data)
+        encoding_errors = self._verifyEncoding(conf_data)
         errors.extend(encoding_errors)
         parser = SafeConfigParser()
-        parser.readfp(StringIO.StringIO(config_data), filename)
+        parser.readfp(StringIO.StringIO(conf_data), conf_name)
         for section_name in parser.sections():
             if section_name == 'meta':
                 extends, meta_errors = self._loadMetaData(parser)
@@ -381,7 +380,22 @@ class Config:
             items = parser.items(section_name)
             section_errors = sections[section_name].update(items)
             errors.extend(section_errors)
-        return ConfigData(self.schema, filename, sections, extends, errors)
+        self._config_data = ConfigData(
+            self.schema, conf_name, sections, extends, errors)
+        self._overlays.append(self._config_data)
+
+    def _verifyEncoding(self, config_data):
+        """Verify that the data is ASCII encoded.
+
+        :return: a list of UnicodeDecodeError errors. If there are no
+            errors, return an empty list.
+        """
+        errors = []
+        try:
+            config_data.encode('ascii', 'ignore')
+        except UnicodeDecodeError, error:
+            errors.append(error)
+        return errors
 
     def _loadMetaData(self, parser):
         """Load the config meta data from the ConfigParser.
@@ -400,27 +414,6 @@ class Config:
                 msg = "The meta section does not have a %s key." % key
                 errors.append(UnknownKeyError(msg))
         return (extends, errors)
-
-    @property
-    def extends(self):
-        """See `IStackableConfig`."""
-        # XXX sinzui 2008-01-08: This is flawed because conf data can be
-        # pushed for other reasons than extends.
-        if len(self.overlays) > 1:
-            return self.overlays[-2]
-        else:
-            # The first item in overlays was made from the schema.
-            return None
-
-    @property
-    def overlays(self):
-        """See `IStackableConfig`."""
-        return self._overlays
-
-    def push(self, conf_name, conf_data):
-        """See `IStackableConfig`."""
-        self._config_data = self._loadConfigData(conf_name, conf_data)
-        self._overlays.append(self._config_data)
 
     def pop(self, conf_name):
         """See `IStackableConfig`."""
@@ -502,6 +495,7 @@ class Section:
     def clone(self):
         """Return a copy of this section.
 
-        This method is required by the extension mechanism.
+        The extension mechanism requires a copy of a section to prevent
+        mutation.
         """
         return copy.deepcopy(self)
