@@ -1256,9 +1256,8 @@ class INewPersonForm(IPerson):
     """
 
     password = PasswordField(
-            title=_('Create password'), required=True, readonly=False,
-            description=_("Enter the same password in each field.")
-            )
+        title=_('Create password'), required=True, readonly=False,
+        description=_("Enter the same password in each field."))
 
 
 class ITeam(IPerson, IHasIcon):
