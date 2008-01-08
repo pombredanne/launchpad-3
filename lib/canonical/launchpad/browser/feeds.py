@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'AnnouncementsFeedLink',
     'BugFeedLink',
     'BugTargetLatestBugsFeedLink',
     'FeedLinkBase',
@@ -12,6 +13,7 @@ __all__ = [
     'FeedsNavigation',
     'FeedsRootUrlData',
     'PersonLatestBugsFeedLink',
+    'RootAnnouncementsFeedLink',
     ]
 
 from zope.component import getUtility
