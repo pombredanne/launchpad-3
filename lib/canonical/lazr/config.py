@@ -311,7 +311,7 @@ class Config:
         self.schema = schema
         self.filename = schema.filename
         self.name = schema.name
-        self._overlays = [self._config_data]
+        self._overlays = (self._config_data, )
 
     def _getRequiredSections(self, schema):
         """return a dict of `Section`s from the required `SectionSchemas`."""
@@ -380,7 +380,7 @@ class Config:
             section_errors = sections[section_name].update(items)
             errors.extend(section_errors)
         self._config_data = ConfigData(conf_name, sections, extends, errors)
-        self._overlays.append(self._config_data)
+        self._overlays =  self._overlays + (self._config_data, )
 
     def _verifyEncoding(self, config_data):
         """Verify that the data is ASCII encoded.
@@ -418,7 +418,7 @@ class Config:
         index = self._getIndexOfOverlay(conf_name)
         removed_overlays = self.overlays[index:]
         self._overlays = self.overlays[:index]
-        self._config_data = self._overlays[-1]
+        self._config_data = self.overlays[-1]
         return removed_overlays
 
     def _getIndexOfOverlay(self, conf_name):

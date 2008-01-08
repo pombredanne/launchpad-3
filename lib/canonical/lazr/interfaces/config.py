@@ -201,7 +201,7 @@ class IStackableConfig(Interface):
         """Remove conf_name from the overlays stack.
 
         :param conf_name: the name of the configdata to remove.
-        :return: the list of ConfigData that was removed from overlays.
+        :return: the tuple of ConfigData that was removed from overlays.
         :raise NoConfigError: if no configdata has the conf_name.
 
         This method removes the named ConfigData from the stack; Configdata
