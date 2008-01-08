@@ -1482,7 +1482,7 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         query, clauseTables, orderby = self.buildQuery(params)
         bugtasks = BugTask.select(
-            query, clauseTables=clauseTables, orderBy=orderby, distinct=True)
+            query, clauseTables=clauseTables, orderBy=orderby)
         joins = self._getJoinsForSortingSearchResults()
         for arg in args:
             query, clauseTables, dummy = self.buildQuery(arg)
