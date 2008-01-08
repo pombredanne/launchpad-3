@@ -337,9 +337,9 @@ class BugWatchSet(BugSetBase):
             'default': r'(.*/)(Bug|Ticket)/Display.html',
             'rt.cpan.org': r'(.*/)Public/(Bug|Ticket)/Display.html'}
 
-        try:
+        if host in host_expressions:
             expression = host_expressions[host]
-        except KeyError:
+        else:
             expression = host_expressions['default']
 
         match = re.match(expression, path)
