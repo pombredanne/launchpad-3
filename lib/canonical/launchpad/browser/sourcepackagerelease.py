@@ -18,9 +18,9 @@ from canonical.launchpad.webapp.tales import FormattersAPI
 class SourcePackageReleaseView(LaunchpadView):
 
     @property
-    def changelog(self):
-        """Return a linkified changelog."""
-        return self._linkify_changelog(self.context.changelog)
+    def changelog_entry(self):
+        """Return a linkified changelog entry."""
+        return self._linkify_changelog(self.context.changelog_entry)
 
     @property
     def change_summary(self):
