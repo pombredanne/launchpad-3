@@ -28,8 +28,7 @@ from canonical.launchpad.interfaces import (
     IMailingListApplication, IMaloneApplication, IOpenIdApplication,
     IProductSet, IRegistryApplication, IRosettaApplication,
     IShipItApplication, ITranslationGroupSet, IWebServiceApplication)
-
-from canonical.lazr.interfaces import (IHTTPResource)
+from canonical.launchpad.rest import (HelloWorldResource)
 
 class AuthServerApplication:
     """AuthServer End-Point."""
@@ -192,7 +191,7 @@ class HWDBApplication:
 
 class WebServiceApplication:
     """See IWebServiceApplication."""
-    implements(IWebServiceApplication, IPublishTraverse, IHTTPResource)
+    implements(IWebServiceApplication, IPublishTraverse)
 
     def publishTraverse(self, request, name):
         """In the final version, this method will return a CollectionResource
@@ -200,6 +199,7 @@ class WebServiceApplication:
         """
         raise NotFound(self, name)
 
-    def __call__(self):
-        import pdb; pdb.set_trace()
-        return "Hello, world!"
+    def __call__(self, REQUEST=None):
+        if REQUEST:
+            return HelloWorldResource(REQUEST)()
+

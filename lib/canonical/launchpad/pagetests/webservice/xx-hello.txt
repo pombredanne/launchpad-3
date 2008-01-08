@@ -1,0 +1,23 @@
+= Introduction =
+
+This is a test of the minimal "Hello world" web service. GET it and
+you get a string.
+
+  >>> print http(r"""
+  ... GET / HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Hello, world!
+
+Though web services in general support all HTTP methods, this
+particular resource supports only GET.
+
+  >>> print http(r"""
+  ... DELETE / HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...

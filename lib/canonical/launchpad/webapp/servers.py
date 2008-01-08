@@ -48,7 +48,6 @@ from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.opstats import OpStats
 
-
 class StepsToGo:
     """
 
