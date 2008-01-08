@@ -339,18 +339,6 @@ class ZopelessTransactionManager(object):
         con.set_isolation_level(level)
         # Make the isolation level stick
         self.desc.isolation = level
-        cur = con.cursor()
-        cur.execute('SHOW transaction_isolation')
-        isolation_str = cur.fetchone()[0]
-        if level == AUTOCOMMIT_ISOLATION:
-            # psycopg implements autocommit using read committed and commits.
-            assert isolation_str == 'read committed', 'Got ' + isolation_str
-        elif level == READ_COMMITTED_ISOLATION:
-            assert isolation_str == 'read committed', 'Got ' + isolation_str
-        elif level == SERIALIZABLE_ISOLATION:
-            assert isolation_str == 'serializable', 'Got ' + isolation_str
-        else:
-            raise AssertionError("Unknown transaction isolation level")
 
     def conn(self):
         return self.sqlClass._connection._connection
