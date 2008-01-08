@@ -185,7 +185,8 @@ ISourcePackageRelease, it will automatically set the
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
   ...     arg_urgency, changelog_entry, dsc, arg_key, arg_sect,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-  ...     dsc_binaries, archive, copyright=copyright)
+  ...     dsc_binaries, archive, copyright=copyright,
+  ...      build_conflicts=None, build_conflicts_indep=None)
 
   >>> new_spr.upload_distroseries.name
   u'hoary'
@@ -305,7 +306,7 @@ evolution_1.0:
     >>> evo_bin = evo_build_i386.createBinaryPackageRelease(
     ...      evo_bin_name, '1.0', 'no sum', 'no desc',
     ...      binarypackageformat, main_component, mail_section, extra_priority,
-    ...      '', '', '', '', '', '', '', False, 1, False)
+    ...      '', '', '', '', '', '', '', '', '', '', False, 1, False)
 
 Publish 'evo_bin' in all supported architectures (as expected for
 arch-indep binaries).

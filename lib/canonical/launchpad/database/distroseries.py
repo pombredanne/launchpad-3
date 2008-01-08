@@ -869,7 +869,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         builddependsindep, architecturehintlist, component, creator,
         urgency, changelog_entry, dsc, dscsigningkey, section,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries, archive, copyright, dateuploaded=DEFAULT):
+        dsc_binaries, archive, copyright, build_conflicts,
+        build_conflicts_indep, dateuploaded=DEFAULT):
         """See IDistroSeries."""
         return SourcePackageRelease(
             upload_distroseries=self, sourcepackagename=sourcepackagename,
@@ -881,7 +882,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             copyright=copyright, upload_archive=archive,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
-            dsc_format=dsc_format, dsc_binaries=dsc_binaries)
+            dsc_format=dsc_format, dsc_binaries=dsc_binaries,
+            build_conflicts=build_conflicts,
+            build_conflicts_indep=build_conflicts_indep)
 
     def getComponentByName(self, name):
         """See IDistroSeries."""

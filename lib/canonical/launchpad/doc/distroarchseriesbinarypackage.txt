@@ -51,6 +51,9 @@ existing builds that are in sampledata!
   ...   conflicts=None,
   ...   replaces=None,
   ...   provides=None,
+  ...   pre_depends=None,
+  ...   enhances=None,
+  ...   breaks=None,
   ...   essential=False,
   ...   installedsize=0,
   ...   architecturespecific=False)
@@ -88,6 +91,9 @@ existing builds that are in sampledata!
   ...   conflicts=None,
   ...   replaces=None,
   ...   provides=None,
+  ...   pre_depends=None,
+  ...   enhances=None,
+  ...   breaks=None,
   ...   essential=False,
   ...   installedsize=0,
   ...   architecturespecific=False)
