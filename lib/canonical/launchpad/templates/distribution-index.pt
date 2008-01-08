@@ -102,7 +102,7 @@
       <div class="right">
         <div
           class="two column section"
-          tal:content="structure context/@@+portlet-details"
+          tal:content="structure context/@@+details"
         />
         <div
           class="two column section"

@@ -14,13 +14,6 @@
       <h1>Create a port</h1>
     </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
