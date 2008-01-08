@@ -362,6 +362,9 @@ class HasSpecificationsView(LaunchpadView):
             for spec in specs:
                 if spec in plan:
                     continue
+                # Check whether the spec has
+                # any dependencies by looking
+                # at the cached dependencies list
                 spec_has_dependencies = False
                 for spec_id, dep_id in dependencies:
                     if spec_id == spec.id:
