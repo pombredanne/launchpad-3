@@ -13,18 +13,8 @@ import psycopg
 from canonical.config import config
 from canonical.testing import mockdb, DatabaseLayer
 from canonical.testing.mockdb import (
-        MockDbConnection, RecordCache, ReplayCache, RetryTest,
+        MockDbConnection, RecordCache, ReplayCache, RetryTest, dont_retry,
         )
-
-
-def dont_retry(func):
-    """Decorator for tests that flag a RetryTest exception as a failure."""
-    def dont_retry_func(self, *args, **kw):
-        try:
-            return func(self, *args, **kw)
-        except RetryTest, exception:
-            self.fail("Retry attempted: %s" % str(exception))
-    return dont_retry_func
 
 
 class MockDbTestCase(unittest.TestCase):

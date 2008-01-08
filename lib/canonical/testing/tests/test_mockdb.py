@@ -9,7 +9,11 @@ import os
 import os.path
 import unittest
 
+from zope.testing.doctestunit import DocTestSuite
+
 from canonical.testing import mockdb
+from canonical.testing.mockdb import dont_retry, RetryTest
+
 
 class MockDbTestCase(unittest.TestCase):
     def setUp(self):
@@ -19,6 +23,7 @@ class MockDbTestCase(unittest.TestCase):
         if os.path.exists(self.cache_filename):
             os.unlink(self.cache_filename)
 
+    @dont_retry
     def testSerialize(self):
         # Ensure the caches can store and retrieve their logs
         recorder = mockdb.RecordCache(self.cache_filename)
@@ -28,6 +33,7 @@ class MockDbTestCase(unittest.TestCase):
         replayer = mockdb.ReplayCache(self.cache_filename)
         self.failUnlessEqual(replayer.log, ['Arbitrary Data'])
 
+    @dont_retry
     def testHandleInvalidCache(self):
         # Ensure a RetryTest exception is raised and the invalid cache
         # file removed when handleInvalidCache() is called
@@ -41,6 +47,7 @@ class MockDbTestCase(unittest.TestCase):
                 )
         self.failIf(os.path.exists(self.cache_filename))
 
+    @dont_retry
     def testShortCache(self):
         # Ensure a RetryTest exception is raised if an attempt to pull
         # results from an exhausted cache.
@@ -49,6 +56,7 @@ class MockDbTestCase(unittest.TestCase):
         replayer = mockdb.ReplayCache(self.cache_filename)
         self.assertRaises(mockdb.RetryTest, replayer.getNextEntry, None, None)
 
+    @dont_retry
     def testCacheFilename(self):
         # Ensure evil characters in the key don't mess up the cache_filename
         # results. Only '/' is really evil - others chars should all work
@@ -71,8 +79,63 @@ class MockDbTestCase(unittest.TestCase):
             for evil_char in evil_chars:
                 self.failIf(evil_char in filename)
 
+    _retry_count = 0
+
+    # This test needs to leak RetryTest exeptions as it tests that the
+    # test runner is handling them correctly.
+    #@dont_retry
+    def testRetryTestRetriesTest(self):
+        MockDbTestCase._retry_count += 1
+        if MockDbTestCase._retry_count % 2 == 1:
+            raise RetryTest("Testing RetryTest behavior")
+
+
+_doctest_retry_count = 0
+
+def retry_on_odd_numbered_calls():
+    """Helper for doctest RetryTest test.
+    
+    >>> try:
+    ...     retry_on_odd_numbered_calls()
+    ... except RetryTest:
+    ...     print "Caught RetryTest."
+    ...
+    Retry raised.
+    Caught RetryTest.
+    >>> try:
+    ...     retry_on_odd_numbered_calls()
+    ... except RetryTest:
+    ...     print "Caught RetryTest."
+    ...
+    Retry not raised.
+    """
+    global _doctest_retry_count
+    _doctest_retry_count += 1
+    if _doctest_retry_count % 2 == 1:
+        print "Retry raised."
+        raise RetryTest
+    print "Retry not raised."
+
+
+def testRetryTestInDoctest():
+    """Test a RetryTest exception in a doctest works as expected.
+
+    >>> True == True
+    True
+    >>> retry_on_odd_numbered_calls()
+    Retry not raised.
+    >>> False == False
+    True
+    >>> raise RuntimeError("Oops")
+    Traceback (most recent call last):
+    ...
+    RuntimeError: Oops
+    """
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(MockDbTestCase))
+    suite.addTest(DocTestSuite())
     return suite
 

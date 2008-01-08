@@ -13,7 +13,10 @@ a RetryTest exception raised for the test runner to deal with.
 """
 
 __metaclass__ = type
-__all__ = ['MockDbConnection', 'RecordCache', 'ReplayCache', 'cache_filename']
+__all__ = [
+        'MockDbConnection', 'RecordCache', 'ReplayCache', 'cache_filename',
+        'RetryTest', 'dont_retry',
+        ]
 
 import cPickle as pickle
 import gzip
@@ -21,15 +24,12 @@ import os.path
 import urllib
 
 import psycopg
+from zope.testing.testrunner import RetryTest, dont_retry
 
 from canonical.config import config
 
 
 CACHE_DIR = os.path.join(config.root, 'mockdbcache~')
-
-
-class RetryTest(Exception):
-    """Exception indicating the current test should be aborted and retried."""
 
 
 def cache_filename(key):
