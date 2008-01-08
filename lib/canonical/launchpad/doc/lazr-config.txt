@@ -270,7 +270,7 @@ ConfigSchema implements the two methods in the IConfigLoader interface.
 A Config is created by a schema using either the load() or loadFile()
 methods to return a Config instance.
 
-    >>> from canonical.lazr.interfaces import IConfigData, IConfigLoader
+    >>> from canonical.lazr.interfaces import IConfigLoader
     >>> verifyObject(IConfigLoader, schema)
     True
 
@@ -278,10 +278,6 @@ The load() method accepts a filename.
 
     >>> local_conf = '%s/%s' % (testfiles_dir,  'local.conf')
     >>> config = schema.load(local_conf)
-
-    >>> from canonical.lazr.config import Config
-    >>> verifyObject(IConfigData, config)
-    True
 
 Passing a filename to a non-existent file will raise an IOError.
 
@@ -312,8 +308,6 @@ does not have a name attribute.
 
     >>> bad_config = schema.loadFile(
     ...     StringIO.StringIO(bad_data), 'bad conf')
-    >>> verifyObject(IConfigData, bad_config)
-    True
 
 The bad_config example will be used for validation tests.
 
@@ -324,6 +318,16 @@ The config represents the local configuration of the process on system.
 It is validated with a schema. It extends the schema, or other conf
 files to define the specific differences from the extended files that
 are required to run the local processes.
+
+The config created above implements both the IConfigData and
+IStackableConfig interfaces. They represent the data and methods
+respectively.
+
+    >>> from canonical.lazr.interfaces import IConfigData, IStackableConfig
+    >>> verifyObject(IConfigData, config)
+    True
+    >>> verifyObject(IStackableConfig, config)
+    True
 
 Like the schema file, the conf file is made up of sections with keys.
 The sections may belong to a category. Unlike the schema file, it does
@@ -558,11 +562,19 @@ errors in the config.
 == Config overlays ==
 
 A conf file may contains a meta section that is used by the config
-system. The config can access the config it extended using the extends
-property.
+system. The config data can access the config it extended using the
+extends property. The object is just the config data; it does not
+have any config methods.
 
     >>> config.extends.name
     'shared.conf'
+
+    >>> verifyObject(IConfigData, config.extends)
+    True
+    >>> verifyObject(IStackableConfig, config.extends)
+    Traceback (most recent call last):
+     ...
+    DoesNotImplement: ...
 
 As Config supports inheritance through the extends key, each conf file
 produces instance of ConfigData, called an overlay. ConfigData
@@ -575,6 +587,9 @@ config file that was loaded.
     base.conf
     shared.conf
     local.conf
+
+    >>> verifyObject(IConfigData, config.overlays[-1])
+    True
 
 Raw config data can be merged with the config to create a new overlay
 for testing. The push() method accepts a string of config data. The
@@ -640,6 +655,14 @@ The config's name and overlays are updated by push().
     local.conf
     test config
     test app-a
+
+The 'test app-a' did not declare an extends key in a meta section. Its
+extends property is None, even though it implicitly extends 'test
+config'. The extends property only provides access to configs that are
+explicitly extended.
+
+    >>> print config.extends
+    None
 
 The config's sections are updated with 'section-3.app-a' too.
 

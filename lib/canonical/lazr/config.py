@@ -239,6 +239,9 @@ class ConfigSchema:
                 pass
         return extends_name
 
+
+# LAZR config classes may access ConfigData._extends and ConfigData._errors.
+# pylint: disable-msg=W0212
 class ConfigData:
     """See `IConfigData`."""
     implements(IConfigData)
@@ -251,9 +254,9 @@ class ConfigData:
         self._category_names = self._getCategoryNames()
         self._extends = extends
         if errors is None:
-            self.errors = []
+            self._errors = []
         else:
-            self.errors = errors
+            self._errors = errors
 
     def _getCategoryNames(self):
         """Return a tuple of category names that the `Section`s belong to."""
@@ -262,11 +265,6 @@ class ConfigData:
             if '.' in section_name:
                 category_names.add(section_name.split('.')[0])
         return tuple(category_names)
-
-    @property
-    def extends(self):
-        """See `IConfigData`."""
-        return self._extends
 
     @property
     def category_names(self):
@@ -324,13 +322,19 @@ class Config:
     @property
     def extends(self):
         """See `IStackableConfig`."""
-        # XXX sinzui 2008-01-08: This is flawed because conf data can be
-        # pushed for other reasons than extends.
-        if len(self.overlays) > 1:
-            return self.overlays[-2]
-        else:
-            # The first item in overlays was made from the schema.
+        conf_name = self._config_data._extends
+        if conf_name is None:
             return None
+        index = self._getIndexOfOverlay(conf_name)
+        return self.overlays[index]
+
+    def _getIndexOfOverlay(self, conf_name):
+        """Return the index of the config named conf_name."""
+        for index, config_data in enumerate(self.overlays):
+            if config_data.name == conf_name:
+                return index
+        # The config data was not found in the overlays.
+        raise NoConfigError('No config with name: %s.' % conf_name)
 
     @property
     def overlays(self):
@@ -339,9 +343,9 @@ class Config:
 
     def validate(self):
         """See `IConfigData`."""
-        if len(self._config_data.errors) > 0:
+        if len(self._config_data._errors) > 0:
             message = "%s is not valid." % self.name
-            raise ConfigErrors(message, errors=self._config_data.errors)
+            raise ConfigErrors(message, errors=self._config_data._errors)
         return True
 
     def push(self, conf_name, conf_data):
@@ -354,7 +358,7 @@ class Config:
         sections = {}
         for section in self._config_data:
             sections[section.name] = section.clone()
-        errors = list(self._config_data.errors)
+        errors = list(self._config_data._errors)
         extends = None
         encoding_errors = self._verifyEncoding(conf_data)
         errors.extend(encoding_errors)
@@ -420,14 +424,6 @@ class Config:
         self._overlays = self.overlays[:index]
         self._config_data = self.overlays[-1]
         return removed_overlays
-
-    def _getIndexOfOverlay(self, conf_name):
-        """Return the index of the config named conf_name."""
-        for index, config_data in enumerate(self.overlays):
-            if config_data.name == conf_name:
-                return index
-        # The config data was not found in the overlays.
-        raise NoConfigError('No config with name: %s.' % conf_name)
 
 
 class SectionSchema:

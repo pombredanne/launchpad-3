@@ -178,8 +178,8 @@ class IStackableConfig(Interface):
     test environment must be configured differently.
     """
     schema = Attribute("The schema that defines the config.")
-    overlays = Attribute("The stack of ConfigData that define this config.")
     extends = Attribute("The configuration that this config extends.")
+    overlays = Attribute("The stack of ConfigData that define this config.")
 
     def validate():
         """Return True if the config is valid for the schema.
