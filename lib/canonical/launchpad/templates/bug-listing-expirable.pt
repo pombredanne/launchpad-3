@@ -11,10 +11,6 @@
 >
 
   <body>
-    <metal:portlets fill-slot="portlets">
-      <div tal:replace="structure context/@@+portlet-details" />
-    </metal:portlets>
-
     <div metal:fill-slot="main">
       <h1>
         Bugs that can expire in
@@ -29,7 +25,7 @@
 
       <tal:expirable-bugs condition="view/can_show_expirable_bugs">
         <p>
-          Incomplete Bugs reports can expire if they are unattended and they
+          Incomplete bug reports can expire if they are unattended and they
           become inactive. These bugs are not confirmed, or in a status
           that indicates they were confirmed. An Incomplete bug can remain
           in this list indefinitely, so long as the bug is regularly updated.
