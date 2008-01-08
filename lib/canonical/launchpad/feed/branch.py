@@ -64,7 +64,7 @@ class BranchFeedBase(FeedBase):
             )
 
     @property
-    def url(self):
+    def link_self(self):
         """See `IFeed`."""
         return "%s/%s.%s" % (
             canonical_url(self.context), self.feedname, self.format)
@@ -185,5 +185,4 @@ class ProjectBranchFeed(ProductProjectBranchFeed):
 
     def initialize(self):
         """See `IFeed`."""
-        # For a `BranchFeed` we must ensure that the branch is not private.
         super(ProjectBranchFeed, self).initialize()
