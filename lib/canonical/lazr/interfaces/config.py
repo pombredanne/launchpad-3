@@ -8,6 +8,7 @@ __all__ = [
     'ConfigErrors',
     'ConfigSchemaError',
     'IConfigData',
+    'NoConfigError',
     'IConfigLoader',
     'IConfigSchema',
     'InvalidSectionNameError',
@@ -50,6 +51,8 @@ class UnknownSectionError(ConfigSchemaError):
 class UnknownKeyError(ConfigSchemaError):
     """The section has a key that is not in the schema."""
 
+class NoConfigError(ConfigSchemaError):
+    """No config has the name."""
 
 class ConfigErrors(ConfigSchemaError):
     """The errors in a Config.
@@ -155,14 +158,6 @@ class IConfigData(IConfigSchema):
 
     See `IConfigSchema` for more information about the config file format.
     """
-    schema = Attribute("The schema that defines the config.")
-
-    def validate():
-        """Return True if the config is valid for the schema.
-
-        :raise `ConfigErrors`: if the are errors. A list of all schema
-            problems can be retrieved via the errors property.
-        """
 
 
 class IStackableConfig(Interface):
@@ -182,9 +177,16 @@ class IStackableConfig(Interface):
     The push() and pop() methods can be used to test processes where the
     test environment must be configured differently.
     """
-
+    schema = Attribute("The schema that defines the config.")
     overlays = Attribute("The stack of ConfigData that define this config.")
     extends = Attribute("The configuration that this config extends.")
+
+    def validate():
+        """Return True if the config is valid for the schema.
+
+        :raise `ConfigErrors`: if the are errors. A list of all schema
+            problems can be retrieved via the errors property.
+        """
 
     def push(conf_name, conf_data):
         """Overlay the config with unparsed config data.
@@ -198,9 +200,10 @@ class IStackableConfig(Interface):
     def pop(conf_name):
         """Remove conf_name from the overlays stack.
 
-        :param conf_name: the name of the config to remove.
+        :param conf_name: the name of the configdata to remove.
         :return: the list of ConfigData that was removed from overlays.
+        :raise NoConfigError: if no configdata has the conf_name.
 
-        This method removes the named ConfigData from the stack; ConfigData
-        above the named config are removed too.
+        This method removes the named ConfigData from the stack; Configdata
+        above the named configdata are removed too.
         """

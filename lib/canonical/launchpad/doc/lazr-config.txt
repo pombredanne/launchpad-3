@@ -570,8 +570,8 @@ represents the state of a config. The overlays property is a stack of
 ConfigData as it was constructed from the schema's config to the last
 config file that was loaded.
 
-    >>> for confdata in config.overlays:
-    ...     print confdata.name
+    >>> for config_data in config.overlays:
+    ...     print config_data.name
     base.conf
     shared.conf
     local.conf
@@ -633,8 +633,8 @@ The config's name and overlays are updated by push().
     'test app-a'
     >>> config.filename
     'test app-a'
-    >>> for confdata in config.overlays:
-    ...     print confdata.name
+    >>> for config_data in config.overlays:
+    ...     print config_data.name
     base.conf
     shared.conf
     local.conf
@@ -655,14 +655,14 @@ Configdata can be removed removed from the stack of overlays using the
 pop() method. The methods returns the list of ConfigData that was
 removed--a slice from the specified configdata to the top of the stack.
 
-    >>> overlays = config.pop('test-config')
-    >>> for overlay in overlays:
-    ...     overlay.name
+    >>> overlays = config.pop('test config')
+    >>> for config_data in overlays:
+    ...     config_data.name
     'test config'
     'test app-a'
 
-    >>> for confdata in config.overlays:
-    ...     print confdata.name
+    >>> for config_data in config.overlays:
+    ...     print config_data.name
     base.conf
     shared.conf
     local.conf
@@ -685,3 +685,10 @@ keys ('key1' and 'key5') for 'section-1' were restored.
     key3 : Launchpad&nbsp;rocks
     key4 : F&#028c;k yeah!
     key5 : local value
+
+Call the pop() method with an unknown conf_name raises an error
+
+    >>> overlays = config.pop('bad-name')
+    Traceback (most recent call last):
+      ...
+    NoConfigError: No config with name: bad-name.

@@ -22,7 +22,7 @@ from zope.interface import implements
 from canonical.lazr.interfaces import (
     ConfigErrors, IConfigData, IConfigLoader, IConfigSchema,
     InvalidSectionNameError, ISection, ISectionSchema, IStackableConfig,
-    NoCategoryError, RedefinedSectionError, UnknownKeyError,
+    NoCategoryError, NoConfigError, RedefinedSectionError, UnknownKeyError,
     UnknownSectionError)
 from canonical.lp import decorates
 
@@ -185,7 +185,6 @@ class ConfigSchema:
     def _load(self, filename, conf_data):
         """Return a Config parsed from conf_data."""
         confs = self._getExtendedConfs(filename, conf_data)
-        #confs.reverse()
         config = Config(self)
         for conf_name, conf_data in confs:
             config.push(conf_name, conf_data)
@@ -217,12 +216,13 @@ class ConfigSchema:
             self._getExtendedConfs(extends_filename, extends_data, confs)
         return confs
 
+    _option_pattern = re.compile(r'\w*[:=]\w*')
+
     def _findExtendsName(self, conf_data):
         """Return the name of the extended conf."""
         extends_name = None
         in_meta_section = False
-        for line in StringIO.StringIO(conf_data):
-            line.strip()
+        for line in conf_data.splitlines():
             if line.startswith('[meta]'):
                 # Only search the meta section for the extends key.
                 in_meta_section = True
@@ -231,7 +231,7 @@ class ConfigSchema:
                 break
             elif in_meta_section and line.startswith('extends'):
                 # Found the extends key in the meta section.
-                tokens = line.split(':', 1)
+                tokens = self._option_pattern.split(line, maxsplit=1)
                 extends_name = tokens[-1].strip()
                 break
             else:
@@ -243,18 +243,17 @@ class ConfigData:
     """See `IConfigData`."""
     implements(IConfigData)
 
-    def __init__(self, schema, filename, sections, extends=None, errors=None):
-        """Set the schema and configuration data."""
-        self.schema = schema
+    def __init__(self, filename, sections, extends=None, errors=None):
+        """Set the configuration data."""
         self.filename = filename
         self.name = basename(filename)
         self._sections = sections
         self._category_names = self._getCategoryNames()
         self._extends = extends
         if errors is None:
-            self._errors = []
+            self.errors = []
         else:
-            self._errors = errors
+            self.errors = errors
 
     def _getCategoryNames(self):
         """Return a tuple of category names that the `Section`s belong to."""
@@ -299,13 +298,6 @@ class ConfigData:
             raise NoCategoryError(name)
         return sections
 
-    def validate(self):
-        """See `IConfigData`."""
-        if len(self._errors) > 0:
-            message = "%s is not valid." % self.name
-            raise ConfigErrors(message, errors=self._errors)
-        return True
-
 
 class Config:
     """See `IStackableConfig`."""
@@ -315,7 +307,7 @@ class Config:
     def __init__(self, schema):
         """Set the schema and configuration."""
         sections = self._getRequiredSections(schema)
-        self._config_data = ConfigData(schema, schema.filename, sections)
+        self._config_data = ConfigData(schema.filename, sections)
         self.schema = schema
         self.filename = schema.filename
         self.name = schema.name
@@ -345,17 +337,24 @@ class Config:
         """See `IStackableConfig`."""
         return self._overlays
 
+    def validate(self):
+        """See `IConfigData`."""
+        if len(self._config_data.errors) > 0:
+            message = "%s is not valid." % self.name
+            raise ConfigErrors(message, errors=self._config_data.errors)
+        return True
+
     def push(self, conf_name, conf_data):
         """See `IStackableConfig`.
 
-        New sections, category_names, and errors are created from copied
-        of the current objects instead of making updates. This allows
+        New sections, category_names, errors, and extends are created
+        from the current data instead of making updates. This allows
         overlaid configs to retain their state.
         """
         sections = {}
         for section in self._config_data:
             sections[section.name] = section.clone()
-        errors = list(self._config_data._errors)
+        errors = list(self._config_data.errors)
         extends = None
         encoding_errors = self._verifyEncoding(conf_data)
         errors.extend(encoding_errors)
@@ -380,8 +379,7 @@ class Config:
             items = parser.items(section_name)
             section_errors = sections[section_name].update(items)
             errors.extend(section_errors)
-        self._config_data = ConfigData(
-            self.schema, conf_name, sections, extends, errors)
+        self._config_data = ConfigData(conf_name, sections, extends, errors)
         self._overlays.append(self._config_data)
 
     def _verifyEncoding(self, config_data):
@@ -417,16 +415,19 @@ class Config:
 
     def pop(self, conf_name):
         """See `IStackableConfig`."""
-        index = None
-        for index, overlay in enumerate(self.overlays):
-            if overlay.name == conf_name:
-                break
-        if index is None:
-            raise KeyError("No config by the name.")
-        removed_overlays = self.overlays[index - 1:]
-        self._overlays = self.overlays[0:index - 1]
+        index = self._getIndexOfOverlay(conf_name)
+        removed_overlays = self.overlays[index:]
+        self._overlays = self.overlays[:index]
         self._config_data = self._overlays[-1]
         return removed_overlays
+
+    def _getIndexOfOverlay(self, conf_name):
+        """Return the index of the config named conf_name."""
+        for index, config_data in enumerate(self.overlays):
+            if config_data.name == conf_name:
+                return index
+        # The config data was not found in the overlays.
+        raise NoConfigError('No config with name: %s.' % conf_name)
 
 
 class SectionSchema:
