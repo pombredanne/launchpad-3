@@ -8,15 +8,18 @@ __all__ = [
     'BugWatchEditView',
     'BugWatchView']
 
-
 from zope.component import getUtility
+from zope.interface import Interface
+from zope.schema import TextLine
 
+from canonical.launchpad import _
 from canonical.launchpad.browser import get_comments_for_bugtask
-from canonical.launchpad.interfaces import (IBugWatch, IBugWatchSet,
-    ILaunchBag, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces import (
+    IBugWatch, IBugWatchSet, ILaunchBag, ILaunchpadCelebrities,
+    NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadView)
+    GetitemNavigation, LaunchpadFormView, LaunchpadView, action,
+    canonical_url)
 
 
 class BugWatchSetNavigation(GetitemNavigation):
@@ -55,15 +58,38 @@ class BugWatchView(LaunchpadView):
         return displayed_comments
 
 
-class BugWatchEditView(LaunchpadEditFormView):
+class BugWatchEditForm(Interface):
+    """Form definition for the bug watch edit view."""
+
+    url = TextLine(title=_('URL'), required=True,
+        description=_("The URL at which to view the remote bug."))
+
+
+class BugWatchEditView(LaunchpadFormView):
     """View for editing a bug watch."""
 
-    schema = IBugWatch
-    field_names = ['bugtracker', 'remotebug']
+    schema = BugWatchEditForm
+    field_names = ['url']
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        return {'url' : self.context.url}
+
+    def validate(self, data):
+        """See `LaunchpadFormView.`"""
+        try:
+            bugtracker, bug = getUtility(
+                IBugWatchSet).extractBugTrackerAndBug(data['url'])
+        except (NoBugTrackerFound, UnrecognizedBugTrackerURL):
+            self.setFieldError('url', 'Invalid bug tracker URL.')
 
     @action('Change', name='change')
     def change_action(self, action, data):
-        self.updateContextFromData(data)
+        bugtracker, remote_bug = getUtility(
+            IBugWatchSet).extractBugTrackerAndBug(data['url'])
+        self.context.bugtracker = bugtracker
+        self.context.remotebug = remote_bug
 
     def bugWatchIsUnlinked(self, action):
         """Return whether the bug watch is unlinked."""

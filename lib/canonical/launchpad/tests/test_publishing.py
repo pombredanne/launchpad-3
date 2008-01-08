@@ -73,7 +73,8 @@ class SoyuzTestPublisher:
                      distroseries=None, archive=None, builddepends=None,
                      builddependsindep=None, architecturehintlist='all',
                      dsc_standards_version='3.6.2', dsc_format='1.0',
-                     dsc_binaries='foo-bin',
+                     dsc_binaries='foo-bin', build_conflicts=None,
+                     build_conflicts_indep=None,
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>'):
         """Return a mock source publishing record."""
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
@@ -95,6 +96,8 @@ class SoyuzTestPublisher:
             version=version,
             builddepends=builddepends,
             builddependsindep=builddependsindep,
+            build_conflicts=build_conflicts,
+            build_conflicts_indep=build_conflicts_indep,
             architecturehintlist=architecturehintlist,
             changelog_entry=None,
             dsc=None,
@@ -132,7 +135,8 @@ class SoyuzTestPublisher:
                        description='Well ...\nit does nothing, though',
                        shlibdep=None, depends=None, recommends=None,
                        suggests=None, conflicts=None, replaces=None,
-                       provides=None, filecontent='bbbiiinnnaaarrryyy',
+                       provides=None, pre_depends=None, enhances=None,
+                       breaks=None, filecontent='bbbiiinnnaaarrryyy',
                        status=PackagePublishingStatus.PENDING,
                        pocket=PackagePublishingPocket.RELEASE,
                        scheduleddeletiondate=None, dateremoved=None,
@@ -158,19 +162,17 @@ class SoyuzTestPublisher:
                 arch, archive, spr, status, pocket, scheduleddeletiondate,
                 dateremoved, filecontent, binaryname, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
-                provides)
+                provides, pre_depends, enhances, breaks)
             published_binaries.extend(pub_binaries)
 
         return sorted(
             published_binaries, key=operator.attrgetter('id'), reverse=True)
 
-    def _buildAndPublishBinaryForSource(self, distroarchseries, archive,
-                                        sourcepackagerelease, status,
-                                        pocket, scheduleddeletiondate,
-                                        dateremoved, filecontent, binaryname,
-                                        summary, description, shlibdep,
-                                        depends, recommends, suggests,
-                                        conflicts, replaces, provides):
+    def _buildAndPublishBinaryForSource(
+        self, distroarchseries, archive, sourcepackagerelease, status,
+        pocket, scheduleddeletiondate, dateremoved, filecontent, binaryname,
+        summary, description, shlibdep, depends, recommends, suggests,
+        conflicts, replaces, provides, pre_depends, enhances, breaks):
         """Return the corresponding BinaryPackagePublishingHistory."""
         # Create a Build record.
         build = sourcepackagerelease.createBuild(
@@ -194,6 +196,9 @@ class SoyuzTestPublisher:
             conflicts=conflicts,
             replaces=replaces,
             provides=provides,
+            pre_depends=pre_depends,
+            enhances=enhances,
+            breaks=breaks,
             essential=False,
             installedsize=100,
             architecturespecific=architecturespecific,
