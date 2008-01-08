@@ -31,7 +31,7 @@ from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.publisher.browser import FileUpload
-from zope.schema import Choice, List
+from zope.schema import Choice
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef

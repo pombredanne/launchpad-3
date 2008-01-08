@@ -298,7 +298,8 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
             # An unexpected type.
             raise AssertionError('Unexpected context type')
 
-        base_sql = self._constructGeneralQuery(quoted_query, check_product=False)
+        base_sql = self._constructGeneralQuery(
+            quoted_query, check_product=False)
         if len(base_sql) > 0:
             return '%s AND %s' % (base_sql, restrict_sql)
         else:
