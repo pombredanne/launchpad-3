@@ -199,12 +199,31 @@ class RecordCache:
                 con.close()
 
 
+def noop_if_invalid(func):
+    """Decorator that causes the decorated method to be a noop if the
+    cache this method belongs too is invalid.
+
+    This allows teardown to complete when a ReplayCache has
+    raised a RetryTest exception. Normally during teardown DB operations
+    are made when doing things like aborting the transaction.
+    """
+    def dont_retry_func(self, *args, **kw):
+        if self.invalid:
+            return None
+        else:
+            return func(self, *args, **kw)
+    return dont_retry_func
+
+
 class ReplayCache:
     """Replay database queries from a cache."""
 
+    key = None # Unique key identifying this test
     cache_filename = None # File storing our statement/result cache
     log = None # List of CacheEntry objects loaded from _cache_filename
     connections = None # List of connections using this cache
+
+    invalid = False # If True, the cache is invalid and we are tearing down.
 
     def __init__(self, key):
         self.key = key
@@ -248,6 +267,7 @@ class ReplayCache:
 
         return entry
 
+    @noop_if_invalid
     def connect(self, connection, *args, **kw):
         self.connections.append(connection)
         connection.connection_number = self.connections.index(connection)
@@ -255,6 +275,7 @@ class ReplayCache:
         if (entry.args, entry.kw) != (args, kw):
             self.handleInvalidCache("Connection parameters have changed.")
 
+    @noop_if_invalid
     def execute(self, cursor, query, params=None):
         """Handle Cursor.execute()."""
         connection = cursor.connection
@@ -277,6 +298,7 @@ class ReplayCache:
 
         return entry
 
+    @noop_if_invalid
     def close(self, connection):
         """Handle Connection.close()."""
         entry = self.getNextEntry(connection, CloseCacheEntry)
@@ -289,12 +311,14 @@ class ReplayCache:
         if entry.exception is not None:
             raise entry.exception
 
+    @noop_if_invalid
     def rollback(self, connection):
         """Handle Connection.rollback()."""
         entry = self.getNextEntry(connection, RollbackCacheEntry)
         if entry.exception is not None:
             raise entry.exception
 
+    @noop_if_invalid
     def set_isolation_level(self, connection, level):
         """Handle Connection.set_isolation_level()."""
         entry = self.getNextEntry(connection, SetIsolationLevelCacheEntry)
@@ -307,6 +331,7 @@ class ReplayCache:
         """Remove the cache from disk and raise a RetryTest exception."""
         if os.path.exists(self.cache_filename):
             os.unlink(self.cache_filename)
+        self.invalid = True
         raise RetryTest(reason)
 
 

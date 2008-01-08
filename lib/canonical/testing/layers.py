@@ -35,6 +35,7 @@ from zope.component import getUtility, getGlobalSiteManager
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
+from zope.testing.testrunner import RetryTest
 
 from canonical.config import config
 from canonical.database.sqlbase import ZopelessTransactionManager
@@ -355,6 +356,8 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     @profiled
     def installMockDb(cls):
+        assert cls.mockdb_mode is None, 'mock db already installed'
+
         from canonical.testing.mockdb import (
                 cache_filename, MockDbConnection, RecordCache, ReplayCache,
                 )
@@ -405,9 +408,17 @@ class DatabaseLayer(BaseLayer):
         if cls.mockdb_mode is None:
             return # Already uninstalled
 
+        from canonical.testing.mockdb import (
+                cache_filename, MockDbConnection, RecordCache, ReplayCache,
+                )
+
         # Store results if we are recording
         if cls.mockdb_mode == 'record':
             cls.cache.store()
+            assert os.path.exists(cls.cache.cache_filename)
+            assert isinstance(cls.cache, RecordCache)
+        else:
+            assert isinstance(cls.cache, ReplayCache)
 
         cls.mockdb_mode = None
         global _org_connect
@@ -672,7 +683,7 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
     @classmethod
     @profiled
     def testTearDown(cls):
-        cls.txn.abort()
+        cls.txn.abort() # Will fail if using the mock db in replay mode!
         cls.txn.uninstall()
         if ZopelessTransactionManager._installed is not None:
             raise LayerInvariantError(
