@@ -59,7 +59,7 @@
         <tr>
           <th>Branch:</th>
           <td>
-            <tal:branch replace="structure series/series_branch/fmt:link"/>
+            <tal:branch replace="structure series/series_branch/fmt:project-link"/>
           </td>
         </tr>
         <tr class="lesser">

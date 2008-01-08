@@ -73,7 +73,7 @@
     />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProduct"
-    name="+branches"
+    name="+code-index"
     layer="canonical.launchpad.layers.CodeLayer"
     />
   <browser:defaultView
@@ -316,7 +316,7 @@
     class="canonical.launchpad.browser.ProductBranchOverviewView"
     facet="branches"
     permission="zope.Public"
-    name="+overview"
+    name="+code-index"
     template="../templates/product-branch-overview.pt"
     />
 

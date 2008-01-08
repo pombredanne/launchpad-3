@@ -789,6 +789,17 @@ class PillarFormatterAPI(ObjectFormatterExtendedAPI):
 class BranchFormatterAPI(ObjectFormatterExtendedAPI):
     """Adapter for IBranch objects to a formatted string."""
 
+    def traverse(self, name, furtherPath):
+        if name == 'project-link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.projectLink(extra_path)
+        if name == 'title-link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.titleLink(extra_path)
+        return ObjectFormatterExtendedAPI.traverse(self, name, furtherPath)
+
     def link(self, extra_path):
         """Return an HTML link to the branch page containing an icon
         followed by the branch's unique name.
@@ -799,7 +810,44 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
             url = '%s/%s' % (url, extra_path)
         return ('<a href="%s" title="%s"><img src="/@@/branch" alt=""/>'
                 '&nbsp;%s</a>' % (
-                    url, branch.displayname, branch.unique_name))
+                url, branch.displayname, branch.unique_name))
+
+    def projectLink(self, extra_path):
+        """Return an HTML link to the branch page containing an icon
+        followed by the branch's unique name.
+        """
+        branch = self._context
+        url = canonical_url(branch)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        if branch.title is not None:
+            title = branch.title
+        else:
+            title = "(no title)"
+        if branch.author is not None:
+            author = branch.author.name
+        else:
+            author = branch.owner.name
+
+        return ('<a href="%s" title="%s"><img src="/@@/branch" alt=""/>'
+                '&nbsp;%s</a>: %s' % (
+                    url, branch.displayname, branch.name, title))
+
+    def titleLink(self, extra_path):
+        """Return an HTML link to the branch page containing an icon
+        followed by the branch's unique name.
+        """
+        branch = self._context
+        url = canonical_url(branch)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        if branch.title is not None:
+            title = branch.title
+        else:
+            title = "(no title)"
+
+        return ('<a href="%s" title="%s">%s</a>: %s' % (
+                    url, branch.displayname, branch.name, title))
 
 
 class BugFormatterAPI(ObjectFormatterExtendedAPI):

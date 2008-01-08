@@ -1284,6 +1284,10 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin):
         return [branch.getBranchRevision(branch.revision_count)
                 for branch in self.recent_revision_branches]
 
+    @cachedproperty
+    def latest_branches(self):
+        return self.context.getLatestBranches(visible_by_user=self.user)
+
 
 class ProductBranchesView(BranchListingView):
     """View for branch listing for a product."""
