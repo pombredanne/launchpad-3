@@ -8,6 +8,7 @@ __all__ = [
     'LaunchpadDropdownWidget',
     'LabeledMultiCheckBoxWidget',
     'LaunchpadRadioWidget',
+    'LaunchpadRadioWidgetWithDescription',
     'CheckBoxMatrixWidget',
     ]
 
@@ -68,8 +69,8 @@ class LaunchpadRadioWidget(RadioWidget):
             and getattr(self, 'firstItem', False)
             and len(self.vocabulary) > 0
             and self.context.required):
-                # Grab the first item from the iterator:
-                values = [iter(self.vocabulary).next().value]
+            # Grab the first item from the iterator:
+            values = [iter(self.vocabulary).next().value]
         elif value != self.context.missing_value:
             values = [value]
         else:
@@ -95,12 +96,18 @@ class LaunchpadRadioWidget(RadioWidget):
 
 
 class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
+    """Display the enumerated type description after the label.
+
+    This widget assumes that the vocabulary that has been supplied
+    is a LAZR enumerated type, and uses this information to get
+    the associated description for the items.
+    """
 
     _joinButtonToMessageTemplate = u"<label>%s&nbsp;%s</label> - %s"
 
     def renderItem(self, index, text, value, name, cssClass):
         """Render an item of the list."""
-        description= self.vocabulary.getTermByToken(value).value.description
+        description = self.vocabulary.getTermByToken(value).value.description
 
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
@@ -113,7 +120,7 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
 
     def renderSelectedItem(self, index, text, value, name, cssClass):
         """Render a selected item of the list."""
-        description= self.vocabulary.getTermByToken(value).value.description
+        description = self.vocabulary.getTermByToken(value).value.description
 
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
@@ -123,7 +130,7 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
                              cssClass=cssClass,
                              checked="checked",
                              type='radio')
-        return self._joinButtonToMessageTemplate %(elem, text, description)
+        return self._joinButtonToMessageTemplate % (elem, text, description)
 
 
 class CheckBoxMatrixWidget(LabeledMultiCheckBoxWidget):

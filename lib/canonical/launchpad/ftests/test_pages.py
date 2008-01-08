@@ -42,7 +42,8 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
         HTTPCaller.__init__(self, *args, **kw)
     def __call__(self, *args, **kw):
         if self._debug:
-            import pdb; pdb.set_trace()
+            import pdb
+            pdb.set_trace()
         try:
             return HTTPCaller.__call__(self, *args, **kw)
         finally:
@@ -78,15 +79,16 @@ def find_tags_by_class(content, class_, only_first=False):
     """Find and return one or more tags matching the given class(es)"""
     match_classes = set(class_.split())
     def class_matcher(value):
-        if value is None: return False
+        if value is None:
+            return False
         classes = set(value.split())
         return match_classes.issubset(classes)
     soup = BeautifulSoup(
         content, parseOnlyThese=SoupStrainer(attrs={'class': class_matcher}))
     if only_first:
-        find=BeautifulSoup.find
+        find = BeautifulSoup.find
     else:
-        find=BeautifulSoup.findAll
+        find = BeautifulSoup.findAll
     return find(soup, attrs={'class': class_matcher})
 
 
@@ -113,7 +115,8 @@ def find_main_content(content):
 def get_feedback_messages(content):
     """Find and return the feedback messages of the page."""
     message_classes = [
-        'message', 'informational message', 'error message', 'warning message']
+        'message', 'informational message', 'error message',
+        'warning message']
     soup = BeautifulSoup(
         content,
         parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
@@ -146,7 +149,8 @@ ELEMENTS_INTRODUCING_NEWLINE = [
 
 
 NEWLINES_RE = re.compile(u'\n+')
-LEADING_AND_TRAILING_SPACES_RE = re.compile(u'(^[ \t]+)|([ \t]$)', re.MULTILINE)
+LEADING_AND_TRAILING_SPACES_RE = re.compile(
+    u'(^[ \t]+)|([ \t]$)', re.MULTILINE)
 TABS_AND_SPACES_RE = re.compile(u'[ \t]+')
 NBSP_RE = re.compile(u'&nbsp;|&#160;')
 
