@@ -40,7 +40,7 @@ modification date.
     True
 
 
-= POTemplateSubset= 
+= POTemplateSubset=
 
 A POTemplateSubset describes the subset of all templates that belong to
 either one product series, or one source package in one distro series.
