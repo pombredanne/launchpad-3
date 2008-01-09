@@ -161,6 +161,10 @@ class ArchiveView(LaunchpadView):
         return self.status_filter_widget.renderValue(
             self.selected_status_filter.value)
 
+    @property
+    def is_active(self):
+        return bool(self.context.getPublishedSources())
+
     def source_count_text(self):
         if self.context.number_of_sources == 1:
             return '%s source package' % self.context.number_of_sources
