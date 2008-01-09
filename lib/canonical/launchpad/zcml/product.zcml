@@ -301,7 +301,6 @@
       />
   </browser:pages>
 
-  <!-- change to pages -->
   <browser:page
     for="canonical.launchpad.interfaces.IProduct"
     class="canonical.launchpad.browser.ProductBranchesView"

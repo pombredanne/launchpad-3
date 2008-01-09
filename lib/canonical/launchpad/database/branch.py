@@ -1115,7 +1115,7 @@ class BranchSet:
         # visible.  When we get stormified we can fix this, but I don't
         # think it is worthwile blocking this feature on storm.
 
-        query = """
+        select_query = """
             select branch.id
             from branch, revision, branchrevision
             where branch.id = branchrevision.branch
@@ -1126,12 +1126,13 @@ class BranchSet:
         query = """
             %s order by revision.revision_date desc
             limit %s
-            """ % (self._generateBranchClause(query, visible_by_user),
+            """ % (self._generateBranchClause(select_query, visible_by_user),
                    quantity)
         cur = cursor()
         cur.execute(query)
 
         branch_ids = [id for (id,) in cur.fetchall()]
+        cur.close()
         # Now get the branches for these id's and sort them so they
         # are in the same order.
 

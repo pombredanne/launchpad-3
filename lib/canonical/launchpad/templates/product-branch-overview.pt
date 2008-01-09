@@ -63,13 +63,13 @@
                   <a tal:attributes="href branch/owner/fmt:url"
                      tal:content="branch/owner/browsername">Foo Bar</a>
               </div>
-        <dl>
-          <dd>
-        <tal:revision define="codebrowse string:${view/codebrowse_root}${rev_no/branch/unique_name}">
-        <metal:landing-target use-macro="rev_no/branch/@@+macros/revision-text"/>
-        </tal:revision>
-          </dd>
-        </dl>
+              <dl>
+                <dd>
+                  <tal:revision define="codebrowse string:${view/codebrowse_root}${rev_no/branch/unique_name}">
+                    <metal:landing-target use-macro="rev_no/branch/@@+macros/revision-text"/>
+                  </tal:revision>
+                </dd>
+              </dl>
             </td>
           </tr>
         </tal:branches>

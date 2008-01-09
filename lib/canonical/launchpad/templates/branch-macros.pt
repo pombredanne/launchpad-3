@@ -171,15 +171,15 @@
       By
       <strong>
         <tal:not-anonymous condition="view/user">
-          <span tal:replace="rev_no/revision/revision_author/name">
+          <tal:author replace="rev_no/revision/revision_author/name">
             John Doe &lt;john.doe@example.com&gt;
-          </span>
+          </tal:author>
         </tal:not-anonymous>
         <tal:anonymous condition="not:view/user">
-          <span
-              tal:replace="rev_no/revision/revision_author/name_without_email">
+          <tal:author
+              replace="rev_no/revision/revision_author/name_without_email">
             John Doe
-          </span>
+          </tal:author>
           &lt;email address hidden&gt;
         </tal:anonymous>
       </strong>
@@ -187,9 +187,10 @@
             tal:content="rev_no/revision/revision_date/fmt:displaydate"
             >2005-10-05 14:34:22 WST</span>
   </div>
-  <p tal:replace="structure rev_no/revision/log_body/fmt:text-to-html">
+  <tal:commit-message
+      replace="structure rev_no/revision/log_body/fmt:text-to-html">
     The revision commit message.
-  </p>
+  </tal:commit-message>
 
 </metal:revision-text>
 

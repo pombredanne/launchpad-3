@@ -37,7 +37,7 @@
 
 
 <metal:branch_display define-macro="branch_display">
-  <tal:comment replace="nothing">
+  <tal:comment condition="nothing">
     This macro expects two variables to be defined:
       - 'series': The ProductSeries
       - 'is_focus': A boolean saying whether this is the series in which

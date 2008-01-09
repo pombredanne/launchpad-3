@@ -1270,6 +1270,7 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin):
 
     @cachedproperty
     def recent_revision_branches(self):
+        """Branches that have the most recent revisions."""
         branch_set = getUtility(IBranchSet)
         return branch_set.getBranchesWithRecentRevisionsForProduct(
             self.context, 5, self.user)
@@ -1281,11 +1282,13 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin):
 
     @cachedproperty
     def recent_revisions(self):
+        """The tip revision for each of the recent revision branches."""
         return [branch.getBranchRevision(branch.revision_count)
                 for branch in self.recent_revision_branches]
 
     @cachedproperty
     def latest_branches(self):
+        """The lastest branches registered for the product."""
         return self.context.getLatestBranches(visible_by_user=self.user)
 
 

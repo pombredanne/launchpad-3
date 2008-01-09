@@ -952,8 +952,8 @@ class IBranchSet(Interface):
                                                  visible_by_user=None):
         """Return the product's branches that have the most recent revisions.
 
-        At most `quantity` branches are returned.
-
+        :param quantity: At most `quantity` branches are returned.
+        :type quantity: int
         :param visible_by_user: If a person is not supplied, only public
             branches are returned.  If a person is supplied both public
             branches, and the private branches that the person is entitled to
