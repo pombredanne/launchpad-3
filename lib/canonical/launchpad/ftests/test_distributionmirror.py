@@ -190,12 +190,17 @@ class TestDistributionMirrorSet(unittest.TestCase):
     
     def test_getBestMirrorsForCountry_randomizes_results(self):
         """Make sure getBestMirrorsForCountry() randomizes its results."""
-        @classmethod
         def my_select(class_, query, *args, **kw):
+            """Fake function with the same signature of SQLBase.select().
+
+            This function ensures the orderBy argument given to it contains
+            the 'random' string in its first item.
+            """
             self.failUnlessEqual(kw['orderBy'][0].expr, 'random')
             return [1,2,3]
+
         orig_select = DistributionMirror.select
-        DistributionMirror.select = my_select
+        DistributionMirror.select = classmethod(my_select)
         login('foo.bar@canonical.com')
         getUtility(IDistributionMirrorSet).getBestMirrorsForCountry(
             None, MirrorContent.ARCHIVE)
