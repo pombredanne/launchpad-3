@@ -43,4 +43,3 @@ Following is a snippet of the log file above:
 
 Regards,
 The Launchpad Team 
-

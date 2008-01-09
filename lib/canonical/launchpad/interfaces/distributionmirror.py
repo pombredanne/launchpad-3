@@ -404,13 +404,12 @@ class IDistributionMirror(Interface):
         """
 
     def disable(notify_owner, log):
-        """Mark this mirror as disabled and notify the distributions's mirror
-        admins by email.
+        """Disable this mirror and notify the distro's mirror admins by email.
 
-        @param notify_owner: If True, an identical notification is sent to the
+        :param notify_owner: If True, an identical notification is sent to the
         mirror owner.
 
-        @param log: The log of requests/responses from the last time this
+        :param log: The log of requests/responses from the last time this
         mirror was probed.  This is only necessary because we want to include
         a snippet of the log in the email notification but the content can
         only be read back from the librarian after we commit the transaction
