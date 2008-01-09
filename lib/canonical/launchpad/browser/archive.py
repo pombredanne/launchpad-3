@@ -27,14 +27,15 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchive, IPPAActivateForm, IArchiveSet, IBuildSet,
-    IHasBuildRecords, ILaunchpadCelebrities, NotFoundError,
+    ArchivePurpose, IArchive, IArchiveSet, IBuildSet, IHasBuildRecords,
+    ILaunchpadCelebrities, IPPAActivateForm, IPublishingSet, NotFoundError,
     PackagePublishingStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.authorization import check_permission
 
 
 class ArchiveNavigation(Navigation):
@@ -176,6 +177,53 @@ class ArchiveView(LaunchpadView):
             return '%s binary package' % self.context.number_of_binaries
         else:
             return '%s binary packages' % self.context.number_of_binaries
+
+    def performPPAAction(self):
+        """Execute the designed action over the selected queue items.
+
+        Returns a message describing the action executed or None if nothing
+        was done.
+        """
+        if self.request.method != "POST":
+            return
+
+        if not check_permission('launchpad.Edit', self.context):
+            self.error = 'You do not have permission to act on this archive.'
+            return
+
+        delete = self.request.form.get('DELETE', '')
+        include_binaries = self.request.form.get('DELETE_BINARIES', '')
+        pub_src_ids = self.request.form.get('PUB_SRC_ID', '')
+
+        if not delete or not pub_src_ids:
+            self.error = "No items selected."
+            return
+
+        if not isinstance(pub_src_ids, list):
+            pub_src_ids = [pub_src_ids]
+
+        if include_binaries:
+            target = "sources and binaries"
+        else:
+            target = "sources"
+
+        header = 'Deleting %s:<br>' % target
+
+        success = []
+        failure = []
+        for pub_src_id in pub_src_ids:
+            info = "nahh"
+            pub = getUtility(IPublishingSet).getSource(int(pub_src_id))
+            if pub.id % 2:
+                failure.append('FAILED: %s (%s)' %
+                               (pub.displayname, pub.id))
+            else:
+                success.append('OK: %s' % pub.displayname)
+
+        report = '%s<br>%s' % (header, ', '.join(success + failure))
+        self.error = "Placeholder"
+        return report
+
 
 class ArchiveActivateView(LaunchpadFormView):
     """PPA activation view class.

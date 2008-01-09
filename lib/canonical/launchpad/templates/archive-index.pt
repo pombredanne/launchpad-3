@@ -35,6 +35,8 @@
             replace="structure context/description/fmt:text-to-html" />
       </div>
 
+      <h2>apt sources.list entries</h2>
+
       <tal:entries replace="structure view/sources_list_entries" />
 
       <h2>Packages</h2>
@@ -43,9 +45,8 @@
         This PPA does not contain any packages yet.
       </p>
 
-      <h2>apt sources.list entries</h2>
-
-      <tal:active_ppa condition="ppa_active">
+      <tal:active_ppa condition="ppa_active"
+                      define="allow_actions context/required:launchpad.Edit">
 
       <div>
         <ul id="package_counters">
@@ -72,6 +73,8 @@
         </form>
       </div>
 
+      <form name="ppa_actions" action="" method="POST" >
+
       <div style="padding-top: 1em;" tal:define="batch view/search_results">
 
       <tal:navigation_top
@@ -81,6 +84,7 @@
       <table class="listing" id="packages_list" tal:condition="batch">
         <thead>
           <tr>
+            <td tal:condition="allow_actions" />
             <th colspan="2">Source</th>
             <th tal:condition="context/owner/isTeam">Uploader</th>
             <th>Published</th>
@@ -89,6 +93,7 @@
             <th>Section</th>
           </tr>
         </thead>
+
         <tbody>
           <tal:block repeat="publishing batch"
                      replace="structure publishing/@@+listing-ppa-detailed">
@@ -105,12 +110,45 @@
               No matching package for '<span tal:replace="view/name_filter" />'.
            </tal:has_filter>
         </div>
+      </div>
+
+      <div id="action_console" tal:condition="allow_actions"
+           tal:define="message view/performPPAAction;
+                       error view/error|nothing"
+           style="padding-top: 1em;">
+
+        <table>
+         <thead>
+            <tr>
+              <td>Action Console:</td>
+            </tr>
+         </thead>
+         <tfoot style="padding-top: 1em">
+            <tr>
+              <td>
+                 <input value="DELETE" name="DELETE" type="submit"/>
+                 <input type="checkbox" name="DELETE_BINARIES" value="YES" />
+                 <label for="DELETE_BINARIES">Include binaries</label>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <p class="informational message"
+           tal:condition="message"
+           tal:content="structure message" />
+
+        <p class="error message"
+           tal:condition="error"
+           tal:content="error" />
 
       </div>
 
+      </form>
+
       </tal:active_ppa>
 
-    </div>
+    </div> <!--main -->
 
     <p metal:fill-slot="help">
       You can view the current

@@ -5,6 +5,11 @@
   omit-tag="">
 
   <tr class="ppa_package_row">
+     <td class="icon left"
+         tal:condition="context/archive/required:launchpad.Edit">
+        <input type="checkbox" name="PUB_SRC_ID"
+               tal:attributes="value context/id" />
+     </td>
      <td style="white-space: nowrap"><a href="#"
             tal:attributes="onClick string:return toggleExpandableTableRow('pub${context/id}');"><img
                 src="/@@/treeCollapsed" alt=""
@@ -30,8 +35,6 @@
      <td tal:content="context/distroseries/name"
          >dapper</td>
      <td tal:content="context/section/name">base</td>
-     <td>
-     </td>
   </tr>
   <tr tal:attributes="id string:pub${context/id}"
       tal:define="published_source_and_binary_files view/published_source_and_binary_files"
