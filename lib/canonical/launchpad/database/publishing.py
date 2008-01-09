@@ -3,13 +3,16 @@
 
 __metaclass__ = type
 
-__all__ = ['SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
-           'SecureSourcePackagePublishingHistory',
-           'SecureBinaryPackagePublishingHistory',
-           'SourcePackagePublishingHistory',
-           'BinaryPackagePublishingHistory',
-           'IndexStanzaFields',
-           ]
+__all__ = [
+    'IndexStanzaFields',
+    'BinaryPackageFilePublishing',
+    'BinaryPackagePublishingHistory',
+    'SecureBinaryPackagePublishingHistory',
+    'SecureSourcePackagePublishingHistory',
+    'SourcePackageFilePublishing',
+    'SourcePackagePublishingHistory',
+    'PublishingSet',
+    ]
 
 from warnings import warn
 import os
@@ -22,12 +25,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
-    ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
-    ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
-    ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    IArchiveSafePublisher, PackagePublishingPriority,
-    PackagePublishingStatus, PackagePublishingPocket,
-    PoolFileOverwriteError)
+    IArchiveSafePublisher, IBinaryPackageFilePublishing,
+    IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
+    ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
+    ISourcePackagePublishingHistory, IPublishingSet, PackagePublishingPriority,
+    PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 
 
@@ -772,3 +774,13 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             datecreated=UTC_NOW,
             pocket=pocket,
             embargo=False)
+
+
+class PublishingSet:
+
+    implements(IPublishingSet)
+    title = "Publishing record utility"
+
+    def getSource(self, pub_id):
+        """See `IPublishingSet`."""
+        return SourcePackagePublishingHistory.get(pub_id)
