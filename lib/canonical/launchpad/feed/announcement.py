@@ -13,7 +13,7 @@ __all__ = [
 import cgi
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, urlappend
 from canonical.launchpad.interfaces import (
     IAnnouncementSet, IDistribution, IHasAnnouncements, IProduct, IProject)
 from canonical.launchpad.interfaces import IFeedsApplication
@@ -26,19 +26,11 @@ class AnnouncementsFeedBase(FeedBase):
 
     feedname = "announcements"
 
-    def normalizedUrl(self, rootsite=None):
-        url = canonical_url(self.context, rootsite=rootsite)
-        # canonical_url has a trailing '/' when there is no path information
-        # but does not if a path is present.  If a trailing '/' doesn't exist,
-        # add it on so the constructed URL will be correct for all cases.
-        if not url.endswith('/'):
-            url += '/'
-        return url
-
     @property
     def alternate_url(self):
         """See `IFeed`."""
-        return "%s+announcements" % self.normalizedUrl(rootsite="mainsite")
+        return urlappend(canonical_url(self.context, rootsite="mainsite"),
+                         "+announcements")
 
     def entryTitle(self, announcement):
         """Return the title for the announcement.
@@ -68,8 +60,8 @@ class AnnouncementsFeedBase(FeedBase):
     @property
     def url(self):
         """See `IFeed`."""
-        return "%s%s.%s" % (
-            self.normalizedUrl(), self.feedname, self.format)
+        return urlappend(canonical_url(self.context, rootsite="mainsite"),
+                         "%s.%s" % (self.feedname, self.format))
 
 
 class AnnouncementsFeed(AnnouncementsFeedBase):
