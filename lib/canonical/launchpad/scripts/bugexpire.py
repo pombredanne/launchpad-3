@@ -71,6 +71,10 @@ class BugJanitor:
             self.log.info(
                 'Found %d bugtasks to expire.' % len(incomplete_bugtasks))
             for bugtask in incomplete_bugtasks:
+                # We don't expire bugtasks with conjoined masters.
+                if bugtask.conjoined_master:
+                    continue
+
                 bugtask_before_modification = Snapshot(
                     bugtask, providing=providedBy(bugtask))
                 bugtask.transitionToStatus(

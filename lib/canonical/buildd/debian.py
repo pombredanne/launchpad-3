@@ -91,6 +91,14 @@ class DebianBuildManager(BuildManager):
             self.arch_indep = extra_args['arch_indep']
         else:
             self.arch_indep = False
+        if 'suite' in extra_args:
+            self.suite = extra_args['suite']
+        else:
+            self.suite = False
+        if 'archive_purpose' in extra_args:
+            self.archive_purpose = extra_args['archive_purpose']
+        else:
+            self.archive_purpose = False
 
         BuildManager.initiate(self, files, chroot, extra_args)
 
@@ -121,6 +129,12 @@ class DebianBuildManager(BuildManager):
         args.extend(self._sbuildargs)
         if self.arch_indep:
             args.extend(["-A"])
+        if self.archive_purpose:
+            args.extend(["--purpose=" + self.archive_purpose])
+        if self.suite:
+            args.extend(["--dist=" + self.suite])
+        else:
+            args.extend(["--dist=autobuild"])
         args.extend(["--comp=" + self.ogre])
         args.extend([self._dscfile])
         self.runSubProcess( self._sbuildpath, args )

@@ -82,6 +82,7 @@
     </sectiontype>
 
     <sectiontype name="mainsite" extends="virtual_host" />
+    <sectiontype name="api" extends="virtual_host" />
     <sectiontype name="blueprints" extends="virtual_host" />
     <sectiontype name="code" extends="virtual_host" />
     <sectiontype name="translations" extends="virtual_host" />
@@ -102,7 +103,17 @@
                 When false, use http URLs unless explicitly overridden.
             </description>
         </key>
+
+
+        <key name="expose_webservice" datatype="boolean" default="no">
+          <description>
+            Whether or not the web service is exposed. This is false
+            except in development. When the web service is ready to go
+            live, this variable will be removed.
+          </description>
+        </key>
         <section name="*" type="mainsite" attribute="mainsite" required="yes" />
+        <section name="*" type="api" attribute="api" required="yes" />
         <section name="*" type="blueprints" attribute="blueprints" required="yes" />
         <section name="*" type="code" attribute="code" required="yes" />
         <section name="*" type="translations" attribute="translations" required="yes" />
@@ -195,14 +206,14 @@ k            </description>
             </description>
         </key>
         <key name="max_productrelease_file_size" datatype="integer" required="no"
-            default="0">
+            default="62914560">
             <description>
                 Maximum size of product release download files in bytes. A value
                 of 0 means no limit.
             </description>
         </key>
         <key name="max_productrelease_signature_size" datatype="integer" required="no"
-            default="0">
+            default="1024">
             <description>
                 Maximum size of a product release download file signature in bytes.
                 A value of 0 means no limit.
@@ -591,6 +602,13 @@ k            </description>
             Whether comments should be searched when searching bugs.
           </description>
         </key>
+        <key name="show_imported_comments" datatype="boolean" required="no"
+            default="false">
+          <description>
+            Whether comments that have been imported from remote bug
+            trackers should be displayed in the Launchpad UI.
+          </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="shipit" extends="database_options">
@@ -887,10 +905,18 @@ k            </description>
                 BuilddMaster Datatbase user.
             </description>
         </key>
-        <key name="socket_timeout" datatype="integer" default="600">
+        <key name="socket_timeout" datatype="integer" default="40">
             <description>
                 The time in seconds that the builddmaster will wait for a
                 reply from buildd slave.
+            </description>
+        </key>
+        <key name="vm_resume_command" datatype="string"
+             default="echo %(vm_host)s">
+            <description>
+              Command-line used to reset the virtual builder. 'vm_host'
+              variable will be replaced by the context builder virtual
+              machine host.
             </description>
         </key>
         <key name="uploader" datatype="string" required="yes">
@@ -907,13 +933,6 @@ k            </description>
         <key name="root" datatype="string" required="yes">
             <description>
                 Directory to be created to store build results.
-            </description>
-        </key>
-        <key name="crondaily_lockfile" datatype="string"
-             default="/srv/launchpad.net/ubuntu-archive/cron.daily.lock">
-            <description>
-             cron.daily lockfile path, it's probed in order to suppress
-             buildd-queue-builder runs during the publication process.
             </description>
         </key>
         <key name="send_build_notification" datatype="boolean"
@@ -1132,6 +1151,7 @@ k            </description>
         <key name="dbuser" datatype="string" default="checkwatches" />
         <key name="batch_query_threshold" datatype="integer" default="10" />
         <key name="default_socket_timeout" datatype="integer" default="30" />
+        <key name="import_comments" datatype="boolean" default="false" />
     </sectiontype>
 
     <sectiontype name="canonical" extends="database_options">

@@ -96,7 +96,7 @@ class SoyuzTestPublisher:
             builddepends=builddepends,
             builddependsindep=builddependsindep,
             architecturehintlist=architecturehintlist,
-            changelog=None,
+            changelog_entry=None,
             dsc=None,
             copyright='placeholder ...',
             dscsigningkey=self.signingkey,

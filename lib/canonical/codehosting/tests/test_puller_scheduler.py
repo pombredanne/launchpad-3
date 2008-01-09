@@ -831,6 +831,65 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
 
         return deferred.addErrback(self._dumpError)
 
+    def mirror_with_unexpected_failure(self):
+        """Attempt to mirror using a script that fails with a NameError.
+
+        The script will fail with a distinctive NameError before reporting
+        success or failure, and this function will return a deferred that
+        calls back with the ProcessTerminated exception that results.
+        """
+        unexpected_error_script = """
+        OOGA_BOOGA
+        """
+
+        puller_master = self.makePullerMaster(
+            script_text=unexpected_error_script)
+
+        destination_branch = BzrDir.create_branch_convenience(
+            puller_master.destination_url)
+
+        # "Mirroring" the branch will fail.
+        return self.assertFailure(
+            puller_master.mirror(), error.ProcessTerminated)
+
+    def test_mirror_with_unexpected_failure(self):
+        # If the puller worker script fails before recording success or
+        # failure, the branch is considered to have failed.
+
+        # We run a "mirror" that will fail with a distinctive
+        # NameError:
+        deferred = self.mirror_with_unexpected_failure()
+
+        # And check that the process monitoring machinery will call
+        # "mirrorFailed" for the branch.
+        def check_mirror_failed(ignored):
+            self.assertEqual(len(self.client.calls), 1)
+            mirror_failed_call, = self.client.calls
+            self.assertEqual(
+                mirror_failed_call[:2],
+                ('mirrorFailed', self.db_branch.id))
+            self.assertTrue(
+                "OOGA_BOOGA" in mirror_failed_call[2])
+            return ignored
+        deferred.addCallback(check_mirror_failed)
+
+        return deferred.addErrback(self._dumpError)
+
+    def test_mirror_with_unexpected_failure_and_failing_authserver(self):
+        # If the puller worker script fails before recording success
+        # or failure _and_ the call to the authserver to record this
+        # failure fails, there's not much we can do, but we should
+        # exit cleanly and not hang.
+
+        class FailingFakeBranchStatusClient(FakeBranchStatusClient):
+            def mirrorFailed(self, branch_id, revision_id):
+                return defer.fail(Exception())
+        self.client = FailingFakeBranchStatusClient()
+
+        deferred = self.mirror_with_unexpected_failure()
+
+        return deferred.addErrback(self._dumpError)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
