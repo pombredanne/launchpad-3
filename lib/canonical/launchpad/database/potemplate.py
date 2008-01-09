@@ -48,7 +48,7 @@ standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
 
 '''
 
-standardPOFileHeader = (
+standardTemplateHeader = (
 "Project-Id-Version: %(origin)s\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: %(templatedate)s\n"
@@ -58,8 +58,12 @@ standardPOFileHeader = (
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=%(nplurals)d; plural=%(pluralexpr)s\n"
 )
+
+
+standardPOFileHeader = (standardTemplateHeader +
+    "Plural-Forms: nplurals=%(nplurals)d; plural=%(pluralexpr)s\n")
+
 
 class POTemplate(SQLBase, RosettaStats):
     implements(IPOTemplate)
@@ -92,7 +96,7 @@ class POTemplate(SQLBase, RosettaStats):
         notNull=False, default=None)
     distroseries = ForeignKey(foreignKey='DistroSeries',
         dbName='distroseries', notNull=False, default=None)
-    header = StringCol(dbName='header', notNull=False, default=None)
+    header = StringCol(dbName='header', notNull=False)
     binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
         dbName='binarypackagename', notNull=False, default=None)
     languagepack = BoolCol(dbName='languagepack', notNull=True, default=False)
@@ -781,13 +785,20 @@ class POTemplateSubset:
 
     def new(self, name, translation_domain, path, owner):
         """See `IPOTemplateSubset`."""
+        header_params = {
+            'origin': 'PACKAGE VERSION',
+            'templatedate': datetime.datetime.now(),
+            'languagename': 'LANGUAGE',
+            'languagecode': 'LL',
+            }
         return POTemplate(name=name,
                           translation_domain=translation_domain,
                           sourcepackagename=self.sourcepackagename,
                           distroseries=self.distroseries,
                           productseries=self.productseries,
                           path=path,
-                          owner=owner)
+                          owner=owner,
+                          header=standardTemplateHeader % header_params)
 
     def getPOTemplateByName(self, name):
         """See `IPOTemplateSubset`."""
