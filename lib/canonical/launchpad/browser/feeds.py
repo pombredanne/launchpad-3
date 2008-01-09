@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import (
     IBugTask, IBugTarget, IHasAnnouncements, ILaunchpadRoot, IPerson)
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp import (
-    Navigation, canonical_name, canonical_url, stepto, urljoin)
+    Navigation, canonical_name, canonical_url, stepto)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.vhosts import allvhosts
