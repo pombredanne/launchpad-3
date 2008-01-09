@@ -120,16 +120,16 @@ def retry_on_odd_numbered_calls():
 def testRetryTestInDoctest():
     """Test a RetryTest exception in a doctest works as expected.
 
-    >>> True == True
-    True
+    The first time this doctest is run, the following call will raise
+    a RetryTest exception. You shouldn't see this though, as the test
+    machinery will silently retry the test and the second time through
+    the method will not raise this exception (well - you might see the test
+    runner report that it is running this test twice because refactoring the
+    testrunner and unittest framework and maintaining the patch to support
+    Retry properly is just way too much work for little gain).
+
     >>> retry_on_odd_numbered_calls()
     Retry not raised.
-    >>> False == False
-    True
-    >>> raise RuntimeError("Oops")
-    Traceback (most recent call last):
-    ...
-    RuntimeError: Oops
     """
 
 
