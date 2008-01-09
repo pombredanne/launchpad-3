@@ -270,21 +270,57 @@ class MailingList(SQLBase):
 
     def getSubscribedAddresses(self):
         """See `IMailingList`."""
-        for subscription in self._getSubscriptions():
-            yield subscription.subscribed_address.email
+        # Import here to avoid circular imports.
+        from canonical.launchpad.database.emailaddress import EmailAddress
+        # In order to handle the case where the preferred email address is
+        # used (i.e. where MailingListSubscription.email_address is NULL), we
+        # need to UNION, those using a specific address and those using the
+        # preferred address.
+        clause_tables = ('MailingList',
+                         'MailingListSubscription',
+                         'TeamParticipation')
+        preferred = EmailAddress.select("""
+            EmailAddress.person = MailingListSubscription.person AND
+            MailingList.id = MailingListSubscription.mailing_list AND
+            TeamParticipation.person = MailingListSubscription.person AND
+            MailingListSubscription.mailing_list = %s AND
+            TeamParticipation.team = %s AND
+            MailingList.status <> %s AND
+            MailingListSubscription.email_address IS NULL AND
+            EmailAddress.status = %s
+            """ % sqlvalues(self, self.team,
+                            MailingListStatus.INACTIVE,
+                            EmailAddressStatus.PREFERRED),
+            clauseTables=clause_tables)
+        specific = EmailAddress.select("""
+            EmailAddress.id = MailingListSubscription.email_address AND
+            MailingList.id = MailingListSubscription.mailing_list AND
+            TeamParticipation.person = MailingListSubscription.person AND
+            MailingListSubscription.mailing_list = %s AND
+            TeamParticipation.team = %s AND
+            MailingList.status <> %s
+            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
+            clauseTables=clause_tables)
+        return preferred.union(specific)
 
     def getSenderAddresses(self):
         """See `IMailingList`."""
-        # Make this more efficient.
-        email_addresses = set()
-        for subscription in self._getSubscriptions():
-            preferred = subscription.person.preferredemail
-            if preferred is not None:
-                email_addresses.add(preferred.email)
-            email_addresses.update(
-                email.email for email in subscription.person.validatedemails)
-        for address in email_addresses:
-            yield address
+        # Import here to avoid circular imports.
+        from canonical.launchpad.database.emailaddress import EmailAddress
+        return EmailAddress.select("""
+            EmailAddress.person = MailingListSubscription.person AND
+            MailingList.id = MailingListSubscription.mailing_list AND
+            TeamParticipation.person = MailingListSubscription.person AND
+            MailingListSubscription.mailing_list = %s AND
+            TeamParticipation.team = %s AND
+            MailingList.status <> %s AND
+            EmailAddress.status IN %s
+            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE,
+                            (EmailAddressStatus.VALIDATED,
+                             EmailAddressStatus.PREFERRED)),
+            distinct=True, clauseTables=['MailingListSubscription',
+                                         'TeamParticipation',
+                                         'MailingList'])
 
 
 class MailingListSet:

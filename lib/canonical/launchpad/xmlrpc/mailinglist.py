@@ -125,22 +125,20 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # Start by getting all addresses for all users who are subscribed.
             # These are the addresses that are allowed to post to the mailing
             # list, but may not get deliveries of posted messages.
-            for address in mailing_list.getSenderAddresses():
-                email_address = emailset.getByEmail(address)
+            for email_address in mailing_list.getSenderAddresses():
                 real_name = email_address.person.displayname
                 # We'll mark the status of these addresses as disabled BYUSER,
                 # which seems like the closest mapping to the semantics we
                 # intend.  It doesn't /really/ matter as long as it's disabled
                 # because the reason is only evident in the Mailman web u/i,
                 # which we're not using.
-                members[address] = (real_name, flags, BYUSER)
+                members[email_address.email] = (real_name, flags, BYUSER)
             # Now go through just the subscribed addresses, the main
             # difference now being that these addresses are enabled for
             # delivery.  If there are overlaps, the enabled flag wins.
-            for address in mailing_list.getSubscribedAddresses():
-                email_address = emailset.getByEmail(address)
+            for email_address in mailing_list.getSubscribedAddresses():
                 real_name = email_address.person.displayname
-                members[address] = (real_name, flags, ENABLED)
+                members[email_address.email] = (real_name, flags, ENABLED)
             # The response must be a list of tuples.
             response[team_name] = [
                 (address, members[address][0],
