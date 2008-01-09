@@ -16,42 +16,23 @@ Though web services in general support all HTTP methods, this
 particular resource supports only GET. Eventually it will also support
 HEAD and OPTIONS.
 
-  >>> print http(r"""
-  ... HEAD / HTTP/1.1
+  >>> for method in ['HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS']:
+  ...     print http(r"""
+  ... %s / HTTP/1.1
   ... Host: api.launchpad.dev
-  ... """)
+  ... """ % method)
   HTTP/1.1 405 Method Not Allowed
   Allow: GET
   ...
-
-  >>> print http(r"""
-  ... POST / HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """)
   HTTP/1.1 405 Method Not Allowed
   Allow: GET
   ...
-
-  >>> print http(r"""
-  ... PUT / HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """)
   HTTP/1.1 405 Method Not Allowed
   Allow: GET
   ...
-
-  >>> print http(r"""
-  ... DELETE / HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """)
   HTTP/1.1 405 Method Not Allowed
   Allow: GET
   ...
-
-  >>> print http(r"""
-  ... OPTIONS / HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """)
   HTTP/1.1 405 Method Not Allowed
   Allow: GET
   ...

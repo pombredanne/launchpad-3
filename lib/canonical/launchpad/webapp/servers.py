@@ -337,23 +337,6 @@ class WebServiceRequestPublicationFactory(
             vhost_name, request_factory, publication_factory, port,
             ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
-    def checkRequest(self, environment):
-        """See `VirtualHostRequestPublicationFactory`.
-
-        Accept only requests where the MIME type is application/json
-        """
-        request_factory, publication_factory = (
-            super(WebServiceRequestPublicationFactory, self).checkRequest(
-                environment))
-        if request_factory is None:
-            mime_type = environment.get('CONTENT_TYPE')
-            method = environment.get('REQUEST_METHOD')
-            if (method in ['PUT', 'POST'] and mime_type != 'application/json'):
-                request_factory = ProtocolErrorRequest
-                # 415 - Unsupported Media Type
-                publication_factory = ProtocolErrorPublicationFactory(415)
-        return request_factory, publication_factory
-
 
     def canHandle(self, environment):
         """See `IRequestPublicationFactory`.
