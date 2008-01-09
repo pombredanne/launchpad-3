@@ -10,9 +10,8 @@
        id="enhances"
        tal:define="relationships view/enhances">
 
-     <tal:has_dep condition="relationships/has_items">
-        <tal:block replace="structure relationships/@@+render-list"/>
-     </tal:has_dep>
+     <tal:block condition="relationships/has_items"
+                replace="structure relationships/@@+render-list"/>
 
   </div>
 

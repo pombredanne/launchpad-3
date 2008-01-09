@@ -83,8 +83,8 @@ text:
   TEXT: "libc6 (&gt;= 2.3.2.ds1-4)"
   TEXT: "libstdc++6-dev (&gt;= 3.4.1-4sarge1)"
 
-Even when there is not information to present, the package control
-files doesn't contain the field, we still presenting the corresponding
+Even when there is no information to present and the package control
+files don't contain the field, we still present the  corresponding
 relationship section.
 
   >>> browser.open('http://launchpad.dev/ubuntu/warty/i386/pmount/0.1-1')

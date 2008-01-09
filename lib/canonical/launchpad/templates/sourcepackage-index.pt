@@ -117,28 +117,29 @@
 
     <table width="100%" valign="top">
       <tr>
-          <td id="depends" tal:define="relationships view/builddepends"
-              tal:condition="relationships/has_items">
+          <td id="depends" tal:define="relationships view/builddepends">
               <h3>Build dependencies</h3>
-              <tal:block replace="structure relationships/@@+render-list"/>
+              <tal:block tal:condition="relationships/has_items"
+                         replace="structure relationships/@@+render-list"/>
           </td>
-          <td id="dependsindep" tal:define="relationships view/builddependsindep"
-              tal:condition="relationships/has_items">
+          <td id="dependsindep"
+              tal:define="relationships view/builddependsindep">
               <h3>Platform-independent build dependencies</h3>
-              <tal:block replace="structure relationships/@@+render-list"/>
+              <tal:block tal:condition="relationships/has_items"
+                         replace="structure relationships/@@+render-list"/>
           </td>
       </tr>
       <tr>
-          <td id="conflicts" tal:define="relationships view/build_conflicts"
-              tal:condition="relationships/has_items">
+          <td id="conflicts" tal:define="relationships view/build_conflicts">
               <h3>Build conflicts</h3>
-              <tal:block replace="structure relationships/@@+render-list"/>
+              <tal:block tal:condition="relationships/has_items"
+                         replace="structure relationships/@@+render-list"/>
           </td>
           <td id="conflictsindep"
-              tal:define="relationships view/build_conflicts_indep"
-              tal:condition="relationships/has_items">
+              tal:define="relationships view/build_conflicts_indep">
               <h3>Platform-independent build dependencies</h3>
-              <tal:block replace="structure relationships/@@+render-list"/>
+              <tal:block tal:condition="relationships/has_items"
+                         replace="structure relationships/@@+render-list"/>
           </td>
       </tr>
     </table>
