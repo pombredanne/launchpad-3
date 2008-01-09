@@ -7716,6 +7716,8 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
  LP: #10
  LP: #999
  LP: #badid
+ LP: #7, #8,
+   #11
 
      -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 19, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep) VALUES (26, 1, 'cr.g7-37', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 20, 3, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL);
