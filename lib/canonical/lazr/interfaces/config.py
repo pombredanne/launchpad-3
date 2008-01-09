@@ -200,10 +200,10 @@ class IStackableConfig(Interface):
     def pop(conf_name):
         """Remove conf_name from the overlays stack.
 
-        :param conf_name: the name of the configdata to remove.
+        :param conf_name: the name of the ConfigData to remove.
         :return: the tuple of ConfigData that was removed from overlays.
-        :raise NoConfigError: if no configdata has the conf_name.
+        :raise NoConfigError: if no ConfigData has the conf_name.
 
-        This method removes the named ConfigData from the stack; Configdata
-        above the named configdata are removed too.
+        This method removes the named ConfigData from the stack; ConfigData
+        above the named ConfigData are removed too.
         """

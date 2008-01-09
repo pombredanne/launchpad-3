@@ -674,9 +674,9 @@ The config's sections are updated with 'section-3.app-a' too.
     section-3.app-b
     section-5
 
-Configdata can be removed removed from the stack of overlays using the
+ConfigData can be removed removed from the stack of overlays using the
 pop() method. The methods returns the list of ConfigData that was
-removed--a slice from the specified configdata to the top of the stack.
+removed--a slice from the specified ConfigData to the top of the stack.
 
     >>> overlays = config.pop('test config')
     >>> for config_data in overlays:
