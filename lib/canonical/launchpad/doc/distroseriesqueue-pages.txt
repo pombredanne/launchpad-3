@@ -119,7 +119,7 @@ Add fake librarian files so that email notifications work:
   >>> getUtility(IPackageUploadSet).get(1).status.name
   'ACCEPTED'
   >>> getUtility(IPackageUploadSet).get(3).status.name
-  'ACCEPTED'
+  'DONE'
 
 
 'rejecting' an item from NEW:
