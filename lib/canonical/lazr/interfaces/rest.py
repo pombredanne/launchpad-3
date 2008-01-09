@@ -4,7 +4,10 @@
 
 __metaclass__ = type
 __all__ = [
+    'ICollectionResource',
+    'IEntryResource',
     'IHTTPResource',
+    'IJSONPublishable'
     ]
 
 from zope.interface import Interface

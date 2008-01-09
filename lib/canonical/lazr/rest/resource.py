@@ -4,18 +4,23 @@
 
 __metaclass__ = type
 __all__ = [
+    'CollectionResource',
+    'EntryResource',
     'HTTPResource',
     'ReadOnlyResource'
     ]
 
+
 import simplejson
 from zope.interface import implements
-from canonical.lazr.interfaces import (IHTTPResource, IJSONPublishable)
+from canonical.lazr.interfaces import (
+    ICollectionResource, IEntryResource, IHTTPResource, IJSONPublishable)
+
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
 
     def default(self, obj):
-        if obj.implements(IJSONPublishable):
+        if IJSONPublishable.providedBy(obj):
             return obj.toJSON()
         return simplejson.JSONEncoder.default(self, obj)
 
@@ -61,7 +66,7 @@ class EntryResource:
         """
         dict = {}
         for name in self.resourceInterface().names(False):
-            dict[name] = self.getattr(name)
+            dict[name] = getattr(self, name)
         return dict
 
     def toJSON(self):
@@ -75,5 +80,5 @@ class CollectionResource(ReadOnlyResource):
 
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
-        entry_resources = self.find():
+        entry_resources = self.find()
         return ResourceJSONEncoder().encode(entry_resources)

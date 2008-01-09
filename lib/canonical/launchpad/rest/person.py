@@ -4,11 +4,17 @@
 
 __metaclass__ = type
 __all__ = [
+    'PersonResource',
     'PersonCollectionResource',
     ]
 
 
+from zope.component import (adapts, getUtility)
+from zope.interface import implements
+from canonical.lp import decorates
 from canonical.lazr.rest import (CollectionResource, EntryResource)
+from canonical.launchpad.interfaces import (
+    IPerson, IPersonResource, IPersonSet)
 
 
 class PersonResource(EntryResource):

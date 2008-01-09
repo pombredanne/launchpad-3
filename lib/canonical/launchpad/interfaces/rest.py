@@ -8,10 +8,10 @@ __all__ = [
     ]
 
 
-from canonical.interfaces.person import PersonNameField
+from canonical.launchpad.interfaces.person import PersonNameField
+from canonical.lazr.interfaces import IEntryResource
 
-
-class IPersonResource(IResource):
+class IPersonResource(IEntryResource):
     """The part of a person that we expose through the web service."""
 
     name = PersonNameField()
