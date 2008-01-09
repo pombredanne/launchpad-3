@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, BoolCol
-from sqlobject.sqlbuilder import AND
+from sqlobject.sqlbuilder import AND, func
 
 from canonical.config import config
 
@@ -403,8 +403,12 @@ class DistributionMirrorSet:
             DistributionMirror.q.official_candidate == True,
             DistributionMirror.q.status == MirrorStatus.OFFICIAL)
         query = AND(DistributionMirror.q.countryID == country_id, base_query)
+        # The list of mirrors returned by this method is fed to apt through
+        # launchpad.net, so we order the results randomly in a lame attempt to
+        # balance the load on the mirrors.
+        order_by = [func.random()]
         mirrors = shortlist(
-            DistributionMirror.select(query, orderBy=['-speed']),
+            DistributionMirror.select(query, orderBy=order_by),
             longest_expected=50)
 
         if not mirrors and country is not None:
@@ -414,7 +418,7 @@ class DistributionMirrorSet:
                 DistributionMirror.q.countryID == Country.q.id,
                 base_query)
             mirrors.extend(shortlist(
-                DistributionMirror.select(query, orderBy=['-speed']),
+                DistributionMirror.select(query, orderBy=order_by),
                 longest_expected=100))
 
         if mirror_type == MirrorContent.ARCHIVE:
