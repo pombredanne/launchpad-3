@@ -15,10 +15,10 @@ archive mirrors, plus the canonical one.
     text/plain;charset=utf-8
     >>> print browser.headers['X-Generated-For-Country']
     France
-    >>> print browser.contents
-    http://localhost:11375/archive-mirror/
-    http://localhost:11375/valid-mirror/
-    http://archive.ubuntu.com/ubuntu/
+    >>> sorted(browser.contents.split('\n'))
+    ['http://archive.ubuntu.com/ubuntu/',
+     'http://localhost:11375/archive-mirror/',
+     'http://localhost:11375/valid-mirror/']
 
 Using a request with no IP address information will give us only the
 canonical mirror.
@@ -28,8 +28,8 @@ canonical mirror.
     ...     'http://launchpad.dev/ubuntu/+countrymirrors-archive')
     >>> print anon_browser.headers['X-Generated-For-Country']
     Unknown
-    >>> print anon_browser.contents
-    http://archive.ubuntu.com/ubuntu/
+    >>> sorted(anon_browser.contents.split('\n'))
+    ['http://archive.ubuntu.com/ubuntu/']
 
 Note that unofficial mirrors are not included in the listings.
 
@@ -44,9 +44,9 @@ Note that unofficial mirrors are not included in the listings.
     # http://localhost:11375/archive-mirror/ is not included in the list
     # anymore.
     >>> browser.open('http://launchpad.dev/ubuntu/+countrymirrors-archive')
-    >>> print browser.contents
-    http://localhost:11375/valid-mirror/
-    http://archive.ubuntu.com/ubuntu/
+    >>> sorted(browser.contents.split('\n'))
+    ['http://archive.ubuntu.com/ubuntu/',
+     'http://localhost:11375/valid-mirror/']
 
 Also, the +countrymirrors-archive page is only available for the Ubuntu
 distribution.
