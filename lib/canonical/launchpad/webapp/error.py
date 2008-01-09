@@ -153,6 +153,11 @@ class NotFoundView(SystemErrorView):
     def __call__(self):
         return self.index()
 
+    @property
+    def referer(self):
+        """Return the URL of the referring page."""
+        return self.request.get('HTTP_REFERER') or None
+
 
 class RequestExpiredView(SystemErrorView):
 
