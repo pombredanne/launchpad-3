@@ -12,15 +12,9 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:condition="context/product/project"
-       tal:replace="structure context/product/project/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/product/@@+portlet-details" />
-</metal:rightportlets>
+    <metal:portlets fill-slot="portlets">
+      <div tal:replace="structure context/@@+portlet-details" />
+    </metal:portlets>
 
 <metal:heading fill-slot="pageheading">
   <h1>Change series details</h1>

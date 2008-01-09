@@ -47,9 +47,6 @@
          tal:condition="view/shouldShowReleaseCriticalPortlet"
          tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
      </tal:do_not_show_portlets_advanced_form>
-     <tal:show_portlets_advanced condition="view/shouldShowAdvancedForm">
-       <div tal:replace="structure context/@@+portlet-details" />
-     </tal:show_portlets_advanced>
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
