@@ -14,7 +14,6 @@
 
 <metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/product/@@+portlet-details" />
 </metal:portlets>
 
 <metal:heading fill-slot="pageheading">

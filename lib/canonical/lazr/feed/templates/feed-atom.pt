@@ -7,8 +7,8 @@
   <title tal:content="view/title">Recently opened bugs</title>
 
     <id tal:content="view/feed_id">tag:launchpad.net,2008-01-02:/bugs/ubuntu</id>
-  <link rel="self" tal:attributes="href view/url" />
-  <link rel="alternate" tal:attributes="href view/alternate_url" />
+    <link rel="self" tal:attributes="href view/link_self" />
+    <link rel="alternate" tal:attributes="href view/link_alternate" />
   <logo tal:condition="view/logo"
         tal:content="view/logo" />
   <icon tal:condition="view/icon"

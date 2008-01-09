@@ -52,8 +52,12 @@
     <browser:feeds
         module="canonical.launchpad.feed"
         classes="BugFeed BugTargetBugsFeed PersonBugsFeed SearchBugsFeed
+<<<<<<< TREE
                  AnnouncementsFeed TargetAnnouncementsFeed
                  BranchFeed ProductBranchFeed ProjectBranchFeed"
+=======
+                 LaunchpadAnnouncementsFeed TargetAnnouncementsFeed"
+>>>>>>> MERGE-SOURCE
         />
 
 </configure>

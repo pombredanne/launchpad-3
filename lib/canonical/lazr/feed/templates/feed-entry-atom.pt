@@ -19,6 +19,15 @@
       <email tal:condition="author/email"
              tal:content="author/email" />
     </author>
+    <contributor tal:repeat="contributor entry/contributors">
+        <tal:name tal:condition="contributor/name">
+            <name tal:content="contributor/name" />
+            <uri tal:condition="contributor/uri"
+                 tal:content="contributor/uri" />
+            <email tal:condition="contributor/email"
+                   tal:content="contributor/email" />
+        </tal:name>
+    </contributor>
     <content tal:condition="entry/content"
              tal:content="structure entry/content/content"
              tal:attributes="type entry/content/content_type" />

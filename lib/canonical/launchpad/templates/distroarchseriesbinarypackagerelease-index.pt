@@ -16,7 +16,6 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/distroarchseries/distroseries/@@+portlet-details" />
   <div tal:replace="structure context/distroarchseries/@@+portlet-details" />
 </metal:leftportlets>
 

@@ -35,14 +35,17 @@ from canonical.config import config
 from canonical.launchpad.webapp import canonical_url, LaunchpadFormView, urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
-    IFeed, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
+    IFeed, IFeedEntry, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
 
 SUPPORTED_FEEDS = ('.atom', '.html')
 MINUTES = 60 # Seconds in a minute.
 
 
 class FeedBase(LaunchpadFormView):
-    """Base class for feeds."""
+    """See `IFeed`.
+
+    Base class for feeds.
+    """
 
     implements(IFeed)
 
@@ -72,7 +75,7 @@ class FeedBase(LaunchpadFormView):
         raise NotImplementedError
 
     @property
-    def url(self):
+    def link_self(self):
         """See `IFeed`."""
         raise NotImplementedError
 
@@ -82,7 +85,7 @@ class FeedBase(LaunchpadFormView):
         return allvhosts.configs['mainsite'].rooturl[:-1]
 
     @property
-    def alternate_url(self):
+    def link_alternate(self):
         """See `IFeed`."""
         return canonical_url(self.context, rootsite=self.rootsite)
 
@@ -101,7 +104,7 @@ class FeedBase(LaunchpadFormView):
             datecreated = self.context.date_created.date().isoformat()
         else:
             datecreated = "2008"
-        url_path = urlparse(self.alternate_url)[2]
+        url_path = urlparse(self.link_alternate)[2]
         if self.rootsite != 'mainsite':
             id_ = 'tag:launchpad.net,%s:/%s%s' % (
                 datecreated,
@@ -190,7 +193,13 @@ class FeedBase(LaunchpadFormView):
 
 
 class FeedEntry:
-    """An entry for a feed."""
+    """See `IFeedEntry`.
+
+    An individual entry for a feed.
+    """
+
+    implements(IFeedEntry)
+
     def __init__(self,
                  title,
                  link_alternate,
