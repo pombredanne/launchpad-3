@@ -59,6 +59,17 @@
   <browser:pages
     for="canonical.launchpad.interfaces.IArchive"
     permission="zope.Public"
+    class="canonical.launchpad.browser.ArchiveSearchView">
+    <browser:page
+      template="../templates/archive-search.pt"
+      facet="overview"
+      name="+search"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="zope.Public"
     class="canonical.launchpad.browser.ArchiveBuildsView">
     <browser:page
       name="+builds"

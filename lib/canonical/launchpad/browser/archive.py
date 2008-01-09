@@ -9,6 +9,7 @@ __all__ = [
     'ArchiveFacets',
     'ArchiveOverviewMenu',
     'ArchiveView',
+    'ArchiveSearchView',
     'ArchiveActivateView',
     'ArchiveBuildsView',
     'ArchiveEditView',
@@ -72,7 +73,7 @@ class ArchiveOverviewMenu(ApplicationMenu):
 
     usedfor = IArchive
     facet = 'overview'
-    links = ['admin', 'edit', 'builds']
+    links = ['admin', 'edit', 'builds', 'search']
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -88,33 +89,29 @@ class ArchiveOverviewMenu(ApplicationMenu):
         text = 'View build records'
         return Link('+builds', text, icon='info')
 
+    def search(self):
+        text = 'Search source packages'
+        return Link('+search', text, icon='info')
 
-class ArchiveView(LaunchpadView):
-    """Default Archive view class
 
-    Implements useful actions and collects useful sets for the pagetemplate.
-    """
+class ArchiveViewBase(LaunchpadView):
+    """Common features for Archive view classes."""
 
-    __used_for__ = IArchive
+    @property
+    def is_active(self):
+        return bool(self.context.getPublishedSources())
 
-    def initialize(self):
-        """Set up select control and a batched list of publishing records."""
-        entries = SourcesListEntries(self.context.distribution,
-                                     self.context.archive_url,
-                                     self.context.series_with_sources)
-        self.sources_list_entries = SourcesListEntriesView(entries,
-                                                           self.request)
+    def source_count_text(self):
+        if self.context.number_of_sources == 1:
+            return '%s source package' % self.context.number_of_sources
+        else:
+            return '%s source packages' % self.context.number_of_sources
 
-        self.name_filter = self.request.get('field.name_filter')
-        status_filter = self.request.get('field.status_filter', 'published')
-        self.setupStatusFilterWidget(status_filter)
-
-        publishing = self.context.getPublishedSources(
-            name=self.name_filter,
-            status=self.selected_status_filter.value.collection)
-
-        self.batchnav = BatchNavigator(publishing, self.request)
-        self.search_results = self.batchnav.currentBatch()
+    def binary_count_text(self):
+        if self.context.number_of_binaries == 1:
+            return '%s binary package' % self.context.number_of_binaries
+        else:
+            return '%s binary packages' % self.context.number_of_binaries
 
     def setupStatusFilterWidget(self, status_filter):
         """Setup a customized publishing status select widget.
@@ -162,21 +159,46 @@ class ArchiveView(LaunchpadView):
         return self.status_filter_widget.renderValue(
             self.selected_status_filter.value)
 
-    @property
-    def is_active(self):
-        return bool(self.context.getPublishedSources())
 
-    def source_count_text(self):
-        if self.context.number_of_sources == 1:
-            return '%s source package' % self.context.number_of_sources
-        else:
-            return '%s source packages' % self.context.number_of_sources
+class ArchiveView(ArchiveViewBase):
+    """Default Archive view class
 
-    def binary_count_text(self):
-        if self.context.number_of_binaries == 1:
-            return '%s binary package' % self.context.number_of_binaries
-        else:
-            return '%s binary packages' % self.context.number_of_binaries
+    Implements useful actions and collects useful sets for the pagetemplate.
+    """
+
+    __used_for__ = IArchive
+
+    def initialize(self):
+        """Set up select control and a batched list of publishing records."""
+        entries = SourcesListEntries(
+            self.context.distribution, self.context.archive_url,
+            self.context.series_with_sources)
+        self.sources_list_entries = SourcesListEntriesView(
+            entries, self.request)
+
+        self.name_filter = self.request.get('field.name_filter')
+        status_filter = self.request.get('field.status_filter', 'published')
+        self.setupStatusFilterWidget(status_filter)
+
+
+class ArchiveSearchView(ArchiveViewBase):
+    """Archive search view class. """
+
+    __used_for__ = IArchive
+
+    def initialize(self):
+        """Set up a batched list of publishing records."""
+        self.name_filter = self.request.get('field.name_filter')
+        status_filter = self.request.get('field.status_filter', 'published')
+
+        self.setupStatusFilterWidget(status_filter)
+
+        publishing = self.context.getPublishedSources(
+            name=self.name_filter,
+            status=self.selected_status_filter.value.collection)
+
+        self.batchnav = BatchNavigator(publishing, self.request)
+        self.search_results = self.batchnav.currentBatch()
 
     def performPPAAction(self):
         """Execute the designed action over the selected queue items.
@@ -193,10 +215,15 @@ class ArchiveView(LaunchpadView):
 
         delete = self.request.form.get('DELETE', '')
         include_binaries = self.request.form.get('DELETE_BINARIES', '')
+        deletion_comment = self.request.form.get('DELETION_COMMENT', '')
         pub_src_ids = self.request.form.get('PUB_SRC_ID', '')
 
         if not delete or not pub_src_ids:
             self.error = "No items selected."
+            return
+
+        if not deletion_comment:
+            self.error = "Deletion comment is required."
             return
 
         if not isinstance(pub_src_ids, list):
@@ -220,8 +247,8 @@ class ArchiveView(LaunchpadView):
             else:
                 success.append('OK: %s' % pub.displayname)
 
-        report = '%s<br>%s' % (header, ', '.join(success + failure))
-        self.error = "Placeholder"
+        report = '%s<br>%s<br>%s' % (
+            header, ', '.join(success + failure), deletion_comment)
         return report
 
 

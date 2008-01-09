@@ -118,6 +118,8 @@ archive_edit = ContextTitle('Edit %s')
 
 archive_index = ContextTitle('%s')
 
+archive_search = ContextTitle('Search packages in %s')
+
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'Launchpad Code'
