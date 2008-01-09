@@ -30,9 +30,8 @@ class ReadOnlyResource(HTTPResource):
 
     def __call__(self):
         """Handle a GET request."""
-        result = self.do_GET()
         if self.request.method == "GET":
-            return result
+            return self.do_GET()
         else:
             self.request.response.setStatus(405)
             self.request.response.setHeader("Allow", "GET")

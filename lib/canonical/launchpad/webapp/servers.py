@@ -862,6 +862,19 @@ class WebServicePublication(LaunchpadBrowserPublication):
     root_object_interface = IWebServiceApplication
 
     def getDefaultTraversal(self, request, ob):
+        """Publish the WebServiceApplication as the top-level object.
+
+        This is called when the client requests '/' and traversal
+        bottoms out at the IWebServiceApplication itself. It's needed
+        because WebServiceRequest inherits (through LaunchpadRequest)
+        the BrowserRequest semantics. In these semantics,
+        getDefaultTraversal (defined by IBrowserPublication) is called
+        unless the object provides IBrowserPublisher.
+
+        Rather than making our resources provide an unrelated
+        interface (IBrowserPublisher), we implement this as the
+        equivalent of a no-op.
+        """
         return (ob, None)
 
 
