@@ -32,12 +32,20 @@ If there are no branches associated with the product series, then
 the user is told this.
 
     >>> browser.open('http://code.launchpad.dev/firefox')
-    >>> official_branches = find_portlet(
-    ...     browser.contents, 'Official branches')
-    >>> print extract_text(official_branches)
-    Official branches
+    >>> def print_official_branches(browser):
+    ...     official_branches = find_portlet(
+    ...         browser.contents, 'Official branches')
+    ...     for div in official_branches.findAll('div', recursive=False):
+    ...         # The first div in this div contains the highlighting class.
+    ...         print '---\nCSS style: %s' % div.div['class']
+    ...         print extract_text(div)
+    >>> print_official_branches(browser)
+    ---
+    CSS style: highlighted
     Series: trunk Current development focus
     No branch specified
+    ---
+    CSS style: unhighlighted
     Series: 1.0
     No branch specified
 
@@ -60,13 +68,14 @@ And set a branch for the 1.0 series.
 This branch is now shown, along with the bzr branch example.
 
     >>> browser.open('http://code.launchpad.dev/firefox')
-    >>> official_branches = find_portlet(
-    ...     browser.contents, 'Official branches')
-    >>> print extract_text(official_branches)
-    Official branches
+    >>> print_official_branches(browser)
+    ---
+    CSS style: highlighted
     Series: trunk   Current development focus
     Branch: main: Mozilla Firefox Mainline
     Example: bzr branch lp:firefox
+    ---
+    CSS style: unhighlighted
     Series: 1.0
     Branch: release-0.9: Mozilla Firefox 0.9
     Example: bzr branch lp:firefox/1.0
