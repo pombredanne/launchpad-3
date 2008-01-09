@@ -438,3 +438,15 @@ method:
     >>> notifications = BugNotification.selectBy(bugID=6, date_emailed=None)
     >>> notifications.count()
     0
+
+
+=== Full descriptions in notifications ===
+
+Not all users save received bug notifications. As a result, bug
+notifications that don't contain the bug's description can be somewhat
+cryptic.
+
+Users are able to set a flag which will cause all notifications to
+contain the bug's original description.
+
+
