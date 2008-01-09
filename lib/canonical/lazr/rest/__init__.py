@@ -1,7 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0401
 
-"""Code for publishing objects and collections through RESTful web
-services.
-"""
+"""Code for publishing RESTful web services."""
 
-from canonical.lazr.rest.rest import *
+from canonical.lazr.rest.resource import *

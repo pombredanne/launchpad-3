@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import (
     IMailingListApplication, IMaloneApplication, IOpenIdApplication,
     IProductSet, IRegistryApplication, IRosettaApplication,
     IShipItApplication, ITranslationGroupSet, IWebServiceApplication)
-from canonical.launchpad.rest import (HelloWorldResource)
+from canonical.launchpad.rest import ServiceRootResource
 
 class AuthServerApplication:
     """AuthServer End-Point."""
@@ -194,12 +194,9 @@ class WebServiceApplication:
     implements(IWebServiceApplication, IPublishTraverse)
 
     def publishTraverse(self, request, name):
-        """In the final version, this method will return a CollectionResource
-        corresponding to one of the top-level collections.
-        """
+        """Right now there are no resources below the root."""
         raise NotFound(self, name)
 
     def __call__(self, REQUEST=None):
         if REQUEST:
-            return HelloWorldResource(REQUEST)()
-
+            return ServiceRootResource(REQUEST)()

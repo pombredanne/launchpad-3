@@ -1,0 +1,57 @@
+= Introduction =
+
+The service root (/) is a resource that responds to GET by describing
+the web service. Right now, it just sends a simple string description.
+you get a string.
+
+  >>> print http(r"""
+  ... GET / HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  This is Launchpad's web service.
+
+Though web services in general support all HTTP methods, this
+particular resource supports only GET. Eventually it will also support
+HEAD and OPTIONS.
+
+  >>> print http(r"""
+  ... HEAD / HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...
+
+  >>> print http(r"""
+  ... POST / HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...
+
+  >>> print http(r"""
+  ... PUT / HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...
+
+  >>> print http(r"""
+  ... DELETE / HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...
+
+  >>> print http(r"""
+  ... OPTIONS / HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 405 Method Not Allowed
+  Allow: GET
+  ...
