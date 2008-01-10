@@ -9,6 +9,9 @@ responds to GET.
   ... """)
   HTTP/1.1 200 Ok
   ...
-  [ { 'name' : 'leonardr',
-      'preferredmail' : 'leonardr@canonical.com' } ]
+  Content-Type: application/json
+  ...
+  [ { 'name' : 'leonardr' }, { 'name' : 'salgado }
+  ...
+  ]
 

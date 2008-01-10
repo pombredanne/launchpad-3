@@ -11,13 +11,14 @@ __all__ = [
     ]
 
 from zope.interface import Interface
+from zope.publisher.interfaces import IPublishTraverse
 
 
-class IHTTPResource(Interface):
+class IHTTPResource(IPublishTraverse):
     """An object published through HTTP."""
 
-    def __call__(self):
-        """Publish this resource to the web."""
+    def __call__(self, REQUEST=None):
+        """Publish the object."""
 
 
 class IJSONPublishable(Interface):
@@ -27,7 +28,7 @@ class IJSONPublishable(Interface):
         """Return a JSON representation of this object."""
 
 
-class IEntryResource(IJSONPublishable):
+class IEntryResource(IHTTPResource, IJSONPublishable):
     """A resource that represents an individual Launchpad object."""
     def get(self):
         """Retrieve this object.
@@ -36,7 +37,7 @@ class IEntryResource(IJSONPublishable):
         """
 
 
-class ICollectionResource(Interface):
+class ICollectionResource(IHTTPResource):
     """A resource that represents a collection of entry resources."""
 
     def get(self):

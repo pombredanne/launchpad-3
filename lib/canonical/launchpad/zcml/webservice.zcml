@@ -13,4 +13,8 @@
         <allow interface='canonical.lazr.interfaces.IHTTPResource' />
     </securedutility>
 
+    <class class="canonical.launchpad.rest.person.PersonCollectionResource">
+        <allow interface='canonical.lazr.interfaces.IHTTPResource' />
+    </class>
+
 </configure>

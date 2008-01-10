@@ -29,11 +29,7 @@ class HTTPResource:
     """See `IHTTPResource`."""
     implements(IHTTPResource)
 
-    def __init__(self, request):
-        """Store the request for later processing."""
-        self.request = request
-
-    def __call__(self):
+    def __call__(self, REQUEST=None):
         """See `IHTTPResource`."""
         pass
 
@@ -41,13 +37,13 @@ class HTTPResource:
 class ReadOnlyResource(HTTPResource):
     """A resource that serves a string in response to GET."""
 
-    def __call__(self):
+    def __call__(self, REQUEST=None):
         """Handle a GET request."""
-        if self.request.method == "GET":
-            return self.do_GET()
+        if REQUEST.method == "GET":
+            return self.do_GET(REQUEST)
         else:
-            self.request.response.setStatus(405)
-            self.request.response.setHeader("Allow", "GET")
+            REQUEST.response.setStatus(405)
+            REQUEST.response.setHeader("Allow", "GET")
 
 
 class EntryResource:
@@ -78,7 +74,8 @@ class CollectionResource(ReadOnlyResource):
     implements(ICollectionResource)
     """A resource that serves a list of entry resources."""
 
-    def do_GET(self):
+    def do_GET(self, request):
         """Fetch a collection and render it as JSON."""
         entry_resources = self.find()
+        request.response.setHeader('Content-type', 'application/json')
         return ResourceJSONEncoder().encode(entry_resources)
