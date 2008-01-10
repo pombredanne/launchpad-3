@@ -17,7 +17,7 @@ __all__ = [
     ]
 
 from zope.schema import Choice
-from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser import TextAreaWidget, CheckBoxWidget
 from zope.app.form.utility import setUpWidget
 from zope.app.form.interfaces import IInputWidget
 from zope.component import getUtility
@@ -28,9 +28,9 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchive, IArchiveSet, IBuildSet, IHasBuildRecords,
-    ILaunchpadCelebrities, IPPAActivateForm, IPublishingSet, NotFoundError,
-    PackagePublishingStatus)
+    ArchivePurpose, IArchive, IArchiveConsoleForm, IArchiveSet, IBuildSet,
+    IHasBuildRecords, ILaunchpadCelebrities, IPPAActivateForm, IPublishingSet,
+    NotFoundError, PackagePublishingStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
@@ -197,43 +197,33 @@ class ArchiveView(ArchiveViewBase):
         self.setupPackageSearchResult()
 
 
-class ArchiveConsoleView(ArchiveViewBase):
+class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
     """Archive console view class. """
 
-    __used_for__ = IArchive
+    schema = IArchiveConsoleForm
 
     def initialize(self):
+        LaunchpadFormView.initialize(self)
         self.setupPackageFilters()
         self.setupPackageSearchResult()
 
-    def performPPAAction(self):
-        """Execute the designed action over the selected queue items.
+    def validate(self, data):
+        """Ensure user has checked the 'accepted' checkbox."""
+        if len(self.errors) == 0:
+            if not data.get('field.selected_sources'):
+                self.addError = "No items selected."
 
-        Returns a message describing the action executed or None if nothing
-        was done.
-        """
-        if self.request.method != "POST":
-            return
+    @action(_("Delete"), name="delete")
+    def action_delete(self, action, data):
+        print
+        print 30 * '*'
+        print data
+        print 30 * '*'
+        return
 
-        if not check_permission('launchpad.Edit', self.context):
-            self.error = 'You do not have permission to act on this archive.'
-            return
-
-        delete = self.request.form.get('DELETE', '')
-        include_binaries = self.request.form.get('DELETE_BINARIES', '')
-        deletion_comment = self.request.form.get('DELETION_COMMENT', '')
-        pub_src_ids = self.request.form.get('PUB_SRC_ID', '')
-
-        if not delete or not pub_src_ids:
-            self.error = "No items selected."
-            return
-
-        if not deletion_comment:
-            self.error = "Deletion comment is required."
-            return
-
-        if not isinstance(pub_src_ids, list):
-            pub_src_ids = [pub_src_ids]
+        include_binaries = data.get('field.include_binaries')
+        comment = data.get('field.comment')
+        pub_src_ids = data.get('field.selected_sources')
 
         if include_binaries:
             target = "sources and binaries"
@@ -254,7 +244,7 @@ class ArchiveConsoleView(ArchiveViewBase):
                 success.append('OK: %s' % pub.displayname)
 
         report = '%s<br>%s<br>%s' % (
-            header, ', '.join(success + failure), deletion_comment)
+            header, ', '.join(success + failure), comment)
         return report
 
 

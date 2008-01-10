@@ -11,123 +11,98 @@
   >
 <body>
 
-    <metal:portlets fill-slot="portlets">
-       <tal:portlet replace="structure context/distribution/@@+portlet-ppa-architectures" />
-    </metal:portlets>
+<metal:portlets fill-slot="portlets">
+   <tal:portlet replace="structure context/distribution/@@+portlet-ppa-architectures" />
+</metal:portlets>
 
-    <div metal:fill-slot="main"
-         tal:define="ppa_active view/is_active">
+<div metal:fill-slot="main" tal:define="ppa_active view/is_active">
 
-      <p tal:condition="not: ppa_active">
-        This PPA does not contain any packages yet.
-      </p>
+  <p tal:condition="not: ppa_active">
+    This PPA does not contain any packages yet.
+  </p>
 
-      <tal:active_ppa condition="ppa_active">
+  <tal:active_ppa condition="ppa_active">
 
-      <div>
-        <form name="package_search" action="" method="GET">
-           <label for="name">Package name contains:</label>
-           <input id="field.name_filter" title="Package Name" size="20"
-                  type="text" name="field.name_filter"
-                  tal:attributes="value view/name_filter"/>
-           <span tal:replace="structure view/plain_status_filter_widget" />
-           <input type="submit" value="Search" />
-        </form>
-      </div>
+  <div>
+    <form name="package_search" action="" method="GET">
+       <label for="name">Package name contains:</label>
+       <input id="field.name_filter" title="Package Name" size="20"
+              type="text" name="field.name_filter"
+              tal:attributes="value view/name_filter"/>
+       <span tal:replace="structure view/plain_status_filter_widget" />
+       <input type="submit" value="Search" />
+    </form>
+  </div>
 
-      <form name="ppa_actions" action="" method="POST" >
 
-      <div style="padding-top: 1em;" tal:define="batch view/search_results">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
-      <tal:navigation_top
-           condition="python: view.name_filter is not None"
-           replace="structure view/batchnav/@@+navigation-links-upper" />
+    <div metal:fill-slot="extra_info"
+         tal:define="batch view/search_results">
 
-      <table class="listing" id="packages_list" tal:condition="batch">
-        <thead>
-          <tr>
-            <td />
-            <th colspan="2">Source</th>
-            <th tal:condition="context/owner/isTeam">Uploader</th>
-            <th>Published</th>
-            <th>Status</th>
-            <th>Series</th>
-            <th>Section</th>
-          </tr>
-        </thead>
+       <tal:navigation_top
+            condition="python: view.name_filter is not None"
+            replace="structure view/batchnav/@@+navigation-links-upper" />
 
-        <tbody>
+       <table class="listing" id="packages_list" tal:condition="batch">
+         <thead>
+           <tr>
+             <td />
+             <th colspan="2">Source</th>
+             <th tal:condition="context/owner/isTeam">Uploader</th>
+             <th>Published</th>
+             <th>Status</th>
+             <th>Series</th>
+             <th>Section</th>
+           </tr>
+         </thead>
+
+         <tbody>
           <tal:block repeat="publishing batch"
                      replace="structure publishing/@@+listing-ppa-detailed">
           </tal:block>
-        </tbody>
-      </table>
+         </tbody>
+       </table>
 
-      <tal:navigation_bottom
-           condition="python: view.name_filter is not None"
-           replace="structure view/batchnav/@@+navigation-links-lower" />
+       <tal:navigation_bottom
+            condition="python: view.name_filter is not None"
+            replace="structure view/batchnav/@@+navigation-links-lower" />
 
-        <div id="empty-result" tal:condition="not: batch">
-           <tal:has_filter condition="view/name_filter">
-              No matching package for '<span tal:replace="view/name_filter" />'.
-           </tal:has_filter>
-        </div>
+       <div id="empty-result" tal:condition="not: batch">
+          <tal:has_filter condition="view/name_filter">
+             No matching package for '<span tal:replace="view/name_filter" />'.
+          </tal:has_filter>
+       </div>
+
+    </div> <!--extra_info -->
+
+    <div class="form" metal:fill-slot="widgets">
+
+      <div tal:define="widget nocall:view/widgets/include_binaries|nothing"
+           tal:condition="widget">
+        <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
       </div>
 
-      <div id="action_console"
-           tal:define="message view/performPPAAction;
-                       error view/error|nothing"
-           style="padding-top: 1em;">
-
-        <table>
-         <thead>
-            <tr>
-              <td>Action Console:</td>
-            </tr>
-         </thead>
-         <tfoot style="padding-top: 1em">
-            <tr>
-              <td>
-                 <label for="DELETE_BINARIES">Include binaries</label>
-                 <input type="checkbox" name="DELETE_BINARIES" value="YES" />
-                 <label for="DELETION_COMMENT">Comment:</label>
-                 <input title="Comment" size="50" type="text"
-                        name="DELETION_COMMENT" />
-                 <input value="Delete" name="DELETE" type="submit"/>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                 <label for="COPY_BINARIES">Include binaries</label>
-                 <input type="checkbox" name="COPY_BINARIES" value="YES" />
-                 <label for="DEST_PPA_OWNER">Destination PPA owner:</label>
-                 <input title="Destination PPA owner" size="20" type="text"
-                        name="DEST_PPA_OWNER" />
-                 <input value="Copy" name="COPY" type="submit"/>
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-
-        <p class="informational message"
-           tal:condition="message"
-           tal:content="structure message" />
-
-        <p class="error message"
-           tal:condition="error"
-           tal:content="error" />
-
+      <div tal:define="widget nocall:view/widgets/comment|nothing"
+           tal:condition="widget">
+         <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
       </div>
 
-      </form>
+    </div> <!--form fields -->
 
-      </tal:active_ppa>
+    <div class="actions" metal:fill-slot="buttons">
+      <input tal:replace="structure view/actions/field.actions.delete/render" />
+    </div>
 
-    </div> <!--main -->
+  </div> <!-- launchpad_form -->
 
-    <p metal:fill-slot="help">
+  </tal:active_ppa>
+
+</div> <!--main -->
+
+<p metal:fill-slot="help">
        Not yet ...
-    </p>
+</p>
 
-  </body>
+</body>
 </html>
