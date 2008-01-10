@@ -1,0 +1,31 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-publishing-details">
+
+  <h2>"<span tal:replace="context/name">apache2</span>" versions published in
+  <span tal:replace="context/distribution/name">ubuntu</span></h2>
+
+  <div class="portletBody portletContent"
+       tal:define="cr context/currentrelease">
+
+    <div tal:condition="context/current_publishing_records">
+      <tal:block repeat="pub context/current_publishing_records">
+        <b><div tal:replace="pub/distroseries/name/capitalize"/></b>
+        (<div tal:replace="pub/sourcepackagerelease/version"/>):
+        <div tal:replace="pub/component/name"/>
+        /
+        <div tal:replace="pub/section/name"/>
+        <br/>
+      </tal:block>
+    </div>
+
+    <div tal:condition="not: context/current_publishing_records">
+      This source is not published in
+      <div tal:replace="context/distribution/name/capitalize"/>
+    </div>
+
+  </div>
+
+</div>
