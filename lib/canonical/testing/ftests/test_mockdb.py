@@ -445,6 +445,7 @@ class MockDbTestCase(unittest.TestCase):
             rows = list(cur.fetchall())
             self.failUnlessEqual(len(rows), 10)
             cur.fetchall()
+
  
 def test_suite():
     suite = unittest.TestSuite()
