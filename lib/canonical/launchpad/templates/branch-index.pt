@@ -261,42 +261,10 @@ div.revision p {
   <tal:history-available condition="context/revision_count">
     <div class="revision"
          tal:repeat="rev_no context/latest_revisions"
+         tal:define="codebrowse view/codebrowse_url"
          tal:attributes="id string:rev${rev_no/sequence}">
-      <div>
-        <tal:comment condition="nothing">
-          The end of the anchor and the start of the next tal expression
-          has no whitespace between the elements as we do not want any
-          space between the number and the fullstop.
-        </tal:comment>
-        <a tal:attributes="href string:${view/codebrowse_url}/revision/${rev_no/sequence}"
-           tal:content="rev_no/sequence"
-           tal:condition="context/code_is_browseable">
-          1
-        </a><tal:revno condition="not: context/code_is_browseable"
-                       replace="rev_no/sequence">1</tal:revno>.
-        By
-        <strong>
-          <tal:not-anonymous condition="view/user">
-            <span tal:replace="rev_no/revision/revision_author/name">
-              John Doe &lt;john.doe@example.com&gt;
-            </span>
-          </tal:not-anonymous>
-          <tal:anonymous condition="not:view/user">
-            <span
-               tal:replace="rev_no/revision/revision_author/name_without_email">
-              John Doe
-            </span>
-            &lt;email address hidden&gt;
-          </tal:anonymous>
-        </strong>
-        <span
-            tal:attributes="title rev_no/revision/revision_date/fmt:datetime"
-            tal:content="rev_no/revision/revision_date/fmt:displaydate"
-            >2005-10-05 14:34:22 WST</span>
-      </div>
-      <p tal:replace="structure rev_no/revision/log_body/fmt:text-to-html">
-        The revision commit message.
-      </p>
+
+      <metal:landing-target use-macro="context/@@+macros/revision-text"/>
     </div>
   </tal:history-available>
   </div>
