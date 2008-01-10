@@ -965,9 +965,9 @@ class BranchSet:
                 quote(lifecycle_statuses))
         return lifecycle_clause
 
-    def _dormantClause(self, show_dormant):
+    def _dormantClause(self, hide_dormant):
         dormant_clause = ''
-        if not show_dormant:
+        if hide_dormant:
             dormant_days = timedelta(
                 days=config.launchpad.branch_dormant_days)
             last_date = datetime.utcnow() - dormant_days
@@ -1000,12 +1000,12 @@ class BranchSet:
 
     def getBranchesForPerson(self, person, lifecycle_statuses=None,
                              visible_by_user=None, sort_by=None,
-                             show_dormant=True):
+                             hide_dormant=False):
         """See `IBranchSet`."""
         query_params = {
             'person': person.id,
             'lifecycle_clause': self._lifecycleClause(lifecycle_statuses),
-            'dormant_clause': self._dormantClause(show_dormant)
+            'dormant_clause': self._dormantClause(hide_dormant)
             }
         query = ('''
             Branch.id in (
@@ -1034,10 +1034,10 @@ class BranchSet:
 
     def getBranchesAuthoredByPerson(self, person, lifecycle_statuses=None,
                                     visible_by_user=None, sort_by=None,
-                                    show_dormant=True):
+                                    hide_dormant=False):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        dormant_clause = self._dormantClause(show_dormant)
+        dormant_clause = self._dormantClause(hide_dormant)
         query = 'Branch.author = %s %s %s' % (
             person.id, lifecycle_clause, dormant_clause)
         return BranchWithSortKeys.select(
@@ -1046,10 +1046,10 @@ class BranchSet:
 
     def getBranchesRegisteredByPerson(self, person, lifecycle_statuses=None,
                                       visible_by_user=None, sort_by=None,
-                                      show_dormant=True):
+                                      hide_dormant=False):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        dormant_clause = self._dormantClause(show_dormant)
+        dormant_clause = self._dormantClause(hide_dormant)
         query = ('''
             Branch.owner = %s AND
             (Branch.author is NULL OR
@@ -1062,10 +1062,10 @@ class BranchSet:
 
     def getBranchesSubscribedByPerson(self, person, lifecycle_statuses=None,
                                       visible_by_user=None, sort_by=None,
-                                      show_dormant=True):
+                                      hide_dormant=False):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        dormant_clause = self._dormantClause(show_dormant)
+        dormant_clause = self._dormantClause(hide_dormant)
         query = ('''
             Branch.id = BranchSubscription.branch
             AND BranchSubscription.person = %s %s %s
@@ -1078,11 +1078,11 @@ class BranchSet:
 
     def getBranchesForProduct(self, product, lifecycle_statuses=None,
                               visible_by_user=None, sort_by=None,
-                              show_dormant=True):
+                              hide_dormant=False):
         """See `IBranchSet`."""
         assert product is not None, "Must have a valid product."
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        dormant_clause = self._dormantClause(show_dormant)
+        dormant_clause = self._dormantClause(hide_dormant)
 
         query = 'Branch.product = %s %s %s' % (
             product.id, lifecycle_clause, dormant_clause)
@@ -1093,11 +1093,11 @@ class BranchSet:
 
     def getBranchesForProject(self, project, lifecycle_statuses=None,
                               visible_by_user=None, sort_by=None,
-                              show_dormant=True):
+                              hide_dormant=False):
         """See `IBranchSet`."""
         assert project is not None, "Must have a valid project."
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        dormant_clause = self._dormantClause(show_dormant)
+        dormant_clause = self._dormantClause(hide_dormant)
 
         query = ('''
             Branch.product = Product.id AND

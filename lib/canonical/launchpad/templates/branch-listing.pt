@@ -7,8 +7,13 @@
     <label for="field.lifecycle">
       Branches with status:
     </label>
-    <tal:widgets repeat="widget context/view/widgets"
-                 replace="structure widget" />
+    <tal:lifecycle-selector replace="structure context/view/widgets/lifecycle"/>
+    <tal:sort-by replace="structure context/view/widgets/sort_by"/>
+    <label tal:attributes="for context/view/widgets/hide_dormant/name"
+           style="font-weight: normal">
+      <tal:hide-dormant replace="structure context/view/widgets/hide_dormant"/>
+      Hide dormant branches
+    </label>
     <noscript>
       <input type="submit" value="Filter"/>
     </noscript>
@@ -24,8 +29,8 @@ function hookUpFilterSubmission () {
   if (getElement('field.sort_by')) {
     connect('field.sort_by', 'onchange', submit_filter);
   }
-  if (getElement('field.show_dormant')) {
-    connect('field.show_dormant', 'onchange', submit_filter);
+  if (getElement('field.hide_dormant')) {
+    connect('field.hide_dormant', 'onchange', submit_filter);
   }
 }
 
