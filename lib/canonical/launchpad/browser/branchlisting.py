@@ -25,7 +25,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.branch import BranchBadges
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter,
-    BranchListingDormancy, BranchListingSort,
+    BranchListingSort,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
     IBranchBatchNavigator, IBranchListingFilter, IBugBranchSet,
     ISpecificationBranchSet)

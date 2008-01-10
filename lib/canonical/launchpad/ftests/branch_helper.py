@@ -10,9 +10,6 @@ __all__ = [
 
 from datetime import datetime, timedelta
 import pytz
-import transaction
-
-from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.ftests import login, logout

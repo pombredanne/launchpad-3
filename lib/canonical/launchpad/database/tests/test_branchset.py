@@ -14,8 +14,6 @@ import transaction
 from canonical.config import config
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (
-    cursor, quote, SQLBase, sqlvalues)
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
@@ -58,8 +56,8 @@ class TestBranchSet(TestCase):
         self.assertEqual(quantity, len(list(latest_branches)))
 
     def test_onlyForProduct(self):
-        """getLatestBranchesForProduct returns branches only from the requested
-        product.
+        """getLatestBranchesForProduct returns branches only from the
+        requested product.
         """
         quantity = 5
         latest_branches = self.branch_set.getLatestBranchesForProduct(
@@ -69,9 +67,9 @@ class TestBranchSet(TestCase):
             [branch.product.name for branch in latest_branches])
 
     def test_abandonedBranchesNotIncluded(self):
-        """getLatestBranchesForProduct does not include branches that have been
-        abandoned, because they are not relevant for those interested in recent
-        activity.
+        """getLatestBranchesForProduct does not include branches that have
+        been abandoned, because they are not relevant for those interested
+        in recent activity.
         """
         original_branches = list(
             self.branch_set.getLatestBranchesForProduct(self.product, 5))
@@ -351,7 +349,8 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
             (MIRROR_TIME_INCREMENT * 2 ** (num_failures - 1)))
 
     def test_repeatedMirrorFailuresDisablesMirroring(self):
-        """If a branch's mirror failures exceed the maximum, disable mirroring.
+        """If a branch's mirror failures exceed the maximum, disable
+        mirroring.
         """
         branch = self.makeBranch()
         for i in range(MAXIMUM_MIRROR_FAILURES):
@@ -446,7 +445,8 @@ class BranchVisibilityPolicyTestCase(TestCase):
     def assertBranchRule(self, creator, owner, expected_rule):
         """Check the getBranchVisibilityRuleForBranch results for a branch."""
         branch = BranchSet().new(
-            BranchType.HOSTED, 'test_rule', creator, owner, self.firefox, None)
+            BranchType.HOSTED, 'test_rule', creator, owner, self.firefox,
+            None)
         rule = self.firefox.getBranchVisibilityRuleForBranch(branch)
         self.assertEqual(rule, expected_rule,
                          'Wrong visibililty rule returned: '
@@ -457,17 +457,17 @@ class BranchVisibilityPolicyTestCase(TestCase):
         """Check the visibility policy for branch creation.
 
         The method _checkVisibilityPolicy of the class BranchSet is called
-        when a branch is being created.  The method is responsible for checking
-        the visibility policy of the product.  The visibility policy is a
-        collection of team policies, where a team policy is a team and a
+        when a branch is being created.  The method is responsible for
+        checking the visibility policy of the product.  The visibility policy
+        is a collection of team policies, where a team policy is a team and a
         visiblity rule.
 
         This method does not create a branch, it just checks to see that the
         creator is able to create a branch in the namespace of the owner, and
-        it determins whether the branch is a public branch or a private branch.
-        If the branch is to be created as a private branch, then there may be
-        a team that is implicitly subscribed to the branch to give that team
-        the ability to see the private branch.
+        it determins whether the branch is a public branch or a private
+        branch.  If the branch is to be created as a private branch, then
+        there may be a team that is implicitly subscribed to the branch to
+        give that team the ability to see the private branch.
 
         :param creator: The user creating the branch.
         :param owner: The person or team that will be the owner of the branch.
@@ -557,12 +557,14 @@ class NoPolicies(BranchVisibilityPolicyTestCase):
     """Test behaviour with no team policies defined."""
 
     def test_creation_where_not_team_member(self):
-        """If the creator isn't a member of the owner an exception is raised."""
+        """If the creator isn't a member of the owner an exception is raised.
+        """
         self.assertPolicyCheckRaises(
             BranchCreatorNotMemberOfOwnerTeam, self.doug, self.xray)
 
     def test_creation_under_different_user(self):
-        """If the owner is a user other than the creator an exception is raised.
+        """If the owner is a user other than the creator an exception is
+        raised.
         """
         self.assertPolicyCheckRaises(
             BranchCreatorNotOwner, self.albert, self.bob)
@@ -973,9 +975,10 @@ class TeamsWithinTeamsPolicies(BranchVisibilityPolicyTestCase):
 
     def test_multiple_private_policies_through_indirect_membership(self):
         """If a person is a member of a team that specifies private branches,
-        and that team is also a member either directly or indirectly of another
-        team that specifies private branches, then when members of those teams
-        create branches, those branches have no implicit subscribers.
+        and that team is also a member either directly or indirectly of
+        another team that specifies private branches, then when members of
+        those teams create branches, those branches have no implicit
+        subscribers.
         """
         self.assertPrivateSubscriber(self.albert, self.albert, None)
         self.assertPrivateSubscriber(self.charlie, self.charlie, None)
