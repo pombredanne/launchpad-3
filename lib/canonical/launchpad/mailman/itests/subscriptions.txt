@@ -55,16 +55,25 @@ people and join them to teams through the backdoor.
     >>> commit()
     >>> itest_helper.wait_for_mailman()
 
-Both Anne and Bart are now members of the mailing list.
+Both Anne and Bart are now members of the mailing list.  Both have two
+subscribed addresses (because both are validated with Launchpad), but only one
+of them is enabled.
 
     >>> from Mailman.MailList import MailList
+    >>> from Mailman.MemberAdaptor import ENABLED
+    >>> def print_members(mailing_list):
+    ...     for key in sorted(mailing_list.getMembers()):
+    ...         address = mailing_list.getMemberCPAddress(key)
+    ...         fullname = mailing_list.getMemberName(key)
+    ...         is_enabled = (mailing_list.getDeliveryStatus(key) == ENABLED)
+    ...         print fullname, '<%s>' % address, is_enabled
+
     >>> mailing_list = MailList('itest-one', lock=False)
-    >>> for key in sorted(mailing_list.getMembers()):
-    ...     address = mailing_list.getMemberCPAddress(key)
-    ...     fullname = mailing_list.getMemberName(key)
-    ...     print fullname, '<%s>' % address
-    Anne Person <anne.person@example.com>
-    Bart Person <bperson@example.org>
+    >>> print_members(mailing_list)
+    Anne Person <anne.person@example.com> True
+    Anne Person <aperson@example.org> False
+    Bart Person <bart.person@example.com> False
+    Bart Person <bperson@example.org> True
 
 Cris and Dirk now subscribe to the team and its list.  Anne changes her
 preferred email address, and Bart unsubscribes from the mailing list.
@@ -98,10 +107,52 @@ the only other members.
 
     # Reload the list data.
     >>> mailing_list.Load()
-    >>> for key in sorted(mailing_list.getMembers()):
-    ...     address = mailing_list.getMemberCPAddress(key)
-    ...     fullname = mailing_list.getMemberName(key)
-    ...     print fullname, '<%s>' % address
-    Anne Person <aperson@example.org>
-    Cris Person <cris.person@example.com>
-    Dirk Person <dirk.person@example.com>
+    >>> print_members(mailing_list)
+    Anne Person <anne.person@example.com> False
+    Anne Person <aperson@example.org> True
+    Cris Person <cperson@example.org> False
+    Cris Person <cris.person@example.com> True
+    Dirk Person <dirk.person@example.com> True
+    Dirk Person <dperson@example.org> False
+
+
+== Alternative addresses ==
+
+Now Anne decides to register another email address with Launchpad, however
+before she can validate this address, subscriptions for the list are
+synchronized with Mailman.  Anne's non-validated address does not appear in
+the membership list, either as an enabled or disabled address.
+
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> login('foo.bar@canonical.com')    
+    >>> email_set = getUtility(IEmailAddressSet)
+    >>> email = email_set.new('anne.x.person@example.net', anne)
+    >>> logout()
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
+
+    # Reload the list data.
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list)
+    Anne Person <anne.person@example.com> False
+    Anne Person <aperson@example.org> True
+    Cris Person <cperson@example.org> False
+    Cris Person <cris.person@example.com> True
+    Dirk Person <dirk.person@example.com> True
+    Dirk Person <dperson@example.org> False
+
+Once Anne validates her address though, she may post from it.
+
+    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> email.status = EmailAddressStatus.VALIDATED
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list)
+    Anne Person <anne.person@example.com> False
+    Anne Person <anne.x.person@example.net> False
+    Anne Person <aperson@example.org> True
+    Cris Person <cperson@example.org> False
+    Cris Person <cris.person@example.com> True
+    Dirk Person <dirk.person@example.com> True
+    Dirk Person <dperson@example.org> False

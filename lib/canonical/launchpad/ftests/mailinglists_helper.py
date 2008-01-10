@@ -93,7 +93,7 @@ def print_info(info):
         print team_name
         subscribees = info[team_name]
         for address, realname, flags, status in subscribees:
-            print '   ', address, realname, flags, status
+            print '    %-23s' % address, realname, flags, status
 
 
 def new_team(team_name, with_list=False):

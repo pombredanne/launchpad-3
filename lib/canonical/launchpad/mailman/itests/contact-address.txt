@@ -129,7 +129,7 @@ This is the message to the contact address.
     X-Launchpad-Question: product=firefox; status=Open; assignee=None;
       priority=Normal; language=en
     X-Launchpad-Message-Rationale: Answer Contact (firefox) @itest-one
-    To: itest-one@lists.launchpad.net
+    To: itest-one@lists.launchpad.dev
     From: No Privileges Person <question...@answers.launchpad.net>
     ...
     Subject: [Itest-one] [Question #...]: A new question
@@ -157,7 +157,7 @@ This is the message to the contact address.
     _______________________________________________
     Itest-one mailing list
     Itest-one@launchpad.dev
-    http://mission.wooz.org/mailman/listinfo/itest-one
+    http://lists.launchpad.dev/mailman/listinfo/itest-one
     <BLANKLINE>
     <BLANKLINE>
 
@@ -179,7 +179,7 @@ sent to its mailing list.
 
     >>> print messages[0].as_string()
     MIME-Version: 1.0
-    To: itest-one@lists.launchpad.net
+    To: itest-one@lists.launchpad.dev
     From: No Privileges Person <no-priv@canonical.com>
     ...
     <BLANKLINE>
