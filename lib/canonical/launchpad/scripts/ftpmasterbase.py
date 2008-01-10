@@ -121,7 +121,12 @@ class PackageLocation:
         return False
 
     def __str__(self):
-        return '%s: %s-%s' % (self.archive.owner.name,
+        # Use ASCII-only for PPA titles, owner names can contain unicode.
+        if self.archive.purpose == ArchivePurpose.PPA:
+            title = self.archive.owner.name
+        else:
+            title = self.archive.title
+        return '%s: %s-%s' % (title,
                              self.distroseries.name, self.pocket.name)
 
 
