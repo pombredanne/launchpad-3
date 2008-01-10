@@ -817,31 +817,31 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
             author = branch.owner.name
         return {
             'author': author,
-            'displayname': branch.displayname,
+            'display_name': branch.displayname,
             'name': branch.name,
             'title': title,
-            'uniquename' : branch.unique_name,
+            'unique_name' : branch.unique_name,
             'url': url,
             }
 
     def link(self, extra_path):
         """A hyperlinked branch icon with the unique name."""
         return (
-            '<a href="%(url)s" title="%(displayname)s">'
+            '<a href="%(url)s" title="%(display_name)s">'
             '<img src="/@@/branch" alt=""/>'
             '&nbsp;%(unique_name)s</a>' % self._args(extra_path))
 
     def projectLink(self, extra_path):
         """A hyperlinked branch icon with the name and title."""
         return (
-            '<a href="%(url)s" title="%(displayname)s">'
+            '<a href="%(url)s" title="%(display_name)s">'
             '<img src="/@@/branch" alt=""/>'
             '&nbsp;%(name)s</a>: %(title)s' % self._args(extra_path))
 
     def titleLink(self, extra_path):
         """A hyperlinked branch name with following title."""
         return (
-            '<a href="%(url)s" title="%(displayname)s">'
+            '<a href="%(url)s" title="%(display_name)s">'
             '%(name)s</a>: %(title)s' % self._args(extra_path))
 
 
