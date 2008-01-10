@@ -34,7 +34,7 @@ This button does not appear for normal users:
 If we remove the RCS details, we will get an error when trying to
 certify the import:
 
-  >>> browser.getControl('No revision control system, or Bazaar').click()
+  >>> browser.getControl('No revision control system or not specifed here').click()
   >>> browser.getControl(
   ...     'Approve import for production and publication').click()
   >>> print browser.url
