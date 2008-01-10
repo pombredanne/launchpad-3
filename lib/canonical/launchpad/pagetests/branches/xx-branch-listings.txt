@@ -399,7 +399,7 @@ shown.
 Here we are going to make two of Sample Person's branches dormant so
 they are not shown by default.
 
-    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+branches')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
@@ -417,7 +417,7 @@ they are not shown by default.
 
 The default listing now doesn't show these two branches.
 
-    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal/+branches')
     >>> browser.getControl(name='field.hide_dormant').value
     True
     >>> table = find_tag_by_id(browser.contents, 'branchtable')

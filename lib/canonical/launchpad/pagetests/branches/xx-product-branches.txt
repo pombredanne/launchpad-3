@@ -28,12 +28,6 @@ link:
     >>> print extract_text(find_main_content(browser.contents).h1)
     Bazaar branches for Gnome Applets
 
-We are be able to display a list of branches for a product at +branches.
-
-   >>> browser.open('http://launchpad.dev/gnome-terminal/+branches')
-   >>> print browser.title
-   GNOME Terminal's Bazaar branches registered in Launchpad
-
 If there are not any branches, a relevant message is shown.
 
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')

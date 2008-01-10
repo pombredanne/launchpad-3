@@ -13,7 +13,6 @@ __all__ = [
     'BranchCreatorNotOwner',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
-    'BranchListingDormancy',
     'BranchListingSort',
     'BranchType',
     'BranchTypeError',
