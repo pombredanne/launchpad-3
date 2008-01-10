@@ -67,14 +67,14 @@ non-existent or empty.
 == Unvalidated member postings ==
 
 Similarly, an address that has been registered with Launchpad but not verified
-should also be summarily discarded.  To demonstrate this, we'll add Anne as a
+will also be summarily discarded.  To demonstrate this, we'll add Anne as a
 normal Launchpad user, but de-certify her alternative address.  This is
 equivalent to making it unvalidated.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     get_alternative_email, new_person)
     >>> from canonical.launchpad.ftests import login, logout
-    >>> login('foo.bar@canonical.com')    
+    >>> login('foo.bar@canonical.com')
     >>> anne = new_person('Anne')
     >>> alternative_email = get_alternative_email(anne)
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
@@ -86,7 +86,7 @@ equivalent to making it unvalidated.
 
     >>> vette_watcher.resync()
     >>> inject('itest-one', """\
-    ... From: aperson@example.com
+    ... From: aperson@example.org
     ... To: itest-one@lists.launchpad.dev
     ... Subject: A non-member post
     ... Message-ID: <second-injection>
@@ -128,8 +128,7 @@ list.
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
-    >>> message = messages[0]
-    >>> print message.as_string()
+    >>> print messages[0].as_string()
     Subject: Auto-discard notification
     From: itest-one-bounces@launchpad.dev
     To: itest-one-owner@launchpad.dev
@@ -167,6 +166,7 @@ to the mailing list.
     >>> print anne.preferredemail.email, anne.preferredemail.statusname
     anne.person@example.com Preferred Email Address
     >>> smtp_watcher.resync()
+    >>> smtpd.reset()
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
@@ -177,15 +177,12 @@ to the mailing list.
     ... """)
     >>> smtp_watcher.wait_for_growth()
 
-To show that this message will make it through by reading the mbox file.
-There are now two messages in the mbox file, the previous auto-discard notice,
-and the newly posted message.
+Anne's message got posted to the mailing list.
 
     >>> messages = smtpd.getMessages()
     >>> len(messages)
-    2
-    >>> message = messages[1]
-    >>> print message.as_string()
+    1
+    >>> print messages[0].as_string()
     From: anne.person@example.com
     To: itest-one@lists.launchpad.dev
     Message-ID: <fifth-injection>
@@ -199,6 +196,65 @@ and the newly posted message.
     http://.../mailman/listinfo/itest-one
     <BLANKLINE>
     <BLANKLINE>
+
+Once again, Anne cannot post from her alternative email address because it has
+not been validated yet.
+
+    >>> smtpd.reset()
+    >>> vette_watcher.resync()
+    >>> inject('itest-one', """\
+    ... From: aperson@example.org
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A non-member post
+    ... Message-ID: <sixth-injection>
+    ...
+    ... Hi, I am not a verified member of this team (yet).
+    ... """)
+    >>> vette_watcher.wait_for_growth()
+    >>> smtpd.getMailboxSize() <= 0
+    True
+
+However, once she validates this address, she can post from it.
+
+    >>> alternative_email.status = EmailAddressStatus.VALIDATED
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
+    >>> smtp_watcher.resync()
+    >>> inject('itest-one', """\
+    ... From: aperson@example.org
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A member post
+    ... Message-ID: <sixth-injection>
+    ...
+    ... Hi, I am now a verified member of this team!
+    ... """)
+    >>> smtp_watcher.wait_for_growth()
+    >>> messages = smtpd.getMessages()
+    >>> len(messages)
+    1
+    >>> print messages[0].as_string()
+    From: aperson@example.org
+    To: itest-one@lists.launchpad.dev
+    Message-ID: <sixth-injection>
+    Subject: [Itest-one] A member post
+    ...
+    <BLANKLINE>
+    Hi, I am now a verified member of this team!
+    _______________________________________________
+    Itest-one mailing list
+    Itest-one@launchpad.dev
+    http://.../mailman/listinfo/itest-one
+    <BLANKLINE>
+    <BLANKLINE>
+
+There should also be no held requests pending.
+
+    # The mailing list must be locked to make this query.
+    >>> from Mailman.MailList import MailList
+    >>> mailing_list = MailList('itest-one')
+    >>> mailing_list.NumRequestsPending()
+    0
+    >>> mailing_list.Unlock()
 
 
 == Clean up ==
