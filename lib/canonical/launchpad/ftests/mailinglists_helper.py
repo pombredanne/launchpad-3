@@ -88,12 +88,22 @@ def print_info(info):
     """A helper function for the mailing list tests.
 
     This prints the results of the XMLRPC .getPendingActions() call.
+
+    Note that in order to make the tests that use this method a little
+    clearer, we specifically suppress printing of the mail-archive recipient.
+    You should pick the info apart manually if you want that.
     """
     for team_name in sorted(info):
         print team_name
         subscribees = info[team_name]
         for address, realname, flags, status in subscribees:
-            print '    %-23s' % address, realname, flags, status
+            if (config.mailman is not None and
+                config.mailman.archive_address and
+                address == config.mailman.archive_address):
+                # Don't print this information
+                pass
+            else:
+                print '    %-23s' % address, realname, flags, status
 
 
 def new_team(team_name, with_list=False):

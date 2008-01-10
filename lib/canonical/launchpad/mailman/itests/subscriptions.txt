@@ -72,6 +72,7 @@ of them is enabled.
     >>> print_members(mailing_list)
     Anne Person <anne.person@example.com> True
     Anne Person <aperson@example.org> False
+     <archive@mail-archive.com> True
     Bart Person <bart.person@example.com> False
     Bart Person <bperson@example.org> True
 
@@ -110,6 +111,7 @@ the only other members.
     >>> print_members(mailing_list)
     Anne Person <anne.person@example.com> False
     Anne Person <aperson@example.org> True
+     <archive@mail-archive.com> True
     Cris Person <cperson@example.org> False
     Cris Person <cris.person@example.com> True
     Dirk Person <dirk.person@example.com> True
@@ -136,6 +138,7 @@ the membership list, either as an enabled or disabled address.
     >>> print_members(mailing_list)
     Anne Person <anne.person@example.com> False
     Anne Person <aperson@example.org> True
+     <archive@mail-archive.com> True
     Cris Person <cperson@example.org> False
     Cris Person <cris.person@example.com> True
     Dirk Person <dirk.person@example.com> True
@@ -152,6 +155,7 @@ Once Anne validates her address though, she may post from it.
     Anne Person <anne.person@example.com> False
     Anne Person <anne.x.person@example.net> False
     Anne Person <aperson@example.org> True
+     <archive@mail-archive.com> True
     Cris Person <cperson@example.org> False
     Cris Person <cris.person@example.com> True
     Dirk Person <dirk.person@example.com> True
