@@ -144,13 +144,14 @@ class TestDistributionMirror(unittest.TestCase):
         # previously enabled or disabled.
         self._create_probe_record(mirror)
         self.failUnless(mirror.enabled)
-        mirror.disable(notify_owner=True)
+        log = 'Got a 404 on http://foo/baz'
+        mirror.disable(notify_owner=True, log=log)
         # A notification was sent to the owner and other to the mirror admins.
         transaction.commit()
         self.failUnlessEqual(len(stub.test_emails), 2)
         stub.test_emails = []
 
-        mirror.disable(notify_owner=True)
+        mirror.disable(notify_owner=True, log=log)
         # Again, a notification was sent to the owner and other to the mirror
         # admins.
         transaction.commit()
@@ -161,7 +162,7 @@ class TestDistributionMirror(unittest.TestCase):
         # the owner if the mirror was previously enabled.
         self._create_probe_record(mirror)
         mirror.enabled = True
-        mirror.disable(notify_owner=True)
+        mirror.disable(notify_owner=True, log=log)
         # A notification was sent to the owner and other to the mirror admins.
         transaction.commit()
         self.failUnlessEqual(len(stub.test_emails), 2)
@@ -170,13 +171,13 @@ class TestDistributionMirror(unittest.TestCase):
         # We can always disable notifications to the owner by passing
         # notify_owner=False to mirror.disable().
         mirror.enabled = True
-        mirror.disable(notify_owner=False)
+        mirror.disable(notify_owner=False, log=log)
         transaction.commit()
         self.failUnlessEqual(len(stub.test_emails), 1)
         stub.test_emails = []
 
         mirror.enabled = False
-        mirror.disable(notify_owner=True)
+        mirror.disable(notify_owner=True, log=log)
         # No notifications were sent this time
         transaction.commit()
         self.failUnlessEqual(len(stub.test_emails), 0)
