@@ -11,6 +11,7 @@ from zope.component import getUtility
 from zope.app.exception.interfaces import ISystemErrorView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 import canonical.launchpad.layers
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -153,10 +154,14 @@ class NotFoundView(SystemErrorView):
     def __call__(self):
         return self.index()
 
-    @property
-    def referer(self):
+    @cachedproperty
+    def referrer(self):
         """Return the URL of the referring page."""
-        return self.request.get('HTTP_REFERER') or None
+        referrer = self.request.get('HTTP_REFERER')
+        if referrer == "":
+            return None
+        else:
+            return referrer
 
 
 class RequestExpiredView(SystemErrorView):

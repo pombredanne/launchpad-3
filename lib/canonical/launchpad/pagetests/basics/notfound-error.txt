@@ -12,6 +12,10 @@ the contents of any error page. So we use http() instead.)
     ... """))
     >>> 'HTTP/1.1 404 Not Found' in page_with_referer
     True
+    >>> 'If you got here from a link' in page_with_referer
+    True
+    >>> 'Check that you entered the address correctly' in page_with_referer
+    False
     >>> 'http://launchpad.dev/+about' in page_with_referer
     True
     >>> 'Return to the page you came from' in page_with_referer
@@ -23,7 +27,11 @@ Referer: header, the 404 page includes no such link.
     >>> page_with_no_referer = str(http(r"""
     ... GET /+fqwhgads HTTP/1.1
     ... """))
-    >>> 'HTTP/1.1 404 Not Found' in page_with_referer
+    >>> 'HTTP/1.1 404 Not Found' in page_with_no_referer
+    True
+    >>> 'If you got here from a link' in page_with_no_referer
+    False
+    >>> 'Check that you entered the address correctly' in page_with_no_referer
     True
     >>> 'Return to the page you came from' in page_with_no_referer
     False
