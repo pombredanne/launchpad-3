@@ -63,18 +63,10 @@ have only on binary.
   mozilla-firefox [u'hppa', u'i386']
   mozilla-firefox-data [u'hppa', u'i386']
 
-Check dependency related view attributes:
-
-  >>> pmount_view.has_build_depends()
-  False
-
-  >>> firefox_view.has_build_depends()
-  True
-
 Check the formatted dependency lines provided by the view class, they
 return a IPackageRelationshipSet object (see package-relationship.txt).
 
-  >>> firefox_parsed_depends = firefox_view.builddepends()
+  >>> firefox_parsed_depends = firefox_view.builddepends
 
   >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.launchpad.interfaces import IPackageRelationshipSet
@@ -91,7 +83,7 @@ return a IPackageRelationshipSet object (see package-relationship.txt).
   ('pmount', None, '', u'http://launchpad.dev/ubuntu/warty/+package/pmount')
 
 
-  >>> firefox_parsed_dependsindep = firefox_view.builddependsindep()
+  >>> firefox_parsed_dependsindep = firefox_view.builddependsindep
 
   >>> verifyObject(IPackageRelationshipSet, firefox_parsed_dependsindep)
   True
