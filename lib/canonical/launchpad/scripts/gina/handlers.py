@@ -1,11 +1,12 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-__metaclass__ = type
-
 """Gina db handlers.
 
 Classes to handle and create entries on launchpad db.
 """
+
+__metaclass__ = type
+
 __all__ = [
     'ImporterHandler',
     'BinaryPackageHandler',
@@ -144,7 +145,7 @@ class ImporterHandler:
         if archtag in self.archinfo.keys():
             return
 
-        """Get distroarchseries and processor from the architecturetag"""
+        # Get distroarchseries and processor from the architecturetag.
         dar = DistroArchSeries.selectOneBy(
                 distroseriesID=self.distroseries.id,
                 architecturetag=archtag)
@@ -333,7 +334,8 @@ class ImporterHandler:
     def publish_sourcepackage(self, sourcepackagerelease, sourcepackagedata):
         """Append to the sourcepackagerelease imported list."""
         self.sppublisher.publish(sourcepackagerelease, sourcepackagedata)
-        self.imported_sources.append((sourcepackagerelease, sourcepackagedata))
+        self.imported_sources.append((sourcepackagerelease,
+            sourcepackagedata))
 
     def publish_binarypackage(self, binarypackagerelease, binarypackagedata,
                               archtag):
@@ -568,9 +570,11 @@ class SourcePackageHandler:
             dsc=src.dsc,
             copyright=src.copyright,
             version=src.version,
-            changelog=src.changelog,
+            changelog_entry=src.changelog,
             builddepends=src.build_depends,
             builddependsindep=src.build_depends_indep,
+            build_conflicts=src.build_conflicts,
+            build_conflicts_indep=src.build_conflicts_indep,
             architecturehintlist=src.architecture,
             format=SourcePackageFormat.DPKG,
             upload_distroseries=distroseries.id,
@@ -736,25 +740,28 @@ class BinaryPackageHandler:
 
         # Create the binarypackage entry on lp db.
         binpkg = BinaryPackageRelease(
-            binarypackagename = bin_name.id,
-            component = componentID,
-            version = bin.version,
-            description = bin.description,
-            summary = bin.summary,
-            build = build.id,
-            binpackageformat = getBinaryPackageFormat(bin.filename),
-            section = sectionID,
-            priority = prioritymap[bin.priority],
-            shlibdeps = bin.shlibs,
-            depends = bin.depends,
-            suggests = bin.suggests,
-            recommends = bin.recommends,
-            conflicts = bin.conflicts,
-            replaces = bin.replaces,
-            provides = bin.provides,
-            essential = bin.essential,
-            installedsize = bin.installed_size,
-            architecturespecific = architecturespecific,
+            binarypackagename=bin_name.id,
+            component=componentID,
+            version=bin.version,
+            description=bin.description,
+            summary=bin.summary,
+            build=build.id,
+            binpackageformat=getBinaryPackageFormat(bin.filename),
+            section=sectionID,
+            priority=prioritymap[bin.priority],
+            shlibdeps=bin.shlibs,
+            depends=bin.depends,
+            suggests=bin.suggests,
+            recommends=bin.recommends,
+            conflicts=bin.conflicts,
+            replaces=bin.replaces,
+            provides=bin.provides,
+            pre_depends=bin.pre_depends,
+            enhances=bin.enhances,
+            breaks=bin.breaks,
+            essential=bin.essential,
+            installedsize=bin.installed_size,
+            architecturespecific=architecturespecific,
             )
         log.info('Binary Package Release %s (%s) created' %
                  (bin_name.name, bin.version))
@@ -925,7 +932,7 @@ def ensure_person(displayname, emailaddress, package_name, distroseries_name):
     """
     person = getUtility(IPersonSet).getByEmail(emailaddress)
     if person is None:
-        comment=('when the %s package was imported into %s'
+        comment = ('when the %s package was imported into %s'
                  % (package_name, distroseries_name))
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             emailaddress, PersonCreationRationale.SOURCEPACKAGEIMPORT,

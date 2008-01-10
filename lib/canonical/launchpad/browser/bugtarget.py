@@ -33,7 +33,9 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
-from canonical.launchpad.browser.feeds import FeedsMixin
+from canonical.launchpad.browser.feeds import (
+    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
+    PersonLatestBugsFeedLink)
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBug, IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IProduct,
@@ -956,6 +958,13 @@ class BugCountDataItem:
 
 class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
     """View for the Bugs front page."""
+
+    # Only include <link> tags for bug feeds when using this view.
+    feed_types = (
+        BugFeedLink,
+        BugTargetLatestBugsFeedLink,
+        PersonLatestBugsFeedLink,
+        )
 
     # XXX: Bjorn Tillenius 2007-02-13:
     #      These colors should be changed. It's the same colors that are used

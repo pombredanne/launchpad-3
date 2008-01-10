@@ -22,8 +22,7 @@
     <div tal:replace="structure context/@@+portlet-search" />
     
       <div
-        tal:condition="context/target/sourcepackagename|nothing"
-        tal:replace="structure context/target/@@+portlet-details"
+        tal:replace="structure context/target/@@+portlet-details | nothing"
       />
     </metal:portlets>
 
