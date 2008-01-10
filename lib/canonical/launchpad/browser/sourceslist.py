@@ -8,6 +8,7 @@ from zope.app.form.interfaces import IInputWidget
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
 
@@ -29,13 +30,30 @@ class SourcesListEntriesView(LaunchpadView):
     __used_for__ = SourcesListEntries
     template = ViewPageTemplateFile('../templates/sources-list-entries.pt')
 
+    def __init__(self, context, request, hidden_by_default=False):
+        LaunchpadView.__init__(self, context, request)
+        self._hidden_by_default = hidden_by_default
+
     def initialize(self):
-        self.terms = [SimpleTerm(s, s.name, s.title)
-                 for s in self.context.valid_series]
+        if self._hidden_by_default:
+            self.terms = [SimpleTerm(
+                None, 'none', 'Choose a Distribution series')]
+        else:
+            self.terms = []
+        for s in self.context.valid_series:
+            self.terms.append(SimpleTerm(s, s.name, s.title))
         field = Choice(__name__='series', title=_("Distro Series"),
                        vocabulary=SimpleVocabulary(self.terms), required=True)
         setUpWidget(self, 'series',  field, IInputWidget)
         self.series_widget.extra = "onChange='updateSeries(this);'"
+
+    @cachedproperty
+    def default_visibility(self):
+        """The default visibility of the source.list entries."""
+        if self._hidden_by_default:
+            return 'hidden'
+        else:
+            return 'visible'
 
     @property
     def plain_series_widget(self):
@@ -57,6 +75,7 @@ class SourcesListEntriesView(LaunchpadView):
         """
         if len(self.terms) == 0:
             return self.context.distribution.currentseries.name
+        elif self._hidden_by_default:
+            # There is no distro series entries shown.
+            return None
         return self.terms[0].value.name
-
-
