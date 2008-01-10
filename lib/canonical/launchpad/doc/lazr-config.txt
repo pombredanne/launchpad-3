@@ -9,7 +9,7 @@ The config file supports inheritance to minimize duplication of
 information across files. The format supports schema validation.
 
 
-== ConfigSchema and ConfigSchemaParser ==
+== ConfigSchema ==
 
 A schema is loaded by instantiating the ConfigSchema class with
 the path to a configuration file. The schema is explicitly derived from
@@ -262,3 +262,277 @@ section name.
     Traceback (most recent call last):
       ...
     InvalidSectionNameError: [$category.name_part.optional] ...
+
+
+== IConfigLoader  ==
+
+ConfigSchema implements the two methods in the IConfigLoader interface.
+A Config is created by a schema using either the load() or loadFile()
+methods to return a Config instance.
+
+    >>> from canonical.lazr.interfaces import IConfig, IConfigLoader
+    >>> verifyObject(IConfigLoader, schema)
+    True
+
+The load() method accepts a filename.
+
+    >>> local_conf = '%s/%s' % (testfiles_dir,  'local.conf')
+    >>> config = schema.load(local_conf)
+
+    >>> from canonical.lazr.config import Config
+    >>> verifyObject(IConfig, config)
+    True
+
+Passing a filename to a non-existent file will raise an IOError.
+
+    >>> schema.load("fnord.conf")
+    Traceback (most recent call last):
+      ...
+    IOError: [Errno 2] No such file or directory: 'fnord.conf'
+
+The loadFile method accepts a file-like object and an optional filename
+keyword arg. The filename arg must be passed if the file-like object
+does not have a name attribute.
+
+    >>> import StringIO
+    >>> bad_data = '\n'.join([
+    ...     "[meta]",
+    ...     "extends: base.conf",
+    ...     "metakey: unsupported",
+    ...     "[unknown-section]",
+    ...     "key1 = value1",
+    ...     "[section-1]",
+    ...     "keyn: unknown key",
+    ...     "key1: bad character in caf\xc3)",
+    ...     "[section-3.template]",
+    ...     "key1: schema suffixes are not permitted"])
+    >>> schema.loadFile(StringIO.StringIO(bad_data))
+    Traceback (most recent call last):
+      ...
+    AttributeError: StringIO instance has no attribute 'name'
+
+    >>> bad_config = schema.loadFile(
+    ...     StringIO.StringIO(bad_data), 'bad conf')
+    >>> verifyObject(IConfig, bad_config)
+    True
+
+The bad_config example will be used for validation tests.
+
+
+== Config ==
+
+The config represents the local configuration of the process on system.
+It is validated with a schema. It extends the schema, or other conf
+files to define the specific differences from the extended files that
+are required to run the local processes.
+
+Like the schema file, the conf file is made up of sections with keys.
+The sections may belong to a category. Unlike the schema file, it does
+not have template or optional sections.
+
+    >>> local_file = open(local_conf, 'r')
+    >>> raw_conf = local_file.read()
+    >>> local_file.close()
+    >>> print raw_conf
+    # Localize a key for section-1.
+    [section-1]
+    key5: local value
+    # Accept the default values for the optional section-5.
+    [section-5]
+
+The config that was loaded has name and filename attributes to identify
+the configuration.
+
+    >>> config.name
+    'local.conf'
+    >>> config.filename
+    '...ftests/testfiles/local.conf'
+
+A conf file may contains a meta section that is used by the config
+system. The config can access the schema via the schema property.
+
+    >>> print config.extends
+    None
+    >>> config.schema.name
+    'base.conf'
+    >>> config.schema.filename
+    '...ftests/testfiles/base.conf'
+    >>> config.schema is schema
+    True
+
+A config is made up of multiple Sections like the schema. They can be
+iterated over in a loop as needed. This config inherited several
+sections defined in schema. Note that the meta section is not present
+because it pertains to the config system, not to the processes being
+configured.
+
+    >>> for section in sorted(config, key=attrgetter('name')):
+    ...     print section.name
+    section-1
+    section-2.app-b
+    section-3.app-b
+    section-5
+
+You can check if a section name is in a config.
+
+    >>> 'section-1' in config
+    True
+    >>> 'bad-section' in config
+    False
+
+Optional SchemaSections are not inherited by the config. A config file
+must declare all optional sections. Including the section heading is
+enough to inherit the section and its keys. The config file may localize
+the keys by declaring them too.
+
+    >>> 'section-3.app-a' in config
+    False
+    >>> 'section-3.app-a' in config.schema
+    True
+    >>> config.schema['section-3.app-a'].optional
+    True
+
+    >>> 'section-5' in config
+    True
+    >>> 'section-5' in config.schema
+    True
+    >>> config.schema['section-5'].optional
+    True
+
+A Section can be accessed using subscript notation. Accessing a section
+that does not exist will raise a NoSectionError.
+
+    >>> section_1 = config['section-1']
+    >>> section_1.name in config
+    True
+
+    >>> config['section-4']
+    Traceback (most recent call last):
+      ...
+    NoSectionError: ...
+
+NoSectionError is raised for a undeclared optional sections too.
+
+    >>> config['section-3.app-a']
+    Traceback (most recent call last):
+      ...
+    NoSectionError: ...
+
+Config and Schema provide attribute-based access to their members.
+# XXX sinzui 2007-12-17:
+# This is delayed to lazrconfig-4. The issue is somewhat awkward in
+# that section names are not python-identifier friendly because they
+# may contain dot, dash, and start with a number.
+
+Config supports category access like Schema does. The list of
+categories are returned by the category_names property.
+
+    >>> sorted(config.category_names)
+    ['section-2', 'section-3']
+
+All the sections that belong to a category can be retrieved using the
+getByCategory() method.
+
+    >>> for section in config.getByCategory('section-3'):
+    ...     print section_schema.name
+    section-3.app-b
+
+Passing a non-existent category_name to the method will raise a
+NoCategoryError.
+
+    >>> config.getByCategory('non-section')
+    Traceback (most recent call last):
+      ...
+    NoCategoryError: ...
+
+
+== Section ==
+
+A Section behaves similar to a dictionary. It has keys and values.
+It supports some specialize access methods and properties for working
+with the values. Each Section has a name. Continuing with section_1
+from above....
+
+    >>> from canonical.lazr.interfaces import ISection
+    >>> verifyObject(ISection, section_1)
+    True
+
+    >>> section_1.name
+    'section-1'
+
+A key can be verified to be in a Section.
+
+    >>> 'key1' in section_1
+    True
+    >>> 'nonkey' in section_1
+    False
+
+A key can be accessed directly using as a subscript of the Section.
+The value is always a string.
+
+    >>> section_1['key3']
+    'Launchpad&nbsp;rocks'
+    >>> section_1['key5']
+    'local value'
+
+An error is raised if a non-existent key is accessed via a subscript.
+
+    >>> section_1['not-exist']
+    Traceback (most recent call last):
+      ...
+    KeyError: ...
+
+The Section keys can be iterated. The section has all the keys from
+the SectionSchema, and its localized values from the config file
+took precedence over the schema values.
+
+    >>> for key in sorted(section_1):
+    ...     print key, ':', section_1[key]
+    key1 : foo
+    key2 : bar and baz
+    key3 : Launchpad&nbsp;rocks
+    key4 : F&#028c;k yeah!
+    key5 : local value
+
+    >>> section_1.schema['key5']
+    ''
+
+The schema provided mandatory sections and default values to the
+config. So while the config file did not declare all the sections, they
+are present. In the case of section-3.app-b, its keys were defined in a
+template section.
+
+    >>> for key in sorted(config['section-3.app-b']):
+    ...     print key, ':', config['section-3.app-b'][key]
+    key1 : 17
+    key2 : changed
+    key3 : unique
+
+
+== Validating configs ==
+
+Config provides the validate() method to verify that the config is valid
+according to the schema. The method returns True if the config is valid.
+
+    >>> config.validate()
+    True
+
+When the config is not valid, a ConfigErrors is raised. The
+exception has an errors property that contains a list of all the
+errors in the config.
+
+    >>> from canonical.lazr.interfaces import ConfigErrors
+
+    >>> try:
+    ...     bad_config.validate()
+    ... except ConfigErrors, validation_error:
+    ...     print validation_error
+    ...     for error in validation_error.errors:
+    ...         print  "%s: %s" % (error.__class__.__name__, error)
+    ConfigErrors: bad conf is not valid.
+    UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in ... range(128)
+    UnknownSectionError: base.conf does not have a section-3.template section.
+    UnknownKeyError: The meta section does not have a metakey key.
+    UnknownKeyError: section-1 does not have a keyn key.
+    UnknownSectionError: base.conf does not have a unknown-section section.
+

@@ -36,10 +36,25 @@ def upgrade_to_34():
     in_file.close()
     out_file.close()
 
+def upgrade_to_39():
+    print "Upgrading %s to version 39" % conf_file
+    subprocess.call(["mv", conf_file, conf_file+"-prev39~"])
+    in_file = open(conf_file+"-prev39~", "r")
+    out_file = open(conf_file, "w")
+    for line in in_file:
+        if line.startswith("sbuildargs"):
+            line = line.replace("-dautobuild ","")
+        if line.startswith("[slave]"):
+            line += "ntphost = ntp.buildd\n"
+        out_file.write(line)
+    in_file.close()
+    out_file.close()
 
 if __name__ == "__main__":
     if int(old_version) < 12:
         upgrade_to_12()
     if int(old_version) < 34:
         upgrade_to_34()
+    if int(old_version) < 39:
+        upgrade_to_39()
 

@@ -32,6 +32,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
     redirection)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.widgets import DelimitedListWidget
 
 
 class BugTrackerSetNavigation(GetitemNavigation):
@@ -65,7 +66,7 @@ class BugTrackerSetContextMenu(ContextMenu):
 
 
 class BugTrackerAddView(LaunchpadFormView):
-    
+
     schema = IBugTracker
     label = "Register an external bug tracker"
     field_names = ['name', 'bugtrackertype', 'title', 'summary',
@@ -102,28 +103,6 @@ class BugTrackerAddView(LaunchpadFormView):
             contactdetails=data['contactdetails'],
             owner=getUtility(ILaunchBag).user)
         self.next_url = canonical_url(bugtracker)
-        
-#     def create(self, name, bugtrackertype, title, summary, baseurl,
-#                contactdetails):
-#         """Create the IBugTracker."""
-#         btset = getUtility(IBugTrackerSet)
-#         bugtracker = btset.ensureBugTracker(
-#             name=name,
-#             bugtrackertype=bugtrackertype,
-#             title=title,
-#             summary=summary,
-#             baseurl=baseurl,
-#             contactdetails=contactdetails,
-#             owner=getUtility(ILaunchBag).user)
-#         # keep track of the new one
-#         self._newtracker_ = bugtracker
-#         return bugtracker
-
-#     def add(self, content):
-#         return content
-
-#     def nextURL(self):
-#         return canonical_url(self._newtracker_)
 
 
 class BugTrackerView(LaunchpadView):
@@ -148,12 +127,42 @@ class BugTrackerEditView(LaunchpadEditFormView):
 
     schema = IBugTracker
     field_names = ['name', 'title', 'bugtrackertype',
-                   'summary', 'baseurl', 'contactdetails']
+                   'summary', 'baseurl', 'aliases', 'contactdetails']
 
     custom_widget('summary', TextAreaWidget, width=30, height=5)
+    custom_widget('aliases', DelimitedListWidget, height=3)
+
+    def validate(self, data):
+        """See `LaunchpadFormView`."""
+        # Normalise aliases to an empty list if it's None.
+        if data.get('aliases') is None:
+            data['aliases'] = []
+
+        # Check that none of the new aliases are used elsewhere.
+        current_aliases = set(self.context.aliases)
+        requested_aliases = set(data['aliases'])
+        new_aliases = requested_aliases - current_aliases
+        bugtracker_set = getUtility(IBugTrackerSet)
+        used_alias_errors = []
+        for alias_url in new_aliases:
+            bugtracker = bugtracker_set.queryByBaseURL(alias_url)
+            if bugtracker is not None and bugtracker != self.context:
+                used_alias_errors.append(
+                    "%s already refers to %s" % (
+                        alias_url, bugtracker.title))
+        if len(used_alias_errors) > 0:
+            self.setFieldError('aliases', '; '.join(used_alias_errors))
 
     @action('Change', name='change')
     def change_action(self, action, data):
+        # If the baseurl is going to change, save the current baseurl
+        # as an alias. Users attempting to use this URL, which is
+        # presumably incorrect or out-of-date, will be captured.
+        current_baseurl = self.context.baseurl
+        requested_baseurl = data['baseurl']
+        if requested_baseurl != current_baseurl:
+            data['aliases'].append(current_baseurl)
+
         self.updateContextFromData(data)
 
     @property
