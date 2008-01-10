@@ -8,8 +8,10 @@
       Branches with status:
     </label>
     <tal:lifecycle-selector replace="structure context/view/widgets/lifecycle"/>
-    <tal:sort-by replace="structure context/view/widgets/sort_by"/>
+    <tal:sort-by replace="structure context/view/widgets/sort_by"
+                 condition="context/view/widgets/sort_by|nothing"/>
     <label tal:attributes="for context/view/widgets/hide_dormant/name"
+           tal:condition="context/view/widgets/hide_dormant|nothing"
            style="font-weight: normal">
       <tal:hide-dormant replace="structure context/view/widgets/hide_dormant"/>
       Hide dormant branches

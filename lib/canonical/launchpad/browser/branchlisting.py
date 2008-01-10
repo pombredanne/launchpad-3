@@ -200,7 +200,7 @@ class BranchListingView(LaunchpadFormView):
         if widget.hasValidInput():
             return widget.getInputValue()
         else:
-            return False
+            return self.initial_values['hide_dormant']
 
     def branches(self):
         """All branches related to this target, sorted for display."""

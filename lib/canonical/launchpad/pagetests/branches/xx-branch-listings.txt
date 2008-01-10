@@ -102,16 +102,16 @@ subset of the branches are shown.
     >>> filter_control
     <ListControl name='field.lifecycle' type='select'>
     >>> filter_control.displayValue
-    ['New, Experimental, Development or Mature']
+    ['Any active status']
     >>> filter_control.displayOptions
-    ['New, Experimental, Development or Mature', 'Any Status', 'New', 'Experimental', 'Development', 'Mature', 'Merged', 'Abandoned']
+    ['Any active status', 'Any status', 'New', 'Experimental', 'Development', 'Mature', 'Merged', 'Abandoned']
 
 Changing the value of the select control will (in a javascript
 enabled browser) cause the form to be submitted automatically.
 For browsers with javascript disabled, there is a form submit
 button.
 
-    >>> filter_control.displayValue = ['Any Status']
+    >>> filter_control.displayValue = ['Any status']
     >>> browser.getControl('Filter').click()
 
 Now all types of branches should be shown.
@@ -164,7 +164,7 @@ status value, it will default to current branches.
     >>> browser.open(
     ...  'http://launchpad.dev/~name12/+branches?field.lifecycle=Fubar')
     >>> browser.getControl(name='field.lifecycle').displayValue
-    ['New, Experimental, Development or Mature']
+    ['Any active status']
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
@@ -390,11 +390,25 @@ the person context.
 
 == Hidden dormant branches ==
 
-Branches are hidden by default if they have not been modified in a
-significant period of time.
+Dormant branches are thost that have not been edited or pushed
+to in a significant period of time.  If a product has more branches
+than would fit on one page, then the dormant branches are hidden
+initially, and the user can uncheck the checkbox to get all branches
+shown.
 
 Here we are going to make two of Sample Person's branches dormant so
 they are not shown by default.
+
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    2.6                            Mature
+    main Current development focus Development
+    klingon   Sample Person        Experimental
+    launchpad Launchpad Developers New
+    import                         New
+    mirrored                       New
 
     >>> from canonical.launchpad.ftests.branch_helper import (
     ...     make_branch_dormant)
@@ -403,28 +417,30 @@ they are not shown by default.
 
 The default listing now doesn't show these two branches.
 
-    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> browser.getControl(name='field.hide_dormant').value
+    True
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    main      Sample Person        New          firefox         Author
-    2.6                            Mature       gnome-terminal  Registrant
-    main                           Development  gnome-terminal  Registrant
-    launchpad Launchpad Developers New          gnome-terminal  Subscriber
-    pushed                         New          gnome-terminal  Registrant
-    scanned                        New          gnome-terminal  Registrant
+    2.6                            0 Mature
+    main Current development focus 1 Development
+    launchpad Launchpad Developers 5 New
+    import                         5 New
+    pushed                         5 New
+    scanned                        5 New
 
 If we specify that the listing should show dormant branches they
 are shown.
 
-    >>> browser.getControl(name='field.show_dormant').value = ['SHOW']
+    >>> browser.getControl(name='field.hide_dormant').value = False
     >>> browser.getControl('Filter').click()
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    main      Sample Person        New          firefox         Author
-    2.6                            Mature       gnome-terminal  Registrant
-    main                           Development  gnome-terminal  Registrant
-    klingon   Sample Person        Experimental gnome-terminal  Author
-    launchpad Launchpad Developers New          gnome-terminal  Subscriber
-    mirrored                       New          gnome-terminal  Registrant
+    2.6                            Mature
+    main Current development focus Development
+    klingon   Sample Person        Experimental
+    launchpad Launchpad Developers New
+    import                         New
+    mirrored                       New
