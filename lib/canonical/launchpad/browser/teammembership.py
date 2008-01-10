@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'TeamMembershipListingView',
     'TeamMembershipEditView',
     'TeamMembershipSHP',
     ]
@@ -16,10 +17,23 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadCelebrities, TeamMembershipStatus,
+    ILaunchBag,
+    ILaunchpadCelebrities,
+    PersonVisibility,
+    TeamMembershipStatus,
     UnexpectedFormData)
 from canonical.launchpad.browser.launchpad import (
     StructuralHeaderPresentation)
+
+
+class TeamMembershipListingView:
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def isPrivate(self):
+        return self.context.visibility == PersonVisibility.PRIVATE_MEMBERSHIP
 
 
 class TeamMembershipSHP(StructuralHeaderPresentation):
