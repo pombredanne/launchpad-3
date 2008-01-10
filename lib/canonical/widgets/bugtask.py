@@ -217,7 +217,10 @@ class BugTaskAssigneeWidget(Widget):
 
 
 class BugWatchEditForm(Interface):
-    """Form field definition for the bug watch widget."""
+    """Form field definition for the bug watch widget.
+
+    Used to edit the bug watch on the bugtask edit page.
+    """
 
     url = URIField(
         title=_('URL'), required=True,
