@@ -11,7 +11,6 @@ from zope.component import getUtility
 from zope.interface import implements, Interface
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
     IDisplayWidget, IInputWidget, InputErrors, WidgetInputError,
@@ -23,7 +22,7 @@ from zope.app.form.utility import setUpWidget
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces import (
-    IBugWatch, IBugWatchSet, ILaunchBag, NoBugTrackerFound, NotFoundError,
+    IBugWatchSet, ILaunchBag, NoBugTrackerFound, NotFoundError,
     UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
