@@ -156,12 +156,14 @@ class NotFoundView(SystemErrorView):
 
     @cachedproperty
     def referrer(self):
-        """Return the URL of the referring page."""
+        """Return the URL of the referring page, if there is one.
+        Otherwise return None.
+        """
         referrer = self.request.get('HTTP_REFERER')
-        if referrer == "":
-            return None
-        else:
+        if referrer:
             return referrer
+        else:
+            return None
 
 
 class RequestExpiredView(SystemErrorView):

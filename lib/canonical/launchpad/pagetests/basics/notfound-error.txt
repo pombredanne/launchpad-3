@@ -7,7 +7,7 @@ exist, the 404 page includes a link back to the referring page.
 the contents of any error page. So we use http() instead.)
 
     >>> page_with_referer = str(http(r"""
-    ... GET /+fqwhgads HTTP/1.1
+    ... GET /+fhqwhgads HTTP/1.1
     ... Referer: http://launchpad.dev/+about
     ... """))
     >>> 'HTTP/1.1 404 Not Found' in page_with_referer
@@ -25,7 +25,7 @@ But if you go to a non-existent page directly, without sending a
 Referer: header, the 404 page includes no such link.
 
     >>> page_with_no_referer = str(http(r"""
-    ... GET /+fqwhgads HTTP/1.1
+    ... GET /+fhqwhgads HTTP/1.1
     ... """))
     >>> 'HTTP/1.1 404 Not Found' in page_with_no_referer
     True
