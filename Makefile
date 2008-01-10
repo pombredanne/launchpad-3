@@ -19,6 +19,8 @@ HERE:=$(shell pwd)
 LPCONFIG=default
 CONFFILE=configs/${LPCONFIG}/launchpad.conf
 
+MINS_TO_SHUTDOWN=15
+
 # DO NOT ALTER : this should just build by default
 default: inplace
 
@@ -174,6 +176,15 @@ start: inplace stop bzr_version_info
 stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
 	    utilities/killservice.py librarian buildsequencer launchpad mailman
+
+shutdown: scheduleoutage stop
+	rm -f +maintenancetime.txt
+
+scheduleoutage:
+	echo Scheduling outage in ${MINS_TO_SHUTDOWN} mins
+	date --iso-8601=minutes -u -d +${MINS_TO_SHUTDOWN}mins > +maintenancetime.txt
+	echo Sleeping ${MINS_TO_SHUTDOWN} mins
+	sleep ${MINS_TO_SHUTDOWN}m
 
 harness:
 	PYTHONPATH=lib $(PYTHON) -i lib/canonical/database/harness.py

@@ -10,14 +10,9 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-    </metal:heading>
-
 
 <metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/distroseries/distribution/@@+portlet-details" />
-  <div tal:replace="structure context/distroseries/@@+portlet-details" />
 </metal:portlets>
 
 <div metal:fill-slot="main"
