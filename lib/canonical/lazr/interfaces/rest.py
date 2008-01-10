@@ -17,7 +17,10 @@ from zope.publisher.interfaces import IPublishTraverse
 class IHTTPResource(IPublishTraverse):
     """An object published through HTTP."""
 
-    def __call__(self, REQUEST=None):
+    def __init__(self, request):
+        """Associate the object with an incoming request."""
+
+    def __call__(self):
         """Publish the object."""
 
 
@@ -34,7 +37,7 @@ class IJSONPublishable(Interface):
 
 class IEntryResource(IHTTPResource, IJSONPublishable):
     """A resource that represents an individual Launchpad object."""
-    def get(self):
+    def do_GET(self):
         """Retrieve this object.
 
         :return: A string representation.
@@ -44,7 +47,7 @@ class IEntryResource(IHTTPResource, IJSONPublishable):
 class ICollectionResource(IHTTPResource):
     """A resource that represents a collection of entry resources."""
 
-    def get(self):
+    def do_GET(self):
         """Retrieve this collection.
 
         :return: A string representation.

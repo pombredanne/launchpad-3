@@ -29,7 +29,10 @@ class HTTPResource:
     """See `IHTTPResource`."""
     implements(IHTTPResource)
 
-    def __call__(self, REQUEST=None):
+    def __init__(self, request):
+        self.request = request
+
+    def __call__(self):
         """See `IHTTPResource`."""
         pass
 
@@ -37,13 +40,13 @@ class HTTPResource:
 class ReadOnlyResource(HTTPResource):
     """A resource that serves a string in response to GET."""
 
-    def __call__(self, REQUEST=None):
+    def __call__(self):
         """Handle a GET request."""
-        if REQUEST.method == "GET":
-            return self.do_GET(REQUEST)
+        if self.request.method == "GET":
+            return self.do_GET()
         else:
-            REQUEST.response.setStatus(405)
-            REQUEST.response.setHeader("Allow", "GET")
+            self.request.response.setStatus(405)
+            self.request.response.setHeader("Allow", "GET")
 
 
 class EntryResource:
@@ -54,28 +57,24 @@ class EntryResource:
     """
     implements(IEntryResource)
 
-    def toDictionary(self):
-        """Turn this object into a dictionary.
+    def toJSONReady(self):
+        """Turn the object into a simple data structure.
 
-        The dictionary contains all fields defined by the resource
-        interface.
+        In this case, a dictionary containing all fields defined by
+        the resource interface.
         """
         dict = {}
-        for name in self.resourceInterface().names(False):
+        for name in self.schema.names(False):
             dict[name] = getattr(self, name)
         return dict
-
-    def toJSONReady(self):
-        """Turn the object into a simple data structure."""
-        return self.toDictionary()
 
 
 class CollectionResource(ReadOnlyResource):
     implements(ICollectionResource)
     """A resource that serves a list of entry resources."""
 
-    def do_GET(self, request):
+    def do_GET(self):
         """Fetch a collection and render it as JSON."""
         entry_resources = self.find()
-        request.response.setHeader('Content-type', 'application/json')
+        self.request.response.setHeader('Content-type', 'application/json')
         return ResourceJSONEncoder().encode(entry_resources)

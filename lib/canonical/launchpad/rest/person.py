@@ -9,30 +9,24 @@ __all__ = [
     ]
 
 
-from zope.component import (adapts, getUtility)
+from zope.component import adapts, getUtility
 from zope.interface import implements
 from canonical.lp import decorates
-from canonical.lazr.rest import (CollectionResource, EntryResource)
+from canonical.lazr.rest import CollectionResource, EntryResource
 from canonical.launchpad.interfaces import (
     IPerson, IPersonResource, IPersonSet)
 
 
 class PersonResource(EntryResource):
     """A person."""
-    implements(IPersonResource)
-    decorates(IPersonResource, context="person")
+    decorates(IPersonResource, context="context")
     adapts(IPerson)
 
-    def __init__(self, person):
+    schema = IPersonResource
+
+    def __init__(self, context):
         """Associate this resource with a specific person."""
-        self.person = person
-
-    def resourceInterface(self):
-        return IPersonResource
-
-    @property
-    def name(self):
-        return self.person.name
+        self.context = context
 
 
 class PersonCollectionResource(CollectionResource):

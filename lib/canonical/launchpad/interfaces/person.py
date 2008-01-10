@@ -16,6 +16,7 @@ __all__ = [
     'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
+    'IPersonResource',
     'IPersonSet',
     'IRequestPeopleMerge',
     'ITeam',
@@ -41,6 +42,7 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
+from canonical.lazr.interfaces import IEntryResource
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, StrippedTextLine)
@@ -1247,6 +1249,12 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
         :target: An object providing `IBugTarget` to search within.
         """
+
+
+class IPersonResource(IEntryResource):
+    """The part of a person that we expose through the web service."""
+
+    name = PersonNameField()
 
 
 class INewPersonForm(IPerson):

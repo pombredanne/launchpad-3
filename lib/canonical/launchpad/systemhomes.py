@@ -197,7 +197,7 @@ class WebServiceApplication:
     def publishTraverse(self, request, name):
         """Right now there are no resources below the root."""
         if name == "people":
-            return PersonCollectionResource()
+            return PersonCollectionResource(request)
         else:
             raise NotFound(self, name)
 
