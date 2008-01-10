@@ -12,10 +12,6 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
 <div metal:fill-slot="main">
 
   <h1>Milestones</h1>

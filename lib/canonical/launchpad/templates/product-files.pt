@@ -13,7 +13,6 @@
 <body>
 
 <metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-top-contributors" />
 </metal:portlets>
 

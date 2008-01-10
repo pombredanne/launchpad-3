@@ -15,7 +15,8 @@
        <tal:portlet replace="structure context/distribution/@@+portlet-ppa-architectures" />
     </metal:portlets>
 
-    <div metal:fill-slot="main">
+    <div metal:fill-slot="main"
+         tal:define="ppa_active view/is_active">
 
       <h2 style="margin-top: 0">URL: <a tal:attributes="href context/archive_url"
        tal:content="context/archive_url">url</a></h2>
@@ -38,13 +39,13 @@
 
       <h2>Packages</h2>
 
-      <p tal:condition="not:context/number_of_sources">
+      <p tal:condition="not: ppa_active">
         This PPA does not contain any packages yet.
       </p>
 
       <h2>apt sources.list entries</h2>
 
-      <tal:active_ppa condition="context/number_of_sources">
+      <tal:active_ppa condition="ppa_active">
 
       <div>
         <ul id="package_counters">
