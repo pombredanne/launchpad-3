@@ -132,7 +132,7 @@ One of the most obvious places to hide private branches are the code
 listing tab.
 
     >>> def print_landscape_code_listing(browser):
-    ...     browser.open('http://code.launchpad.dev/landscape')
+    ...     browser.open('http://code.launchpad.dev/landscape/+branches')
     ...     table = find_tag_by_id(browser.contents, 'branchtable')
     ...     for row in table.tbody.fetch('tr'):
     ...         print extract_text(row)

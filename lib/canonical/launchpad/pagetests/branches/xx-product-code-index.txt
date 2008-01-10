@@ -1,0 +1,133 @@
+= Product code overview =
+
+The default page shown on the code rootsite for a product is
+a summary of the branches for the project.
+
+The page has the following important elements:
+  * A link to the branch listing for the product
+  * A clear way to show the branches associated with the product series
+  * The branches with the most recent revisions
+  * The most recently registered branches
+
+
+== Link to branch listings ==
+
+The link to the branch listing is the first thing on the page.
+
+    >>> browser.open('http://code.launchpad.dev/firefox')
+    >>> print browser.title
+    Code overview for Mozilla Firefox
+
+    >>> browser.getLink('List currently active branches').click()
+    >>> print browser.title
+    Mozilla Firefox's Bazaar branches registered in Launchpad
+
+
+== Branches associated with product series ==
+
+These are shown under the heading 'Official branches' as these are
+the 'blessed' branches for the product.
+
+If there are no branches associated with the product series, then
+the user is told this.
+
+    >>> browser.open('http://code.launchpad.dev/firefox')
+    >>> def print_official_branches(browser):
+    ...     official_branches = find_portlet(
+    ...         browser.contents, 'Official branches')
+    ...     for div in official_branches.findAll('div', recursive=False):
+    ...         # The first div in this div contains the highlighting class.
+    ...         print '---\nCSS style: %s' % div.div['class']
+    ...         print extract_text(div)
+    >>> print_official_branches(browser)
+    ---
+    CSS style: highlighted
+    Series: trunk Current development focus
+    No branch specified
+    ---
+    CSS style: unhighlighted
+    Series: 1.0
+    No branch specified
+
+Specify a branch as the main development focus branch.
+
+    >>> admin_browser.open(
+    ...     'http://code.launchpad.dev/firefox/trunk/+source')
+    >>> admin_browser.getControl(name="field.user_branch").value = (
+    ...     '~name12/firefox/main')
+    >>> admin_browser.getControl('Update Details').click()
+
+And set a branch for the 1.0 series.
+
+    >>> admin_browser.open(
+    ...     'http://code.launchpad.dev/firefox/1.0/+source')
+    >>> admin_browser.getControl(name="field.user_branch").value = (
+    ...     '~sabdfl/firefox/release-0.9')
+    >>> admin_browser.getControl('Update Details').click()
+
+This branch is now shown, along with the bzr branch example.
+
+    >>> browser.open('http://code.launchpad.dev/firefox')
+    >>> print_official_branches(browser)
+    ---
+    CSS style: highlighted
+    Series: trunk   Current development focus
+    Branch: main: Mozilla Firefox Mainline
+    Example: bzr branch lp:firefox
+    ---
+    CSS style: unhighlighted
+    Series: 1.0
+    Branch: release-0.9: Mozilla Firefox 0.9
+    Example: bzr branch lp:firefox/1.0
+
+
+== Recent revisions ==
+
+The branches that have the most recent revisions are shown, along with
+the commit message, time and committer of the revision.  There is also
+a codebrowse link on the revision number.
+
+    >>> revisions = find_portlet(
+    ...     browser.contents, 'Recent revisions')
+    >>> print extract_text(revisions)
+    Recent revisions
+    These are the branches with the most recent revisions.
+    release-0.9: Mozilla Firefox 0.9
+    registered by Mark Shuttleworth
+      1. By &lt;email address hidden&gt; on 2005-03-09
+      Import of Mozilla Firefox 0.9
+    release--0.9.1: Mozilla Firefox 0.9.1
+    registered by Mark Shuttleworth
+      1. By &lt;email address hidden&gt; on 2005-03-09
+      Import of Mozilla Firefox 0.9.1
+    release-0.9.2: Mozilla Firefox 0.9.2
+    registered by Mark Shuttleworth
+      1. By &lt;email address hidden&gt; on 2005-03-09
+      Import of Mozilla Firefox 0.9.2
+
+
+== Latest branches ==
+
+The last five (or at most five) registered branches are also shown.
+As well as the time (or date) that the branch was registered, and
+by whom, the branch summary is also shown (if there is one).
+
+    >>> branches = find_portlet(
+    ...     browser.contents, 'Latest branches')
+    >>> print extract_text(branches)
+    Latest branches
+    release-0.8: Mozilla Firefox 0.8
+    registered on 2006-10-16 by Mark Shuttleworth
+      text
+    release-0.9: Mozilla Firefox 0.9
+    registered on 2006-10-16 by Mark Shuttleworth
+      text
+    release--0.9.1: Mozilla Firefox 0.9.1
+    registered on 2006-10-16 by Mark Shuttleworth
+      text
+    release-0.9.2: Mozilla Firefox 0.9.2
+    registered on 2006-10-16 by Mark Shuttleworth
+      text
+    main: Mozilla Firefox Mainline
+    registered on 2006-10-16 by Sample Person
+      text
