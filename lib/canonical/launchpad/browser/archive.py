@@ -98,6 +98,9 @@ class ArchiveOverviewMenu(ApplicationMenu):
 class ArchiveViewBase(LaunchpadView):
     """Common features for Archive view classes."""
 
+    # Whether to present or not default results on page load.
+    show_default_results = True
+
     @property
     def is_active(self):
         return bool(self.context.getPublishedSources())
@@ -176,9 +179,12 @@ class ArchiveViewBase(LaunchpadView):
 
     def setupPackageSearchResult(self):
         """Setup a list of results for the package search."""
-        publishing = self.context.getPublishedSources(
-            name=self.name_filter,
-            status=self.selected_status_filter.value.collection)
+        if self.name_filter is not None or self.show_default_results:
+            publishing = self.context.getPublishedSources(
+                name=self.name_filter,
+                status=self.selected_status_filter.value.collection)
+        else:
+            publishing = []
         self.batchnav = BatchNavigator(publishing, self.request)
         self.search_results = self.batchnav.currentBatch()
 
@@ -201,6 +207,8 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
     """Archive console view class. """
 
     schema = IArchiveConsoleForm
+    # Do not present search results if 'Search' button is not hit.
+    show_default_results = False
 
     def initialize(self):
         LaunchpadFormView.initialize(self)
