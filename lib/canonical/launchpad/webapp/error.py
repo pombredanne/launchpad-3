@@ -93,7 +93,7 @@ class SystemErrorView:
             del tb
 
     def inside_div(self, html):
-        """Returns the given html text inside a div of an appropriate class."""
+        """Returns the given HTML inside a div of an appropriate class."""
 
         return ('<div class="highlighted" '
                 'style="font-family: monospace; font-size: smaller;">'
@@ -156,7 +156,8 @@ class NotFoundView(SystemErrorView):
 
     @cachedproperty
     def referrer(self):
-        """Return the URL of the referring page, if there is one.
+        """If there is a referring page, return its URL.
+        
         Otherwise return None.
         """
         referrer = self.request.get('HTTP_REFERER')
