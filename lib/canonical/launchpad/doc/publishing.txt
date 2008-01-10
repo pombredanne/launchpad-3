@@ -3,6 +3,7 @@
 This class provides public access to publishing records via a SQL view.
 
  >>> from canonical.launchpad.database import SourcePackagePublishingHistory
+ >>> from canonical.launchpad.database import BinaryPackagePublishingHistory
 
 Select a publishing record from the sampledata (pmount is a
 interesting one):
@@ -49,13 +50,12 @@ Verify if the object follows its interface contracts:
 
 == Stanza generation ==
 
- >>> from canonical.launchpad.database import SourcePackagePublishingHistory
  >>> from canonical.launchpad.interfaces import (
- ...     IArchiveSafePublisher,
- ...     ISourcePackageFilePublishing,
- ...     ISecureSourcePackagePublishingHistory)
+ ...     IArchiveSafePublisher, ISourcePackageFilePublishing,
+ ...     ISecureSourcePackagePublishingHistory,
+ ...     ISecureBinaryPackagePublishingHistory)
 
-Retrive any SourcePackagePublishingHistory entry.
+Retrieve any SourcePackagePublishingHistory entry.
 
  >>> spph = SourcePackagePublishingHistory.get(10)
  >>> verifyObject(ISourcePackagePublishingHistory, spph)
@@ -65,7 +65,7 @@ Retrive any SourcePackagePublishingHistory entry.
 
 A 'stanza' is the name given to a group of attributes related to one
 source or binary package in the archive index file, it provides
-informations to APT, things like, package name, pool path, DSC format,
+information to APT, things like, package name, pool path, DSC format,
 files checksum, etc.
 
 The archive index should containg one entry for each source or binary
@@ -119,6 +119,7 @@ requestDeletion requires a removed_by (IPerson) and optionally a
 removal_comment argument.
 
   >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> from zope.component import getUtility
   >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
   >>> modified_spph = spph.requestDeletion(sabdfl, "testing deletion")
 
@@ -147,6 +148,140 @@ pockets for stable distroseries):
   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
 
+== Copying and published binarypackages lookup ==
+
+ISourcePackagePublishingHistory provides the getPublishedBinaries
+which returns all published binaries build from a source in the pocket
+it is published.
+
+We will use SoyuzTestPublisher to generate coherent publications to
+test this feature.
+
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...      SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('foo.bar@canonical.com')
+
+    >>> test_publisher.prepareBreezyAutotest()
+
+We will create a publication for a source (foo) and two
+architecture-specific binaries in ubuntu/breezy-autotest.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     PackagePublishingStatus, PackagePublishingPocket)
+    >>> source = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.PROPOSED)
+    >>> binaries = test_publisher.getPubBinaries(
+    ...     pub_source=source,
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.PROPOSED)
+
+    >>> print source.displayname
+    foo 666 in breezy-autotest
+
+    >>> for bin in binaries:
+    ...     print bin.displayname
+    foo-bin 666 in breezy-autotest i386
+    foo-bin 666 in breezy-autotest hppa
+
+Using the source publication, ISSPH we can obtain the published
+binaries.
+
+    >>> created_ids = [bin.id for bin in binaries]
+    >>> retrieved_ids = [bin.id for bin in source.getPublishedBinaries()]
+    >>> sorted(created_ids) == sorted(retrieved_ids)
+    True
+
+Now that we know how to retrieve generated binary publication related
+to a source publication we can exercise the API provided to copy
+publications across suites and/or archives.
+
+One of the most common use-cases for copying a publication is when
+archive-admins wants to release for public audience a Stable Release
+Update (SRU) which was successfully tested in PROPOSED pocket. This
+procedure will consist of a source copy from PROPOSED to UPDATES
+including its binaries.
+
+'distroseries' and 'archive' will be constant.
+
+    >>> distroseries = source.distroseries
+    >>> archive = source.archive
+
+'pocket' will be UPDATES.
+
+    >>> pocket = PackagePublishingPocket.UPDATES
+
+Let's perform the copy of the source and all its binaries.
+
+    >>> copied_source = source.copyTo(distroseries, pocket, archive)
+
+    >>> copied_binaries = []
+    >>> for bin in binaries:
+    ...     copied_binaries.append(
+    ...          bin.copyTo(distroseries, pocket, archive))
+
+The 'copied' records are instance of Secure{Source,
+Binary}PackagePublishingHistory:
+
+    >>> ISecureSourcePackagePublishingHistory.providedBy(copied_source)
+    True
+
+    >>> [ISecureBinaryPackagePublishingHistory.providedBy(bin)
+    ...  for bin in copied_binaries]
+    [True, True]
+
+Copied publications are created as PENDING, so the publisher will have
+a chance to verify it's contents and include it in the destination
+archive index.
+
+    >>> print copied_source.status.name
+    PENDING
+
+    >>> for bin in copied_binaries:
+    ...     print bin.status.name
+    PENDING
+    PENDING
+
+Before checking getPublishedBinaries in the copied publications we
+have to make them PUBLISHED emulating what would have been done by the
+publisher.
+
+    >>> def publish(pub):
+    ...     pub.status = PackagePublishingStatus.PUBLISHED
+
+    >>> publish(copied_source)
+    >>> for bin in copied_binaries:
+    ...     publish(bin)
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+Let's retrieve the 'insecure' corresponding publishing records since
+only they provide the API we are interested in.
+
+    >>> copied_source = SourcePackagePublishingHistory.get(copied_source.id)
+
+    >>> copied_binaries = [BinaryPackagePublishingHistory.get(bin.id)
+    ...                    for bin in copied_binaries]
+
+Now we can observe that both, the original and the copied sources are
+related only with their corresponding binaries, see bug #181834 for
+previous broken implementation in this area.
+
+    >>> for bin in source.getPublishedBinaries():
+    ...     print bin.displayname, bin.pocket.name
+    foo-bin 666 in breezy-autotest hppa PROPOSED
+    foo-bin 666 in breezy-autotest i386 PROPOSED
+
+    >>> for bin in copied_source.getPublishedBinaries():
+    ...     print bin.displayname, bin.pocket.name
+    foo-bin 666 in breezy-autotest hppa UPDATES
+    foo-bin 666 in breezy-autotest i386 UPDATES
+
+
 == Secure Source Publishing ==
 
 'secure_record' returns a ISecureSourcePackagePublishing instance
@@ -167,10 +302,8 @@ IArchiveSafePublisher.
 Symmetric behaviour is offered for BinaryPackagePublishing,
 BinaryPackageFile and ISecureBinaryPackagePublishingHistory
 
- >>> from canonical.launchpad.database import BinaryPackagePublishingHistory
  >>> from canonical.launchpad.interfaces import (
- ...     IBinaryPackagePublishingHistory, IBinaryPackageFilePublishing,
- ...     ISecureBinaryPackagePublishingHistory)
+ ...     IBinaryPackagePublishingHistory, IBinaryPackageFilePublishing)
 
  >>> bpph = BinaryPackagePublishingHistory.get(15)
  >>> print bpph.displayname
@@ -221,33 +354,3 @@ Generating respective "Packages" stanzas:
 
  >>> [pub_file.archive_url for pub_file in bpph.files]
  [u'http://launchpad.dev/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
-
-== Source Package Publishing Views ==
-
-The default view for SourcePackagePublishingHistory offers a convenience
-property that can be used to display files that are related to that
-publication; this includes binary and source files. The property returns
-a sorted list of dictionaries with URLs, filenames and filesizes.
-
-  >>> from zope.component import getMultiAdapter
-  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-  >>> view = getMultiAdapter((spph, LaunchpadTestRequest()),
-  ...           name="+listing-ppa-detailed")
-  >>> view.published_source_and_binary_files
-  [{'url': 'http://.../alsa-utils_1.0.8-1ubuntu1.dsc',
-   'filesize': 3,
-   'filename': u'alsa-utils_1.0.8-1ubuntu1.dsc'}]
-
-  >>> ice = SourcePackagePublishingHistory.get(28)
-  >>> view = getMultiAdapter((ice, LaunchpadTestRequest()),
-  ...           name="+listing-ppa-detailed")
-  >>> view.published_source_and_binary_files
-  [{'url': 'http://localhost:58000/3/firefox-0.9.2.orig.tar.gz',
-    'filesize': 9922560,
-    'filename': u'firefox-0.9.2.orig.tar.gz'},
-   {'url': 'http://localhost:58000/62/iceweasel-1.0.dsc',
-    'filesize': 123,
-    'filename': u'iceweasel-1.0.dsc'},
-   {'url': 'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb',
-    'filesize': 3,
-    'filename': u'mozilla-firefox_0.9_i386.deb'}]
