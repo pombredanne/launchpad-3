@@ -257,8 +257,8 @@ class POFileTranslateView(BaseTranslationView):
             translationmessage = potmsgset.getCurrentTranslationMessage(
                 self.context.language)
             if translationmessage is None:
-                translationmessage = potmsgset.getCurrentDummyTranslationMessage(
-                    self.context.language)
+                get_dummy_msg = potmsgset.getCurrentDummyTranslationMessage
+                translationmessage = get_dummy_msg(self.context.language)
             view = self._prepareView(
                 CurrentTranslationMessageView, translationmessage,
                 self.errors.get(potmsgset))
