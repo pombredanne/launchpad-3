@@ -20,7 +20,7 @@ import operator
 import os
 import time
 from xml.sax.saxutils import escape as xml_escape
-from BeautifulSoup import BeautifulStoneSoup
+from BeautifulSoup import BeautifulSoup
 from datetime import datetime
 
 from zope.app.datetimeutils import rfc1123_date
@@ -209,12 +209,14 @@ class FeedEntry:
                  authors=None,
                  contributors=None,
                  content=None,
+                 id_=None,
                  generator=None,
                  logo=None,
                  icon=None):
         self.title = title
         self.link_alternate = link_alternate
         self.content = content
+        self.date_created = date_created
         self.date_updated = date_updated
         self.date_published = date_published
         if date_updated is None:
@@ -225,7 +227,16 @@ class FeedEntry:
         if contributors is None:
             contribuors = []
         self.contributors = contributors
-        url_path = urlparse(link_alternate)[2]
+        self.id = self.construct_id()
+
+    @property
+    def last_modified(self):
+        if self.date_published is not None:
+            return max(self.date_published, self.date_updated)
+        return self.date_updated
+
+    def construct_id(self):
+        url_path = urlparse(self.link_alternate)[2]
         # Strip the first portion of the path, which will be the
         # project/product identifier but is not wanted in the <id> as it may
         # change if the entry is re-assigned which would break the permanence
@@ -237,15 +248,9 @@ class FeedEntry:
             # raises a ValueError because '/' was not in the path, then fall
             # back to using the entire path.
             unique_url_path = url_path
-        self.id = 'tag:launchpad.net,%s:%s' % (
-            date_created.date().isoformat(),
+        return 'tag:launchpad.net,%s:%s' % (
+            self.date_created.date().isoformat(),
             unique_url_path)
-
-    @property
-    def last_modified(self):
-        if self.date_published is not None:
-            return max(self.date_published, self.date_updated)
-        return self.date_updated
 
 
 class FeedTypedData:
@@ -266,10 +271,10 @@ class FeedTypedData:
         if self.content_type in ('text', 'html'):
             return xml_escape(self._content)
         elif self.content_type == 'xhtml':
-            soup = BeautifulStoneSoup(
+            soup = BeautifulSoup(
                 self._content,
-                convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-            return unicode(soup)
+                convertEntities=BeautifulSoup.HTML_ENTITIES)
+            return unicode(soup.prettify())
 
 
 class FeedPerson:
