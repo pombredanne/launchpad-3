@@ -561,6 +561,7 @@ class BaseTranslationView(LaunchpadView):
             # user.
             return unicode(e)
         else:
+            self._translationWasUpdated(potmsgset)
             return None
 
     def _prepareView(self, view_class, current_translation_message, error):
@@ -816,6 +817,14 @@ class BaseTranslationView(LaunchpadView):
         else:
             raise AssertionError('More than %d plural forms were submitted!'
                                  % self.MAX_PLURAL_FORMS)
+
+    def _translationWasUpdated(self, potmsgset):
+        """Signal that a translation was updated in potmsgset.
+
+        Subclasses should redefine this method if they need to watch the
+        sucessful calls to potmsgse.updateTranslation().
+        """
+        pass
 
     #
     # Redirection

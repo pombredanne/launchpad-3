@@ -228,6 +228,7 @@ class POFileTranslateView(BaseTranslationView):
         # do that.
         self.errors = {}
         self.translationmessage_views = []
+        self.start_offset = 0
 
         self._initializeShowOption()
         BaseTranslationView.initialize(self)
@@ -308,8 +309,26 @@ class POFileTranslateView(BaseTranslationView):
             self.request.response.addErrorNotification(message)
             return False
 
+        if (self.start_offset != 0
+            and self.batchnav.batch.nextBatch() is not None):
+            # The batch has mutated; the start of the next batch has changed.
+            self.batchnav.batch.start -= self.start_offset
         self._redirectToNextPage()
         return True
+
+    def _translationWasUpdated(self, potmsgset):
+        """see `BaseTranslationView`.
+
+        Update the start_offset when the filtered batch has mutated.
+        """
+        if self.show == 'untranslated':
+            self.start_offset += 1
+        elif self.show == 'need_review':
+            if not self.form_posted_needsreview.get(potmsgset, False):
+                self.start_offset += 1
+        else:
+            # This change does not mutate the batch.
+            pass
 
     def _buildRedirectParams(self):
         parameters = BaseTranslationView._buildRedirectParams(self)
