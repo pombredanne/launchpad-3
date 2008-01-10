@@ -5,12 +5,11 @@
   omit-tag="">
 
   <tr class="ppa_package_row">
-     <td class="icon left"
-         tal:condition="context/archive/required:launchpad.Edit">
-        <input type="checkbox" name="PUB_SRC_ID"
-               tal:attributes="value context/id" />
-     </td>
-     <td style="white-space: nowrap"><a href="#"
+     <td style="white-space: nowrap"><input
+            id="field.selected_sources" type="checkbox"
+            tal:condition="context/archive/required:launchpad.Admin"
+            tal:attributes="value context/id"
+            name="field.selected_sources" /><a href="#"
             tal:attributes="onClick string:return toggleExpandableTableRow('pub${context/id}');"><img
                 src="/@@/treeCollapsed" alt=""
                 tal:attributes="id string:pub${context/id}-arrow" /></a><span

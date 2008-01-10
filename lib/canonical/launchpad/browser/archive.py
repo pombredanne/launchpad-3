@@ -207,45 +207,55 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         self.setupPackageFilters()
         self.setupPackageSearchResult()
 
-    def validate(self, data):
-        """Ensure user has checked the 'accepted' checkbox."""
-        if len(self.errors) == 0:
-            if not data.get('field.selected_sources'):
-                self.addError = "No items selected."
+    def _getSelectedSources(self):
+        """ """
+        # hack, hack, hack
+        selected_sources_ids = self.request.get('field.selected_sources')
+
+        if selected_sources_ids is None:
+            return []
+
+        if not isinstance(selected_sources_ids, list):
+            selected_sources_ids = [selected_sources_ids]
+
+        if not selected_sources_ids:
+            return []
+
+        pub_set = getUtility(IPublishingSet)
+        selected_sources = []
+        for source_id in selected_sources_ids:
+            selected_sources.append(pub_set.getSource(int(source_id)))
+        return selected_sources
 
     @action(_("Delete"), name="delete")
     def action_delete(self, action, data):
-        print
-        print 30 * '*'
-        print data
-        print 30 * '*'
-        return
+        selected_sources = self._getSelectedSources()
+        if not selected_sources:
+            self.addError("No sources selected.")
+            return
 
-        include_binaries = data.get('field.include_binaries')
-        comment = data.get('field.comment')
-        pub_src_ids = data.get('field.selected_sources')
+        include_binaries = data.get('include_binaries')
+        comment = data.get('comment')
 
+        messages = []
+        for source in selected_sources:
+            # !!!!!
+            # source.requestDeletion(self.user, comment)
+            messages.append(
+                '<p>%s</p>' % source.displayname)
+
+        # Present a page notification about the action.
         if include_binaries:
-            target = "sources and binaries"
+            target = "Sources and binaries"
         else:
-            target = "sources"
+            target = "Sources"
+        messages.insert(
+            0, '<p>%s deleted by %s request:</p>' % (
+            target, self.user.displayname))
+        messages.append("Deletion comment: %s" % comment)
+        notification = "\n".join(messages)
 
-        header = 'Deleting %s:<br>' % target
-
-        success = []
-        failure = []
-        for pub_src_id in pub_src_ids:
-            info = "nahh"
-            pub = getUtility(IPublishingSet).getSource(int(pub_src_id))
-            if pub.id % 2:
-                failure.append('FAILED: %s (%s)' %
-                               (pub.displayname, pub.id))
-            else:
-                success.append('OK: %s' % pub.displayname)
-
-        report = '%s<br>%s<br>%s' % (
-            header, ', '.join(success + failure), comment)
-        return report
+        self.request.response.addNotification(notification)
 
 
 class ArchiveActivateView(LaunchpadFormView):

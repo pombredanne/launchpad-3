@@ -23,7 +23,7 @@
 
   <tal:active_ppa condition="ppa_active">
 
-  <div>
+  <div style="padding-bottom: 1em;">
     <form name="package_search" action="" method="GET">
        <label for="name">Package name contains:</label>
        <input id="field.name_filter" title="Package Name" size="20"
@@ -33,7 +33,6 @@
        <input type="submit" value="Search" />
     </form>
   </div>
-
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
@@ -47,7 +46,6 @@
        <table class="listing" id="packages_list" tal:condition="batch">
          <thead>
            <tr>
-             <td />
              <th colspan="2">Source</th>
              <th tal:condition="context/owner/isTeam">Uploader</th>
              <th>Published</th>
@@ -76,7 +74,7 @@
 
     </div> <!--extra_info -->
 
-    <div class="form" metal:fill-slot="widgets">
+    <div style="padding-top: 1em;" class="form" metal:fill-slot="widgets">
 
       <div tal:define="widget nocall:view/widgets/include_binaries|nothing"
            tal:condition="widget">
