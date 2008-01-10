@@ -42,12 +42,8 @@
     <tal:do_not_show_portlets_advanced_form
       condition="not: view/shouldShowAdvancedForm">
       <tal:block content="structure context/@@+portlet-bugfilters" />
-      <div
-        tal:replace="structure context/@@+portlet-details | nothing"
-      />
-      <div
-        tal:replace="structure context/@@+portlet-publishing-details | nothing"
-      />
+      <tal:block 
+        content="structure context/@@+portlet-publishing-details | nothing"/>
       <tal:block content="structure context/@@+portlet-bugtags" />
       <tal:releasecriticalbugs
          tal:condition="view/shouldShowReleaseCriticalPortlet"

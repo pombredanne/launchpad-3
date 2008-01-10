@@ -5,7 +5,7 @@
   class="portlet" id="portlet-publishing-details">
 
   <h2>"<span tal:replace="context/name">apache2</span>" versions published in
-  <span tal:replace="context/distribution/name">ubuntu</span></h2>
+  <span tal:replace="context/distribution/name/capitalize">ubuntu</span></h2>
 
   <div class="portletBody portletContent"
        tal:define="cr context/currentrelease">
