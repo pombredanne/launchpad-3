@@ -23,6 +23,7 @@ class MockDbTestCase(unittest.TestCase):
     connections = None
 
     def setUp(self):
+        """Setup the test environment, defaulting to 'direct' mode."""
         # Turn off automatic use of the infrastructure we need to test
         DatabaseLayer.uninstallMockDb()
 
@@ -162,6 +163,30 @@ class MockDbTestCase(unittest.TestCase):
                 )
 
     @dont_retry
+    def testFailedConnection(self):
+        # Ensure failed database connection are reproducable.
+        for mode in self.modes():
+            connection_string = "dbname=not_a_sausage host=%s user=yourmom" % (
+                    config.dbhost
+                    )
+            try:
+                if mode == 'direct':
+                    con = psycopg.connect(connection_string)
+                elif mode == 'record':
+                    con = MockDbConnection(
+                            self.cache, psycopg.connect(connection_string),
+                            connection_string
+                            )
+                else:
+                    con = MockDbConnection(
+                            self.cache, None, connection_string
+                            )
+            except psycopg.OperationalError:
+                pass
+            else:
+                self.fail("Failed to fail to connect.")
+
+    @dont_retry
     def testNoopSession(self):
         # Minimal do-nothing case.
         for mode in self.modes():
@@ -246,10 +271,18 @@ class MockDbTestCase(unittest.TestCase):
             cur.execute("SELECT displayname FROM Person WHERE name='stub'")
             self.failUnlessEqual(cur.fetchone()[0], "Stuart Bishop")
 
-            # Change the known value and commit.
+            # Change the known value...
             cur.execute(
                     "UPDATE Person SET displayname='Foo' WHERE name='stub'"
                     )
+
+            # Ensure it isn't visible to other connetions...
+            con2 = self.connect()
+            cur2 = con2.cursor()
+            cur2.execute("SELECT displayname FROM Person WHERE name='stub'")
+            self.failUnlessEqual(cur2.fetchone()[0], "Stuart Bishop")
+
+            # And commit.
             con.commit()
 
             # Confirm that the changed value is visible from a
@@ -276,11 +309,18 @@ class MockDbTestCase(unittest.TestCase):
         for mode in self.modes():
             con1 = self.connect()
             cur1 = con1.cursor()
+
+            # Ensure known state
+            cur1.execute("SELECT displayname FROM Person WHERE name='stub'")
+            self.failUnlessEqual(cur1.fetchone()[0], "Stuart Bishop")
+
+            # Update a row and rollback.
             cur1.execute(
                 "UPDATE Person SET displayname='Foo' WHERE name='stub'"
                 )
             con1.rollback()
 
+            # Confirm change wasn't committed.
             con2 = self.connect()
             cur2 = con2.cursor()
             cur2.execute("SELECT displayname FROM Person WHERE name='stub'")
@@ -291,7 +331,7 @@ class MockDbTestCase(unittest.TestCase):
 
     @dont_retry
     def testClose(self):
-        # Confirm and record close bahavior.
+        # Confirm and record close behavior.
         for mode in self.modes():
             con = self.connect()
             cur = con.cursor()
@@ -302,7 +342,7 @@ class MockDbTestCase(unittest.TestCase):
                     )
             # Should raise an exception according to the DB-API, but
             # psycopg doesn't do this. Our wrapper works according to the
-            # DB-API so we can enforce nice behavior even where psyopg
+            # DB-API so we can enforce nice behavior even where psycopg
             # allows bad behavior.
             if mode == 'direct':
                 con.close()
@@ -327,6 +367,13 @@ class MockDbTestCase(unittest.TestCase):
             self.failUnlessEqual(len(desc[0]), 7) # And it must be a 7-tuple.
             self.failUnlessEqual(desc[0][0], "name")
             self.failUnlessEqual(desc[0][1], psycopg.STRING)
+
+            # Make sure our record and replay descriptions are identical to
+            # the direct description.
+            if mode == 'direct':
+                direct_description = cur.description
+            else:
+                self.failUnlessEqual(direct_description, cur.description)
 
     @dont_retry
     def testCursorRowcount(self):
@@ -391,7 +438,7 @@ class MockDbTestCase(unittest.TestCase):
             try:
                 row = cur.fetchone()
                 # psycopg seems to be indeterminite in this case! Let it pass.
-                # Our mock db follows the standard consistantly.
+                # Our mock db follows the standard consistently.
                 if mode == 'direct' and row is None:
                     pass
                 else:
@@ -409,24 +456,27 @@ class MockDbTestCase(unittest.TestCase):
                 self.failUnlessEqual(row[0], 1, "Bad result %s" % repr(row))
             self.failUnless(cur.fetchone() is None, "Too many results")
 
-    ## psycopg1 does not support this extension.
-    ##
-    ## @dont_retry
-    ## def testCursorIteration(self):
-    ##     for mode in self.modes():
-    ##         con = self.connect()
-    ##         cur = con.cursor()
-    ##         cur.execute("SELECT 1 FROM generate_series(1, 10)")
-    ##         row_count = 0
-    ##         for row in cur:
-    ##             row_count += 1
-    ##             self.failIfEqual(row_count, 11, "Too many results")
-    ##             self.failIf(row is None,
-    ##                     "Not enough results - only %d rows" % row_count)
-    ##             self.failUnlessEqual(
-    ##                 len(row), 1, "Should be a single column"
-    ##                 )
-    ##             self.failUnlessEqual(row[0], 1, "Bad result %s" % repr(row))
+    @dont_retry
+    def testCursorIteration(self):
+        # psycopg1 does not support this extension.
+        for mode in self.modes():
+            con = self.connect()
+            cur = con.cursor()
+            self.failIf(hasattr(cur, '__iter__'), "Cursor supports __iter__()")
+            self.failIf(hasattr(cur, 'next'), "Cursor supports next()")
+        ##  con = self.connect()
+        ##  cur = con.cursor()
+        ##  cur.execute("SELECT 1 FROM generate_series(1, 10)")
+        ##  row_count = 0
+        ##  for row in cur:
+        ##      row_count += 1
+        ##      self.failIfEqual(row_count, 11, "Too many results")
+        ##      self.failIf(row is None,
+        ##          "Not enough results - only %d rows" % row_count)
+        ##      self.failUnlessEqual(
+        ##          len(row), 1, "Should be a single column"
+        ##          )
+        ##      self.failUnlessEqual(row[0], 1, "Bad result %s" % repr(row))
   
     @dont_retry
     def testFetchAll(self):

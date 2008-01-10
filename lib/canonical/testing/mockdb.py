@@ -2,20 +2,19 @@
 
 """A self maintaining mock database for tests.
 
-The first time a MockDbConnection with a given key is used,
-it functions as a proxy to the real database connection. Queries
-and results are recorded into a cache.
+The first time a `MockDbConnection` is used, it functions as a proxy
+to the real database connection. Queries and results are recorded into
+a cache.
 
 For subsequent runs, if the same queries are issued in the same order
-then results are returned from the cached log and the real database
+then results are returned from the cached log and the real database is
 not used. If the cache is detected as being invalid, it is removed and
-a RetryTest exception raised for the test runner to deal with.
+a `RetryTest` exception raised for the test runner to deal with.
 """
 
 __metaclass__ = type
 __all__ = [
         'MockDbConnection', 'RecordCache', 'ReplayCache', 'cache_filename',
-        'RetryTest', 'dont_retry',
         ]
 
 import cPickle as pickle
@@ -55,8 +54,8 @@ class CacheEntry:
 
 class ConnectCacheEntry(CacheEntry):
     """An entry created instantiating a Connection."""
-    args = None # Arguments passed to the connect() method
-    kw = None # Keyword arguments passed to the connect() method
+    args = None # Arguments passed to the connect() method.
+    kw = None # Keyword arguments passed to the connect() method.
     
     def __init__(self, connection, *args, **kw):
         super(ConnectCacheEntry, self).__init__(connection)
@@ -66,11 +65,16 @@ class ConnectCacheEntry(CacheEntry):
 
 class ExecuteCacheEntry(CacheEntry):
     """An entry created via Cursor.execute()."""
-    query = None # Query passed to Cursor.execute()
-    params = None # Parameters passed to Cursor.execute()
-    results = None # Cursor.fetchall() results as a list
-    description = None # Cursor.description as per DB-API
-    rowcount = None # Cursor.rowcount after Cursor.fetchall() as per DB-API
+    query = None # Query passed to Cursor.execute().
+    params = None # Parameters passed to Cursor.execute().
+    results = None # Cursor.fetchall() results as a list.
+    description = None # Cursor.description as per DB-API.
+    rowcount = None # Cursor.rowcount after Cursor.fetchall() as per DB-API.
+
+    def __init__(self, connection, query, params):
+        super(ExecuteCacheEntry, self).__init__(connection)
+        self.query = query
+        self.params = params
 
 
 class CloseCacheEntry(CacheEntry):
@@ -94,8 +98,8 @@ class SetIsolationLevelCacheEntry(CacheEntry):
 
 
 class RecordCache:
-    key = None # The unique key to this test
-    cache_filename = None # path to our cache file
+    key = None # The unique key to this test.
+    cache_filename = None # Path to our cache file.
     log = None
     connections = None
 
@@ -114,9 +118,7 @@ class RecordCache:
     def execute(self, cursor, query, params=None):
         """Handle Cursor.execute()."""
         con = cursor.connection
-        entry = ExecuteCacheEntry(con)
-        entry.query = query
-        entry.params = params
+        entry = ExecuteCacheEntry(con, query, params)
 
         real_cursor = cursor.real_cursor
         try:
@@ -130,8 +132,10 @@ class RecordCache:
         try:
             entry.results = list(real_cursor.fetchall())
             entry.description = real_cursor.description
+            # Might have changed now fetchall() has been done.
+            entry.rowcount = real_cursor.rowcount
         except psycopg.Error:
-            # No results, such as an UPDATE query
+            # No results, such as an UPDATE query.
             entry.results = None
 
         self.log.append(entry)
@@ -183,7 +187,7 @@ class RecordCache:
 
     def store(self):
         """Store the log for future runs."""
-        # Create cache directory if necessary
+        # Create cache directory if necessary.
         if not os.path.isdir(CACHE_DIR):
             os.makedirs(CACHE_DIR, mode=0700)
 
@@ -221,10 +225,10 @@ def noop_if_invalid(func):
 class ReplayCache:
     """Replay database queries from a cache."""
 
-    key = None # Unique key identifying this test
-    cache_filename = None # File storing our statement/result cache
-    log = None # List of CacheEntry objects loaded from _cache_filename
-    connections = None # List of connections using this cache
+    key = None # Unique key identifying this test.
+    cache_filename = None # File storing our statement/result cache.
+    log = None # List of CacheEntry objects loaded from _cache_filename.
+    connections = None # List of connections using this cache.
 
     invalid = False # If True, the cache is invalid and we are tearing down.
 
@@ -413,8 +417,8 @@ class MockDbConnection:
 class MockDbCursor:
     _cache_entry = None
 
-    arraysize = 100 # As per DB-API
-    connection = None # As per DB-API optional extension
+    arraysize = 100 # As per DB-API.
+    connection = None # As per DB-API optional extension.
 
     def __init__(self, connection):
         self.connection = connection
@@ -437,14 +441,14 @@ class MockDbCursor:
 
         results = self._cache_entry.results
 
-        if results is None: # DELETE or UPDATE set rowcount
+        if results is None: # DELETE or UPDATE set rowcount.
             return self._cache_entry.rowcount
         
         if results is None or self._fetch_position < len(results):
             return -1
         return self._cache_entry.rowcount
 
-    _real_cursor = None # Used by real_cursor()
+    _real_cursor = None # Used by real_cursor().
 
     @property
     def real_cursor(self):
@@ -529,12 +533,12 @@ class MockDbCursor:
     def setinputsizes(self, sizes):
         """As per DB-API."""
         self._checkClosed()
-        return # No-op
+        return # No-op.
 
     def setoutputsize(self, size, column=None):
         """As per DB-API."""
         self._checkClosed()
-        return # No-op
+        return # No-op.
 
     ## psycopg1 does not support this extension.
     ##

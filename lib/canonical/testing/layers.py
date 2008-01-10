@@ -683,7 +683,7 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
     @classmethod
     @profiled
     def testTearDown(cls):
-        cls.txn.abort() # Will fail if using the mock db in replay mode!
+        cls.txn.abort()
         cls.txn.uninstall()
         if ZopelessTransactionManager._installed is not None:
             raise LayerInvariantError(
