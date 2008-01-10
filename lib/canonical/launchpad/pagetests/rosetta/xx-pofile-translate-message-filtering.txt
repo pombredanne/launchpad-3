@@ -10,14 +10,15 @@ with the ids between 130 and 151 and, by default, the batch are of 10 items.
   >>> match_translation_id = 'msgset_([0-9]+)_es_translation_0$'
 
   # This function will be used to check the content of the browser.
-  >>> def print_shown_messages(browser):
+  >>> def print_shown_messages(browser, soup=None):
   ...     """Print the id/value of all shown translations on the page."""
   ...     import re
   ...
   ...     # Map msgset_ids to HTML tags
   ...     translations = {}
   ...
-  ...     soup = find_main_content(browser.contents)
+  ...     if soup is None:
+  ...          soup = find_main_content(browser.contents)
   ...     for tag in soup.findAll('label'):
   ...         id = tag.get('id')
   ...         if id is not None:
@@ -34,35 +35,95 @@ with the ids between 130 and 151 and, by default, the batch are of 10 items.
 
 == Filters ==
 
+No Privileges Person visits the evolution-2.2 package in Ubuntu Hoary
+to review the state of the translation.
+
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
+    ...     '+source/evolution/+pots/evolution-2.2/es/+translate')
+    >>> user_browser.title
+    'Translating evolution-2.2 in ... package "evolution" into Spanish'
+
+He can see that there are xx messages.
+
+    >>> contents = find_main_content(user_browser.contents)
+    >>> print extract_text(contents.find(
+    ...     'td', {'class' : 'batch-navigation-index'})).encode('utf-8')
+    1 ... 10  of 22 results
+
 === Untranslated ===
 
-Let's see the list of untranslated messsages that the pofile has with the
-first batch of entries:
+No Privileges Person chooses to see the untranslated messages in the
+evolution-2.2 sourcepackage. He sets the 'Show' list to 'Untranslated'
+to filter the messages. He sees 13 messages are not translated.
 
-  >>> user_browser.open(
-  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
-  ...     '+pots/evolution-2.2/es/+translate?show=untranslated')
+    >>> user_browser.getControl('Show').value = ['untranslated']
+    >>> user_browser.getControl('Filter').click()
+    >>> user_browser.url
+    'http://.../evolution-2.2/es/+translate?batch=10&show=untranslated'
 
-  >>> print_shown_messages(user_browser)
-  133: '(no translation yet)'
-  135: '(no translation yet)'
-  136: '(no translation yet)'
-  137: '(no translation yet)'
-  138: '(no translation yet)'
-  139: '(no translation yet)'
-  140: '(no translation yet)'
-  141: '(no translation yet)'
-  142: '(no translation yet)'
-  148: '(no translation yet)'
+    >>> contents = find_main_content(user_browser.contents)
+    >>> print extract_text(contents.find(
+    ...     'td', {'class' : 'batch-navigation-index'})).encode('utf-8')
+    1 ... 10  of 13 results
 
-The set of messages that are untranslated in the second batch:
+    >>> print_shown_messages(user_browser, contents)
+    133: '(no translation yet)'
+    135: '(no translation yet)'
+    136: '(no translation yet)'
+    137: '(no translation yet)'
+    138: '(no translation yet)'
+    139: '(no translation yet)'
+    140: '(no translation yet)'
+    141: '(no translation yet)'
+    142: '(no translation yet)'
+    148: '(no translation yet)'
 
-  >>> user_browser.getLink('Next').click()
+Only the first 10 messages were shown. No Privileges Person views the
+next page of messages to confirm the three remaining messages show.
 
-  >>> print_shown_messages(user_browser)
-  149: '(no translation yet)'
-  150: '(no translation yet)'
-  151: '(no translation yet)'
+    >>> user_browser.getLink('Next').click()
+    >>> contents = find_main_content(user_browser.contents)
+    >>> print extract_text(contents.find(
+    ...     'td', {'class' : 'batch-navigation-index'})).encode('utf-8')
+    11 ... 13  of 13 results
+
+    >>> print_shown_messages(user_browser, contents)
+    149: '(no translation yet)'
+    150: '(no translation yet)'
+    151: '(no translation yet)'
+
+In the case of the 'Untranslated' filter, users can change the set of
+filtered messages by making updates to a single message. No Privileges
+Person decides to use the 'Untranslated' filter to locate messages that
+need translations in to Australian English.
+
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
+    ...     '+source/evolution/+pots/evolution-2.2/en_AU/+translate')
+    >>> user_browser.title
+    'Translating evolution-2.2 in ... "evolution" into English (Australia)'
+
+    >>> contents = find_main_content(user_browser.contents)
+    >>> print extract_text(contents.find(
+    ...     'td', {'class' : 'batch-navigation-index'})).encode('utf-8')
+    1 ... 10  of 22 results
+
+    >>> user_browser.getControl(
+    ...     name='msgset_130_en_AU_translation_0_new').value = 'addressbook'
+    >>> user_browser.getControl(
+    ...     name='msgset_130_en_AU_translation_0_radiobutton').value = [
+    ...         'msgset_130_en_AU_translation_0_new']
+    >>> user_browser.getControl('Save & Continue').click()
+
+The batch of 'Untranslated message' was decremented by 1. No Privileges
+Person can see that the next page of messages starts on 10, not 11, and
+that there are 21 untranslated messages.
+
+    >>> contents = find_main_content(user_browser.contents)
+    >>> print extract_text(contents.find(
+    ...     'td', {'class' : 'batch-navigation-index'})).encode('utf-8')
+    10 ... 19  of 21 results
 
 
 === Messages with new suggestions ===
@@ -70,6 +131,9 @@ The set of messages that are untranslated in the second batch:
 Now, we are going to select messages with new suggestions submitted after
 they were last reviewed.
 
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
+    ...     '+source/evolution/+pots/evolution-2.2/es/+translate')
   >>> user_browser.getControl('Show:').displayValue = ['with new suggestions']
   >>> user_browser.getControl('Filter').click()
   >>> user_browser.url
@@ -83,9 +147,8 @@ they were last reviewed.
 
 Now, we are going to select the amount of entries that need to be reviewed.
 
-  >>> user_browser.open(
-  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
-  ...     '+pots/evolution-2.2/es/+translate?show=need_review')
+  >>> user_browser.getControl('Show:').displayValue = ['need review']
+  >>> user_browser.getControl('Filter').click()
   >>> print_shown_messages(user_browser)
   132: 'tiene<samp> </samp>'
   146: '<code>%d</code> foo'
