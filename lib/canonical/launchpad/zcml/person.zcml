@@ -702,7 +702,6 @@
   <browser:page
     name="+members"
     for="canonical.launchpad.interfaces.ITeam"
-    class="canonical.launchpad.browser.TeamMembershipListingView"
     permission="zope.Public"
     template="../templates/team-members.pt"
     />
