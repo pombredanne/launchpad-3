@@ -4,8 +4,8 @@ While doing translations, there is a functionality that allows the user
 to filter the kind of messages that should be shown.
 
 For this test, we know that the valid msgsets that this form uses are
-the ones with the ids between 130 and 151 and, by default, the batch
-are of 10 items.
+the ones with the ids between 130 and 151. By default, view shows the
+mesages in the batches of 10 items.
 
     # This describes the HTML tag ids we'll be looking for below.
     >>> match_translation_id = 'msgset_([0-9]+)_es_translation_0$'
@@ -33,6 +33,10 @@ are of 10 items.
     ...         print "%d: '%s'" % (
     ...             msgset_id, translation.renderContents().strip())
 
+    >>> def print_batch_header(soup):
+    ...     """Print the batch navigator header."""
+    ...     print extract_text(contents.find(
+    ...         'td', {'class' : 'batch-navigation-index'})).encode('utf-8')
 
 == Filters ==
 
@@ -45,11 +49,10 @@ to review the state of the translation.
     >>> user_browser.title
     'Translating evolution-2.2 in ... package "evolution" into Spanish'
 
-He can see that there are xx messages.
+He can see that there are 22 messages.
 
     >>> contents = find_main_content(user_browser.contents)
-    >>> print extract_text(contents.find(
-    ...     'td', {'class' : 'batch-navigation-index'})).encode('utf-8')
+    >>> print_batch_header(contents)
     1 ... 10  of 22 results
 
 === Untranslated ===
@@ -64,8 +67,7 @@ to filter the messages. He sees 13 messages are not translated.
     'http://.../evolution-2.2/es/+translate?batch=10&show=untranslated'
 
     >>> contents = find_main_content(user_browser.contents)
-    >>> print extract_text(contents.find(
-    ...     'td', {'class' : 'batch-navigation-index'})).encode('utf-8')
+    >>> print_batch_header(contents)
     1 ... 10  of 13 results
 
     >>> print_shown_messages(user_browser, contents)
@@ -85,8 +87,7 @@ next page of messages to confirm the three remaining messages show.
 
     >>> user_browser.getLink('Next').click()
     >>> contents = find_main_content(user_browser.contents)
-    >>> print extract_text(contents.find(
-    ...     'td', {'class' : 'batch-navigation-index'})).encode('utf-8')
+    >>> print_batch_header(contents)
     11 ... 13  of 13 results
 
     >>> print_shown_messages(user_browser, contents)
@@ -102,35 +103,49 @@ need translations in to Australian English.
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/en_AU/+translate')
+    >>> user_browser.getControl('Show').value = ['untranslated']
+    >>> user_browser.getControl('Filter').click()
     >>> user_browser.title
     'Translating evolution-2.2 in ... "evolution" into English (Australia)'
 
     >>> contents = find_main_content(user_browser.contents)
-    >>> print extract_text(contents.find(
-    ...     'td', {'class' : 'batch-navigation-index'})).encode('utf-8')
+    >>> print_batch_header(contents)
     1 ... 10  of 22 results
 
     >>> user_browser.getControl(
-    ...     name='msgset_130_en_AU_translation_0_new').value = 'addressbook'
-    >>> user_browser.getControl(
     ...     name='msgset_130_en_AU_translation_0_radiobutton').value = [
     ...         'msgset_130_en_AU_translation_0_new']
-    >>> user_browser.getControl('Save & Continue').click()
+    >>> user_browser.getControl(
+    ...     name='msgset_130_en_AU_translation_0_new').value = 'addressbook'
+    >>> user_browser.getControl(name='submit_translations').click()
 
 The batch of 'Untranslated message' was decremented by 1. No Privileges
 Person can see that the next page of messages starts on 10, not 11, and
 that there are 21 untranslated messages.
 
     >>> contents = find_main_content(user_browser.contents)
-    >>> print extract_text(contents.find(
-    ...     'td', {'class' : 'batch-navigation-index'})).encode('utf-8')
+    >>> print_batch_header(contents)
     10 ... 19  of 21 results
+
+When No Privileges Person returns to the previous page, he can see
+the first 10 untranslated messages. The message is translated is not
+displayed.
+
+    >>> user_browser.getLink("Previous").click()
+    >>> contents = find_main_content(user_browser.contents)
+    >>> print_batch_header(contents)
+    1 ... 10  of 21 results
+
+    >>> print find_tag_by_id(
+    ...     user_browser.contents, 'msgset_130_en_AU_translation_0')
+    None
 
 
 === Messages with new suggestions ===
 
-Now, we are going to select messages with new suggestions submitted after
-they were last reviewed.
+No Privileges Person chooses to view messages with new suggestions
+submitted after they were last reviewed. There is only one message in
+the batch.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
@@ -147,67 +162,90 @@ they were last reviewed.
 
 === Messages needing review ===
 
-Now, we are going to select the amount of entries that need to be
-reviewed.
+No Privileges Person can view just the enteries that need to be
+reviewed by filtering on 'need review'. There are two messages in the
+batch.
 
     >>> user_browser.getControl('Show:').displayValue = ['need review']
     >>> user_browser.getControl('Filter').click()
 
+    >>> contents = find_main_content(user_browser.contents)
+    >>> print_batch_header(contents)
+    1 ... 2  of 2 results
+
+    >>> print_shown_messages(user_browser)
+    132: 'tiene<samp> </samp>'
+    146: '<code>%d</code> foo'
+
+XXX sinzui 2008-01-09: We need to test clearing the is_fuzzy flag while
+traversing this view.
+
 
 === Messages changed in Launchpad ===
 
-Next, lets see entries which have changed in Launchpad.
+No Privileges Person can see entries which have changed in Launchpad.
+There is only one message in the batch.
 
     >>> user_browser.getControl('Show:').displayValue = [
     ...     'changed in Launchpad']
     >>> user_browser.getControl('Filter').click()
     >>> user_browser.url
-    'http://.../es/+translate?batch=10&show=changed_in_launchpad'
+    'http://...evolution-2.2/es/+translate?batch=10&show=changed_in_launchpad'
 
-    >>> print_shown_messages(user_browser)
+    >>> contents = find_main_content(user_browser.contents)
+    >>> print_batch_header(contents)
+    1 ... 1  of 1 result
+
+    >>> print_shown_messages(user_browser, contents)
     134: '<samp> </samp>caratas'
 
-We are now at the end of this template. Let's try the form submission
-to be sure that we don't redirect to a broken URL but to the first batch.
+There is not a next link when the messages are filtered since there is
+only one page of messages. If No Privileges Person submits the form,
+the browser is redirected to the first batch.
 
     >>> user_browser.getControl('Save & Continue').click()
     >>> user_browser.url
     'http://...evolution-2.2/es/+translate?batch=10&show=changed_in_launchpad'
+
+    >>> print_shown_messages(user_browser)
+    134: '<samp> </samp>caratas'
 
 
 == Batch parameters when changing filters ==
 
 Another thing that filtering should do is to move to the start of the
 set of messages when the filtering rule changes but preserving batch
-size.
+size. No Privileges Person can see the when he switches filter to
+show 'untranslated' message, he is is seeing the first batch.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/es/+translate')
     >>> user_browser.getLink('Last').click()
+    >>> contents = find_main_content(user_browser.contents)
+    >>> print_batch_header(contents)
+    21 ... 22  of 22 results
+
     >>> user_browser.getControl('Show').value = ['untranslated']
     >>> user_browser.getControl('Filter').click()
-    >>> user_browser.url
-    'http://.../evolution-2.2/es/+translate?batch=10&show=untranslated'
+    >>> contents = find_main_content(user_browser.contents)
+    >>> print_batch_header(contents)
+    1 ... 10  of 13 results
 
 
 == Filters and error display ==
 
-When we find errors in translations the user is submitting, we display
-a general error message at the top of the page, plus individual error
-messages for the individual problematic translations.
+When there are errors in translations that No Privileges Person
+submits, he sees a general error message at the top of the page,
+plus individual error messages for the individual problematic
+translations.
 
-Thus it's important for the error page to show the same messages that
-the user submitted for: it should be the same batch, shown with the
-same filter (see bug 112308).
+The error page shows the same messages that the user submitted for:
+it is the same batch, shown with the same filter (see bug 112308).
 
-    >>> user_browser.open(
-    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
-    ...     '+source/evolution/+pots/evolution-2.2/es/+translate'
-    ...     '?show=untranslated')
-
-The user submits a bad translation, one that lacks conversion
-specifications the original message has, and is shown an error.
+No Privileges Person submits a bad translation, one that lacks
+conversion specifications the original message has, and is shown an
+error.
 
     >>> print find_tag_by_id(
     ...     user_browser.contents, 'msgset_142_singular').renderContents()
@@ -222,9 +260,14 @@ specifications the original message has, and is shown an error.
 
 The exact same batch of messages is shown again, but with the error.
 
-    >>> user_browser.url
-    'http://.../evolution-2.2/es/+translate?show=untranslated'
-    >>> print_shown_messages(user_browser)
+    >>> user_browser.getControl('Show').value
+    ['untranslated']
+
+    >>> contents = find_main_content(user_browser.contents)
+    >>> print_batch_header(contents)
+    1 ... 10  of 13 results
+
+    >>> print_shown_messages(user_browser, contents)
     133: '(no translation yet)'
     135: '(no translation yet)'
     136: '(no translation yet)'
@@ -247,14 +290,16 @@ The exact same batch of messages is shown again, but with the error.
 
 == Filters and alternative languages ==
 
-Handling of http parameters gets a bit more complex when we post forms.
-Nonetheless we can submit translations while combining message filters
-with alternative suggestion languages.
+Handling of http parameters gets a bit more complex when forms are
+posted. Nonetheless users can submit translations while combining
+message filters with alternative suggestion languages. No Privileges
+Person submits Chinese translations using Spanish suggestions.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
-    ...     '+source/evolution/+pots/evolution-2.2/zh_CN/+translate'
-    ...     '?show=untranslated')
+    ...     '+source/evolution/+pots/evolution-2.2/zh_CN/+translate')
+    >>> user_browser.getControl('Show').value = ['untranslated']
+    >>> user_browser.getControl('Filter').click()
     >>> user_browser.getControl('Spanish (es)').selected = True
     >>> user_browser.getControl(name='select_alternate_language').click()
 
@@ -265,16 +310,10 @@ with alternative suggestion languages.
     ...     name='msgset_130_zh_CN_translation_0_new').value = 'Chinese!'
     >>> user_browser.getControl(name='submit_translations').click()
 
-If we browse back to the page we just submitted translations for, we
-don't see our own translation since we are only showing untranslated
-strings.
+When he returns to the first page of messages, he is still shown Spanish
+suggestions.
 
     >>> user_browser.getLink("Previous").click()
-    >>> print find_tag_by_id(
-    ...     user_browser.contents, 'msgset_130_zh_CN_translation_0')
-    None
-
-We do, however, see Spanish suggestions.
 
     >>> text = extract_text(find_main_content(user_browser.contents))
     >>> print text.encode('UTF-8')
