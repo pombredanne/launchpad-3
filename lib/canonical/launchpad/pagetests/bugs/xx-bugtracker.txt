@@ -270,16 +270,15 @@ displayed:
   #1:  Firefox does not support SVG  304014
   #7:  A test bug                    280883
 
-But if we are not permitted to view one of watches, for example,
-because it's associated with a private bug:
+But if the user is not permitted to view one of the watches only very
+basic details are displayed. For example, when a bug watch is
+associated with a private bug:
 
   >>> admin_browser.open('http://launchpad.dev/bugs/15')
   >>> admin_browser.getLink('Set privacy/security').click()
   >>> admin_browser.getControl(
   ...     'This bug report should be private').selected = True
   >>> admin_browser.getControl('Change').click()
-
-...only very basic details are displayed:
 
   >>> anon_browser.open(
   ...     'http://launchpad.dev/bugs/bugtrackers/debbugs')

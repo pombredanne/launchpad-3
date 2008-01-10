@@ -113,13 +113,6 @@ class BugTrackerView(LaunchpadView):
     def initialize(self):
         self.batchnav = BatchNavigator(self.context.watches, self.request)
 
-    def shouldHideWatchDetails(self, watch):
-        """Return whether or not the bug watch details should be hidden.
-
-        Check if the user has permission to view the watch.
-        """
-        return not check_permission('launchpad.View', watch)
-
     @property
     def related_projects(self):
         """Return all project groups and projects.

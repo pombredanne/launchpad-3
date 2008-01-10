@@ -38,11 +38,12 @@
 
       <tbody>
         <tal:watches repeat="watch watches">
-          <tr tal:define="hide python:view.shouldHideWatchDetails(watch)">
+          <tr tal:define="hide not:watch/bug/required:launchpad.View">
             <tal:hide-watch-details condition="hide">
               <td>
                 <img alt="" src="/@@/bug" />
-                #<span tal:replace="watch/bug/id">34</span>: <em>(Private)</em>
+                #<span tal:replace="watch/bug/id">34</span>:
+                <em>(Private)</em>
               </td>
               <td><em>-</em></td>
               <td></td>
@@ -52,7 +53,9 @@
                 <img alt="" src="/@@/bug" />
                 <a href="#" tal:attributes="href watch/bug/fmt:url">
                   #<span tal:replace="watch/bug/id">34</span>:
-                  <span tal:replace="watch/bug/title">Launchpad Bug Title</span>
+                  <span tal:replace="watch/bug/title">
+                    Launchpad Bug Title
+                  </span>
                 </a>
               </td>
               <td>
