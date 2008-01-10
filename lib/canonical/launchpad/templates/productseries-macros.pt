@@ -34,4 +34,55 @@
   </div>
   <metal:extra define-slot="extra" />
 </metal:detailed_display>
+
+
+<metal:branch_display define-macro="branch_display">
+  <tal:comment condition="nothing">
+    This macro expects two variables to be defined:
+      - 'series': The ProductSeries
+      - 'is_focus': A boolean saying whether this is the series in which
+                    development is focused.
+  </tal:comment>
+
+  <strong>Series: <a tal:attributes="href series/fmt:url"
+             tal:content="series/name" >
+      1.0
+    </a>
+  </strong>
+  <em tal:condition="is_focus">Current development focus</em>
+
+  <div>
+
+  <tal:has_branch condition="series/series_branch">
+    <table>
+      <tbody>
+        <tr>
+          <th>Branch:</th>
+          <td>
+            <tal:branch replace="structure series/series_branch/fmt:project-link"/>
+          </td>
+        </tr>
+        <tr class="lesser">
+          <th>Example:</th>
+          <td>
+            bzr branch
+            <tal:dev-focus condition="is_focus">
+              lp:<tal:product replace="context/name"/>
+            </tal:dev-focus>
+            <tal:not-dev-focus condition="not: is_focus">
+              lp:<tal:product replace="context/name"/>/<tal:series replace="series/name"/>
+            </tal:not-dev-focus>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </tal:has_branch>
+
+  <tal:no_branch condition="not: series/series_branch">
+    No branch specified
+  </tal:no_branch>
+
+  </div>
+</metal:branch_display>
+
 </tal:root>
