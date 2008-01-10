@@ -37,20 +37,32 @@
       </thead>
 
       <tbody>
-        <tr tal:repeat="watch watches">
-          <td>
-            <img alt="" src="/@@/bug" />
-            <a href="#" tal:attributes="href watch/bug/fmt:url">
-              #<span tal:replace="watch/bug/id">34</span>:
-               <span tal:replace="watch/bug/title">Launchpad Bug Title</span>
-            </a>
-          </td>
-          <td><a tal:content="watch/remotebug"
-                 tal:attributes="href watch/url">53656
-              </a>
-          </td>
-          <td tal:content="watch/remotestatus" />
-        </tr>
+        <tal:watches repeat="watch watches">
+          <tr tal:define="hide python:view.shouldHideWatchDetails(watch)">
+            <tal:hide-watch-details condition="hide">
+              <td>
+                <img alt="" src="/@@/bug" />
+                #<span tal:replace="watch/bug/id">34</span>: <em>(Private)</em>
+              </td>
+              <td><em>-</em></td>
+              <td></td>
+            </tal:hide-watch-details>
+            <tal:show-watch-details condition="not:hide">
+              <td>
+                <img alt="" src="/@@/bug" />
+                <a href="#" tal:attributes="href watch/bug/fmt:url">
+                  #<span tal:replace="watch/bug/id">34</span>:
+                  <span tal:replace="watch/bug/title">Launchpad Bug Title</span>
+                </a>
+              </td>
+              <td>
+                <a tal:content="watch/remotebug"
+                   tal:attributes="href watch/url">53656</a>
+              </td>
+              <td tal:content="watch/remotestatus" />
+            </tal:show-watch-details>
+          </tr>
+        </tal:watches>
       </tbody>
     </table>
   </metal:macro>

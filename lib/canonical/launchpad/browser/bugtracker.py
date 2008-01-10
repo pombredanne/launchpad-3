@@ -31,6 +31,7 @@ from canonical.launchpad.webapp import (
     ContextMenu, GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
     redirection)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets import DelimitedListWidget
 
@@ -111,6 +112,13 @@ class BugTrackerView(LaunchpadView):
 
     def initialize(self):
         self.batchnav = BatchNavigator(self.context.watches, self.request)
+
+    def shouldHideWatchDetails(self, watch):
+        """Return whether or not the bug watch details should be hidden.
+
+        Check if the user has permission to view the watch.
+        """
+        return not check_permission('launchpad.View', watch)
 
     @property
     def related_projects(self):
