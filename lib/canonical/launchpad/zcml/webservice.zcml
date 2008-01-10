@@ -17,4 +17,8 @@
         <allow interface='canonical.lazr.interfaces.IHTTPResource' />
     </class>
 
+    <class class="canonical.launchpad.rest.person.PersonResource">
+        <allow interface='canonical.lazr.interfaces.IHTTPResource' />
+    </class>
+
 </configure>

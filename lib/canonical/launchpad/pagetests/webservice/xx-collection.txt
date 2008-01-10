@@ -13,3 +13,14 @@ responds to GET.
   <BLANKLINE>
   [{"name": "bug-importer"}, {"name": "carlos"}, ... {"name": "tsukimi"}]
 
+The elements of a collection can be looked up by unique identifier:
+
+  >>> print http(r"""
+  ... GET /people/carlos HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  <BLANKLINE>
+  {"name": "carlos"}

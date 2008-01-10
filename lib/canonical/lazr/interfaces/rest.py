@@ -44,6 +44,12 @@ class IEntryResource(IHTTPResource, IJSONPublishable):
 class ICollectionResource(IHTTPResource):
     """A resource that represents a collection of entry resources."""
 
+    def lookupEntry(self, request, name):
+        """Look up an entry in the collection by unique identifier.
+
+        :return: An IEntryResource
+        """
+
     def get(self):
         """Retrieve this collection.
 

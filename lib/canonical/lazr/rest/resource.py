@@ -13,9 +13,9 @@ __all__ = [
 
 import simplejson
 from zope.interface import implements
+from zope.publisher.interfaces import NotFound
 from canonical.lazr.interfaces import (
     ICollectionResource, IEntryResource, IHTTPResource, IJSONPublishable)
-
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
 
@@ -46,12 +46,8 @@ class ReadOnlyResource(HTTPResource):
             REQUEST.response.setHeader("Allow", "GET")
 
 
-class EntryResource:
-    """A Launchpad object, published to the web.
-
-    This is not a real resource yet--you can't really access it from the
-    web. It's only used to compose collection resources.
-    """
+class EntryResource(ReadOnlyResource):
+    """A Launchpad object, published to the web."""
     implements(IEntryResource)
 
     def toDictionary(self):
@@ -69,10 +65,24 @@ class EntryResource:
         """Turn the object into a simple data structure."""
         return self.toDictionary()
 
+    def do_GET(self, request):
+        """Render an entry as JSON."""
+        request.response.setHeader('Content-type', 'application/json')
+        return ResourceJSONEncoder().encode(self)
+
 
 class CollectionResource(ReadOnlyResource):
     implements(ICollectionResource)
     """A resource that serves a list of entry resources."""
+
+    def publishTraverse(self, request, name):
+        """Fetch an entry resource by name."""
+        import pdb; pdb.set_trace()
+        entry = self.lookupEntry(request, name)
+        if entry is None:
+            raise NotFound(self, name)
+        else:
+            return entry
 
     def do_GET(self, request):
         """Fetch a collection and render it as JSON."""
