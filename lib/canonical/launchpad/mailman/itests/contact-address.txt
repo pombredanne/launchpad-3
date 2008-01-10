@@ -144,7 +144,7 @@ Here is the message to Anne, a member of the mailing list.
     ...
     Subject: [Itest-one] [Question #...]: A new question
     X-BeenThere: itest-one@launchpad.dev
-    X-Mailman-Version: 2.1.10a0
+    X-Mailman-Version: ...
     Reply-To: question...@answers.launchpad.net
     List-Id: <itest-one.launchpad.dev>
     List-Unsubscribe: <http://lists.launchpad.dev/mailman/listinfo/itest-one>,

@@ -324,13 +324,13 @@ messages to the list.
     >>> smtpd.reset()
     >>> vette_watcher.resync()
     >>> inject('itest-one', """\
-    ... From: archive@mail-archive.com
+    ... From: %s
     ... To: itest-one@lists.launchpad.dev
     ... Subject: A forgery
     ... Message-ID: <seventh-injection>
     ...
     ... Hi, I am forging me some spam!
-    ... """)
+    ... """ % config.mailman.archive_address)
     >>> vette_watcher.wait_for_growth()
     >>> smtpd.getMailboxSize() <= 0
     True
