@@ -22,8 +22,7 @@
         This PPA does not contain any packages yet.
       </p>
 
-      <tal:active_ppa condition="ppa_active"
-                      define="allow_actions context/required:launchpad.Edit">
+      <tal:active_ppa condition="ppa_active">
 
       <div>
         <form name="package_search" action="" method="GET">
@@ -47,7 +46,7 @@
       <table class="listing" id="packages_list" tal:condition="batch">
         <thead>
           <tr>
-            <td tal:condition="allow_actions" />
+            <td />
             <th colspan="2">Source</th>
             <th tal:condition="context/owner/isTeam">Uploader</th>
             <th>Published</th>
@@ -75,7 +74,7 @@
         </div>
       </div>
 
-      <div id="action_console" tal:condition="allow_actions"
+      <div id="action_console"
            tal:define="message view/performPPAAction;
                        error view/error|nothing"
            style="padding-top: 1em;">
@@ -94,7 +93,17 @@
                  <label for="DELETION_COMMENT">Comment:</label>
                  <input title="Comment" size="50" type="text"
                         name="DELETION_COMMENT" />
-                 <input value="DELETE" name="DELETE" type="submit"/>
+                 <input value="Delete" name="DELETE" type="submit"/>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                 <label for="COPY_BINARIES">Include binaries</label>
+                 <input type="checkbox" name="COPY_BINARIES" value="YES" />
+                 <label for="DEST_PPA_OWNER">Destination PPA owner:</label>
+                 <input title="Destination PPA owner" size="20" type="text"
+                        name="DEST_PPA_OWNER" />
+                 <input value="Copy" name="COPY" type="submit"/>
               </td>
             </tr>
           </tfoot>

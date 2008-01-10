@@ -59,17 +59,6 @@
   <browser:pages
     for="canonical.launchpad.interfaces.IArchive"
     permission="zope.Public"
-    class="canonical.launchpad.browser.ArchiveSearchView">
-    <browser:page
-      template="../templates/archive-search.pt"
-      facet="overview"
-      name="+search"
-      />
-  </browser:pages>
-
-  <browser:pages
-    for="canonical.launchpad.interfaces.IArchive"
-    permission="zope.Public"
     class="canonical.launchpad.browser.ArchiveBuildsView">
     <browser:page
       name="+builds"
@@ -100,6 +89,16 @@
     template="../templates/archive-admin.pt"
     />
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="launchpad.Admin"
+    class="canonical.launchpad.browser.ArchiveConsoleView">
+    <browser:page
+      template="../templates/archive-console.pt"
+      facet="overview"
+      name="+console"
+      />
+  </browser:pages>
 
   <!-- ArchiveSet -->
   <content class="canonical.launchpad.database.ArchiveSet">

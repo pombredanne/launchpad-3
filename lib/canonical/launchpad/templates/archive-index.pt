@@ -63,7 +63,7 @@
       </div>
 
       <div>
-        <form name="package_search" action="+search" method="GET">
+        <form name="package_search" action="" method="GET">
            <label for="name">Package name contains:</label>
            <input id="field.name_filter" title="Package Name" size="20"
                   type="text" name="field.name_filter"
@@ -71,6 +71,42 @@
            <span tal:replace="structure view/plain_status_filter_widget" />
            <input type="submit" value="Search" />
         </form>
+      </div>
+
+      <div style="padding-top: 1em;" tal:define="batch view/search_results">
+
+      <tal:navigation_top
+           condition="python: view.name_filter is not None"
+           replace="structure view/batchnav/@@+navigation-links-upper" />
+
+      <table class="listing" id="packages_list" tal:condition="batch">
+        <thead>
+          <tr>
+            <th colspan="2">Source</th>
+            <th tal:condition="context/owner/isTeam">Uploader</th>
+            <th>Published</th>
+            <th>Status</th>
+            <th>Series</th>
+            <th>Section</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tal:block repeat="publishing batch"
+                     replace="structure publishing/@@+listing-ppa-detailed">
+          </tal:block>
+        </tbody>
+      </table>
+
+      <tal:navigation_bottom
+           condition="python: view.name_filter is not None"
+           replace="structure view/batchnav/@@+navigation-links-lower" />
+
+        <div id="empty-result" tal:condition="not: batch">
+           <tal:has_filter condition="view/name_filter">
+              No matching package for '<span tal:replace="view/name_filter" />'.
+           </tal:has_filter>
+        </div>
       </div>
 
       </tal:active_ppa>

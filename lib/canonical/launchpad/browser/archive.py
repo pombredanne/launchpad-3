@@ -9,7 +9,7 @@ __all__ = [
     'ArchiveFacets',
     'ArchiveOverviewMenu',
     'ArchiveView',
-    'ArchiveSearchView',
+    'ArchiveConsoleView',
     'ArchiveActivateView',
     'ArchiveBuildsView',
     'ArchiveEditView',
@@ -73,7 +73,7 @@ class ArchiveOverviewMenu(ApplicationMenu):
 
     usedfor = IArchive
     facet = 'overview'
-    links = ['admin', 'edit', 'builds', 'search']
+    links = ['admin', 'edit', 'builds', 'console']
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -89,9 +89,10 @@ class ArchiveOverviewMenu(ApplicationMenu):
         text = 'View build records'
         return Link('+builds', text, icon='info')
 
-    def search(self):
-        text = 'Search source packages'
-        return Link('+search', text, icon='info')
+    @enabled_with_permission('launchpad.Admin')
+    def console(self):
+        text = 'Package console'
+        return Link('+console', text, icon='edit')
 
 
 class ArchiveViewBase(LaunchpadView):
@@ -159,6 +160,28 @@ class ArchiveViewBase(LaunchpadView):
         return self.status_filter_widget.renderValue(
             self.selected_status_filter.value)
 
+    def setupSourcesListEntries(self):
+        """Setup of the sources list entries widget."""
+        entries = SourcesListEntries(
+            self.context.distribution, self.context.archive_url,
+            self.context.series_with_sources)
+        self.sources_list_entries = SourcesListEntriesView(
+            entries, self.request)
+
+    def setupPackageFilters(self):
+        """Setup of the package search form."""
+        self.name_filter = self.request.get('field.name_filter')
+        status_filter = self.request.get('field.status_filter', 'published')
+        self.setupStatusFilterWidget(status_filter)
+
+    def setupPackageSearchResult(self):
+        """Setup a list of results for the package search."""
+        publishing = self.context.getPublishedSources(
+            name=self.name_filter,
+            status=self.selected_status_filter.value.collection)
+        self.batchnav = BatchNavigator(publishing, self.request)
+        self.search_results = self.batchnav.currentBatch()
+
 
 class ArchiveView(ArchiveViewBase):
     """Default Archive view class
@@ -169,36 +192,19 @@ class ArchiveView(ArchiveViewBase):
     __used_for__ = IArchive
 
     def initialize(self):
-        """Set up select control and a batched list of publishing records."""
-        entries = SourcesListEntries(
-            self.context.distribution, self.context.archive_url,
-            self.context.series_with_sources)
-        self.sources_list_entries = SourcesListEntriesView(
-            entries, self.request)
-
-        self.name_filter = self.request.get('field.name_filter')
-        status_filter = self.request.get('field.status_filter', 'published')
-        self.setupStatusFilterWidget(status_filter)
+        self.setupSourcesListEntries()
+        self.setupPackageFilters()
+        self.setupPackageSearchResult()
 
 
-class ArchiveSearchView(ArchiveViewBase):
-    """Archive search view class. """
+class ArchiveConsoleView(ArchiveViewBase):
+    """Archive console view class. """
 
     __used_for__ = IArchive
 
     def initialize(self):
-        """Set up a batched list of publishing records."""
-        self.name_filter = self.request.get('field.name_filter')
-        status_filter = self.request.get('field.status_filter', 'published')
-
-        self.setupStatusFilterWidget(status_filter)
-
-        publishing = self.context.getPublishedSources(
-            name=self.name_filter,
-            status=self.selected_status_filter.value.collection)
-
-        self.batchnav = BatchNavigator(publishing, self.request)
-        self.search_results = self.batchnav.currentBatch()
+        self.setupPackageFilters()
+        self.setupPackageSearchResult()
 
     def performPPAAction(self):
         """Execute the designed action over the selected queue items.
