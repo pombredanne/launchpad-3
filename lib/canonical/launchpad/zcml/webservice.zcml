@@ -1,0 +1,16 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <securedutility
+        class="canonical.launchpad.systemhomes.WebServiceApplication"
+        provides="canonical.launchpad.interfaces.IWebServiceApplication">
+        <allow
+            interface="canonical.launchpad.interfaces.IWebServiceApplication" />
+        <allow interface='zope.publisher.interfaces.IPublishTraverse' />
+        <allow interface='canonical.lazr.interfaces.IHTTPResource' />
+    </securedutility>
+
+</configure>

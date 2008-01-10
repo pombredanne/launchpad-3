@@ -78,16 +78,12 @@ class AllVirtualHostsConfiguration:
         """
         self.use_https = launchpad_conf_vhosts.use_https
 
-        # Assume all the attributes of the vhosts configuration, except
-        # for use_https, will be virtual hosts.
-        attrs = set(launchpad_conf_vhosts.getSectionAttributes())
-        attrs.remove('use_https')
-        set_of_vhosts = attrs
-
         self.configs = {}
         self.hostnames = set()
-        for conf_item_name in set_of_vhosts:
+        for conf_item_name in launchpad_conf_vhosts.getSectionAttributes():
             vhost = getattr(launchpad_conf_vhosts, conf_item_name)
+            if getattr(vhost, 'hostname', None) is None:
+                continue
             self.configs[conf_item_name] = config = VirtualHostConfig(
                 vhost.hostname,
                 vhost.althostnames,
