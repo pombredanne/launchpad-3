@@ -24,8 +24,12 @@ class IHTTPResource(IPublishTraverse):
 class IJSONPublishable(Interface):
     """An object that can be published as a JSON data structure."""
 
-    def toJSON(self):
-        """Return a JSON representation of this object."""
+    def toJSONReady(self):
+        """Return a JSON-ready representation of this object.
+
+        The object must consist entirely of simple data structures and
+        IJSONPublishable objects.
+        """
 
 
 class IEntryResource(IHTTPResource, IJSONPublishable):

@@ -10,8 +10,6 @@ responds to GET.
   HTTP/1.1 200 Ok
   ...
   Content-Type: application/json
-  ...
-  [ { 'name' : 'leonardr' }, { 'name' : 'salgado }
-  ...
-  ]
+  <BLANKLINE>
+  [{"name": "bug-importer"}, {"name": "carlos"}, ... {"name": "tsukimi"}]
 

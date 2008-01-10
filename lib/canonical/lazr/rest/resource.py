@@ -21,8 +21,8 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
 
     def default(self, obj):
         if IJSONPublishable.providedBy(obj):
-            return obj.toJSON()
-        return simplejson.JSONEncoder.default(self, obj)
+            return obj.toJSONReady()
+        return super(ResourceJSONEncoder, self).default(self, obj)
 
 
 class HTTPResource:
@@ -65,9 +65,9 @@ class EntryResource:
             dict[name] = getattr(self, name)
         return dict
 
-    def toJSON(self):
-        """Render a JSON representation of this object."""
-        return simplejson.dumps(self.toDictionary())
+    def toJSONReady(self):
+        """Turn the object into a simple data structure."""
+        return self.toDictionary()
 
 
 class CollectionResource(ReadOnlyResource):
