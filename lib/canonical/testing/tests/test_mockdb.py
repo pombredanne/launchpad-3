@@ -128,9 +128,54 @@ def testRetryTestInDoctest():
     testrunner and unittest framework and maintaining the patch to support
     Retry properly is just way too much work for little gain).
 
+    This test confirms that a RetryException raised where no exception
+    was expected works.
+
     >>> retry_on_odd_numbered_calls()
     Retry not raised.
     """
+
+
+def retry_on_odd_numbered_calls2():
+    """Helper for doctest RetryTest test.
+    
+    >>> try:
+    ...     retry_on_odd_numbered_calls2()
+    ... except RetryTest:
+    ...     print "Caught RetryTest."
+    ...
+    Retry raised.
+    Caught RetryTest.
+    >>> try:
+    ...     retry_on_odd_numbered_calls2()
+    ... except RetryTest:
+    ...     print "Caught RetryTest."
+    ...
+    Traceback (most recent call last):
+    ...
+    RuntimeError: Retry not raised.
+    """
+    global _doctest_retry_count
+    _doctest_retry_count += 1
+    if _doctest_retry_count % 2 == 1:
+        print "Retry raised."
+        raise RetryTest
+    raise RuntimeError("Retry not raised.")
+
+
+def testRetryTestInDoctest2():
+    """Test a RetryTest exception in a doctest works as expected.
+
+    This test is the same as testRetryTestInDoctest, except it confirms
+    that a RetryException raised where a different exception was expected
+    works.
+
+    >>> retry_on_odd_numbered_calls2()
+    Traceback (most recent call last):
+    ...
+    RuntimeError: Retry not raised.
+    """
+
 
 
 def test_suite():

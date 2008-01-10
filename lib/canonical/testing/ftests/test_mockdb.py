@@ -34,7 +34,7 @@ class MockDbTestCase(unittest.TestCase):
     def tearDown(self):
         if os.path.exists(self.cache_filename):
             os.unlink(self.cache_filename)
-        self.standardMode()
+        self.directMode()
 
     def closeConnections(self):
         for con in self.connections:
@@ -44,7 +44,7 @@ class MockDbTestCase(unittest.TestCase):
                 pass
         self.connections = []
 
-    def standardMode(self):
+    def directMode(self):
         self.closeConnections()
         self.cache = None
 
@@ -60,10 +60,10 @@ class MockDbTestCase(unittest.TestCase):
         """This generator allows a test to run the same block under
         the three different modes - original, record & replay.
         """
-        # Do things three times, first in standard mode using a real
+        # Do things three times, first in direct mode using a real
         # database connection...
-        self.standardMode()
-        yield 'standard'
+        self.directMode()
+        yield 'direct'
 
         # Then in mock db mode, recording.
         self.recordMode()
@@ -139,7 +139,7 @@ class MockDbTestCase(unittest.TestCase):
                         config.dbname, dbuser, config.dbhost
                         )
 
-                if mode == 'standard':
+                if mode == 'direct':
                     con = psycopg.connect(connection_string)
                 elif mode == 'record':
                     con = MockDbConnection(
@@ -301,10 +301,13 @@ class MockDbTestCase(unittest.TestCase):
                     "SELECT name FROM Person WHERE name='stub'"
                     )
             # Should raise an exception according to the DB-API, but
-            # we need to mimic psycopg1 behavior which doesn't follow the
-            # spec here.
-            #self.assertRaises(psycopg.Error, con.close)
-            con.close()
+            # psycopg doesn't do this. Our wrapper works according to the
+            # DB-API so we can enforce nice behavior even where psyopg
+            # allows bad behavior.
+            if mode == 'direct':
+                con.close()
+            else:
+                self.assertRaises(psycopg.Error, con.close)
 
     @dont_retry
     def testCursorDescription(self):
@@ -356,6 +359,16 @@ class MockDbTestCase(unittest.TestCase):
             cur.fetchall()
             self.failUnlessEqual(cur.rowcount, 0)
 
+            # Confirm update behavior.
+            cur.execute("SELECT COUNT(*) FROM Person")
+            expected_rowcount = cur.fetchone()[0]
+            cur.execute("UPDATE Person SET displayname='Fnord'")
+            self.failUnlessEqual(cur.rowcount, expected_rowcount)
+
+            # Confirm delete behavior
+            cur.execute("DELETE FROM WikiName WHERE person=1")
+            self.failUnlessEqual(cur.rowcount, 1)
+
     @dont_retry
     def testCursorClose(self):
         # Confirm and record cursor.close behavior.
@@ -379,7 +392,7 @@ class MockDbTestCase(unittest.TestCase):
                 row = cur.fetchone()
                 # psycopg seems to be indeterminite in this case! Let it pass.
                 # Our mock db follows the standard consistantly.
-                if mode == 'standard' and row is None:
+                if mode == 'direct' and row is None:
                     pass
                 else:
                     self.fail("%r failed in mode %s" % (cur, mode))
@@ -420,7 +433,7 @@ class MockDbTestCase(unittest.TestCase):
         for mode in self.modes():
             con = self.connect()
             cur = con.cursor()
-            if mode != 'standard':
+            if mode != 'direct':
                 # We only do this test against our mock db. psycopg1 gives
                 # a SystemError if fetchall is called before a query issued!
                 self.assertRaises(psycopg.Error, cur.fetchall) # No query yet.

@@ -126,9 +126,9 @@ class RecordCache:
             self.log.append(entry)
             raise
 
+        entry.rowcount = real_cursor.rowcount
         try:
             entry.results = list(real_cursor.fetchall())
-            entry.rowcount = real_cursor.rowcount
             entry.description = real_cursor.description
         except psycopg.Error:
             # No results, such as an UPDATE query
@@ -157,6 +157,7 @@ class RecordCache:
         except (connection.Warning, connection.Error), exception:
             entry.exception = exception
             self.log.append(entry)
+            raise
 
     def rollback(self, connection):
         """Handle Connection.rollback()."""
@@ -167,6 +168,7 @@ class RecordCache:
         except (connection.Warning, connection.Error), exception:
             entry.exception = exception
             self.log.append(entry)
+            raise
 
     def set_isolation_level(self, connection, level):
         """Handle Connection.set_isolation_level()."""
@@ -177,6 +179,7 @@ class RecordCache:
         except (connection.Warning, connection.Error), exception:
             entry.exception = exception
             self.log.append(entry)
+            raise
 
     def store(self):
         """Store the log for future runs."""
@@ -374,10 +377,6 @@ class MockDbConnection:
 
     def close(self):
         """As per DB-API."""
-        # DB-API says an exception should be raised if closing an already
-        # closed connection, but psycopg1 doesn't follow the spec here.
-        if self._closed is True:
-            return
         self._checkClosed()
         self.cache.close(self)
         self._closed = True
@@ -433,9 +432,14 @@ class MockDbCursor:
        
         As per DB-API, pulled from the cache entry.
         """
-        if self._cache_entry is None:
+        if not isinstance(self._cache_entry, ExecuteCacheEntry):
             return -1
+
         results = self._cache_entry.results
+
+        if results is None: # DELETE or UPDATE set rowcount
+            return self._cache_entry.rowcount
+        
         if results is None or self._fetch_position < len(results):
             return -1
         return self._cache_entry.rowcount
