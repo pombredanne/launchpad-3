@@ -819,10 +819,10 @@ class BaseTranslationView(LaunchpadView):
                                  % self.MAX_PLURAL_FORMS)
 
     def _translationWasUpdated(self, potmsgset):
-        """Signal that a translation was updated in potmsgset.
+        """Signal that a translation was updated in the potmsgset.
 
         Subclasses should redefine this method if they need to watch the
-        sucessful calls to potmsgse.updateTranslation().
+        successful calls to potmsgset.updateTranslation().
         """
         pass
 
