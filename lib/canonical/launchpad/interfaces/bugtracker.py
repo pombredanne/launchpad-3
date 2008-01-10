@@ -8,17 +8,19 @@ __metaclass__ = type
 __all__ = [
     'BugTrackerType',
     'IBugTracker',
+    'IBugTrackerAlias',
+    'IBugTrackerAliasSet',
     'IBugTrackerSet',
-    'IRemoteBug',
-    ]
+    'IRemoteBug']
 
-from zope.interface import Interface, Attribute
-from zope.schema import Int, Text, TextLine, Choice
+from zope.interface import Attribute, Interface
+from zope.schema import (
+    Choice, Int, List, Object, Text, TextLine)
 from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, StrippedTextLine, UniqueField)
+    ContentNameField, StrippedTextLine, UniqueField, URIField)
 from canonical.launchpad.validators.name import name_validator
 
 from canonical.lazr import DBEnumeratedType, DBItem
@@ -112,7 +114,7 @@ class BugTrackerType(DBEnumeratedType):
 
 
 class IBugTracker(Interface):
-    """A remote a bug system."""
+    """A remote bug system."""
 
     id = Int(title=_('ID'))
     bugtrackertype = Choice(
@@ -138,6 +140,12 @@ class IBugTracker(Interface):
         description=_(
             'The top-level URL for the bug tracker. This must be accurate '
             'so that Launchpad can link to external bug reports.'))
+    aliases = List(
+        title=_('Base URL aliases'),
+        description=_(
+            'A list of URLs that all lead to the same bug tracker, '
+            'or commonly seen typos.'),
+        value_type=URIField(), required=False)
     owner = Int(title=_('Owner'))
     contactdetails = Text(
         title=_('Contact details'),
@@ -175,11 +183,15 @@ class IBugTrackerSet(Interface):
     bugtracker_count = Attribute("The number of registered bug trackers.")
 
     def get(bugtracker_id, default=None):
-        """Get a BugTracker by its id, or return default if it doesn't exist."""
+        """Get a BugTracker by its id.
+
+        If no tracker with the given id exists, return default.
+        """
 
     def getByName(name, default=None):
-        """Get a BugTracker by its name, or return default if it doesn't
-        exist.
+        """Get a BugTracker by its name.
+
+        If no tracker with the given name exists, return default.
         """
 
     def __getitem__(name):
@@ -197,16 +209,13 @@ class IBugTrackerSet(Interface):
 
     def ensureBugTracker(baseurl, owner, bugtrackertype,
         title=None, summary=None, contactdetails=None, name=None):
-        """Make sure that there is a bugtracker for the given base url, and
-        if not, then create one using the given attributes.
+        """Make sure that there is a bugtracker for the given base url.
+
+        If not, create one using the given attributes.
         """
 
     def search():
         """Search all the IBugTrackers in the system."""
-
-    def normalise_baseurl(baseurl):
-        """Turn https into http, so that we do not create multiple
-        bugtrackers unnecessarily."""
 
     def getMostActiveBugTrackers(limit=None):
         """Return the top IBugTrackers.
@@ -214,6 +223,29 @@ class IBugTrackerSet(Interface):
         Returns a list of IBugTracker objects, ordered by the number
         of bugwatches for each tracker, from highest to lowest.
         """
+
+
+class IBugTrackerAlias(Interface):
+    """Another URL for a remote bug system.
+
+    Used to prevent accidental duplication of bugtrackers and so
+    reduce the gardening burden.
+    """
+
+    id = Int(title=_('ID'))
+    bugtracker = Object(
+        title=_('The bugtracker for which this is an alias.'),
+        schema=IBugTracker)
+    base_url = BugTrackerBaseURL(
+        title=_('Base URL'),
+        description=_('Another top-level URL for the bug tracker.'))
+
+
+class IBugTrackerAliasSet(Interface):
+    """A set of IBugTrackerAliases."""
+
+    def queryByBugTracker(bugtracker):
+        """Query IBugTrackerAliases by BugTracker."""
 
 
 class IRemoteBug(Interface):
@@ -227,7 +259,8 @@ class IRemoteBug(Interface):
         readonly=False, description=_("The bug number of this bug in the "
         "remote bug system."))
 
-    bugs = Attribute(_("A list of the Launchpad bugs watching the remote bug"))
+    bugs = Attribute(
+        _("A list of the Launchpad bugs watching the remote bug."))
 
     title = TextLine(
         title=_('Title'),

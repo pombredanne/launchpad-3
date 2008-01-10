@@ -842,6 +842,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         bugtracker = data.get('bugtracker', None)
         if bugtracker is None or IBugTracker.providedBy(bugtracker):
             data['enable_bug_expiration'] = False
+        ProductLicenseMixin.validate(self, data)
 
     @action("Change", name='change')
     def change_action(self, action, data):
