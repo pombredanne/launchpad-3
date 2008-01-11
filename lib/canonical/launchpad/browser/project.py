@@ -366,14 +366,6 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
     pass
 
 
-class ProjectBugView(ProjectView):
-    """Project view for bugs.launchpad.net.
-
-    Do not include announcement feed <link> tags on this page.
-    """
-    feed_types = (BugTargetLatestBugsFeedLink,)
-
-
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
