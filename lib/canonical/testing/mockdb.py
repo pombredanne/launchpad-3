@@ -49,7 +49,8 @@ class CacheEntry:
     exception = None
 
     def __init__(self, connection):
-        self.connection_number = connection.connection_number
+        if connection is not None:
+            self.connection_number = connection.connection_number
 
 
 class ConnectCacheEntry(CacheEntry):
@@ -109,11 +110,27 @@ class RecordCache:
         self.log = []
         self.connections = []
 
-    def connect(self, connection, *args, **kw):
+    def connect(self, connect_func, *args, **kw):
+        """Open a connection to the database, returning a `MockDbConnection`.
+        """
+        try:
+            connection = connect_func(*args, **kw)
+            exception = None
+        except (psycopg.Warning, psycopg.Error), connect_exception:
+            connection = None
+            exception = connect_exception
+
+        connection = MockDbConnection(self, connection, *args, **kw)
+
         self.connections.append(connection)
-        connection.connection_number = self.connections.index(connection)
+        if connection is not None:
+            connection.connection_number = self.connections.index(connection)
         entry = ConnectCacheEntry(connection, *args, **kw)
         self.log.append(entry)
+        if exception:
+            entry.exception = exception
+            raise exception
+        return connection
 
     def execute(self, cursor, query, params=None):
         """Handle Cursor.execute()."""
@@ -145,9 +162,10 @@ class RecordCache:
         """Handle Connection.close()."""
         entry = CloseCacheEntry(connection)
         try:
-            connection.real_connection.close()
+            if connection.real_connection is not None:
+                connection.real_connection.close()
             self.log.append(entry)
-        except (connection.Warning, connection.Error), exception:
+        except (psycopg.Warning, psycopg.Error), exception:
             entry.exception = exception
             self.log.append(entry)
             raise
@@ -158,7 +176,7 @@ class RecordCache:
         try:
             connection.real_connection.commit()
             self.log.append(entry)
-        except (connection.Warning, connection.Error), exception:
+        except (psycopg.Warning, psycopg.Error), exception:
             entry.exception = exception
             self.log.append(entry)
             raise
@@ -169,7 +187,7 @@ class RecordCache:
         try:
             connection.real_connection.rollback()
             self.log.append(entry)
-        except (connection.Warning, connection.Error), exception:
+        except (psycopg.Warning, psycopg.Error), exception:
             entry.exception = exception
             self.log.append(entry)
             raise
@@ -180,7 +198,7 @@ class RecordCache:
         try:
             connection.real_connection.set_isolation_level(level)
             self.log.append(entry)
-        except (connection.Warning, connection.Error), exception:
+        except (psycopg.Warning, psycopg.Error), exception:
             entry.exception = exception
             self.log.append(entry)
             raise
@@ -202,7 +220,7 @@ class RecordCache:
         # but protects us from silly mistakes.
         while self.connections:
             con = self.connections.pop()
-            if not con._closed:
+            if con is not None and not con._closed:
                 con.close()
 
 
@@ -261,8 +279,8 @@ class ReplayCache:
 
         if connection.connection_number != entry.connection_number:
             self.handleInvalidCache(
-                    'Expected query to connection %d '
-                    'but got query to connection %d'
+                    'Expected query to connection %s '
+                    'but got query to connection %s'
                     % (entry.connection_number, connection.connection_number)
                     )
 
@@ -275,12 +293,20 @@ class ReplayCache:
         return entry
 
     @noop_if_invalid
-    def connect(self, connection, *args, **kw):
+    def connect(self, connect_func, *args, **kw):
+        """Return a `MockDbConnection`.
+       
+        Does not actually connect to the database - we are in replay mode.
+        """
+        connection = MockDbConnection(self, None, *args, **kw)
         self.connections.append(connection)
         connection.connection_number = self.connections.index(connection)
         entry = self.getNextEntry(connection, ConnectCacheEntry)
         if (entry.args, entry.kw) != (args, kw):
             self.handleInvalidCache("Connection parameters have changed.")
+        if entry.exception is not None:
+            raise entry.exception
+        return connection
 
     @noop_if_invalid
     def execute(self, cursor, query, params=None):
@@ -349,8 +375,12 @@ class MockDbConnection:
     connection_number = None
     cache = None
 
-    def __init__(self, cache, real_connection=None, *args, **kw):
-        """Initialize the MockDbConnection.
+    def __init__(self, cache, real_connection, *args, **kw):
+        """Initialize the `MockDbConnection`.
+
+        `MockDbConnection` intances are generally only created in the
+        *Cache.connect() methods as the attempt needs to be recorded
+        (even if it fails).
 
         If we have a real_connection, we are proxying and recording results.
         If real_connection is None, we are replaying results from the cache.
@@ -360,13 +390,7 @@ class MockDbConnection:
         not been changed; a RetryTest exception may be raised in replay mode.
         """
         self.cache = cache
-        if isinstance(cache, ReplayCache):
-            assert real_connection is None, \
-                    'Passed a real db connection in replay mode.'
-        else:
-            self.real_connection = real_connection
-
-        cache.connect(self, *args, **kw)
+        self.real_connection = real_connection
 
     def cursor(self):
         """As per DB-API."""
@@ -381,6 +405,14 @@ class MockDbConnection:
 
     def close(self):
         """As per DB-API."""
+        # DB-API says closing a closed connection should raise an exception
+        # ("exception will be raised if any operation is attempted
+        # wht the [closed] connection"), but psycopg1 doesn't do this.
+        # It would be nice if our wrapper could be more strict than psycopg1,
+        # but unfortunately the sqlos/sqlobject combination relies on this
+        # behavior. So we have to emulate it.
+        if self._closed:
+            return
         self._checkClosed()
         self.cache.close(self)
         self._closed = True

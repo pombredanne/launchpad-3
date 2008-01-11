@@ -45,17 +45,29 @@ class MockDbTestCase(unittest.TestCase):
                 pass
         self.connections = []
 
+    mode = None
+
     def directMode(self):
         self.closeConnections()
         self.cache = None
+        self.mode = 'direct'
 
     def recordMode(self):
         self.closeConnections()
         self.cache = RecordCache(self.test_key)
+        self.mode = 'record'
 
     def replayMode(self):
-        self.closeConnections()
+        # Can't enter replay mode unless we have already recorded something.
+        self.failUnless(self.mode in ('record', 'replay'))
+
+        if self.mode != 'replay':
+            # If we are already in replay mode don't close connections, 
+            # as these close events won't be in the cache and will fail.
+            self.closeConnections()
+
         self.cache = ReplayCache(self.test_key)
+        self.mode = 'replay'
 
     def modes(self):
         """This generator allows a test to run the same block under
@@ -75,19 +87,16 @@ class MockDbTestCase(unittest.TestCase):
         self.replayMode()
         yield 'replay'
 
-    def connect(self):
+    def connect(self, connection_string=None):
         """Open a connection to the (possibly fake) database."""
-        # Genuine mode.
+        if connection_string is None:
+            connection_string = "dbname=%s user=launchpad host=%s" % (
+                    config.dbname, config.dbhost
+                    )
         if self.cache is None:
-            con = DatabaseLayer.connect()
-
-        # Mock modes.
+            con = psycopg.connect(connection_string)
         else:
-            if isinstance(self.cache, RecordCache):
-                real_connection = DatabaseLayer.connect()
-            else:
-                real_connection = None
-            con = MockDbConnection(self.cache, real_connection)
+            con = self.cache.connect(psycopg.connect, connection_string)
         self.connections.append(con)
         return con
 
@@ -139,28 +148,14 @@ class MockDbTestCase(unittest.TestCase):
                 connection_string = "dbname=%s user=%s host=%s" % (
                         config.dbname, dbuser, config.dbhost
                         )
-
-                if mode == 'direct':
-                    con = psycopg.connect(connection_string)
-                elif mode == 'record':
-                    con = MockDbConnection(
-                            self.cache, psycopg.connect(connection_string),
-                            connection_string
-                            )
-                else:
-                    con = MockDbConnection(
-                            self.cache, None, connection_string
-                            )
-
+                con = self.connect(connection_string)
                 cur = con.cursor()
                 cur.execute("SHOW session authorization")
                 self.failUnlessEqual(cur.fetchone()[0], dbuser)
 
         # Confirm that unexpected connection parameters raises a RetryTest.
         self.replayMode()
-        self.assertRaises(
-                RetryTest, MockDbConnection, self.cache, None, "whoops"
-                )
+        self.assertRaises(RetryTest, self.connect, "whoops")
 
     @dont_retry
     def testFailedConnection(self):
@@ -169,22 +164,9 @@ class MockDbTestCase(unittest.TestCase):
             connection_string = "dbname=not_a_sausage host=%s user=yourmom" % (
                     config.dbhost
                     )
-            try:
-                if mode == 'direct':
-                    con = psycopg.connect(connection_string)
-                elif mode == 'record':
-                    con = MockDbConnection(
-                            self.cache, psycopg.connect(connection_string),
-                            connection_string
-                            )
-                else:
-                    con = MockDbConnection(
-                            self.cache, None, connection_string
-                            )
-            except psycopg.OperationalError:
-                pass
-            else:
-                self.fail("Failed to fail to connect.")
+            self.assertRaises(
+                    psycopg.OperationalError, self.connect, connection_string
+                    )
 
     @dont_retry
     def testNoopSession(self):
@@ -263,7 +245,6 @@ class MockDbTestCase(unittest.TestCase):
     def testCommit(self):
         # Confirm commit behavior.
         for mode in self.modes():
-
             con = self.connect()
             cur = con.cursor()
 
@@ -341,13 +322,14 @@ class MockDbTestCase(unittest.TestCase):
                     "SELECT name FROM Person WHERE name='stub'"
                     )
             # Should raise an exception according to the DB-API, but
-            # psycopg doesn't do this. Our wrapper works according to the
-            # DB-API so we can enforce nice behavior even where psycopg
-            # allows bad behavior.
-            if mode == 'direct':
+            # psycopg doesn't do this. It would be nice if our wrapper
+            # works according to the DB-API so we can enforce nice
+            # behavior and ensure future compatibility, but unfortunately
+            # the sqlobject/sqlos combination relies on this behavior.
+            try:
                 con.close()
-            else:
-                self.assertRaises(psycopg.Error, con.close)
+            except psycopg.Error:
+                self.fail("Connection.close() not DB-API compliant.")
 
     @dont_retry
     def testCursorDescription(self):

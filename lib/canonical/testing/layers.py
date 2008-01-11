@@ -386,21 +386,12 @@ class DatabaseLayer(BaseLayer):
             cls.mockdb_mode = 'record'
             cls.cache = RecordCache(test_key)
 
-        # Proxy real connections with our mockdb.
         global _org_connect
         _org_connect = psycopg.connect
-
-        def record_fake_connect(*args, **kw):
-            real_connection = _org_connect(*args, **kw)
-            return MockDbConnection(cls.cache, real_connection, *args, **kw)
-
-        def replay_fake_connect(*args, **kw):
-            return MockDbConnection(cls.cache, None, *args, **kw)
-
-        if cls.mockdb_mode == 'replay':
-            psycopg.connect = replay_fake_connect
-        else:
-            psycopg.connect = record_fake_connect
+        # Proxy real connections with our mockdb.
+        def fake_connect(*args, **kw):
+            return cls.cache.connect(_org_connect, *args, **kw)
+        psycopg.connect = fake_connect
 
     @classmethod
     @profiled
