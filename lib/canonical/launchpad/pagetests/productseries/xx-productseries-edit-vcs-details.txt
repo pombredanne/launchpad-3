@@ -25,6 +25,10 @@ Selecting the Bazaar option allows the user to specify a branch.
     >>> browser.getControl(name='field.user_branch').value = (
     ...     '~name12/firefox/main')
     >>> browser.getControl('Update Details').click()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
+    Upstream source details updated.
+
     >>> branch = find_tag_by_id(browser.contents, 'branch-details')
     >>> print extract_text(branch)
     Mozilla Firefox Mainline - Sample Person
