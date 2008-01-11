@@ -1145,6 +1145,8 @@ k            </description>
              default="mailing-list-beta-testers" />
         <key name="archive_url_template" datatype="string"
              default="http://lists.launchpad.dev/archives/$team_name" />
+        <key name="archive_address" datatype="string"
+             default="archive@mail-archive.com" />
     </sectiontype>
 
     <sectiontype name="checkwatches">
