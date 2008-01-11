@@ -66,7 +66,8 @@ re-activation.
     >>> itest_helper.wait_for_mailman()
     >>> mlist.Load()
     >>> sorted(mlist.getMembers())
-    ['anne.person@example.com', 'aperson@example.org']
+    ['anne.person@example.com', 'aperson@example.org',
+     'archive@mail-archive.com']
 
 Now the team owner deactivates the list.
 
@@ -110,4 +111,5 @@ Anne is a member of the re-activated mailing list, just as she was before the
 list was deactivated.
 
     >>> sorted(mlist.getMembers())
-    ['anne.person@example.com', 'aperson@example.org']
+    ['anne.person@example.com', 'aperson@example.org',
+     'archive@mail-archive.com']

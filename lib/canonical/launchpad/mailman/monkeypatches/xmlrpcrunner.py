@@ -283,12 +283,14 @@ class XMLRPCRunner(Runner):
                 mlist.Create(team_name,
                              mm_cfg.SITE_LIST_OWNER,
                              ' no password ')
+                # Additional hard coded list defaults.
+                # - Personalize regular delivery so that we can VERP these.
+                mlist.personalize = 1
                 mlist.Save()
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
             except:
-                syslog('xmlrpc',
-                       'List creation error for team: %s', team_name)
+                syslog('xmlrpc', 'List creation error for team: %s', team_name)
                 log_exception()
                 return False
             else:
