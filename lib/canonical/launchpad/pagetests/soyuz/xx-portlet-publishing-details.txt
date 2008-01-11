@@ -9,7 +9,7 @@ package for each distroseries in which it is published.
 
 For each distroseries there is a line containing the distroseries name,
 the current version, the published component and the published section.
-These latter two come specifically from the publishing records so take
+These latter two come specifically from the publishing records, so take
 into account any overrides applied since the package was uploaded.
 
     >>> print extract_text(browser.contents)
