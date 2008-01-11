@@ -108,11 +108,7 @@ class StandardLaunchpadFacets(FacetMenu):
     #   usedfor = IWhatever
 
     links = ['overview', 'branches', 'bugs', 'specifications', 'translations',
-        'answers']
-
-    enable_only = ['overview', 'bugs', 'specifications',
-                   'translations', 'calendar']
-
+             'answers']
     defaultlink = 'overview'
 
     def _filterLink(self, name, link):
@@ -144,8 +140,6 @@ class StandardLaunchpadFacets(FacetMenu):
         return Link('', text)
 
     def answers(self):
-        # This facet is visible but unavailable by default.
-        # See the enable_only list above.
         text = 'Answers'
         summary = 'Launchpad Answer Tracker'
         return Link('', text, summary)
@@ -155,21 +149,7 @@ class StandardLaunchpadFacets(FacetMenu):
         summary = 'Blueprints and specifications'
         return Link('', text, summary)
 
-    def bounties(self):
-        target = '+bounties'
-        text = 'Bounties'
-        summary = 'View related bounty offers'
-        return Link(target, text, summary)
-
-    def calendar(self):
-        """Disabled calendar link."""
-        target = '+branches'
-        text = 'Calendar'
-        return Link(target, text, enabled=False)
-
     def branches(self):
-        # this is disabled by default, because relatively few objects have
-        # branch views
         text = 'Code'
         summary = 'View related branches of code'
         return Link('', text, summary=summary)

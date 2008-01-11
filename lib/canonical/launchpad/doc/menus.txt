@@ -973,6 +973,33 @@ is selected, we get a couple of menus.
     ...     print link.url
     http://launchpad.dev/sesamestreet/number73/+first
 
+Also, we can retrieve a concrete menu entry in a concrete facet:
+
+    >>> link = test_tales(
+    ...     'CONTEXTS/menu:foo/first', context=house, view=view,
+    ...     request=request)
+    >>> print link.url
+    http://launchpad.dev/sesamestreet/number73/+first
+
+But, if we select a non existing entry, we report that it doesn't
+exist.
+
+    >>> test_tales(
+    ...     'CONTEXTS/menu:foo/broken', context=house, view=view,
+    ...     request=request)
+    Traceback (most recent call last):
+    ...
+    KeyError: 'broken'
+
+Also, we report also when the selected facet does not exist.
+
+    >>> test_tales(
+    ...     'CONTEXTS/menu:broken/bar', context=house, view=view,
+    ...     request=request)
+    Traceback (most recent call last):
+    ...
+    TraversalError: ..., 'broken')
+
 We can also get a context menu as menu:context.  It makes no difference
 whether the TALES code is CONTEXTS/menu:context or context/menu:context,
 because the menus system doesn't need to know anything about the view object.
@@ -996,6 +1023,15 @@ When there is no menu for a thing, we get an empty iterator.
     ...     context=root, view=view, request=request)
     >>> list(menu)
     []
+
+And thus, we don't have a facet to navigate to:
+
+    >>> test_tales(
+    ...     'CONTEXTS/menu:foo/+first', context=root, view=view,
+    ...     request=request)
+    Traceback (most recent call last):
+    ...
+    TraversalError: ..., 'foo')
 
 
 == Cleaning up ==
