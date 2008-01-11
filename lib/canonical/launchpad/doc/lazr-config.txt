@@ -319,9 +319,9 @@ It is validated with a schema. It extends the schema, or other conf
 files to define the specific differences from the extended files that
 are required to run the local processes.
 
-The config created above implements both the IConfigData and
-IStackableConfig interfaces. They represent the data and methods
-respectively.
+The config created above provides both the IConfigData and
+IStackableConfig interfaces. They represent the data access and data
+manipulation methods respectively.
 
     >>> from canonical.lazr.interfaces import IConfigData, IStackableConfig
     >>> verifyObject(IConfigData, config)
@@ -584,9 +584,9 @@ config file that was loaded.
 
     >>> for config_data in config.overlays:
     ...     print config_data.name
-    base.conf
-    shared.conf
     local.conf
+    shared.conf
+    base.conf
 
     >>> verifyObject(IConfigData, config.overlays[-1])
     True
@@ -650,19 +650,19 @@ The config's name and overlays are updated by push().
     'test app-a'
     >>> for config_data in config.overlays:
     ...     print config_data.name
-    base.conf
-    shared.conf
-    local.conf
-    test config
     test app-a
+    test config
+    local.conf
+    shared.conf
+    base.conf
 
 The 'test app-a' did not declare an extends key in a meta section. Its
 extends property is None, even though it implicitly extends 'test
 config'. The extends property only provides access to configs that are
 explicitly extended.
 
-    >>> print config.extends
-    None
+    >>> config.extends.name
+    'test config'
 
 The config's sections are updated with 'section-3.app-a' too.
 
@@ -674,21 +674,21 @@ The config's sections are updated with 'section-3.app-a' too.
     section-3.app-b
     section-5
 
-ConfigData can be removed removed from the stack of overlays using the
-pop() method. The methods returns the list of ConfigData that was
-removed--a slice from the specified ConfigData to the top of the stack.
+ConfigData can be removed from the stack of overlays using the pop()
+method. The methods returns the list of ConfigData that was removed--a
+slice from the specified ConfigData to the top of the stack.
 
     >>> overlays = config.pop('test config')
     >>> for config_data in overlays:
     ...     config_data.name
-    'test config'
     'test app-a'
+    'test config'
 
     >>> for config_data in config.overlays:
     ...     print config_data.name
-    base.conf
-    shared.conf
     local.conf
+    shared.conf
+    base.conf
 
 The config's state was restored to the ConfigData that is top of the
 overlay stack. Section 'section-3.app-a' was removed completely. The

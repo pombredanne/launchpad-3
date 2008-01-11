@@ -167,6 +167,14 @@ class ConfigSchema:
             raise NoCategoryError(name)
         return section_schemas
 
+    def _getRequiredSections(self):
+        """return a dict of `Section`s from the required `SectionSchemas`."""
+        sections = {}
+        for section_schema in self:
+            if not section_schema.optional:
+                sections[section_schema.name] = Section(section_schema)
+        return sections
+
     def load(self, filename):
         """See `IConfigLoader`."""
         conf_data = read_content(filename)
@@ -196,7 +204,7 @@ class ConfigSchema:
         :param conf_filename: The path and name the conf file.
         :param conf_data: Unparsed config data.
         :param confs: A list of confs that extend filename.
-        :return: A list of confs order from extendee to extender.
+        :return: A list of confs ordered from extendee to extender.
         :raises IOError: If filename cannot be read.
 
         This method recursively constructs a list of all unparsed config data.
@@ -300,41 +308,23 @@ class ConfigData:
 class Config:
     """See `IStackableConfig`."""
     implements(IStackableConfig)
-    decorates(IConfigData, context='_config_data')
+    decorates(IConfigData, context='data')
 
     def __init__(self, schema):
         """Set the schema and configuration."""
-        sections = self._getRequiredSections(schema)
-        self._config_data = ConfigData(schema.filename, sections)
+        self._overlays = (
+            ConfigData(schema.filename, schema._getRequiredSections()), )
         self.schema = schema
-        self.filename = schema.filename
-        self.name = schema.name
-        self._overlays = (self._config_data, )
 
-    def _getRequiredSections(self, schema):
-        """return a dict of `Section`s from the required `SectionSchemas`."""
-        sections = {}
-        for section_schema in schema:
-            if not section_schema.optional:
-                sections[section_schema.name] = Section(section_schema)
-        return sections
+    @property
+    def data(self):
+        """See `IStackableConfig`."""
+        return self.overlays[0]
 
     @property
     def extends(self):
         """See `IStackableConfig`."""
-        conf_name = self._config_data._extends
-        if conf_name is None:
-            return None
-        index = self._getIndexOfOverlay(conf_name)
-        return self.overlays[index]
-
-    def _getIndexOfOverlay(self, conf_name):
-        """Return the index of the config named conf_name."""
-        for index, config_data in enumerate(self.overlays):
-            if config_data.name == conf_name:
-                return index
-        # The config data was not found in the overlays.
-        raise NoConfigError('No config with name: %s.' % conf_name)
+        return self.overlays[1]
 
     @property
     def overlays(self):
@@ -343,9 +333,9 @@ class Config:
 
     def validate(self):
         """See `IConfigData`."""
-        if len(self._config_data._errors) > 0:
+        if len(self.data._errors) > 0:
             message = "%s is not valid." % self.name
-            raise ConfigErrors(message, errors=self._config_data._errors)
+            raise ConfigErrors(message, errors=self.data._errors)
         return True
 
     def push(self, conf_name, conf_data):
@@ -356,9 +346,9 @@ class Config:
         overlaid configs to retain their state.
         """
         sections = {}
-        for section in self._config_data:
+        for section in self.data:
             sections[section.name] = section.clone()
-        errors = list(self._config_data._errors)
+        errors = list(self.data._errors)
         extends = None
         encoding_errors = self._verifyEncoding(conf_data)
         errors.extend(encoding_errors)
@@ -375,7 +365,7 @@ class Config:
                     self.schema.name, section_name)
                 errors.append(UnknownSectionError(msg))
                 continue
-            if section_name not in self._config_data:
+            if section_name not in self.data:
                 # Create the optional section from the schema.
                 section_schema = self.schema[section_name]
                 sections[section_name] = Section(section_schema)
@@ -383,8 +373,8 @@ class Config:
             items = parser.items(section_name)
             section_errors = sections[section_name].update(items)
             errors.extend(section_errors)
-        self._config_data = ConfigData(conf_name, sections, extends, errors)
-        self._overlays =  self._overlays + (self._config_data, )
+        config_data = ConfigData(conf_name, sections, extends, errors)
+        self._overlays = (config_data, ) + self._overlays
 
     def _verifyEncoding(self, config_data):
         """Verify that the data is ASCII encoded.
@@ -420,11 +410,17 @@ class Config:
     def pop(self, conf_name):
         """See `IStackableConfig`."""
         index = self._getIndexOfOverlay(conf_name)
-        removed_overlays = self.overlays[index:]
-        self._overlays = self.overlays[:index]
-        self._config_data = self.overlays[-1]
+        removed_overlays = self.overlays[:index]
+        self._overlays = self.overlays[index:]
         return removed_overlays
 
+    def _getIndexOfOverlay(self, conf_name):
+        """Return the index of the config named conf_name."""
+        for index, config_data in enumerate(self.overlays):
+            if config_data.name == conf_name:
+                return index + 1
+        # The config data was not found in the overlays.
+        raise NoConfigError('No config with name: %s.' % conf_name)
 
 class SectionSchema:
     """See `ISectionSchema`."""

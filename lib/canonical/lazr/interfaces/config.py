@@ -160,7 +160,7 @@ class IConfigData(IConfigSchema):
     """
 
 
-class IStackableConfig(Interface):
+class IStackableConfig(IConfigSchema):
     """A configuration that is built from configs that extend each other.
 
     A config may extend another config so that a configuration for a
@@ -178,7 +178,8 @@ class IStackableConfig(Interface):
     test environment must be configured differently.
     """
     schema = Attribute("The schema that defines the config.")
-    extends = Attribute("The configuration that this config extends.")
+    data = Attribute("The current CongidData. use by the config.")
+    extends = Attribute("The ConfigData that this config extends.")
     overlays = Attribute("The stack of ConfigData that define this config.")
 
     def validate():
