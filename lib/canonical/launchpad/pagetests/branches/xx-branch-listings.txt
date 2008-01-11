@@ -347,6 +347,7 @@ development focus branch.
 
     >>> admin_browser.open('http://launchpad.dev/gnome-terminal/trunk')
     >>> admin_browser.getLink('Edit source').click()
+    >>> admin_browser.getControl('Bazaar').click()
     >>> admin_browser.getControl(name='field.user_branch').value = (
     ...     '~name12/gnome-terminal/main')
     >>> admin_browser.getControl('Update Details').click()
