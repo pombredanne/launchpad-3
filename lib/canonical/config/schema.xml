@@ -196,6 +196,8 @@ k            </description>
             default="50" />
         <key name="branchlisting_batch_size" datatype="integer" required="no"
             default="100" />
+        <key name="branch_dormant_days" datatype="integer" required="no"
+            default="180" />
         <key name="code_homepage_product_cloud_size" datatype="integer"
              required="no" default="120" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
