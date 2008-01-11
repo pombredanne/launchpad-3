@@ -13,7 +13,7 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 
 
-class RcsTypeWidgetDisectionTestCase(unittest.TestCase):
+class RcsTypeWidgetDissectionTestCase(unittest.TestCase):
 
     layer = LaunchpadFunctionalLayer
 
@@ -23,8 +23,8 @@ class RcsTypeWidgetDisectionTestCase(unittest.TestCase):
     def tearDown(self):
         logout()
 
-    def testDisectRcsTypeWidget(self):
-        # Test that the rcstype widget is disected correctly
+    def testDissectRcsTypeWidget(self):
+        # Test that the rcstype widget is dissected correctly.
         product = getUtility(IProductSet).getByName('firefox')
         context = product.getSeries('trunk')
         request = LaunchpadTestRequest()
@@ -36,7 +36,7 @@ class RcsTypeWidgetDisectionTestCase(unittest.TestCase):
         self.assertInputElement(
             view.rcstype_none, 'radio', 'field.rcstype', '', checked=True)
         self.assertInputElement(
-            view.rcstype_cvs, 'radio', 'field.rcstype',
+            view.rcstype_bzr, 'radio', 'field.rcstype',
             UIRevisionControlSystems.BZR.name, checked=False)
         self.assertInputElement(
             view.rcstype_cvs, 'radio', 'field.rcstype',

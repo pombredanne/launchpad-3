@@ -543,7 +543,16 @@ class ProductSeriesEditView(LaunchpadEditFormView):
 
 
 class UIRevisionControlSystems(EnumeratedType):
-    """An enumerated type add have a Bazaar radio button to existing types."""
+    """A vocabulary to control the user visible choices.
+
+    The DBEnumeratedType `RevisionControlSystems` is being extended here
+    with the addition of an item for Bazaar.
+
+    If the user selects the Bazaar option, a `user_branch` value is stored
+    and the `rcstype` of the product series remains None.  The Bazaar option
+    in the user interface is purely a visual artifact rather than a database
+    one.
+    """
 
     use_template(RevisionControlSystems)
 
@@ -705,11 +714,11 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
 
         if self.resettoautotest_action.submitted():
             if rcstype is None or rcstype == UIRevisionControlSystems.BZR:
-                self.addError('Can not rerun import without CVS or '
+                self.addError('Cannot rerun import without CVS or '
                               'Subversion details.')
         elif self.certify_action.submitted():
             if rcstype is None or rcstype == UIRevisionControlSystems.BZR:
-                self.addError('Can not certify import without CVS or '
+                self.addError('Cannot certify import without CVS or '
                               'Subversion details.')
             if self.context.syncCertified():
                 self.addError('Import has already been approved.')

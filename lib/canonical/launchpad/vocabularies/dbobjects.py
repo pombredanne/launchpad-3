@@ -273,7 +273,7 @@ class BranchVocabulary(BranchVocabularyBase):
 
 
 class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
-    """A vocabulary for searching branches restriced on product.
+    """A vocabulary for searching branches restricted on product.
 
     The query entered checks the name or URL of the branch, or the
     name of the registrant of the branch.
