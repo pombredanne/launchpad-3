@@ -2,73 +2,75 @@
 
 This class provides public access to publishing records via a SQL view.
 
- >>> from canonical.launchpad.database import SourcePackagePublishingHistory
- >>> from canonical.launchpad.database import BinaryPackagePublishingHistory
+    >>> from canonical.launchpad.database import SourcePackagePublishingHistory
+    >>> from canonical.launchpad.database import BinaryPackagePublishingHistory
 
 Select a publishing record from the sampledata (pmount is a
 interesting one):
 
- >>> spph = SourcePackagePublishingHistory.get(8)
- >>> spph.sourcepackagerelease.name, spph.distroseries.name
- (u'pmount', u'hoary')
+    >>> spph = SourcePackagePublishingHistory.get(8)
+    >>> spph.sourcepackagerelease.name, spph.distroseries.name
+    (u'pmount', u'hoary')
 
 Verify if the object follows its interface contracts:
 
- >>> from canonical.launchpad.webapp.testing import verifyObject
- >>> from canonical.launchpad.interfaces import (
- ...     ISourcePackageRelease, IDistroSeries,
- ...     ISourcePackagePublishingHistory,
- ...     ISourcePackage,
- ...     IDistributionSourcePackageRelease)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     ISourcePackageRelease, IDistroSeries,
+    ...     ISourcePackagePublishingHistory,
+    ...     ISourcePackage,
+    ...     IDistributionSourcePackageRelease)
 
- >>> verifyObject(ISourcePackagePublishingHistory, spph)
- True
+    >>> verifyObject(ISourcePackagePublishingHistory, spph)
+    True
 
  XXX cprov 20060322: None of the attributes below pass verifyObject().
  So, they claim to implement some thing they don't really have. Most
  of the problems are related with bad interface inheritance.
 
- >>> IDistroSeries.providedBy(spph.distroseries)
- True
+    >>> IDistroSeries.providedBy(spph.distroseries)
+    True
 
- >>> ISourcePackageRelease.providedBy(spph.sourcepackagerelease)
- True
+    >>> ISourcePackageRelease.providedBy(spph.sourcepackagerelease)
+    True
 
- >>> ISourcePackageRelease.providedBy(spph.supersededby)
- True
+    >>> ISourcePackageRelease.providedBy(spph.supersededby)
+    True
 
- >>> IDistributionSourcePackageRelease.providedBy(
- ...     spph.meta_sourcepackagerelease)
- True
+    >>> IDistributionSourcePackageRelease.providedBy(
+    ...     spph.meta_sourcepackagerelease)
+    True
 
- >>> IDistributionSourcePackageRelease.providedBy(spph.meta_supersededby)
- True
+    >>> IDistributionSourcePackageRelease.providedBy(spph.meta_supersededby)
+    True
 
- >>> ISourcePackage.providedBy(spph.meta_sourcepackage)
- True
+    >>> ISourcePackage.providedBy(spph.meta_sourcepackage)
+    True
 
 
 == Stanza generation ==
 
- >>> from canonical.launchpad.interfaces import (
- ...     IArchiveSafePublisher, ISourcePackageFilePublishing,
- ...     ISecureSourcePackagePublishingHistory,
- ...     ISecureBinaryPackagePublishingHistory)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IArchiveSafePublisher, ISourcePackageFilePublishing,
+    ...     ISecureSourcePackagePublishingHistory,
+    ...     ISecureBinaryPackagePublishingHistory)
 
 Retrieve any SourcePackagePublishingHistory entry.
 
- >>> spph = SourcePackagePublishingHistory.get(10)
- >>> verifyObject(ISourcePackagePublishingHistory, spph)
- True
- >>> print spph.displayname
- alsa-utils 1.0.8-1ubuntu1 in warty
+    >>> spph = SourcePackagePublishingHistory.get(10)
+
+    >>> verifyObject(ISourcePackagePublishingHistory, spph)
+    True
+
+    >>> print spph.displayname
+    alsa-utils 1.0.8-1ubuntu1 in warty
 
 A 'stanza' is the name given to a group of attributes related to one
 source or binary package in the archive index file, it provides
 information to APT, things like, package name, pool path, DSC format,
 files checksum, etc.
 
-The archive index should containg one entry for each source or binary
+The archive index should contain one entry for each source or binary
 currently published in the archive, it is usually partionated by
 component:
 
@@ -77,19 +79,18 @@ component:
 
 The archive index is also available in in compressed formats.
 
- >>> print spph.getIndexStanza() #doctest: -NORMALIZE_WHITESPACE
- Package: alsa-utils
- Binary: alsa-mixer
- Version: 1.0.8-1ubuntu1
- Section: base
- Maintainer: Mark Shuttleworth <sabdfl@hbd.com>
- Architecture: all
- Standards-Version: 3.6.2
- Format: 1.0
- Directory: pool/main/a/alsa-utils
- Files:
-  01234567890123456789012345678925 3 alsa-utils_1.0.8-1ubuntu1.dsc
-
+    >>> print spph.getIndexStanza() #doctest: -NORMALIZE_WHITESPACE
+    Package: alsa-utils
+    Binary: alsa-mixer
+    Version: 1.0.8-1ubuntu1
+    Section: base
+    Maintainer: Mark Shuttleworth <sabdfl@hbd.com>
+    Architecture: all
+    Standards-Version: 3.6.2
+    Format: 1.0
+    Directory: pool/main/a/alsa-utils
+    Files:
+     01234567890123456789012345678925 3 alsa-utils_1.0.8-1ubuntu1.dsc
 
 Empty fields like are suppressed, like 'Build-Depends' or
 'Build-Depends-Indep' to avoid extra charge on download.
@@ -98,14 +99,14 @@ in question.
 
 Files published are accessible via the files property:
 
- >>> any_pub_file = spph.files[-1]
- >>> ISourcePackageFilePublishing.providedBy(any_pub_file)
- True
+    >>> any_pub_file = spph.files[-1]
+    >>> ISourcePackageFilePublishing.providedBy(any_pub_file)
+    True
 
- >>> [(pub_file.libraryfilealias.filename, pub_file.file_type_name, pub_file.archive_url)
- ...   for pub_file in spph.files]
- [(u'alsa-utils_1.0.8-1ubuntu1.dsc', 'dsc',
-   u'http://launchpad.dev/ubuntu/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
+    >>> [(pub_file.libraryfilealias.filename, pub_file.file_type_name,
+    ...   pub_file.archive_url) for pub_file in spph.files]
+    [(u'alsa-utils_1.0.8-1ubuntu1.dsc', 'dsc',
+      u'http://launchpad.dev/ubuntu/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
 
 
 == Deletion and obsolescence ==
@@ -118,34 +119,34 @@ the states DELETED and OBSOLETE respectively.
 requestDeletion requires a removed_by (IPerson) and optionally a
 removal_comment argument.
 
-  >>> from canonical.launchpad.interfaces import IPersonSet
-  >>> from zope.component import getUtility
-  >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-  >>> modified_spph = spph.requestDeletion(sabdfl, "testing deletion")
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from zope.component import getUtility
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> modified_spph = spph.requestDeletion(sabdfl, "testing deletion")
 
 Inspecting the modified record shows it's ready for domination:
 
-  >>> modified_spph.status
-  <DBItem PackagePublishingStatus.DELETED, (4) Deleted>
-  >>> modified_spph.datesuperseded
-  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-  >>> modified_spph.removed_by.name
-  u'sabdfl'
-  >>> modified_spph.removal_comment
-  u'testing deletion'
+    >>> modified_spph.status
+    <DBItem PackagePublishingStatus.DELETED, (4) Deleted>
+    >>> modified_spph.datesuperseded
+    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    >>> modified_spph.removed_by.name
+    u'sabdfl'
+    >>> modified_spph.removal_comment
+    u'testing deletion'
 
 requstObsolescence takes no additional arguments:
 
-  >>> modified_spph = spph.requestObsolescence()
+    >>> modified_spph = spph.requestObsolescence()
 
 Inspecting the modified record shows it's ready for death row (obsoleted
 publications skip domination because domination only works in post-release
 pockets for stable distroseries):
 
-  >>> modified_spph.status
-  <DBItem PackagePublishingStatus.OBSOLETE, (5) Obsolete>
-  >>> modified_spph.scheduleddeletiondate
-  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    >>> modified_spph.status
+    <DBItem PackagePublishingStatus.OBSOLETE, (5) Obsolete>
+    >>> modified_spph.scheduleddeletiondate
+    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
 
 == Copying and published binarypackages lookup ==
@@ -187,8 +188,8 @@ architecture-specific binaries in ubuntu/breezy-autotest.
     foo-bin 666 in breezy-autotest i386
     foo-bin 666 in breezy-autotest hppa
 
-Using the source publication, ISSPH we can obtain the published
-binaries.
+Using the source publication, ISecureSourcePackagePublishingHistory we
+can obtain the published binaries.
 
     >>> created_ids = [bin.id for bin in binaries]
     >>> retrieved_ids = [bin.id for bin in source.getPublishedBinaries()]
@@ -288,13 +289,13 @@ previous broken implementation in this area.
 corresponding to this publication. This instance also implements
 IArchiveSafePublisher.
 
- >>> sspph = spph.secure_record
- >>> ISecureSourcePackagePublishingHistory.providedBy(sspph)
- True
- >>> verifyObject(IArchiveSafePublisher, sspph)
- True
- >>> sspph.embargo
- False
+    >>> sspph = spph.secure_record
+    >>> ISecureSourcePackagePublishingHistory.providedBy(sspph)
+    True
+    >>> verifyObject(IArchiveSafePublisher, sspph)
+    True
+    >>> sspph.embargo
+    False
 
 
 == Binary and Binary File Publishing ===
@@ -302,55 +303,55 @@ IArchiveSafePublisher.
 Symmetric behaviour is offered for BinaryPackagePublishing,
 BinaryPackageFile and ISecureBinaryPackagePublishingHistory
 
- >>> from canonical.launchpad.interfaces import (
- ...     IBinaryPackagePublishingHistory, IBinaryPackageFilePublishing)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBinaryPackagePublishingHistory, IBinaryPackageFilePublishing)
 
- >>> bpph = BinaryPackagePublishingHistory.get(15)
- >>> print bpph.displayname
- mozilla-firefox 0.9 in woody i386
+    >>> bpph = BinaryPackagePublishingHistory.get(15)
+    >>> print bpph.displayname
+    mozilla-firefox 0.9 in woody i386
 
- >>> IBinaryPackagePublishingHistory.providedBy(bpph)
- True
+    >>> IBinaryPackagePublishingHistory.providedBy(bpph)
+    True
 
 Generating respective "Packages" stanzas:
 
- >>> print bpph.getIndexStanza() #doctest: -NORMALIZE_WHITESPACE
- Package: mozilla-firefox
- Source: mozilla-firefox
- Priority: important
- Section: editors
- Maintainer: Mark Shuttleworth <mark@canonical.com>
- Architecture: i386
- Version: 0.9
- Recommends: gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)
- Replaces: gnome-mozilla-browser
- Suggests: firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint
- Provides: mozilla-firefox
- Depends: gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)
- Conflicts: firefox, mozilla-web-browser
- Pre-Depends: pmount, foo
- Enhances: pmount, bar
- Breaks: pmount, baz
- Filename: pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb
- Size: 3
- MD5sum: 01234567890123456789012345678926
- Description: Mozilla Firefox Web Browser
-  Mozilla Firefox Web Browser is .....
+    >>> print bpph.getIndexStanza() #doctest: -NORMALIZE_WHITESPACE
+    Package: mozilla-firefox
+    Source: mozilla-firefox
+    Priority: important
+    Section: editors
+    Maintainer: Mark Shuttleworth <mark@canonical.com>
+    Architecture: i386
+    Version: 0.9
+    Recommends: gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)
+    Replaces: gnome-mozilla-browser
+    Suggests: firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint
+    Provides: mozilla-firefox
+    Depends: gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)
+    Conflicts: firefox, mozilla-web-browser
+    Pre-Depends: pmount, foo
+    Enhances: pmount, bar
+    Breaks: pmount, baz
+    Filename: pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb
+    Size: 3
+    MD5sum: 01234567890123456789012345678926
+    Description: Mozilla Firefox Web Browser
+     Mozilla Firefox Web Browser is .....
 
- >>> sbpph = bpph.secure_record
- >>> ISecureBinaryPackagePublishingHistory.providedBy(sbpph)
- True
- >>> verifyObject(IArchiveSafePublisher, sbpph)
- True
- >>> sbpph.embargo
- False
+    >>> sbpph = bpph.secure_record
+    >>> ISecureBinaryPackagePublishingHistory.providedBy(sbpph)
+    True
+    >>> verifyObject(IArchiveSafePublisher, sbpph)
+    True
+    >>> sbpph.embargo
+    False
 
- >>> any_file = bpph.files[-1]
- >>> IBinaryPackageFilePublishing.providedBy(any_file)
- True
+    >>> any_file = bpph.files[-1]
+    >>> IBinaryPackageFilePublishing.providedBy(any_file)
+    True
 
- >>> [pub_file.libraryfilealias.filename for pub_file in bpph.files]
- [u'mozilla-firefox_0.9_i386.deb']
+    >>> [pub_file.libraryfilealias.filename for pub_file in bpph.files]
+    [u'mozilla-firefox_0.9_i386.deb']
 
- >>> [pub_file.archive_url for pub_file in bpph.files]
- [u'http://launchpad.dev/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
+    >>> [pub_file.archive_url for pub_file in bpph.files]
+    [u'http://launchpad.dev/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
