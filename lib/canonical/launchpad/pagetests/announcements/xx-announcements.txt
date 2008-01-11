@@ -5,26 +5,32 @@ list is available as a portlet on the project home page, as well as on a
 dedicated batched page showing all announcements, and as an RSS/Atom
 news feed.
 
-   >>> NOANNOUNCE = 'no announcements for this project'
-   >>> SHOWLNK = 'Show announcements'
-   >>> def latest_news(content):
-   ...     """The contents of the latest news portlet."""
-   ...     return extract_text(find_portlet(content, 'Latest news'))
-   >>> def has_latest_news(content):
-   ...     """Determine if the latest-news portlet is visible"""
-   ...     return find_portlet(content, 'Latest news') is not None
-   >>> def has_show_link(content):
-   ...     """Determine whether the "Show announcements" link is shown."""
-   ...     return SHOWLNK in extract_text(find_portlet(content, 'Actions'))
-   >>> def no_announcements(content):
-   ...     """Verify there are no announcements in page content."""
-   ...     return NOANNOUNCE in extract_text(find_main_content(content))
-   >>> def announcements(content):
-   ...     """Return the text of the announcement listings."""
-   ...     announcements = find_tag_by_id(content, 'announcements')
-   ...     if announcements is None:
-   ...         return ''
-   ...     return extract_text(announcements)
+    >>> NOANNOUNCE = 'no announcements for this project'
+    >>> SHOWLNK = 'Show announcements'
+    >>> def latest_news(content):
+    ...     """The contents of the latest news portlet."""
+    ...     return extract_text(find_portlet(content, 'Latest news'))
+    >>> def has_latest_news(content):
+    ...     """Determine if the latest-news portlet is visible"""
+    ...     return find_portlet(content, 'Latest news') is not None
+    >>> def has_show_link(content):
+    ...     """Determine whether the "Show announcements" link is shown."""
+    ...     return SHOWLNK in extract_text(find_portlet(content, 'Actions'))
+    >>> def no_announcements(content):
+    ...     """Verify there are no announcements in page content."""
+    ...     return NOANNOUNCE in extract_text(find_main_content(content))
+    >>> def announcements(content):
+    ...     """Return the text of the announcement listings."""
+    ...     announcements = find_tag_by_id(content, 'announcements')
+    ...     if announcements is None:
+    ...         return ''
+    ...     return extract_text(announcements)
+    >>> def announcement_ids(contents):
+    ...     """Return all id tags in the announcement listings."""
+    ...     strainer = SoupStrainer('id')
+    ...     tags = [tag for tag in BSS(contents,
+    ...                                parseOnlyThese=strainer)]
+    ...     return tags
 
 == Making an announcement ==
 
@@ -558,10 +564,16 @@ IDistribution.
 
 The feeds are published even when there are no announcements.
 
+    >>> from BeautifulSoup import BeautifulStoneSoup as BSS
+    >>> from BeautifulSoup import SoupStrainer
     >>> nopriv_browser.open(
     ...     'http://feeds.launchpad.dev/netapplet/announcements.atom')
     >>> 'NetApplet Announcements' in nopriv_browser.contents
     True
+
+    >>> for id_ in announcement_ids(nopriv_browser.contents):
+    ...     print extract_text(id_)
+    tag:launchpad.net,2005-03-10:/netapplet/+announcements
 
 The feeds include only published announcements. The Jokosher
 announcement, which is due in the future, does not show up:
@@ -577,9 +589,15 @@ Retracted items do not show up either.
     ...     'http://feeds.launchpad.dev/guadalinex/announcements.atom')
     >>> 'Kubuntu announcement headline' in nopriv_browser.contents
     True
+    >>> for id_ in announcement_ids(nopriv_browser.contents):
+    ...     print extract_text(id_)
+    tag:launchpad.net,2006-10-16:/guadalinex/+announcements
+    tag:launchpad.net,...:/+announcement/27
+
     >>> priv_browser.open('http://launchpad.dev/guadalinex/+announcements')
     >>> 'Kubuntu announcement headline' in announcements(priv_browser.contents)
     True
+
     >>> priv_browser.getLink('Retract').click()
     >>> priv_browser.url
     'http://launchpad.dev/guadalinex/+announcement/.../+retract'
@@ -599,6 +617,12 @@ products.
     True
     >>> 'Derby announcement headline' in nopriv_browser.contents
     True
+    >>> for id_ in announcement_ids(nopriv_browser.contents):
+    ...     print extract_text(id_)
+    tag:launchpad.net,2004-09-24:/apache/+announcements
+    tag:launchpad.net,...:/+announcement/25
+    tag:launchpad.net,...:/+announcement/23
+    tag:launchpad.net,...:/+announcement/24
 
 Finally, there is a feed for all announcements across all projects
 hosted in Launchpad:
@@ -635,4 +659,3 @@ You can permanently delete an announcement.
     http://launchpad.dev/guadalinex/+announcements
     >>> no_announcements(kamion_browser.contents)
     True
-

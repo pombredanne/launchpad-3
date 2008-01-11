@@ -21,7 +21,7 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadFormView, Link, StandardLaunchpadFacets)
-from canonical.launchpad.interfaces import IDistributionMirror
+from canonical.launchpad.interfaces import IDistributionMirror, MirrorContent
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.browser.sourceslist import (
@@ -91,10 +91,15 @@ class DistributionMirrorView(LaunchpadView):
             if series not in valid_series:
                 valid_series.append(series)
         entries = SourcesListEntries(self.context.distribution,
-                                     self.context.http_base_url,
+                                     self.context.base_url,
                                      valid_series)
         self.sources_list_entries = SourcesListEntriesView(entries,
                                                            self.request)
+
+    @cachedproperty
+    def has_sources_list(self):
+        """Whether this mirror could be used in sources.list file."""
+        return self.context.content == MirrorContent.ARCHIVE
 
     @cachedproperty
     def probe_records(self):
