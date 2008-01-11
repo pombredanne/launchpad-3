@@ -44,18 +44,27 @@
                     development is focused.
   </tal:comment>
 
-  <strong>Series: <a tal:attributes="href series/fmt:url"
-             tal:content="series/name" >
-      1.0
-    </a>
-  </strong>
-  <em tal:condition="is_focus">Current development focus</em>
+  <table>
+    <tbody>
+      <tr>
+        <th>Series:</th>
+        <tal:comment condition="nothing">
+          In order to make the Series column as small as possible, tell the
+          right column to take up as much space as it can.  This keeps the
+          Series: in line for all series displayed.
+        </tal:comment>
+        <td style="width: 99%">
+          <strong>
+            <a tal:attributes="href series/fmt:url"
+               tal:content="series/name" >
+              1.0
+            </a>
+          </strong>
+          <em tal:condition="is_focus">Current development focus</em>
+        </td>
+      </tr>
 
-  <div>
-
-  <tal:has_branch condition="series/series_branch">
-    <table>
-      <tbody>
+      <tal:has_branch condition="series/series_branch">
         <tr>
           <th>Branch:</th>
           <td>
@@ -63,7 +72,7 @@
           </td>
         </tr>
         <tr class="lesser">
-          <th>Example:</th>
+          <td></td>
           <td>
             bzr branch
             <tal:dev-focus condition="is_focus">
@@ -74,15 +83,18 @@
             </tal:not-dev-focus>
           </td>
         </tr>
-      </tbody>
-    </table>
-  </tal:has_branch>
+      </tal:has_branch>
 
-  <tal:no_branch condition="not: series/series_branch">
-    No branch specified
-  </tal:no_branch>
+      <tal:no_branch condition="not: series/series_branch">
+        <tr>
+          <td colspan="2">
+            No branch specified
+          </td>
+        </tr>
+      </tal:no_branch>
+    </tbody>
+  </table>
 
-  </div>
 </metal:branch_display>
 
 </tal:root>
