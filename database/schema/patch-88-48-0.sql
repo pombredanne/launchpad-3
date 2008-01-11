@@ -39,6 +39,7 @@ DROP FUNCTION dirname(text);
 -- easily-detected case.
 CREATE UNIQUE INDEX pofile__potemplate__path__key
     ON POFile(potemplate, path);
+DROP INDEX pofile_potemplate_idx; -- Now unnecessary
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (88, 48, 0);
 
