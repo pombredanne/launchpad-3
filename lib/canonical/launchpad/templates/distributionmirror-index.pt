@@ -78,7 +78,7 @@
       </li>
     </ul>
 
-    <tal:entries condition="view/has_sources_list"
+    <tal:entries condition="context/content/enumvalue:ARCHIVE"
                  replace="structure view/sources_list_entries" />
 
     <div id="last-probe" tal:define="probe context/last_probe_record">

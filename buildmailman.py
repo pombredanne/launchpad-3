@@ -82,6 +82,7 @@ def build_mailman():
         '--with-groupname=' + group,
         '--with-mail-gid=' + group,
         '--with-mailhost=' + config.mailman.build.host_name,
+        '--with-urlhost=' + config.mailman.build.host_name,
         )
     retcode = subprocess.call(configure_args, cwd=mailman_source)
     if retcode:
