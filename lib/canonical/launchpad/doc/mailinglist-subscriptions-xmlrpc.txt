@@ -140,6 +140,55 @@ registered either.
     False
 
 
+== The archive address ==
+
+We archive messages by sending them to The Mail Archive
+<http://www.mail-archive.com>.  They automatically determine which list a
+message is posted to so all we need to do is include them in the recipients
+list and the rest is taken care of.
+
+    >>> from canonical.config import config
+    >>> config.mailman.archive_address
+    'archive@mail-archive.dev'
+
+Every team should have this address as an enabled recipient.  There is no real
+name for this member.
+
+    # Don't use print_info() since that explicitly suppresses the archive
+    # address in order to make the above tests more succinct.
+    >>> info = mailinglist_api.getMembershipInformation(
+    ...     ('team-one', 'team-two'))
+    >>> for team in sorted(info):
+    ...     subscribees = info[team]
+    ...     for address, realname, flags, status in subscribees:
+    ...         if address == config.mailman.archive_address:
+    ...             # Print the repr so we'll see the empty string better.
+    ...             print team, address, repr(realname), flags, status
+    ...             break
+    ...     else:
+    ...         raise AssertionError('No archive address in subscribees')
+    team-one archive@mail-archive.dev '' 0 0
+    team-two archive@mail-archive.dev '' 0 0
+
+However, in order to prevent this address from being used to forge spam onto
+the lists, the archive address is hard-coded to not be registered in
+Launchpad.
+
+    >>> mailinglist_api.isRegisteredInLaunchpad(config.mailman.archive_address)
+    False    
+
+This is true even if by dumb luck the address actually gets registered in
+Launchpad.
+
+    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> new_address = emailset.new(
+    ...     config.mailman.archive_address, fred,
+    ...     EmailAddressStatus.VALIDATED)
+    >>> flush_database_updates()
+    >>> mailinglist_api.isRegisteredInLaunchpad(config.mailman.archive_address)
+    False    
+
+
 == Error cases ==
 
 If Mailman requests the membership information for a team that doesn't exist,

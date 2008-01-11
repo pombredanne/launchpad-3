@@ -11,6 +11,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
     IMailingListSet, MailingListStatus)
@@ -139,6 +140,13 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             for email_address in mailing_list.getSubscribedAddresses():
                 real_name = email_address.person.displayname
                 members[email_address.email] = (real_name, flags, ENABLED)
+            # Finally, add the archive recipient if there is one.  This
+            # address should never be registered in Launchpad, meaning
+            # specifically that the isRegisteredInLaunchpad() test below
+            # should always fail for it.  That way, the address can never be
+            # used to forge spam onto a list.
+            if config.mailman is not None and config.mailman.archive_address:
+                members[config.mailman.archive_address] = ('', flags, ENABLED)
             # The response must be a list of tuples.
             response[team_name] = [
                 (address, members[address][0],
@@ -148,6 +156,13 @@ class MailingListAPIView(LaunchpadXMLRPCView):
 
     def isRegisteredInLaunchpad(self, address):
         """See `IMailingListAPIView.`."""
+        if (config.mailman is not None and
+            config.mailman.archive_address and
+            address == config.mailman.archive_address):
+            # Hard code that the archive address is never registered in
+            # Launchpad, so forged messages from that sender will always be
+            # discarded.
+            return False
         email_address = getUtility(IEmailAddressSet).getByEmail(address)
         return (email_address is not None and
                 email_address.status in (EmailAddressStatus.VALIDATED,
