@@ -161,7 +161,7 @@ class IArchiveConsoleForm(Interface):
     """Schema used to manipulate packages within a archive."""
 
     comment = TextLine(
-        title=_("Comment"), required=False,
+        title=_("Comment"), required=True,
         description=_("The reason why the package is being modified."))
 
     include_binaries = Bool(

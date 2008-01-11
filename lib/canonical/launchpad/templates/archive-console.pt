@@ -90,6 +90,7 @@
 
     <div class="actions" metal:fill-slot="buttons">
       <input tal:replace="structure view/actions/field.actions.delete/render" />
+      <input tal:replace="structure view/actions/field.actions.cancel/render" />
     </div>
 
   </div> <!-- launchpad_form -->

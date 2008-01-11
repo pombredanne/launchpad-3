@@ -204,7 +204,12 @@ class ArchiveView(ArchiveViewBase):
 
 
 class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
-    """Archive console view class. """
+    """Archive console view class.
+
+    This view presents the default package-search slot associated with a
+    POST form implementing actions that could be performed upon a set of
+    selected packages.
+    """
 
     schema = IArchiveConsoleForm
     # Do not present search results if 'Search' button is not hit.
@@ -215,9 +220,14 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         self.setupPackageFilters()
         self.setupPackageSearchResult()
 
+# XXX cprov 20080111: ideally 'field.selected_sources' should get validated
+# by the zope infrastructure and obtained in delete action via data dictionary.
+# Currently this field is also poorly rendered inside:
+#   sourcepackagepublishing-listing-ppa-details.pt template
+# which is not only confusing but also broken since it will be rendered in the
+# wrong place (+index) if the user has launchpad.Admin permission.
+
     def _getSelectedSources(self):
-        """ """
-        # hack, hack, hack
         selected_sources_ids = self.request.get('field.selected_sources')
 
         if selected_sources_ids is None:
@@ -232,27 +242,51 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         pub_set = getUtility(IPublishingSet)
         selected_sources = []
         for source_id in selected_sources_ids:
-            selected_sources.append(pub_set.getSource(int(source_id)))
+            source = pub_set.getSource(int(source_id))
+            selected_sources.append(source)
+
         return selected_sources
+
+    def validate(self, data):
+        """Retrieve 'selected_sources' directly from the request.
+
+        Ensure we have only valid and published sources selected.
+        """
+        if len(self.errors) != 0:
+            return
+
+        selected_sources = self._getSelectedSources()
+        if not selected_sources:
+            self.addError("No published sources selected.")
+            return
+
+        for source in selected_sources:
+            if source.status != PackagePublishingStatus.PUBLISHED:
+                self.addError('Cannot delete non-published source (%s)'
+                              % source.displayname)
+                return
+        # Finally inject 'selected_sources' in the validated form data.
+        data['selected_sources'] = selected_sources
+
+    @action(_("Cancel"), name="cancel", validator='validate_cancel')
+    def action_cancel(self, action, data):
+        self.next_url = canonical_url(self.context)
 
     @action(_("Delete"), name="delete")
     def action_delete(self, action, data):
-        selected_sources = self._getSelectedSources()
-        if not selected_sources:
-            self.addError("No sources selected.")
-            return
-
         include_binaries = data.get('include_binaries')
         comment = data.get('comment')
-
+        selected_sources = data.get('selected_sources')
         messages = []
         for source in selected_sources:
-            # !!!!!
-            # source.requestDeletion(self.user, comment)
+            source.requestDeletion(self.user, comment)
             messages.append(
                 '<p>%s</p>' % source.displayname)
+            if include_binaries:
+                for bin in source.getPublishedBinaries():
+                    bin.requestDeletion(self.user, comment)
 
-        # Present a page notification about the action.
+        # Present a page notification describing the action.
         if include_binaries:
             target = "Sources and binaries"
         else:
