@@ -687,6 +687,10 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
                       "used as a key by FOAF RDF spec"),
         readonly=True)
 
+    verbose_bugnotifications = Bool(
+        title=_("Should this person receive verbose bug notifications?"),
+        required=False, default=True)
+
     defaultmembershipperiod = Int(
         title=_('Subscription period'), required=False,
         description=_(
