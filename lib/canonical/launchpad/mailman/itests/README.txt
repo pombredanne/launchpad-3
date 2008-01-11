@@ -8,7 +8,6 @@ Here are the steps to run these integration tests:
 - Build and run Launchpad with the following command:
 
   make LPCONFIG=mailman-itests schema
-  make LPCONFIG=mailman-itests mailman_instance
   make LPCONFIG=mailman-itests run_all
 
 - In a separate shell, run the LP/MM integration tests:

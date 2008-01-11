@@ -80,14 +80,10 @@ From the edit page we can also create a new bug watch:
     ...     '+bug/1/+editstatus')
     >>> bugwatch_control = browser.getControl(
     ...     name='debian_mozilla-firefox.bugwatch')
-    >>> bugtracker_control = browser.getControl(
-    ...     name='debian_mozilla-firefox.bugtracker')
-    >>> remotebug_control = browser.getControl(
-    ...     name='debian_mozilla-firefox.remotebug')
+    >>> url_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.url')
     >>> bugwatch_control.value = ['NEW']
-    >>> bugtracker_control.displayValue
-    ['Debian Bug tracker']
-    >>> remotebug_control.value = '1'
+    >>> url_control.value = 'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1'
 
     >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()
@@ -114,14 +110,10 @@ created, instead the old one will be used.
     ...     '+bug/1/+editstatus')
     >>> bugwatch_control = browser.getControl(
     ...     name='debian_mozilla-firefox.bugwatch')
-    >>> bugtracker_control = browser.getControl(
-    ...     name='debian_mozilla-firefox.bugtracker')
-    >>> remotebug_control = browser.getControl(
-    ...     name='debian_mozilla-firefox.remotebug')
+    >>> url_control = browser.getControl(
+    ...     name='debian_mozilla-firefox.url')
     >>> bugwatch_control.value = ['NEW']
-    >>> bugtracker_control.displayValue
-    ['Debian Bug tracker']
-    >>> remotebug_control.value = '1'
+    >>> url_control.value = 'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1'
 
     >>> submit_button = browser.getControl('Save Changes')
     >>> submit_button.click()

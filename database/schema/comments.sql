@@ -970,7 +970,7 @@ COMMENT ON COLUMN Person.mail_resumption_date IS 'A NULL resumption date or a da
 COMMENT ON COLUMN Person.mailing_list_auto_subscribe_policy IS 'The auto-subscription policy for the person, i.e. whether and how the user is automatically subscribed to mailing lists for teams they join.  Values are described in dbschema.MailingListAutoSubscribePolicy.';
 COMMENT ON COLUMN Person.mailing_list_receive_duplicates IS 'True means the user wants to receive list copies of messages on which they are explicitly named as a recipient.';
 COMMENT ON COLUMN Person.visibility IS 'person.PersonVisibility enumeration which can be set to Public, Public with Private Membership, or Private.';
-COMMENT ON COLUMN Person.verbose_bugnotifications  IS 'If true, all bugnotifications sent to this Person will include the bug description and status.';
+COMMENT ON COLUMN Person.verbose_bugnotifications IS 'If true, all bug notifications sent to this person will contain the bug description.';
 
 COMMENT ON TABLE ValidPersonOrTeamCache IS 'A materialized view listing the Person.ids of all valid people and teams.';
 
