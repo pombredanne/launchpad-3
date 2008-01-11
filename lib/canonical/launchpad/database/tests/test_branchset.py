@@ -130,7 +130,7 @@ class TestBranchSetDormancyClause(TestCase):
         """Four branches should be returned if showing dormant branches."""
         branch_set = getUtility(IBranchSet)
         branch_count = branch_set.getBranchesForPerson(
-            self.branch_owner, show_dormant=True).count()
+            self.branch_owner, hide_dormant=False).count()
         self.assertEqual(4, branch_count,
                          "Expected 4 branches, got %d" % branch_count)
 
@@ -138,7 +138,7 @@ class TestBranchSetDormancyClause(TestCase):
         """Two branches should be returned if showing dormant branches."""
         branch_set = getUtility(IBranchSet)
         branch_count = branch_set.getBranchesForPerson(
-            self.branch_owner, show_dormant=False).count()
+            self.branch_owner, hide_dormant=True).count()
         self.assertEqual(2, branch_count,
                          "Expected 2 branches, got %d" % branch_count)
 
