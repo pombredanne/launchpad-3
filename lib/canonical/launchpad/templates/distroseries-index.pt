@@ -67,7 +67,7 @@
       <div class="right">
         <div
           class="section"
-          tal:content="structure context/@@+portlet-details"
+          tal:content="structure context/@@+details"
         />
         <div
           class="section"
