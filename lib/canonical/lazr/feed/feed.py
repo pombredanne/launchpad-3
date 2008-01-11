@@ -185,7 +185,7 @@ class FeedBase(LaunchpadFormView):
 
     def renderAtom(self):
         """See `IFeed`."""
-        self.request.response.setHeader('content-type', 
+        self.request.response.setHeader('content-type',
                                         'application/atom+xml;charset=utf-8')
         template_file = ViewPageTemplateFile(self.template_files['atom'])
         result = template_file(self)
