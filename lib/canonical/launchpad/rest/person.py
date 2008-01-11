@@ -11,26 +11,22 @@ __all__ = [
 
 from zope.component import adapts, getAdapter, getUtility
 from zope.interface import implements
-from canonical.lp import decorates
-from canonical.lazr.rest import CollectionResource, EntryResource
+from canonical.lazr.interfaces import (
+    ICollectionResource, IEntryResourceController)
 from canonical.launchpad.interfaces import (
-    IPerson, IPersonResourceSchema, IPersonSet)
+    IPerson, IPersonResource, IPersonSet)
 
 
-class PersonResource(EntryResource):
+class PersonResource:
     """A person."""
-    decorates(IPersonResourceSchema, context="context")
     adapts(IPerson)
-    schema = IPersonResourceSchema
-
-    def __init__(self, context):
-        """Associate this resource with a specific person."""
-        self.context = context
+    schema = IPersonResource
 
 
-class PersonCollectionResource(CollectionResource):
+class PersonCollectionResource:
     """A collection of people."""
+    implements(ICollectionResource)
 
     def find(self):
-        return [getAdapter(p, IPersonResourceSchema) for p in
+        return [getAdapter(p, IEntryResourceController) for p in
                 getUtility(IPersonSet).getAllValidPersons()]

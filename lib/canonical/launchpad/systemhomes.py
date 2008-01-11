@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces import (
     IMailingListApplication, IMaloneApplication, IOpenIdApplication,
     IProductSet, IRegistryApplication, IRosettaApplication,
     IShipItApplication, ITranslationGroupSet, IWebServiceApplication)
+from canonical.lazr.rest import CollectionResourceController
 from canonical.launchpad.rest import (
     PersonCollectionResource, ServiceRootResource)
 
@@ -197,10 +198,11 @@ class WebServiceApplication:
     def publishTraverse(self, request, name):
         """Right now there are no resources below the root."""
         if name == "people":
-            return PersonCollectionResource(request)
+            return CollectionResourceController(
+                PersonCollectionResource(), request)
         else:
             raise NotFound(self, name)
 
     def __call__(self, REQUEST=None):
         if REQUEST:
-            return ServiceRootResource(REQUEST)()
+            return ServiceRootResource(None, REQUEST)()

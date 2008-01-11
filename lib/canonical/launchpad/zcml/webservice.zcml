@@ -13,13 +13,13 @@
         <allow interface='canonical.lazr.interfaces.IHTTPResource' />
     </securedutility>
 
-    <class class="canonical.launchpad.rest.person.PersonCollectionResource">
+    <class class="canonical.lazr.rest.CollectionResourceController">
         <allow interface='canonical.lazr.interfaces.IHTTPResource' />
     </class>
 
     <adapter
         for="canonical.launchpad.interfaces.IPerson"
-        provides="canonical.launchpad.interfaces.IPersonResourceSchema"
+        provides="canonical.launchpad.interfaces.IPersonResource"
         factory="canonical.launchpad.rest.PersonResource"
         />
 </configure>

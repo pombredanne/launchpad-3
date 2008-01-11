@@ -5,10 +5,11 @@
 __metaclass__ = type
 __all__ = [
     'ICollectionResource',
+    'ICollectionResourceController',
     'IEntryResource',
+    'IEntryResourceController',
     'IHTTPResource',
     'IJSONPublishable',
-    'IResourceSchema'
     ]
 
 from zope.interface import Interface
@@ -36,7 +37,7 @@ class IJSONPublishable(Interface):
         """
 
 
-class IEntryResource(IHTTPResource, IJSONPublishable):
+class IEntryResourceController(IHTTPResource):
     """A resource that represents an individual Launchpad object."""
     def do_GET(self):
         """Retrieve this object.
@@ -45,7 +46,7 @@ class IEntryResource(IHTTPResource, IJSONPublishable):
         """
 
 
-class ICollectionResource(IHTTPResource):
+class ICollectionResourceController(IHTTPResource):
     """A resource that represents a collection of entry resources."""
 
     def do_GET(self):
@@ -54,5 +55,13 @@ class ICollectionResource(IHTTPResource):
         :return: A string representation.
         """
 
-class IResourceSchema(Interface):
-    """The schema of an object exposed as an IEntryResource."""
+
+class IEntryResource(IJSONPublishable):
+    """An entry resource, driven by an IEntryResourceController."""
+
+
+class ICollectionResource(Interface):
+    """A collection resource, driven by an IEntryResourceController."""
+
+    def find(self):
+        """Retrieve all items in the collection."""
