@@ -811,8 +811,8 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         the size of the upload plus the current PPA size must be smaller
         than the PPA.authorized_size, otherwise the upload will be rejected.
         """
-        # Stuff 1024 Mbytes in name16 PPA, so anything will be above the
-        # default quota limit, 1024 Mbytes.
+        # Stuff 1024 MiB in name16 PPA, so anything will be above the
+        # default quota limit, 1024 MiB.
         self._fillArchive(self.name16.archive, 1024 * (2 ** 20))
 
         # XXX cprov 20071204: see uploadpolicy.py line 255.
@@ -824,7 +824,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         contents = [
             "Subject: [PPA name16] Accepted: bar 1.0-1 (source)",
             "Upload Warnings:",
-            "PPA exceeded its size limit (1024.00 of 1024.00 Mbytes). "
+            "PPA exceeded its size limit (1024.00 of 1024.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "
             "if you need more space."]
         self.assertEmail(contents)
@@ -835,8 +835,8 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         The system start warning users for uploads exceeding 95 % of
         the current size limit.
         """
-        # Stuff 973 Mbytes into name16 PPA, approximately 95 % of
-        # the default quota limit, 1024 Mbyte.
+        # Stuff 973 MiB into name16 PPA, approximately 95 % of
+        # the default quota limit, 1024 MiB.
         self._fillArchive(self.name16.archive, 973 * (2 ** 20))
 
         # Ensure the warning is sent in the acceptance notification.
@@ -845,7 +845,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         contents = [
             "Subject: [PPA name16] Accepted: bar 1.0-1 (source)",
             "Upload Warnings:",
-            "PPA exceeded 95 % of its size limit (973.00 of 1024.00 Mbytes). "
+            "PPA exceeded 95 % of its size limit (973.00 of 1024.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "
             "if you need more space."]
         self.assertEmail(contents)
@@ -874,8 +874,8 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         self.options.context = 'buildd'
         self.options.buildid = build_bar_i386.id
 
-        # Stuff 1024 Mbytes in name16 PPA, so anything will be above the
-        # default quota limit, 1024 Mbytes.
+        # Stuff 1024 MiB in name16 PPA, so anything will be above the
+        # default quota limit, 1024 MiB.
         self._fillArchive(self.name16.archive, 1024 * (2 ** 20))
 
         upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")

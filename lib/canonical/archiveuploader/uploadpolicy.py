@@ -261,14 +261,14 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
             # the size quota (hint: use upload.reject instead of warn).
             # Warning users about a PPA exceeding the size limit.
             upload.warn(
-                "PPA exceeded its size limit (%.2f of %.2f Mbytes). "
+                "PPA exceeded its size limit (%.2f of %.2f MiB). "
                 "Ask a question in https://answers.launchpad.net/soyuz/ "
                 "if you need more space." % (
                 new_size / MEGA, self.archive.authorized_size))
         elif new_size > 0.95 * limit_size:
             # Warning users about a PPA over 95 % of the size limit.
             upload.warn(
-                "PPA exceeded 95 %% of its size limit (%.2f of %.2f Mbytes). "
+                "PPA exceeded 95 %% of its size limit (%.2f of %.2f MiB). "
                 "Ask a question in https://answers.launchpad.net/soyuz/ "
                 "if you need more space." % (
                 new_size / MEGA, self.archive.authorized_size))
