@@ -16,7 +16,7 @@ __all__ = [
     'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
-    'IPersonResource',
+    'IPersonResourceSchema',
     'IPersonSet',
     'IRequestPeopleMerge',
     'ITeam',
@@ -42,7 +42,7 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
-from canonical.lazr.interfaces import IEntryResource
+from canonical.lazr.interfaces import IResourceSchema
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, StrippedTextLine)
@@ -1251,7 +1251,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """
 
 
-class IPersonResource(IEntryResource):
+class IPersonResourceSchema(IResourceSchema):
     """The part of a person that we expose through the web service."""
 
     name = PersonNameField()

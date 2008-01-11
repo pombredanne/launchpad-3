@@ -14,14 +14,14 @@ from zope.interface import implements
 from canonical.lp import decorates
 from canonical.lazr.rest import CollectionResource, EntryResource
 from canonical.launchpad.interfaces import (
-    IPerson, IPersonResource, IPersonSet)
+    IPerson, IPersonResourceSchema, IPersonSet)
 
 
 class PersonResource(EntryResource):
     """A person."""
-    decorates(IPersonResource, context="context")
+    decorates(IPersonResourceSchema, context="context")
     adapts(IPerson)
-    schema = IPersonResource
+    schema = IPersonResourceSchema
 
     def __init__(self, context):
         """Associate this resource with a specific person."""
@@ -32,5 +32,5 @@ class PersonCollectionResource(CollectionResource):
     """A collection of people."""
 
     def find(self):
-        return [getAdapter(p, IPersonResource) for p in
+        return [getAdapter(p, IPersonResourceSchema) for p in
                 getUtility(IPersonSet).getAllValidPersons()]

@@ -19,7 +19,7 @@
 
     <adapter
         for="canonical.launchpad.interfaces.IPerson"
-        provides="canonical.launchpad.interfaces.IPersonResource"
+        provides="canonical.launchpad.interfaces.IPersonResourceSchema"
         factory="canonical.launchpad.rest.PersonResource"
         />
 </configure>

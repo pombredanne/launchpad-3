@@ -7,7 +7,8 @@ __all__ = [
     'ICollectionResource',
     'IEntryResource',
     'IHTTPResource',
-    'IJSONPublishable'
+    'IJSONPublishable',
+    'IResourceSchema'
     ]
 
 from zope.interface import Interface
@@ -52,3 +53,6 @@ class ICollectionResource(IHTTPResource):
 
         :return: A string representation.
         """
+
+class IResourceSchema(Interface):
+    """The schema of an object exposed as an IEntryResource."""
