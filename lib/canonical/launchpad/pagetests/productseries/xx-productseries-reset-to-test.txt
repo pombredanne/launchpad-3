@@ -44,7 +44,7 @@ details", we can't reset the import if we make that change:
   >>> for message in get_feedback_messages(browser.contents):
   ...     print extract_text(message)
   There is 1 error.
-  Can not rerun import without CVS or Subversion details.
+  Cannot rerun import without CVS or Subversion details.
 
 This is really a CVS import, so we'll switch back to that.  So we'll
 switch back to that and reset the import:
