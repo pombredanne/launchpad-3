@@ -15,6 +15,12 @@ archive mirrors, plus the canonical one.
     text/plain;charset=utf-8
     >>> print browser.headers['X-Generated-For-Country']
     France
+    >>> print browser.headers['X-Generated-For-IP']
+    83.196.46.77
+    >>> print browser.headers['X-REQUEST-HTTP_X_FORWARDED_FOR']
+    83.196.46.77
+    >>> print browser.headers['X-REQUEST-REMOTE_ADDR']
+    None
     >>> sorted(browser.contents.split('\n'))
     ['http://archive.ubuntu.com/ubuntu/',
      'http://localhost:11375/archive-mirror/',
