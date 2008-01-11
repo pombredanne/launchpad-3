@@ -11,14 +11,16 @@ import unittest
 from email import message_from_string
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.archiveuploader.ftests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchiveSet, IDistributionSet, ILaunchpadCelebrities,
-    IPersonSet, NotFoundError, PackageUploadStatus, PackagePublishingStatus,
-    PackagePublishingPocket)
+    ILibraryFileAliasSet, IPersonSet, NotFoundError, PackageUploadStatus,
+    PackagePublishingStatus, PackagePublishingPocket)
+from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.launchpad.mail import stub
 
 
@@ -262,86 +264,6 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
             version="1.0-1", exact_match=True, archive=cprov.archive)
-        self.assertEqual(queue_items.count(), 1)
-
-    def testPPASizeQuotaSourceRejection(self):
-        """Verify the size quota check for PPA uploads.
-
-        New source uploads are submitted to the size quota check, where
-        the size of the upload plus the current PPA size must be smaller
-        than the PPA.authorized_size, otherwise the upload will be rejected.
-        """
-        # Reducing the target PPA size quota to 1 byte.
-        self.name16.archive.authorized_size = 1
-
-        # XXX cprov 20071204: see uploadpolicy.py line 255.
-        # When we change the code to actually reject the upload this
-        # test should also be modified to cope with the rejection
-        # notification.
-        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)",
-            "Upload Warnings:",
-            "PPA exceeded its size limit (1213 of 1 bytes). "
-            "Contact a Launchpad administrator if you need more space."]
-        self.assertEmail(contents)
-
-    def testPPASizeQuotaSourceWarning(self):
-        """Verify the size quota warning for PPA near size limit.
-
-        The system start warning users for uploads exceeding 80 % of
-        the current size limit.
-        """
-        # Set a PPA size_quota that doesn't fit 'bar' source upload
-        # under its 95 % 'safe' limit.
-        self.name16.archive.authorized_size = 1250
-
-        # Ensure the warning is sent in the acceptance notification.
-        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)",
-            "Upload Warnings:",
-            "PPA exceeded 95 % of its size limit (1213 of 1250 bytes). "
-            "Contact a Launchpad administrator if you need more space."]
-        self.assertEmail(contents)
-
-    def testPPADoNotCheckSizeQuotaForBinary(self):
-        """Verify the size quota check for internal binary PPA uploads.
-
-        Binary uploads are not submitted to the size quota check, since
-        they are automatically generated, rejecting/warning them would
-        just cause unnecessary hassle.
-        """
-        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
-        contents = [
-            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
-        self.assertEmail(contents)
-
-        # Create a build record for source bar in breezy-i386
-        # distroarchseries, and setup a appropriate upload policy
-        # in preparation to the corresponding binary upload.
-        pub_sources = self.name16.archive.getPublishedSources(name='bar')
-        [pub_bar] = pub_sources
-        build_bar_i386 = pub_bar.sourcepackagerelease.createBuild(
-            self.breezy['i386'], PackagePublishingPocket.RELEASE,
-            self.name16.archive)
-        self.options.context = 'buildd'
-        self.options.buildid = build_bar_i386.id
-
-        # Drastically reduce the size quota to check if it doesn't
-        # affect binary uploads as expected.
-        self.name16.archive.authorized_size = 1
-
-        upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
-        self.processUpload(self.uploadprocessor, upload_dir)
-
-        # The binary upload was accepted, and it's waiting in the queue.
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
     def testUploadDoesNotEmailMaintainerOrChangedBy(self):
@@ -846,6 +768,124 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             "Subject: [PPA name16] Accepted: bar 1.0-10 (source)"]
         self.assertEmail(contents)
 
+
+class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
+    """Functional test for uploadprocessor.py quota checks in PPA."""
+
+    def _fillArchive(self, archive, size):
+        """Create content in the given archive which the given size.
+
+        Create a source package publication in the given archive totalizing
+        the given size in bytes.
+
+        Uses `SoyuzTestPublisher` class to create the corresponding publishing
+        record, then switchDbUser as 'librariangc' and update the size of the
+        source file to the given value.
+        """
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        pub_src = publisher.getPubSource(
+            archive=archive, distroseries=self.breezy,
+            status=PackagePublishingStatus.PUBLISHED)
+        alias_id = pub_src.sourcepackagerelease.files[0].libraryfile.id
+
+        self.layer.commit()
+        self.layer.switchDbUser('librariangc')
+        content = getUtility(ILibraryFileAliasSet)[alias_id].content
+        content = removeSecurityProxy(content)
+        # Decrement the archive index parcel automatically added by
+        # IArchive.estimated_size.
+        content.filesize = size - 1024
+        self.layer.commit()
+        self.layer.switchDbUser('uploader')
+
+        # Re-initialize uploadprocessor since it depends on the new
+        # transaction reset by switchDbUser.
+        self.uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+    def testPPASizeQuotaSourceRejection(self):
+        """Verify the size quota check for PPA uploads.
+
+        New source uploads are submitted to the size quota check, where
+        the size of the upload plus the current PPA size must be smaller
+        than the PPA.authorized_size, otherwise the upload will be rejected.
+        """
+        # Stuff 1024 MiB in name16 PPA, so anything will be above the
+        # default quota limit, 1024 MiB.
+        self._fillArchive(self.name16.archive, 1024 * (2 ** 20))
+
+        # XXX cprov 20071204: see uploadpolicy.py line 255.
+        # When we change the code to actually reject the upload this
+        # test should also be modified to cope with the rejection
+        # notification.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)",
+            "Upload Warnings:",
+            "PPA exceeded its size limit (1024.00 of 1024.00 MiB). "
+            "Ask a question in https://answers.launchpad.net/soyuz/ "
+            "if you need more space."]
+        self.assertEmail(contents)
+
+    def testPPASizeQuotaSourceWarning(self):
+        """Verify the size quota warning for PPA near size limit.
+
+        The system start warning users for uploads exceeding 95 % of
+        the current size limit.
+        """
+        # Stuff 973 MiB into name16 PPA, approximately 95 % of
+        # the default quota limit, 1024 MiB.
+        self._fillArchive(self.name16.archive, 973 * (2 ** 20))
+
+        # Ensure the warning is sent in the acceptance notification.
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)",
+            "Upload Warnings:",
+            "PPA exceeded 95 % of its size limit (973.00 of 1024.00 MiB). "
+            "Ask a question in https://answers.launchpad.net/soyuz/ "
+            "if you need more space."]
+        self.assertEmail(contents)
+
+    def testPPADoNotCheckSizeQuotaForBinary(self):
+        """Verify the size quota check for internal binary PPA uploads.
+
+        Binary uploads are not submitted to the size quota check, since
+        they are automatically generated, rejecting/warning them would
+        just cause unnecessary hassle.
+        """
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-1 (source)"]
+        self.assertEmail(contents)
+
+        # Create a build record for source bar in breezy-i386
+        # distroarchseries, and setup a appropriate upload policy
+        # in preparation to the corresponding binary upload.
+        pub_sources = self.name16.archive.getPublishedSources(name='bar')
+        [pub_bar] = pub_sources
+        build_bar_i386 = pub_bar.sourcepackagerelease.createBuild(
+            self.breezy['i386'], PackagePublishingPocket.RELEASE,
+            self.name16.archive)
+        self.options.context = 'buildd'
+        self.options.buildid = build_bar_i386.id
+
+        # Stuff 1024 MiB in name16 PPA, so anything will be above the
+        # default quota limit, 1024 MiB.
+        self._fillArchive(self.name16.archive, 1024 * (2 ** 20))
+
+        upload_dir = self.queueUpload("bar_1.0-1_binary", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        # The binary upload was accepted, and it's waiting in the queue.
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED, name="bar",
+            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        self.assertEqual(queue_items.count(), 1)
 
 
 def test_suite():
