@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 
-from zope.component import adapts, getUtility
+from zope.component import adapts, getAdapter, getUtility
 from zope.interface import implements
 from canonical.lp import decorates
 from canonical.lazr.rest import CollectionResource, EntryResource
@@ -21,7 +21,6 @@ class PersonResource(EntryResource):
     """A person."""
     decorates(IPersonResource, context="context")
     adapts(IPerson)
-
     schema = IPersonResource
 
     def __init__(self, context):
@@ -33,5 +32,5 @@ class PersonCollectionResource(CollectionResource):
     """A collection of people."""
 
     def find(self):
-        return [PersonResource(p) for p in
+        return [getAdapter(p, IPersonResource) for p in
                 getUtility(IPersonSet).getAllValidPersons()]
