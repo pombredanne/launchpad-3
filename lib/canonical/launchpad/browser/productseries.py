@@ -17,6 +17,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesRdfView',
            'ProductSeriesSourceSetView',
            'ProductSeriesReviewView',
+           'ProductSeriesLinkBranchView',
            'ProductSeriesShortLink',
            'ProductSeriesFileBugRedirect',
            'get_series_branch_error']
@@ -52,6 +53,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu
+from canonical.widgets import SinglePopupWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 
@@ -116,8 +118,8 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     usedfor = IProductSeries
     facet = 'overview'
     links = [
-        'edit', 'driver', 'editsource', 'ubuntupkg', 'add_package',
-        'add_milestone', 'add_release', 'rdf', 'review'
+        'edit', 'driver', 'editsource', 'link_branch', 'ubuntupkg',
+        'add_package', 'add_milestone', 'add_release', 'rdf', 'review'
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -135,6 +137,11 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     def editsource(self):
         text = 'Edit source'
         return Link('+source', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def link_branch(self):
+        text = 'Link to branch'
+        return Link('+linkbranch', text, icon='edit')
 
     def ubuntupkg(self):
         text = 'Link to Ubuntu package'
@@ -537,6 +544,38 @@ class ProductSeriesEditView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+
+class ProductSeriesLinkBranchView(LaunchpadEditFormView):
+    """View to set the bazaar branch for a product series."""
+
+    schema = IProductSeries
+    field_names = ['user_branch']
+
+    custom_widget('user_branch', SinglePopupWidget, displayWidth=35)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+        # Clear out old revision control details.
+        if self.context.rcstype == RevisionControlSystems.CVS:
+            self.context.rcstype = None
+            self.context.cvsroot = None
+            self.context.cvsmodule = None
+            self.context.cvsbranch = None
+        if self.context.rcstype == RevisionControlSystems.SVN:
+            self.context.rcstype = None
+            self.context.svnrepository = None
+        self.request.response.addInfoNotification(
+            'Series code location updated.')
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the product series page."""
 
 
 class ProductSeriesSourceView(LaunchpadEditFormView):

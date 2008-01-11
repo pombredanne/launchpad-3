@@ -236,6 +236,15 @@
         permission="launchpad.EditSource"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+linkbranch"
+        class="canonical.launchpad.browser.ProductSeriesLinkBranchView"
+        template="../templates/productseries-linkbranch.pt"
+        facet="overview"
+        permission="launchpad.EditSource"
+        />
+
     <browser:editform
         name="+review"
         for="canonical.launchpad.interfaces.IProductSeries"
