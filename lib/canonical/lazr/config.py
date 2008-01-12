@@ -192,10 +192,12 @@ class ConfigSchema:
 
     def _load(self, filename, conf_data):
         """Return a Config parsed from conf_data."""
-        confs = self._getExtendedConfs(filename, conf_data)
         config = Config(self)
-        for conf_name, conf_data in confs:
-            config.push(conf_name, conf_data)
+        config.push(filename, conf_data)
+#        confs = self._getExtendedConfs(filename, conf_data)
+#        confs.reverse()
+#        for conf_name, conf_data in confs:
+#            config.push(conf_name, conf_data)
         return config
 
     def _getExtendedConfs(self, conf_filename, conf_data, confs=None):
@@ -215,7 +217,7 @@ class ConfigSchema:
         if confs is None:
             confs = []
         # Insert the conf before the conf that provides the extension.
-        confs.insert(0, (conf_filename, conf_data))
+        confs.append((conf_filename, conf_data))
         extends_name = self._findExtendsName(conf_data)
         if extends_name is not None:
             base_path = dirname(conf_filename)
@@ -345,15 +347,48 @@ class Config:
         from the current data instead of making updates. This allows
         overlaid configs to retain their state.
         """
+        confs = self._getExtendedConfs(conf_name, conf_data)
+        confs.reverse()
+        for conf_name, parser, encoding_errors in confs:
+            self._createConfigData(conf_name, parser, encoding_errors)
+
+    def _getExtendedConfs(self, conf_filename, conf_data, confs=None):
+        """Return a list of 2-tuple(config_name, parsed_config, errors).
+
+        :param conf_filename: The path and name the conf file.
+        :param conf_data: Unparsed config data.
+        :param confs: A list of confs that extend filename.
+        :return: A list of confs ordered from extendee to extender.
+        :raises IOError: If filename cannot be read.
+
+        This method recursively constructs a list of all unparsed config data.
+        It scans the config data for the extends key in the meta section. It
+        reads the unparsed config_data from the extended file and passes that
+        to itself.
+        """
+        if confs is None:
+            confs = []
+        encoding_errors = self._verifyEncoding(conf_data)
+        parser = SafeConfigParser()
+        parser.readfp(StringIO.StringIO(conf_data), conf_filename)
+        confs.append((conf_filename, parser, encoding_errors))
+        if parser.has_option('meta', 'extends'):
+            base_path = dirname(conf_filename)
+            extends_name = parser.get('meta', 'extends')
+            extends_filename = abspath('%s/%s' % (base_path, extends_name))
+            extends_data = read_content(extends_filename)
+            self._getExtendedConfs(extends_filename, extends_data, confs)
+        return confs
+
+    def _createConfigData(self, conf_name, parser, encoding_errors):
+        """Return ConfigData created from a parsed conf file."""
         sections = {}
         for section in self.data:
             sections[section.name] = section.clone()
         errors = list(self.data._errors)
-        extends = None
-        encoding_errors = self._verifyEncoding(conf_data)
         errors.extend(encoding_errors)
-        parser = SafeConfigParser()
-        parser.readfp(StringIO.StringIO(conf_data), conf_name)
+        extends = None
+
         for section_name in parser.sections():
             if section_name == 'meta':
                 extends, meta_errors = self._loadMetaData(parser)
