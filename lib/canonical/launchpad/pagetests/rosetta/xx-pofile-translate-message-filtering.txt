@@ -5,7 +5,7 @@ to filter the kind of messages that should be shown.
 
 For this test, we know that the valid msgsets that this form uses are
 the ones with the ids between 130 and 151. By default, view shows the
-mesages in the batches of 10 items.
+messages in the batches of 10 items.
 
     # This describes the HTML tag ids we'll be looking for below.
     >>> match_translation_id = 'msgset_([0-9]+)_es_translation_0$'
@@ -32,11 +32,6 @@ mesages in the batches of 10 items.
     ...         translation = translations[msgset_id]
     ...         print "%d: '%s'" % (
     ...             msgset_id, translation.renderContents().strip())
-
-    >>> def print_batch_header(soup):
-    ...     """Print the batch navigator header."""
-    ...     print extract_text(contents.find(
-    ...         'td', {'class' : 'batch-navigation-index'})).encode('utf-8')
 
 == Filters ==
 
@@ -96,9 +91,9 @@ next page of messages to confirm the three remaining messages show.
     151: '(no translation yet)'
 
 In the case of the 'Untranslated' filter, users can change the set of
-filtered messages by making updates to a single message. No Privileges
-Person decides to use the 'Untranslated' filter to locate messages that
-need translations in to Australian English.
+filtered messages by making updates to messages. No Privileges Person
+decides to use the 'Untranslated' filter to locate messages that need
+translations into Australian English.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
@@ -140,6 +135,38 @@ displayed.
     ...     user_browser.contents, 'msgset_130_en_AU_translation_0')
     None
 
+Projects can restrict translation to privileged users. The messages that
+No Privileges Person adds to upstream Evolution are taken as
+suggestions, not translations. His changes do not change the total
+number of untranslated messages; they do not affect the batch
+navigation.
+
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'evolution/trunk/+pots/evolution-2.2/en_AU/+translate')
+    >>> user_browser.getControl('Show').value = ['untranslated']
+    >>> user_browser.getControl('Filter').click()
+    >>> user_browser.title
+    'Translating evolution-2.2 in Evolution trunk into English (Australia)'
+
+    >>> contents = find_main_content(user_browser.contents)
+    >>> print_batch_header(contents)
+    1 ... 10  of 22 results
+
+    >>> user_browser.getControl(
+    ...     name='msgset_1_en_AU_translation_0_new_checkbox').value = [
+    ...         'msgset_1_en_AU_translation_0_new']
+    >>> user_browser.getControl(
+    ...     name='msgset_1_en_AU_translation_0_new').value = 'addressbook'
+    >>> user_browser.getControl('Save & Continue').click()
+
+No Privileges Person can see that the number of untranslated messages
+has not changed, and that he is seeing messages 11 though 20.
+
+    >>> contents = find_main_content(user_browser.contents)
+    >>> print_batch_header(contents)
+    11 ... 20  of 22 results
+
 
 === Messages with new suggestions ===
 
@@ -177,10 +204,11 @@ batch.
     132: 'tiene<samp> </samp>'
     146: '<code>%d</code> foo'
 
-Users can change the set of message in 'need review' filter by
-deselecting the 'Someone should review this translation' control.
-When No Privileges Person reviews the Czech translations for pmount,
-The filter and paging is updated by his actions.
+If the user deselects the 'Someone should review this translation'
+control, submitting a translation will take that message out of the
+'need review' set. When No Privileges Person reviews the Czech
+translations for pmount, The filter and paging are updated by his
+actions.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
@@ -199,9 +227,9 @@ The filter and paging is updated by his actions.
     >>> user_browser.getControl(name='msgset_85_cs_needsreview').value = []
     >>> user_browser.getControl('Save & Continue').click()
 
-The batch of 'need review' messages was decremented by 2. No Privileges
-Person can see that the next page of messages starts on 9, not 11, and
-that there are 34 messages that need review.
+Two messages were removed from the batch of 'need review' messages. No
+Privileges Person can see that the next page of messages starts on 9,
+not 11, and that there are 34 messages that need review.
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
@@ -229,9 +257,9 @@ There is only one message in the batch.
     >>> print_shown_messages(user_browser, contents)
     134: '<samp> </samp>caratas'
 
-There is not a next link when the messages are filtered since there is
-only one page of messages. If No Privileges Person submits the form,
-the browser is redirected to the first batch.
+Now that the messages are filtered, there is no next link when the
+messages, since there is only one page of messages. If No Privileges
+Person submits the form, the browser is redirected to the first batch.
 
     >>> user_browser.getControl('Save & Continue').click()
     >>> user_browser.url
@@ -245,8 +273,8 @@ the browser is redirected to the first batch.
 
 Another thing that filtering should do is to move to the start of the
 set of messages when the filtering rule changes but preserving batch
-size. No Privileges Person can see the when he switches filter to
-show 'untranslated' message, he is is seeing the first batch.
+size. No Privileges Person can see the when he switches the filter to
+show 'untranslated' message, he is seeing the first batch.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'

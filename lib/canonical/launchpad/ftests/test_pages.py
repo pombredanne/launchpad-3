@@ -250,6 +250,12 @@ def print_comments(page):
         print "-"*40
 
 
+def print_batch_header(soup):
+    """Print the batch navigator header."""
+    navigation = soup.find('td', {'class' : 'batch-navigation-index'})
+    print extract_text(navigation).encode('utf-8')
+
+
 def setupBrowser(auth=None):
     """Create a testbrowser object for use in pagetests.
 
@@ -289,6 +295,7 @@ def setUpGlobs(test):
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
     test.globs['print_comments'] = print_comments
+    test.globs['print_batch_header'] = print_batch_header
 
 
 class PageStoryTestCase(unittest.TestCase):
