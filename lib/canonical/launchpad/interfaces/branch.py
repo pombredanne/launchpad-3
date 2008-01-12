@@ -347,7 +347,7 @@ class IBranch(IHasOwner):
 
     private = Bool(
         title=_("Keep branch confidential"), required=False,
-        description=_("Make this branch visible only to its subscribers"),
+        description=_("Make this branch visible only to its subscribers."),
         default=False)
 
     # People attributes
