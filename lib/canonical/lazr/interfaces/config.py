@@ -178,7 +178,7 @@ class IStackableConfig(IConfigSchema):
     test environment must be configured differently.
     """
     schema = Attribute("The schema that defines the config.")
-    data = Attribute("The current CongidData. use by the config.")
+    data = Attribute("The current ConfigData. use by the config.")
     extends = Attribute("The ConfigData that this config extends.")
     overlays = Attribute("The stack of ConfigData that define this config.")
 
