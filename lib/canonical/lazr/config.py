@@ -197,8 +197,6 @@ class ConfigSchema:
         return config
 
 
-# LAZR config classes may access ConfigData._extends and ConfigData._errors.
-# pylint: disable-msg=W0212
 class ConfigData:
     """See `IConfigData`."""
     implements(IConfigData)
@@ -256,6 +254,8 @@ class ConfigData:
 
 class Config:
     """See `IStackableConfig`."""
+    # LAZR config classes may access ConfigData private data.
+    # pylint: disable-msg=W0212
     implements(IStackableConfig)
     decorates(IConfigData, context='data')
 
@@ -290,14 +290,16 @@ class Config:
     def push(self, conf_name, conf_data):
         """See `IStackableConfig`.
 
-        New sections, category_names, errors, and extends are created
-        from the current data instead of making updates. This allows
-        overlaid configs to retain their state.
+        Create a new ConfigData object from the raw conf_data, and
+        place it on top of the overlay stack. If the conf_data extends
+        another conf, a ConfigData object will be created for that first.
         """
         confs = self._getExtendedConfs(conf_name, conf_data)
         confs.reverse()
         for conf_name, parser, encoding_errors in confs:
-            self._createConfigData(conf_name, parser, encoding_errors)
+            config_data = self._createConfigData(
+                conf_name, parser, encoding_errors)
+            self._overlays = (config_data, ) + self._overlays
 
     def _getExtendedConfs(self, conf_filename, conf_data, confs=None):
         """Return a list of 3-tuple(conf_name, parser, encoding_errors).
@@ -308,7 +310,7 @@ class Config:
         :return: A list of confs ordered from extender to extendee.
         :raises IOError: If filename cannot be read.
 
-        This method recursively constructs a list of parsed config data.
+        This method parses the config data and checks for encoding errors.
         It checks parsed config data for the extends key in the meta section.
         It reads the unparsed config_data from the extended filename.
         It passes filename, data, and the working list to itself.
@@ -328,14 +330,24 @@ class Config:
         return confs
 
     def _createConfigData(self, conf_name, parser, encoding_errors):
-        """Return ConfigData created from a parsed conf file."""
+        """Return a new ConfigData object created from a parsed conf file.
+
+        :param conf_name: the full name of the config file, may be a filepath.
+        :param parser: the parsed config file; an instance of ConfigParser.
+        :param encoding_errors: a list of encoding error in the config file.
+        :return: a new ConfigData object.
+
+        This method extracts the sections, keys, and values from the parser
+        to construct a new ConfigData object The list of encoding errors are
+        incorporated into the the list of data-related errors for the
+        ConfigData.
+        """
         sections = {}
         for section in self.data:
             sections[section.name] = section.clone()
         errors = list(self.data._errors)
         errors.extend(encoding_errors)
         extends = None
-
         for section_name in parser.sections():
             if section_name == 'meta':
                 extends, meta_errors = self._loadMetaData(parser)
@@ -355,8 +367,7 @@ class Config:
             items = parser.items(section_name)
             section_errors = sections[section_name].update(items)
             errors.extend(section_errors)
-        config_data = ConfigData(conf_name, sections, extends, errors)
-        self._overlays = (config_data, ) + self._overlays
+        return ConfigData(conf_name, sections, extends, errors)
 
     def _verifyEncoding(self, config_data):
         """Verify that the data is ASCII encoded.
@@ -403,6 +414,7 @@ class Config:
                 return index + 1
         # The config data was not found in the overlays.
         raise NoConfigError('No config with name: %s.' % conf_name)
+
 
 class SectionSchema:
     """See `ISectionSchema`."""
