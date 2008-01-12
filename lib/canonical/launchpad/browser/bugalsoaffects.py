@@ -346,13 +346,13 @@ class BugTaskCreationStep(AlsoAffectsStep):
             confirm_button = (
                 '<input type="hidden" name="%s" value="1" />'
                 '<input style="font-size: smaller" type="submit"'
-                ' value="Yes, Add Anyway" name="ignore_missing_remote_bug" />'
+                ' value="Add Anyway" name="ignore_missing_remote_bug" />'
                 % self.continue_action.__name__)
             self.notifications.append(_(dedent("""
                 %s doesn't use Launchpad as its bug tracker. Without a bug
-                URL to watch, status will need to be tracked manually.
-                Request a fix anyway?  %s""" %
-                (cgi.escape(self.getTarget().displayname), confirm_button))))
+                URL to watch, the %s status will not update automatically.
+                %s""" % (cgi.escape(self.getTarget().displayname),
+                cgi.escape(self.getTarget().displayname), confirm_button))))
             return None
 
         extracted_bug = None
