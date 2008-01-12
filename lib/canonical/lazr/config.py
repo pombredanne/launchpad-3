@@ -194,60 +194,7 @@ class ConfigSchema:
         """Return a Config parsed from conf_data."""
         config = Config(self)
         config.push(filename, conf_data)
-#        confs = self._getExtendedConfs(filename, conf_data)
-#        confs.reverse()
-#        for conf_name, conf_data in confs:
-#            config.push(conf_name, conf_data)
         return config
-
-    def _getExtendedConfs(self, conf_filename, conf_data, confs=None):
-        """Return a list of 2-tuple config name and unparsed config.
-
-        :param conf_filename: The path and name the conf file.
-        :param conf_data: Unparsed config data.
-        :param confs: A list of confs that extend filename.
-        :return: A list of confs ordered from extendee to extender.
-        :raises IOError: If filename cannot be read.
-
-        This method recursively constructs a list of all unparsed config data.
-        It scans the config data for the extends key in the meta section. It
-        reads the unparsed config_data from the extended file and passes that
-        to itself.
-        """
-        if confs is None:
-            confs = []
-        # Insert the conf before the conf that provides the extension.
-        confs.append((conf_filename, conf_data))
-        extends_name = self._findExtendsName(conf_data)
-        if extends_name is not None:
-            base_path = dirname(conf_filename)
-            extends_filename = abspath('%s/%s' % (base_path, extends_name))
-            extends_data = read_content(extends_filename)
-            self._getExtendedConfs(extends_filename, extends_data, confs)
-        return confs
-
-    _option_pattern = re.compile(r'\w*[:=]\w*')
-
-    def _findExtendsName(self, conf_data):
-        """Return the name of the extended conf."""
-        extends_name = None
-        in_meta_section = False
-        for line in conf_data.splitlines():
-            if line.startswith('[meta]'):
-                # Only search the meta section for the extends key.
-                in_meta_section = True
-            elif in_meta_section and line.startswith('['):
-                # There was no extends key in the meta section.
-                break
-            elif in_meta_section and line.startswith('extends'):
-                # Found the extends key in the meta section.
-                tokens = self._option_pattern.split(line, maxsplit=1)
-                extends_name = tokens[-1].strip()
-                break
-            else:
-                # This line is not interesting.
-                pass
-        return extends_name
 
 
 # LAZR config classes may access ConfigData._extends and ConfigData._errors.
@@ -353,18 +300,18 @@ class Config:
             self._createConfigData(conf_name, parser, encoding_errors)
 
     def _getExtendedConfs(self, conf_filename, conf_data, confs=None):
-        """Return a list of 2-tuple(config_name, parsed_config, errors).
+        """Return a list of 3-tuple(conf_name, parser, encoding_errors).
 
         :param conf_filename: The path and name the conf file.
         :param conf_data: Unparsed config data.
         :param confs: A list of confs that extend filename.
-        :return: A list of confs ordered from extendee to extender.
+        :return: A list of confs ordered from extender to extendee.
         :raises IOError: If filename cannot be read.
 
-        This method recursively constructs a list of all unparsed config data.
-        It scans the config data for the extends key in the meta section. It
-        reads the unparsed config_data from the extended file and passes that
-        to itself.
+        This method recursively constructs a list of parsed config data.
+        It checks parsed config data for the extends key in the meta section.
+        It reads the unparsed config_data from the extended filename.
+        It passes filename, data, and the working list to itself.
         """
         if confs is None:
             confs = []
