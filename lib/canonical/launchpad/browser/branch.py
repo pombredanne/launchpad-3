@@ -30,6 +30,7 @@ import pytz
 from zope.event import notify
 from zope.component import getUtility
 from zope.interface import Interface
+from zope.publisher.interfaces import NotFound
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -227,7 +228,9 @@ class BranchContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.AnyPerson')
     def registermerge(self):
         text = 'Propose for merging'
-        return Link('+register-merge', text, icon='edit')
+        # It is not valid to propose a junk branch for merging.
+        enabled = self.context.product is not None
+        return Link('+register-merge', text, icon='edit', enabled=enabled)
 
     def landingcandidates(self):
         text = 'View landing candidates'
@@ -871,6 +874,12 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
     custom_widget('target_branch', TargetBranchWidget)
     custom_widget('dependent_branch', SinglePopupWidget, displayWidth=35)
+
+    def initialize(self):
+        """Show a 404 if the source branch is junk."""
+        if self.context.product is None:
+            raise NotFound(self.context, '+register-merge')
+        LaunchpadFormView.initialize(self)
 
     @action('Register', name='register')
     def register_action(self, action, data):

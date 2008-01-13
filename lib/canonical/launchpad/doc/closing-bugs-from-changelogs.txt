@@ -121,7 +121,7 @@ added as a comment from the janitor.
     >>> print last_comment.owner.displayname
     Launchpad Janitor
 
-    >>> print pmount_release.changelog
+    >>> print pmount_release.changelog_entry
     pmount (0.1-1) hoary; urgency=low
     <BLANKLINE>
      * Fix description (Malone #1)

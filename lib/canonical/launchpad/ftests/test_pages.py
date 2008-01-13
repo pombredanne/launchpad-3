@@ -4,6 +4,10 @@
 
 Set up the test data in the database first.
 """
+# Stop lint warning about not initializing TestCase parent on
+# PageStoryTestCase, see the comment bellow.
+# pylint: disable-msg=W0231
+
 __metaclass__ = type
 
 import doctest
@@ -114,9 +118,8 @@ def find_main_content(content):
 
 def get_feedback_messages(content):
     """Find and return the feedback messages of the page."""
-    message_classes = [
-        'message', 'informational message', 'error message',
-        'warning message']
+    message_classes = ['message', 'informational message', 'error message',
+                       'warning message']
     soup = BeautifulSoup(
         content,
         parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
@@ -220,6 +223,9 @@ def parse_relationship_section(content):
     soup = BeautifulSoup(content)
     section = soup.find('ul')
     whitespace_re = re.compile('\s+')
+    if section is None:
+        print 'EMPTY SECTION'
+        return
     for li in section.findAll('li'):
         if li.a:
             link = li.a
