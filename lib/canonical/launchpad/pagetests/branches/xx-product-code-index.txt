@@ -53,6 +53,7 @@ Specify a branch as the main development focus branch.
 
     >>> admin_browser.open(
     ...     'http://code.launchpad.dev/firefox/trunk/+source')
+    >>> admin_browser.getControl('Bazaar').click()
     >>> admin_browser.getControl(name="field.user_branch").value = (
     ...     '~name12/firefox/main')
     >>> admin_browser.getControl('Update Details').click()
@@ -61,6 +62,7 @@ And set a branch for the 1.0 series.
 
     >>> admin_browser.open(
     ...     'http://code.launchpad.dev/firefox/1.0/+source')
+    >>> admin_browser.getControl('Bazaar').click()
     >>> admin_browser.getControl(name="field.user_branch").value = (
     ...     '~sabdfl/firefox/release-0.9')
     >>> admin_browser.getControl('Update Details').click()
