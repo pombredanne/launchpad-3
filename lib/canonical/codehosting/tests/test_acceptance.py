@@ -628,19 +628,19 @@ class OOPSReportingSmartserverTests(SmartserverTests):
             What we do is attempt to execute some command other than 'bzr
             serve', which works but is thoroughly arbitrary.
             """
-            c = SSHClient()
+            ssh_client = SSHClient()
             # Connect to unrecognized hosts freely:
-            c.set_missing_host_key_policy(MissingHostKeyPolicy())
-            c.connect(
+            ssh_client.set_missing_host_key_policy(MissingHostKeyPolicy())
+            ssh_client.connect(
                 'localhost', 22222, 'sabdfl',
                 key_filename=os.path.join(os.environ['HOME'], '.ssh/id_dsa'))
             try:
-                c.exec_command('sleep')
+                ssh_client.exec_command('sleep')
             except SSHException:
                 pass
-            c.close()
+            ssh_client.close()
 
-        d = cause_exception_in_ssh_server()
+        defer_cause_exception = cause_exception_in_ssh_server()
 
         def check_new_oops_has_been_reported(ignored):
             """Check that there has been a new OOPS report logged."""
@@ -650,7 +650,8 @@ class OOPSReportingSmartserverTests(SmartserverTests):
                 self.assertNotEqual(new_report.id, existing_report.id)
             self.assertIn('Not allowed to execute', new_report.value)
 
-        return d.addCallback(check_new_oops_has_been_reported)
+        return defer_cause_exception.addCallback(
+            check_new_oops_has_been_reported)
 
 def make_server_tests(base_suite, servers):
     from canonical.codehosting.tests.helpers import (

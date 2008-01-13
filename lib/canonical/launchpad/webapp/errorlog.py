@@ -224,7 +224,7 @@ class ErrorReportingUtility:
         return lastid, lastfilename
 
     def _findLastOopsId(self, directory):
-        """Find the last error number used by this Launchpad instance
+        """Find the last error number used by this Launchpad instance.
 
         The purpose of this function is to not repeat sequence numbers
         if the Launchpad instance is restarted.

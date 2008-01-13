@@ -87,7 +87,8 @@ def oops_reporting_observer(args):
             failure = args['failure']
             request = errorlog.ScriptRequest([])
             errorlog.globalErrorUtility.raising(
-                (failure.type, failure.value, failure.getTraceback()), request,)
+                (failure.type, failure.value, failure.getTraceback()),
+                request,)
             log.info("Logged OOPS id %s."%(request.oopsid,))
         except:
             log.exception("Error reporting OOPS:")
