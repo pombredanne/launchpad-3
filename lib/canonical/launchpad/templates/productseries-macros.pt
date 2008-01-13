@@ -61,6 +61,11 @@
             </a>
           </strong>
           <em tal:condition="is_focus">Current development focus</em>
+
+          <tal:edit-link condition="series/required:launchpad.Edit">
+            (<a tal:attributes="href string:${series/name}/+linkbranch"
+            >Set branch for series</a>)
+          </tal:edit-link>
         </td>
       </tr>
 
