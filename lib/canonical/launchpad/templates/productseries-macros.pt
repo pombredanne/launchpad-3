@@ -74,13 +74,16 @@
         <tr class="lesser">
           <td></td>
           <td>
-            bzr branch
+            To get a copy of this branch, use the command:<br/>
+            <tt style="padding-left:2em; font-weight: bold">
+              bzr branch
             <tal:dev-focus condition="is_focus">
               lp:<tal:product replace="context/name"/>
             </tal:dev-focus>
             <tal:not-dev-focus condition="not: is_focus">
               lp:<tal:product replace="context/name"/>/<tal:series replace="series/name"/>
             </tal:not-dev-focus>
+            </tt>
           </td>
         </tr>
       </tal:has_branch>

@@ -19,11 +19,6 @@
   <tal:comment condition="nothing">
     Here is where we'd add the branch searching form.
   </tal:comment>
-  <p>
-    <img src="/@@/list" alt=""/>
-    <a href="+branches">List currently active branches</a> for
-    <tal:project-name replace="context/displayname"/>.
-  </p>
 
   <div class="left">
     <div class="section portlet" id="official-branches">
