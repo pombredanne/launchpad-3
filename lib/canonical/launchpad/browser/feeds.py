@@ -12,7 +12,10 @@ __all__ = [
     'FeedsMixin',
     'FeedsNavigation',
     'FeedsRootUrlData',
+    'PersonBranchesFeedLink',
     'PersonLatestBugsFeedLink',
+    'ProductBranchesFeedLink',
+    'ProjectBranchesFeedLink',
     'RootAnnouncementsFeedLink',
     ]
 
