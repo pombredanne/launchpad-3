@@ -601,12 +601,12 @@ SET search_path = public, pg_catalog;
 
 ALTER TABLE announcement DISABLE TRIGGER ALL;
 
-INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (1, '2007-11-25 00:44:32.186178', '2007-11-20 03:00:00', 1, NULL, 1, NULL, 'Every Macedonian Student to Use Ubuntu-Powered Computer Workstations', 'The Macedonia Ministry of Education and Science will deploy more than 180,000 workstations running Canonicalâs Edubuntu 7.04 as part of its "Computer for Every Child" project.', 'http://www.ubuntu.com/news/macedonia-school-computers', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (1, '2007-11-25 00:44:32.186178', '2007-11-20 03:00:00', 1, NULL, 1, NULL, 'Every Macedonian Student to Use Ubuntu-Powered Computer Workstations', 'The Macedonia Ministry of Education and Science will deploy more than 180,000 workstations running Canonical’s Edubuntu 7.04 as part of its "Computer for Every Child" project.', 'http://www.ubuntu.com/news/macedonia-school-computers', true, NULL);
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (2, '2007-11-25 00:48:53.347225', '2007-10-15 07:00:00', 1, NULL, 1, NULL, 'Ubuntu 7.10 Released, Delivering the Best of Open Source Software', 'Canonical Ltd. announced today the upcoming availability of version 7.10 of the Ubuntu Server, Desktop, Kubuntu and Edubuntu Editions. All will be available for free download on Thursday 18 October. Canonical is the commercial sponsor of Ubuntu.
 
 ', 'http://www.ubuntu.com/news/ubuntu710', true, NULL);
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (3, '2007-11-25 00:50:56.337934', '2007-09-11 04:00:00', 1, NULL, 1, NULL, 'Canonical to Provide Optimized Ubuntu OS Layer for VMware Virtual Appliances', 'Canonical Ltd., the commercial sponsor of Ubuntu, today announced the availability of its Ubuntu JeOS (Just Enough Operating System) edition. Ubuntu JeOS (pronounced "Juice") is an efficient variant of the popular desktop and server operating system, configured specifically for virtual appliances.', 'http://www.ubuntu.com/news/ubuntu-jeos', true, NULL);
-INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (4, '2007-11-25 00:52:09.015964', '2007-08-07 04:29:00', 1, NULL, 1, NULL, 'Dell Answers Customer Calls for Linux in Europe', 'Dell today unveiled two consumer PCs in Europe â the Inspiron 6400n and the Inspiron 530n â with the Ubuntu 7.04 Linux operating system factory installed. Available now in the United Kingdom, Germany and France, the systems are Dellâs first steps to meet the needs of the Linux enthusiast community outside of the United States.
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (4, '2007-11-25 00:52:09.015964', '2007-08-07 04:29:00', 1, NULL, 1, NULL, 'Dell Answers Customer Calls for Linux in Europe', 'Dell today unveiled two consumer PCs in Europe – the Inspiron 6400n and the Inspiron 530n – with the Ubuntu 7.04 Linux operating system factory installed. Available now in the United Kingdom, Germany and France, the systems are Dell’s first steps to meet the needs of the Linux enthusiast community outside of the United States.
 
 ', 'http://www.ubuntu.com/news/dell-available-in-europe', true, NULL);
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (5, '2007-11-25 00:53:11.94385', '2007-08-03 10:56:00', 1, NULL, 1, NULL, 'Canonical and Altkom Akademia partner to deliver Ubuntu Certified Professional training in Poland', 'Canonical Ltd, the commercial sponsor of Ubuntu, today announced it has signed an agreement with Altkom Akademia to deliver ''Ubuntu Certified Professional'' (UCP) training in Poland. Altkom will deliver official courses in Warsaw starting in September 2007.
@@ -615,9 +615,9 @@ Two five day courses, Ubuntu Professional Courses 1 & 2, will assist system admi
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (6, '2007-11-25 00:54:20.800516', '2007-07-22 14:43:00', 1, NULL, 1, NULL, 'Canonical Launches Web-Based Systems Management Tool For Ubuntu Deployments', 'Canonical announced today the availability of Landscape, its web-based systems management tool for Ubuntu servers and desktops.
 
 Available to Canonical''s support subscribers, Landscape provides a key tool for the growing number of businesses that want to take advantage of the ease of use of Ubuntu and have previously seen system administration or support as a hurdle.', 'http://www.ubuntu.com/news/landscape-system-management-tool', true, NULL);
-INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (7, '2007-11-25 00:55:21.295487', '2007-06-29 17:28:00', 1, NULL, 1, NULL, 'Ubuntu Receives Readers'' Choice Award for ''Best Linux Distribution''', 'Canonical, Ltd., the commercial sponsor of Ubuntu, today announced that it won Enterprise Open Source Magazineâs Readersâ Choice Award for the âBest Linux Distribution,â voted on by members of the open source community.
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (7, '2007-11-25 00:55:21.295487', '2007-06-29 17:28:00', 1, NULL, 1, NULL, 'Ubuntu Receives Readers'' Choice Award for ''Best Linux Distribution''', 'Canonical, Ltd., the commercial sponsor of Ubuntu, today announced that it won Enterprise Open Source Magazine’s Readers’ Choice Award for the “Best Linux Distribution,” voted on by members of the open source community.
 
-The winners of the Readersâ Choice Awards were revealed by SYS-CON, the parent publishing company for Enterprise Open Source Magazine, at the second annual Enterprise Open Source Conference in New York last week. This year the Enterprise Open Source Conference has been co-located with the SOA World Conference & Expo 2007.
+The winners of the Readers’ Choice Awards were revealed by SYS-CON, the parent publishing company for Enterprise Open Source Magazine, at the second annual Enterprise Open Source Conference in New York last week. This year the Enterprise Open Source Conference has been co-located with the SOA World Conference & Expo 2007.
 
 ', 'http://www.ubuntu.com/news/enterprise-open-source-best-distribution-award', true, NULL);
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (8, '2007-11-25 00:59:12.513928', '2007-11-25 00:59:12.513928', 1, NULL, 1, NULL, 'Ubuntu takes majority market share in Bapetikosweti', 'In a stunning turnaround, the independent republic of Bapetikosweti has declared that all computers sold within its borders should have Ubuntu preinstalled, fully translated into the local dialect, Uysh. A government spokesman said "we wanted to show that this could be nation of change".', NULL, false, '2007-11-25 00:59:23.363818');
@@ -625,25 +625,33 @@ INSERT INTO announcement (id, date_created, date_announced, registrant, product,
 
 Ubuntu is the award-winning Linux distribution for the desktop, laptop, thin client and server which brings together the best of open source software every 6 months. Version 8.04 launched in April as a secure, feature-rich alternative to Microsoft Windows. Recently, Canonical has announced partnerships with leading technology companies including Dell, VMware and Zimbra to expand the distribution''s reach.', NULL, true, NULL);
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (10, '2007-11-25 01:13:31.234806', '2007-11-19 20:00:00', 1, 4, NULL, NULL, 'Firefox 3 Beta 1 Ready for Testing', 'Mozilla announced Firefox 3 Beta 1 today. Mike Betlzner has a comprehensive post on DevNews, crossposted below. Reminder that the Firefox 3 Beta 1 milestone release is intended for testing purposes only and is not for casual users.', 'http://blog.mozilla.com/blog/2007/11/20/firefox-3-beta-1-ready-for-testing/', true, NULL);
-INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (11, '2007-11-25 01:14:42.885968', '2007-10-25 08:02:00', 1, 4, NULL, NULL, 'Extend Firefox 2 is Here!', 'Will you be the brain behind the next great web innovation? Get ready to show the world what youâre made ofâ¦ Extend Firefox 2 is here! Extend Firefox 2 is a developer contest with prizes awarded for creating new Firefox Add-ons. All entries will be judged by a panel of experts.', 'http://blog.mozilla.com/blog/2007/10/25/extend-firefox-2-is-here/', true, NULL);
-INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (12, '2007-11-25 01:16:01.858804', '2007-07-09 12:00:00', 1, 4, NULL, NULL, 'Four Hundred Million Firefox Downloads', 'On November 9th, 2004, you all started a movement. Spread Firefox, supported by tens of thousands of contributors, took just 99 days to deliver 25 million downloads of Firefox to a world of people desperate for a better Web â a Web that didnât overwhelm them with pop-ups, a Web that didnât infect their systems with viruses and spyware, a Web that was fun again, simply put, a Web that worked.', 'http://blog.mozilla.com/blog/2007/09/07/four-hundred-million-firefox-downloads/', true, NULL);
-INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (13, '2007-11-25 01:17:47.035452', '2007-08-06 09:45:00', 1, 4, NULL, NULL, 'Rock Your Firefox!', ' Weâre excited to announce the launch of another tool that will allow you to surf your web, your way: Rock Your Firefox! Rock Your Firefox is an application built on the FacebookÂ® Platform allowing you to personalize, customize, and essentially rock out your browser, and share it with your friends. Browse through more than 2000 add-ons and recommend those you like to your friends - and see what they recommend for you.', 'http://blog.mozilla.com/blog/2007/08/06/rock-your-firefox/', true, NULL);
-INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (14, '2007-11-25 01:19:22.075917', '2007-06-19 22:23:00', 1, 4, NULL, NULL, 'Firefox support options', 'We often get letters, voicemails and emails asking, âHow do I get help for Firefox?â Thatâs a good question, so I thought I would share the available and very helpful resources.', 'http://blog.mozilla.com/blog/2007/06/20/firefox-support-options/', true, NULL);
-INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (15, '2007-11-25 01:20:14.590274', '2007-06-15 02:13:00', 1, 4, NULL, NULL, 'A few foxy tips', 'A great deal of Firefoxâs popularity is due to the ability to personalize it and add all sorts of functionality via add-ons. But there are some nifty shortcuts and features right in Firefox. I asked around here at Mozilla for favorite Firefox features and time savers.', 'http://blog.mozilla.com/blog/2007/06/15/a-few-foxy-tips/', true, NULL);
-INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (16, '2007-11-25 01:21:54.413156', '2007-09-18 02:24:00', 1, 8, NULL, NULL, 'Mozillaâs New Focus on Thunderbird and Internet Communications', 'Mozilla has been investing in email since the Foundation was created. We have a good, solid client in Thunderbird, and we have aspirations to do more. Weâve spent the last few months working on how to meet those aspirations. Many thanks to everyone who participated in the discussions.
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (11, '2007-11-25 01:14:42.885968', '2007-10-25 08:02:00', 1, 4, NULL, NULL, 'Extend Firefox 2 is Here!', 'Will you be the brain behind the next great web innovation? Get ready to show the world what you’re made of… Extend Firefox 2 is here! Extend Firefox 2 is a developer contest with prizes awarded for creating new Firefox Add-ons. All entries will be judged by a panel of experts.', 'http://blog.mozilla.com/blog/2007/10/25/extend-firefox-2-is-here/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (12, '2007-11-25 01:16:01.858804', '2007-07-09 12:00:00', 1, 4, NULL, NULL, 'Four Hundred Million Firefox Downloads', 'On November 9th, 2004, you all started a movement. Spread Firefox, supported by tens of thousands of contributors, took just 99 days to deliver 25 million downloads of Firefox to a world of people desperate for a better Web — a Web that didn’t overwhelm them with pop-ups, a Web that didn’t infect their systems with viruses and spyware, a Web that was fun again, simply put, a Web that worked.', 'http://blog.mozilla.com/blog/2007/09/07/four-hundred-million-firefox-downloads/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (13, '2007-11-25 01:17:47.035452', '2007-08-06 09:45:00', 1, 4, NULL, NULL, 'Rock Your Firefox!', ' We’re excited to announce the launch of another tool that will allow you to surf your web, your way: Rock Your Firefox! Rock Your Firefox is an application built on the Facebook® Platform allowing you to personalize, customize, and essentially rock out your browser, and share it with your friends. Browse through more than 2000 add-ons and recommend those you like to your friends - and see what they recommend for you.', 'http://blog.mozilla.com/blog/2007/08/06/rock-your-firefox/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (14, '2007-11-25 01:19:22.075917', '2007-06-19 22:23:00', 1, 4, NULL, NULL, 'Firefox support options', 'We often get letters, voicemails and emails asking, “How do I get help for Firefox?” That’s a good question, so I thought I would share the available and very helpful resources.', 'http://blog.mozilla.com/blog/2007/06/20/firefox-support-options/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (15, '2007-11-25 01:20:14.590274', '2007-06-15 02:13:00', 1, 4, NULL, NULL, 'A few foxy tips', 'A great deal of Firefox’s popularity is due to the ability to personalize it and add all sorts of functionality via add-ons. But there are some nifty shortcuts and features right in Firefox. I asked around here at Mozilla for favorite Firefox features and time savers.', 'http://blog.mozilla.com/blog/2007/06/15/a-few-foxy-tips/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (16, '2007-11-25 01:21:54.413156', '2007-09-18 02:24:00', 1, 8, NULL, NULL, 'Mozilla’s New Focus on Thunderbird and Internet Communications', 'Mozilla has been investing in email since the Foundation was created. We have a good, solid client in Thunderbird, and we have aspirations to do more. We’ve spent the last few months working on how to meet those aspirations. Many thanks to everyone who participated in the discussions.
 
-The result is that Mozilla is launching a new effort to improve email and internet communications. We will increase our investment and focus on our current email client â Thunderbird â and on innovations in the email and communications areas.', 'http://blog.mozilla.com/blog/2007/09/18/mozillas-new-focus-on-thunderbird-and-internet-communications/', true, NULL);
-INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (17, '2007-11-25 01:25:18.801758', '2007-09-10 10:28:00', 1, NULL, NULL, 4, 'Air Mozilla Live this Wednesday - Window Snyder, Mozilla Security', 'Air Mozilla is the live âcall inâ show featuring influential Mozilla contributors from all over the world. This weekâs show will feature Window Snyder, Chief Security Something or Other, talking about Mozilla and Web security. So join us this Wednesday at air.mozilla.com and on IRC or IM to be a part of the fun.', 'http://blog.mozilla.com/blog/2007/10/09/air-mozilla-live-this-wednesday-window-snyder-mozilla-security/', true, NULL);
-INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (18, '2007-11-25 01:26:23.455036', '2007-09-18 12:28:00', 1, NULL, NULL, 4, 'Special Edition of Air Mozilla: Mitchell Baker and David Ascher', 'Tomorrowâs Air Mozilla Live will be focused on the recent announcements around Mozillaâs increasing investment in email and messaging. Weâll have both Mitchell Baker, Chairman of the Board, and David Ascher, the leader of Mozillaâs new messaging company taking your questions, live just after 2PM Pacific. So join us this Wednesday at air.mozilla.com and on IRC or IM to be a part of the fun.', 'http://blog.mozilla.com/blog/2007/09/18/special-edition-of-air-mozilla-mitchell-baker-and-david-ascher/', true, NULL);
-INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (19, '2007-11-25 01:27:29.708004', '2007-09-15 07:03:00', 1, NULL, NULL, 4, 'Mozilla 24 is LIVE!', 'Our colleagues in Japan kicked off Mozilla 24 in Tokyo this evening. If you werenât able to make it there like me, you donât have to miss out on all the action. You can watch live from the Mozilla 24 site now.', 'http://blog.mozilla.com/blog/2007/09/15/mozilla-24-is-live/', true, NULL);
-INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (20, '2007-11-25 01:28:31.840429', '2007-09-10 07:26:00', 1, NULL, NULL, 4, 'Count down to Mozilla 24!', 'Weâre just a few days away from Mozilla 24, our global community event that will be taking place in Paris, Tokyo, the S.F. Bay Area (Stanford University) and now Thailand! Here is a recap of the Mozilla 24 events near you.', 'http://blog.mozilla.com/blog/2007/09/10/count-down-to-mozilla-24/', true, NULL);
-INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (21, '2007-11-25 01:30:55.41149', '2007-08-07 12:22:00', 1, NULL, NULL, 4, 'Announcing the Grand Re-Opening of the Mozilla Store', 'Hi all. Iâm excited to announce that the revamped Mozilla Store is now live!
-Here are a few quick high points of whatâs new:
+The result is that Mozilla is launching a new effort to improve email and internet communications. We will increase our investment and focus on our current email client — Thunderbird — and on innovations in the email and communications areas.', 'http://blog.mozilla.com/blog/2007/09/18/mozillas-new-focus-on-thunderbird-and-internet-communications/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (17, '2007-11-25 01:25:18.801758', '2007-09-10 10:28:00', 1, NULL, NULL, 4, 'Air Mozilla Live this Wednesday - Window Snyder, Mozilla Security', 'Air Mozilla is the live “call in” show featuring influential Mozilla contributors from all over the world. This week’s show will feature Window Snyder, Chief Security Something or Other, talking about Mozilla and Web security. So join us this Wednesday at air.mozilla.com and on IRC or IM to be a part of the fun.', 'http://blog.mozilla.com/blog/2007/10/09/air-mozilla-live-this-wednesday-window-snyder-mozilla-security/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (18, '2007-11-25 01:26:23.455036', '2007-09-18 12:28:00', 1, NULL, NULL, 4, 'Special Edition of Air Mozilla: Mitchell Baker and David Ascher', 'Tomorrow’s Air Mozilla Live will be focused on the recent announcements around Mozilla’s increasing investment in email and messaging. We’ll have both Mitchell Baker, Chairman of the Board, and David Ascher, the leader of Mozilla’s new messaging company taking your questions, live just after 2PM Pacific. So join us this Wednesday at air.mozilla.com and on IRC or IM to be a part of the fun.', 'http://blog.mozilla.com/blog/2007/09/18/special-edition-of-air-mozilla-mitchell-baker-and-david-ascher/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (19, '2007-11-25 01:27:29.708004', '2007-09-15 07:03:00', 1, NULL, NULL, 4, 'Mozilla 24 is LIVE!', 'Our colleagues in Japan kicked off Mozilla 24 in Tokyo this evening. If you weren’t able to make it there like me, you don’t have to miss out on all the action. You can watch live from the Mozilla 24 site now.', 'http://blog.mozilla.com/blog/2007/09/15/mozilla-24-is-live/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (20, '2007-11-25 01:28:31.840429', '2007-09-10 07:26:00', 1, NULL, NULL, 4, 'Count down to Mozilla 24!', 'We’re just a few days away from Mozilla 24, our global community event that will be taking place in Paris, Tokyo, the S.F. Bay Area (Stanford University) and now Thailand! Here is a recap of the Mozilla 24 events near you.', 'http://blog.mozilla.com/blog/2007/09/10/count-down-to-mozilla-24/', true, NULL);
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (21, '2007-11-25 01:30:55.41149', '2007-08-07 12:22:00', 1, NULL, NULL, 4, 'Announcing the Grand Re-Opening of the Mozilla Store', 'Hi all. I’m excited to announce that the revamped Mozilla Store is now live!
+Here are a few quick high points of what’s new:
 - new site design, featuring Mozilla employees as models.
 - 12 new items (plus many old favorites) including t-shirts, stickers and more.
 - interactive features including a Store Blog, Community Spotlight', 'http://blog.mozilla.com/blog/2007/08/17/announcing-the-grand-re-opening-of-the-mozilla-store/', true, NULL);
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (22, '2007-11-25 01:32:06.722004', NULL, 1, NULL, NULL, 4, 'Google become Platinum Sponsor of Mozilla', 'In a landmark deal for an open source project, Mozilla and Google have agreed that Google will provide free food to all Mozilla contributors, regardless of their domicile.', NULL, true, NULL);
 
+INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (23, '2007-11-23 01:32:06.722004', '2007-11-23 01:32:06.722004', 1, NULL, 1, NULL, 'Ampersand="&" LessThan="<" GreaterThan=">"', 'This is to test that special characters get escaped and displayed correctly.
+Ampersand="&"
+LessThan="<"
+GreaterThan=">"
+Newline="
+"
+url="http://www.ubuntu.com" (The text-to-html formatter should make this an <a> tag)
+', NULL, true, NULL);
 
 ALTER TABLE announcement ENABLE TRIGGER ALL;
 
@@ -668,9 +676,9 @@ INSERT INTO archive (id, "owner", description, enabled, authorized_size, whitebo
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1);
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1);
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (9, 28, 'packages to help my friends.', true, 1234567, 'It is not my fault.', 1, 2);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, NULL, NULL, 1, 2);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, NULL, NULL, 1, 2);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2);
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4);
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4);
 
@@ -1365,7 +1373,7 @@ ALTER TABLE continent ENABLE TRIGGER ALL;
 ALTER TABLE country DISABLE TRIGGER ALL;
 
 INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, continent) VALUES (1, 'AF', 'AFG', 'Afghanistan', 'The Transitional Islamic State of Afghanistan', NULL, 2);
-INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, continent) VALUES (2, 'AX', 'ALA', 'Ãland Islands', NULL, NULL, 3);
+INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, continent) VALUES (2, 'AX', 'ALA', 'Åland Islands', NULL, NULL, 3);
 INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, continent) VALUES (3, 'AL', 'ALB', 'Albania', 'Republic of Albania', NULL, 3);
 INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, continent) VALUES (4, 'DZ', 'DZA', 'Algeria', 'People''s Democratic Republic of Algeria', NULL, 1);
 INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, continent) VALUES (5, 'AS', 'ASM', 'American Samoa', NULL, NULL, 6);
@@ -1417,7 +1425,7 @@ INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, c
 INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, continent) VALUES (51, 'CD', 'ZAR', 'Congo, The Democratic Republic of the', NULL, NULL, 1);
 INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, continent) VALUES (52, 'CK', 'COK', 'Cook Islands', NULL, NULL, 6);
 INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, continent) VALUES (53, 'CR', 'CRI', 'Costa Rica', 'Republic of Costa Rica', NULL, 4);
-INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, continent) VALUES (54, 'CI', 'CIV', 'CÃ´te d''Ivoire', 'Republic of Cote d''Ivoire', NULL, 1);
+INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, continent) VALUES (54, 'CI', 'CIV', 'Côte d''Ivoire', 'Republic of Cote d''Ivoire', NULL, 1);
 INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, continent) VALUES (55, 'HR', 'HRV', 'Croatia', 'Republic of Croatia', NULL, 3);
 INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, continent) VALUES (56, 'CU', 'CUB', 'Cuba', 'Republic of Cuba', NULL, 4);
 INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, continent) VALUES (57, 'CY', 'CYP', 'Cyprus', 'Republic of Cyprus', NULL, 2);
@@ -2695,7 +2703,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (299, 'nic', 'Niger-Kordofanian (Other)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (300, 'niu', 'Niuean', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (301, 'nn', 'Norwegian Nynorsk', NULL, 2, 'n != 1', true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (302, 'nb', 'Norwegian BokmÃ¥l', NULL, 2, 'n != 1', true, 0, '{4CD2763D-5532-4ddc-84D9-2E094695A680}');
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (302, 'nb', 'Norwegian Bokmål', NULL, 2, 'n != 1', true, 0, '{4CD2763D-5532-4ddc-84D9-2E094695A680}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (303, 'nog', 'Nogai', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (304, 'non', 'Norse, Old', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (305, 'no', 'Norwegian', NULL, 2, 'n != 1', false, 0, NULL);
@@ -2730,7 +2738,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (334, 'pt', 'Portuguese', NULL, 2, 'n != 1', true, 0, '{6e528a74-5cca-40d1-mozia152-d1b2d415210b}');
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (335, 'pon', 'Pohnpeian', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (336, 'pra', 'Prakrit languages', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (337, 'pro', 'ProvenÃ§al, Old (to 1500)', NULL, NULL, NULL, true, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (337, 'pro', 'Provençal, Old (to 1500)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (338, 'ps', 'Pushto', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (339, 'qu', 'Quechua', NULL, 2, '(n % 10 == 1 && n % 100 != 11) ? 0 : 1', true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (340, 'raj', 'Rajasthani', NULL, NULL, NULL, true, 0, NULL);
@@ -3234,7 +3242,7 @@ INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rf
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (13, '2005-10-14 13:28:11.554476', 'Re: Slow system', 12, NULL, NULL, '<20051014132811.14276.65873.lptickets@localhost.localdomain>', NULL, NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (14, '2005-10-28 09:10:17.13237', 'Printing doesn''t work', 12, NULL, 3, '<20051028091017.6690.9505.malonedeb@localhost.localdomain>', NULL, NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (15, '2006-02-23 16:42:14.080227', 'Thunderbird crashes', 16, NULL, 1, '<20060223164214.9126.7558.malonedeb@localhost.localdomain>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (16, '2006-06-16 17:12:54', 'Unicodeâ¢', 16, NULL, NULL, '<20060616141252.22134.71562@localhost.localdomain>', NULL, 51);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (16, '2006-06-16 17:12:54', 'Unicode™', 16, NULL, NULL, '<20060616141252.22134.71562@localhost.localdomain>', NULL, 51);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (17, '2006-02-22 19:42:21.890299', 'another test bug', 16, NULL, 1, '<20060222194221.25842.69665.malonedeb@banzai.async.com.br>', NULL, NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (18, '2006-07-20 20:48:24.975495', 'Re: Continue playing after shutdown', 16, NULL, NULL, '<20060720204825.13277.37433.lptickets@Bourdieu.Contre.COM>', NULL, NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (19, '2006-07-20 20:49:47.551344', 'Re: mailto: problem in webpage', 16, NULL, NULL, '<20060720204947.13277.79684.lptickets@Bourdieu.Contre.COM>', NULL, NULL);
@@ -3317,7 +3325,7 @@ INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (1
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (14, 15, 1, 'Every time I start Thunderbird it crashes.', NULL, NULL);
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (15, 16, 1, 'Welcome to Canada!', NULL, NULL);
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (16, 17, 1, 'test bug', NULL, NULL);
-INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (17, 16, 2, 'Unicodeâ¢ text', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (17, 16, 2, 'Unicode™ text', NULL, NULL);
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (18, 18, 1, 'XMMS has a plugin for that.', NULL, NULL);
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (19, 19, 1, 'Have you tried changing the preferences in system->preferences->preferred applications?', NULL, NULL);
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (20, 20, 1, 'Hi, see https://help.ubuntu.com/community/Java for the proper way to install Java.', NULL, NULL);
@@ -3934,88 +3942,88 @@ ALTER TABLE packaging ENABLE TRIGGER ALL;
 
 ALTER TABLE person DISABLE TRIGGER ALL;
 
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (1, 'Mark Shuttleworth', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'sabdfl', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.591618', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'sabdfl_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (2, 'Robert Collins', 'ID1adsprLaTBox18F6dpSdtSdqCiOdpgUXBo4oG17qhg73jSDTVe3g==', NULL, NULL, 'lifeless', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.598107', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'lifeless_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (3, 'Dave Miller', NULL, NULL, NULL, 'justdave', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.610048', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'justdave_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (4, 'Colin Watson', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'kamion', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.611185', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'kamion_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (5, 'Scott James Remnant', NULL, NULL, NULL, 'keybuk', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.608802', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'keybuk_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (6, 'Jeff Waugh', 'egSV4F7r1WCy/hf5jWu7AlOfsdt6E5/eGUDj2esLlEPV8VfJSdIJSQ==', NULL, NULL, 'jdub', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.600523', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'jdub_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (7, 'Andrew Bennetts', NULL, NULL, NULL, 'spiv', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.551196', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 2, 'when importing bugs from http://bugzilla.ubuntu.com/', NULL, NULL, 10, 'spiv_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (8, 'James Blackwell', 'AqRrSgxlaD/jsmKcwKM6WRV6RjgdyuND0kHVDSFG+F1FGUCoCXncuQ==', NULL, NULL, 'jblack', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.601584', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'jblack_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (9, 'Christian Reis', NULL, NULL, NULL, 'kiko', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.594941', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'kiko_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (10, 'Alexander Limi', NULL, NULL, NULL, 'limi', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.619713', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 2, 'when importing bugs from http://bugzilla.ubuntu.com/', NULL, NULL, 10, 'limi_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (11, 'Steve Alexander', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'stevea', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.599234', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'stevea_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (12, 'Sample Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name12', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.612277', 'Australia/Perth', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 8, NULL, NULL, NULL, 10, 'name12_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (13, 'Carlos PerellÃ³ MarÃ­n', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 'carlos', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.615543', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'carlos_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (14, 'Dafydd Harries', 'pGQrbOLX8qWHLVFxd/VPhZlqhPDXj/3/8p8CeEUYIFfYziLKdTbJNQ==', NULL, NULL, 'daf', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.616666', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'daf_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (16, 'Foo Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name16', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', 'Africa/Johannesburg', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'name16_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (17, 'Ubuntu Team', NULL, 1, 'This Team is responsible for the Ubuntu Distribution', 'ubuntu-team', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.60576', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'ubuntu-team_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (18, 'Ubuntu Gnome Team', NULL, 1, 'This Team is responsible for the GNOME releases Issues on whole Ubuntu Distribution', 'name18', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.607744', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'name18_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (19, 'Warty Gnome Team', NULL, 1, 'This Team is responsible for GNOME release Issues on Warty Distribution Release', 'name19', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.602661', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'name19_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (20, 'Warty Security Team', NULL, 1, 'This Team is responsible for Security Issues on Warty Distribution Release', 'name20', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.614468', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'name20_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (21, 'Hoary Gnome Team', NULL, 1, 'This team is responsible for Security Issues on Hoary Distribution Release', 'name21', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.603691', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'name21_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (22, 'Stuart Bishop', 'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx', NULL, NULL, 'stub', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.59276', 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'stub_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (23, 'David Allouche', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'ddaa', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.620823', 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 35, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'ddaa_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (24, 'VCS imports', NULL, 2, 'Owner of branches imported from non-bzr VCS', 'vcs-imports', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.604746', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'vcs-imports_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (25, 'Launchpad Administrators', NULL, 1, 'Launchpad Administrators', 'admins', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'admins_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (26, 'Daniel Silverstone', NULL, NULL, NULL, 'kinnison', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.618722', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 2, 'when importing bugs from http://bugzilla.ubuntu.com/', NULL, NULL, 10, 'kinnison_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (27, 'Daniel Henrique Debonzi', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 'debonzi', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.557224', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'debonzi_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (28, 'Celso Providelo', 'OkikNBxGC7hgRBJ109OZru86vpzhHw+cO+zW/0SlTN2phfv7lSwSHg==', NULL, NULL, 'cprov', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.59705', 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'cprov_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (29, 'Guilherme Salgado', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 'salgado', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.596025', 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'salgado_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (30, 'Rosetta Administrators', NULL, 25, 'Rosetta Administrators', 'rosetta-admins', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.613368', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'rosetta-admins_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (31, 'Ubuntu Translators', NULL, 30, 'Ubuntu Translators', 'ubuntu-translators', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.617651', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'ubuntu-translators_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (32, 'GuadaMen', NULL, 16, 'The guadalinex maintainers team', 'guadamen', NULL, NULL, 700, 300, 1, NULL, '2005-06-06 08:59:51.606755', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'guadamen_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (33, 'Edgar Bursic', 'y8OAKvlJbK6Ai5ycnK2D/754rb4/jKwJvPJ13OUqPr8mRY2kb4jQXw==', NULL, NULL, 'edgar', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.621892', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'edgar_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (34, 'Jordi Vilalta', 'gsTz0TyTUL7xrkoAH4Yz2WE6/w6WoYG5LjaO8p/xA1FDdSM6qkWiYA==', NULL, NULL, 'jvprat', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.622908', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Catalan (ca) translation of pmount in Ubuntu Hoary package "pmount"', NULL, NULL, 10, 'jvprat_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (35, 'Sigurd Gartmann', 'FvPq9d4L5onnmcRA9wCzQ5lnPPYIzvW5rJA7GGnnsJuQqz8M8naZkQ==', NULL, NULL, 'sigurd-ubuntu', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.623962', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Norwegian BokmÃ¥l (nb) translation of pmount in Ubuntu Hoary package "pmount"', NULL, NULL, 10, 'sigurd-ubuntu_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (36, 'Vlastimil Skacel', 'lyA9CgUH9lHmTiaiWGP2vzkmytufiHBAnc9c8WCX1g5pYyBd6QgL3A==', NULL, NULL, 'skacel', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.5244', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Czech (cs) translation of pmount in Ubuntu Hoary package "pmount"', NULL, NULL, 10, 'skacel_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (37, 'Daniel Aguayo', 'bpLapC1tQHUedQBP447krtcmaRPd3hrncPusTlNUKXh5ymfO5yVhhQ==', NULL, NULL, 'danner', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.549651', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'danner_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (38, 'Martin Pitt', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 'martin-pitt', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.555051', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the German (de) translation of pmount in Ubuntu Hoary package "pmount"', NULL, NULL, 10, 'martin-pitt_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (39, 'Nicolas Velin', 'U2QzusrIFlQZKb3hWzcLpfhFcB3WZ0fa0E+OwcV8q/WOtsQCjarzzA==', NULL, NULL, 'nsv', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.556132', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the French (fr) translation of pmount in Ubuntu Hoary package "pmount"', NULL, NULL, 10, 'nsv_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (40, 'Francesco AccattapÃ ', 'mSKDc1EKoi8a5L0zd+oueU33nuSEuFWy+JHIHxOukBVJt9LPW47RVg==', NULL, NULL, 'callipeo', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.558429', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Italian (Italy) (it_IT) translation of pmount in Ubuntu Hoary package "pmount"', NULL, NULL, 10, 'callipeo_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (41, 'Aloriel', '94y1dy33Evut2/bLsGG8Pzguyuip9wHeRtFWp0cSItzHdD1tK3gmcQ==', NULL, NULL, 'jorge-gonzalez-gonzalez', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.559519', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"', NULL, NULL, 10, 'jorge-gonzalez-gonzalez_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (42, 'Denis Barbier', 'vI/vIVB2qsx1NvuaMy+q4l8rWUNMFINWzCSLOK1D5qi97/VmXvIrEw==', NULL, NULL, 'barbier', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.560604', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the French (fr) translation of pkgconf-mozilla in Ubuntu Hoary package "mozilla"', NULL, NULL, 10, 'barbier_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (43, 'AndrÃ© LuÃ­s Lopes', 'HG6qWB8PwzfIr3z+Tu+m3lQv7r1dsaWY6rxCxRuNypGomTPTzBh9iA==', NULL, NULL, 'andrelop', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.561685', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Portuguese (Brazil) (pt_BR) translation of pkgconf-mozilla in Ubuntu Hoary package "mozilla"', NULL, NULL, 10, 'andrelop_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (44, 'Carlos Valdivia YagÃ¼e', 'xrXafuC+VBaIz3m2+0UMjxms+2KhGhj6qnQdoo2V/f4iNFHJgSDzzw==', NULL, NULL, 'valyag', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.562857', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Spanish (es) translation of pkgconf-mozilla in Ubuntu Hoary package "mozilla"', NULL, NULL, 10, 'valyag_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (45, 'Luk Claes', 'w+f2krWWyQIIm76PIUEIsMCNQLhWLjObLcDONJNjjXcRaiKzKXeMAw==', NULL, NULL, 'luk-claes', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.563952', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Dutch (nl) translation of pkgconf-mozilla in Ubuntu Hoary package "mozilla"', NULL, NULL, 10, 'luk-claes_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (46, 'Miroslav Kure', '1u05okOZJIa069F8COZ2vmxRq11c+4rolNUVRp539TI5ihnHwk9+Sw==', NULL, NULL, 'kurem', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.565033', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'kurem_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (47, 'Morten Brix Pedersen', 'n+KIa3PoihBN8ljj9Hjg9H3Im2LWnrn2yprgY4u/MnxOQx3dOh3bDw==', NULL, NULL, 'morten', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.56614', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Danish (da) translation of pkgconf-mozilla in Ubuntu Hoary package "mozilla"', NULL, NULL, 10, 'morten_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (48, 'Matti PÃ¶llÃ¤', 'U4KMnp73AYdriB7QH2NpEYhlH+fBWJKziDPcDAt25OxItZMYh0QV4Q==', NULL, NULL, 'mpo', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.567224', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Finnish (fi) translation of pkgconf-mozilla in Ubuntu Hoary package "mozilla"', NULL, NULL, 10, 'mpo_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (49, 'KÄstutis BiliÅ«nas', 'YbUJ4nzlxjYtaLLFMqUFL3LplUpS3FxcYwiCAS0WaAcnXS8Sst9BgA==', NULL, NULL, 'kebil', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.568323', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Lithuanian (lt) translation of pkgconf-mozilla in Ubuntu Hoary package "mozilla"', NULL, NULL, 10, 'kebil_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (50, 'Valentina Commissari', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 'tsukimi', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.569518', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'tsukimi_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (51, 'Helge Kreutzmann', 'sYVFKi2dWAfkFkWekcW296s2dZ0ihYcxAXtwumI1FQJes4PWD8xvqQ==', NULL, NULL, 'kreutzm', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.570701', 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 25, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'kreutzm_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (52, 'No Privileges Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'no-priv', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'no-priv_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (53, 'testing Spanish team', NULL, 13, NULL, 'testing-spanish-team', NULL, NULL, NULL, NULL, 1, NULL, '2005-07-12 14:32:01.84779', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'testing-spanish-team_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (55, 'Marilize Coetzee', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'marilize', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', 'Africa/Johannesburg', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'marilize_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (56, 'Jordi Mallach', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'jordi', NULL, NULL, NULL, NULL, 1, NULL, '2005-10-07 14:17:51.593849', 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'jordi_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (57, 'Launchpad Developers', NULL, 16, 'Launchpad developers', 'launchpad', NULL, NULL, NULL, NULL, 3, NULL, '2005-10-13 13:03:41.668724', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'launchpad_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (58, 'Bug Importer', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'bug-importer', NULL, NULL, NULL, NULL, 1, NULL, '2005-12-06 09:48:58.287679', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'bug-importer_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (59, 'Mirror Administrators', NULL, 1, 'Mirror Administrators', 'ubuntu-mirror-admins', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'ubuntu-mirror-admins_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (60, 'Registry Administrators', NULL, 1, 'Launchpad Registry Administrators Team', 'registry', NULL, NULL, NULL, NULL, 1, NULL, '2006-04-06 10:17:11.833824', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'registry_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (61, 'Launchpad Buildd Admins', NULL, 16, 'Buildd System administrators', 'launchpad-buildd-admins', NULL, NULL, NULL, NULL, 1, NULL, '2006-05-15 22:23:29.062603', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'launchpad-buildd-admins_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (62, 'Bug Watch Updater', NULL, NULL, NULL, 'bug-watch-updater', NULL, NULL, NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL, 10, 'bug-watch-updater_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (63, 'Karl Tilbury', 'UnjDN34pTZ0xE3vbCNZDedIVpLPrA9nty9S/mOzbeefQXAEN6CMNUQ==', NULL, NULL, 'karl', NULL, NULL, NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 8, NULL, NULL, NULL, 10, 'karl_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (64, 'Landscape Developers', NULL, 12, NULL, 'landscape-developers', NULL, NULL, NULL, NULL, 1, NULL, '2006-07-11 20:01:09.874128', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'landscape-developers_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (65, 'Launchpad Janitor', NULL, NULL, NULL, 'janitor', NULL, NULL, NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL, 10, 'launchpad-janitor_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (66, 'Diogo Matsubara', NULL, NULL, NULL, 'matsubara', NULL, NULL, NULL, NULL, 1, NULL, '2006-12-13 21:19:06.369142', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Portuguese (Brazil) (pt_BR) translation of evolution-2.2-test in Evolution trunk', NULL, NULL, 10, 'matsubara_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (67, 'Team Membership Janitor', NULL, NULL, NULL, 'team-membership-janitor', NULL, NULL, NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL, 10, 'team-membership-janitor_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (68, 'Launchpad Beta Testers Owner', 'q/esKTLj2ba0Bzu2Xdi1JA4zgC683EE3I1Vjm+hp4mY+xgikQ7YD1g==', NULL, NULL, 'launchpad-beta-owner', NULL, NULL, NULL, NULL, 1, NULL, '2007-01-31 06:56:25.096519', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'launchpad-beta-owner_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (69, 'Launchpad Beta Testers', NULL, 68, 'People who are testing the new Launchpad "beta" UI.', 'launchpad-beta-testers', NULL, NULL, NULL, NULL, 1, NULL, '2007-01-31 06:57:54.592917', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'launchpad-beta-testers_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243601, 'ShipIt Administrators', NULL, 1, 'ShipIt Administrators', 'shipit-admins', NULL, NULL, NULL, NULL, 1, NULL, '2007-02-05 06:24:03.06971', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'shipit-admins_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243602, 'No Team Memberships', 'PlPmrpS1styVUEK/lGn72zqxYYeZcLqKD3b5oD4/C6AyntMMFvSacw==', NULL, NULL, 'no-team-memberships', NULL, NULL, NULL, NULL, 1, NULL, '2007-02-19 11:17:57.755666', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'no-team-memberships_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243603, 'One Membership', '52kdKnxgzc0LWK2ltsED9SeqQcjZgDAj+wWlaRotx3BvsXJCH0AUdQ==', NULL, NULL, 'one-membership', NULL, NULL, NULL, NULL, 1, NULL, '2007-02-21 10:53:59.700105', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'one-membership_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243604, 'Simple Team', NULL, 243603, 'This team should have only one member, the "One Membership" user.', 'simple-team', NULL, NULL, NULL, NULL, 3, NULL, '2007-02-21 10:55:03.899255', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'simple-team_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243606, 'Julian Edwards', NULL, NULL, NULL, 'launchpad-julian-edwards', NULL, NULL, NULL, NULL, 1, NULL, '2007-08-09 21:25:37.832976', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 7, 'when the commercialpackage_1.0-1 package was uploaded to breezy-autotest/RELEASE', NULL, NULL, 10, 'neMCQNd', NULL, 10, 9, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243607, 'Mailing List Experts', NULL, 25, 'This team is responsible for the management of Launchpad-hosted mailing lists.', 'mailing-list-experts', NULL, NULL, NULL, NULL, 3, NULL, '2007-10-04 19:59:03.615674', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'CQGNewe', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243608, 'Ubuntu Doc Team', NULL, NULL, NULL, 'doc', NULL, NULL, NULL, NULL, 1, NULL, '2007-11-12 15:23:19.847132', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 3, NULL, NULL, NULL, 10, 'WQPMHdf', NULL, 10, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243609, 'Katie', NULL, NULL, NULL, 'katie', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-07 13:43:20.393704', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, '6w7kmzC', NULL, 20, 0, NULL, NULL, 1, true, NULL, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243610, 'Gold Member', '9I7bMpJUcBH+edfXjswjdo7nC6iuoTU6YAqolznT59Q1h9v+z9pdVQ==', NULL, NULL, 'member', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-14 16:52:15.403833', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'cCGE3LA', NULL, 20, 0, NULL, NULL, 1, true, 1, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243611, 'Owner', 'zpAkRDpNGKvwvoPeBHuuwK4RFNCrwUnEMglcuWfzV1FCZ0M9nskK8w==', NULL, NULL, 'owner', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-14 16:52:15.403833', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'MGWJnTL', NULL, 20, 0, NULL, NULL, 1, true, 1, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243612, 'My Team', NULL, 243611, NULL, 'myteam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-14 16:52:15.403833', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'ewxwdWA', NULL, 10, 0, NULL, NULL, 1, true, 20, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243613, 'Other Team', NULL, 243611, NULL, 'otherteam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-14 16:52:15.403833', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'XPJeTcA', NULL, 10, 0, NULL, NULL, 1, true, 1, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243614, 'josh', NULL, NULL, NULL, 'jbuhl-nospam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, '6KHNEe3', NULL, 10, 0, NULL, NULL, 1, true, 1, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243615, 'Sjoerd Simons', NULL, NULL, NULL, 'sjoerd', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 'yEzBPbd', NULL, 10, 0, NULL, NULL, 1, true, 1, true);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243616, 'Martin Pitt', NULL, NULL, NULL, 'mpitt', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 'R8FpwXd', NULL, 10, 0, NULL, NULL, 1, true, 1, true);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (1, 'Mark Shuttleworth', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'sabdfl', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.591618', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'sabdfl_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (2, 'Robert Collins', 'ID1adsprLaTBox18F6dpSdtSdqCiOdpgUXBo4oG17qhg73jSDTVe3g==', NULL, NULL, 'lifeless', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.598107', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'lifeless_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (3, 'Dave Miller', NULL, NULL, NULL, 'justdave', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.610048', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'justdave_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (4, 'Colin Watson', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'kamion', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.611185', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'kamion_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (5, 'Scott James Remnant', NULL, NULL, NULL, 'keybuk', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.608802', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'keybuk_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (6, 'Jeff Waugh', 'egSV4F7r1WCy/hf5jWu7AlOfsdt6E5/eGUDj2esLlEPV8VfJSdIJSQ==', NULL, NULL, 'jdub', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.600523', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'jdub_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (7, 'Andrew Bennetts', NULL, NULL, NULL, 'spiv', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.551196', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 2, 'when importing bugs from http://bugzilla.ubuntu.com/', NULL, NULL, 10, 'spiv_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (8, 'James Blackwell', 'AqRrSgxlaD/jsmKcwKM6WRV6RjgdyuND0kHVDSFG+F1FGUCoCXncuQ==', NULL, NULL, 'jblack', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.601584', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'jblack_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (9, 'Christian Reis', NULL, NULL, NULL, 'kiko', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.594941', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'kiko_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (10, 'Alexander Limi', NULL, NULL, NULL, 'limi', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.619713', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 2, 'when importing bugs from http://bugzilla.ubuntu.com/', NULL, NULL, 10, 'limi_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (11, 'Steve Alexander', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'stevea', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.599234', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'stevea_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (12, 'Sample Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name12', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.612277', 'Australia/Perth', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 8, NULL, NULL, NULL, 10, 'name12_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (13, 'Carlos Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 'carlos', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.615543', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'carlos_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (14, 'Dafydd Harries', 'pGQrbOLX8qWHLVFxd/VPhZlqhPDXj/3/8p8CeEUYIFfYziLKdTbJNQ==', NULL, NULL, 'daf', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.616666', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'daf_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (16, 'Foo Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name16', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', 'Africa/Johannesburg', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'name16_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (17, 'Ubuntu Team', NULL, 1, 'This Team is responsible for the Ubuntu Distribution', 'ubuntu-team', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.60576', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'ubuntu-team_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (18, 'Ubuntu Gnome Team', NULL, 1, 'This Team is responsible for the GNOME releases Issues on whole Ubuntu Distribution', 'name18', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.607744', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'name18_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (19, 'Warty Gnome Team', NULL, 1, 'This Team is responsible for GNOME release Issues on Warty Distribution Release', 'name19', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.602661', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'name19_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (20, 'Warty Security Team', NULL, 1, 'This Team is responsible for Security Issues on Warty Distribution Release', 'name20', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.614468', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'name20_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (21, 'Hoary Gnome Team', NULL, 1, 'This team is responsible for Security Issues on Hoary Distribution Release', 'name21', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.603691', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'name21_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (22, 'Stuart Bishop', 'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx', NULL, NULL, 'stub', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.59276', 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'stub_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (23, 'David Allouche', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'ddaa', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.620823', 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 35, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'ddaa_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (24, 'VCS imports', NULL, 2, 'Owner of branches imported from non-bzr VCS', 'vcs-imports', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.604746', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'vcs-imports_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (25, 'Launchpad Administrators', NULL, 1, 'Launchpad Administrators', 'admins', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'admins_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (26, 'Daniel Silverstone', NULL, NULL, NULL, 'kinnison', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.618722', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 2, 'when importing bugs from http://bugzilla.ubuntu.com/', NULL, NULL, 10, 'kinnison_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (27, 'Daniel Henrique Debonzi', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 'debonzi', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.557224', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'debonzi_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (28, 'Celso Providelo', 'OkikNBxGC7hgRBJ109OZru86vpzhHw+cO+zW/0SlTN2phfv7lSwSHg==', NULL, NULL, 'cprov', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.59705', 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'cprov_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (29, 'Guilherme Salgado', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 'salgado', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.596025', 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'salgado_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (30, 'Rosetta Administrators', NULL, 25, 'Rosetta Administrators', 'rosetta-admins', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.613368', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'rosetta-admins_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (31, 'Ubuntu Translators', NULL, 30, 'Ubuntu Translators', 'ubuntu-translators', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.617651', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'ubuntu-translators_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (32, 'GuadaMen', NULL, 16, 'The guadalinex maintainers team', 'guadamen', NULL, NULL, 700, 300, 1, NULL, '2005-06-06 08:59:51.606755', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'guadamen_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (33, 'Edgar Bursic', 'y8OAKvlJbK6Ai5ycnK2D/754rb4/jKwJvPJ13OUqPr8mRY2kb4jQXw==', NULL, NULL, 'edgar', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.621892', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'edgar_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (34, 'Jordi Vilalta', 'gsTz0TyTUL7xrkoAH4Yz2WE6/w6WoYG5LjaO8p/xA1FDdSM6qkWiYA==', NULL, NULL, 'jvprat', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.622908', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Catalan (ca) translation of pmount in Ubuntu Hoary package "pmount"', NULL, NULL, 10, 'jvprat_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (35, 'Sigurd Gartmann', 'FvPq9d4L5onnmcRA9wCzQ5lnPPYIzvW5rJA7GGnnsJuQqz8M8naZkQ==', NULL, NULL, 'sigurd-ubuntu', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.623962', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Norwegian Bokmål (nb) translation of pmount in Ubuntu Hoary package "pmount"', NULL, NULL, 10, 'sigurd-ubuntu_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (36, 'Vlastimil Skacel', 'lyA9CgUH9lHmTiaiWGP2vzkmytufiHBAnc9c8WCX1g5pYyBd6QgL3A==', NULL, NULL, 'skacel', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.5244', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Czech (cs) translation of pmount in Ubuntu Hoary package "pmount"', NULL, NULL, 10, 'skacel_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (37, 'Daniel Aguayo', 'bpLapC1tQHUedQBP447krtcmaRPd3hrncPusTlNUKXh5ymfO5yVhhQ==', NULL, NULL, 'danner', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.549651', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'danner_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (38, 'Martin Pitt', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 'martin-pitt', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.555051', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the German (de) translation of pmount in Ubuntu Hoary package "pmount"', NULL, NULL, 10, 'martin-pitt_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (39, 'Nicolas Velin', 'U2QzusrIFlQZKb3hWzcLpfhFcB3WZ0fa0E+OwcV8q/WOtsQCjarzzA==', NULL, NULL, 'nsv', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.556132', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the French (fr) translation of pmount in Ubuntu Hoary package "pmount"', NULL, NULL, 10, 'nsv_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (40, 'Francesco Accattapà', 'mSKDc1EKoi8a5L0zd+oueU33nuSEuFWy+JHIHxOukBVJt9LPW47RVg==', NULL, NULL, 'callipeo', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.558429', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Italian (Italy) (it_IT) translation of pmount in Ubuntu Hoary package "pmount"', NULL, NULL, 10, 'callipeo_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (41, 'Aloriel', '94y1dy33Evut2/bLsGG8Pzguyuip9wHeRtFWp0cSItzHdD1tK3gmcQ==', NULL, NULL, 'jorge-gonzalez-gonzalez', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.559519', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"', NULL, NULL, 10, 'jorge-gonzalez-gonzalez_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (42, 'Denis Barbier', 'vI/vIVB2qsx1NvuaMy+q4l8rWUNMFINWzCSLOK1D5qi97/VmXvIrEw==', NULL, NULL, 'barbier', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.560604', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the French (fr) translation of pkgconf-mozilla in Ubuntu Hoary package "mozilla"', NULL, NULL, 10, 'barbier_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (43, 'André Luís Lopes', 'HG6qWB8PwzfIr3z+Tu+m3lQv7r1dsaWY6rxCxRuNypGomTPTzBh9iA==', NULL, NULL, 'andrelop', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.561685', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Portuguese (Brazil) (pt_BR) translation of pkgconf-mozilla in Ubuntu Hoary package "mozilla"', NULL, NULL, 10, 'andrelop_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (44, 'Carlos Valdivia Yagüe', 'xrXafuC+VBaIz3m2+0UMjxms+2KhGhj6qnQdoo2V/f4iNFHJgSDzzw==', NULL, NULL, 'valyag', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.562857', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Spanish (es) translation of pkgconf-mozilla in Ubuntu Hoary package "mozilla"', NULL, NULL, 10, 'valyag_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (45, 'Luk Claes', 'w+f2krWWyQIIm76PIUEIsMCNQLhWLjObLcDONJNjjXcRaiKzKXeMAw==', NULL, NULL, 'luk-claes', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.563952', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Dutch (nl) translation of pkgconf-mozilla in Ubuntu Hoary package "mozilla"', NULL, NULL, 10, 'luk-claes_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (46, 'Miroslav Kure', '1u05okOZJIa069F8COZ2vmxRq11c+4rolNUVRp539TI5ihnHwk9+Sw==', NULL, NULL, 'kurem', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.565033', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'kurem_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (47, 'Morten Brix Pedersen', 'n+KIa3PoihBN8ljj9Hjg9H3Im2LWnrn2yprgY4u/MnxOQx3dOh3bDw==', NULL, NULL, 'morten', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.56614', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Danish (da) translation of pkgconf-mozilla in Ubuntu Hoary package "mozilla"', NULL, NULL, 10, 'morten_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (48, 'Matti Pöllä', 'U4KMnp73AYdriB7QH2NpEYhlH+fBWJKziDPcDAt25OxItZMYh0QV4Q==', NULL, NULL, 'mpo', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.567224', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Finnish (fi) translation of pkgconf-mozilla in Ubuntu Hoary package "mozilla"', NULL, NULL, 10, 'mpo_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (49, 'Kęstutis Biliūnas', 'YbUJ4nzlxjYtaLLFMqUFL3LplUpS3FxcYwiCAS0WaAcnXS8Sst9BgA==', NULL, NULL, 'kebil', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.568323', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Lithuanian (lt) translation of pkgconf-mozilla in Ubuntu Hoary package "mozilla"', NULL, NULL, 10, 'kebil_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (50, 'Valentina Commissari', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 'tsukimi', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.569518', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'tsukimi_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (51, 'Helge Kreutzmann', 'sYVFKi2dWAfkFkWekcW296s2dZ0ihYcxAXtwumI1FQJes4PWD8xvqQ==', NULL, NULL, 'kreutzm', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.570701', 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 25, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'kreutzm_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (52, 'No Privileges Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'no-priv', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'no-priv_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (53, 'testing Spanish team', NULL, 13, NULL, 'testing-spanish-team', NULL, NULL, NULL, NULL, 1, NULL, '2005-07-12 14:32:01.84779', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'testing-spanish-team_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (55, 'Marilize Coetzee', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'marilize', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', 'Africa/Johannesburg', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'marilize_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (56, 'Jordi Mallach', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'jordi', NULL, NULL, NULL, NULL, 1, NULL, '2005-10-07 14:17:51.593849', 'UTC', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'jordi_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (57, 'Launchpad Developers', NULL, 16, 'Launchpad developers', 'launchpad', NULL, NULL, NULL, NULL, 3, NULL, '2005-10-13 13:03:41.668724', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'launchpad_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (58, 'Bug Importer', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'bug-importer', NULL, NULL, NULL, NULL, 1, NULL, '2005-12-06 09:48:58.287679', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'bug-importer_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (59, 'Mirror Administrators', NULL, 1, 'Mirror Administrators', 'ubuntu-mirror-admins', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'ubuntu-mirror-admins_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (60, 'Registry Administrators', NULL, 1, 'Launchpad Registry Administrators Team', 'registry', NULL, NULL, NULL, NULL, 1, NULL, '2006-04-06 10:17:11.833824', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'registry_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (61, 'Launchpad Buildd Admins', NULL, 16, 'Buildd System administrators', 'launchpad-buildd-admins', NULL, NULL, NULL, NULL, 1, NULL, '2006-05-15 22:23:29.062603', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'launchpad-buildd-admins_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (62, 'Bug Watch Updater', NULL, NULL, NULL, 'bug-watch-updater', NULL, NULL, NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL, 10, 'bug-watch-updater_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (63, 'Karl Tilbury', 'UnjDN34pTZ0xE3vbCNZDedIVpLPrA9nty9S/mOzbeefQXAEN6CMNUQ==', NULL, NULL, 'karl', NULL, NULL, NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 8, NULL, NULL, NULL, 10, 'karl_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (64, 'Landscape Developers', NULL, 12, NULL, 'landscape-developers', NULL, NULL, NULL, NULL, 1, NULL, '2006-07-11 20:01:09.874128', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'landscape-developers_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (65, 'Launchpad Janitor', NULL, NULL, NULL, 'janitor', NULL, NULL, NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL, 10, 'launchpad-janitor_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (66, 'Diogo Matsubara', NULL, NULL, NULL, 'matsubara', NULL, NULL, NULL, NULL, 1, NULL, '2006-12-13 21:19:06.369142', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Portuguese (Brazil) (pt_BR) translation of evolution-2.2-test in Evolution trunk', NULL, NULL, 10, 'matsubara_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (67, 'Team Membership Janitor', NULL, NULL, NULL, 'team-membership-janitor', NULL, NULL, NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL, 10, 'team-membership-janitor_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (68, 'Launchpad Beta Testers Owner', 'q/esKTLj2ba0Bzu2Xdi1JA4zgC683EE3I1Vjm+hp4mY+xgikQ7YD1g==', NULL, NULL, 'launchpad-beta-owner', NULL, NULL, NULL, NULL, 1, NULL, '2007-01-31 06:56:25.096519', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'launchpad-beta-owner_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (69, 'Launchpad Beta Testers', NULL, 68, 'People who are testing the new Launchpad "beta" UI.', 'launchpad-beta-testers', NULL, NULL, NULL, NULL, 1, NULL, '2007-01-31 06:57:54.592917', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'launchpad-beta-testers_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243601, 'ShipIt Administrators', NULL, 1, 'ShipIt Administrators', 'shipit-admins', NULL, NULL, NULL, NULL, 1, NULL, '2007-02-05 06:24:03.06971', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'shipit-admins_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243602, 'No Team Memberships', 'PlPmrpS1styVUEK/lGn72zqxYYeZcLqKD3b5oD4/C6AyntMMFvSacw==', NULL, NULL, 'no-team-memberships', NULL, NULL, NULL, NULL, 1, NULL, '2007-02-19 11:17:57.755666', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'no-team-memberships_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243603, 'One Membership', '52kdKnxgzc0LWK2ltsED9SeqQcjZgDAj+wWlaRotx3BvsXJCH0AUdQ==', NULL, NULL, 'one-membership', NULL, NULL, NULL, NULL, 1, NULL, '2007-02-21 10:53:59.700105', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'one-membership_oid', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243604, 'Simple Team', NULL, 243603, 'This team should have only one member, the "One Membership" user.', 'simple-team', NULL, NULL, NULL, NULL, 3, NULL, '2007-02-21 10:55:03.899255', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'simple-team_oid', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243606, 'Julian Edwards', NULL, NULL, NULL, 'launchpad-julian-edwards', NULL, NULL, NULL, NULL, 1, NULL, '2007-08-09 21:25:37.832976', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 7, 'when the commercialpackage_1.0-1 package was uploaded to breezy-autotest/RELEASE', NULL, NULL, 10, 'neMCQNd', NULL, 10, 9, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243607, 'Mailing List Experts', NULL, 25, 'This team is responsible for the management of Launchpad-hosted mailing lists.', 'mailing-list-experts', NULL, NULL, NULL, NULL, 3, NULL, '2007-10-04 19:59:03.615674', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'CQGNewe', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243608, 'Ubuntu Doc Team', NULL, NULL, NULL, 'doc', NULL, NULL, NULL, NULL, 1, NULL, '2007-11-12 15:23:19.847132', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 3, NULL, NULL, NULL, 10, 'WQPMHdf', NULL, 10, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243609, 'Katie', NULL, NULL, NULL, 'katie', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-07 13:43:20.393704', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, '6w7kmzC', NULL, 20, 0, NULL, NULL, 1, true, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243610, 'Gold Member', '9I7bMpJUcBH+edfXjswjdo7nC6iuoTU6YAqolznT59Q1h9v+z9pdVQ==', NULL, NULL, 'member', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-14 16:52:15.403833', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'cCGE3LA', NULL, 20, 0, NULL, NULL, 1, true, 1);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243611, 'Owner', 'zpAkRDpNGKvwvoPeBHuuwK4RFNCrwUnEMglcuWfzV1FCZ0M9nskK8w==', NULL, NULL, 'owner', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-14 16:52:15.403833', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'MGWJnTL', NULL, 20, 0, NULL, NULL, 1, true, 1);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243612, 'My Team', NULL, 243611, NULL, 'myteam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-14 16:52:15.403833', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'ewxwdWA', NULL, 10, 0, NULL, NULL, 1, true, 20);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243613, 'Other Team', NULL, 243611, NULL, 'otherteam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-14 16:52:15.403833', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'XPJeTcA', NULL, 10, 0, NULL, NULL, 1, true, 1);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243614, 'josh', NULL, NULL, NULL, 'jbuhl-nospam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, '6KHNEe3', NULL, 10, 0, NULL, NULL, 1, true, 1);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243615, 'Sjoerd Simons', NULL, NULL, NULL, 'sjoerd', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 'yEzBPbd', NULL, 10, 0, NULL, NULL, 1, true, 1);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility) VALUES (243616, 'Martin Pitt', NULL, NULL, NULL, 'mpitt', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 'R8FpwXd', NULL, 10, 0, NULL, NULL, 1, true, 1);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -4106,24 +4114,24 @@ ALTER TABLE poexportrequest ENABLE TRIGGER ALL;
 
 ALTER TABLE pofile DISABLE TRIGGER ALL;
 
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (1, 1, 387, 'Spanish translation for evolution in hoary', ' traducciÃ³n de es.po al Spanish
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (1, 1, 387, 'Spanish translation for evolution in hoary', ' traducción de es.po al Spanish
  translation of es.po to Spanish
  translation of evolution.HEAD to Spanish
- Copyright Â© 2000-2002 Free Software Foundation, Inc.
+ Copyright © 2000-2002 Free Software Foundation, Inc.
  This file is distributed under the same license as the evolution package.
- Carlos PerellÃ³ MarÃ­n <carlos@gnome-db.org>, 2000-2001.
- HÃ©ctor GarcÃ­a Ãlvarez <hector@scouts-es.org>, 2000-2002.
+ Carlos Perelló Marín <carlos@gnome-db.org>, 2000-2001.
+ Héctor García Álvarez <hector@scouts-es.org>, 2000-2002.
  Ismael Olea <Ismael@olea.org>, 2001, (revisiones) 2003.
  Eneko Lacunza <enlar@iname.com>, 2001-2002.
- HÃ©ctor GarcÃ­a Ãlvarez <hector@scouts-es.org>, 2002.
- Pablo Gonzalo del Campo <pablodc@bigfoot.com>,2003 (revisiÃ³n).
+ Héctor García Álvarez <hector@scouts-es.org>, 2002.
+ Pablo Gonzalo del Campo <pablodc@bigfoot.com>,2003 (revisión).
  Francisco Javier F. Serrador <serrador@cvs.gnome.org>, 2003, 2004.
 
 
 ', 'Project-Id-Version: es
 POT-Creation-Date: 2004-08-17 11:10+0200
 PO-Revision-Date: 2005-04-07 13:22+0000
-Last-Translator: Carlos PerellÃ³ MarÃ­n <carlos@canonical.com>
+Last-Translator: Carlos Perelló Marín <carlos@canonical.com>
 Language-Team: Spanish <traductores@es.gnome.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -4219,7 +4227,7 @@ INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header
 Report-Msgid-Bugs-To: martin.pitt@canonical.com
 POT-Creation-Date: 2005-04-04 17:31+0200
 PO-Revision-Date: 2005-03-16 23:54+0000
-Last-Translator: Francesco AccattapÃ  <callipeo@libero.it>
+Last-Translator: Francesco Accattapà <callipeo@libero.it>
 Language-Team: Italian (Italy) <it_IT@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -4242,7 +4250,7 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
 ', true, 36, NULL, 56, 0, 0, NULL, 31, NULL, 'cs.po', NULL, NULL, '2005-06-06 08:59:54.249601', NULL, 0, '2005-05-06 20:10:41.732277');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (10, 2, 302, NULL, ' BokmÃ¥l, Norwegian translation for pmount
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (10, 2, 302, NULL, ' Bokmål, Norwegian translation for pmount
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the pmount package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -4252,7 +4260,7 @@ Report-Msgid-Bugs-To: martin.pitt@canonical.com
 POT-Creation-Date: 2005-04-04 17:31+0200
 PO-Revision-Date: 2005-03-31 10:35+0000
 Last-Translator: Sigurd Gartmann <sigurd-ubuntu@brogar.org>
-Language-Team: BokmÃ¥l, Norwegian <nb@li.org>
+Language-Team: Bokmål, Norwegian <nb@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -4274,24 +4282,24 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
 ', true, 41, NULL, 54, 0, 0, NULL, 31, NULL, 'po/es.po', NULL, NULL, '2005-06-06 08:59:54.229882', NULL, 0, '2005-05-06 20:13:10.405056');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (12, 4, 387, NULL, ' traducciÃ³n de es.po al Spanish
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (12, 4, 387, NULL, ' traducción de es.po al Spanish
  translation of es.po to Spanish
  translation of evolution.HEAD to Spanish
- Copyright Â© 2000-2002 Free Software Foundation, Inc.
+ Copyright © 2000-2002 Free Software Foundation, Inc.
  This file is distributed under the same license as the evolution package.
- Carlos PerellÃ³ MarÃ­n <carlos@gnome-db.org>, 2000-2001.
- HÃ©ctor GarcÃ­a Ãlvarez <hector@scouts-es.org>, 2000-2002.
+ Carlos Perelló Marín <carlos@gnome-db.org>, 2000-2001.
+ Héctor García Álvarez <hector@scouts-es.org>, 2000-2002.
  Ismael Olea <Ismael@olea.org>, 2001, (revisiones) 2003.
  Eneko Lacunza <enlar@iname.com>, 2001-2002.
- HÃ©ctor GarcÃ­a Ãlvarez <hector@scouts-es.org>, 2002.
- Pablo Gonzalo del Campo <pablodc@bigfoot.com>,2003 (revisiÃ³n).
+ Héctor García Álvarez <hector@scouts-es.org>, 2002.
+ Pablo Gonzalo del Campo <pablodc@bigfoot.com>,2003 (revisión).
  Francisco Javier F. Serrador <serrador@cvs.gnome.org>, 2003, 2004.
 
 
 ', 'Project-Id-Version: es
 POT-Creation-Date: 2004-08-17 11:10+0200
 PO-Revision-Date: 2005-04-07 13:22+0000
-Last-Translator: Carlos PerellÃ³ MarÃ­n <carlos@canonical.com>
+Last-Translator: Carlos Perelló Marín <carlos@canonical.com>
 Language-Team: Spanish <traductores@es.gnome.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -4363,7 +4371,7 @@ INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header
 Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-07-25 16:17-0300
-Last-Translator: AndrÃ© LuÃ­s Lopes <andrelop@debian.org>
+Last-Translator: André Luís Lopes <andrelop@debian.org>
 Language-Team: Debian-BR Porject <debian-l10n-portuguese@lists.debian.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
@@ -4396,13 +4404,13 @@ Plural-Forms: nplurals=2; plural=n != 1
 ', true, 51, NULL, 9, 0, 0, NULL, 31, NULL, 'de.po', NULL, NULL, '2005-06-06 08:59:54.253299', NULL, 0, '2005-05-06 21:12:42.747648');
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (17, 5, 427, NULL, ' Turkish translation of mozilla.
  This file is distributed under the same license as the mozilla package.
- Mehmet TÃ¼rker <mturker@innova.com.tr>, 2004.
+ Mehmet Türker <mturker@innova.com.tr>, 2004.
 
 ', 'Project-Id-Version: mozilla
 Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-04-25 14:47+0300
-Last-Translator: Mehmet TÃ¼rker <EMAIL>
+Last-Translator: Mehmet Türker <EMAIL>
 Language-Team: Turkish <debian-l10n-turkish@lists.debian.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -4452,13 +4460,13 @@ Plural-Forms: nplurals=2; plural=n != 1
 ', true, 47, NULL, 9, 0, 0, NULL, 31, NULL, 'da.po', NULL, NULL, '2005-06-06 08:59:54.24466', NULL, 0, '2005-05-06 21:12:31.382429');
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (20, 5, 241, NULL, ' Lithuanian translation of mozilla.
  This file is distributed under the same license as the mozilla package.
- KÄstutis BiliÅ«nas <kebil@kaunas.init.lt>, 2004.
+ Kęstutis Biliūnas <kebil@kaunas.init.lt>, 2004.
 
 ', 'Project-Id-Version: mozilla
 Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-10-24 14:14+0300
-Last-Translator: KÄstutis BiliÅ«nas <kebil@kaunas.init.lt>
+Last-Translator: Kęstutis Biliūnas <kebil@kaunas.init.lt>
 Language-Team: Lithuanian <komp_lt@konferencijos.lt>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -4505,12 +4513,12 @@ INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header
 
     Developers do not need to manually edit POT or PO files.
 
- Matti PÃ¶llÃ¤ <mpo@iki.fi>, 2004.
+ Matti Pöllä <mpo@iki.fi>, 2004.
 ', 'Project-Id-Version: mozilla
 Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2004-08-15 22:41+0300
-Last-Translator: Matti PÃ¶llÃ¤ <mpo@iki.fi>
+Last-Translator: Matti Pöllä <mpo@iki.fi>
 Language-Team: Finnish <debian-l10n-finnish@lists.debian.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -4578,13 +4586,13 @@ INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header
 
     Developers do not need to manually edit POT or PO files.
 
- Carlos Valdivia YagÃ¼e <valyag@dat.etsit.upm.es>, 2003
+ Carlos Valdivia Yagüe <valyag@dat.etsit.upm.es>, 2003
 
 ', 'Project-Id-Version: mozilla-browser 1.4-4
 Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: 2003-09-20 20:00+0200
-Last-Translator: Carlos Valdivia YagÃ¼e <valyag@dat.etsit.upm.es>
+Last-Translator: Carlos Valdivia Yagüe <valyag@dat.etsit.upm.es>
 Language-Team: Debian L10n Spanish <debian-l10n-spanish@lists.debian.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -5455,27 +5463,27 @@ INSERT INTO potranslation (id, translation) VALUES (1, 'libreta de direcciones d
 INSERT INTO potranslation (id, translation) VALUES (2, 'carpeta de libretas de direcciones actual');
 INSERT INTO potranslation (id, translation) VALUES (3, 'tiene ');
 INSERT INTO potranslation (id, translation) VALUES (4, ' tarjetas');
-INSERT INTO potranslation (id, translation) VALUES (5, 'La ubicaciÃ³n y jerarquÃ­a de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.
+INSERT INTO potranslation (id, translation) VALUES (5, 'La ubicación y jerarquía de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.
 
 Tenga paciencia mientras Evolution migra sus carpetas...');
 INSERT INTO potranslation (id, translation) VALUES (6, '%d contacto');
 INSERT INTO potranslation (id, translation) VALUES (7, '%d contactos');
-INSERT INTO potranslation (id, translation) VALUES (8, 'Abrir %d contacto abrirÃ¡ %d ventanas nuevas tambiÃ©n.
-Â¿Quiere realmente mostrar este contacto?');
-INSERT INTO potranslation (id, translation) VALUES (9, 'Abrir %d contactos abrirÃ¡ %d ventanas nuevas tambiÃ©n.
-Â¿Quiere realmente mostrar todos estos contactos?');
+INSERT INTO potranslation (id, translation) VALUES (8, 'Abrir %d contacto abrirá %d ventanas nuevas también.
+¿Quiere realmente mostrar este contacto?');
+INSERT INTO potranslation (id, translation) VALUES (9, 'Abrir %d contactos abrirá %d ventanas nuevas también.
+¿Quiere realmente mostrar todos estos contactos?');
 INSERT INTO potranslation (id, translation) VALUES (10, '%d foo');
-INSERT INTO potranslation (id, translation) VALUES (11, 'ContraseÃ±a de EncFS: ');
-INSERT INTO potranslation (id, translation) VALUES (12, '_AÃ±adir grupo');
+INSERT INTO potranslation (id, translation) VALUES (11, 'Contraseña de EncFS: ');
+INSERT INTO potranslation (id, translation) VALUES (12, '_Añadir grupo');
 INSERT INTO potranslation (id, translation) VALUES (13, 'Upotreba:
 
-%s [opcije] <ureÄaj> [<etiketa>]
+%s [opcije] <uređaj> [<etiketa>]
 ');
 INSERT INTO potranslation (id, translation) VALUES (14, '%s --lock <device> <pid>
-  SprijeÄi daljnje pmounts <device> sve dok nije ponovno otkljuÄan. <pid>
-  specificira id procesa za koji drÅ¾i brava. To dozvoljava da se zakljuÄa ureÄaj
-  sa strane nekoliko nezavisnih procesa i izbjegava neodreÄena zakljuÄavanja sruÅ¡enih
-  procesa (nepostojeÄi pid-ovi su oÄiÅ¡Äeni prije pokuÅ¡aja montiranja).
+  Spriječi daljnje pmounts <device> sve dok nije ponovno otključan. <pid>
+  specificira id procesa za koji drži brava. To dozvoljava da se zaključa uređaj
+  sa strane nekoliko nezavisnih procesa i izbjegava neodređena zaključavanja srušenih
+  procesa (nepostojeći pid-ovi su očišćeni prije pokušaja montiranja).
 
 ');
 INSERT INTO potranslation (id, translation) VALUES (15, '%s --unlock <device> <pid>
@@ -5483,140 +5491,140 @@ INSERT INTO potranslation (id, translation) VALUES (15, '%s --unlock <device> <p
 
 ');
 INSERT INTO potranslation (id, translation) VALUES (16, 'Opcije:
-  -a, --async : montiraj <device> sa ''async'' opcijom (predodreÄeno: ''sync'')
-  --noatime : montiraj <device> sa ''noatime'' opcijom (predodreÄeno: ''atime'')
-  -e, --exec : montiraj <device> sa ''exec'' opcijom (predodreÄeno: ''noexec'')
-  -t <fs> : montiraj kao datoteÄni sustav <fs> vrste (predodreÄeno: samodetektirano)
-  -c <charset>: upotrebi dani I/O skup znakova (predodreÄeno: ''utf8'' ako je pozvano
-                u jednoj UTF-8 lokali, inaÄe montiraj predodreÄeno)
-  -d, --debug : aktiviraj debug izlaz (jako rijeÄito)
-  -h, --help : ispiÅ¡i pomoÄnu poruku i uspjeÅ¡no izaÄi');
-INSERT INTO potranslation (id, translation) VALUES (17, 'GreÅ¡ka: make_mountpoint_name: nevaÅ¾eÄi ureÄaj %s (mora biti u /dev/)
+  -a, --async : montiraj <device> sa ''async'' opcijom (predodređeno: ''sync'')
+  --noatime : montiraj <device> sa ''noatime'' opcijom (predodređeno: ''atime'')
+  -e, --exec : montiraj <device> sa ''exec'' opcijom (predodređeno: ''noexec'')
+  -t <fs> : montiraj kao datotečni sustav <fs> vrste (predodređeno: samodetektirano)
+  -c <charset>: upotrebi dani I/O skup znakova (predodređeno: ''utf8'' ako je pozvano
+                u jednoj UTF-8 lokali, inače montiraj predodređeno)
+  -d, --debug : aktiviraj debug izlaz (jako riječito)
+  -h, --help : ispiši pomoćnu poruku i uspješno izađi');
+INSERT INTO potranslation (id, translation) VALUES (17, 'Greška: make_mountpoint_name: nevažeči uređaj %s (mora biti u /dev/)
 ');
-INSERT INTO potranslation (id, translation) VALUES (18, 'GreÅ¡ka: etiketa ne smije biti prazna
+INSERT INTO potranslation (id, translation) VALUES (18, 'Greška: etiketa ne smije biti prazna
 ');
-INSERT INTO potranslation (id, translation) VALUES (19, 'GreÅ¡ka: etiketa je preduga
+INSERT INTO potranslation (id, translation) VALUES (19, 'Greška: etiketa je preduga
 ');
-INSERT INTO potranslation (id, translation) VALUES (20, 'GreÅ¡ka: ''/'' ne smije se nalaziti u imenu etikete
+INSERT INTO potranslation (id, translation) VALUES (20, 'Greška: ''/'' ne smije se nalaziti u imenu etikete
 ');
-INSERT INTO potranslation (id, translation) VALUES (21, 'GreÅ¡ka: ime ureÄaja je predugo
+INSERT INTO potranslation (id, translation) VALUES (21, 'Greška: ime uređaja je predugo
 ');
-INSERT INTO potranslation (id, translation) VALUES (22, 'GreÅ¡ka: ne mogu otpustiti sve uid privilegije');
-INSERT INTO potranslation (id, translation) VALUES (23, 'GreÅ¡ka: ne mogu izvrÅ¡iti mount');
-INSERT INTO potranslation (id, translation) VALUES (24, 'Unutarnja greÅ¡ka: mount_attempt: dato ime datoteÄnog sustava je NULL
+INSERT INTO potranslation (id, translation) VALUES (22, 'Greška: ne mogu otpustiti sve uid privilegije');
+INSERT INTO potranslation (id, translation) VALUES (23, 'Greška: ne mogu izvršiti mount');
+INSERT INTO potranslation (id, translation) VALUES (24, 'Unutarnja greška: mount_attempt: dato ime datotečnog sustava je NULL
 ');
-INSERT INTO potranslation (id, translation) VALUES (25, 'GreÅ¡ka: nevaÅ¾eÄe ime datoteÄnog sustava ''%s''
+INSERT INTO potranslation (id, translation) VALUES (25, 'Greška: nevažeće ime datotečnog sustava ''%s''
 ');
-INSERT INTO potranslation (id, translation) VALUES (26, 'GreÅ¡ka: nevaÅ¾eÄe ime charseta ''%s''
+INSERT INTO potranslation (id, translation) VALUES (26, 'Greška: nevažeće ime charseta ''%s''
 ');
-INSERT INTO potranslation (id, translation) VALUES (27, 'GreÅ¡ka: ne mogu se dignuti na pune root uid privilegije');
-INSERT INTO potranslation (id, translation) VALUES (28, 'GreÅ¡ka: ne mogu Äekati za izvrÅ¡eni proces montiranja');
-INSERT INTO potranslation (id, translation) VALUES (29, 'GreÅ¡ka: ne mogu zakljuÄati za pid %u, taj proces ne postoji
+INSERT INTO potranslation (id, translation) VALUES (27, 'Greška: ne mogu se dignuti na pune root uid privilegije');
+INSERT INTO potranslation (id, translation) VALUES (28, 'Greška: ne mogu čekati za izvršeni proces montiranja');
+INSERT INTO potranslation (id, translation) VALUES (29, 'Greška: ne mogu zaključati za pid %u, taj proces ne postoji
 ');
-INSERT INTO potranslation (id, translation) VALUES (30, 'GreÅ¡ka: ne mogu kreirati pid zakljuÄanu datoteku %s: %s
+INSERT INTO potranslation (id, translation) VALUES (30, 'Greška: ne mogu kreirati pid zaključanu datoteku %s: %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (31, 'GreÅ¡ka: ne mogu maknuti pid zakljuÄanu datoteku %s: %s
+INSERT INTO potranslation (id, translation) VALUES (31, 'Greška: ne mogu maknuti pid zaključanu datoteku %s: %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (32, 'GreÅ¡ka: do_unlock: ne mogu maknuti zakljuÄani direktorij');
-INSERT INTO potranslation (id, translation) VALUES (33, 'GreÅ¡ka: ovaj program mora biti instaliran kao suid root
+INSERT INTO potranslation (id, translation) VALUES (32, 'Greška: do_unlock: ne mogu maknuti zaključani direktorij');
+INSERT INTO potranslation (id, translation) VALUES (33, 'Greška: ovaj program mora biti instaliran kao suid root
 ');
-INSERT INTO potranslation (id, translation) VALUES (34, 'Unutarnja greÅ¡ka: getopt_long() vratio nepoznatu vrijednost
+INSERT INTO potranslation (id, translation) VALUES (34, 'Unutarnja greška: getopt_long() vratio nepoznatu vrijednost
 ');
-INSERT INTO potranslation (id, translation) VALUES (35, 'Upozorenje: ureÄaj %s je veÄ zbrinut sa strane /etc/fstab, dana etiketa je zanemarena
+INSERT INTO potranslation (id, translation) VALUES (35, 'Upozorenje: uređaj %s je već zbrinut sa strane /etc/fstab, dana etiketa je zanemarena
 ');
-INSERT INTO potranslation (id, translation) VALUES (36, 'GreÅ¡ka: ne mogu ustanoviti pravi put ureÄaja');
-INSERT INTO potranslation (id, translation) VALUES (37, 'GreÅ¡ka: nevaÅ¾eÄi ureÄaj %s (mora biti u /dev/)
+INSERT INTO potranslation (id, translation) VALUES (36, 'Greška: ne mogu ustanoviti pravi put uređaja');
+INSERT INTO potranslation (id, translation) VALUES (37, 'Greška: nevažeći uređaj %s (mora biti u /dev/)
 ');
-INSERT INTO potranslation (id, translation) VALUES (38, 'GreÅ¡ka: ne mogu izbrisati toÄku montiranja');
-INSERT INTO potranslation (id, translation) VALUES (39, 'Unutarnja greÅ¡ka: mod %i nije obraÄen.
+INSERT INTO potranslation (id, translation) VALUES (38, 'Greška: ne mogu izbrisati točku montiranja');
+INSERT INTO potranslation (id, translation) VALUES (39, 'Unutarnja greška: mod %i nije obrađen.
 ');
-INSERT INTO potranslation (id, translation) VALUES (40, 'pmount-hal - izvrÅ¡i pmount sa dodatnim informacijama iz hal-a
+INSERT INTO potranslation (id, translation) VALUES (40, 'pmount-hal - izvrši pmount sa dodatnim informacijama iz hal-a
 
 Upotreba: pmount-hal <hal UDI> [pmount opcije]
 
-Ova naredba montira ureÄaj opisan sa datim UDI-jem koristeÄi pmount.
-Tip datoteÄnog sustava, volumen policyja spremanja i Å¾eljena etiketa biti Äe
-Äitani iz hal-a i proslijeÄeni pmountu.');
-INSERT INTO potranslation (id, translation) VALUES (41, 'GreÅ¡ka: ne mogu izvrÅ¡iti pmount
+Ova naredba montira uređaj opisan sa datim UDI-jem koristeči pmount.
+Tip datotečnog sustava, volumen policyja spremanja i željena etiketa biti će
+čitani iz hal-a i proslijeđeni pmountu.');
+INSERT INTO potranslation (id, translation) VALUES (41, 'Greška: ne mogu izvršiti pmount
 ');
-INSERT INTO potranslation (id, translation) VALUES (42, 'GreÅ¡ka: ne mogu se spojiti na hal
+INSERT INTO potranslation (id, translation) VALUES (42, 'Greška: ne mogu se spojiti na hal
 ');
-INSERT INTO potranslation (id, translation) VALUES (43, 'GreÅ¡ka: dani UDI ne postoji
+INSERT INTO potranslation (id, translation) VALUES (43, 'Greška: dani UDI ne postoji
 ');
-INSERT INTO potranslation (id, translation) VALUES (44, 'GreÅ¡ka: dani UDI nije montabilni volumen
+INSERT INTO potranslation (id, translation) VALUES (44, 'Greška: dani UDI nije montabilni volumen
 ');
-INSERT INTO potranslation (id, translation) VALUES (45, 'GreÅ¡ka: ne mogu dobiti stanje ureÄaja');
-INSERT INTO potranslation (id, translation) VALUES (46, 'GreÅ¡ka: ne mogu dobiti sysfs direktorij
+INSERT INTO potranslation (id, translation) VALUES (45, 'Greška: ne mogu dobiti stanje uređaja');
+INSERT INTO potranslation (id, translation) VALUES (46, 'Greška: ne mogu dobiti sysfs direktorij
 ');
-INSERT INTO potranslation (id, translation) VALUES (47, 'GreÅ¡ka: ne mogu otvoriti <sysfs dir>/block/');
-INSERT INTO potranslation (id, translation) VALUES (48, 'GreÅ¡ka: ne mogu otvoriti <sysfs dir>/block/<device>/');
-INSERT INTO potranslation (id, translation) VALUES (49, 'GreÅ¡ka: ureÄaj %s ne postoji
+INSERT INTO potranslation (id, translation) VALUES (47, 'Greška: ne mogu otvoriti <sysfs dir>/block/');
+INSERT INTO potranslation (id, translation) VALUES (48, 'Greška: ne mogu otvoriti <sysfs dir>/block/<device>/');
+INSERT INTO potranslation (id, translation) VALUES (49, 'Greška: uređaj %s ne postoji
 ');
-INSERT INTO potranslation (id, translation) VALUES (50, 'GreÅ¡ka: %s nije blok ureÄaj
+INSERT INTO potranslation (id, translation) VALUES (50, 'Greška: %s nije blok uređaj
 ');
-INSERT INTO potranslation (id, translation) VALUES (51, 'GreÅ¡ka: ne mogu otvoriti fstab-type datoteku');
-INSERT INTO potranslation (id, translation) VALUES (52, 'GreÅ¡ka: ureÄaj %s je veÄ montiran na %s
+INSERT INTO potranslation (id, translation) VALUES (51, 'Greška: ne mogu otvoriti fstab-type datoteku');
+INSERT INTO potranslation (id, translation) VALUES (52, 'Greška: uređaj %s je već montiran na %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (53, 'GreÅ¡ka: ureÄaj %s nije montiran
+INSERT INTO potranslation (id, translation) VALUES (53, 'Greška: uređaj %s nije montiran
 ');
-INSERT INTO potranslation (id, translation) VALUES (54, 'GreÅ¡ka: ureÄaj %s nije montiran za vas
+INSERT INTO potranslation (id, translation) VALUES (54, 'Greška: uređaj %s nije montiran za vas
 ');
-INSERT INTO potranslation (id, translation) VALUES (55, 'GreÅ¡ka: ureÄaj %s nije odstranjiv
+INSERT INTO potranslation (id, translation) VALUES (55, 'Greška: uređaj %s nije odstranjiv
 ');
-INSERT INTO potranslation (id, translation) VALUES (56, 'GreÅ¡ka: ureÄaj %s je zakljuÄan
+INSERT INTO potranslation (id, translation) VALUES (56, 'Greška: uređaj %s je zaključan
 ');
-INSERT INTO potranslation (id, translation) VALUES (57, 'GreÅ¡ka: direktorij %s veÄ sadrÅ¾i montirani datoteÄni sustav
+INSERT INTO potranslation (id, translation) VALUES (57, 'Greška: direktorij %s već sadrži montirani datotečni sustav
 ');
-INSERT INTO potranslation (id, translation) VALUES (58, 'GreÅ¡ka: direktorij %s ne sadrÅ¾i montirani datoteÄni sustav
+INSERT INTO potranslation (id, translation) VALUES (58, 'Greška: direktorij %s ne sadrži montirani datotečni sustav
 ');
 INSERT INTO potranslation (id, translation) VALUES (59, 'Upotreba:
 
 %s [options] <device>
   Umount <device> iz direktorija ispod %s ako su zahtjevi policyja
-  zadovoljeni (vidi pumount(1) za detalje). ToÄka montiranja direktorija je odstranjena 
+  zadovoljeni (vidi pumount(1) za detalje). Točka montiranja direktorija je odstranjena 
   kasnije.
 
 Opcije:
   -l, --lazy : umount lijeno, vidi umount (8)
-  -d, --debug : aktiviraj debug izlaz (jako opÅ¡irno)
-  -h, --help : ispiÅ¡i poruku pomoÄi i uspjeÅ¡no izaÄi
+  -d, --debug : aktiviraj debug izlaz (jako opširno)
+  -h, --help : ispiši poruku pomoći i uspješno izađi
 ');
-INSERT INTO potranslation (id, translation) VALUES (60, 'Unutarnja greÅ¡ka: ne mogu ustanoviti toÄku montiranja
+INSERT INTO potranslation (id, translation) VALUES (60, 'Unutarnja greška: ne mogu ustanoviti točku montiranja
 ');
-INSERT INTO potranslation (id, translation) VALUES (61, 'GreÅ¡ka: toÄka montiranja %s nije ispod %s
+INSERT INTO potranslation (id, translation) VALUES (61, 'Greška: točka montiranja %s nije ispod %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (62, 'GreÅ¡ka: ne mogu izvrÅ¡iti umount');
-INSERT INTO potranslation (id, translation) VALUES (63, 'GreÅ¡ka: nisam mogla priÄekati za izvrÅ¡eni umount proces');
-INSERT INTO potranslation (id, translation) VALUES (64, 'GreÅ¡ka: neuspjelo umount
+INSERT INTO potranslation (id, translation) VALUES (62, 'Greška: ne mogu izvršiti umount');
+INSERT INTO potranslation (id, translation) VALUES (63, 'Greška: nisam mogla pričekati za izvršeni umount proces');
+INSERT INTO potranslation (id, translation) VALUES (64, 'Greška: neuspjelo umount
 ');
-INSERT INTO potranslation (id, translation) VALUES (65, 'GreÅ¡ka: izvan memorije
+INSERT INTO potranslation (id, translation) VALUES (65, 'Greška: izvan memorije
 ');
-INSERT INTO potranslation (id, translation) VALUES (66, 'GreÅ¡ka: Nisam mogla kreirati direktorij');
-INSERT INTO potranslation (id, translation) VALUES (67, 'GreÅ¡ka: nisam mogla kreirati Å¾ig datoteku u direktoriju');
-INSERT INTO potranslation (id, translation) VALUES (68, 'GreÅ¡ka: %s nije direktorij
+INSERT INTO potranslation (id, translation) VALUES (66, 'Greška: Nisam mogla kreirati direktorij');
+INSERT INTO potranslation (id, translation) VALUES (67, 'Greška: nisam mogla kreirati žig datoteku u direktoriju');
+INSERT INTO potranslation (id, translation) VALUES (68, 'Greška: %s nije direktorij
 ');
-INSERT INTO potranslation (id, translation) VALUES (69, 'GreÅ¡ka: nisam mogla otvoriti direktorij');
-INSERT INTO potranslation (id, translation) VALUES (70, 'GreÅ¡ka: direktorij %s nije prazan
+INSERT INTO potranslation (id, translation) VALUES (69, 'Greška: nisam mogla otvoriti direktorij');
+INSERT INTO potranslation (id, translation) VALUES (70, 'Greška: direktorij %s nije prazan
 ');
-INSERT INTO potranslation (id, translation) VALUES (71, 'GreÅ¡ka: ''%s'' nije ispravan broj
+INSERT INTO potranslation (id, translation) VALUES (71, 'Greška: ''%s'' nije ispravan broj
 ');
-INSERT INTO potranslation (id, translation) VALUES (72, 'Unutarnja greÅ¡ka: nisam mogla promjeniti u efektivni uid root');
-INSERT INTO potranslation (id, translation) VALUES (73, 'Unutarnja greÅ¡ka: nisam mogla promjeniti efektivni korisniÄki uid u realni korisniÄki id');
-INSERT INTO potranslation (id, translation) VALUES (74, 'Unutarnja greÅ¡ka: nisam mogla promjeniti u efektivni gid root');
-INSERT INTO potranslation (id, translation) VALUES (75, 'Unutarnja greÅ¡ka: nisam mogla promjeniti efektivnu grupu u realni id grupe');
-INSERT INTO potranslation (id, translation) VALUES (76, 'Ãs:
+INSERT INTO potranslation (id, translation) VALUES (72, 'Unutarnja greška: nisam mogla promjeniti u efektivni uid root');
+INSERT INTO potranslation (id, translation) VALUES (73, 'Unutarnja greška: nisam mogla promjeniti efektivni korisnički uid u realni korisnićki id');
+INSERT INTO potranslation (id, translation) VALUES (74, 'Unutarnja greška: nisam mogla promjeniti u efektivni gid root');
+INSERT INTO potranslation (id, translation) VALUES (75, 'Unutarnja greška: nisam mogla promjeniti efektivnu grupu u realni id grupe');
+INSERT INTO potranslation (id, translation) VALUES (76, 'Ús:
 
 %s [opcions] <dispositiu> [<etiqueta>]
 
   Monta <dispositiu> al directori sota %s si es compleixen
-  els requeriments (vegeu pmount(1) per mÃ©s detalls). Si es dÃ³na <etiqueta>, el punt de muntatge
-  serÃ  %s/<etiqueta>, en cas contrari, serÃ  %s<dispositiu>.
-  Si el punt de muntatge no existeix, es crearÃ .
+  els requeriments (vegeu pmount(1) per més detalls). Si es dóna <etiqueta>, el punt de muntatge
+  serà %s/<etiqueta>, en cas contrari, serà %s<dispositiu>.
+  Si el punt de muntatge no existeix, es crearà.
 
 ');
 INSERT INTO potranslation (id, translation) VALUES (77, '%s --lock <dispositiu> <pid>
-  PrevÃ©n mÃ©s pmounts del <dispositiu> fins que no es desbloqui altra vegada. <pid>
-  especifica l''identificador del procÃ©s al qual actua el blocatge. AixÃ² permet bloquejar un dispositiu
+  Prevén més pmounts del <dispositiu> fins que no es desbloqui altra vegada. <pid>
+  especifica l''identificador del procés al qual actua el blocatge. Això permet bloquejar un dispositiu
   per diversos processos independents i evita bloquejos indefinits de processos
   fallits (pids no existents es netegen abans d''intentar montar-los).
 
@@ -5626,15 +5634,15 @@ INSERT INTO potranslation (id, translation) VALUES (78, '%s --unlock <dispositiu
 
 ');
 INSERT INTO potranslation (id, translation) VALUES (79, 'Opcions:
-  -a, --async : monta <dispositiu> amb l''opciÃ³ ''async'' (per defecte: ''sync'')
-  --noatime   : monta <dispositiu> amb l''opciÃ³ ''noatime'' (per defecte: ''atime'')
-  -e, --exec  : monta <dispositiu> amb l''opciÃ³ ''exec'' (per defecte: ''noexec'')
+  -a, --async : monta <dispositiu> amb l''opció ''async'' (per defecte: ''sync'')
+  --noatime   : monta <dispositiu> amb l''opció ''noatime'' (per defecte: ''atime'')
+  -e, --exec  : monta <dispositiu> amb l''opció ''exec'' (per defecte: ''noexec'')
   -t <fs>     : monta com a tipus de sistema de fitxers <fs> (per defecte: autodetectat)
-  -c <charset>: usa el joc de carÃ cters I/O donat (per defecte: ''utf8'' si es crida
+  -c <charset>: usa el joc de caràcters I/O donat (per defecte: ''utf8'' si es crida
                 des d''una locale UTF-8, si no es monta per defecte)
-  -d, --debug : habilita la sortida en mode depuraciÃ³ (molt detalladament)
+  -d, --debug : habilita la sortida en mode depuració (molt detalladament)
   -h, --help  : imprimeix el missatge d''ajuda i surt exitosament');
-INSERT INTO potranslation (id, translation) VALUES (80, 'Error: make_mountpoint_name: dispositiu %s invÃ lid (ha d''estar a /dev/)
+INSERT INTO potranslation (id, translation) VALUES (80, 'Error: make_mountpoint_name: dispositiu %s invàlid (ha d''estar a /dev/)
 ');
 INSERT INTO potranslation (id, translation) VALUES (81, 'Error: l''etiqueta no pot estar buida
 ');
@@ -5646,46 +5654,46 @@ INSERT INTO potranslation (id, translation) VALUES (84, 'Error: nom de dispositi
 ');
 INSERT INTO potranslation (id, translation) VALUES (85, 'Error: no es poden eliminar tots els privilegis uid');
 INSERT INTO potranslation (id, translation) VALUES (86, 'Error: no es pot executar mount');
-INSERT INTO potranslation (id, translation) VALUES (87, 'error intern: mount_attempt: el sistema de fitxers donat Ã©s NULL
+INSERT INTO potranslation (id, translation) VALUES (87, 'error intern: mount_attempt: el sistema de fitxers donat és NULL
 ');
-INSERT INTO potranslation (id, translation) VALUES (88, 'Error: el nom %s de sistema de fitxers Ã©s invÃ lid
+INSERT INTO potranslation (id, translation) VALUES (88, 'Error: el nom %s de sistema de fitxers és invàlid
 ');
-INSERT INTO potranslation (id, translation) VALUES (89, 'Error: el nom %s del joc de carÃ cters Ã©s invÃ lid
+INSERT INTO potranslation (id, translation) VALUES (89, 'Error: el nom %s del joc de caràcters és invàlid
 ');
 INSERT INTO potranslation (id, translation) VALUES (90, 'Error: no s''han pogut donar tots els privilegis uid de super-usuari');
 INSERT INTO potranslation (id, translation) VALUES (91, 'Error: no s''ha pogut esperar per processos de muntatge executats');
-INSERT INTO potranslation (id, translation) VALUES (92, 'Error: no s''ha pogut blocar el pid  %u. Aquest procÃ©s no existeix
+INSERT INTO potranslation (id, translation) VALUES (92, 'Error: no s''ha pogut blocar el pid  %u. Aquest procés no existeix
 ');
 INSERT INTO potranslation (id, translation) VALUES (93, 'Error: no s''ha pogut crear un blocatge del pid del fitxer %s: %s
 ');
 INSERT INTO potranslation (id, translation) VALUES (94, 'Error: no s''ha pogut remoure el blocatge del pid del fitxer %s: %s
 ');
 INSERT INTO potranslation (id, translation) VALUES (95, 'Error: do_unlock: no s''ha pogut remoure el blocatge del directori');
-INSERT INTO potranslation (id, translation) VALUES (96, 'Error: aquest programa necessita ser instalÂ·lar amb suid de super-usuari
+INSERT INTO potranslation (id, translation) VALUES (96, 'Error: aquest programa necessita ser instal·lar amb suid de super-usuari
 ');
 INSERT INTO potranslation (id, translation) VALUES (97, 'error intern: getopt_long() ha retornat un valor desconegut
 ');
-INSERT INTO potranslation (id, translation) VALUES (98, 'AvÃ­s: el dispositiu %s ja Ã©s gestionat per /etc/fstab, s''ignorarÃ  l''etiqueta donada
+INSERT INTO potranslation (id, translation) VALUES (98, 'Avís: el dispositiu %s ja és gestionat per /etc/fstab, s''ignorarà l''etiqueta donada
 ');
-INSERT INTO potranslation (id, translation) VALUES (99, 'Error: no s''ha pogut determinar el camÃ­ real del dispositiu');
-INSERT INTO potranslation (id, translation) VALUES (100, 'Error: dispositiu %s invÃ lid (ha d''estar a /dev/)
+INSERT INTO potranslation (id, translation) VALUES (99, 'Error: no s''ha pogut determinar el camí real del dispositiu');
+INSERT INTO potranslation (id, translation) VALUES (100, 'Error: dispositiu %s invàlid (ha d''estar a /dev/)
 ');
 INSERT INTO potranslation (id, translation) VALUES (101, 'Error: no s''ha pogut eliminar el punt de muntatge');
 INSERT INTO potranslation (id, translation) VALUES (102, 'error intern: el mode %i no s''ha gestionat.
 ');
-INSERT INTO potranslation (id, translation) VALUES (103, 'pmount-hal - executa pmount amb informaciÃ³ addicional de hal
+INSERT INTO potranslation (id, translation) VALUES (103, 'pmount-hal - executa pmount amb informació addicional de hal
 
-Ãs: pmount-hal <UDI de hal> [opcions de pmount]
+Ús: pmount-hal <UDI de hal> [opcions de pmount]
 
 Aquesta comanda monta el dispositiu descrit per l''UDI donat utilitzant
-pmount. El tipus de sistema de fitxers, la polÃ­tica d''emmagatzematge del
+pmount. El tipus de sistema de fitxers, la política d''emmagatzematge del
 volum i l''etiqueta desitjada es llegiran de hal i es passaran a pmount.');
 INSERT INTO potranslation (id, translation) VALUES (104, 'Error: no s''ha pogut executar pmount
 ');
 INSERT INTO potranslation (id, translation) VALUES (105, 'Error, no es pot obrir el directori');
 INSERT INTO potranslation (id, translation) VALUES (106, 'Error: l''UDI donat no existeix
 ');
-INSERT INTO potranslation (id, translation) VALUES (107, 'Error: l''UDI donat no Ã©s un volum montable
+INSERT INTO potranslation (id, translation) VALUES (107, 'Error: l''UDI donat no és un volum montable
 ');
 INSERT INTO potranslation (id, translation) VALUES (108, 'Error: no s''ha pogut aconseguir l''estat del dispositiu');
 INSERT INTO potranslation (id, translation) VALUES (109, 'Error: no s''ha pogut aconseguir el directori sysfs
@@ -5694,57 +5702,57 @@ INSERT INTO potranslation (id, translation) VALUES (110, 'Error: no s''ha pogut 
 INSERT INTO potranslation (id, translation) VALUES (111, 'Error: no s''ha pogut obrir <sysfs dir>/block/<dispsitiu>/');
 INSERT INTO potranslation (id, translation) VALUES (112, 'Error: el dispositiu %s no existeix
 ');
-INSERT INTO potranslation (id, translation) VALUES (113, 'Error: %s no Ã©s un dispositiu de blocs
+INSERT INTO potranslation (id, translation) VALUES (113, 'Error: %s no és un dispositiu de blocs
 ');
 INSERT INTO potranslation (id, translation) VALUES (114, 'Error: no s''ha pogut obrir el fitxer de tipus fstab');
-INSERT INTO potranslation (id, translation) VALUES (115, 'Error: el dispositiu %s ja estÃ  montat a %s
+INSERT INTO potranslation (id, translation) VALUES (115, 'Error: el dispositiu %s ja està montat a %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (116, 'Error: el dispositiu %s no estÃ  montat
+INSERT INTO potranslation (id, translation) VALUES (116, 'Error: el dispositiu %s no està montat
 ');
 INSERT INTO potranslation (id, translation) VALUES (117, 'Error: el dispositiu %s no ha estat montat per tu
 ');
 INSERT INTO potranslation (id, translation) VALUES (118, 'Error: el dispositiu %s no es pot remoure
 ');
-INSERT INTO potranslation (id, translation) VALUES (119, 'Error: el dispositiu %s estÃ  blocat
+INSERT INTO potranslation (id, translation) VALUES (119, 'Error: el dispositiu %s està blocat
 ');
-INSERT INTO potranslation (id, translation) VALUES (120, 'Error: el directori %s ja contÃ© un sistema de fitxers montat
+INSERT INTO potranslation (id, translation) VALUES (120, 'Error: el directori %s ja conté un sistema de fitxers montat
 ');
-INSERT INTO potranslation (id, translation) VALUES (121, 'Error: el directori %s no contÃ© un sistema de fitxers montat
+INSERT INTO potranslation (id, translation) VALUES (121, 'Error: el directori %s no conté un sistema de fitxers montat
 ');
-INSERT INTO potranslation (id, translation) VALUES (122, 'Ãs:
+INSERT INTO potranslation (id, translation) VALUES (122, 'Ús:
 
 %s [opcions] <dispositiu>
   Umount <dispositiu> des d''un directori sota %s si es compleixen els
-  requeriments (vegeu pumount(1) per mÃ©s detalls). El directori del punt de montatge
-  s''elimina desprÃ©s
+  requeriments (vegeu pumount(1) per més detalls). El directori del punt de montatge
+  s''elimina després
 
 Opcions:
   -l, --lazy : umount mandrosament, vegeu umount(8)
-  -d, --debug : habilita la sortida de depuraciÃ³ (molt detalladament)
+  -d, --debug : habilita la sortida de depuració (molt detalladament)
   -h, --help : imprimeix el missatge d''ajuda i surt exitosament
 ');
 INSERT INTO potranslation (id, translation) VALUES (123, 'Error intern: no s''ha pogut determinar el punt de montatge
 ');
-INSERT INTO potranslation (id, translation) VALUES (124, 'Error: el punt de montatge %s no Ã©s a sota %s
+INSERT INTO potranslation (id, translation) VALUES (124, 'Error: el punt de montatge %s no és a sota %s
 ');
 INSERT INTO potranslation (id, translation) VALUES (125, 'Error: no s''ha pogut executar umount');
 INSERT INTO potranslation (id, translation) VALUES (126, 'Error no s''ha pogut esperar els processos d''umount executats');
 INSERT INTO potranslation (id, translation) VALUES (127, 'Error: ha fallat umount
 ');
-INSERT INTO potranslation (id, translation) VALUES (128, 'Error: fora de memÃ²ria
+INSERT INTO potranslation (id, translation) VALUES (128, 'Error: fora de memòria
 ');
 INSERT INTO potranslation (id, translation) VALUES (129, 'Error: no es pot crear el directori');
 INSERT INTO potranslation (id, translation) VALUES (130, 'Error: no es pot crear fitxer de marca al directori');
-INSERT INTO potranslation (id, translation) VALUES (131, 'Error: %s no Ã©s un directori
+INSERT INTO potranslation (id, translation) VALUES (131, 'Error: %s no és un directori
 ');
-INSERT INTO potranslation (id, translation) VALUES (132, 'Error: el directori %s no Ã©s buit
+INSERT INTO potranslation (id, translation) VALUES (132, 'Error: el directori %s no és buit
 ');
-INSERT INTO potranslation (id, translation) VALUES (133, 'Error: ''%s'' no Ã©s un nÃºmero vÃ lid
+INSERT INTO potranslation (id, translation) VALUES (133, 'Error: ''%s'' no és un número vàlid
 ');
 INSERT INTO potranslation (id, translation) VALUES (134, 'Error intern: no s''ha pogut canviar a uid de superusuari efectiva');
-INSERT INTO potranslation (id, translation) VALUES (135, 'Error intern: no s''ha pogut canviar uid d''usuari efectiva a identificaciÃ³ d''usuari real');
+INSERT INTO potranslation (id, translation) VALUES (135, 'Error intern: no s''ha pogut canviar uid d''usuari efectiva a identificació d''usuari real');
 INSERT INTO potranslation (id, translation) VALUES (136, 'Error intern: no s''ha pogut canviar a gid superusuari efectiu');
-INSERT INTO potranslation (id, translation) VALUES (137, 'Error intern: no s''ha pogut canviar l''identificaciÃ³ de grup efectiva a una identificaciÃ³ real de grup');
+INSERT INTO potranslation (id, translation) VALUES (137, 'Error intern: no s''ha pogut canviar l''identificació de grup efectiva a una identificació real de grup');
 INSERT INTO potranslation (id, translation) VALUES (138, 'Bruk:
 
 %s [valg] <enhet> [<etikett>]
@@ -5758,70 +5766,70 @@ INSERT INTO potranslation (id, translation) VALUES (138, 'Bruk:
 ');
 INSERT INTO potranslation (id, translation) VALUES (139, '%s --lock <enhet> <pid>
   Forhindrer videre pmount-monteringer av <enhet> helt til den
-  blir lÃ¥st opp igjen. <pid> er hvilken prosess id lÃ¥sen holdes
-  for. Dette gjÃ¸r det mulig Ã¥ lÃ¥se en enhet av flere uavhengige
-  prosesser, og unngÃ¥r uendelig lÃ¥sing av krasjede prosesser
-  (pids som ikke finnes blir ryddet fÃ¸r forsÃ¸k pÃ¥ en montering).
+  blir låst opp igjen. <pid> er hvilken prosess id låsen holdes
+  for. Dette gjør det mulig å låse en enhet av flere uavhengige
+  prosesser, og unngår uendelig låsing av krasjede prosesser
+  (pids som ikke finnes blir ryddet før forsøk på en montering).
 
 ');
 INSERT INTO potranslation (id, translation) VALUES (140, '%s --unlock <enhet> <pid>
-  Fjerner lÃ¥sen pÃ¥ <enhet> for prosess <pid>.
+  Fjerner låsen på <enhet> for prosess <pid>.
 
 ');
 INSERT INTO potranslation (id, translation) VALUES (141, 'Valg:
-  -a, --async : monterer <enhet> med Â«asyncÂ»-valget (standard: Â«syncÂ»)
-  --noatime : monterer <enhet> med Â«noatimeÂ»-valget (standard: Â«atimeÂ»)
-  -e, --exec : monterer <enhet> med Â«execÂ»-valget (standard: Â«noexecÂ»)
+  -a, --async : monterer <enhet> med «async»-valget (standard: «sync»)
+  --noatime : monterer <enhet> med «noatime»-valget (standard: «atime»)
+  -e, --exec : monterer <enhet> med «exec»-valget (standard: «noexec»)
   -t <fs> : monterer som filsystemtype <fs> (standard: velger automatisk)
   -c <tegnsett> : bruk gitt I/O-tegnsett (standard: utf8 i
                  UTF-8-locale, ellers monteringsstandard)
   -d, --debug : skriv debuginformasjon (veldig mye)
   -h, --help : skriv hjelpemelding og avslutt med suksess');
-INSERT INTO potranslation (id, translation) VALUES (142, 'Feil: make_mountpoint_name: ugyldig enhet %s (mÃ¥ finnes i /dev/)
+INSERT INTO potranslation (id, translation) VALUES (142, 'Feil: make_mountpoint_name: ugyldig enhet %s (må finnes i /dev/)
 ');
-INSERT INTO potranslation (id, translation) VALUES (143, 'Feil: etiketten kan ikke vÃ¦re blank
+INSERT INTO potranslation (id, translation) VALUES (143, 'Feil: etiketten kan ikke være blank
 ');
 INSERT INTO potranslation (id, translation) VALUES (144, 'Feil: Etiketten er for lang
 ');
-INSERT INTO potranslation (id, translation) VALUES (145, 'Feil: Etiketter kan ikke inneholde Â«/Â»
+INSERT INTO potranslation (id, translation) VALUES (145, 'Feil: Etiketter kan ikke inneholde «/»
 ');
-INSERT INTO potranslation (id, translation) VALUES (146, 'Feil: Navnet pÃ¥ enheten er for langt
+INSERT INTO potranslation (id, translation) VALUES (146, 'Feil: Navnet på enheten er for langt
 ');
 INSERT INTO potranslation (id, translation) VALUES (147, 'Feil: Kunne ikke fjerne alle uid-rettigheter');
-INSERT INTO potranslation (id, translation) VALUES (148, 'Feil: Kunne ikke kjÃ¸re mount');
+INSERT INTO potranslation (id, translation) VALUES (148, 'Feil: Kunne ikke kjøre mount');
 INSERT INTO potranslation (id, translation) VALUES (149, 'Intern feil: mount_attempt: Filsystemnavnet er NULL
 ');
-INSERT INTO potranslation (id, translation) VALUES (150, 'Feil: Ugyldig filsystemnavn Â«%sÂ»
+INSERT INTO potranslation (id, translation) VALUES (150, 'Feil: Ugyldig filsystemnavn «%s»
 ');
-INSERT INTO potranslation (id, translation) VALUES (151, 'Feil: Ugyldig tegnsettnavn Â«%sÂ»
+INSERT INTO potranslation (id, translation) VALUES (151, 'Feil: Ugyldig tegnsettnavn «%s»
 ');
-INSERT INTO potranslation (id, translation) VALUES (152, 'Feil: Kunne ikke Ã¸ke til fullstendige root-uid-rettigheter');
-INSERT INTO potranslation (id, translation) VALUES (153, 'Feil: Kunne ikke vente pÃ¥ startet mounting');
-INSERT INTO potranslation (id, translation) VALUES (154, 'Feil: Kan ikke lÃ¥se for %u, siden denne prosessen ikke finnes
+INSERT INTO potranslation (id, translation) VALUES (152, 'Feil: Kunne ikke øke til fullstendige root-uid-rettigheter');
+INSERT INTO potranslation (id, translation) VALUES (153, 'Feil: Kunne ikke vente på startet mounting');
+INSERT INTO potranslation (id, translation) VALUES (154, 'Feil: Kan ikke låse for %u, siden denne prosessen ikke finnes
 ');
-INSERT INTO potranslation (id, translation) VALUES (155, 'Feil: Kunne ikke opprette pid-lÃ¥sfil %s: %s
+INSERT INTO potranslation (id, translation) VALUES (155, 'Feil: Kunne ikke opprette pid-låsfil %s: %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (156, 'Feil: Kunne ikke fjerne pid-lÃ¥sfil %s: %s
+INSERT INTO potranslation (id, translation) VALUES (156, 'Feil: Kunne ikke fjerne pid-låsfil %s: %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (157, 'Feil: du_unlock: Kunne ikke fjerne lÃ¥skatalog');
-INSERT INTO potranslation (id, translation) VALUES (158, 'Feil: Dette programmet mÃ¥ vÃ¦re installert suid root
+INSERT INTO potranslation (id, translation) VALUES (157, 'Feil: du_unlock: Kunne ikke fjerne låskatalog');
+INSERT INTO potranslation (id, translation) VALUES (158, 'Feil: Dette programmet må være installert suid root
 ');
 INSERT INTO potranslation (id, translation) VALUES (159, 'Intern feil: getopt_long() returnerte ukjent verdi
 ');
-INSERT INTO potranslation (id, translation) VALUES (160, 'Advarsel: Enheten Â«%sÂ» hÃ¥ndteres allerede i /etc/fstab, ny etikett blir ignorert
+INSERT INTO potranslation (id, translation) VALUES (160, 'Advarsel: Enheten «%s» håndteres allerede i /etc/fstab, ny etikett blir ignorert
 ');
 INSERT INTO potranslation (id, translation) VALUES (161, 'Feil: Kunne ikke bestemme den ordentlige stien for denne enheten');
-INSERT INTO potranslation (id, translation) VALUES (162, 'Feil: Ugyldig enhet %s (mÃ¥ vÃ¦re i /dev/)
+INSERT INTO potranslation (id, translation) VALUES (162, 'Feil: Ugyldig enhet %s (må være i /dev/)
 ');
 INSERT INTO potranslation (id, translation) VALUES (163, 'Feil: Kunne ikke slette monteringspunkt');
-INSERT INTO potranslation (id, translation) VALUES (164, 'Intern feil: modus %i er blir ikke hÃ¥ndtert.
+INSERT INTO potranslation (id, translation) VALUES (164, 'Intern feil: modus %i er blir ikke håndtert.
 ');
-INSERT INTO potranslation (id, translation) VALUES (165, 'pmount-hal - kjÃ¸r pmount med tilleggsinformasjon fra hal
+INSERT INTO potranslation (id, translation) VALUES (165, 'pmount-hal - kjør pmount med tilleggsinformasjon fra hal
 
 Bruk: pmount-hal <hal UDI> [pmount-valg]
 
-Denne kommandoen monterer enheten beskrevet av den oppgitte UDI-en ved bruk av Â«pmountÂ». Filsystemtypen, volumlagringspolitikk og Ã¸nsket etikett vil bli lest ut fra Â«halÂ» og gitt til Â«pmountÂ».');
-INSERT INTO potranslation (id, translation) VALUES (166, 'Feil: Kunne ikke kjÃ¸re pmount
+Denne kommandoen monterer enheten beskrevet av den oppgitte UDI-en ved bruk av «pmount». Filsystemtypen, volumlagringspolitikk og ønsket etikett vil bli lest ut fra «hal» og gitt til «pmount».');
+INSERT INTO potranslation (id, translation) VALUES (166, 'Feil: Kunne ikke kjøre pmount
 ');
 INSERT INTO potranslation (id, translation) VALUES (167, 'Feil: Kunne ikke koble til hal
 ');
@@ -5829,36 +5837,36 @@ INSERT INTO potranslation (id, translation) VALUES (168, 'Feil: Oppgitt UDI finn
 ');
 INSERT INTO potranslation (id, translation) VALUES (169, 'Feil: Oppgitt UDI er ikke en monterbar enhet
 ');
-INSERT INTO potranslation (id, translation) VALUES (170, 'Feil: Kunne ikke fÃ¥ status fra enhet');
+INSERT INTO potranslation (id, translation) VALUES (170, 'Feil: Kunne ikke få status fra enhet');
 INSERT INTO potranslation (id, translation) VALUES (171, 'Feil: Kunne ikke hente sysfs-katalog
 ');
-INSERT INTO potranslation (id, translation) VALUES (172, 'Feil: Kunne ikke Ã¥pne <sysfs-katalog>/block/');
-INSERT INTO potranslation (id, translation) VALUES (173, 'Feil: Kunne ikke Ã¥pne <sysfs-kat>/block/<enhet>/');
+INSERT INTO potranslation (id, translation) VALUES (172, 'Feil: Kunne ikke åpne <sysfs-katalog>/block/');
+INSERT INTO potranslation (id, translation) VALUES (173, 'Feil: Kunne ikke åpne <sysfs-kat>/block/<enhet>/');
 INSERT INTO potranslation (id, translation) VALUES (174, 'Feil: Enhet %s finnes ikke
 ');
 INSERT INTO potranslation (id, translation) VALUES (175, 'Feil: %s er ikke en blokkenhet
 ');
-INSERT INTO potranslation (id, translation) VALUES (176, 'Feil: Kunne ikke Ã¥pne fstab-fil');
-INSERT INTO potranslation (id, translation) VALUES (177, 'Feil: Enheten Â«%sÂ» er allerede montert pÃ¥ Â«%sÂ»
+INSERT INTO potranslation (id, translation) VALUES (176, 'Feil: Kunne ikke åpne fstab-fil');
+INSERT INTO potranslation (id, translation) VALUES (177, 'Feil: Enheten «%s» er allerede montert på «%s»
 ');
-INSERT INTO potranslation (id, translation) VALUES (178, 'Feil: Enheten Â«%sÂ» er ikke montert
+INSERT INTO potranslation (id, translation) VALUES (178, 'Feil: Enheten «%s» er ikke montert
 ');
 INSERT INTO potranslation (id, translation) VALUES (179, 'Feil: Enheten %s ble ikke montert av deg
 ');
-INSERT INTO potranslation (id, translation) VALUES (180, 'Feil: Enheten Â«%sÂ» kan ikke fjernes
+INSERT INTO potranslation (id, translation) VALUES (180, 'Feil: Enheten «%s» kan ikke fjernes
 ');
-INSERT INTO potranslation (id, translation) VALUES (181, 'Feil: Enheten Â«%sÂ» er lÃ¥st
+INSERT INTO potranslation (id, translation) VALUES (181, 'Feil: Enheten «%s» er låst
 ');
-INSERT INTO potranslation (id, translation) VALUES (182, 'Feil: Katalogen Â«%sÂ» inneholder allerede et montert filsystem
+INSERT INTO potranslation (id, translation) VALUES (182, 'Feil: Katalogen «%s» inneholder allerede et montert filsystem
 ');
-INSERT INTO potranslation (id, translation) VALUES (183, 'Feil: Katalogen Â«%sÂ» inneholder ikke et montert filsystem
+INSERT INTO potranslation (id, translation) VALUES (183, 'Feil: Katalogen «%s» inneholder ikke et montert filsystem
 ');
 INSERT INTO potranslation (id, translation) VALUES (184, 'Bruk
 
 %s [valg] <enhet>
   Avmonter <enhet> fra en katalog under %s hvis krav er
   tilfredsstilt (se pumount(1) for mer). Monteringspunktkatalogen
-  blir fjernet etterpÃ¥.
+  blir fjernet etterpå.
 
 Valg:
   -l, --lazy : lat umount, se umount(8)
@@ -5867,186 +5875,186 @@ Valg:
 ');
 INSERT INTO potranslation (id, translation) VALUES (185, 'Intern feil: Kunne ikke bestemme monteringspunkt
 ');
-INSERT INTO potranslation (id, translation) VALUES (186, 'Feil: Monteringspunktet Â«%sÂ» er ikke under Â«%sÂ»
+INSERT INTO potranslation (id, translation) VALUES (186, 'Feil: Monteringspunktet «%s» er ikke under «%s»
 ');
-INSERT INTO potranslation (id, translation) VALUES (187, 'Feil: Kunne ikke kjÃ¸re umount');
-INSERT INTO potranslation (id, translation) VALUES (188, 'Feil: Kunne ikke vente pÃ¥ startet avmonteringsprosess');
+INSERT INTO potranslation (id, translation) VALUES (187, 'Feil: Kunne ikke kjøre umount');
+INSERT INTO potranslation (id, translation) VALUES (188, 'Feil: Kunne ikke vente på startet avmonteringsprosess');
 INSERT INTO potranslation (id, translation) VALUES (189, 'Feil: Avmontering feilet
 ');
 INSERT INTO potranslation (id, translation) VALUES (190, 'Feil: Ikke mer minne
 ');
 INSERT INTO potranslation (id, translation) VALUES (191, 'Feil: Kunne ikke opprette katalog');
 INSERT INTO potranslation (id, translation) VALUES (192, 'Feil: Kunne ikke opprette stempelfil i katalog');
-INSERT INTO potranslation (id, translation) VALUES (193, 'Feil. Â«%sÂ» er ikke en katalog
+INSERT INTO potranslation (id, translation) VALUES (193, 'Feil. «%s» er ikke en katalog
 ');
-INSERT INTO potranslation (id, translation) VALUES (194, 'Feil: Kunne ikke Ã¥pne katalog');
-INSERT INTO potranslation (id, translation) VALUES (195, 'Feil: Katalogen Â«%sÂ» er ikke tom
+INSERT INTO potranslation (id, translation) VALUES (194, 'Feil: Kunne ikke åpne katalog');
+INSERT INTO potranslation (id, translation) VALUES (195, 'Feil: Katalogen «%s» er ikke tom
 ');
-INSERT INTO potranslation (id, translation) VALUES (196, 'Feil: Â«%sÂ» er ikke et gyldig tall
+INSERT INTO potranslation (id, translation) VALUES (196, 'Feil: «%s» er ikke et gyldig tall
 ');
 INSERT INTO potranslation (id, translation) VALUES (197, 'Intern feil: Kunne ikke endre til effektiv uid root');
 INSERT INTO potranslation (id, translation) VALUES (198, 'Intern feil: kunne ikke endre effektiv bruker-uid til ekte bruker-id');
 INSERT INTO potranslation (id, translation) VALUES (199, 'Intern feil: Kunne ikke endre til effektiv gid root');
 INSERT INTO potranslation (id, translation) VALUES (200, 'Intern feil: Kunne ikke endre effektiv gruppe-id til ekte grouppe-id');
-INSERT INTO potranslation (id, translation) VALUES (201, 'PouÅ¾itÃ­:
+INSERT INTO potranslation (id, translation) VALUES (201, 'Použití:
 
-%s [volby]<zaÅÃ­zenÃ­>[<jmÃ©no>]
+%s [volby]<zařízení>[<jméno>]
 
-  PÅipojÃ­ <zaÅÃ­zenÃ­> do adresÃ¡Åe na %s jestliÅ¾e mÃ¡ oprÃ¡vnÄnÃ­
-  (podÃ­vej do pmount(1) na podrobnosti). JestliÅ¾e je <jmÃ©no>
-  zadÃ¡no,   pÅipojovacÃ­ bod bude %s/<jmÃ©no>, jinak to bude%s
-  <zaÅÃ­zenÃ­>. JestliÅ¾e pÅipojovacÃ­ bod neexistuje, 
-  bude vytvoÅen.
+  Připojí <zařízení> do adresáře na %s jestliže má oprávnění
+  (podívej do pmount(1) na podrobnosti). Jestliže je <jméno>
+  zadáno,   připojovací bod bude %s/<jméno>, jinak to bude%s
+  <zařízení>. Jestliže připojovací bod neexistuje, 
+  bude vytvořen.
 
 ');
-INSERT INTO potranslation (id, translation) VALUES (202, '%s --lock <zaÅÃ­zenÃ­><pid>
-  ZabrÃ¡nÃ­ pÅÃ­Å¡tÃ­m pmounts <zaÅÃ­zenÃ­> dokud nenÃ­ znovu odemÄeno.
-  <pid> specifikuje id uzamykajÃ­cÃ­ho procesu. To umoÅ¾Åuje zamknout
-  zaÅÃ­zenÃ­ nÄkolika nezÃ¡vislÃ½mi procesy a zabrÃ¡nÃ­ nekoneÄnÃ©mu
-  uzamÄenÃ­ havarovanÃ½mi procesy (neexistujÃ­cÃ­ pid jsou smazÃ¡ny
-  pÅed mount)
+INSERT INTO potranslation (id, translation) VALUES (202, '%s --lock <zařízení><pid>
+  Zabrání příštím pmounts <zařízení> dokud není znovu odemčeno.
+  <pid> specifikuje id uzamykajícího procesu. To umožňuje zamknout
+  zařízení několika nezávislými procesy a zabrání nekonečnému
+  uzamčení havarovanými procesy (neexistující pid jsou smazány
+  před mount)
 
 ');
 INSERT INTO potranslation (id, translation) VALUES (203, '%s --unlock <device> <pid>
-  Odstranit znovu zÃ¡mek na <device> pro proces <pid>.
+  Odstranit znovu zámek na <device> pro proces <pid>.
 
 ');
 INSERT INTO potranslation (id, translation) VALUES (204, 'Volby:
-  -a, --async : pÅipojit <zaÅÃ­zenÃ­> s volbou ''async'' (vÃ½chozÃ­ je:''sync'')
-  --noatime : pÅipojit <zaÅÃ­zenÃ­> s volbou ''noatime'' (vÃ½chozÃ­ je:''atime'')
-  -e, --exec : pÅipojit <zaÅÃ­zenÃ­> s volbou ''exec'' (vÃ½chozÃ­ je: ''noexec'')
-  -t <fs> : pÅipojit jako souborovÃ½ systÃ©m <fs> (vÃ½chozÃ­: autodetected)
-  -c <charset>: pouÅ¾Ã­t danou znakovou sadu (vÃ½chozÃ­: ''utf8'' jestliÅ¾e je
-                v nÄjakÃ©m lokÃ¡lnÃ­m UTF-8 , jinak vÃ½chozÃ­ pro mount)
-  -d, --debug : povolit ladÃ­cÃ­ vÃ½stupy (mnoho hlÃ¡Å¡ek)
-  -h, --help : vypÃ­Å¡e nÃ¡povÄdu a ukonÄÃ­ se');
-INSERT INTO potranslation (id, translation) VALUES (205, 'Chyba: make_mount_name: neplatnÃ© zaÅÃ­zenÃ­ %s (musÃ­ bÃ½t v /dev/)
+  -a, --async : připojit <zařízení> s volbou ''async'' (výchozí je:''sync'')
+  --noatime : připojit <zařízení> s volbou ''noatime'' (výchozí je:''atime'')
+  -e, --exec : připojit <zařízení> s volbou ''exec'' (výchozí je: ''noexec'')
+  -t <fs> : připojit jako souborový systém <fs> (výchozí: autodetected)
+  -c <charset>: použít danou znakovou sadu (výchozí: ''utf8'' jestliže je
+                v nějakém lokálním UTF-8 , jinak výchozí pro mount)
+  -d, --debug : povolit ladící výstupy (mnoho hlášek)
+  -h, --help : vypíše nápovědu a ukončí se');
+INSERT INTO potranslation (id, translation) VALUES (205, 'Chyba: make_mount_name: neplatné zařízení %s (musí být v /dev/)
 ');
-INSERT INTO potranslation (id, translation) VALUES (206, 'Chyba: jmÃ©no nesmÃ­ bÃ½t prÃ¡zdnÃ©
+INSERT INTO potranslation (id, translation) VALUES (206, 'Chyba: jméno nesmí být prázdné
 ');
-INSERT INTO potranslation (id, translation) VALUES (207, 'Chyba: PÅÃ­liÅ¡ dlouhÃ© jmÃ©no
+INSERT INTO potranslation (id, translation) VALUES (207, 'Chyba: Příliš dlouhé jméno
 ');
-INSERT INTO potranslation (id, translation) VALUES (208, 'Chyba:''/'' se nesmÃ­ vyskytovat ve jmÃ©nÄ
+INSERT INTO potranslation (id, translation) VALUES (208, 'Chyba:''/'' se nesmí vyskytovat ve jméně
 ');
-INSERT INTO potranslation (id, translation) VALUES (209, 'Chyba: pÅÃ­liÅ¡ dlouhÃ© jmÃ©no zaÅÃ­zenÃ­
+INSERT INTO potranslation (id, translation) VALUES (209, 'Chyba: příliš dlouhé jméno zařízení
 ');
-INSERT INTO potranslation (id, translation) VALUES (210, 'Chyba: nelze zapsat vÅ¡echna uid oprÃ¡vnÄnÃ­');
+INSERT INTO potranslation (id, translation) VALUES (210, 'Chyba: nelze zapsat všechna uid oprávnění');
 INSERT INTO potranslation (id, translation) VALUES (211, 'Chyba: nelze spustit mount');
-INSERT INTO potranslation (id, translation) VALUES (212, 'VnitÅnÃ­ chyba: mount_attempmt: pÅedanÃ© jmÃ©no souboru je NULL
+INSERT INTO potranslation (id, translation) VALUES (212, 'Vnitřní chyba: mount_attempmt: předané jméno souboru je NULL
 ');
-INSERT INTO potranslation (id, translation) VALUES (213, 'Chyba: Å¡patnÃ© jmÃ©no souborovÃ©ho systÃ©mu ''%s''
+INSERT INTO potranslation (id, translation) VALUES (213, 'Chyba: špatné jméno souborového systému ''%s''
 ');
-INSERT INTO potranslation (id, translation) VALUES (214, 'Chyba: Å¡patnÃ© jmÃ©no znakovÃ© sady ''%s''
+INSERT INTO potranslation (id, translation) VALUES (214, 'Chyba: špatné jméno znakové sady ''%s''
 ');
-INSERT INTO potranslation (id, translation) VALUES (215, 'Chyba: nelze zÃ­skat plnÃ¡ prÃ¡va superuÅ¾ivatele');
-INSERT INTO potranslation (id, translation) VALUES (216, 'Chyba: nelze Äekat na spuÅ¡tÄnÃ½ proces pÅipojenÃ­');
+INSERT INTO potranslation (id, translation) VALUES (215, 'Chyba: nelze získat plná práva superuživatele');
+INSERT INTO potranslation (id, translation) VALUES (216, 'Chyba: nelze čekat na spuštěný proces připojení');
 INSERT INTO potranslation (id, translation) VALUES (217, 'Chyba: nelze zamknout pro pid %u, tento proces neexistuje
 ');
-INSERT INTO potranslation (id, translation) VALUES (218, 'Chyba: nelze vytvoÅit pid zamykacÃ­ soubor %s:%s
+INSERT INTO potranslation (id, translation) VALUES (218, 'Chyba: nelze vytvořit pid zamykací soubor %s:%s
 ');
-INSERT INTO potranslation (id, translation) VALUES (219, 'Chyba: nelze odstranit pid zamykacÃ­ soubor %s: %s
+INSERT INTO potranslation (id, translation) VALUES (219, 'Chyba: nelze odstranit pid zamykací soubor %s: %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (220, 'Chyba: do_unlock: nelze odstranit uzamÄenÃ­ adresÃ¡Åe');
-INSERT INTO potranslation (id, translation) VALUES (221, 'Chyba: tento program je potÅeba instalovat jako root
+INSERT INTO potranslation (id, translation) VALUES (220, 'Chyba: do_unlock: nelze odstranit uzamčení adresáře');
+INSERT INTO potranslation (id, translation) VALUES (221, 'Chyba: tento program je potřeba instalovat jako root
 ');
-INSERT INTO potranslation (id, translation) VALUES (222, 'VnitÅnÃ­ chyba: getopt_long() vrÃ¡til neznÃ¡mou hodnotu
+INSERT INTO potranslation (id, translation) VALUES (222, 'Vnitřní chyba: getopt_long() vrátil neznámou hodnotu
 ');
-INSERT INTO potranslation (id, translation) VALUES (223, 'VarovÃ¡nÃ­: zaÅÃ­zenÃ­ %s je jiÅ¾ ÅÃ­zeno s /etc/fstab, dodanÃ© jmÃ©no bude ignorovÃ¡no
+INSERT INTO potranslation (id, translation) VALUES (223, 'Varování: zařízení %s je již řízeno s /etc/fstab, dodané jméno bude ignorováno
 ');
-INSERT INTO potranslation (id, translation) VALUES (224, 'Chyba: nelze urÄit opravdovou cestu k zaÅÃ­zenÃ­');
-INSERT INTO potranslation (id, translation) VALUES (225, 'Chyba: neplatnÃ© zaÅÃ­zenÃ­ %s (musÃ­ bÃ½t v /dev/)
+INSERT INTO potranslation (id, translation) VALUES (224, 'Chyba: nelze určit opravdovou cestu k zařízení');
+INSERT INTO potranslation (id, translation) VALUES (225, 'Chyba: neplatné zařízení %s (musí být v /dev/)
 ');
-INSERT INTO potranslation (id, translation) VALUES (226, 'Chyba: nelze smazat bod pÅipojenÃ­');
-INSERT INTO potranslation (id, translation) VALUES (227, 'VnitÅnÃ­ chyba: mÃ³d %i nenÃ­ obsluhovÃ¡n.
+INSERT INTO potranslation (id, translation) VALUES (226, 'Chyba: nelze smazat bod připojení');
+INSERT INTO potranslation (id, translation) VALUES (227, 'Vnitřní chyba: mód %i není obsluhován.
 ');
-INSERT INTO potranslation (id, translation) VALUES (228, 'pmount-hal - spusit pmount s pÅÃ­davnÃ½mi informacemi z halu
+INSERT INTO potranslation (id, translation) VALUES (228, 'pmount-hal - spusit pmount s přídavnými informacemi z halu
 
-UÅ¾itÃ­: pmount-hal <hal UDI> [pmount volby]
+Užití: pmount-hal <hal UDI> [pmount volby]
 
-Tento pÅÃ­kaz pÅipojÃ­ zaÅÃ­zenÃ­ popsanÃ© danÃ½m UDI pouÅ¾Ã­vajÃ­cÃ­ pmount. SystÃ©m souborÅ¯, chovÃ¡nÃ­ diskovÃ© jednotky and poÅ¾adovanÃ½ nÃ¡zev budou
-pÅeÄteny z halu a zaslÃ¡ny pmountu.');
+Tento příkaz připojí zařízení popsané daným UDI používající pmount. Systém souborů, chování diskové jednotky and požadovaný název budou
+přečteny z halu a zaslány pmountu.');
 INSERT INTO potranslation (id, translation) VALUES (229, 'Chyba: nelze spusit pmount
 ');
-INSERT INTO potranslation (id, translation) VALUES (230, 'Chyba: nelze se pÅipojit na hal
+INSERT INTO potranslation (id, translation) VALUES (230, 'Chyba: nelze se připojit na hal
 ');
-INSERT INTO potranslation (id, translation) VALUES (231, 'Chyba: danÃ© UDI neexistuje
+INSERT INTO potranslation (id, translation) VALUES (231, 'Chyba: dané UDI neexistuje
 ');
-INSERT INTO potranslation (id, translation) VALUES (232, 'Chyba: danÃ© UDI neni pÅipojitelnÃ© zaÅÃ­zenÃ­
+INSERT INTO potranslation (id, translation) VALUES (232, 'Chyba: dané UDI neni připojitelné zařízení
 ');
-INSERT INTO potranslation (id, translation) VALUES (233, 'Chyba: nelze zjistit stav zaÅÃ­zenÃ­');
-INSERT INTO potranslation (id, translation) VALUES (234, 'Chyba: nelze zÃ­skat sysfs adresÃ¡Å
+INSERT INTO potranslation (id, translation) VALUES (233, 'Chyba: nelze zjistit stav zařízení');
+INSERT INTO potranslation (id, translation) VALUES (234, 'Chyba: nelze získat sysfs adresář
 ');
-INSERT INTO potranslation (id, translation) VALUES (235, 'Chyba: nelze otevÅÃ­t <sysfs adresÃ¡Å>/block/');
-INSERT INTO potranslation (id, translation) VALUES (236, 'Chyba: nelze otevÅÃ­t <sysfs adresÃ¡Å>/block/<device>/');
-INSERT INTO potranslation (id, translation) VALUES (237, 'Chyba: zaÅÃ­zenÃ­ %s neexistuje
+INSERT INTO potranslation (id, translation) VALUES (235, 'Chyba: nelze otevřít <sysfs adresář>/block/');
+INSERT INTO potranslation (id, translation) VALUES (236, 'Chyba: nelze otevřít <sysfs adresář>/block/<device>/');
+INSERT INTO potranslation (id, translation) VALUES (237, 'Chyba: zařízení %s neexistuje
 ');
-INSERT INTO potranslation (id, translation) VALUES (238, 'Chyba: %s nenÃ­ blokovÃ© zaÅÃ­zenÃ­
+INSERT INTO potranslation (id, translation) VALUES (238, 'Chyba: %s není blokové zařízení
 ');
-INSERT INTO potranslation (id, translation) VALUES (239, 'Chyba: nelze otevÅÃ­t soubor fstab-type');
-INSERT INTO potranslation (id, translation) VALUES (240, 'Chyba: zaÅÃ­zenÃ­ %s je jÃ­Å¾ pÅipojeno na %s
+INSERT INTO potranslation (id, translation) VALUES (239, 'Chyba: nelze otevřít soubor fstab-type');
+INSERT INTO potranslation (id, translation) VALUES (240, 'Chyba: zařízení %s je jíž připojeno na %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (241, 'Chyba: zaÅÃ­zenÃ­ %s nenÃ­ pÅipojeno
+INSERT INTO potranslation (id, translation) VALUES (241, 'Chyba: zařízení %s není připojeno
 ');
-INSERT INTO potranslation (id, translation) VALUES (242, 'Chyba: zaÅÃ­zenÃ­ %s nepÅipojils ty
+INSERT INTO potranslation (id, translation) VALUES (242, 'Chyba: zařízení %s nepřipojils ty
 ');
-INSERT INTO potranslation (id, translation) VALUES (243, 'Chyba: zaÅÃ­zenÃ­ %s nenÃ­ vyjÃ­matelnÃ©
+INSERT INTO potranslation (id, translation) VALUES (243, 'Chyba: zařízení %s není vyjímatelné
 ');
-INSERT INTO potranslation (id, translation) VALUES (244, 'Chyba: zaÅÃ­zenÃ­ %s je zamÄeno
+INSERT INTO potranslation (id, translation) VALUES (244, 'Chyba: zařízení %s je zamčeno
 ');
-INSERT INTO potranslation (id, translation) VALUES (245, 'Chyba: adresÃ¡Å %s jiÅ¾ obsahuje pÅipojenÃ½ souborovÃ½ systÃ©m
+INSERT INTO potranslation (id, translation) VALUES (245, 'Chyba: adresář %s již obsahuje připojený souborový systém
 ');
-INSERT INTO potranslation (id, translation) VALUES (246, 'Chyba: adresÃ¡Å %s neobsahuje pÅipojenÃ½ souborovÃ½ systÃ©m
+INSERT INTO potranslation (id, translation) VALUES (246, 'Chyba: adresář %s neobsahuje připojený souborový systém
 ');
-INSERT INTO potranslation (id, translation) VALUES (247, 'PouÅ¾itÃ­:
+INSERT INTO potranslation (id, translation) VALUES (247, 'Použití:
 
-%s [parametry] <zaÅÃ­zenÃ­>
-  Odpojenit <zaÅÃ­zenÃ­> z adresÃ¡Åe pod %s jestliÅ¾e 
-  jsou nastavenÃ¡ poÅ¾adovnÃ¡ prÃ¡va (podrobnosti viz pumount(1)). 
-  AdresÃ¡Å pÅipojovacÃ­ho bodu je potÃ© odstranÄn.
+%s [parametry] <zařízení>
+  Odpojenit <zařízení> z adresáře pod %s jestliže 
+  jsou nastavená požadovná práva (podrobnosti viz pumount(1)). 
+  Adresář připojovacího bodu je poté odstraněn.
 
 Parametry:
-  -l, --lazy : odpojit lÃ­nÄ, viz umount(8)
-  -d, --debug : povolit ladÃ­cÃ­ vÃ½stupy (velmi ukecanÃ©)
-  -h, --help : vytiskne nÃ¡povÄdu a ukonÄÃ­ se
+  -l, --lazy : odpojit líně, viz umount(8)
+  -d, --debug : povolit ladící výstupy (velmi ukecané)
+  -h, --help : vytiskne nápovědu a ukončí se
 ');
-INSERT INTO potranslation (id, translation) VALUES (248, 'VnitÅnÃ­ chyba: nelze urÄit bod pÅipojenÃ­
+INSERT INTO potranslation (id, translation) VALUES (248, 'Vnitřní chyba: nelze určit bod připojení
 ');
-INSERT INTO potranslation (id, translation) VALUES (249, 'Chyba: pÅipojovacÃ­ bod %s nenÃ­ pod %s
+INSERT INTO potranslation (id, translation) VALUES (249, 'Chyba: připojovací bod %s není pod %s
 ');
 INSERT INTO potranslation (id, translation) VALUES (250, 'Chyba: nelze spustit umount');
-INSERT INTO potranslation (id, translation) VALUES (251, 'Chyba: nelze Äekat na spuÅ¡tÄnÃ½ proces umount');
+INSERT INTO potranslation (id, translation) VALUES (251, 'Chyba: nelze čekat na spuštěný proces umount');
 INSERT INTO potranslation (id, translation) VALUES (252, 'Chyba: umount selhal
 ');
-INSERT INTO potranslation (id, translation) VALUES (253, 'Chyba: nedostatek pamÄti
+INSERT INTO potranslation (id, translation) VALUES (253, 'Chyba: nedostatek paměti
 ');
-INSERT INTO potranslation (id, translation) VALUES (254, 'Chyba: nelze vytvoÅit adresÃ¡Å');
-INSERT INTO potranslation (id, translation) VALUES (255, 'Chyba: nelze vytvoÅit soubor razÃ­tka v adresÃ¡Åi');
-INSERT INTO potranslation (id, translation) VALUES (256, 'Chyba: %s nenÃ­ adresÃ¡Å
+INSERT INTO potranslation (id, translation) VALUES (254, 'Chyba: nelze vytvořit adresář');
+INSERT INTO potranslation (id, translation) VALUES (255, 'Chyba: nelze vytvořit soubor razítka v adresáři');
+INSERT INTO potranslation (id, translation) VALUES (256, 'Chyba: %s není adresář
 ');
-INSERT INTO potranslation (id, translation) VALUES (257, 'Chyba: nelze otevÅÃ­t adresÃ¡Å');
-INSERT INTO potranslation (id, translation) VALUES (258, 'Chyba: adresÃ¡Å %s nenÃ­ prÃ¡zdnÃ½
+INSERT INTO potranslation (id, translation) VALUES (257, 'Chyba: nelze otevřít adresář');
+INSERT INTO potranslation (id, translation) VALUES (258, 'Chyba: adresář %s není prázdný
 ');
-INSERT INTO potranslation (id, translation) VALUES (259, 'Chyba: ''%s'' nenÃ­ platnÃ© ÄÃ­slo
+INSERT INTO potranslation (id, translation) VALUES (259, 'Chyba: ''%s'' není platné číslo
 ');
-INSERT INTO potranslation (id, translation) VALUES (260, 'VnitÅnÃ­ chyba: nelze zmÄnit ÃºspÄÅ¡nÄ na uid roota');
-INSERT INTO potranslation (id, translation) VALUES (261, 'VnitÅnÃ­ chyba: nelze zmÄnit skuteÄnÃ© uÅ¾ivatelskÃ© id na pravÃ© uÅ¾ivatelskÃ© id');
-INSERT INTO potranslation (id, translation) VALUES (262, 'VnitÅnÃ­ chyba: nelze zmÄnit na skuteÄnÃ© gid roota');
-INSERT INTO potranslation (id, translation) VALUES (263, 'VnitÅnÃ­ chyba: nelze zmÄnit id skuteÄnÃ© skupiny na id pravÃ© skupiny');
+INSERT INTO potranslation (id, translation) VALUES (260, 'Vnitřní chyba: nelze změnit úspěšně na uid roota');
+INSERT INTO potranslation (id, translation) VALUES (261, 'Vnitřní chyba: nelze změnit skutečné uživatelské id na pravé uživatelské id');
+INSERT INTO potranslation (id, translation) VALUES (262, 'Vnitřní chyba: nelze změnit na skutečné gid roota');
+INSERT INTO potranslation (id, translation) VALUES (263, 'Vnitřní chyba: nelze změnit id skutečné skupiny na id pravé skupiny');
 INSERT INTO potranslation (id, translation) VALUES (264, 'Uso:
 
 %s [opciones] <dispositivo> [<etiqueta>]
 
   Monta el <dispositivo> en un directorio bajo %s si se cumplen los
   requisitos de seguridad (ver detalles en pmount(1)). Si se pone
-  <etiqueta>, el punto de montaje serÃ¡ %s/<etiqueta>, si no, serÃ¡
-  %s<dispositivo>. Si el punto de montaje no existe, se crearÃ¡.
+  <etiqueta>, el punto de montaje será %s/<etiqueta>, si no, será
+  %s<dispositivo>. Si el punto de montaje no existe, se creará.
 
 ');
-INSERT INTO potranslation (id, translation) VALUES (265, '%s --lock <dispositivo> <pid>ã
+INSERT INTO potranslation (id, translation) VALUES (265, '%s --lock <dispositivo> <pid>〓
   Previene posteriores montajes del <dispositivo> hasta que se desbloquee.
   <pid> especifica el id del proceso que pone el bloqueo. Esto permite
   bloquear un dispositivo a varios procesos independendientes evitando
-  bloqueos indefinidos por procesos caÃ­dos (los pids inexistentes se
+  bloqueos indefinidos por procesos caídos (los pids inexistentes se
   limpian antes de intentar un montaje).
 
 ');
@@ -6055,15 +6063,15 @@ INSERT INTO potranslation (id, translation) VALUES (266, '%s --unlock <dispositi
 
 ');
 INSERT INTO potranslation (id, translation) VALUES (267, 'Opciones:
-  -a, --async : montar <dispositivo> con la opciÃ³n ''async'' (por defecto: ''sync'')
-  --noatime   : montar <dispositivo> con la opciÃ³n ''noatime'' (por defecto: ''atime'')
-  -e, --exec  : montar <dispositivo> con la opciÃ³n ''exec'' (por defecto: ''noexec'')
+  -a, --async : montar <dispositivo> con la opción ''async'' (por defecto: ''sync'')
+  --noatime   : montar <dispositivo> con la opción ''noatime'' (por defecto: ''atime'')
+  -e, --exec  : montar <dispositivo> con la opción ''exec'' (por defecto: ''noexec'')
   -t <fs>     : montar como sistema de ficheros tipo <fs> (por defecto: autodetectado)
   -c <charset>: usar el juego de caracteres E/S dado (por defecto: ''utf8'' si se llama
                 en un local UTF-8, si no, el defecto de montaje)
-  -d, --debug : habilita salida de depuraciÃ³n (muy verbosa)
+  -d, --debug : habilita salida de depuración (muy verbosa)
   -h, --help  : escribir mensaje de ayuda y salir');
-INSERT INTO potranslation (id, translation) VALUES (268, 'Error: make_mountpoint_name: el dispositivo %s no es vÃ¡lido (ha de estar en /dev/)
+INSERT INTO potranslation (id, translation) VALUES (268, 'Error: make_mountpoint_name: el dispositivo %s no es válido (ha de estar en /dev/)
 ');
 INSERT INTO potranslation (id, translation) VALUES (269, 'Error: la etiqueta no puede estar vacia
 ');
@@ -6077,9 +6085,9 @@ INSERT INTO potranslation (id, translation) VALUES (273, 'Error: no se han podid
 INSERT INTO potranslation (id, translation) VALUES (274, 'Error: no se ha podido ejecutar el montaje');
 INSERT INTO potranslation (id, translation) VALUES (275, 'Error interno: mount_attempt: el nombre del sistema de archivos dado es NULO
 ');
-INSERT INTO potranslation (id, translation) VALUES (276, 'Error: el nombre del sistema de ficheros ''%s'' no es vÃ¡lido
+INSERT INTO potranslation (id, translation) VALUES (276, 'Error: el nombre del sistema de ficheros ''%s'' no es válido
 ');
-INSERT INTO potranslation (id, translation) VALUES (277, 'Error: el nombre del juego de caracteres ''%s'' no es vÃ¡lido
+INSERT INTO potranslation (id, translation) VALUES (277, 'Error: el nombre del juego de caracteres ''%s'' no es válido
 ');
 INSERT INTO potranslation (id, translation) VALUES (278, 'Error: no se han podido alcanzar privilegios de uid root completos');
 INSERT INTO potranslation (id, translation) VALUES (279, 'Error: no se ha podido esperar a que se ejecutara el proceso de montaje');
@@ -6094,7 +6102,7 @@ INSERT INTO potranslation (id, translation) VALUES (284, 'Error este programa ne
 ');
 INSERT INTO potranslation (id, translation) VALUES (285, 'Error interno: getopt_long() ha devuelto un valor desconocido
 ');
-INSERT INTO potranslation (id, translation) VALUES (286, 'Aviso: el dispositivo %s ya se gestiona en /etc/fstab, la etiqueta proporcionada serÃ¡ ignorada
+INSERT INTO potranslation (id, translation) VALUES (286, 'Aviso: el dispositivo %s ya se gestiona en /etc/fstab, la etiqueta proporcionada será ignorada
 ');
 INSERT INTO potranslation (id, translation) VALUES (287, 'Error: no se ha podido determinar la ruta real del dispositivo');
 INSERT INTO potranslation (id, translation) VALUES (288, 'Error: el dispositivo %s no vale (ha de estar en /dev/)
@@ -6102,20 +6110,20 @@ INSERT INTO potranslation (id, translation) VALUES (288, 'Error: el dispositivo 
 INSERT INTO potranslation (id, translation) VALUES (289, 'Error: no se ha podido borrar el punto de montaje');
 INSERT INTO potranslation (id, translation) VALUES (290, 'Error interno: %i es un modo no gestionado.
 ');
-INSERT INTO potranslation (id, translation) VALUES (291, 'pmount-hal - ejecutar pmount con informaciÃ³n adicional de hal
+INSERT INTO potranslation (id, translation) VALUES (291, 'pmount-hal - ejecutar pmount con información adicional de hal
 
 Uso: pmount-hal <UDI hal> [opciones de pmount]
 
 Esta orden monta el dispositivo descrito por el UDI dado usando pmount. El
-tipo de sistema de ficheros, la polÃ­tica de almacenamiento del volumen y la etiqueta deseada se 
-leerÃ¡n de hal y se pasarÃ¡n a pmount.');
+tipo de sistema de ficheros, la política de almacenamiento del volumen y la etiqueta deseada se 
+leerán de hal y se pasarán a pmount.');
 INSERT INTO potranslation (id, translation) VALUES (292, 'Error: no se pudo ejecutar pmount
 ');
 INSERT INTO potranslation (id, translation) VALUES (293, 'Error: no se ha podido abrir el directorio
 ');
 INSERT INTO potranslation (id, translation) VALUES (294, 'Error: el UDI introducido no existe
 ');
-INSERT INTO potranslation (id, translation) VALUES (295, 'Error: el UDI introducido no es un volÃºmen montable
+INSERT INTO potranslation (id, translation) VALUES (295, 'Error: el UDI introducido no es un volúmen montable
 ');
 INSERT INTO potranslation (id, translation) VALUES (296, 'Error: no se ha podido hallar el estado del dispositivo');
 INSERT INTO potranslation (id, translation) VALUES (297, 'Error: no se ha podido hallar el directorio sysfs
@@ -6127,35 +6135,35 @@ INSERT INTO potranslation (id, translation) VALUES (300, 'Error: el dispositivo 
 INSERT INTO potranslation (id, translation) VALUES (301, 'Error: %s no es dispositivo de bloques
 ');
 INSERT INTO potranslation (id, translation) VALUES (302, 'Error: un fichero de tipo fstab no se ha podido abrir');
-INSERT INTO potranslation (id, translation) VALUES (303, 'Error: el dispositivo %s ya estÃ¡ montado en %s
+INSERT INTO potranslation (id, translation) VALUES (303, 'Error: el dispositivo %s ya está montado en %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (304, 'Error: el dispositivo %s no estÃ¡ montado
+INSERT INTO potranslation (id, translation) VALUES (304, 'Error: el dispositivo %s no está montado
 ');
 INSERT INTO potranslation (id, translation) VALUES (305, 'Error: el dispositivo %s no lo ha montado usted
 ');
 INSERT INTO potranslation (id, translation) VALUES (306, 'Error: el dispositivo %s no es enchufable
 ');
-INSERT INTO potranslation (id, translation) VALUES (307, 'Error: el dispositivo %s estÃ¡ bloqueado
+INSERT INTO potranslation (id, translation) VALUES (307, 'Error: el dispositivo %s está bloqueado
 ');
 INSERT INTO potranslation (id, translation) VALUES (308, 'Error: el directorio %s ya tiene montado un sistema de ficheros
 ');
-INSERT INTO potranslation (id, translation) VALUES (309, 'Error: el directorio %s no tiene montado ningÃºn sistema de ficheros
+INSERT INTO potranslation (id, translation) VALUES (309, 'Error: el directorio %s no tiene montado ningún sistema de ficheros
 ');
 INSERT INTO potranslation (id, translation) VALUES (310, 'Uso:
 
 %s [opciones] <dispositivo>
   Desmontar <dispositivo> de directorio bajo %s si se cumplen los requisitos
-  de seguridad (ver detalles en pumount(1)). DespuÃ©s se elimina el directorio
+  de seguridad (ver detalles en pumount(1)). Después se elimina el directorio
   del punto de montaje.
 
 Opciones:
   -l, --lazy : desmontaje laxo, ver umount(8)
-  -d, --debug : permitir salida de depuraciÃ³n (muy verbosa)
+  -d, --debug : permitir salida de depuración (muy verbosa)
   -h, --help : escribir mensaje de ayuda y salir bien
 ');
 INSERT INTO potranslation (id, translation) VALUES (311, 'Error interno: no se ha podido determinar el punto de montaje
 ');
-INSERT INTO potranslation (id, translation) VALUES (312, 'Error: el punto de montaje %s no estÃ¡ bajo %s
+INSERT INTO potranslation (id, translation) VALUES (312, 'Error: el punto de montaje %s no está bajo %s
 ');
 INSERT INTO potranslation (id, translation) VALUES (313, 'Error: no se ha podido ejecutar el desmontaje');
 INSERT INTO potranslation (id, translation) VALUES (314, 'Error: no se ha podido esperar a que se ejecutara el proceso de desmontaje');
@@ -6168,9 +6176,9 @@ INSERT INTO potranslation (id, translation) VALUES (318, 'Error: no se ha podido
 INSERT INTO potranslation (id, translation) VALUES (319, 'Error: %s no es un directorio
 ');
 INSERT INTO potranslation (id, translation) VALUES (320, 'Error: no se ha podido abrir el directorio');
-INSERT INTO potranslation (id, translation) VALUES (321, 'Error: el directorio %s no estÃ¡ vacÃ­o
+INSERT INTO potranslation (id, translation) VALUES (321, 'Error: el directorio %s no está vacío
 ');
-INSERT INTO potranslation (id, translation) VALUES (322, 'Error: ''%s'' no es un nÃºmero vÃ¡lido
+INSERT INTO potranslation (id, translation) VALUES (322, 'Error: ''%s'' no es un número válido
 ');
 INSERT INTO potranslation (id, translation) VALUES (323, 'Error interno: no se ha podido cambiar a un uid efectivo de root');
 INSERT INTO potranslation (id, translation) VALUES (324, 'Error interno: no se ha podido cambiar del uid del usuario efectivo al id del usuario real');
@@ -6178,38 +6186,38 @@ INSERT INTO potranslation (id, translation) VALUES (325, 'Error interno: no se h
 INSERT INTO potranslation (id, translation) VALUES (326, 'Error interno: no se ha podido cambiar del id de grupo efectivo al id de grupo real');
 INSERT INTO potranslation (id, translation) VALUES (327, 'Aufruf:
 
-%s [Optionen] <GerÃ¤t> [<Label>]
+%s [Optionen] <Gerät> [<Label>]
 
-  Bindet <GerÃ¤t> unter ein Verzeichnis in %s ein wenn die 
-  Richtlinien dies erlauben (siehe pmount(1) fÃ¼r Details).
+  Bindet <Gerät> unter ein Verzeichnis in %s ein wenn die 
+  Richtlinien dies erlauben (siehe pmount(1) für Details).
   Wenn <Label> gegeben ist, wird als Bindungsverzeichnis
-  %s<Label> verwendet, ansonsten %s<GerÃ¤t>.
+  %s<Label> verwendet, ansonsten %s<Gerät>.
   Wenn dieses Verzeichnis nicht existiert, wird es erstellt.
 
 ');
-INSERT INTO potranslation (id, translation) VALUES (328, '%s --lock <GerÃ¤t> <pid>
-  Sperrt weitere pmount-Aufrufe fÃ¼r <GerÃ¤t> bis es wieder entsperrt
-  wird. <pid> gibt die ID des Prozesses an, der die Sperre hÃ¤lt.  Dies
-  ermÃ¶glicht das Sperren eines GerÃ¤tes von mehreren unabhÃ¤ngigen
-  Prozessen und vermeidet unendliche Sperren von abgestÃ¼rzten
-  Prozessen (Sperren von nichtexistierenden Prozessen werden gelÃ¶scht
+INSERT INTO potranslation (id, translation) VALUES (328, '%s --lock <Gerät> <pid>
+  Sperrt weitere pmount-Aufrufe für <Gerät> bis es wieder entsperrt
+  wird. <pid> gibt die ID des Prozesses an, der die Sperre hält.  Dies
+  ermöglicht das Sperren eines Gerätes von mehreren unabhängigen
+  Prozessen und vermeidet unendliche Sperren von abgestürzten
+  Prozessen (Sperren von nichtexistierenden Prozessen werden gelöscht
   bevor eine Einbindung versucht wird).
 
 ');
-INSERT INTO potranslation (id, translation) VALUES (329, '%s --unlock <GerÃ¤t> <pid>
-  Hebt die Sperre auf <GerÃ¤t> durch den Prozess <pid> wieder auf.
+INSERT INTO potranslation (id, translation) VALUES (329, '%s --unlock <Gerät> <pid>
+  Hebt die Sperre auf <Gerät> durch den Prozess <pid> wieder auf.
 
 ');
 INSERT INTO potranslation (id, translation) VALUES (330, 'Optionen:
-  -a, --async : Binde <GerÃ¤t> mit der Option ''async'' ein (Default: ''sync'')
-  --noatime   : Binde <GerÃ¤t> mit der Option ''noatime'' ein (Default: ''atime'')
-  -e, --exec  : Binde <GerÃ¤t> mit der Option ''exec'' ein (Default: ''noexec'')
+  -a, --async : Binde <Gerät> mit der Option ''async'' ein (Default: ''sync'')
+  --noatime   : Binde <Gerät> mit der Option ''noatime'' ein (Default: ''atime'')
+  -e, --exec  : Binde <Gerät> mit der Option ''exec'' ein (Default: ''noexec'')
   -t <fs>     : Verwende Dateisystem <fs> (Default: automatisch)
   -c <charset>: Verwende angegebenen Zeichensatz (Default: ''utf8'' in
                 einer UTF-8 Umgebung, ansonsten mount-Default)
   -d, --debug : Debug-Ausgaben aktivieren (gibt sehr viel aus)
   -h, --help  : Hilfetext anzeigen und erfolgreich beenden');
-INSERT INTO potranslation (id, translation) VALUES (331, 'Fehler: make_mountpoint_name: UngÃ¼ltiges GerÃ¤t %s (muss in /dev/ sein)
+INSERT INTO potranslation (id, translation) VALUES (331, 'Fehler: make_mountpoint_name: Ungültiges Gerät %s (muss in /dev/ sein)
 ');
 INSERT INTO potranslation (id, translation) VALUES (332, 'Fehler: Label darf nicht leer sein
 ');
@@ -6217,83 +6225,83 @@ INSERT INTO potranslation (id, translation) VALUES (333, 'Fehler: Label ist zu l
 ');
 INSERT INTO potranslation (id, translation) VALUES (334, 'Fehler: Label darf nicht das Zeichen ''/'' enthalten
 ');
-INSERT INTO potranslation (id, translation) VALUES (335, 'Fehler: GerÃ¤tname zu lang
+INSERT INTO potranslation (id, translation) VALUES (335, 'Fehler: Gerätname zu lang
 ');
 INSERT INTO potranslation (id, translation) VALUES (336, 'Fehler: konnte nicht alle User-ID Privilegien aufgeben');
-INSERT INTO potranslation (id, translation) VALUES (337, 'Fehler: konnte mount nicht ausfÃ¼hren');
+INSERT INTO potranslation (id, translation) VALUES (337, 'Fehler: konnte mount nicht ausführen');
 INSERT INTO potranslation (id, translation) VALUES (338, 'Interner Fehler: mount_attempt: gegebener Dateisystem-Name ist NULL
 ');
-INSERT INTO potranslation (id, translation) VALUES (339, 'Fehler: UngÃ¼ltiges Dateisystem ''%s''
+INSERT INTO potranslation (id, translation) VALUES (339, 'Fehler: Ungültiges Dateisystem ''%s''
 ');
-INSERT INTO potranslation (id, translation) VALUES (340, 'Fehler: ungÃ¼ltiger Zeichensatzname ''%s''
+INSERT INTO potranslation (id, translation) VALUES (340, 'Fehler: ungültiger Zeichensatzname ''%s''
 ');
 INSERT INTO potranslation (id, translation) VALUES (341, 'Fehler: konnte nicht zu vollen root-UID-Privilegien wechseln');
-INSERT INTO potranslation (id, translation) VALUES (342, 'Fehler: konnte nicht auf ausgefÃ¼hrten mount-Prozess warten');
-INSERT INTO potranslation (id, translation) VALUES (343, 'Fehler: kann nicht fÃ¼r PID %u sperren, dieser Prozess existiert nicht
+INSERT INTO potranslation (id, translation) VALUES (342, 'Fehler: konnte nicht auf ausgeführten mount-Prozess warten');
+INSERT INTO potranslation (id, translation) VALUES (343, 'Fehler: kann nicht für PID %u sperren, dieser Prozess existiert nicht
 ');
 INSERT INTO potranslation (id, translation) VALUES (344, 'Fehler: konnte PID-Lock-Datei %s nicht anlegen: %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (345, 'Fehler: konnte PID-Lock-Datei %s nicht lÃ¶schen: %s
+INSERT INTO potranslation (id, translation) VALUES (345, 'Fehler: konnte PID-Lock-Datei %s nicht löschen: %s
 ');
 INSERT INTO potranslation (id, translation) VALUES (346, 'Fehler: do_unlock: konnte Lock-Verzeichnis nicht entfernen');
 INSERT INTO potranslation (id, translation) VALUES (347, 'Fehler: Dieses programm muss als setuid root installiert sein
 ');
-INSERT INTO potranslation (id, translation) VALUES (348, 'Interner Fehler: getopt_long() lieferte unbekannten Wert zurÃ¼ck
+INSERT INTO potranslation (id, translation) VALUES (348, 'Interner Fehler: getopt_long() lieferte unbekannten Wert zurück
 ');
-INSERT INTO potranslation (id, translation) VALUES (349, 'Warnung: GerÃ¤t %s wird schon in /etc/fstab verwaltet, angegebenes Label wird ignoriert
+INSERT INTO potranslation (id, translation) VALUES (349, 'Warnung: Gerät %s wird schon in /etc/fstab verwaltet, angegebenes Label wird ignoriert
 ');
-INSERT INTO potranslation (id, translation) VALUES (350, 'Error: konnte echten Pfad des GerÃ¤tes nicht bestimmen');
-INSERT INTO potranslation (id, translation) VALUES (351, 'Fehler: ungÃ¼ltiges GerÃ¤t %s (muss in /dev/ sein)
+INSERT INTO potranslation (id, translation) VALUES (350, 'Error: konnte echten Pfad des Gerätes nicht bestimmen');
+INSERT INTO potranslation (id, translation) VALUES (351, 'Fehler: ungültiges Gerät %s (muss in /dev/ sein)
 ');
-INSERT INTO potranslation (id, translation) VALUES (352, 'Fehler: konnte Mount-Verzeichnis nicht lÃ¶schen');
+INSERT INTO potranslation (id, translation) VALUES (352, 'Fehler: konnte Mount-Verzeichnis nicht löschen');
 INSERT INTO potranslation (id, translation) VALUES (353, 'Interner Fehler: Modus %i nicht behandelt.
 ');
-INSERT INTO potranslation (id, translation) VALUES (354, 'pmount-hal - fÃ¼hrt pmount mit zusÃ¤tzlichen Informationen von HAL aus
+INSERT INTO potranslation (id, translation) VALUES (354, 'pmount-hal - führt pmount mit zusätzlichen Informationen von HAL aus
 
-Aufruf: pmount-hal <hal UDI> [zusÃ¤tzliche pmount-Optionen]
+Aufruf: pmount-hal <hal UDI> [zusätzliche pmount-Optionen]
 
-Dieser Befehl bindet das durch den hal-UDI spezifierte GerÃ¤t mit 
+Dieser Befehl bindet das durch den hal-UDI spezifierte Gerät mit 
 pmount ein. Der Dateisystem-Typ, verschiedene Mount-Optionen und 
 der bevorzugte Name werden von hal gelesen und pmount als Optionen 
-Ã¼berreicht.');
-INSERT INTO potranslation (id, translation) VALUES (355, 'Fehler: konnte pmount nicht ausfÃ¼hren
+überreicht.');
+INSERT INTO potranslation (id, translation) VALUES (355, 'Fehler: konnte pmount nicht ausführen
 ');
 INSERT INTO potranslation (id, translation) VALUES (356, 'Fehler: konnte nicht zu hal verbinden
 ');
 INSERT INTO potranslation (id, translation) VALUES (357, 'Fehler: angegebene UDI existiert nicht
 ');
-INSERT INTO potranslation (id, translation) VALUES (358, 'Fehler: angegebene UDI ist kein einbindbares GerÃ¤t
+INSERT INTO potranslation (id, translation) VALUES (358, 'Fehler: angegebene UDI ist kein einbindbares Gerät
 ');
-INSERT INTO potranslation (id, translation) VALUES (359, 'Fehler: Konnte Status des GerÃ¤tes nicht bestimmen');
+INSERT INTO potranslation (id, translation) VALUES (359, 'Fehler: Konnte Status des Gerätes nicht bestimmen');
 INSERT INTO potranslation (id, translation) VALUES (360, 'Fehler: konnte sysfs-Verzeichnis nicht erfragen
 ');
-INSERT INTO potranslation (id, translation) VALUES (361, 'Fehler: konnte Verzeichnis <sysfs>/block/ nicht Ã¶ffnen');
-INSERT INTO potranslation (id, translation) VALUES (362, 'Fehler: konnte Verzeichnis <sysfs>/block/<GerÃ¤t> nicht Ã¶ffnen');
+INSERT INTO potranslation (id, translation) VALUES (361, 'Fehler: konnte Verzeichnis <sysfs>/block/ nicht öffnen');
+INSERT INTO potranslation (id, translation) VALUES (362, 'Fehler: konnte Verzeichnis <sysfs>/block/<Gerät> nicht öffnen');
 INSERT INTO potranslation (id, translation) VALUES (363, 'Fehler: Verzeichnis %s existiert nicht
 ');
-INSERT INTO potranslation (id, translation) VALUES (364, 'Fehler: %s ist kein Block-GerÃ¤t
+INSERT INTO potranslation (id, translation) VALUES (364, 'Fehler: %s ist kein Block-Gerät
 ');
-INSERT INTO potranslation (id, translation) VALUES (365, 'Fehler: konnte fstab-artige Datei nicht Ã¶ffnen');
-INSERT INTO potranslation (id, translation) VALUES (366, 'Fehler: GerÃ¤t %s ist schon in %s eingebunden
+INSERT INTO potranslation (id, translation) VALUES (365, 'Fehler: konnte fstab-artige Datei nicht öffnen');
+INSERT INTO potranslation (id, translation) VALUES (366, 'Fehler: Gerät %s ist schon in %s eingebunden
 ');
-INSERT INTO potranslation (id, translation) VALUES (367, 'Fehler: GerÃ¤t %s ist nicht eingebunden
+INSERT INTO potranslation (id, translation) VALUES (367, 'Fehler: Gerät %s ist nicht eingebunden
 ');
-INSERT INTO potranslation (id, translation) VALUES (368, 'Fehler: GerÃ¤t %s wurde nicht von Ihnen eingebunden
+INSERT INTO potranslation (id, translation) VALUES (368, 'Fehler: Gerät %s wurde nicht von Ihnen eingebunden
 ');
-INSERT INTO potranslation (id, translation) VALUES (369, 'Fehler: GerÃ¤t %s ist kein WechseldatentrÃ¤ger
+INSERT INTO potranslation (id, translation) VALUES (369, 'Fehler: Gerät %s ist kein Wechseldatenträger
 ');
-INSERT INTO potranslation (id, translation) VALUES (370, 'Fehler: GerÃ¤t %s ist gesperrt
+INSERT INTO potranslation (id, translation) VALUES (370, 'Fehler: Gerät %s ist gesperrt
 ');
-INSERT INTO potranslation (id, translation) VALUES (371, 'Fehler: Verzeichnis %s enthÃ¤lt schon ein eingebundenes Dateisystem
+INSERT INTO potranslation (id, translation) VALUES (371, 'Fehler: Verzeichnis %s enthält schon ein eingebundenes Dateisystem
 ');
-INSERT INTO potranslation (id, translation) VALUES (372, 'Fehler: Verzeichnis %s enthÃ¤lt kein eingebundenes Dateisystem
+INSERT INTO potranslation (id, translation) VALUES (372, 'Fehler: Verzeichnis %s enthält kein eingebundenes Dateisystem
 ');
 INSERT INTO potranslation (id, translation) VALUES (373, 'Aufruf:
 
-%s [Optionen] <GerÃ¤t>
-  LÃ¶se Bindung von <GerÃ¤t> von einem Verzeichnis unter %s wenn die
-  Richtlinien dies erlauben (siehe pumount(1) fÃ¼r Details). Das
-  Bindungsverzeichnis wird danach gelÃ¶scht.
+%s [Optionen] <Gerät>
+  Löse Bindung von <Gerät> von einem Verzeichnis unter %s wenn die
+  Richtlinien dies erlauben (siehe pumount(1) für Details). Das
+  Bindungsverzeichnis wird danach gelöscht.
 
 Optionen:
   -l, --lazy : "lazy" unmount, siehe umount(8)
@@ -6304,8 +6312,8 @@ INSERT INTO potranslation (id, translation) VALUES (374, 'Interner Fehler: Konnt
 ');
 INSERT INTO potranslation (id, translation) VALUES (375, 'Fehler: Bindungsverzeichnis %s ist nicht unter %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (376, 'Fehler: Konnte unmount nicht ausfÃ¼hren');
-INSERT INTO potranslation (id, translation) VALUES (377, 'Fehler: Konnte nicht auf ausgefÃ¼hrten umount-Prozess warten');
+INSERT INTO potranslation (id, translation) VALUES (376, 'Fehler: Konnte unmount nicht ausführen');
+INSERT INTO potranslation (id, translation) VALUES (377, 'Fehler: Konnte nicht auf ausgeführten umount-Prozess warten');
 INSERT INTO potranslation (id, translation) VALUES (378, 'Fehler: umount fehlgeschlagen
 ');
 INSERT INTO potranslation (id, translation) VALUES (379, 'Fehler: Speicher voll
@@ -6314,10 +6322,10 @@ INSERT INTO potranslation (id, translation) VALUES (380, 'Fehler: konnte Verzeic
 INSERT INTO potranslation (id, translation) VALUES (381, 'Fehler: konnte Markierungs-Datei in Verzeichnis nicht anlegen');
 INSERT INTO potranslation (id, translation) VALUES (382, 'Fehler: %s ist kein Verzeichnis
 ');
-INSERT INTO potranslation (id, translation) VALUES (383, 'Fehler: konnte Verzeichnis nicht Ã¶ffnen');
+INSERT INTO potranslation (id, translation) VALUES (383, 'Fehler: konnte Verzeichnis nicht öffnen');
 INSERT INTO potranslation (id, translation) VALUES (384, 'Fehler: Verzeichnis %s ist nicht leer
 ');
-INSERT INTO potranslation (id, translation) VALUES (385, 'Fehler: ''%s'' ist keine gÃ¼ltige Zahl
+INSERT INTO potranslation (id, translation) VALUES (385, 'Fehler: ''%s'' ist keine gültige Zahl
 ');
 INSERT INTO potranslation (id, translation) VALUES (386, 'Interner Fehler: konnte nicht zur effektiven UID von root wechseln');
 INSERT INTO potranslation (id, translation) VALUES (387, 'Interner Fehler: konnte effektive Benutzer-UID nicht zu realer Benutzer-UID wechseln');
@@ -6325,162 +6333,162 @@ INSERT INTO potranslation (id, translation) VALUES (388, 'Interner Fehler: konnt
 INSERT INTO potranslation (id, translation) VALUES (389, 'Interner Fehler: konnte effektive Benutzer-GID nicht zu realer Benutzer-GID wechseln');
 INSERT INTO potranslation (id, translation) VALUES (390, 'Usage:
 
-%s [options] <pÃ©riphÃ©rique> [<label>]
+%s [options] <périphérique> [<label>]
 
-  Monte le <pÃ©riphÃ©rique> sur un rÃ©pertoire sous %s si les contraintes
-  sont satisfaites (voir pmount(1)). Si <label> est prÃ©cisÃ©, le point
-  de montage sera %s/<label>, autrement ce sera %s<pÃ©riphÃ©rique>.
-  Si le point de montage n''existe pas, il sera crÃ©Ã©.
+  Monte le <périphérique> sur un répertoire sous %s si les contraintes
+  sont satisfaites (voir pmount(1)). Si <label> est précisé, le point
+  de montage sera %s/<label>, autrement ce sera %s<périphérique>.
+  Si le point de montage n''existe pas, il sera créé.
 
 ');
-INSERT INTO potranslation (id, translation) VALUES (391, '%s --lock <pÃ©riphÃ©rique> <pid>
-  EmpÃ¨che tout p-montage du <pÃ©riphÃ©rique> jusqu''Ã  ce qu''il
-  soit dÃ©verrouillÃ©. <pid> indique le numÃ©ro de processus pour
+INSERT INTO potranslation (id, translation) VALUES (391, '%s --lock <périphérique> <pid>
+  Empèche tout p-montage du <périphérique> jusqu''à ce qu''il
+  soit déverrouillé. <pid> indique le numéro de processus pour
   lequel le verrou est pris. Ceci permet de verrouiller un
-  pÃ©riphÃ©rique pour plusieurs processus indÃ©pendants et Ã©vite
-  de crÃ©er des verrouillage indÃ©finis pour des processus qui
-  ont Ã©chouÃ© (les pids inexistants sont nettoyÃ©s avant de
+  périphérique pour plusieurs processus indépendants et évite
+  de créer des verrouillage indéfinis pour des processus qui
+  ont échoué (les pids inexistants sont nettoyés avant de
   tenter un montage).
 
 ');
-INSERT INTO potranslation (id, translation) VALUES (392, '%s --unlock <pÃ©riphÃ©rique> <pid>
-  Retire le verrou sur le <pÃ©riphÃ©rique> pour le processus <pid>.
+INSERT INTO potranslation (id, translation) VALUES (392, '%s --unlock <périphérique> <pid>
+  Retire le verrou sur le <périphérique> pour le processus <pid>.
 
 ');
 INSERT INTO potranslation (id, translation) VALUES (393, 'Options:
-  -a, --async : monte le <pÃ©riphÃ©rique> avec l''option ''async'' (par dÃ©faut: ''sync'')
-  -noatime : monte le <pÃ©riphÃ©rique> avec l''option ''noatime'' (par dÃ©faut: ''atime'')
-  -e, --exec : monte le <pÃ©riphÃ©rique> avec l''option ''exec'' (par dÃ©faut: ''noexec'')
-  -t <fs> : monte le systÃ¨me de fichier de type <fs> (par dÃ©faut: autodÃ©tectÃ©)
-  -c <charset>: utilise le jeu de caractÃ¨res <charset> pour les EntrÃ©es/Sorties
-                (par dÃ©faut: ''utf8'' si la locale est une locale UTF-8, autrement celui par dÃ©faut de mount)
-  -d, --debug : active l''affichage de dÃ©bogage (trÃ¨s verbeux)
-  -h, --help : affiche ce message d''aide et terminer avec succÃ¨s');
-INSERT INTO potranslation (id, translation) VALUES (394, 'Erreur : make_mountpoint_name: pÃ©riphÃ©rique invalide %s (il doit Ãªtre dans /dev/)
+  -a, --async : monte le <périphérique> avec l''option ''async'' (par défaut: ''sync'')
+  -noatime : monte le <périphérique> avec l''option ''noatime'' (par défaut: ''atime'')
+  -e, --exec : monte le <périphérique> avec l''option ''exec'' (par défaut: ''noexec'')
+  -t <fs> : monte le système de fichier de type <fs> (par défaut: autodétecté)
+  -c <charset>: utilise le jeu de caractères <charset> pour les Entrées/Sorties
+                (par défaut: ''utf8'' si la locale est une locale UTF-8, autrement celui par défaut de mount)
+  -d, --debug : active l''affichage de débogage (très verbeux)
+  -h, --help : affiche ce message d''aide et terminer avec succès');
+INSERT INTO potranslation (id, translation) VALUES (394, 'Erreur : make_mountpoint_name: périphérique invalide %s (il doit être dans /dev/)
 ');
-INSERT INTO potranslation (id, translation) VALUES (395, 'Erreur : l''Ã©tiquette ne peut pas Ãªtre vide
+INSERT INTO potranslation (id, translation) VALUES (395, 'Erreur : l''étiquette ne peut pas être vide
 ');
 INSERT INTO potranslation (id, translation) VALUES (396, 'Erreur : label trop long
 ');
 INSERT INTO potranslation (id, translation) VALUES (397, 'Erreur : ''/'' ne doit pas apparaitre dans un nom de label
 ');
-INSERT INTO potranslation (id, translation) VALUES (398, 'Erreur : nom du pÃ©riphÃ©rique trop long
+INSERT INTO potranslation (id, translation) VALUES (398, 'Erreur : nom du périphérique trop long
 ');
-INSERT INTO potranslation (id, translation) VALUES (399, 'Erreur : impossible de rÃ©voquer tous les privilÃ¨ges');
-INSERT INTO potranslation (id, translation) VALUES (400, 'Erreur : impossible d''exÃ©cuter mount');
-INSERT INTO potranslation (id, translation) VALUES (401, 'Erreur interne : mount_attempt : le nom du systÃ¨me de fichiers est NULL
+INSERT INTO potranslation (id, translation) VALUES (399, 'Erreur : impossible de révoquer tous les privilèges');
+INSERT INTO potranslation (id, translation) VALUES (400, 'Erreur : impossible d''exécuter mount');
+INSERT INTO potranslation (id, translation) VALUES (401, 'Erreur interne : mount_attempt : le nom du système de fichiers est NULL
 ');
-INSERT INTO potranslation (id, translation) VALUES (402, 'Erreur : nom de systÃ¨me de fichiers invalide ''%s''
+INSERT INTO potranslation (id, translation) VALUES (402, 'Erreur : nom de système de fichiers invalide ''%s''
 ');
-INSERT INTO potranslation (id, translation) VALUES (403, 'Erreur : nom de jeu de caractÃ¨res invalide ''%s''
+INSERT INTO potranslation (id, translation) VALUES (403, 'Erreur : nom de jeu de caractères invalide ''%s''
 ');
-INSERT INTO potranslation (id, translation) VALUES (404, 'Erreur : impossible d''obtenir les privilÃ¨ges complets de l''uid root');
-INSERT INTO potranslation (id, translation) VALUES (405, 'Erreur : impossible d''attendre pour exÃ©cuter les processus de montage');
+INSERT INTO potranslation (id, translation) VALUES (404, 'Erreur : impossible d''obtenir les privilèges complets de l''uid root');
+INSERT INTO potranslation (id, translation) VALUES (405, 'Erreur : impossible d''attendre pour exécuter les processus de montage');
 INSERT INTO potranslation (id, translation) VALUES (406, 'Erreur : ne peut pas verrouiller pour le pid %u, ce processus n''existe pas
 ');
-INSERT INTO potranslation (id, translation) VALUES (407, 'Erreur : ne peut crÃ©er le fichier de verrou de pid  %s: %s
+INSERT INTO potranslation (id, translation) VALUES (407, 'Erreur : ne peut créer le fichier de verrou de pid  %s: %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (408, 'Erreur : ne peut Ã´ter le fichier de verrou pid %s:%s
+INSERT INTO potranslation (id, translation) VALUES (408, 'Erreur : ne peut ôter le fichier de verrou pid %s:%s
 ');
-INSERT INTO potranslation (id, translation) VALUES (409, 'Erreur : do_unlock: ne peut Ã´ter le verrou du rÃ©pertoire');
-INSERT INTO potranslation (id, translation) VALUES (410, 'Erreur : ce programme a besoin d''Ãªtre installÃ© en suid root
+INSERT INTO potranslation (id, translation) VALUES (409, 'Erreur : do_unlock: ne peut ôter le verrou du répertoire');
+INSERT INTO potranslation (id, translation) VALUES (410, 'Erreur : ce programme a besoin d''être installé en suid root
 ');
-INSERT INTO potranslation (id, translation) VALUES (411, 'Erreur interne : getopt_long() a retournÃ© une valeur inconnue
+INSERT INTO potranslation (id, translation) VALUES (411, 'Erreur interne : getopt_long() a retourné une valeur inconnue
 ');
-INSERT INTO potranslation (id, translation) VALUES (412, 'Avertissement : le pÃ©riphÃ©rique %s est dÃ©jÃ  pris en charge par /etc/fstab, l''Ã©tiquette fournie est ignorÃ©e
+INSERT INTO potranslation (id, translation) VALUES (412, 'Avertissement : le périphérique %s est déjà pris en charge par /etc/fstab, l''étiquette fournie est ignorée
 ');
-INSERT INTO potranslation (id, translation) VALUES (413, 'Erreur : n''a pas pu dÃ©terminer le vÃ©ritable chemin d''accÃ¨s Ã  ce pÃ©riphÃ©rique');
-INSERT INTO potranslation (id, translation) VALUES (414, 'Erreur : pÃ©riphÃ©rique invalide %s (doit Ãªtre dans /dev/)
+INSERT INTO potranslation (id, translation) VALUES (413, 'Erreur : n''a pas pu déterminer le véritable chemin d''accès à ce périphérique');
+INSERT INTO potranslation (id, translation) VALUES (414, 'Erreur : périphérique invalide %s (doit être dans /dev/)
 ');
-INSERT INTO potranslation (id, translation) VALUES (415, 'Erreur : n''a pas pu dÃ©truire le point de montage');
+INSERT INTO potranslation (id, translation) VALUES (415, 'Erreur : n''a pas pu détruire le point de montage');
 INSERT INTO potranslation (id, translation) VALUES (416, 'Erreur interne : le mode %i n''est pas pris en charge.
 ');
-INSERT INTO potranslation (id, translation) VALUES (417, 'pmount-hal - execute pmount avec les informations supplÃ©mentaires provenant du hal
+INSERT INTO potranslation (id, translation) VALUES (417, 'pmount-hal - execute pmount avec les informations supplémentaires provenant du hal
 
 Usage: pmount-hal <hal UDI> [options pmount]
 
-Cette commande monte le pÃ©riphÃ©rique dÃ©crit par l''UDI fourni en utilisant pmount. Le
-type du systÃ¨me de fichiers, les contraintes de stockage du volume et l''Ã©tiquette dÃ©sirÃ©e
-seront extraites du hal et passÃ©s Ã  pmount.');
-INSERT INTO potranslation (id, translation) VALUES (418, 'Erreur: impossible d''exÃ©cuter pmount
+Cette commande monte le périphérique décrit par l''UDI fourni en utilisant pmount. Le
+type du système de fichiers, les contraintes de stockage du volume et l''étiquette désirée
+seront extraites du hal et passés à pmount.');
+INSERT INTO potranslation (id, translation) VALUES (418, 'Erreur: impossible d''exécuter pmount
 ');
-INSERT INTO potranslation (id, translation) VALUES (419, 'Erreur : impossible de se connecter Ã  hal
+INSERT INTO potranslation (id, translation) VALUES (419, 'Erreur : impossible de se connecter à hal
 ');
 INSERT INTO potranslation (id, translation) VALUES (420, 'Erreur : l''UDI fourni n''existe pas
 ');
 INSERT INTO potranslation (id, translation) VALUES (421, 'Erreur : L''UDI fourni n''est pas un volume montable
 ');
-INSERT INTO potranslation (id, translation) VALUES (422, 'Erreur : n''a pas pu obtenir l''Ã©tat du pÃ©riphÃ©rique');
-INSERT INTO potranslation (id, translation) VALUES (423, 'Erreur : n''a pas trouver le rÃ©pertoire sysfs
+INSERT INTO potranslation (id, translation) VALUES (422, 'Erreur : n''a pas pu obtenir l''état du périphérique');
+INSERT INTO potranslation (id, translation) VALUES (423, 'Erreur : n''a pas trouver le répertoire sysfs
 ');
 INSERT INTO potranslation (id, translation) VALUES (424, 'Erreur : n''a pas pu ouvrir <sysfs dir>/block/');
 INSERT INTO potranslation (id, translation) VALUES (425, 'Erreur : n''a pas pu ouvrir <sysfs dir>/block/<device>/');
-INSERT INTO potranslation (id, translation) VALUES (426, 'Erreur : le pÃ©riphÃ©rique %s n''existe pas
+INSERT INTO potranslation (id, translation) VALUES (426, 'Erreur : le périphérique %s n''existe pas
 ');
-INSERT INTO potranslation (id, translation) VALUES (427, 'Erreur : %s n''est pas un pÃ©riphÃ©rique de bloc
+INSERT INTO potranslation (id, translation) VALUES (427, 'Erreur : %s n''est pas un périphérique de bloc
 ');
 INSERT INTO potranslation (id, translation) VALUES (428, 'Erreur : n''a pas  pu ouvrir le fichier fstab-type');
-INSERT INTO potranslation (id, translation) VALUES (429, 'Erreur : le pÃ©riphÃ©rique %s est dÃ©ja montÃ© sur %s
+INSERT INTO potranslation (id, translation) VALUES (429, 'Erreur : le périphérique %s est déja monté sur %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (430, 'Erreur : le pÃ©riphÃ©rique %s n''est pas montÃ©
+INSERT INTO potranslation (id, translation) VALUES (430, 'Erreur : le périphérique %s n''est pas monté
 ');
-INSERT INTO potranslation (id, translation) VALUES (431, 'Erreur : le pÃ©riphÃ©rique %s n''a pas Ã©tÃ© montÃ© par vous
+INSERT INTO potranslation (id, translation) VALUES (431, 'Erreur : le périphérique %s n''a pas été monté par vous
 ');
-INSERT INTO potranslation (id, translation) VALUES (432, 'Erreur : le pÃ©riphÃ©rique %s n''est pas amovible
+INSERT INTO potranslation (id, translation) VALUES (432, 'Erreur : le périphérique %s n''est pas amovible
 ');
-INSERT INTO potranslation (id, translation) VALUES (433, 'Erreur : le pÃ©riphÃ©rique %s est vÃ©rrouillÃ©
+INSERT INTO potranslation (id, translation) VALUES (433, 'Erreur : le périphérique %s est vérrouillé
 ');
-INSERT INTO potranslation (id, translation) VALUES (434, 'Erreur : le rÃ©pertoire %s contient dÃ©ja un systÃ¨me de fichiers
+INSERT INTO potranslation (id, translation) VALUES (434, 'Erreur : le répertoire %s contient déja un système de fichiers
 ');
-INSERT INTO potranslation (id, translation) VALUES (435, 'Erreur : le rÃ©pertoire %s ne contient pas de systÃªme de fichiers montÃ©
+INSERT INTO potranslation (id, translation) VALUES (435, 'Erreur : le répertoire %s ne contient pas de systême de fichiers monté
 ');
 INSERT INTO potranslation (id, translation) VALUES (436, 'Utilisation :
 
-%s [options] <pÃ©riphÃ©rique>
-  DÃ©monte le <pÃ©riphÃ©rique> du rÃ©pertoire suivant %s si les droits sont
-  satisfaient ( voir pumount(1) pour les dÃ©tails). Le rÃ©pertoire du
-  point de montage est supprimÃ© aprÃ¨s l''opÃ©ration.
+%s [options] <périphérique>
+  Démonte le <périphérique> du répertoire suivant %s si les droits sont
+  satisfaient ( voir pumount(1) pour les détails). Le répertoire du
+  point de montage est supprimé après l''opération.
 
-Options:ã
-  -l, --lazy : dÃ©montage paresseux, voir umount(8)
-  -d, --debug : autorise l''affichage des messages de debug (trÃ¨s verbeux)
-  -h, --help : affiche ce message d''aide et termine avec succÃ¨s
+Options:〓
+  -l, --lazy : démontage paresseux, voir umount(8)
+  -d, --debug : autorise l''affichage des messages de debug (très verbeux)
+  -h, --help : affiche ce message d''aide et termine avec succès
 ');
-INSERT INTO potranslation (id, translation) VALUES (437, 'Erreur interne : n''a pas pu dÃ©terminer le point de montage
+INSERT INTO potranslation (id, translation) VALUES (437, 'Erreur interne : n''a pas pu déterminer le point de montage
 ');
 INSERT INTO potranslation (id, translation) VALUES (438, 'Erreur : le point de montage %s n''est pas sous %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (439, 'Erreur : n''a pas pu exÃ©cuter umount');
-INSERT INTO potranslation (id, translation) VALUES (440, 'Erreur : n''a pas pu attendre pour exÃ©cuter le processus de dÃ©montage');
-INSERT INTO potranslation (id, translation) VALUES (441, 'Erreur : Ã©chec de umount
+INSERT INTO potranslation (id, translation) VALUES (439, 'Erreur : n''a pas pu exécuter umount');
+INSERT INTO potranslation (id, translation) VALUES (440, 'Erreur : n''a pas pu attendre pour exécuter le processus de démontage');
+INSERT INTO potranslation (id, translation) VALUES (441, 'Erreur : échec de umount
 ');
-INSERT INTO potranslation (id, translation) VALUES (442, 'Erreur : plus de mÃ©moire disponible
+INSERT INTO potranslation (id, translation) VALUES (442, 'Erreur : plus de mémoire disponible
 ');
-INSERT INTO potranslation (id, translation) VALUES (443, 'Erreur : n''a pas pu crÃ©er de rÃ©pertoire');
-INSERT INTO potranslation (id, translation) VALUES (444, 'Erreur : n''a pas pu crÃ©er un fichier estampillÃ© dans le rÃ©pertoire');
-INSERT INTO potranslation (id, translation) VALUES (445, 'Erreur : %s n''est pas un rÃ©pertoire
+INSERT INTO potranslation (id, translation) VALUES (443, 'Erreur : n''a pas pu créer de répertoire');
+INSERT INTO potranslation (id, translation) VALUES (444, 'Erreur : n''a pas pu créer un fichier estampillé dans le répertoire');
+INSERT INTO potranslation (id, translation) VALUES (445, 'Erreur : %s n''est pas un répertoire
 ');
-INSERT INTO potranslation (id, translation) VALUES (446, 'Erreur : ne peut pas ouvrir le rÃ©pertoire');
-INSERT INTO potranslation (id, translation) VALUES (447, 'Erreur : le rÃ©pertoire %s n''est pas vide
+INSERT INTO potranslation (id, translation) VALUES (446, 'Erreur : ne peut pas ouvrir le répertoire');
+INSERT INTO potranslation (id, translation) VALUES (447, 'Erreur : le répertoire %s n''est pas vide
 ');
 INSERT INTO potranslation (id, translation) VALUES (448, 'Erreur : ''%s'' n''est pas un nombre valide
 ');
 INSERT INTO potranslation (id, translation) VALUES (449, 'Erreur interne : n''a pas pu changer pour l''uid effectif de root');
-INSERT INTO potranslation (id, translation) VALUES (450, 'Erreur interne : n''a pas pu changer de l''uid effectif pour le vÃ©ritable id de l''utilisateur');
+INSERT INTO potranslation (id, translation) VALUES (450, 'Erreur interne : n''a pas pu changer de l''uid effectif pour le véritable id de l''utilisateur');
 INSERT INTO potranslation (id, translation) VALUES (451, 'Erreur interne : n''a pas pu changer pour le gid effectif de root');
-INSERT INTO potranslation (id, translation) VALUES (452, 'Erreur interne : n''a pas pu changer de l''id effectif de groupe pour le vÃ©ritable id du groupe');
+INSERT INTO potranslation (id, translation) VALUES (452, 'Erreur interne : n''a pas pu changer de l''id effectif de groupe pour le véritable id du groupe');
 INSERT INTO potranslation (id, translation) VALUES (453, 'Utilizzo:
 
 %s [opzioni] <dispositivo> [<etichetta>]
 
   Monta il <dispositivo> in una directory sotto %s se i requisiti 
-  sono rispettati (vedere pmount(1) per dettagli). Se Ã¨ data <etichetta>,
-  il punto di mount sarÃ  %s/<etichetta>, altrimenti %s<dispositivo>.
-  Se il punto di mount non esiste verrÃ  creato.
+  sono rispettati (vedere pmount(1) per dettagli). Se è data <etichetta>,
+  il punto di mount sarà %s/<etichetta>, altrimenti %s<dispositivo>.
+  Se il punto di mount non esiste verrà creato.
 
 ');
 INSERT INTO potranslation (id, translation) VALUES (454, '%s --lock <dispositivo> <pid>
-  Impedisce ulteriori pmount di <dispositivo> finchÃ© questo non Ã¨ sbloccato
+  Impedisce ulteriori pmount di <dispositivo> finché questo non è sbloccato
   di nuovo. <pid> specifica l''id del processo che detiene il lock. Questo
   permette a diversi processi indipendenti di fare il lock ad un dispositivo
   ed evita lock illimitati da parte di processi andati in crash (id di processi
@@ -6512,7 +6520,7 @@ INSERT INTO potranslation (id, translation) VALUES (460, 'Errore: ''/'' non deve
 INSERT INTO potranslation (id, translation) VALUES (461, 'Errore: nome del dispositivo troppo lungo
 ');
 INSERT INTO potranslation (id, translation) VALUES (462, 'Errore: impossibile eseguire mount');
-INSERT INTO potranslation (id, translation) VALUES (463, 'Errore interno: mount_attempt: il tipo di file system dato Ã¨ NULL
+INSERT INTO potranslation (id, translation) VALUES (463, 'Errore interno: mount_attempt: il tipo di file system dato è NULL
 ');
 INSERT INTO potranslation (id, translation) VALUES (464, 'Errore: file system ''%s'' non valido
 ');
@@ -6524,8 +6532,8 @@ INSERT INTO potranslation (id, translation) VALUES (467, 'Errore: questo program
 ');
 INSERT INTO potranslation (id, translation) VALUES (468, 'Errore interno: getopt_long() ha restituito un valore sconosciuto
 ');
-INSERT INTO potranslation (id, translation) VALUES (469, 'Attenzione: il dispositivo %s Ã¨ giÃ  gestito da /etc/fstab,
-l''etichetta fornita verrÃ  ignorata
+INSERT INTO potranslation (id, translation) VALUES (469, 'Attenzione: il dispositivo %s è già gestito da /etc/fstab,
+l''etichetta fornita verrà ignorata
 ');
 INSERT INTO potranslation (id, translation) VALUES (470, 'Errore: impossibile determinare il percorso effettivo del dispositivo');
 INSERT INTO potranslation (id, translation) VALUES (471, 'Errore: dispositivo %s non valido (deve trovarsi in /dev)
@@ -6544,7 +6552,7 @@ INSERT INTO potranslation (id, translation) VALUES (475, 'Errore: impossibile es
 ');
 INSERT INTO potranslation (id, translation) VALUES (476, 'Errore: lo UDI fornito non esiste
 ');
-INSERT INTO potranslation (id, translation) VALUES (477, 'Errore: lo UDI fornito non Ã¨ un volume montabile
+INSERT INTO potranslation (id, translation) VALUES (477, 'Errore: lo UDI fornito non è un volume montabile
 ');
 INSERT INTO potranslation (id, translation) VALUES (478, 'Errore: impossibile ottenere lo stato del dispositivo');
 INSERT INTO potranslation (id, translation) VALUES (479, 'Errore: impossibile ottenere la directory sysfs
@@ -6553,19 +6561,19 @@ INSERT INTO potranslation (id, translation) VALUES (480, 'Errore: impossibile ap
 INSERT INTO potranslation (id, translation) VALUES (481, 'Errore: impossibile aprire <sysfs dir>/block/<dispositivo>/');
 INSERT INTO potranslation (id, translation) VALUES (482, 'Errore: il dispositivo %s non esiste
 ');
-INSERT INTO potranslation (id, translation) VALUES (483, 'Errore: %s non Ã¨ un dispositivo a blocchi
+INSERT INTO potranslation (id, translation) VALUES (483, 'Errore: %s non è un dispositivo a blocchi
 ');
-INSERT INTO potranslation (id, translation) VALUES (484, 'Errore: il dispositivo %s Ã¨ giÃ  montato in %s
+INSERT INTO potranslation (id, translation) VALUES (484, 'Errore: il dispositivo %s è già montato in %s
 ');
-INSERT INTO potranslation (id, translation) VALUES (485, 'Errore: il dispositivo %s non Ã¨ montato
+INSERT INTO potranslation (id, translation) VALUES (485, 'Errore: il dispositivo %s non è montato
 ');
-INSERT INTO potranslation (id, translation) VALUES (486, 'Errore: il dispositivo %s Ã¨ stato montato da un altro utente
+INSERT INTO potranslation (id, translation) VALUES (486, 'Errore: il dispositivo %s è stato montato da un altro utente
 ');
-INSERT INTO potranslation (id, translation) VALUES (487, 'Errore: il dispositivo %s non Ã¨ rimovibile
+INSERT INTO potranslation (id, translation) VALUES (487, 'Errore: il dispositivo %s non è rimovibile
 ');
-INSERT INTO potranslation (id, translation) VALUES (488, 'Errore: il dispositivo %s Ã¨ in stato di lock
+INSERT INTO potranslation (id, translation) VALUES (488, 'Errore: il dispositivo %s è in stato di lock
 ');
-INSERT INTO potranslation (id, translation) VALUES (489, 'Errore: la directory %s contiene giÃ  un file system montato
+INSERT INTO potranslation (id, translation) VALUES (489, 'Errore: la directory %s contiene già un file system montato
 ');
 INSERT INTO potranslation (id, translation) VALUES (490, 'Errore: la directory %s non contiene un file system montato
 ');
@@ -6574,7 +6582,7 @@ INSERT INTO potranslation (id, translation) VALUES (491, 'Utilizzo:
 %s [opzioni] <dispositivo>
   Smonta il <dispositivo> da una directory sotto %s se i requisiti
   sono rispettati (vedere pumount(1) per i dettagli). La directory del
-  punto di mount Ã¨ rimossa successivamente.
+  punto di mount è rimossa successivamente.
 
 Opzioni:
   -l, --lazy: smonta "pigramente", vedere umount(8)
@@ -6591,21 +6599,21 @@ INSERT INTO potranslation (id, translation) VALUES (495, 'Errore: umount fallito
 INSERT INTO potranslation (id, translation) VALUES (496, 'Errore: memoria esaurita
 ');
 INSERT INTO potranslation (id, translation) VALUES (497, 'Errore: impossibile creare la directory');
-INSERT INTO potranslation (id, translation) VALUES (498, 'Errore: %s non Ã¨ una directory
+INSERT INTO potranslation (id, translation) VALUES (498, 'Errore: %s non è una directory
 ');
 INSERT INTO potranslation (id, translation) VALUES (499, 'Errore: impossibile aprire la directory');
-INSERT INTO potranslation (id, translation) VALUES (500, 'Errore: la directory %s non Ã¨ vuota
+INSERT INTO potranslation (id, translation) VALUES (500, 'Errore: la directory %s non è vuota
 ');
-INSERT INTO potranslation (id, translation) VALUES (501, 'Errore: ''%s'' non Ã¨ un numero valido
+INSERT INTO potranslation (id, translation) VALUES (501, 'Errore: ''%s'' non è un numero valido
 ');
-INSERT INTO potranslation (id, translation) VALUES (502, 'Error: el nombre del juego de caracteres ''%s'' no es vÃ¡lido
+INSERT INTO potranslation (id, translation) VALUES (502, 'Error: el nombre del juego de caracteres ''%s'' no es válido
 
 ');
-INSERT INTO potranslation (id, translation) VALUES (503, 'Error interno: getopt_long() retornÃ³ un valor desconocido
+INSERT INTO potranslation (id, translation) VALUES (503, 'Error interno: getopt_long() retornó un valor desconocido
 ');
-INSERT INTO potranslation (id, translation) VALUES (504, 'ADVERTENCIA: el dispositivo %s estÃ¡ actualmente manejado por /etc/fstab, la etiqueta proporcionada se ha ignorado
+INSERT INTO potranslation (id, translation) VALUES (504, 'ADVERTENCIA: el dispositivo %s está actualmente manejado por /etc/fstab, la etiqueta proporcionada se ha ignorado
 ');
-INSERT INTO potranslation (id, translation) VALUES (505, 'Error: no es posible determinar la ubicaciÃ³n real del dispositivo');
+INSERT INTO potranslation (id, translation) VALUES (505, 'Error: no es posible determinar la ubicación real del dispositivo');
 INSERT INTO potranslation (id, translation) VALUES (506, 'Error: el dispositivo %s es invalido (debe estar en /dev/)
 ');
 INSERT INTO potranslation (id, translation) VALUES (507, 'Error: no es posible borrar el punto de montaje');
@@ -6623,13 +6631,13 @@ INSERT INTO potranslation (id, translation) VALUES (514, 'Error: no existe el di
 INSERT INTO potranslation (id, translation) VALUES (515, 'Error: %s noes un dispositivo bloqueado
 ');
 INSERT INTO potranslation (id, translation) VALUES (516, 'Error: no es posible abrir el archivo fstab-type');
-INSERT INTO potranslation (id, translation) VALUES (517, 'Error: el dispositivo %s ya estÃ¡ montado como %s
+INSERT INTO potranslation (id, translation) VALUES (517, 'Error: el dispositivo %s ya está montado como %s
 ');
 INSERT INTO potranslation (id, translation) VALUES (518, 'Error: el dispositivo %s no fue montado por usted
 ');
 INSERT INTO potranslation (id, translation) VALUES (519, 'Error: el dispositivo %s no es removible
 ');
-INSERT INTO potranslation (id, translation) VALUES (520, 'Error: el directorio %s todavÃ­a tiene montado un sistema de archivos
+INSERT INTO potranslation (id, translation) VALUES (520, 'Error: el directorio %s todavía tiene montado un sistema de archivos
 ');
 INSERT INTO potranslation (id, translation) VALUES (521, 'Error: el directorio %s no tiene sistemas de archivos montados
 ');
@@ -6642,12 +6650,12 @@ INSERT INTO potranslation (id, translation) VALUES (522, 'Uso:
 
 Opciones:
   -l, --lazy: desmonta lentamente, ver umount(8)
-  -d, --debug: activa la depuraciÃ³n (MUY PROLIJA)
+  -d, --debug: activa la depuración (MUY PROLIJA)
   -h, --help: muestra esta pantalla y sale
 ');
 INSERT INTO potranslation (id, translation) VALUES (523, 'Error interno: no esposible determinar el punto de montaje
 ');
-INSERT INTO potranslation (id, translation) VALUES (524, 'Error: el punto de montaje %s no estÃ¡ debajo de %s
+INSERT INTO potranslation (id, translation) VALUES (524, 'Error: el punto de montaje %s no está debajo de %s
 ');
 INSERT INTO potranslation (id, translation) VALUES (525, 'Error: no es posible ejecutar umount');
 INSERT INTO potranslation (id, translation) VALUES (526, 'Error: no es posible esperar por el proceso umount ejecutado');
@@ -6662,39 +6670,39 @@ INSERT INTO potranslation (id, translation) VALUES (532, 'Error interno: no es p
 INSERT INTO potranslation (id, translation) VALUES (533, 'Error interno: no es posible cambiar desde el uid de usuario a id real de usuario');
 INSERT INTO potranslation (id, translation) VALUES (534, 'Error interno: no es posible cambiar a root gid');
 INSERT INTO potranslation (id, translation) VALUES (535, 'Error interno: no es posible cambiar desde gid al gid real');
-INSERT INTO potranslation (id, translation) VALUES (536, 'Les paramÃ¨tres globaux peuvent Ãªtre modifiÃ©s dans /etc/mozilla/prefs.js');
-INSERT INTO potranslation (id, translation) VALUES (537, 'La version de Mozilla dans Debian charge le fichier /etc/mozilla/prefs.js aprÃ¨s d''autres scripts de configuration.');
-INSERT INTO potranslation (id, translation) VALUES (538, 'Vous pouvez modifier dans ce fichier les paramÃ¨tres globaux (p.Â ex. les paramÃ¨tres concernant les polices).');
+INSERT INTO potranslation (id, translation) VALUES (536, 'Les paramètres globaux peuvent être modifiés dans /etc/mozilla/prefs.js');
+INSERT INTO potranslation (id, translation) VALUES (537, 'La version de Mozilla dans Debian charge le fichier /etc/mozilla/prefs.js après d''autres scripts de configuration.');
+INSERT INTO potranslation (id, translation) VALUES (538, 'Vous pouvez modifier dans ce fichier les paramètres globaux (p. ex. les paramètres concernant les polices).');
 INSERT INTO potranslation (id, translation) VALUES (539, 'Automatique, esddsp (pour GNOME), artsdsp (pour KDE), Aucun');
-INSERT INTO potranslation (id, translation) VALUES (540, 'Module d''encapsulation du serveur de sonÂ :');
-INSERT INTO potranslation (id, translation) VALUES (541, 'Il arrive que Mozilla soit bloquÃ© parce que certains greffons (Â«Â pluginsÂ Â») --Â p.Â ex. FlashÂ -- verrouillent le pÃ©riphÃ©rique audio /dev/dsp. Il est possible d''encapsuler l''accÃ¨s au pÃ©riphÃ©rique /dev/dsp pour rÃ©soudre ce problÃ¨me.  Â«Â AutomatiqueÂ Â» sÃ©lectionne un module d''encapsulation du dsp en fonction du serveur de son en cours d''exÃ©cution. Si aucun gestionnaire de son n''est dÃ©tectÃ©, Mozilla n''utilisera aucun module d''encapsulation. Ce choix sera sauvegardÃ© dans /etc/mozilla/mozillarc et pourra Ãªtre modifiÃ© dans votre fichier ~/.mozillarc.');
-INSERT INTO potranslation (id, translation) VALUES (542, 'Faut-il activer la sÃ©lection automatique de la langue/rÃ©gionÂ ?');
-INSERT INTO potranslation (id, translation) VALUES (543, 'Ce rÃ©glage permet de choisir automatiquement les extensions de langue et de rÃ©gion en fonction des paramÃ¨tres rÃ©gionaux de l''utilisateur. Il facilitera la tÃ¢che d''un administrateur systÃ¨me qui travaille pour de nombreux utilisateurs peu expÃ©rimentÃ©s qui ne parlent pas l''anglais.');
-INSERT INTO potranslation (id, translation) VALUES (544, 'Pour que la configuration automatique fonctionne, il faut que les variables d''environnement LC_MESSAGES ou LC_ALL soient correctement dÃ©finies.');
-INSERT INTO potranslation (id, translation) VALUES (545, 'Arquivo /etc/mozilla/prefs.ja disponÃ­vel para preferÃªncias personalizadas.');
-INSERT INTO potranslation (id, translation) VALUES (546, 'O pacote Debian do Mozilla irÃ¡ carregar o arquivo /etc/mozilla/prefs.js apÃ³s carregar alguns scripts de prefrÃªncias padrÃ£o.');
-INSERT INTO potranslation (id, translation) VALUES (547, 'VocÃª pode editar esse arquivo para definir configuraÃ§Ãµes vÃ¡lidas para todos os usuÃ¡rios do sistema. (por exemplo, configuraÃ§Ãµes de fontes)');
+INSERT INTO potranslation (id, translation) VALUES (540, 'Module d''encapsulation du serveur de son :');
+INSERT INTO potranslation (id, translation) VALUES (541, 'Il arrive que Mozilla soit bloqué parce que certains greffons (« plugins ») -- p. ex. Flash -- verrouillent le périphérique audio /dev/dsp. Il est possible d''encapsuler l''accès au périphérique /dev/dsp pour résoudre ce problème.  « Automatique » sélectionne un module d''encapsulation du dsp en fonction du serveur de son en cours d''exécution. Si aucun gestionnaire de son n''est détecté, Mozilla n''utilisera aucun module d''encapsulation. Ce choix sera sauvegardé dans /etc/mozilla/mozillarc et pourra être modifié dans votre fichier ~/.mozillarc.');
+INSERT INTO potranslation (id, translation) VALUES (542, 'Faut-il activer la sélection automatique de la langue/région ?');
+INSERT INTO potranslation (id, translation) VALUES (543, 'Ce réglage permet de choisir automatiquement les extensions de langue et de région en fonction des paramètres régionaux de l''utilisateur. Il facilitera la tâche d''un administrateur système qui travaille pour de nombreux utilisateurs peu expérimentés qui ne parlent pas l''anglais.');
+INSERT INTO potranslation (id, translation) VALUES (544, 'Pour que la configuration automatique fonctionne, il faut que les variables d''environnement LC_MESSAGES ou LC_ALL soient correctement définies.');
+INSERT INTO potranslation (id, translation) VALUES (545, 'Arquivo /etc/mozilla/prefs.ja disponível para preferências personalizadas.');
+INSERT INTO potranslation (id, translation) VALUES (546, 'O pacote Debian do Mozilla irá carregar o arquivo /etc/mozilla/prefs.js após carregar alguns scripts de prefrências padrão.');
+INSERT INTO potranslation (id, translation) VALUES (547, 'Você pode editar esse arquivo para definir configurações válidas para todos os usuários do sistema. (por exemplo, configurações de fontes)');
 INSERT INTO potranslation (id, translation) VALUES (548, 'auto, esddsp, artsdsp, nenhum');
 INSERT INTO potranslation (id, translation) VALUES (549, 'Por favor, escolha o wrapper de seu servidor de som.');
-INSERT INTO potranslation (id, translation) VALUES (550, 'Algumas vezes o Mozilla pode travar devido a alguns plugins (por exemplo, o plugin de Flash) tentarem travar o acesso ao dispositivo de som /dev/dsp. VocÃª pode usar um wrapper dsp para resolver esse problema. A opÃ§Ã£o ''auto'' irÃ¡ decidir qual wrapper dsp deverÃ¡ ser usado de acordo com o daemon de som em execuÃ§Ã£o. Quando nenhum daemon de som for detectado, o Mozilla nÃ£o utilizarÃ¡ nenhum wrapper. Esta configuraÃ§Ã£o serÃ¡ gravada no arquivo /etc/mozilla/mozillarc e poderÃ¡ ser sobreescrita caso esteja definida em seu arquivo ~/.mozillarc.');
-INSERT INTO potranslation (id, translation) VALUES (551, 'Habilitar seleÃ§Ã£o automÃ¡tica de Idioma/RegiÃ£o ?');
-INSERT INTO potranslation (id, translation) VALUES (552, 'Esta configuraÃ§Ã£o fornece uma seleÃ§Ã£o automÃ¡tica de idioma/regiÃ£o no Mozilla utilizando as configuraÃ§Ãµes de locale. A mesma pode auxiliar um administrador de sistema que precisar lidar com centenas de novatos que nÃ£o falam inglÃªs.');
-INSERT INTO potranslation (id, translation) VALUES (553, 'Por favor, defina suas variÃ¡veis de ambiente LC_MESSAGE e LC_ALL para que esta configuraÃ§Ã£o funcione corretamente.');
-INSERT INTO potranslation (id, translation) VALUES (554, 'è¨­å®ã®ã«ã¹ã¿ãã¤ãºã« /etc/mozilla/prefs.js ãå©ç¨ã§ãã¾ãã');
-INSERT INTO potranslation (id, translation) VALUES (555, 'Debian ã® mozilla ã¯ ããã©ã«ãã®è¨­å®ã¹ã¯ãªããã®ãã¨ã« /etc/mozilla/prefs.js ãèª­ã¿è¾¼ã¿ã¾ãã');
-INSERT INTO potranslation (id, translation) VALUES (556, 'ãã®ãã¡ã¤ã«ã«ãããã·ã¹ãã ã¯ã¤ãã®è¨­å®ãã§ãã¾ãã(ä¾ãã°ãã©ã³ããªã©)');
-INSERT INTO potranslation (id, translation) VALUES (557, 'èªå, esddsp, artsdsp, ç¡ã');
-INSERT INTO potranslation (id, translation) VALUES (558, 'ãµã¦ã³ããã¼ã¢ã³ã©ããã¼ãé¸æãã¦ãã ãã:');
-INSERT INTO potranslation (id, translation) VALUES (559, 'ã¨ãã©ããmozilla ã¯ãã©ã°ã¤ã³(ä¾ãã° flashplugin)ã®ããã§ /dev/dsp ãéãããã³ã°ã¢ãããã¦ãã¾ãã¾ããdsp ã©ããã¼ãä½¿ããã¨ã§ãã®åé¡ãåé¿ã§ãã¾ãã ''auto'' ã¯ãä½¿ç¨ãã¦ãããµã¦ã³ããã¼ã¢ã³ãæ¤åºããèªåçã« dsp ã©ããã¼ãé¸æãã¾ãã ãããµã¦ã³ããã¼ã¢ã³ãåãã¦ããªããã°ãmozilla ã¯ã©ã®ã©ããã¼ãä½¿ãã¾ããã ãã®è¨­å®ã¯ /etc/mozilla/mozillarc ã«ä¿å­ãããããã¯ã¦ã¼ã¶ã® ~/.mozillarc ã«ãããªã¼ãã¼ã©ã¤ãã§ãã¾ãã');
-INSERT INTO potranslation (id, translation) VALUES (560, 'è¨èª/å°å èªåé¸ææ©è½ãå©ç¨ãã¾ãã?');
-INSERT INTO potranslation (id, translation) VALUES (561, 'ãã®è¨­å®ã«ãããMozillaã®è¨èª/å°åããã¯ãèªåçã«é¸æãããã¨ãã§ãã¾ããããã¯ãéè±èªåã®åå¿èã«æç¨ãªè¨­å®ã§ãã');
-INSERT INTO potranslation (id, translation) VALUES (562, 'ãã®æ©è½ãæ­£ããåä½ããããã«ãLC_MESSAGE ã LC_ALL ç°å¢å¤æ°ãè¨­å®ãã¦ããã¦ãã ããã');
+INSERT INTO potranslation (id, translation) VALUES (550, 'Algumas vezes o Mozilla pode travar devido a alguns plugins (por exemplo, o plugin de Flash) tentarem travar o acesso ao dispositivo de som /dev/dsp. Você pode usar um wrapper dsp para resolver esse problema. A opção ''auto'' irá decidir qual wrapper dsp deverá ser usado de acordo com o daemon de som em execução. Quando nenhum daemon de som for detectado, o Mozilla não utilizará nenhum wrapper. Esta configuração será gravada no arquivo /etc/mozilla/mozillarc e poderá ser sobreescrita caso esteja definida em seu arquivo ~/.mozillarc.');
+INSERT INTO potranslation (id, translation) VALUES (551, 'Habilitar seleção automática de Idioma/Região ?');
+INSERT INTO potranslation (id, translation) VALUES (552, 'Esta configuração fornece uma seleção automática de idioma/região no Mozilla utilizando as configurações de locale. A mesma pode auxiliar um administrador de sistema que precisar lidar com centenas de novatos que não falam inglês.');
+INSERT INTO potranslation (id, translation) VALUES (553, 'Por favor, defina suas variáveis de ambiente LC_MESSAGE e LC_ALL para que esta configuração funcione corretamente.');
+INSERT INTO potranslation (id, translation) VALUES (554, '設定のカスタマイズに /etc/mozilla/prefs.js が利用できます。');
+INSERT INTO potranslation (id, translation) VALUES (555, 'Debian の mozilla は デフォルトの設定スクリプトのあとに /etc/mozilla/prefs.js を読み込みます。');
+INSERT INTO potranslation (id, translation) VALUES (556, 'このファイルにより、システムワイドの設定ができます。(例えばフォントなど)');
+INSERT INTO potranslation (id, translation) VALUES (557, '自動, esddsp, artsdsp, 無し');
+INSERT INTO potranslation (id, translation) VALUES (558, 'サウンドデーモンラッパーを選択してください:');
+INSERT INTO potranslation (id, translation) VALUES (559, 'ときどき、mozilla はプラグイン(例えば flashplugin)のせいで /dev/dsp を開けずハングアップしてしまいます。dsp ラッパーを使うことでこの問題を回避できます。 ''auto'' は、使用しているサウンドデーモンを検出し、自動的に dsp ラッパーを選択します。 もしサウンドデーモンが動いていなければ、mozilla はどのラッパーも使いません。 この設定は /etc/mozilla/mozillarc に保存され、これはユーザの ~/.mozillarc によりオーバーライドできます。');
+INSERT INTO potranslation (id, translation) VALUES (560, '言語/地域 自動選択機能を利用しますか?');
+INSERT INTO potranslation (id, translation) VALUES (561, 'この設定により、Mozillaの言語/地域パックを自動的に選択することができます。これは、非英語圏の初心者に有用な設定です。');
+INSERT INTO potranslation (id, translation) VALUES (562, 'この機能が正しく動作するために。LC_MESSAGE か LC_ALL 環境変数を設定しておいてください。');
 INSERT INTO potranslation (id, translation) VALUES (563, 'Dispone de /etc/mozilla/prefs.js para personalizaciones.');
-INSERT INTO potranslation (id, translation) VALUES (564, 'Mozilla en Debian carga el fichero /etc/mozilla/prefs.js despuÃ©s de ciertos scripts de configuraciÃ³n.');
-INSERT INTO potranslation (id, translation) VALUES (565, 'Puede editar este fichero para realizar configuraciones generales, tales como la elecciÃ³n de fuentes.');
-INSERT INTO potranslation (id, translation) VALUES (566, 'automÃ¡tico, esddsp, artsdsp, ninguno');
+INSERT INTO potranslation (id, translation) VALUES (564, 'Mozilla en Debian carga el fichero /etc/mozilla/prefs.js después de ciertos scripts de configuración.');
+INSERT INTO potranslation (id, translation) VALUES (565, 'Puede editar este fichero para realizar configuraciones generales, tales como la elección de fuentes.');
+INSERT INTO potranslation (id, translation) VALUES (566, 'automático, esddsp, artsdsp, ninguno');
 INSERT INTO potranslation (id, translation) VALUES (567, 'Por favor, elija el demonio de sonido para acceder al dsp.');
-INSERT INTO potranslation (id, translation) VALUES (568, 'En ocasiones mozilla se cuelga cuando los plugins (por ejemplo el de Flash) bloquean /dev/dsp. Puede utilizar un demonio que haga de wrapper para acceder al dsp. Â«automÃ¡ticoÂ» decidirÃ¡ cuÃ¡l utilizar de acuerdo al demonio de sonido que se estÃ© ejecutando. Si no se detecta ninguno, mozilla no usarÃ¡ ninguno. Este valor se guardarÃ¡ en /etc/mozilla/mozillarc y se puede sobreescribir con ~/.mozillarc.');
+INSERT INTO potranslation (id, translation) VALUES (568, 'En ocasiones mozilla se cuelga cuando los plugins (por ejemplo el de Flash) bloquean /dev/dsp. Puede utilizar un demonio que haga de wrapper para acceder al dsp. «automático» decidirá cuál utilizar de acuerdo al demonio de sonido que se esté ejecutando. Si no se detecta ninguno, mozilla no usará ninguno. Este valor se guardará en /etc/mozilla/mozillarc y se puede sobreescribir con ~/.mozillarc.');
 INSERT INTO potranslation (id, translation) VALUES (569, '/etc/mozilla/prefs.js is beschikbaar om instellingen te wijzigen.');
 INSERT INTO potranslation (id, translation) VALUES (570, 'Debian mozilla zal /etc/mozilla/prefs.js inladen na enkele standaard voorkeurscripts te hebben ingeladen.');
 INSERT INTO potranslation (id, translation) VALUES (571, 'U kunt dit bestand wijzigen voor systeemwijde instellingen (vb: fontinstellingen)');
@@ -6704,92 +6712,92 @@ INSERT INTO potranslation (id, translation) VALUES (574, 'Soms hangt mozilla omd
 INSERT INTO potranslation (id, translation) VALUES (575, 'Automatische taal/regio-selectie inschakelen?');
 INSERT INTO potranslation (id, translation) VALUES (576, 'Deze optie zorgt voor een automatische taal/regio-selectie in Mozilla gebruikmakend van de locale-instellingen. Het kan een systeembeheerder helpen die geconfronteerd wordt met honderden niet-Engels sprekende beginnelingen.');
 INSERT INTO potranslation (id, translation) VALUES (577, 'Zet uw LC_MESSAGE- of LC_ALL-variabele om dit correct te laten werken.');
-INSERT INTO potranslation (id, translation) VALUES (578, 'Pro pÅizpÅ¯sobenÃ­ nastavenÃ­ mÅ¯Å¾ete pouÅ¾Ã­t /etc/mozilla/prefs.js.');
-INSERT INTO potranslation (id, translation) VALUES (579, 'Mozilla v Debianu pouÅ¾Ã­vÃ¡ kromÄ dalÅ¡Ã­ch skriptÅ¯ i soubor /etc/mozilla/prefs.js.');
-INSERT INTO potranslation (id, translation) VALUES (580, 'V tomto souboru mÅ¯Å¾ete nastavit vlastnosti pro vÅ¡echny uÅ¾ivatele v systÃ©mu (napÅ. vhodnÃ¡ pÃ­sma).');
-INSERT INTO potranslation (id, translation) VALUES (581, 'auto, esddsp, artsdsp, Å¾Ã¡dnÃ½');
-INSERT INTO potranslation (id, translation) VALUES (582, 'Vyberte program spravujÃ­cÃ­ zvukovÃ© zaÅÃ­zenÃ­ dsp.');
-INSERT INTO potranslation (id, translation) VALUES (583, 'ObÄas se mÅ¯Å¾e mozilla zaseknout, protoÅ¾e nÄkterÃ© moduly (napÅ. flash) zamknou /dev/dsp. PÅedejÃ­t tomu mÅ¯Å¾ete pouÅ¾itÃ­m speciÃ¡lnÃ­ho programu pro sprÃ¡vu dsp. Volba ''auto'' se rozhodne podle toho, kterÃ½ sprÃ¡vce dsp prÃ¡vÄ bÄÅ¾Ã­. Pokud Å¾Ã¡dnÃ½ program nerozpoznÃ¡, Å¾Ã¡dnÃ½ se nepouÅ¾ije. Toto nastavenÃ­ se uloÅ¾Ã­ do /etc/mozilla/mozillarc a mÅ¯Å¾ete jej pÅepsat ve svÃ©m ~/.mozillarc.');
-INSERT INTO potranslation (id, translation) VALUES (584, 'Povolit automatickÃ½ vÃ½bÄr Jazyka/ZemÄ?');
-INSERT INTO potranslation (id, translation) VALUES (585, 'Pokud odpovÃ­te kladnÄ, v Mozille se bude automaticky vybÃ­rat vhodnÃ½ jazyk/zemÄ. To mÅ¯Å¾e velmi pomoci administrÃ¡torovi se spoustou neanglicky mluvÃ­cÃ­ch novÃ¡ÄkÅ¯.');
-INSERT INTO potranslation (id, translation) VALUES (586, 'Aby toto nastavenÃ­ pracovalo sprÃ¡vnÄ, musÃ­te mÃ­t sprÃ¡vnÄ nastavenÃ© promÄnnÃ© LC_MESSAGE nebo LC_ALL.');
-INSERT INTO potranslation (id, translation) VALUES (587, '/etc/mozilla/prefs.js kan bruges til at opsÃ¦tte prÃ¦ferencer.');
-INSERT INTO potranslation (id, translation) VALUES (588, 'Debians Mozilla vil lÃ¦se /etc/mozilla/prefs.js efter standard prÃ¦ference-skriptsne er blevet lÃ¦st.');
+INSERT INTO potranslation (id, translation) VALUES (578, 'Pro přizpůsobení nastavení můžete použít /etc/mozilla/prefs.js.');
+INSERT INTO potranslation (id, translation) VALUES (579, 'Mozilla v Debianu používá kromě dalších skriptů i soubor /etc/mozilla/prefs.js.');
+INSERT INTO potranslation (id, translation) VALUES (580, 'V tomto souboru můžete nastavit vlastnosti pro všechny uživatele v systému (např. vhodná písma).');
+INSERT INTO potranslation (id, translation) VALUES (581, 'auto, esddsp, artsdsp, žádný');
+INSERT INTO potranslation (id, translation) VALUES (582, 'Vyberte program spravující zvukové zařízení dsp.');
+INSERT INTO potranslation (id, translation) VALUES (583, 'Občas se může mozilla zaseknout, protože některé moduly (např. flash) zamknou /dev/dsp. Předejít tomu můžete použitím speciálního programu pro správu dsp. Volba ''auto'' se rozhodne podle toho, který správce dsp právě běží. Pokud žádný program nerozpozná, žádný se nepoužije. Toto nastavení se uloží do /etc/mozilla/mozillarc a můžete jej přepsat ve svém ~/.mozillarc.');
+INSERT INTO potranslation (id, translation) VALUES (584, 'Povolit automatický výběr Jazyka/Země?');
+INSERT INTO potranslation (id, translation) VALUES (585, 'Pokud odpovíte kladně, v Mozille se bude automaticky vybírat vhodný jazyk/země. To může velmi pomoci administrátorovi se spoustou neanglicky mluvících nováčků.');
+INSERT INTO potranslation (id, translation) VALUES (586, 'Aby toto nastavení pracovalo správně, musíte mít správně nastavené proměnné LC_MESSAGE nebo LC_ALL.');
+INSERT INTO potranslation (id, translation) VALUES (587, '/etc/mozilla/prefs.js kan bruges til at opsætte præferencer.');
+INSERT INTO potranslation (id, translation) VALUES (588, 'Debians Mozilla vil læse /etc/mozilla/prefs.js efter standard præference-skriptsne er blevet læst.');
 INSERT INTO potranslation (id, translation) VALUES (589, 'Du kan redigere i denne fil for system-globale indstillinger (f.eks. skrifttype indstillinger).');
 INSERT INTO potranslation (id, translation) VALUES (590, 'auto, esddsp, artsdsp, ingen');
-INSERT INTO potranslation (id, translation) VALUES (591, 'VÃ¦lg den lyd dÃ¦mon som skal bruges med mozilla.');
-INSERT INTO potranslation (id, translation) VALUES (592, 'Nogle gange hÃ¦nger mozilla fordi plugins (f.eks. flash) lÃ¥ser /dev/dsp.  Du kan bruge en lyd dÃ¦mon til at lÃ¸se det. ''auto'' vil automatisk bestemme hvilken der skal bruges udfra en allerede kÃ¸rende lyd dÃ¦mon NÃ¥r ingen lyd dÃ¦mon er fundet, vil mozilla ikke bruge nogen. Denne indstilling vil blive gemt i /etc/mozilla/mozillarc og kan blive overskrevet af din ~/.mozillarc.');
-INSERT INTO potranslation (id, translation) VALUES (593, 'AktivÃ©r automatisk sprog/regionsvalg?');
-INSERT INTO potranslation (id, translation) VALUES (594, 'Denne indstilling giver mulighed for automatisk sprog/regions valg i Mozilla ved hjÃ¦lp af locale-indstillinger. Det kan vÃ¦re en stor hjÃ¦lp for system administratorer der har hundredvis af ikke-engelsktalende nybegyndere.');
-INSERT INTO potranslation (id, translation) VALUES (595, 'For at dette skal virke, skal LC_MESSAGE eller LC_ALL miljÃ¸variablerne vÃ¦re sat korrekt.');
+INSERT INTO potranslation (id, translation) VALUES (591, 'Vælg den lyd dæmon som skal bruges med mozilla.');
+INSERT INTO potranslation (id, translation) VALUES (592, 'Nogle gange hænger mozilla fordi plugins (f.eks. flash) låser /dev/dsp.  Du kan bruge en lyd dæmon til at løse det. ''auto'' vil automatisk bestemme hvilken der skal bruges udfra en allerede kørende lyd dæmon Når ingen lyd dæmon er fundet, vil mozilla ikke bruge nogen. Denne indstilling vil blive gemt i /etc/mozilla/mozillarc og kan blive overskrevet af din ~/.mozillarc.');
+INSERT INTO potranslation (id, translation) VALUES (593, 'Aktivér automatisk sprog/regionsvalg?');
+INSERT INTO potranslation (id, translation) VALUES (594, 'Denne indstilling giver mulighed for automatisk sprog/regions valg i Mozilla ved hjælp af locale-indstillinger. Det kan være en stor hjælp for system administratorer der har hundredvis af ikke-engelsktalende nybegyndere.');
+INSERT INTO potranslation (id, translation) VALUES (595, 'For at dette skal virke, skal LC_MESSAGE eller LC_ALL miljøvariablerne være sat korrekt.');
 INSERT INTO potranslation (id, translation) VALUES (596, 'Tiedosto /etc/mozilla/prefs.js on asetuksien mukauttamista varten.');
 INSERT INTO potranslation (id, translation) VALUES (597, 'Debianin mozilla lataa tiedoston /etc/mozilla/prefs.js oletusasetukset 
-sisÃ¤ltÃ¤vÃ¤n skriptin jÃ¤lkeen.');
-INSERT INTO potranslation (id, translation) VALUES (598, 'Voit muokata tÃ¤tÃ¤ tiedostoa muuttaaksesi koko jÃ¤rjestelmÃ¤Ã¤ koskevia asetuksia. 
+sisältävän skriptin jälkeen.');
+INSERT INTO potranslation (id, translation) VALUES (598, 'Voit muokata tätä tiedostoa muuttaaksesi koko järjestelmää koskevia asetuksia. 
 (esim. kirjasinasetukset)');
-INSERT INTO potranslation (id, translation) VALUES (599, 'auto, esddsp, artsdsp, ei mikÃ¤Ã¤n');
-INSERT INTO potranslation (id, translation) VALUES (600, 'Valitse Ã¤Ã¤nenhallinnan taustaprosessin dsp-kÃ¤Ã¤re.');
-INSERT INTO potranslation (id, translation) VALUES (601, 'Joskus mozilla voi jumiutua, jos liitÃ¤nnÃ¤iset (esim. flashplugin) lukitsevat 
-/dev/dsp:n. Ongelman voi vÃ¤lttÃ¤Ã¤ kÃ¤yttÃ¤mÃ¤llÃ¤ dsp-kÃ¤Ã¤rettÃ¤. "auto" valitsee 
-kÃ¤ynnissÃ¤ olevan Ã¤Ã¤nenhallinnan taustaohjelman mukaisesti oikeat kÃ¤Ã¤reet. Jos 
-Ã¤Ã¤nenhallinnan tataustaohjelmaa ei havaita, mozilla ei kÃ¤ytÃ¤ mitÃ¤Ã¤n kÃ¤Ã¤rettÃ¤. 
-TÃ¤mÃ¤ asetus tallennetaan tiedostoon /etc/mozilla/mozillarc ja sen voi tarvittaessa
-syrjÃ¤yttÃ¤Ã¤ kÃ¤yttÃ¤jÃ¤n omassa asetustiedostossa (~/.mozillarc).');
+INSERT INTO potranslation (id, translation) VALUES (599, 'auto, esddsp, artsdsp, ei mikään');
+INSERT INTO potranslation (id, translation) VALUES (600, 'Valitse äänenhallinnan taustaprosessin dsp-kääre.');
+INSERT INTO potranslation (id, translation) VALUES (601, 'Joskus mozilla voi jumiutua, jos liitännäiset (esim. flashplugin) lukitsevat 
+/dev/dsp:n. Ongelman voi välttää käyttämällä dsp-käärettä. "auto" valitsee 
+käynnissä olevan äänenhallinnan taustaohjelman mukaisesti oikeat kääreet. Jos 
+äänenhallinnan tataustaohjelmaa ei havaita, mozilla ei käytä mitään käärettä. 
+Tämä asetus tallennetaan tiedostoon /etc/mozilla/mozillarc ja sen voi tarvittaessa
+syrjäyttää käyttäjän omassa asetustiedostossa (~/.mozillarc).');
 INSERT INTO potranslation (id, translation) VALUES (602, 'Salli automaattinen kielen/alueen valinta?');
-INSERT INTO potranslation (id, translation) VALUES (603, 'TÃ¤mÃ¤ asetus mahdollistaa automaattisen kielen/alueen valinnan
-lokaaliasetuksiin perustuen. Asetus voi olla hyÃ¶dyllinen
-yllÃ¤pitÃ¤jille, joiden piirissÃ¤ on satoja muuta kuin englannin kieltÃ¤
-puhuvia kÃ¤yttÃ¤jiÃ¤.');
+INSERT INTO potranslation (id, translation) VALUES (603, 'Tämä asetus mahdollistaa automaattisen kielen/alueen valinnan
+lokaaliasetuksiin perustuen. Asetus voi olla hyödyllinen
+ylläpitäjille, joiden piirissä on satoja muuta kuin englannin kieltä
+puhuvia käyttäjiä.');
 INSERT INTO potranslation (id, translation) VALUES (604, 'Aseta muuttujat LC_MESSAGE ja LC_ALL, jotta automaattinen tunnistus toimisi.');
-INSERT INTO potranslation (id, translation) VALUES (605, 'xprint ei nÃ¤y olevan asennettu');
-INSERT INTO potranslation (id, translation) VALUES (606, 'Mozillasta on poistettu tuki postscriptille. TÃ¤stÃ¤ johtuen Xprint tÃ¤ytyy 
-olla asennettuna, jotta tulostaminen toimisi. Ole hyvÃ¤ ja asenna xprt-xptintorg 
+INSERT INTO potranslation (id, translation) VALUES (605, 'xprint ei näy olevan asennettu');
+INSERT INTO potranslation (id, translation) VALUES (606, 'Mozillasta on poistettu tuki postscriptille. Tästä johtuen Xprint täytyy 
+olla asennettuna, jotta tulostaminen toimisi. Ole hyvä ja asenna xprt-xptintorg 
 -paketti.');
-INSERT INTO potranslation (id, translation) VALUES (607, 'TÃ¤mÃ¤ ei ole ohjelmavirhe. ÃlÃ¤ lÃ¤hetÃ¤ vikailmoitusta tÃ¤stÃ¤. (Toivomuslista 
-postscriptin uudelleentukemiseksi on jo lÃ¤hetetty, Vika#256072.)');
-INSERT INTO potranslation (id, translation) VALUES (608, '/etc/mozilla/prefs.js estÃ¡ dispoÃ±ible para actualiza-las preferencias.');
-INSERT INTO potranslation (id, translation) VALUES (609, 'O mozilla de Debian ha cargar /etc/mozilla/prefs.js despois de cargar algÃºns scripts de preferencia por defecto.');
-INSERT INTO potranslation (id, translation) VALUES (610, 'Pode editar este ficheiro para configuraciÃ³ns globais do sistema (Ã© dicir, configuraciÃ³n dos tipos de letra)');
-INSERT INTO potranslation (id, translation) VALUES (611, 'Failas /etc/mozilla/prefs.js skirtas parinkÄiÅ³ individualizavimui.');
-INSERT INTO potranslation (id, translation) VALUES (612, 'Debiano mozilla Ä¯kels /etc/mozilla/prefs.js parinktis po to, kai bus Ä¯keltos kai kurios pagal nutylÄjimÄ numatytos parinktys.');
-INSERT INTO potranslation (id, translation) VALUES (613, 'JÅ«s galite keisti Å¡Ä¯ failÄ, nustatymams sistemos mastu (pvz. Å¡riftÅ³ nustatymams)');
+INSERT INTO potranslation (id, translation) VALUES (607, 'Tämä ei ole ohjelmavirhe. Älä lähetä vikailmoitusta tästä. (Toivomuslista 
+postscriptin uudelleentukemiseksi on jo lähetetty, Vika#256072.)');
+INSERT INTO potranslation (id, translation) VALUES (608, '/etc/mozilla/prefs.js está dispoñible para actualiza-las preferencias.');
+INSERT INTO potranslation (id, translation) VALUES (609, 'O mozilla de Debian ha cargar /etc/mozilla/prefs.js despois de cargar algúns scripts de preferencia por defecto.');
+INSERT INTO potranslation (id, translation) VALUES (610, 'Pode editar este ficheiro para configuracións globais do sistema (é dicir, configuración dos tipos de letra)');
+INSERT INTO potranslation (id, translation) VALUES (611, 'Failas /etc/mozilla/prefs.js skirtas parinkčių individualizavimui.');
+INSERT INTO potranslation (id, translation) VALUES (612, 'Debiano mozilla įkels /etc/mozilla/prefs.js parinktis po to, kai bus įkeltos kai kurios pagal nutylėjimą numatytos parinktys.');
+INSERT INTO potranslation (id, translation) VALUES (613, 'Jūs galite keisti šį failą, nustatymams sistemos mastu (pvz. šriftų nustatymams)');
 INSERT INTO potranslation (id, translation) VALUES (614, 'auto, esddsp, artsdsp, joks');
-INSERT INTO potranslation (id, translation) VALUES (615, 'Pasirinkite JÅ«sÅ³ garso Ä¯renginio demono dsp aplankÄ (wrapper).');
-INSERT INTO potranslation (id, translation) VALUES (616, 'Kartais mozilla stringa, kuomet jos priedas (pvz. flashplugin) blokuoja /dev/dsp. Å iai problemai sprÄsti galite naudoti dsp aplankÄ (wrapper). ''auto'' nusprÄs, kurÄ¯ dsp aplankÄ naudoti, priklausomai nuo veikianÄio garso demono. Jei nebus aptiktas joks garso demonas, mozilla nenaudos jokio aplanko. Å ie nustatymai bus iÅ¡saugoti faile etc/mozilla/mozillarc, bet JÅ«sÅ³ ~/.mozillarc gali bÅ«ti virÅ¡esnis.');
-INSERT INTO potranslation (id, translation) VALUES (617, 'Ar leisti automatinÄ¯ kalbos/regiono parinkimÄ?');
-INSERT INTO potranslation (id, translation) VALUES (618, 'Å is nustatymas leidÅ¾ia automatiÅ¡kai pasirinkti Mozill''os kalbos/regiono paketÄ, panaudojant locale nustatymus. Tai gali padÄti sistemos administratoriui, susidurianÄiam su Å¡imtais ne anglÅ³ kalba kalbanÄiÅ³ naujokÅ³.');
-INSERT INTO potranslation (id, translation) VALUES (619, 'Tam kad Å¡is nustatymas veiktÅ³, teisingai nustatykite savo LC_MESSAGE arba LC_ALL kintamuosius.');
-INSERT INTO potranslation (id, translation) VALUES (620, 'Il file /etc/mozilla/prefs.js Ã¨ disponibile per la personalizzazione delle preferenze.');
-INSERT INTO potranslation (id, translation) VALUES (621, 'Debian Mozilla caricherÃ  il file /etc/mozilla/prefs.js dopo aver caricato alcuni script di configurazione predefiniti.');
-INSERT INTO potranslation (id, translation) VALUES (622, 'Si puÃ² editare questo file per impostazioni globali di sistema. (Ad esempio le impostazioni per i caratteri)');
+INSERT INTO potranslation (id, translation) VALUES (615, 'Pasirinkite Jūsų garso įrenginio demono dsp aplanką (wrapper).');
+INSERT INTO potranslation (id, translation) VALUES (616, 'Kartais mozilla stringa, kuomet jos priedas (pvz. flashplugin) blokuoja /dev/dsp. Šiai problemai spręsti galite naudoti dsp aplanką (wrapper). ''auto'' nuspręs, kurį dsp aplanką naudoti, priklausomai nuo veikiančio garso demono. Jei nebus aptiktas joks garso demonas, mozilla nenaudos jokio aplanko. Šie nustatymai bus išsaugoti faile etc/mozilla/mozillarc, bet Jūsų ~/.mozillarc gali būti viršesnis.');
+INSERT INTO potranslation (id, translation) VALUES (617, 'Ar leisti automatinį kalbos/regiono parinkimą?');
+INSERT INTO potranslation (id, translation) VALUES (618, 'Šis nustatymas leidžia automatiškai pasirinkti Mozill''os kalbos/regiono paketą, panaudojant locale nustatymus. Tai gali padėti sistemos administratoriui, susiduriančiam su šimtais ne anglų kalba kalbančių naujokų.');
+INSERT INTO potranslation (id, translation) VALUES (619, 'Tam kad šis nustatymas veiktų, teisingai nustatykite savo LC_MESSAGE arba LC_ALL kintamuosius.');
+INSERT INTO potranslation (id, translation) VALUES (620, 'Il file /etc/mozilla/prefs.js è disponibile per la personalizzazione delle preferenze.');
+INSERT INTO potranslation (id, translation) VALUES (621, 'Debian Mozilla caricherà il file /etc/mozilla/prefs.js dopo aver caricato alcuni script di configurazione predefiniti.');
+INSERT INTO potranslation (id, translation) VALUES (622, 'Si può editare questo file per impostazioni globali di sistema. (Ad esempio le impostazioni per i caratteri)');
 INSERT INTO potranslation (id, translation) VALUES (623, 'auto, esddsp, artsdsp, nessuno');
 INSERT INTO potranslation (id, translation) VALUES (624, 'Scegliere il modulo di incapsulazione dsp del demone di gestione del suono.');
-INSERT INTO potranslation (id, translation) VALUES (625, 'Qualche volta Mozilla si blocca quando alcuni plugin (ad esempio il plugin Flash) mettono un lock alla periferica /dev/dsp. Si puÃ² incapsulare l''accesso alla periferica /dev/dsp per risolvere il problema. Scegliendo ''auto'' verrÃ  selezionato un modulo di incapsulazione dsp in funzione del demone di gestione del suono in esecuzione. Quando nessun gestore di suoni viene trovato, Mozilla non userÃ  alcun modulo di incapsulazione. Questa scelta sarÃ  salvata nel file /etc/mozilla/mozillarc e potrÃ  essere sovrascritta dal file ~/.mozillarc.');
+INSERT INTO potranslation (id, translation) VALUES (625, 'Qualche volta Mozilla si blocca quando alcuni plugin (ad esempio il plugin Flash) mettono un lock alla periferica /dev/dsp. Si può incapsulare l''accesso alla periferica /dev/dsp per risolvere il problema. Scegliendo ''auto'' verrà selezionato un modulo di incapsulazione dsp in funzione del demone di gestione del suono in esecuzione. Quando nessun gestore di suoni viene trovato, Mozilla non userà alcun modulo di incapsulazione. Questa scelta sarà salvata nel file /etc/mozilla/mozillarc e potrà essere sovrascritta dal file ~/.mozillarc.');
 INSERT INTO potranslation (id, translation) VALUES (626, 'Abilitare la selezione automatica Lingua/Regione?');
 INSERT INTO potranslation (id, translation) VALUES (627, 'Questa impostazione consente una selezione automatica di lingua/regione utilizzando le preferenze locali. Puo` aiutare un sistemista che abbia a che fare con centinaia di nuovi utenti non a conoscenza della lingua inglese.');
 INSERT INTO potranslation (id, translation) VALUES (628, 'Settare la variabile LC_MESSAGE o LC_ALL per consentire a questa impostazione di funzionare correttamente.');
-INSERT INTO potranslation (id, translation) VALUES (629, 'YapÄ±landÄ±rma tercihlerini kiÅiselleÅtirmek iÃ§in /etc/mozilla/prefs.js mevcuttur.');
-INSERT INTO potranslation (id, translation) VALUES (630, 'Debian mozilla Ã¶n tanÄ±mlÄ± tercih betiklerini yÃ¼kledikten sonra /etc/mozilla/prefs.js dosyasÄ±nÄ± yÃ¼kleyecektir.');
-INSERT INTO potranslation (id, translation) VALUES (631, 'Sistem genelinde ayarlar iÃ§in bu dosyayÄ± dÃ¼zenleyebilirsiniz. (Ã¶r. yazÄ±tipi tanÄ±mlarÄ±)');
+INSERT INTO potranslation (id, translation) VALUES (629, 'Yapılandırma tercihlerini kişiselleştirmek için /etc/mozilla/prefs.js mevcuttur.');
+INSERT INTO potranslation (id, translation) VALUES (630, 'Debian mozilla ön tanımlı tercih betiklerini yükledikten sonra /etc/mozilla/prefs.js dosyasını yükleyecektir.');
+INSERT INTO potranslation (id, translation) VALUES (631, 'Sistem genelinde ayarlar için bu dosyayı düzenleyebilirsiniz. (ör. yazıtipi tanımları)');
 INSERT INTO potranslation (id, translation) VALUES (632, 'otomatik, esddsp, artsdsp, yok');
-INSERT INTO potranslation (id, translation) VALUES (633, 'LÃ¼tfen ses servisinin kullanacaÄÄ± ses sistemini (dsp wrapper) seÃ§in.');
-INSERT INTO potranslation (id, translation) VALUES (634, 'Bazen mozilla, eklentilerin (Ã¶r. flashplugin) /dev/dsp''yi kilitlemesi yÃ¼zÃ¼nden askÄ±da kalÄ±r. Bu sorunu Ã§Ã¶zmek iÃ§in ses sistemini (dsp wrapper) kullanabilirsiniz. ''otomatik'' seÃ§eneÄi, Ã§alÄ±Åan ses servisine gÃ¶re hangi ses sistemlerinin (dsp wrapper) kullanÄ±lmasÄ± gerektiÄine karar verecekir. HiÃ§ bir ses servisi bulunamaz ise, mozilla herhangi bir sistem kullanmayacaktÄ±r. Bu ayar /etc/mozilla/mozillarc dosyasÄ±na kaydedilecektir. Fakat size ait ~/.mozillarc dosyasÄ±ndaki ayarlar daha Ã¶nceliklidir.');
-INSERT INTO potranslation (id, translation) VALUES (635, '/etc/mozilla/prefs.js ist fÃ¼r die Anpassungen von Einstellungen verfÃ¼gbar.');
+INSERT INTO potranslation (id, translation) VALUES (633, 'Lütfen ses servisinin kullanacağı ses sistemini (dsp wrapper) seçin.');
+INSERT INTO potranslation (id, translation) VALUES (634, 'Bazen mozilla, eklentilerin (ör. flashplugin) /dev/dsp''yi kilitlemesi yüzünden askıda kalır. Bu sorunu çözmek için ses sistemini (dsp wrapper) kullanabilirsiniz. ''otomatik'' seçeneği, çalışan ses servisine göre hangi ses sistemlerinin (dsp wrapper) kullanılması gerektiğine karar verecekir. Hiç bir ses servisi bulunamaz ise, mozilla herhangi bir sistem kullanmayacaktır. Bu ayar /etc/mozilla/mozillarc dosyasına kaydedilecektir. Fakat size ait ~/.mozillarc dosyasındaki ayarlar daha önceliklidir.');
+INSERT INTO potranslation (id, translation) VALUES (635, '/etc/mozilla/prefs.js ist für die Anpassungen von Einstellungen verfügbar.');
 INSERT INTO potranslation (id, translation) VALUES (636, 'Debians Mozilla wird die Datei /etc/mozilla/prefs.js nach dem Laden von einigen Standard-Einstellungsskripten laden.');
-INSERT INTO potranslation (id, translation) VALUES (637, 'Sie kÃ¶nnen diese Datei bearbeiten, um systemweite Einstellungen vorzunehmen (z.B. Schriften-Einstellungen).');
+INSERT INTO potranslation (id, translation) VALUES (637, 'Sie können diese Datei bearbeiten, um systemweite Einstellungen vorzunehmen (z.B. Schriften-Einstellungen).');
 INSERT INTO potranslation (id, translation) VALUES (638, 'automatisch, esddsp, artsdsp, kein');
-INSERT INTO potranslation (id, translation) VALUES (639, 'Bitte wÃ¤hlen Sie die DSP-HÃ¼lle Ihres Sound-Daemons aus.');
-INSERT INTO potranslation (id, translation) VALUES (640, 'Manchmal hÃ¤ngt Mozilla, da Erweiterungen (bspw. flashplugin) einen /dev/dsp sperren. Sie kÃ¶nnen das durch die Benutzung einer DSP-HÃ¼lle beheben. ''automatisch'' wird anhand des laufenden Sound-Daemons entscheiden, welche DSP-HÃ¼lle verwendet werden sollte. Falls kein Sound-Daemon erkannt wird, verwendet Mozilla keine HÃ¼lle. Diese Einstellung wird in /etc/mozilla/mozillarc abgespeichert und kann in Ihrer ~/.mozillarc Ã¼berschrieben werden.');
+INSERT INTO potranslation (id, translation) VALUES (639, 'Bitte wählen Sie die DSP-Hülle Ihres Sound-Daemons aus.');
+INSERT INTO potranslation (id, translation) VALUES (640, 'Manchmal hängt Mozilla, da Erweiterungen (bspw. flashplugin) einen /dev/dsp sperren. Sie können das durch die Benutzung einer DSP-Hülle beheben. ''automatisch'' wird anhand des laufenden Sound-Daemons entscheiden, welche DSP-Hülle verwendet werden sollte. Falls kein Sound-Daemon erkannt wird, verwendet Mozilla keine Hülle. Diese Einstellung wird in /etc/mozilla/mozillarc abgespeichert und kann in Ihrer ~/.mozillarc überschrieben werden.');
 INSERT INTO potranslation (id, translation) VALUES (641, 'Automatische Sprach-/Regionenauswahl aktivieren?');
-INSERT INTO potranslation (id, translation) VALUES (642, 'Diese Einstellung ermÃ¶glicht eine automatische Auswahl der Sprach-/Regionenpakete in Mozilla mittels der Â»localeÂ«-Einstellungen. Dies mag Systemadministratoren helfen, die sich Hunderten von nicht Englisch sprechenden Neulingen gegenÃ¼ber sehen.');
-INSERT INTO potranslation (id, translation) VALUES (643, 'Bitte setzen Sie Ihre Â»LC_MESSAGEÂ«- oder Â»LC_ALLÂ«-Variable entsprechend, so dass diese Einstellung korrekt funktioniert.');
+INSERT INTO potranslation (id, translation) VALUES (642, 'Diese Einstellung ermöglicht eine automatische Auswahl der Sprach-/Regionenpakete in Mozilla mittels der »locale«-Einstellungen. Dies mag Systemadministratoren helfen, die sich Hunderten von nicht Englisch sprechenden Neulingen gegenüber sehen.');
+INSERT INTO potranslation (id, translation) VALUES (643, 'Bitte setzen Sie Ihre »LC_MESSAGE«- oder »LC_ALL«-Variable entsprechend, so dass diese Einstellung korrekt funktioniert.');
 INSERT INTO potranslation (id, translation) VALUES (644, ' caratas');
 INSERT INTO potranslation (id, translation) VALUES (648, ' Srprise! (non-editor)');
 INSERT INTO potranslation (id, translation) VALUES (649, ' bang bang in evo hoary');
 INSERT INTO potranslation (id, translation) VALUES (652, 'This is a suggestion added by a non-editor for a multiline entry, and it happens to have a very long first line.
 It should work! :-P');
 INSERT INTO potranslation (id, translation) VALUES (653, 'Antes de enviar, por favor, pruebe a buscar un bug similar en %s');
-INSERT INTO potranslation (id, translation) VALUES (654, 'BÃºsqueda de dispositivos bluetooth completada');
+INSERT INTO potranslation (id, translation) VALUES (654, 'Búsqueda de dispositivos bluetooth completada');
 INSERT INTO potranslation (id, translation) VALUES (655, 'L&lamadas');
 INSERT INTO potranslation (id, translation) VALUES (656, '%d mensajes exportados al mailbox "%s"');
 INSERT INTO potranslation (id, translation) VALUES (657, '%d mensajes exportados al servidor IMAP "%s"');
@@ -7037,14 +7045,14 @@ Other bugs
 
  * Plugins
    - Make e-popup more robust (Michael)
-   - Cleanup authors/descriptions (BjÃ¶rn Torkelsson)
+   - Cleanup authors/descriptions (Björn Torkelsson)
    - out of office exchange fixes (Sushma)
    - retry send options if invalid session string (Chen)
    - set proper default port for shared folders (Vivek)
 
  * Miscellaneous
    - BSD runtime linking fixes (Hans)
-   - distclean fixes (BjÃ¶rn Torkelsson)
+   - distclean fixes (Björn Torkelsson)
 
 Updated translations:
    - et (Priit Laes)
@@ -7211,17 +7219,17 @@ Earlier I could do this but since balsa was installed and then uninstalled, thin
 I am using thunderbird as the default email client or wish that it becomes default again.', NULL, 16, NULL, 1, 1, 20, 10, '2006-07-20 20:24:52.3877', '2006-07-20 20:56:35.442839', NULL, NULL, '2006-07-20 20:49:47.551344', '2006-07-20 20:56:35.442839', NULL, NULL, NULL, 4, 119, NULL);
 INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, date_solved, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (10, 12, 'Play DVDs in Totem', 'How do you play DVDs in Totem..........?', NULL, NULL, NULL, 1, NULL, 18, 10, '2006-07-20 20:34:29.635511', '2006-07-20 20:34:29.635511', NULL, NULL, '2006-07-20 20:53:53.684848', NULL, NULL, NULL, NULL, NULL, 119, NULL);
 INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, date_solved, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (11, 12, 'Continue playing after shutdown', 'I want to be able to shut down and start a mp3 where I left off, because some mp3s are 16++ hours long.', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-07-20 20:40:50.467875', '2006-07-20 23:11:24.975495', NULL, NULL, '2006-07-20 20:48:24.975495', NULL, NULL, NULL, NULL, NULL, 119, NULL);
-INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, date_solved, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (12, 13, 'Problema al recompilar kernel con soporte smp (doble-nÃºcleo)', 'Tengo un portatil con un procesador intel centrino Cuore Duo T2300 y tengo Ubuntu Dapper instalado con la mayorÃ­a de drivers instalados, pero me falta activar el hiper-threading para que me detecte el doble nÃºcleo ya que asÃ­ utilizarÃ¡ al 100% la capacidad del procesador.
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, date_solved, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (12, 13, 'Problema al recompilar kernel con soporte smp (doble-núcleo)', 'Tengo un portatil con un procesador intel centrino Cuore Duo T2300 y tengo Ubuntu Dapper instalado con la mayoría de drivers instalados, pero me falta activar el hiper-threading para que me detecte el doble núcleo ya que así utilizará al 100% la capacidad del procesador.
 
-Para activar esta opcion (SMP) necesito recompilar la kernel (bajada desde kernel.org hoy mismo). Descomprimo el archivo del kernel e entro en el directorio que se ha creado y copio el .config que tengo hecho de la Ãºltima configuracion de Ubuntu (la instalada con el cd de Ubuntu que se encuentra en la carpeta /boot/".config"). Una vez hecho esto hago el ''make oldconfig menuconfig'' y empiza el proceso, despues de unas cuantas preguntas veo que omite el paso de dejarme escoger el tipo de procesador y veo que me pone una n en la pregunta "Symmetric multi-processing support (SMP) [N/y/?] n" i tambien me escoge automaticamente la familia del procesador y me la asigna a 486 que no es el doble nÃºcleo.
+Para activar esta opcion (SMP) necesito recompilar la kernel (bajada desde kernel.org hoy mismo). Descomprimo el archivo del kernel e entro en el directorio que se ha creado y copio el .config que tengo hecho de la última configuracion de Ubuntu (la instalada con el cd de Ubuntu que se encuentra en la carpeta /boot/".config"). Una vez hecho esto hago el ''make oldconfig menuconfig'' y empiza el proceso, despues de unas cuantas preguntas veo que omite el paso de dejarme escoger el tipo de procesador y veo que me pone una n en la pregunta "Symmetric multi-processing support (SMP) [N/y/?] n" i tambien me escoge automaticamente la familia del procesador y me la asigna a 486 que no es el doble núcleo.
 
-No se como hacer para que funcione el doble-nÃºcleo recompilando la kernel, puede que haga algo mal i que me escoja automaticamente por culpa de la configuracion antigua (oldconfig) pero no lo se. Que hago mal?
+No se como hacer para que funcione el doble-núcleo recompilando la kernel, puede que haga algo mal i que me escoja automaticamente por culpa de la configuracion antigua (oldconfig) pero no lo se. Que hago mal?
 
 ', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-10-20 16:52:18.179187', '2006-10-20 16:52:18.179187', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 387, NULL);
-INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, date_solved, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (13, 29, 'Problemas de ImpressÃ£o no Firefox', 'OlÃ¡ a todos!
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, date_solved, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (13, 29, 'Problemas de Impressão no Firefox', 'Olá a todos!
 
-NÃ£o sei se isso acontece com todo mundo, mas aqui nÃ£o consigo imprimir corretamente uma pÃ¡gina com o Firefox, sempre sai cortado. Minha impressora Ã© uma HP400 e uso papel A4, mas a impressÃ£o sai sempre como se estivesse selecionado o tamanho "letter", e isso mesmo mudando no mozilla para A4. Creio que nÃ£o Ã© um problema de configuraÃ§Ã£o de impressora, pois isso sÃ³ acontece com o Mozilla, em outros programas a impressÃ£o Ã© normal.', NULL, NULL, 4, NULL, NULL, 10, 10, '2006-10-20 17:03:21.847064', '2006-10-20 17:03:21.847064', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 521, NULL);
-INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, date_solved, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (14, 12, 'Ø¹ÙØ³ Ø§ÙØªØºÙÙØ±Ø§Øª ØºÙØ± Ø§ÙÙØ­ÙÙØ¸Ø© ÙÙÙØ³ØªÙØ', 'Testing Arabic writing direction (in Firefox) in questions.', NULL, NULL, NULL, 1, NULL, 10, 10, '2001-07-03 21:30:51.583356', '2001-07-03 21:30:51.583356', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 18, NULL);
+Não sei se isso acontece com todo mundo, mas aqui não consigo imprimir corretamente uma página com o Firefox, sempre sai cortado. Minha impressora é uma HP400 e uso papel A4, mas a impressão sai sempre como se estivesse selecionado o tamanho "letter", e isso mesmo mudando no mozilla para A4. Creio que não é um problema de configuração de impressora, pois isso só acontece com o Mozilla, em outros programas a impressão é normal.', NULL, NULL, 4, NULL, NULL, 10, 10, '2006-10-20 17:03:21.847064', '2006-10-20 17:03:21.847064', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 521, NULL);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, date_solved, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (14, 12, 'عكس التغييرات غير المحفوظة للمستن؟', 'Testing Arabic writing direction (in Firefox) in questions.', NULL, NULL, NULL, 1, NULL, 10, 10, '2001-07-03 21:30:51.583356', '2001-07-03 21:30:51.583356', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 18, NULL);
 
 
 ALTER TABLE question ENABLE TRIGGER ALL;
@@ -9328,7 +9336,7 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (9, 3, 'https://wiki.ub
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (10, 6, 'https://wiki.ubuntu.com/', 'JeffWaugh');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (11, 2, 'https://wiki.ubuntu.com/', 'RobertCollins');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (12, 12, 'https://wiki.ubuntu.com/', 'SamplePerson');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (13, 13, 'https://wiki.ubuntu.com/', 'CarlosPerellÃ³MarÃ­n');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (13, 13, 'https://wiki.ubuntu.com/', 'CarlosPerellóMarín');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (14, 14, 'https://wiki.ubuntu.com/', 'DafyddHarries');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (15, 16, 'https://wiki.ubuntu.com/', 'FooBar');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (16, 17, 'https://wiki.ubuntu.com/', 'UbuntuTeam');
@@ -9354,16 +9362,16 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (35, 36, 'https://wiki.
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (36, 37, 'https://wiki.ubuntu.com/', 'DanielAguayo');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (37, 38, 'https://wiki.ubuntu.com/', 'MartinPitt');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (38, 39, 'https://wiki.ubuntu.com/', 'NicolasVelin');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (39, 40, 'https://wiki.ubuntu.com/', 'FrancescoAccattapÃ ');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (39, 40, 'https://wiki.ubuntu.com/', 'FrancescoAccattapà');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (40, 41, 'https://wiki.ubuntu.com/', 'Aloriel');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (41, 42, 'https://wiki.ubuntu.com/', 'DenisBarbier');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (42, 43, 'https://wiki.ubuntu.com/', 'AndrÃ©LuÃ­sLopes');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (43, 44, 'https://wiki.ubuntu.com/', 'CarlosValdiviaYagÃ¼e');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (42, 43, 'https://wiki.ubuntu.com/', 'AndréLuísLopes');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (43, 44, 'https://wiki.ubuntu.com/', 'CarlosValdiviaYagüe');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (44, 45, 'https://wiki.ubuntu.com/', 'LukClaes');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (45, 46, 'https://wiki.ubuntu.com/', 'MiroslavKure');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (46, 47, 'https://wiki.ubuntu.com/', 'MortenBrixPedersen');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (47, 48, 'https://wiki.ubuntu.com/', 'MattiPÃ¶llÃ¤');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (48, 49, 'https://wiki.ubuntu.com/', 'KÄstutisBiliÅ«nas');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (47, 48, 'https://wiki.ubuntu.com/', 'MattiPöllä');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (48, 49, 'https://wiki.ubuntu.com/', 'KęstutisBiliūnas');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (49, 50, 'https://wiki.ubuntu.com/', 'ValentinaCommissari');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (50, 51, 'https://wiki.ubuntu.com/', 'HelgeKreutzmann');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (51, 52, 'https://wiki.ubuntu.com/', 'NoPrivilegesPerson');

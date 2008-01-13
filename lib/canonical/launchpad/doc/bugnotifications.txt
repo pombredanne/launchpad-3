@@ -450,5 +450,5 @@ Users are able to set a flag which will cause all notifications to
 contain the bug's original description.
 
     >>> bug_submitter.verbose_bugnotifications
-    True
+    False
 
