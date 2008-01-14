@@ -39,7 +39,8 @@ class BranchFeedEntry(FeedEntry):
 class BranchFeedContentView(BranchView):
     """View for branch feed contents."""
 
-    def __init__(self, context, request, feed, template='templates/branch.pt'):
+    def __init__(self, context, request, feed,
+                 template='templates/branch.pt'):
         super(BranchFeedContentView, self).__init__(context, request)
         self.feed = feed
         self.template_ = template
@@ -238,12 +239,14 @@ class BranchFeed(BranchFeedBase):
                                              'templates/branch-revision.pt')
         content = FeedTypedData(content=content_view.render(),
                                 content_type="xhtml")
-        entry = BranchFeedEntry(title=title,
-                                link_alternate=url,
-                                date_created=rev.revision.date_created,
-                                date_updated=rev.revision.revision_date,
-                                date_published=rev.revision.date_created,
-                                authors=[RevisionPerson(rev.revision.revision_author,
-                                                        self.rootsite)],
-                                content=content)
+        entry = BranchFeedEntry(
+            title=title,
+            link_alternate=url,
+            date_created=rev.revision.date_created,
+            date_updated=rev.revision.revision_date,
+            date_published=None,
+            authors=[RevisionPerson(
+                    rev.revision.revision_author,
+                    self.rootsite)],
+            content=content)
         return entry

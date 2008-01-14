@@ -160,15 +160,15 @@ updated field in all of the entries.
 
 == Feed for a single branch ==
 
-A single branch can have an Atom feed, though it is not very
-interesting as it'll only have a single entry.  That entry, however,
-will show all of the activity on the branch, including recent revisions.
+A single branch can have an Atom feed with each revision being a
+different entry.
 
-    >>> browser.open('http://feeds.launchpad.dev/~sabdfl/+junk/testdoc/branch.atom')
+    >>> url = 'http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom'
+    >>> browser.open(url)
     >>> print browser.title
-    Branch ~sabdfl/+junk/testdoc
+    Latest Revisions for Branch Mozilla Firefox 0.9.1
     >>> print browser.url
-    http://feeds.launchpad.dev/~sabdfl/+junk/testdoc/branch.atom
+    http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom
 
 The first <id> in a feed identifies the feed.  Each entry then has its
 own <id>, which in the case of a single branch feed will be identical.
@@ -177,12 +177,10 @@ own <id>, which in the case of a single branch feed will be identical.
     >>> ids = parse_ids(browser.contents)
     >>> for id_ in ids:
     ...     print id_
-    <id>tag:launchpad.net,2007-05-04:/code/~sabdfl/+junk/testdoc</id>
-    <id>tag:launchpad.net,2007-05-04:/code/~sabdfl/+junk/testdoc</id>
+    <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release--0.9.1</id>
+    <id>tag:launchpad.net,2005-03-09:/code/~sabdfl/firefox/release--0.9.1/revision/1</id>
     >>> strainer = SoupStrainer('updated')
     >>> updated_dates = [extract_text(tag) for tag in BSS(browser.contents,
     ...                  parseOnlyThese=strainer)]
     >>> assert updated_dates[0] == updated_dates[1]
     ...     "Feed <update> value is not the same as latest entry.")
-
-
