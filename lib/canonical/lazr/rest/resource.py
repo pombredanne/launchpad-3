@@ -16,7 +16,7 @@ from zope.component import getAdapter
 from zope.interface import implements
 from zope.schema.interfaces import IField
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionResource, IEntry, IHTTPResource, IJSONPublishable)
+    ICollectionResource, IEntry, IHTTPResource, IJSONPublishable)
 
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
@@ -80,8 +80,8 @@ class EntryResource:
 
 
 class CollectionResource(ReadOnlyResource):
-    implements(ICollectionResource)
     """A resource that serves a list of entry resources."""
+    implements(ICollectionResource)
 
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
