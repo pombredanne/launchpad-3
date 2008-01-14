@@ -12,8 +12,8 @@ __all__ = [
 
 
 import simplejson
+from zope.component import getAdapter
 from zope.interface import implements
-from canonical.lp import decorates
 from canonical.lazr.interfaces import (
     ICollectionResource, ICollectionResourceController, IEntryResource,
     IEntryResourceController, IHTTPResource, IJSONPublishable)
@@ -23,8 +23,8 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
 
     def default(self, obj):
         if IJSONPublishable.providedBy(obj):
-            return obj.toJSONReady()
-        return super(ResourceJSONEncoder, self).default(self, obj)
+            return obj.toDataForJSON()
+        return super(ResourceJSONEncoder, self).default(obj)
 
 
 class HTTPResource:
@@ -58,7 +58,7 @@ class EntryResourceController:
     This is not a real resource yet--you can't really access it from the
     web. It's only used to compose collection resources.
     """
-    decorates(IEntryResourceController, context="context")
+    implements(IJSONPublishable)
 
     def __init__(self, context):
         """Associate this resource with a specific object."""
