@@ -54,10 +54,20 @@ is only available using FTP.
 The archive mirror does have sources list entries pointing to the
 FTP server.
 
-    >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'sources-list-entries'))
-    deb ftp://my.ftpmirror.com/pub/ hoary main
-    deb-src ftp://my.ftpmirror.com/pub/ hoary main
+    >>> sources_list_entries = find_tag_by_id(
+    ...     browser.contents, 'sources-list-entries')
+
+By default, sources-list-entries section is hidden until a user selects
+a distro series in the form.
+
+    >>> print sources_list_entries
+    <... id="sources-list-entries" style="... visibility: hidden;...
+
+And thus, the text doesn't have the distro series information.
+
+    >>> print extract_text(sources_list_entries)
+    deb ftp://my.ftpmirror.com/pub/ PUT_YOUR_DISTRO_SERIES_HERE main
+    deb-src ftp://my.ftpmirror.com/pub/ PUT_YOUR_DISTRO_SERIES_HERE main
 
 Finally, we create an archive mirror for Ubuntu distribution that uses
 HTTP server.
@@ -82,8 +92,8 @@ The archive mirror does have sources list entries.
 
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'sources-list-entries'))
-    deb http://my.mirror.com/pub/ hoary main
-    deb-src http://my.mirror.com/pub/ hoary main
+    deb http://my.mirror.com/pub/ PUT_YOUR_DISTRO_SERIES_HERE main
+    deb-src http://my.mirror.com/pub/ PUT_YOUR_DISTRO_SERIES_HERE main
 
 
 == Updating a Mirror ==

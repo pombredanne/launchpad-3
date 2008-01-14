@@ -8,7 +8,6 @@ from zope.app.form.interfaces import IInputWidget
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
 
@@ -35,21 +34,20 @@ class SourcesListEntriesView(LaunchpadView):
         self._hidden_by_default = hidden_by_default
 
     def initialize(self):
+        self.terms = []
         if self._hidden_by_default:
-            self.terms = [SimpleTerm(
-                None, 'none', 'Choose a Distribution series')]
-        else:
-            self.terms = []
-        for s in self.context.valid_series:
-            self.terms.append(SimpleTerm(s, s.name, s.title))
+            self.terms.append(SimpleTerm(
+                None, 'none', 'Choose a Distribution series'))
+        for series in self.context.valid_series:
+            self.terms.append(SimpleTerm(series, series.name, series.title))
         field = Choice(__name__='series', title=_("Distro Series"),
                        vocabulary=SimpleVocabulary(self.terms), required=True)
         setUpWidget(self, 'series',  field, IInputWidget)
         self.series_widget.extra = "onChange='updateSeries(this);'"
 
-    @cachedproperty
-    def default_visibility(self):
-        """The default visibility of the source.list entries."""
+    @property
+    def initial_visibility(self):
+        """The initial visibility of the source.list entries."""
         if self._hidden_by_default:
             return 'hidden'
         else:
@@ -69,13 +67,15 @@ class SourcesListEntriesView(LaunchpadView):
     def default_series_name(self):
         """Return the name of the default series.
 
-        If there are packages in this PPA, return the latest series in
-        which packages are published. If not, return the name of the
-        current series.
+        If sources.list entries should be hidden by default, returns a generic
+        text (PUT_YOUR_DISTRO_SERIES_HERE) to note that the user should edit
+        the text before it's useful. If it's shown and there are packages in
+        this PPA, return the latest series in which packages are published.
+        If not, return the name of the current series.
         """
         if len(self.terms) == 0:
             return self.context.distribution.currentseries.name
         elif self._hidden_by_default:
             # There is no distro series entries shown.
-            return None
+            return 'PUT_YOUR_DISTRO_SERIES_HERE'
         return self.terms[0].value.name

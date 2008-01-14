@@ -21,7 +21,7 @@
   </form>
 </div>
 
-<pre tal:attributes="style string:border: 1px solid gray;; padding: 0.3em;; visibility: ${view/default_visibility};;"
+<pre tal:attributes="style string:border: 1px solid gray;; padding: 0.3em;; visibility: ${view/initial_visibility};;"
      id="sources-list-entries">
 deb <a tal:attributes="href context/archive_url"
  tal:content="context/archive_url" /> <span id="series-deb"
