@@ -213,8 +213,12 @@ class IBug(IMessageTarget, ICanBeMentored):
         """Return a candidate subject for a followup message."""
 
     # subscription-related methods
-    def subscribe(person):
-        """Subscribe person to the bug. Returns an IBugSubscription."""
+    def subscribe(person, subscribed_by):
+        """Subscribe person to the bug.
+
+        Record the subscribed_by as the person who created the
+        subscription. Returns an IBugSubscription.
+        """
 
     def unsubscribe(person):
         """Remove this person's subscription to this bug."""
@@ -238,6 +242,9 @@ class IBug(IMessageTarget, ICanBeMentored):
         duplicate of this bug, otherwise False.
         """
 
+    def getDirectSubscriptions():
+        """A sequnce of IBugSubscriptions directly linked to this bug."""
+
     def getDirectSubscribers():
         """A list of IPersons that are directly subscribed to this bug.
 
@@ -257,6 +264,10 @@ class IBug(IMessageTarget, ICanBeMentored):
 
         This includes bug contacts and assignees, but not subscribers
         from duplicates.
+        """
+
+    def getSubscriptionsFromDuplicates():
+        """Return IBugSubscriptions subscribed from dupes of this bug.
         """
 
     def getSubscribersFromDuplicates():

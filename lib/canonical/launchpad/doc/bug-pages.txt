@@ -285,7 +285,7 @@ subscribed to it, 'Subscribe' is shown.
 
 If we subscribe Foo Bar, 'Unsubscribe' is shown.
 
-    >>> bug_one.subscribe(foo_bar)
+    >>> bug_one.subscribe(foo_bar, foo_bar)
     <BugSubscription at ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
@@ -300,7 +300,7 @@ still say 'Unsubscribe':
     >>> launchpad_team = getUtility(IPersonSet).getByName('launchpad')
     >>> foo_bar.inTeam(launchpad_team)
     True
-    >>> bug_one.subscribe(launchpad_team)
+    >>> bug_one.subscribe(launchpad_team, launchpad_team)
     <BugSubscription at ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
@@ -330,7 +330,7 @@ other team, it will say only 'Subscribe'.
     >>> foo_bar.inTeam(shipit_team)
     False
     >>> bug_one.unsubscribe(launchpad_team)
-    >>> bug_one.subscribe(shipit_team)
+    >>> bug_one.subscribe(shipit_team, shipit_team)
     <BugSubscription at ...>
 
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
@@ -395,7 +395,8 @@ we can't know if the user is subscribed or not.
     Bar can subscribe himself, or unsubscribe the Ubuntu Team, which got
     indirectly subscribed to bug #3 from the dupe, bug #2.
 
-        >>> bug_two.subscribe(getUtility(IPersonSet).getByName("ubuntu-team"))
+        >>> ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
+        >>> bug_two.subscribe(ubuntu_team, ubuntu_team)
         <BugSubscription...>
 
         >>> bug_two.duplicateof = bug_three

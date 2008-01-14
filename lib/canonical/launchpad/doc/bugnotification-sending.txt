@@ -694,7 +694,7 @@ notification will be sent to all members individually.
     ...     print member.preferredemail.email
     marilize@hbd.com
 
-    >>> bug_one.subscribe(shipit_admins)
+    >>> bug_one.subscribe(shipit_admins, shipit_admins)
     <...>
 
     >>> comment = getUtility(IMessageSet).fromText(
@@ -983,7 +983,7 @@ filled with data about that bug:
 
     >>> from canonical.launchpad.interfaces import IMilestoneSet
     >>> bug_three = getUtility(IBugSet).get(3)
-    >>> subscription = bug_three.subscribe(sample_person)
+    >>> subscription = bug_three.subscribe(sample_person, sample_person)
 
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a short comment.', sample_person,

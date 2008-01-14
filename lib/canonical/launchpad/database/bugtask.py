@@ -422,9 +422,9 @@ class BugTask(SQLBase, BugTaskMixin):
         """
         return self.status in RESOLVED_BUGTASK_STATUSES
 
-    def subscribe(self, person):
+    def subscribe(self, person, subscribed_by):
         """See `IBugTask`."""
-        return self.bug.subscribe(person)
+        return self.bug.subscribe(person, subscribed_by)
 
     def isSubscribed(self, person):
         """See `IBugTask`."""

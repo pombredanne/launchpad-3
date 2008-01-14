@@ -419,7 +419,7 @@ class FileBugViewBase(LaunchpadFormView):
                     # we'll just ignore it.
                     pass
                 else:
-                    bug.subscribe(person)
+                    bug.subscribe(person, self.user)
                     notifications.append(
                         '%s has been subscribed to this bug.' %
                         person.displayname)
@@ -452,7 +452,7 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(
                 "You are already subscribed to this bug.")
         else:
-            bug.subscribe(self.user)
+            bug.subscribe(self.user, self.user)
             self.request.response.addNotification(
                 "You have been subscribed to this bug.")
 

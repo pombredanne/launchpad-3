@@ -22,6 +22,13 @@ class BugSubscription(SQLBase):
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+    subscribed_by = ForeignKey(
+        dbName='subscribed_by', foreignKey='Person', notNull=True)
 
-
-
+    @property
+    def display_subscribed_by(self):
+        """See `IBugSubscription`."""
+        if self.person == self.subscribed_by:
+            return u'Subscribed themselves'
+        else:
+            return u'Subscribed by %s' % self.subscribed_by.displayname

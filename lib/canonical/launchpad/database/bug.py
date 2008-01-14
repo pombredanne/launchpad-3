@@ -298,14 +298,15 @@ class Bug(SQLBase):
         """See `IBug`."""
         return 'Re: '+ self.title
 
-    def subscribe(self, person):
+    def subscribe(self, person, subscribed_by):
         """See `IBug`."""
         # first look for an existing subscription
         for sub in self.subscriptions:
             if sub.person.id == person.id:
                 return sub
 
-        return BugSubscription(bug=self, person=person)
+        return BugSubscription(
+            bug=self, person=person, subscribed_by=subscribed_by)
 
     def unsubscribe(self, person):
         """See `IBug`."""
@@ -339,6 +340,13 @@ class Bug(SQLBase):
                 bug IN (SELECT id FROM Bug WHERE duplicateof = %d) AND
                 person = %d""" % (self.id, person.id)))
 
+    def getDirectSubscriptions(self):
+        """See `IBug`."""
+        return BugSubscription.select("""
+            Person.id = BugSubscription.person AND
+            BugSubscription.bug = %d""" % self.id,
+            orderBy="displayname", clauseTables=["Person"])
+
     def getDirectSubscribers(self, recipients=None):
         """See `IBug`.
 
@@ -371,6 +379,38 @@ class Bug(SQLBase):
 
         return sorted(
             indirect_subscribers, key=operator.attrgetter("displayname"))
+
+    def getSubscriptionsFromDuplicates(self, recipients=None):
+        """See `IBug`."""
+        if self.private:
+            return []
+        
+        dupe_subscriptions = set(
+            BugSubscription.select("""
+                BugSubscription.bug = Bug.id AND
+                Bug.duplicateof = %d""" % self.id,
+                clauseTables=["Bug"]))
+
+        dupe_subscriptions -= set(self.getDirectSubscriptions())
+        for also_notified_subscriber in self.getAlsoNotifiedSubscribers():
+            for dupe_subscription in dupe_subscriptions:
+                if also_notified_subscriber == dupe_subscription.person:
+                    dupe_subscriptions.remove(dupe_subscription)
+                    break
+
+        # Only add a subscriber once to the list
+        dupe_subscribers = set([sub.person for sub in dupe_subscriptions])
+        subscriptions = []
+        for dupe_subscriber in dupe_subscribers:
+            for dupe_subscription in dupe_subscriptions:
+                if dupe_subscription.person == dupe_subscriber:
+                    subscriptions.append(dupe_subscription)
+                    break
+
+        return sorted(
+            subscriptions,
+            cmp=lambda sub1, sub2: cmp(
+                sub1.person.displayname, sub2.person.displayname))
 
     def getSubscribersFromDuplicates(self, recipients=None):
         """See `IBug`.
@@ -939,7 +979,7 @@ class Bug(SQLBase):
                 # getIndirectSubscribers() behaves differently when
                 # the bug is private.
                 for person in self.getIndirectSubscribers():
-                    self.subscribe(person)
+                    self.subscribe(person, who)
 
             self.private = private
 
@@ -1127,7 +1167,7 @@ class BugSet:
             **extra_params)
 
         if params.subscribe_reporter:
-            bug.subscribe(params.owner)
+            bug.subscribe(params.owner, params.owner)
         if params.tags:
             bug.tags = params.tags
 
@@ -1140,9 +1180,9 @@ class BugSet:
                 context = params.distribution
 
             if context.security_contact:
-                bug.subscribe(context.security_contact)
+                bug.subscribe(context.security_contact, params.owner)
             else:
-                bug.subscribe(context.owner)
+                bug.subscribe(context.owner, params.owner)
         # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
         # non-security bugs, this test might be simplified to checking
         # params.private.
@@ -1151,16 +1191,16 @@ class BugSet:
             # because all their bugs are private by default
             # otherwise only subscribe the bug reporter by default.
             if params.product.bugcontact:
-                bug.subscribe(params.product.bugcontact)
+                bug.subscribe(params.product.bugcontact, params.owner)
             else:
-                bug.subscribe(params.product.owner)
+                bug.subscribe(params.product.owner, params.owner)
         else:
             # nothing to do
             pass
 
         # Subscribe other users.
         for subscriber in params.subscribers:
-            bug.subscribe(subscriber)
+            bug.subscribe(subscriber, params.owner)
 
         # Link the bug to the message.
         BugMessage(bug=bug, message=params.msg)

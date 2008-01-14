@@ -510,7 +510,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
     def _handleSubscribe(self):
         """Handle a subscribe request."""
-        self.context.bug.subscribe(self.user)
+        self.context.bug.subscribe(self.user, self.user)
         self.notices.append("You have been subscribed to this bug.")
 
     def _handleUnsubscribe(self, user):
@@ -1044,7 +1044,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         bugtask = context
 
         if self.request.form.get('subscribe', False):
-            bugtask.bug.subscribe(self.user)
+            bugtask.bug.subscribe(self.user, self.user)
             self.request.response.addNotification(
                 "You have been subscribed to this bug.")
 
@@ -2584,7 +2584,7 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
         # The question.owner was implicitly unsubscribed when the bug
         # was unlinked. We resubscribe the owner if he was subscribed.
         if owner_is_subscribed is True:
-            self.context.bug.subscribe(question.owner)
+            self.context.bug.subscribe(question.owner, self.user)
         self.request.response.addNotification(
             'Removed Question #%s: <a href="%s">%s<a>.'
             % (question.id, canonical_url(question),

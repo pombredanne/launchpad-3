@@ -516,7 +516,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     def linkBug(self, bug):
         """See `IBugLinkTarget`."""
         # Subscribe the question's owner to the bug.
-        bug.subscribe(self.owner)
+        bug.subscribe(self.owner, self.owner)
         return BugLinkTargetMixin.linkBug(self, bug)
 
     def unlinkBug(self, bug):

@@ -94,7 +94,8 @@ If Sample Person get subscribed to bug #2, he can see it in the list.
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> bug_two.subscribe(
-    ...     getUtility(IPersonSet).getByEmail('test@canonical.com'))
+    ...     getUtility(IPersonSet).getByEmail('test@canonical.com'),
+    ...     getUtility(IPersonSet).getByEmail('foo.bar@canonical.com'))
     <BugSubscription...>
     >>> login('test@canonical.com')
     >>> bugs_view = MaloneView(None, LaunchpadTestRequest())
