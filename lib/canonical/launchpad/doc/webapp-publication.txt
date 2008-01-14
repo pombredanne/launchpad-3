@@ -708,6 +708,101 @@ views), the pageid will be empty.
     u'Result'
     >>> request._orig_env['launchpad.pageid']
     ''
+    >>> publication.afterCall(request, callable_publication)
+
+
+== Tick counts ==
+
+Similarly to our page IDs, our publication implementation will store the
+tick counts for the traversal and object publication processes in WSGI
+variables which aren't set originally.
+
+    >>> request, publication = get_request_and_publication()
+    >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
+    >>> request._orig_env.has_key('launchpad.traversalticks')
+    False
+    >>> request._orig_env.has_key('launchpad.publicationticks')
+    False
+
+We start counting the ticks during the beforeTraversal() and
+callObject() hooks.
+
+    >>> logout()
+    >>> publication.beforeTraversal(request)
+    >>> request._orig_env['launchpad._traversalticks_start']
+    30...
+    >>> request._orig_env.has_key('launchpad._publicationticks_start')
+    False
+
+    >>> dummy = publication.callObject(request, TestView(TestContext(), request))
+    >>> request._orig_env['launchpad._publicationticks_start']
+    30...
+
+When we finish the traversal and the publication, we calculate the
+number of ticks and store them in the launchpad.traversalticks and
+launchpad.publicationticks variables.
+
+    # XXX: How can I reliably test the number of ticks?  Maybe I should
+    # just check that the key is present in _orig_env?
+    >>> publication.afterTraversal(request, None)
+    >>> request._orig_env['launchpad.traversalticks']
+    81
+    >>> publication.afterCall(request, None)
+    >>> request._orig_env['launchpad.publicationticks']
+    11
+    >>> publication.endRequest(request, None)
+
+If an exception is raised during traversal or object publication, we'll
+store the ticks up to the point in which the exception is raised.  This
+is done inside the handleException() hook.
+
+If the excpetion is raised before we even start the traversal, then
+there's nothing to store.
+
+    >>> request, publication = get_request_and_publication()
+    >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
+    >>> import sys
+    >>> try:
+    ...     raise Exception()
+    ... except:
+    ...     exc_info = sys.exc_info()
+    >>> publication.handleException(
+    ...     None, request, exc_info, retry_allowed=False)
+    >>> request._orig_env.has_key('launchpad.traversalticks')
+    False
+    >>> request._orig_env.has_key('launchpad.publicationticks')
+    False
+
+If we started the traversal, but haven't finished it, we'll only have
+the ticks for the traversal and not for the publication.
+
+    >>> publication.beforeTraversal(request)
+
+    # XXX: Why do we get a ERROR on this call to handleException()?
+    >>> publication.handleException(
+    ...     None, request, exc_info, retry_allowed=False)
+    ERROR:SiteError:http://localhost
+    ...
+    >>> request._orig_env['launchpad.traversalticks']
+    17
+    >>> request._orig_env.has_key('launchpad.publicationticks')
+    False
+
+Finally, if we started the publication (which means the traversal has
+been completed), we'll have the ticks for the traversal and the ticks
+for the publication, up to the point where it was forcefully stopped.
+
+    >>> publication.afterTraversal(request, None)
+    >>> dummy = publication.callObject(
+    ...     request, TestView(TestContext(), request))
+    >>> publication.handleException(
+    ...     None, request, exc_info, retry_allowed=False)
+    ERROR:SiteError:http://localhost
+    ...
+    >>> request._orig_env['launchpad.traversalticks']
+    277
+    >>> request._orig_env['launchpad.publicationticks']
+    2
 
 
 == Transaction Logging ==
@@ -724,12 +819,18 @@ The user attribute is an empty string, when no user is logged in.
     >>> request, publication = get_request_and_publication()
     >>> print request.principal
     None
+
+    # Our afterCall() implementation expects to find a
+    # launchpad._publicationticks_start in its _orig_env, which is set
+    # by callObject(). Since we don't want to callObject() here, we'll
+    # have to change _orig_env manually.
+    >>> request._orig_env['launchpad._publicationticks_start'] = 1345
     >>> publication.afterCall(request, None)
     >>> txn.user
     ''
 
 But if there is a logged in user, the transaction user attribute will
-contains its ID (as well as an empty '/' path, which is a Zope artefact
+contain its ID (as well as an empty '/' path, which is a Zope artefact
 allowing different authentication based on the traversed objects):
 
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -767,6 +868,12 @@ reverted in a GET request.
     >>> syncUpdate(foo_bar)
 
     >>> request, publication = get_request_and_publication(method='GET')
+
+    # Our afterCall() implementation expects to find a
+    # launchpad._publicationticks_start in its _orig_env, which is set
+    # by callObject(). Since we don't want to callObject() here, we'll
+    # have to change _orig_env manually.
+    >>> request._orig_env['launchpad._publicationticks_start'] = 1345
     >>> publication.afterCall(request, None)
     >>> publication.clearSQLOSCache()
     >>> txn = transaction.begin()
@@ -780,6 +887,12 @@ But not if the request uses POST, the changes will be preserved.
     >>> syncUpdate(foo_bar)
 
     >>> request, publication = get_request_and_publication(method='POST')
+
+    # Our afterCall() implementation expects to find a
+    # launchpad._publicationticks_start in its _orig_env, which is set
+    # by callObject(). Since we don't want to callObject() here, we'll
+    # have to change _orig_env manually.
+    >>> request._orig_env['launchpad._publicationticks_start'] = 1345
     >>> publication.afterCall(request, None)
     >>> publication.clearSQLOSCache()
     >>> txn = transaction.begin()
@@ -798,6 +911,12 @@ afterCall() publication hook.)
     >>> request, publication = get_request_and_publication(method='HEAD')
     >>> response = request.response
     >>> response.setResult('Content that will disappear.')
+
+    # Our afterCall() implementation expects to find a
+    # launchpad._publicationticks_start in its _orig_env, which is set
+    # by callObject(). Since we don't want to callObject() here, we'll
+    # have to change _orig_env manually.
+    >>> request._orig_env['launchpad._publicationticks_start'] = 1345
     >>> publication.afterCall(request, None)
     >>> request.response.consumeBody()
     ''
@@ -808,6 +927,12 @@ In other cases, like a GET, the body would be unchanged.
     >>> request, publication = get_request_and_publication(method='GET')
     >>> response = request.response
     >>> response.setResult('Some boring content.')
+
+    # Our afterCall() implementation expects to find a
+    # launchpad._publicationticks_start in its _orig_env, which is set
+    # by callObject(). Since we don't want to callObject() here, we'll
+    # have to change _orig_env manually.
+    >>> request._orig_env['launchpad._publicationticks_start'] = 1345
     >>> publication.afterCall(request, None)
     >>> print request.response.consumeBody()
     Some boring content.

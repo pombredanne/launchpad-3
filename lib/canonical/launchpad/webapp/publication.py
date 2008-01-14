@@ -2,11 +2,11 @@
 
 __metaclass__ = type
 
-from zope.publisher.publish import mapply
-
 import thread
 import traceback
 import urllib
+
+import tickcount
 
 import sqlos.connection
 from sqlos.interfaces import IConnectionName
@@ -22,6 +22,7 @@ from zope.interface import implements, providedBy
 
 from zope.publisher.interfaces import IPublishTraverse, Retry
 from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
+from zope.publisher.publish import mapply
 
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -135,6 +136,8 @@ class LaunchpadBrowserPublication(
         #t.join(con._dm)
 
     def beforeTraversal(self, request):
+        request.setInWSGIEnvironment(
+            'launchpad._traversalticks_start', tickcount.tickcount())
         threadid = thread.get_ident()
         threadrequestfile = open('thread-%s.request' % threadid, 'w')
         try:
@@ -295,6 +298,8 @@ class LaunchpadBrowserPublication(
         It also sets the launchpad.userid and launchpad.pageid WSGI
         environment variables.
         """
+        request.setInWSGIEnvironment(
+            'launchpad._publicationticks_start', tickcount.tickcount())
         if request.response.getStatus() in [301, 302, 303, 307]:
             return ''
 
@@ -329,7 +334,14 @@ class LaunchpadBrowserPublication(
         Because of this we cannot chain to the superclass and implement
         the whole behaviour here.
         """
-
+        orig_env = request._orig_env
+        assert orig_env.has_key('launchpad._publicationticks_start'), (
+            'launchpad._publicationticks_start, which should have been set by '
+            'callObject(), was not found.')
+        ticks = tickcount.difference(
+            orig_env['launchpad._publicationticks_start'],
+            tickcount.tickcount())
+        request.setInWSGIEnvironment('launchpad.publicationticks', ticks)
         # Annotate the transaction with user data. That was done by
         # zope.app.publication.zopepublication.ZopePublication.
         txn = transaction.get()
@@ -354,6 +366,13 @@ class LaunchpadBrowserPublication(
     def afterTraversal(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
         zopepublication but we do want to send an AfterTraverseEvent """
+        assert request._orig_env.has_key('launchpad._traversalticks_start'), (
+            'launchpad._traversalticks_start, which should have been set by '
+            'beforeTraversal(), was not found.')
+        ticks = tickcount.difference(
+            request._orig_env['launchpad._traversalticks_start'],
+            tickcount.tickcount())
+        request.setInWSGIEnvironment('launchpad.traversalticks', ticks)
         notify(AfterTraverseEvent(ob, request))
 
         # Debugging code. Please leave. -- StuartBishop 20050622
@@ -380,6 +399,28 @@ class LaunchpadBrowserPublication(
         raise NotImplementedError
 
     def handleException(self, object, request, exc_info, retry_allowed=True):
+        orig_env = request._orig_env
+        ticks = tickcount.tickcount()
+        if (orig_env.has_key('launchpad._publicationticks_start') and
+            not orig_env.has_key('launchpad.publicationticks')):
+            # The traversal process has been started but haven't completed.
+            assert orig_env.has_key('launchpad.traversalticks'), (
+                'We reached the publication process so we must have finished '
+                'the traversal.')
+            ticks = tickcount.difference(
+                orig_env['launchpad._publicationticks_start'], ticks)
+            request.setInWSGIEnvironment('launchpad.publicationticks', ticks)
+        elif (orig_env.has_key('launchpad._traversalticks_start') and
+              not orig_env.has_key('launchpad.traversalticks')):
+            # The traversal process has been started but haven't completed.
+            ticks = tickcount.difference(
+                orig_env['launchpad._traversalticks_start'], ticks)
+            request.setInWSGIEnvironment('launchpad.traversalticks', ticks)
+        else:
+            # The exception wasn't raised in the middle of the traversal nor
+            # the publication, so there's nothing we need to do here.
+            pass
+
         # Reraise Retry exceptions rather than log.
         # XXX stub 20070317: Remove this when the standard
         # handleException method we call does this (bug to be fixed upstream)
