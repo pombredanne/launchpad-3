@@ -25,7 +25,7 @@ class IBugSubscription(Interface):
         )
     bug = Int(title=_('Bug Number'), required=True, readonly=True)
     subscribed_by = Choice(
-        title=_('Subscribed cy'), required=True,
+        title=_('Subscribed by'), required=True,
         vocabulary='ValidPersonOrTeam', readonly=True,
         description=_("The person who created this subscription.")
         )

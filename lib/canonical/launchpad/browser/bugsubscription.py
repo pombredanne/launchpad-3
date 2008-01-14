@@ -8,7 +8,7 @@ __all__ = ['BugSubscriptionAddView']
 from zope.component import getUtility
 
 from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.interfaces import IBug, ILaunchBag
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 
 class BugSubscriptionAddView(SQLObjectAddView):

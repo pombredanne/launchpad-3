@@ -18,7 +18,7 @@ class BugSubscription(SQLBase):
 
     implements(IBugSubscription)
 
-    _table='BugSubscription'
+    _table = 'BugSubscription'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)

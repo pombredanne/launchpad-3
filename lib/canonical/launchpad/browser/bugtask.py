@@ -89,8 +89,7 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
-    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
-    PersonLatestBugsFeedLink)
+    BugTargetLatestBugsFeedLink, FeedsMixin, PersonLatestBugsFeedLink)
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 

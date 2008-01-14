@@ -35,7 +35,7 @@
                         isSubscribed messages getBugNotificationRecipients
                         hasBranch security_related tags getMessageChunks
                         isSubscribedToDupes getSubscribersFromDuplicates
-			getSubscriptionsFromDuplicates
+                        getSubscriptionsFromDuplicates
                         getAlsoNotifiedSubscribers getBugWatch getBugTask
                         canBeNominatedFor getNominationFor getNominations
                         date_last_message number_of_duplicates

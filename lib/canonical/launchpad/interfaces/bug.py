@@ -214,10 +214,11 @@ class IBug(IMessageTarget, ICanBeMentored):
 
     # subscription-related methods
     def subscribe(person, subscribed_by):
-        """Subscribe person to the bug.
+        """Subscribe `person` to the bug.
 
-        Record the subscribed_by as the person who created the
-        subscription. Returns an IBugSubscription.
+        :param person: the subscriber.
+        :param subscribed_by: the person who created the subscription.
+        :return: an `IBugSubscription`.
         """
 
     def unsubscribe(person):
@@ -243,7 +244,7 @@ class IBug(IMessageTarget, ICanBeMentored):
         """
 
     def getDirectSubscriptions():
-        """A sequnce of IBugSubscriptions directly linked to this bug."""
+        """A sequence of IBugSubscriptions directly linked to this bug."""
 
     def getDirectSubscribers():
         """A list of IPersons that are directly subscribed to this bug.
@@ -267,12 +268,10 @@ class IBug(IMessageTarget, ICanBeMentored):
         """
 
     def getSubscriptionsFromDuplicates():
-        """Return IBugSubscriptions subscribed from dupes of this bug.
-        """
+        """Return IBugSubscriptions subscribed from dupes of this bug."""
 
     def getSubscribersFromDuplicates():
-        """Return IPersons subscribed from dupes of this bug.
-        """
+        """Return IPersons subscribed from dupes of this bug."""
 
     def getBugNotificationRecipients(duplicateof=None):
         """Return a complete INotificationRecipientSet instance.

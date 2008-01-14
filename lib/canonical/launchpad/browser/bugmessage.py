@@ -9,9 +9,6 @@ __all__ = [
 
 from StringIO import StringIO
 
-from zope.formlib import form
-from zope.schema import ValidationError
-
 from canonical.launchpad.interfaces import IBugMessageAddForm
 from canonical.launchpad.webapp import action, canonical_url
 from canonical.launchpad.webapp import LaunchpadFormView

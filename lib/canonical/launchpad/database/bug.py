@@ -385,32 +385,37 @@ class Bug(SQLBase):
         if self.private:
             return []
         
-        dupe_subscriptions = set(
+        duplicate_subscriptions = set(
             BugSubscription.select("""
                 BugSubscription.bug = Bug.id AND
                 Bug.duplicateof = %d""" % self.id,
                 clauseTables=["Bug"]))
 
-        dupe_subscriptions -= set(self.getDirectSubscriptions())
+        # Direct and "also notified" subscribers take precedence
+        # over subscribers from duplicates.
+        duplicate_subscriptions -= set(self.getDirectSubscriptions())
+        also_notified_subscriptions = set()
         for also_notified_subscriber in self.getAlsoNotifiedSubscribers():
-            for dupe_subscription in dupe_subscriptions:
-                if also_notified_subscriber == dupe_subscription.person:
-                    dupe_subscriptions.remove(dupe_subscription)
+            for duplicate_subscription in duplicate_subscriptions:
+                if also_notified_subscriber == duplicate_subscription.person:
+                    also_notified_subscriptions.add(duplicate_subscription)
                     break
+        duplicate_subscriptions -= also_notified_subscriptions
 
-        # Only add a subscriber once to the list
-        dupe_subscribers = set([sub.person for sub in dupe_subscriptions])
+        # Only add a subscriber once to the list.
+        duplicate_subscribers = set(
+            sub.person for sub in duplicate_subscriptions)
         subscriptions = []
-        for dupe_subscriber in dupe_subscribers:
-            for dupe_subscription in dupe_subscriptions:
-                if dupe_subscription.person == dupe_subscriber:
-                    subscriptions.append(dupe_subscription)
+        for duplicate_subscriber in duplicate_subscribers:
+            for duplicate_subscription in duplicate_subscriptions:
+                if duplicate_subscription.person == duplicate_subscriber:
+                    subscriptions.append(duplicate_subscription)
                     break
 
-        return sorted(
-            subscriptions,
-            cmp=lambda sub1, sub2: cmp(
-                sub1.person.displayname, sub2.person.displayname))
+        def get_person_displayname(subscription):
+            return subscription.person.displayname
+
+        return sorted(subscriptions, key=get_person_displayname)
 
     def getSubscribersFromDuplicates(self, recipients=None):
         """See `IBug`.
