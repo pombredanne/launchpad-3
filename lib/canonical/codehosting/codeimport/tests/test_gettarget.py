@@ -1,6 +1,6 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Test cases for canonical.launchpad.scripts.importd.gettarget."""
+"""Test cases for canonical.codehosting.codeimport.gettarget."""
 
 __metaclass__ = type
 
@@ -22,9 +22,9 @@ from zope.component import getUtility
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
-from canonical.launchpad.scripts.importd.gettarget import ImportdTargetGetter
-from canonical.launchpad.scripts.importd.publish import ImportdPublisher
-from canonical.launchpad.scripts.importd.tests.helpers import (
+from canonical.codehosting.codeimport.gettarget import ImportdTargetGetter
+from canonical.codehosting.codeimport.publish import ImportdPublisher
+from canonical.codehosting.codeimport.tests.helpers import (
     ImportdTestCase)
 
 

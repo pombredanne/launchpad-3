@@ -1,7 +1,7 @@
 = Atom Feeds =
 
 Atom feeds produce XML not HTML.  Therefore we must parse the output as XML
-using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
+using BeautifulStoneSoup instead of BSS or the helper functions.
 
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
     >>> from BeautifulSoup import SoupStrainer
@@ -37,8 +37,8 @@ the bugs page for the product, while the alternate link for entries
 point to the bugs themselves.
 
     >>> browser.open('http://feeds.launchpad.dev/jokosher/latest-bugs.atom')
-    >>> browser.title
-    'Bugs in Jokosher'
+    >>> BSS(browser.contents).title.contents
+    [u'Bugs in Jokosher']
     >>> browser.url
     'http://feeds.launchpad.dev/jokosher/latest-bugs.atom'
 
@@ -80,6 +80,10 @@ point to the bugs themselves.
     >>> print extract_text(entry.id)
     tag:launchpad.net,2007-03-15:/+bug/11
 
+The Atom feed must have the content-type of "application/atom+xml".
+
+    >>> browser.headers['content-type']
+    'application/atom+xml;charset=utf-8'
 
 == Latest bugs for a project ==
 
@@ -87,8 +91,8 @@ This feed gets the latest bugs for a project, and has the same type of content
 as the latest bugs feed for a product.
 
     >>> browser.open('http://feeds.launchpad.dev/mozilla/latest-bugs.atom')
-    >>> browser.title
-    'Bugs in the Mozilla Project'
+    >>> BSS(browser.contents).title.contents
+    [u'Bugs in the Mozilla Project']
     >>> browser.url
     'http://feeds.launchpad.dev/mozilla/latest-bugs.atom'
 
@@ -129,8 +133,8 @@ This feed gets the latest bugs for a distribution, and has the same type
 of content as the latest bugs feed for a product.
 
     >>> browser.open('http://feeds.launchpad.dev/ubuntu/latest-bugs.atom')
-    >>> browser.title
-    'Bugs in Ubuntu'
+    >>> BSS(browser.contents).title.contents
+    [u'Bugs in Ubuntu']
     >>> browser.url
     'http://feeds.launchpad.dev/ubuntu/latest-bugs.atom'
 
@@ -157,8 +161,8 @@ type of content as the latest bugs feed for a product.
     >>> browser.open(
     ...     'http://feeds.launchpad.dev/ubuntu/+source/thunderbird'
     ...     '/latest-bugs.atom')
-    >>> browser.title
-    'Bugs in thunderbird in ubuntu'
+    >>> BSS(browser.contents).title.contents
+    [u'Bugs in thunderbird in ubuntu']
     >>> browser.url
     'http://feeds.launchpad.dev/ubuntu/+source/thunderbird/latest-bugs.atom'
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
@@ -183,8 +187,8 @@ type of content as the latest bugs feed for a product.
 
     >>> browser.open(
     ...     'http://feeds.launchpad.dev/ubuntu/hoary/latest-bugs.atom')
-    >>> browser.title
-    'Bugs in Hoary'
+    >>> BSS(browser.contents).title.contents
+    [u'Bugs in Hoary']
     >>> browser.url
     'http://feeds.launchpad.dev/ubuntu/hoary/latest-bugs.atom'
 
@@ -211,8 +215,8 @@ type of content as the latest bugs feed for a product.
 
     >>> browser.open(
     ...     'http://feeds.launchpad.dev/firefox/1.0/latest-bugs.atom')
-    >>> browser.title
-    'Bugs in 1.0'
+    >>> BSS(browser.contents).title.contents
+    [u'Bugs in 1.0']
     >>> browser.url
     'http://feeds.launchpad.dev/firefox/1.0/latest-bugs.atom'
 
@@ -237,8 +241,8 @@ type of content as the latest bugs feed for a product.
 This feed gets the latest bugs for a person.
 
     >>> browser.open('http://feeds.launchpad.dev/~name16/latest-bugs.atom')
-    >>> browser.title
-    'Bugs for Foo Bar'
+    >>> BSS(browser.contents).title.contents
+    [u'Bugs for Foo Bar']
     >>> browser.url
     'http://feeds.launchpad.dev/~name16/latest-bugs.atom'
 
@@ -301,8 +305,8 @@ some results.
 
     >>> browser.open(
     ...    'http://feeds.launchpad.dev/~simple-team/latest-bugs.atom')
-    >>> browser.title
-    'Bugs for Simple Team'
+    >>> BSS(browser.contents).title.contents
+    [u'Bugs for Simple Team']
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> print extract_text(soup.find('id'))
@@ -341,8 +345,8 @@ to True.
     >>> config.launchpad.is_bug_search_feed_active = True
     >>> browser.open(url)
     >>> config.launchpad.is_bug_search_feed_active = False
-    >>> browser.title
-    'Bugs from custom search'
+    >>> BSS(browser.contents).title.contents
+    [u'Bugs from custom search']
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> feed_id = extract_text(soup.find('id'))
@@ -378,8 +382,8 @@ to True.
 This feed shows the status of a single bug.
 
     >>> browser.open('http://feeds.launchpad.dev/bugs/1/bug.atom')
-    >>> browser.title
-    'Bug 1'
+    >>> BSS(browser.contents).title.contents
+    [u'Bug 1']
     >>> entries = parse_entries(browser.contents)
     >>> print len(entries)
     1
