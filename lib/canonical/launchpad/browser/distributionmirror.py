@@ -91,7 +91,7 @@ class DistributionMirrorView(LaunchpadView):
             if series not in valid_series:
                 valid_series.append(series)
         entries = SourcesListEntries(self.context.distribution,
-                                     self.context.http_base_url,
+                                     self.context.base_url,
                                      valid_series)
         self.sources_list_entries = SourcesListEntriesView(entries,
                                                            self.request)

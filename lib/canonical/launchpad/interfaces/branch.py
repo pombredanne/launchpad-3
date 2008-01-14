@@ -347,7 +347,7 @@ class IBranch(IHasOwner):
 
     private = Bool(
         title=_("Keep branch confidential"), required=False,
-        description=_("Make this branch visible only to its subscribers"),
+        description=_("Make this branch visible only to its subscribers."),
         default=False)
 
     # People attributes
@@ -794,7 +794,7 @@ class IBranchSet(Interface):
 
     def getBranchesForPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
+        visible_by_user=None, sort_by=None, hide_dormant=False):
         """Branches associated with person with appropriate lifecycle.
 
         XXX: thumper 2007-03-23:
@@ -825,11 +825,16 @@ class IBranchSet(Interface):
         :param sort_by: What to sort the returned branches by.
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
+        :param hide_dormant: A flag to indicate whether or not to show
+            dormant branches.  A branch is dormant if it has not had any
+            activity for a significant period of time.  The dormant time
+            frame is specified in `config.launchpad.branch_dormant_days`.
+        :type hide_dormant: Boolean.
         """
 
     def getBranchesAuthoredByPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
+        visible_by_user=None, sort_by=None, hide_dormant=False):
         """Branches authored by person with appropriate lifecycle.
 
         Only branches that are authored by the person are returned.
@@ -848,11 +853,16 @@ class IBranchSet(Interface):
         :param sort_by: What to sort the returned branches by.
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
+        :param hide_dormant: A flag to indicate whether or not to show
+            dormant branches.  A branch is dormant if it has not had any
+            activity for a significant period of time.  The dormant time
+            frame is specified in `config.launchpad.branch_dormant_days`.
+        :type hide_dormant: Boolean.
         """
 
     def getBranchesRegisteredByPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
+        visible_by_user=None, sort_by=None, hide_dormant=False):
         """Branches registered by person with appropriate lifecycle.
 
         Only branches registered by the person but *NOT* authored by
@@ -872,11 +882,16 @@ class IBranchSet(Interface):
         :param sort_by: What to sort the returned branches by.
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
+        :param hide_dormant: A flag to indicate whether or not to show
+            dormant branches.  A branch is dormant if it has not had any
+            activity for a significant period of time.  The dormant time
+            frame is specified in `config.launchpad.branch_dormant_days`.
+        :type hide_dormant: Boolean.
         """
 
     def getBranchesSubscribedByPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
+        visible_by_user=None, sort_by=None, hide_dormant=False):
         """Branches subscribed by person with appropriate lifecycle.
 
         All branches where the person has subscribed to the branch
@@ -896,11 +911,16 @@ class IBranchSet(Interface):
         :param sort_by: What to sort the returned branches by.
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
+        :param hide_dormant: A flag to indicate whether or not to show
+            dormant branches.  A branch is dormant if it has not had any
+            activity for a significant period of time.  The dormant time
+            frame is specified in `config.launchpad.branch_dormant_days`.
+        :type hide_dormant: Boolean.
         """
 
     def getBranchesForProduct(
         product, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
+        visible_by_user=None, sort_by=None, hide_dormant=False):
         """Branches associated with product with appropriate lifecycle.
 
         If lifecycle_statuses evaluates to False then branches
@@ -917,11 +937,16 @@ class IBranchSet(Interface):
         :param sort_by: What to sort the returned branches by.
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
+        :param hide_dormant: A flag to indicate whether or not to show
+            dormant branches.  A branch is dormant if it has not had any
+            activity for a significant period of time.  The dormant time
+            frame is specified in `config.launchpad.branch_dormant_days`.
+        :type hide_dormant: Boolean.
         """
 
     def getBranchesForProject(
         project, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
+        visible_by_user=None, sort_by=None, hide_dormant=False):
         """Branches associated with project with appropriate lifecycle.
 
         If lifecycle_statuses evaluates to False then branches
@@ -938,6 +963,11 @@ class IBranchSet(Interface):
         :param sort_by: What to sort the returned branches by.
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
+        :param hide_dormant: A flag to indicate whether or not to show
+            dormant branches.  A branch is dormant if it has not had any
+            activity for a significant period of time.  The dormant time
+            frame is specified in `config.launchpad.branch_dormant_days`.
+        :type hide_dormanty Boolean.
         """
 
     def getHostedBranchesForPerson(person):
@@ -950,6 +980,20 @@ class IBranchSet(Interface):
         merged or abandoned don't appear in the results -- only branches that
         match `DEFAULT_BRANCH_STATUS_IN_LISTING`.
 
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
+        """
+
+    def getBranchesWithRecentRevisionsForProduct(product, quantity,
+                                                 visible_by_user=None):
+        """Return the product's branches that have the most recent revisions.
+
+        :param quantity: At most `quantity` branches are returned.
+        :type quantity: int
         :param visible_by_user: If a person is not supplied, only public
             branches are returned.  If a person is supplied both public
             branches, and the private branches that the person is entitled to
@@ -1003,13 +1047,13 @@ class BranchLifecycleStatusFilter(EnumeratedType):
         'MERGED', 'ABANDONED')
 
     CURRENT = Item("""
-        New, Experimental, Development or Mature
+        Any active status
 
         Show the currently active branches.
         """)
 
     ALL = Item("""
-        Any Status
+        Any status
 
         Show all the branches.
         """)
@@ -1098,3 +1142,6 @@ class IBranchListingFilter(Interface):
         title=_('ordered by'), vocabulary=BranchListingSort,
         default=BranchListingSort.LIFECYCLE)
 
+    hide_dormant = Bool(
+        title=_("Hide dormant branches"),
+        description=_("Hide dormant branches"))

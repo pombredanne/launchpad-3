@@ -161,8 +161,6 @@ td.error {
 
 form {border: 0; margin: 0; padding: 0;}
 input[type="text"], input[type="password"], textarea {
-  background-color: #fff;
-  color: #656565;
   font-family: sans-serif;
   margin: 0;
 }
@@ -183,6 +181,9 @@ table.listing div.actions {
   display: block; margin-top: 1em;
 }
 textarea {width: 100%;}
+* html textarea {width: 95%;}
+/* XXX 20080110 mpt: We make textareas slightly narrower in IE to avoid the
+right side being clipped (bug 156202). This should be rechecked post-2.0. */
 table.form {width: 100%;}
 /* XXX: this is just to make tables look more consistent when used in a
  * summary pagelet; the concrete use case is in

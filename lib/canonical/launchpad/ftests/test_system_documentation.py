@@ -693,6 +693,11 @@ special = {
             '../doc/soyuz-set-of-uploads.txt',
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags
             ),
+    'publishing.txt': LayeredDocFileSuite(
+            '../doc/publishing.txt',
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
+            ),
+
     }
 
 
