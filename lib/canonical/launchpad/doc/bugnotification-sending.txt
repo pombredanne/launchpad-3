@@ -1020,6 +1020,19 @@ receive include the bug description. This helps in those cases where the
 user doesn't save bug notifications, which can make subsequent
 notifications seem somewhat obscure.
 
+We'll expire all existing notifications since we're not interested in
+them:
+
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    1
+
+    >>> for notification in notifications:
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    ...     flush_database_updates()
+
+
 To demonstrate this, we'll subscribe David Allouche, who receives verbose
 bug notifications, to bug 15.
 
@@ -1030,24 +1043,6 @@ bug notifications, to bug 15.
 
     >>> bug_15.subscribe(ddaa)
     <...>
-
-The subscription will produce a notification, which we'll expire because
-we're not interested in it.
-
-    >>> notifications = getUtility(
-    ...     IBugNotificationSet).getNotificationsToSend()
-    >>> len(notifications)
-    1
-
-    >>> from canonical.launchpad.scripts.bugnotification import (
-    ...     get_email_notifications)
-    >>> for bug_notifications, messages in get_email_notifications(
-    ...     notifications):
-    ...     for message in messages:
-    ...         print_notification(message)
-
-    >>> notifications[0].date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
 
 If we then add a comment to the bug, ddaa will receieve a notification
 containing that comment.
@@ -1064,6 +1059,8 @@ containing that comment.
 
 If we pass this notifcation to get_email_notifications we can see that
 ddaa will receieve a notification which contains the bug description.
+All other subscribers will receive standard notifications that don't
+include the bug description.
 
     >>> from canonical.launchpad.scripts.bugnotification import (
     ...     get_email_notifications)
@@ -1071,3 +1068,63 @@ ddaa will receieve a notification which contains the bug description.
     ...     notifications):
     ...     for message in messages:
     ...         print_notification(message)
+    To: david.allouche@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 15] subject
+    X-Launchpad-Message-Rationale: Subscriber
+    <BLANKLINE>
+    a really simple comment.
+    <BLANKLINE>
+    -- 
+    Nonsensical bugs are useless
+    http://bugs.launchpad.dev/bugs/15
+    You received this bug notification because you are a direct subscriber
+    of the bug.
+    <BLANKLINE>
+    Bug description:
+    Like this one, natch.
+    <BLANKLINE>
+    ---------------------------------------------------------------------- 
+    To: foo.bar@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 15] subject
+    X-Launchpad-Message-Rationale: Subscriber
+    <BLANKLINE>
+    a really simple comment.
+    <BLANKLINE>
+    -- 
+    Nonsensical bugs are useless
+    http://bugs.launchpad.dev/bugs/15
+    You received this bug notification because you are a direct subscriber
+    of the bug.
+    <BLANKLINE>
+    ---------------------------------------------------------------------- 
+    To: guilherme.salgado@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 15] subject
+    X-Launchpad-Message-Rationale: Bug Contact (Redfish) @landscape-developers
+    <BLANKLINE>
+    a really simple comment.
+    <BLANKLINE>
+    -- 
+    Nonsensical bugs are useless
+    http://bugs.launchpad.dev/bugs/15
+    You received this bug notification because you are a member of Landscape
+    Developers, which is the bug contact for Redfish.
+    <BLANKLINE>
+    ---------------------------------------------------------------------- 
+    To: test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 15] subject
+    X-Launchpad-Message-Rationale: Registrant (Mozilla Thunderbird)
+    <BLANKLINE>
+    a really simple comment.
+    <BLANKLINE>
+    -- 
+    Nonsensical bugs are useless
+    http://bugs.launchpad.dev/bugs/15
+    You received this bug notification because you are the registrant for
+    Mozilla Thunderbird.
+    <BLANKLINE>
+    ---------------------------------------------------------------------- 
+
