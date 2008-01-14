@@ -156,7 +156,7 @@ and estimated size).
     >>> results = find_tag_by_id(browser.contents, 'package_counters')
     >>> text = extract_text(results)
     >>> print text
-    4 source packages
+    3 source packages
     (9.5 MiB)
     3 binary packages
     (3 bytes)

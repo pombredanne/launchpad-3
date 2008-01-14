@@ -48,6 +48,9 @@ class BinaryPackageRelease(SQLBase):
     conflicts = StringCol(dbName='conflicts')
     replaces = StringCol(dbName='replaces')
     provides = StringCol(dbName='provides')
+    pre_depends = StringCol(dbName='pre_depends')
+    enhances = StringCol(dbName='enhances')
+    breaks = StringCol(dbName='breaks')
     essential = BoolCol(dbName='essential', default=False)
     installedsize = IntCol(dbName='installedsize')
     architecturespecific = BoolCol(dbName='architecturespecific',

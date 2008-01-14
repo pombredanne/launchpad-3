@@ -24,7 +24,7 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchive, IArchiveSet, IHasOwner, IHasBuildRecords,
-    IBuildSet, ILaunchpadCelebrities)
+    IBuildSet, ILaunchpadCelebrities, PackagePublishingStatus)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -46,7 +46,7 @@ class Archive(SQLBase):
     enabled = BoolCol(dbName='enabled', notNull=False, default=True)
 
     authorized_size = IntCol(
-        dbName='authorized_size', notNull=False, default=1073741824)
+        dbName='authorized_size', notNull=False, default=1024)
 
     whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
 
@@ -196,7 +196,8 @@ class Archive(SQLBase):
     @property
     def number_of_sources(self):
         """See `IArchive`."""
-        return self.getPublishedSources().count()
+        return self.getPublishedSources(
+            status=PackagePublishingStatus.PUBLISHED).count()
 
     @property
     def sources_size(self):
@@ -349,7 +350,8 @@ class Archive(SQLBase):
     @property
     def number_of_binaries(self):
         """See `IArchive`."""
-        return self.getPublishedOnDiskBinaries().count()
+        return self.getPublishedOnDiskBinaries(
+            status=PackagePublishingStatus.PUBLISHED).count()
 
     @property
     def binaries_size(self):

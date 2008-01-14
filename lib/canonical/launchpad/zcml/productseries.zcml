@@ -119,9 +119,6 @@
             name="+portlet-summary"
             template="../templates/object-portlet-summary.pt" />
         <browser:page
-            name="+portlet-source"
-            template="../templates/productseries-portlet-source.pt" />
-        <browser:page
             name="+portlet-packages"
             template="../templates/productseries-portlet-packages.pt" />
         <browser:page
@@ -148,6 +145,9 @@
             name="+importstatus"
             template="../templates/productseries-importstatus.pt"
             />
+        <browser:page
+            name="+portlet-source"
+            template="../templates/productseries-portlet-source.pt" />
     </browser:pages>
 
     <browser:page

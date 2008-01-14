@@ -1,6 +1,6 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Helpers for canonical.launchpad.scripts.importd tests."""
+"""Helpers for canonical.codehosting.codeimport tests."""
 
 __metaclass__ = type
 

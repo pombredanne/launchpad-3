@@ -830,7 +830,13 @@ class DebBugs(ExternalBugTracker):
     def importBugComments(self, bug_watch):
         """Import the comments from a DebBugs bug."""
         debian_bug = self._findBug(bug_watch.remotebug)
-        self.debbugs_db.load_log(debian_bug)
+
+        try:
+            self.debbugs_db.load_log(debian_bug)
+        except debbugs.LogParseFailed:
+            log.warn("Unable to import comments for DebBugs bug #%s. "
+                "Could not parse comment log." %  bug_watch.remotebug)
+            return
 
         imported_comments = []
         for comment in debian_bug.comments:
@@ -1521,6 +1527,7 @@ class Trac(ExternalBugTracker):
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`"""
         status_map = {
+            'accepted': BugTaskStatus.CONFIRMED,
             'assigned': BugTaskStatus.CONFIRMED,
             # XXX: 2007-08-06 Graham Binns:
             #      We should follow dupes if possible.

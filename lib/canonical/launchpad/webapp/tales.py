@@ -525,6 +525,13 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     """
     implements(ITraversable)
 
+    allowed_names = set([
+        'icon',
+        'logo',
+        'mugshot',
+        'badges',
+        ])
+
     icon_template = (
         '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
 
@@ -534,15 +541,13 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for icons with an optional rootsite."""
-        if name == 'icon':
-            return self.icon()
+        if name in self.allowed_names:
+            return getattr(self, name)()
         elif name.startswith('icon:'):
             rootsite = name.split(':', 1)[1]
             return self.icon(rootsite=rootsite)
-        elif name == 'badges':
-            return self.badges()
         else:
-            return None
+            raise TraversalError, name
 
     def icon(self, rootsite=None):
         """Display the icon dependent on the IBugTask.importance."""
@@ -789,17 +794,60 @@ class PillarFormatterAPI(ObjectFormatterExtendedAPI):
 class BranchFormatterAPI(ObjectFormatterExtendedAPI):
     """Adapter for IBranch objects to a formatted string."""
 
-    def link(self, extra_path):
-        """Return an HTML link to the branch page containing an icon
-        followed by the branch's unique name.
-        """
+    def traverse(self, name, furtherPath):
+        """Special case traversal to support multiple link formats."""
+        if name == 'project-link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.projectLink(extra_path)
+        if name == 'title-link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.titleLink(extra_path)
+        return ObjectFormatterExtendedAPI.traverse(self, name, furtherPath)
+
+    def _args(self, extra_path):
+        """Generate a dict of attributes for string template expansion."""
         branch = self._context
         url = canonical_url(branch)
         if extra_path:
             url = '%s/%s' % (url, extra_path)
-        return ('<a href="%s" title="%s"><img src="/@@/branch" alt=""/>'
-                '&nbsp;%s</a>' % (
-                    url, branch.displayname, branch.unique_name))
+        if branch.title is not None:
+            title = branch.title
+        else:
+            title = "(no title)"
+        if branch.author is not None:
+            author = branch.author.name
+        else:
+            author = branch.owner.name
+        return {
+            'author': author,
+            'display_name': branch.displayname,
+            'name': branch.name,
+            'title': title,
+            'unique_name' : branch.unique_name,
+            'url': url,
+            }
+
+    def link(self, extra_path):
+        """A hyperlinked branch icon with the unique name."""
+        return (
+            '<a href="%(url)s" title="%(display_name)s">'
+            '<img src="/@@/branch" alt=""/>'
+            '&nbsp;%(unique_name)s</a>' % self._args(extra_path))
+
+    def projectLink(self, extra_path):
+        """A hyperlinked branch icon with the name and title."""
+        return (
+            '<a href="%(url)s" title="%(display_name)s">'
+            '<img src="/@@/branch" alt=""/>'
+            '&nbsp;%(name)s</a>: %(title)s' % self._args(extra_path))
+
+    def titleLink(self, extra_path):
+        """A hyperlinked branch name with following title."""
+        return (
+            '<a href="%(url)s" title="%(display_name)s">'
+            '%(name)s</a>: %(title)s' % self._args(extra_path))
 
 
 class BugFormatterAPI(ObjectFormatterExtendedAPI):

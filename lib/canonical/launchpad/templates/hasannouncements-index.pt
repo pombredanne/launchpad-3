@@ -47,7 +47,8 @@
   </div>
 
   <div class="lesser"
-       tal:content="structure view/announcement_nav/@@+navigation-links-lower" />
+       tal:content="structure view/announcement_nav/@@+navigation-links-lower"
+       />
 
 </div>
 </body>

@@ -13,7 +13,8 @@ from zope.interface import implements, providedBy
 from zope.component import getUtility
 
 # SQL imports
-from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, SQLMultipleJoin
+from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
+    SQLMultipleJoin)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -91,6 +92,11 @@ class BugWatch(SQLBase):
             self.sync()
 
         for linked_bugtask in self.bugtasks:
+            # We don't updated conjoined bug tasks; they must be updated
+            # through their conjoined masters.
+            if linked_bugtask._isConjoinedBugTask():
+                continue
+
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.importance = malone_importance
@@ -110,6 +116,11 @@ class BugWatch(SQLBase):
             # constant to a datetime value.
             self.sync()
         for linked_bugtask in self.bugtasks:
+            # We don't updated conjoined bug tasks; they must be updated
+            # through their conjoined masters.
+            if linked_bugtask._isConjoinedBugTask():
+                continue
+
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.transitionToStatus(
@@ -318,9 +329,23 @@ class BugWatchSet(BugSetBase):
 
     def parseRTURL(self, scheme, host, path, query):
         """Extract the RT base URL and bug ID."""
-        match = re.match(r'(.*/)Ticket/Display.html', path)
+
+        # We use per-host regular expressions to account for those RT
+        # hosts that we know use non-standard URLs for their tickets,
+        # allowing us to parse them properly.
+        host_expressions = {
+            'default': r'(.*/)(Bug|Ticket)/Display.html',
+            'rt.cpan.org': r'(.*/)Public/(Bug|Ticket)/Display.html'}
+
+        if host in host_expressions:
+            expression = host_expressions[host]
+        else:
+            expression = host_expressions['default']
+
+        match = re.match(expression, path)
         if not match:
             return None
+
         base_path = match.group(1)
         remote_bug = query['id']
 
@@ -359,7 +384,8 @@ class BugWatchSet(BugSetBase):
 
     def extractBugTrackerAndBug(self, url):
         """See IBugWatchSet."""
-        for trackertype, parse_func in self.bugtracker_parse_functions.items():
+        for trackertype, parse_func in (
+            self.bugtracker_parse_functions.items()):
             scheme, host, path, query_string, frag = urlsplit(url)
             query = {}
             for query_part in query_string.split('&'):

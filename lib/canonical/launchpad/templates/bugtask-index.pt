@@ -22,8 +22,7 @@
     <div tal:replace="structure context/@@+portlet-search" />
     
       <div
-        tal:condition="context/target/sourcepackagename|nothing"
-        tal:replace="structure context/target/@@+portlet-details"
+        tal:replace="structure context/target/@@+portlet-details | nothing"
       />
     </metal:portlets>
 
@@ -238,8 +237,10 @@
   </p>
 
   <tal:comment repeat="comment view/getBugCommentsForDisplay">
-    <metal:comment-box
-        metal:use-macro="context/@@bugcomment-macros/comment-box" />
+    <tal:comment-box condition="comment/can_be_shown">
+      <metal:comment-box
+          metal:use-macro="context/@@bugcomment-macros/comment-box" />
+    </tal:comment-box>
   </tal:comment>
 
   <tal:logged-in condition="view/user">

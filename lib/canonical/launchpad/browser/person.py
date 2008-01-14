@@ -2740,7 +2740,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         email address.
         """
         validated = self.context.preferredemail
-        if validated is None:
+        if validated is None and self.context.validatedemails.count() > 0:
             validated = self.context.validatedemails[0]
         unvalidated = self.unvalidated_addresses
         if len(unvalidated) > 0:
@@ -2778,11 +2778,14 @@ class PersonEditEmailsView(LaunchpadFormView):
             else:
                 term = SimpleTerm(term, term.email)
             terms.append(term)
+        if self.validated_addresses:
+            title = _('These addresses may also be yours')
+        else:
+            title = _('These addresses may be yours')
+
         return form.Fields(
-            Choice(__name__='UNVALIDATED_SELECTED',
-                   title=_('These addresses may also be yours'),
-                   source=SimpleVocabulary(terms),
-                   ),
+            Choice(__name__='UNVALIDATED_SELECTED', title=title,
+                   source=SimpleVocabulary(terms)),
             custom_widget = self.custom_widgets['UNVALIDATED_SELECTED'])
 
     def _mailing_list_subscription_type(self, mailing_list):
@@ -2811,11 +2814,9 @@ class PersonEditEmailsView(LaunchpadFormView):
         mailing_list_set = getUtility(IMailingListSet)
         fields = []
         terms = [SimpleTerm("Preferred address"),
-                 SimpleTerm("Don't subscribe"),
-                 SimpleTerm(self.context.preferredemail,
-                            self.context.preferredemail.email)]
+                 SimpleTerm("Don't subscribe")]
         terms += [SimpleTerm(email, email.email)
-                   for email in self.context.validatedemails]
+                   for email in self.validated_addresses]
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
             if mailing_list is not None and mailing_list.isUsable():
@@ -2872,6 +2873,17 @@ class PersonEditEmailsView(LaunchpadFormView):
         # Return the EmailAddress/LoginToken object for use in any
         # further validation.
         return email
+
+    @property
+    def validated_addresses(self):
+        """All of this person's validated email addresses, including
+        their preferred address (if any).
+        """
+        addresses = []
+        if self.context.preferredemail:
+            addresses.append(self.context.preferredemail)
+        addresses += [email for email in self.context.validatedemails]
+        return addresses
 
     @property
     def unvalidated_addresses(self):
@@ -2948,14 +2960,16 @@ class PersonEditEmailsView(LaunchpadFormView):
     def action_confirm(self, action, data):
         """Mail a validation URL to the selected email address."""
         email = data['UNVALIDATED_SELECTED']
+        if IEmailAddress.providedBy(email):
+            email = email.email
         token = getUtility(ILoginTokenSet).new(
-                    self.context, getUtility(ILaunchBag).login, email.email,
+                    self.context, getUtility(ILaunchBag).login, email,
                     LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest(self.request.getApplicationURL())
         self.request.response.addInfoNotification(
             "An e-mail message was sent to '%s' with "
             "instructions on how to confirm that "
-            "it belongs to you." % email.email)
+            "it belongs to you." % email)
         self.next_url = self.action_url
 
     def validate_action_remove_unvalidated(self, action, data):
@@ -3386,9 +3400,10 @@ class PersonBranchesView(BranchListingView):
     extra_columns = ('author', 'product', 'role')
     heading_template = 'Bazaar branches related to %(displayname)s'
 
-    def _branches(self, lifecycle_status):
+    def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesForPerson(
-            self.context, lifecycle_status, self.user, self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
 
     @cachedproperty
     def _subscribed_branches(self):
@@ -3414,9 +3429,10 @@ class PersonAuthoredBranchesView(BranchListingView):
     heading_template = 'Bazaar branches authored by %(displayname)s'
     no_sort_by = (BranchListingSort.AUTHOR,)
 
-    def _branches(self, lifecycle_status):
+    def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
 
 
 class PersonRegisteredBranchesView(BranchListingView):
@@ -3426,9 +3442,10 @@ class PersonRegisteredBranchesView(BranchListingView):
     heading_template = 'Bazaar branches registered by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
-    def _branches(self, lifecycle_status):
+    def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
 
 
 class PersonSubscribedBranchesView(BranchListingView):
@@ -3437,9 +3454,10 @@ class PersonSubscribedBranchesView(BranchListingView):
     extra_columns = ('author', 'product')
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
 
-    def _branches(self, lifecycle_status):
+    def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
 
 
 class PersonTeamBranchesView(LaunchpadView):

@@ -26,27 +26,30 @@
       </tal:block>
 
       <tal:block tal:condition="not: context/preferredemail">
-        <p>Currently you don't have a contact address in
-        Launchpad. Please choose one from the list of confirmed
-        addresses.</p>
+        <p id="no-contact-address">
+          Currently you don't have a contact address in
+          Launchpad.
+        </p>
       </tal:block>
     </metal:extra-info>
 
     <metal:widgets fill-slot="widgets">
 
       <table class="form">
-        <tal:widget define="widget nocall:view/widgets/VALIDATED_SELECTED">
-          <metal:block use-macro="context/@@launchpad_form/widget_row" />
-        </tal:widget>
-        <tr>
-          <td></td>
-          <td>
-            <input tal:replace="structure view/action_set_preferred/render" />
-            <input tal:replace="structure
-                                view/action_remove_validated/render" />
-          </td>
-        </tr>
-
+        <tal:validated tal:condition="view/validated_addresses">
+          <tal:widget define="widget nocall:view/widgets/VALIDATED_SELECTED">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+          <tr>
+            <td></td>
+            <td>
+              <input
+                 tal:replace="structure view/action_set_preferred/render" />
+              <input tal:replace="structure
+                                  view/action_remove_validated/render" />
+            </td>
+          </tr>
+        </tal:validated>
 
         <tal:block tal:condition="view/unvalidated_addresses">
           <tal:widget define="widget nocall:view/widgets/UNVALIDATED_SELECTED">

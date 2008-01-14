@@ -27,13 +27,20 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
         Also contains the paths and checksums for the files included in
         the package in question.
         """
-        pub_source = self.getPubSource()
+        pub_source = self.getPubSource(
+            builddepends='fooish', builddependsindep='pyfoo',
+            build_conflicts='bar', build_conflicts_indep='pybar')
 
         self.assertEqual(
             [u'Package: foo',
              u'Binary: foo-bin',
              u'Version: 666',
+             u'Section: base',
              u'Maintainer: Foo Bar <foo@bar.com>',
+             u'Build-Depends: fooish',
+             u'Build-Depends-Indep: pyfoo',
+             u'Build-Conflicts: bar',
+             u'Build-Conflicts-Indep: pybar',
              u'Architecture: all',
              u'Standards-Version: 3.6.2',
              u'Format: 1.0',
@@ -48,15 +55,29 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
         See also testSourceStanza, it must present something similar for
         binary packages.
         """
-        pub_binary = self.getPubBinaries()[0]
+        pub_binary = self.getPubBinaries(
+            depends='biscuit', recommends='foo-dev', suggests='pyfoo',
+            conflicts='old-foo', replaces='old-foo', provides='foo-master',
+            pre_depends='master-foo', enhances='foo-super', breaks='old-foo'
+            )[0]
         self.assertEqual(
             [u'Package: foo-bin',
+             u'Source: foo',
              u'Priority: standard',
              u'Section: base',
              u'Installed-Size: 100',
              u'Maintainer: Foo Bar <foo@bar.com>',
              u'Architecture: all',
              u'Version: 666',
+             u'Recommends: foo-dev',
+             u'Replaces: old-foo',
+             u'Suggests: pyfoo',
+             u'Provides: foo-master',
+             u'Depends: biscuit',
+             u'Conflicts: old-foo',
+             u'Pre-Depends: master-foo',
+             u'Enhances: foo-super',
+             u'Breaks: old-foo',
              u'Filename: pool/main/f/foo/foo-bin_all.deb',
              u'Size: 18',
              u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
@@ -94,6 +115,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
 
         self.assertEqual(
             [u'Package: foo-bin',
+             u'Source: foo',
              u'Priority: standard',
              u'Section: base',
              u'Installed-Size: 100',
@@ -128,6 +150,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
 
         self.assertEqual(
             [u'Package: foo-bin',
+             u'Source: foo',
              u'Priority: standard',
              u'Section: base',
              u'Installed-Size: 100',

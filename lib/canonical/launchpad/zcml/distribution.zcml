@@ -275,8 +275,8 @@
     for="canonical.launchpad.interfaces.IDistribution"
     permission="zope.Public" >
     <browser:page
-      name="+portlet-details"
-      template="../templates/distribution-portlet-details.pt"
+      name="+details"
+      template="../templates/distribution-details.pt"
       />
     <browser:page
       name="+portlet-lifecycle"
