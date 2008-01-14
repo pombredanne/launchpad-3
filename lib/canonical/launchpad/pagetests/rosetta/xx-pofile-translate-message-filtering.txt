@@ -50,6 +50,7 @@ He can see that there are 22 messages.
     >>> print_batch_header(contents)
     1 ... 10  of 22 results
 
+
 === Untranslated ===
 
 No Privileges Person chooses to see the untranslated messages in the
@@ -157,7 +158,7 @@ navigation.
     ...     name='msgset_1_en_AU_translation_0_new_checkbox').value = [
     ...         'msgset_1_en_AU_translation_0_new']
     >>> user_browser.getControl(
-    ...     name='msgset_1_en_AU_translation_0_new').value = 'addressbook'
+    ...     name='msgset_1_en_AU_translation_0_new').value = 'fnord'
     >>> user_browser.getControl('Save & Continue').click()
 
 No Privileges Person can see that the number of untranslated messages
@@ -166,6 +167,14 @@ has not changed, and that he is seeing messages 11 though 20.
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
     11 ... 20  of 22 results
+
+He returns to the previous page to check that his suggest of 'fnord' was
+accepted.
+
+    >>> user_browser.getLink('Previous').click()
+    >>> contents = find_main_content(user_browser.contents)
+    >>> contents.find(text='fnord').parent
+    <div lang="en-AU" id="msgset_1_en_AU_suggestion_702_0" ...>fnord</div>
 
 
 === Messages with new suggestions ===
@@ -257,9 +266,9 @@ There is only one message in the batch.
     >>> print_shown_messages(user_browser, contents)
     134: '<samp> </samp>caratas'
 
-Now that the messages are filtered, there is no next link when the
-messages, since there is only one page of messages. If No Privileges
-Person submits the form, the browser is redirected to the first batch.
+Now that the messages are filtered, there is no Next link, since there
+is only one page of messages. If No Privileges Person submits the form,
+the browser is redirected to the first batch.
 
     >>> user_browser.getControl('Save & Continue').click()
     >>> user_browser.url
@@ -271,10 +280,10 @@ Person submits the form, the browser is redirected to the first batch.
 
 == Batch parameters when changing filters ==
 
-Another thing that filtering should do is to move to the start of the
-set of messages when the filtering rule changes but preserving batch
-size. No Privileges Person can see the when he switches the filter to
-show 'untranslated' message, he is seeing the first batch.
+When the filter changes, the batch is reset to the start of the set of
+messages, while preserving the batch size. No Privileges Person can see
+the batch header when he switches the filter to show 'untranslated'
+message; he is seeing the first batch.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
