@@ -54,8 +54,9 @@ class SystemErrorView:
         self.computeDebugOutput()
         if config.show_tracebacks:
             self.show_tracebacks = True
-        if canonical.launchpad.layers.PageTestLayer.providedBy(self.request):
-            self.pagetesting = True
+        # if canonical.launchpad.layers.PageTestLayer.providedBy(self.request):
+        #     self.pagetesting = True
+        # XXX 20080109 mpt: We don't use this any more. See bug 181472.
         if canonical.launchpad.layers.DebugLayer.providedBy(self.request):
             self.debugging = True
         self.specialuser = getUtility(ILaunchBag).developer

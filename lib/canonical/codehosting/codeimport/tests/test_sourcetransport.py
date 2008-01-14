@@ -1,6 +1,6 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Test canonical.launchpad.scripts.importd.sourcetransport
+"""Test canonical.codehosting.codeimport.sourcetransport
 """
 
 __metaclass__ = type
@@ -16,11 +16,11 @@ import subprocess
 from bzrlib.urlutils import local_path_to_url
 
 from canonical.config import config
-from canonical.launchpad.scripts.importd.sourcetransport import (
+from canonical.codehosting.codeimport.sourcetransport import (
     ImportdSourceTransport)
-from canonical.launchpad.scripts.importd.tests.helpers import (
+from canonical.codehosting.codeimport.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
-from canonical.launchpad.scripts.importd.tests.sourcetransport_helpers import (
+from canonical.codehosting.codeimport.tests.sourcetransport_helpers import (
     ImportdSourceTarballTestCase, ImportdSourceTransportTestCase)
 
 

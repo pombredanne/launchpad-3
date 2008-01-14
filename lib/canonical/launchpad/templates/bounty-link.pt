@@ -11,10 +11,9 @@
 >
   <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-bounties" />
-</metal:leftportlets>
+    <metal:portlets fill-slot="portlets">
+      <div tal:replace="structure context/@@+portlet-bounties" />
+    </metal:portlets>
 
 <div metal:fill-slot="main">
 

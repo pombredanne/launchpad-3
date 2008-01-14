@@ -9,7 +9,7 @@
 
   <div class="portletBody">
     <div class="portletContent">
-      <div tal:condition="not:context/rcstype"
+      <div tal:condition="not: context/rcstype"
            tal:define="branch context/series_branch">
         <tal:block condition="branch/required:launchpad.View">
           <b>Bazaar Branch:</b><br />

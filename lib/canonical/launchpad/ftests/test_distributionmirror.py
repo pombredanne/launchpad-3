@@ -10,9 +10,11 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.database.distributionmirror import DistributionMirror
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistributionMirrorSet, ILibraryFileAliasSet,
+    ICountrySet, IDistributionSet, IDistributionMirrorSet,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, MirrorContent,
     MirrorFreshness, PackagePublishingPocket)
 from canonical.launchpad.mail import stub
 
@@ -144,13 +146,14 @@ class TestDistributionMirror(unittest.TestCase):
         # previously enabled or disabled.
         self._create_probe_record(mirror)
         self.failUnless(mirror.enabled)
-        mirror.disable(notify_owner=True)
+        log = 'Got a 404 on http://foo/baz'
+        mirror.disable(notify_owner=True, log=log)
         # A notification was sent to the owner and other to the mirror admins.
         transaction.commit()
         self.failUnlessEqual(len(stub.test_emails), 2)
         stub.test_emails = []
 
-        mirror.disable(notify_owner=True)
+        mirror.disable(notify_owner=True, log=log)
         # Again, a notification was sent to the owner and other to the mirror
         # admins.
         transaction.commit()
@@ -161,7 +164,7 @@ class TestDistributionMirror(unittest.TestCase):
         # the owner if the mirror was previously enabled.
         self._create_probe_record(mirror)
         mirror.enabled = True
-        mirror.disable(notify_owner=True)
+        mirror.disable(notify_owner=True, log=log)
         # A notification was sent to the owner and other to the mirror admins.
         transaction.commit()
         self.failUnlessEqual(len(stub.test_emails), 2)
@@ -170,17 +173,57 @@ class TestDistributionMirror(unittest.TestCase):
         # We can always disable notifications to the owner by passing
         # notify_owner=False to mirror.disable().
         mirror.enabled = True
-        mirror.disable(notify_owner=False)
+        mirror.disable(notify_owner=False, log=log)
         transaction.commit()
         self.failUnlessEqual(len(stub.test_emails), 1)
         stub.test_emails = []
 
         mirror.enabled = False
-        mirror.disable(notify_owner=True)
+        mirror.disable(notify_owner=True, log=log)
         # No notifications were sent this time
         transaction.commit()
         self.failUnlessEqual(len(stub.test_emails), 0)
         stub.test_emails = []
+
+
+class TestDistributionMirrorSet(unittest.TestCase):
+    layer = LaunchpadFunctionalLayer
+    
+    def test_getBestMirrorsForCountry_randomizes_results(self):
+        """Make sure getBestMirrorsForCountry() randomizes its results."""
+        def my_select(class_, query, *args, **kw):
+            """Fake function with the same signature of SQLBase.select().
+
+            This function ensures the orderBy argument given to it contains
+            the 'random' string in its first item.
+            """
+            self.failUnlessEqual(kw['orderBy'][0].expr, 'random')
+            return [1,2,3]
+
+        orig_select = DistributionMirror.select
+        DistributionMirror.select = classmethod(my_select)
+        login('foo.bar@canonical.com')
+        getUtility(IDistributionMirrorSet).getBestMirrorsForCountry(
+            None, MirrorContent.ARCHIVE)
+        DistributionMirror.select = orig_select
+
+    def test_getBestMirrorsForCountry_appends_main_repo_to_the_end(self):
+        """Make sure the main mirror is appended to the list of mirrors for a
+        given country.
+        """
+        login('foo.bar@canonical.com')
+        france = getUtility(ICountrySet)['FR']
+        main_mirror = getUtility(ILaunchpadCelebrities).ubuntu_archive_mirror
+        mirrors = getUtility(IDistributionMirrorSet).getBestMirrorsForCountry(
+            france, MirrorContent.ARCHIVE)
+        self.failUnless(len(mirrors) > 1, "Not enough mirrors")
+        self.failUnlessEqual(main_mirror, mirrors[-1])
+
+        main_mirror = getUtility(ILaunchpadCelebrities).ubuntu_cdimage_mirror
+        mirrors = getUtility(IDistributionMirrorSet).getBestMirrorsForCountry(
+            france, MirrorContent.RELEASE)
+        self.failUnless(len(mirrors) > 1, "Not enough mirrors")
+        self.failUnlessEqual(main_mirror, mirrors[-1])
 
 
 def test_suite():

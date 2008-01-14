@@ -956,6 +956,8 @@ product_bugs = ContextDisplayName('Bugs in %s')
 product_branches = ContextDisplayName(
     smartquote("%s's Bazaar branches registered in Launchpad"))
 
+product_branch_overview = ContextDisplayName("Code overview for %s")
+
 product_distros = ContextDisplayName(
     '%s packages: Comparison of distributions')
 

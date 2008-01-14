@@ -136,7 +136,7 @@
         <div tal:replace="structure context/@@+portlet-latestspecs" />
       </div>
       <div class="right">
-        <div tal:replace="structure context/@@+portlet-details" />
+        <div tal:replace="structure context/@@+details" />
         <div tal:replace="structure context/@@+portlet-top-contributors" />
         <div tal:replace="structure context/@@+portlet-latestbugs" />
         <div
