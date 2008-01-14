@@ -4,10 +4,10 @@
 
 __metaclass__ = type
 __all__ = [
+    'ICollection',
     'ICollectionResource',
-    'ICollectionResourceController',
+    'IEntry',
     'IEntryResource',
-    'IEntryResourceController',
     'IHTTPResource',
     'IJSONPublishable',
     ]
@@ -37,16 +37,16 @@ class IJSONPublishable(Interface):
         """
 
 
-class IEntryResourceController(IHTTPResource):
+class IEntryResource(IHTTPResource):
     """A resource that represents an individual Launchpad object."""
     def do_GET(self):
-        """Retrieve this object.
+        """Retrieve this entry.
 
         :return: A string representation.
         """
 
 
-class ICollectionResourceController(IHTTPResource):
+class ICollectionResource(IHTTPResource):
     """A resource that represents a collection of entry resources."""
 
     def do_GET(self):
@@ -56,12 +56,12 @@ class ICollectionResourceController(IHTTPResource):
         """
 
 
-class IEntryResource(IJSONPublishable):
-    """An entry resource, driven by an IEntryResourceController."""
+class IEntry(IJSONPublishable):
+    """An entry, exposed as a resource by an IEntryResource."""
 
 
-class ICollectionResource(Interface):
-    """A collection resource, driven by an IEntryResourceController."""
+class ICollection(Interface):
+    """A collection, driven by an ICollectionResource."""
 
     def find(self):
         """Retrieve all items in the collection."""

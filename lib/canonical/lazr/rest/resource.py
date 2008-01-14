@@ -4,8 +4,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'CollectionResourceController',
-    'EntryResourceController',
+    'CollectionResource',
+    'EntryResource',
     'HTTPResource',
     'ReadOnlyResource'
     ]
@@ -15,8 +15,7 @@ import simplejson
 from zope.component import getAdapter
 from zope.interface import implements
 from canonical.lazr.interfaces import (
-    ICollectionResource, ICollectionResourceController, IEntryResource,
-    IEntryResourceController, IHTTPResource, IJSONPublishable)
+    ICollection, ICollectionResource, IEntry, IHTTPResource, IJSONPublishable)
 
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
@@ -36,7 +35,7 @@ class HTTPResource:
         self.request = request
 
     def __call__(self):
-        """See `IHTTPResourceController`."""
+        """See `IHTTPResource`."""
         pass
 
 
@@ -52,8 +51,8 @@ class ReadOnlyResource(HTTPResource):
             self.request.response.setHeader("Allow", "GET")
 
 
-class EntryResourceController:
-    """A controller for an individual object, published to the web.
+class EntryResource:
+    """An individual object, published to the web.
 
     This is not a real resource yet--you can't really access it from the
     web. It's only used to compose collection resources.
@@ -71,15 +70,15 @@ class EntryResourceController:
         the resource interface.
         """
         dict = {}
-        entry_resource = getAdapter(self.context, IEntryResource)
+        entry_resource = getAdapter(self.context, IEntry)
         for name in entry_resource.schema.names():
             dict[name] = getattr(entry_resource, name)
         return dict
 
 
-class CollectionResourceController(ReadOnlyResource):
-    implements(ICollectionResourceController)
-    """A controller for a resource that serves a list of entry resources."""
+class CollectionResource(ReadOnlyResource):
+    implements(ICollectionResource)
+    """A resource that serves a list of entry resources."""
 
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
