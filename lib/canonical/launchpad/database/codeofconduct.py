@@ -292,7 +292,7 @@ class SignedCodeOfConductSet:
                                      signedcode=signedcode, active=True)
 
         # Send Advertisement Email
-        subject = 'Launchpad: Code of Conduct Signature Acknowledge'
+        subject = 'Your Code of Conduct signature has been acknowledged'
         content = ('Digitally Signed by %s\n' % sig.fingerprint)
         signed.sendAdvertisementEmail(subject, content)
 
