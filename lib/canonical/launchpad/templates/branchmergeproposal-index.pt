@@ -13,14 +13,13 @@
 <body>
 
 <metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/source_branch/@@+portlet-details" />
 </metal:portlets>
 
 <div metal:fill-slot="main">
 
   <tal:summary replace="structure context/@@+pagelet-summary" />
 
-  <h1>Proposal to merge branches</h1>
+  <h1>Proposal to merge branch</h1>
 
   <tal:whiteboard condition="context/whiteboard">
     <h2>Whiteboard</h2>

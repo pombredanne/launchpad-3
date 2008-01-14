@@ -232,7 +232,7 @@ class IBranchMergeProposal(Interface):
         the proposal is able to be reviewed.
         """
 
-    def getUnlandedSourceBranchRevisions(self):
+    def getUnlandedSourceBranchRevisions():
         """Returns a sequence of `BranchRevision` objects.
 
         Returns those revisions that are in the revision history for the

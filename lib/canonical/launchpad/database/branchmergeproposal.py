@@ -81,6 +81,8 @@ class BranchMergeProposal(SQLBase):
 
     def isPersonValidReviewer(self, reviewer):
         """See `IBranchMergeProposal`."""
+        if reviewer is None:
+            return False
         target_review_team = self.target_branch.reviewer
         if target_review_team is None:
             target_review_team = self.target_branch.owner

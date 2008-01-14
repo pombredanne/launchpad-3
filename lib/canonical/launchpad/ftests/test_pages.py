@@ -223,12 +223,27 @@ def print_tab_links(content):
 def print_action_links(content):
     """Print action menu urls."""
     actions = find_portlet(content, 'Actions')
+    if actions is None:
+        print "No actions portlet"
+        return
     entries = actions.findAll('li')
     for entry in entries:
         if entry.a:
             print '%s: %s' % (entry.a.string, entry.a['href'])
         elif entry.strong:
             print entry.strong.string
+
+
+def print_submit_buttons(content):
+    """Print the submit button values found in the main content."""
+    buttons = find_main_content(content).findAll(
+        'input', attrs={'class': 'button', 'type': 'submit'})
+    if buttons is None:
+        print "No buttons found"
+    else:
+        for button in buttons:
+            print button['value']
+
 
 def print_comments(page):
     """Print the comments on a BugTask index page."""
@@ -279,6 +294,7 @@ def setUpGlobs(test):
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
     test.globs['print_comments'] = print_comments
+    test.globs['print_submit_buttons'] = print_submit_buttons
 
 
 class PageStoryTestCase(unittest.TestCase):

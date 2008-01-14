@@ -88,10 +88,13 @@ class BranchMergeProposalContextMenu(ContextMenu):
         text = 'Review proposal'
         # Enable the review option if the proposal is reviewable, and the
         # user is a reviewer.
-        lp_admins = getUtility(ILaunchpadCelebrities).admin
-        valid_reviewer = (self.context.isPersonValidReviewer(self.user) or
-                          self.user.inTeam(lp_admins))
-        enabled = self.context.isReviewable() and valid_reviewer
+        if self.user is None:
+            enabled = False
+        else:
+            lp_admins = getUtility(ILaunchpadCelebrities).admin
+            valid_reviewer = (self.context.isPersonValidReviewer(self.user) or
+                              self.user.inTeam(lp_admins))
+            enabled = self.context.isReviewable() and valid_reviewer
         return Link('+review', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
@@ -310,25 +313,22 @@ class BranchMergeProposalEditView(MergeProposalEditView):
         # it is available in the situation where the merge proposal
         # is deleted.
         self.source_branch = self.context.source_branch
+        self.next_url = canonical_url(self.context)
         super(BranchMergeProposalEditView, self).initialize()
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
 
     @action('Update', name='update')
     def update_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
         self.updateContextFromData(data)
 
-    @action('Delete', name='delete')
+    @action('Delete proposal', name='delete')
     def delete_action(self, action, data):
         """Delete the merge proposal and go back to the source branch."""
         self.context.destroySelf()
         # Override the next url to be the source branch.
         self.next_url = canonical_url(self.source_branch)
 
-    @action('Cancel', name='cancel')
+    @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         """Do nothing and go back to the source branch."""
 
@@ -349,7 +349,7 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
         revno = data['merged_revno']
         self.context.markAsMerged(revno, merge_reporter=self.user)
 
-    @action('Cancel', name='cancel')
+    @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         """Do nothing and go back to the merge proposal."""
 

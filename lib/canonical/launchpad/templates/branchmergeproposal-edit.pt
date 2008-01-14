@@ -12,7 +12,6 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets">
-  <div tal:replace="structure context/source_branch/@@+portlet-details" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
