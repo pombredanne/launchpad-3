@@ -252,6 +252,20 @@ The administration procedure allow us to:
     PPA whiteboard:
     Here lives a lazy community.
 
+There is a maximum size allowed for authorized_size that is set by
+Postgres, and is currently (2**30)-1 bytes.  Submitting the form with an
+authorized_size that is too large will result in an error:
+
+    >>> admin_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
+    >>> admin_browser.getControl(
+    ...     name="field.authorized_size").value = '2147483649'
+    >>> admin_browser.getControl("Save").click()
+    >>> tags = find_tags_by_class(admin_browser.contents,'message')
+    >>> for tag in tags:
+    ...     print extract_text(tag)
+    There is 1 error.
+    Value is too big
+
 The whiteboard section can be viewed by the PPA owner:
 
     >>> carlos_browser = setupBrowser(auth="Basic carlos@canonical.com:test")
