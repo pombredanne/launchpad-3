@@ -279,7 +279,7 @@ linkified.
 This changelog has got text of the form 'LP: #nnn' where nnn is a bug number,
 and this is linkified so that when clicked it takes us to the bug page:
 
-  >>> browser.getLink('LP: #10').url
+  >>> browser.getLink('#10').url
   'http://launchpad.dev/bugs/10'
 
 The same page for commercialpackage has an email address in the

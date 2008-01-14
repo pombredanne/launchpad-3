@@ -11,7 +11,7 @@ Open the "Upstream Source Import" page for a series.
 Currently, no revision details are selected.  We can submit the form
 as is, which will leave us with no revision control system selected:
 
-  >>> browser.getControl('No revision control system, or Bazaar').selected
+  >>> browser.getControl('No revision control system or not specifed here').selected
   True
   >>> browser.getControl('Update Details').click()
   >>> print browser.url
@@ -143,13 +143,13 @@ If we set the series back to no upstream details, the subversion
 details are blanked:
 
   >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
-  >>> browser.getControl('No revision control system, or Bazaar').click()
+  >>> browser.getControl('No revision control system or not specifed here').click()
   >>> browser.getControl('Update Details').click()
   >>> print browser.url
   http://launchpad.dev/firefox/trunk
 
   >>> browser.open('http://launchpad.dev/firefox/trunk/+source')
-  >>> browser.getControl('No revision control system, or Bazaar').selected
+  >>> browser.getControl('No revision control system or not specifed here').selected
   True
   >>> browser.getControl(name='field.svnrepository').value
   ''

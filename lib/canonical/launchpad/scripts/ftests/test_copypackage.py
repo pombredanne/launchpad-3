@@ -255,7 +255,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         self.assertEqual(
             str(copy_helper.location),
-            'PPA for Celso Providelo: warty-RELEASE')
+            'cprov: warty-RELEASE')
         self.assertEqual(
             str(copy_helper.destination),
             'Primary Archive for Ubuntu Linux: hoary-RELEASE')
@@ -277,10 +277,10 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         self.assertEqual(
             str(copy_helper.location),
-            'PPA for Celso Providelo: warty-RELEASE')
+            'cprov: warty-RELEASE')
         self.assertEqual(
             str(copy_helper.destination),
-            'PPA for Mark Shuttleworth: hoary-RELEASE')
+            'sabdfl: hoary-RELEASE')
 
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)

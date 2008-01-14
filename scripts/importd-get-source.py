@@ -32,10 +32,10 @@ import logging
 from optparse import OptionParser
 
 from canonical.launchpad.scripts import logger_options, logger, log
-from canonical.launchpad.scripts.importd.bzr_progress import (
+from canonical.codehosting.codeimport.bzr_progress import (
     setup_batch_progress)
 
-from canonical.launchpad.scripts.importd.sourcetransport import (
+from canonical.codehosting.codeimport.sourcetransport import (
     ImportdSourceTransport)
 
 
