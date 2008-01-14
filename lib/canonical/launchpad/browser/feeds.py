@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'AnnouncementsFeedLink',
+    'BranchFeedLink',
     'BugFeedLink',
     'BugTargetLatestBugsFeedLink',
     'FeedLinkBase',
@@ -25,7 +26,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IAnnouncementSet, IBugSet, IBugTaskSet, IFeedsApplication,
+    IAnnouncementSet, IBranch, IBugSet, IBugTaskSet, IFeedsApplication,
     IPersonSet, IPillarNameSet, NotFoundError)
 from canonical.launchpad.interfaces import (
     IBugTarget, IBugTask, IHasAnnouncements, ILaunchpadRoot, IPerson,
@@ -254,6 +255,19 @@ class PersonBranchesFeedLink(BranchesFeedLinkBase):
     usedfor = IPerson
 
 
+class BranchFeedLink(FeedLinkBase):
+    """Feed links for revisions on a branch."""
+    usedfor = IBranch
+
+    @property
+    def title(self):
+        return 'Latest Revisions for Branch %s' % self.context.displayname
+    @property
+    def href(self):
+        return urlappend(canonical_url(self.context, rootsite="feeds"),
+                         'branch.atom')
+
+
 class FeedsMixin:
     """Mixin which adds the feed_links attribute to a view object.
 
@@ -271,6 +285,7 @@ class FeedsMixin:
         ProjectBranchesFeedLink,
         ProductBranchesFeedLink,
         PersonBranchesFeedLink,
+        BranchFeedLink,
         )
 
     @property

@@ -278,7 +278,7 @@ class FeedTypedData:
 
 
 class FeedPerson:
-    """Data for person in a feed.
+    """See `IFeedPerson`.
 
     If this class is consistently used we will not accidentally leak email
     addresses.

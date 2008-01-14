@@ -249,3 +249,17 @@ to the atom feed for that person's latest branches.
     [<link rel="alternate" type="application/atom+xml"
         title="Latest Branches for Mark Shuttleworth"
         href="http://feeds.launchpad.dev/~sabdfl/branches.atom" />]
+
+
+== Latest Revisions on a Branch ==
+
+On a branch page on code.launchpad.dev, we should show a link to the
+atom feed for that branch's revisions.
+
+    >>> url = 'http://code.launchpad.dev/~sabdfl/firefox/release--0.9.1'
+    >>> browser.open(url)
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [<link rel="alternate" type="application/atom+xml"
+        title="Latest Revisions for Branch Mozilla Firefox 0.9.1"
+        href="http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom" />]

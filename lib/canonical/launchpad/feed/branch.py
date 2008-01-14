@@ -12,16 +12,19 @@ __all__ = [
     ]
 
 from zope.app.pagetemplate import ViewPageTemplateFile
+from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.browser import (
     BranchView, PersonBranchesView, ProductBranchesView, ProjectBranchesView)
 from canonical.config import config
-from canonical.launchpad.webapp import canonical_url, urlparse
+from canonical.launchpad.webapp import canonical_url, urlappend, urlparse
 from canonical.launchpad.interfaces import (
     IBranch, IPerson, IProduct, IProject)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
+from canonical.lazr.interfaces import (
+    IFeedPerson)
 
 
 class BranchFeedEntry(FeedEntry):
@@ -36,13 +39,13 @@ class BranchFeedEntry(FeedEntry):
 class BranchFeedContentView(BranchView):
     """View for branch feed contents."""
 
-    def __init__(self, context, request, feed):
+    def __init__(self, context, request, feed, template='templates/branch.pt'):
         super(BranchFeedContentView, self).__init__(context, request)
         self.feed = feed
-
+        self.template_ = template
     def render(self):
         """Render the view."""
-        return ViewPageTemplateFile('templates/branch.pt')(self)
+        return ViewPageTemplateFile(self.template_)(self)
 
 
 class BranchFeedBase(FeedBase):
@@ -105,29 +108,6 @@ class BranchFeedBase(FeedBase):
         return entry
 
 
-class BranchFeed(BranchFeedBase):
-    """Feed for single branch."""
-
-    usedfor = IBranch
-    feedname = "branch"
-
-    def initialize(self):
-        """See `IFeed`."""
-        # For a `BranchFeed` we must ensure that the branch is not private.
-        super(BranchFeed, self).initialize()
-        if self.context.private:
-            raise Unauthorized("Feeds do not serve private branches")
-
-    @property
-    def title(self):
-        """See `IFeed`."""
-        return "Branch %s" % self.context.displayname
-
-    def _getRawItems(self):
-        """Get the raw set of items for the feed."""
-        return [self.context]
-
-
 class BranchListingFeed(BranchFeedBase):
     """Feed for all branches on a product or project."""
 
@@ -188,3 +168,82 @@ class PersonBranchFeed(BranchListingFeed):
     def initialize(self):
         """See `IFeed`."""
         super(PersonBranchFeed, self).initialize()
+
+
+class RevisionPerson:
+    """See `IFeedPerson`.
+
+    Uses the `name_without_email` property for the display name.
+    """
+    implements(IFeedPerson)
+
+    def __init__(self, person, rootsite):
+
+        no_email =  person.name_without_email
+        if no_email:
+            self.name = no_email
+        else:
+            self.name = person.name
+        # We don't want to disclose email addresses in public feeds.
+        self.email = None
+        self.uri = None
+
+class BranchFeed(BranchFeedBase):
+    """Feed for single branch.
+
+    Unlike the other branch feeds, where the feed entries were the various
+    branches for that object, the feed for a single branch has as entries the
+    latest revisions for that branch.
+    """
+
+    usedfor = IBranch
+    feedname = "branch"
+    delegate_view_class = BranchView
+
+    def initialize(self):
+        """See `IFeed`."""
+        # For a `BranchFeed` we must ensure that the branch is not private.
+        super(BranchFeed, self).initialize()
+        if self.context.private:
+            raise Unauthorized("Feeds do not serve private branches")
+
+    @property
+    def title(self):
+        """See `IFeed`."""
+        return "Latest Revisions for Branch %s" % self.context.displayname
+
+    def _getRawItems(self):
+        """Get the raw set of items for the feed.
+
+        For a `BranchFeed` the items are the revisions for the branch.
+        """
+        branch = self.context
+        return branch.latest_revisions(quantity=self.quantity)
+
+    def getItems(self):
+        """See `IFeed`."""
+        items = self._getRawItems()
+        # Convert the items into their feed entry representation.
+        items = [self.itemToFeedEntry(item) for item in items]
+        return items
+
+    def itemToFeedEntry(self, rev):
+        """See `IFeed`."""
+        delegate_view = self.delegate_view_class(self.context, self.request)
+        delegate_view.initialize()
+        title = FeedTypedData("Revision %d" % rev.sequence)
+        url = urlappend(delegate_view.codebrowse_url,
+                        "revision/%d" % rev.sequence)
+        content_view = BranchFeedContentView(rev, self.request, self,
+                                             'templates/branch-revision.pt')
+        content = FeedTypedData(content=content_view.render(),
+                                content_type="xhtml")
+        entry = BranchFeedEntry(title=title,
+                                link_alternate=url,
+                                date_created=rev.revision.date_created,
+                                date_updated=rev.revision.revision_date,
+                                date_published=rev.revision.date_created,
+                                authors=[RevisionPerson(rev.revision.revision_author,
+                                                        self.rootsite)],
+                                content=content)
+        return entry
