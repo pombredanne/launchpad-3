@@ -253,15 +253,7 @@
                                  revisions branch/latest_revisions">
     <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
   </tal:history-available>
-  <tal:history-available condition="context/revision_count">
-    <div class="revision"
-         tal:repeat="rev_no context/latest_revisions"
-         tal:define="codebrowse view/codebrowse_url"
-         tal:attributes="id string:rev${rev_no/sequence}">
 
-      <metal:landing-target use-macro="context/@@+macros/revision-text"/>
-    </div>
-  </tal:history-available>
   </div>
 
   <tal:has-related-bugs condition="context/related_bugs">
