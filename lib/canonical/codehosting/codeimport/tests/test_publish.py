@@ -1,6 +1,6 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Test cases for canonical.launchpad.scripts.importd.publish."""
+"""Test cases for canonical.codehosting.codeimport.publish."""
 
 __metaclass__ = type
 
@@ -20,13 +20,13 @@ from zope.component import getUtility
 from canonical.database.sqlbase import commit
 from canonical.launchpad.interfaces import (
     BranchType, IBranchSet, ILaunchpadCelebrities, IPersonSet)
-from canonical.launchpad.scripts.importd.publish import (
+from canonical.codehosting.codeimport.publish import (
     ensure_series_branch, ImportdPublisher, mirror_url_from_series)
-from canonical.launchpad.scripts.importd.tests.helpers import ImportdTestCase
+from canonical.codehosting.codeimport.tests.helpers import ImportdTestCase
 
 
 class TestImportdPublisher(ImportdTestCase):
-    """Test canonical.launchpad.scripts.importd.publish.ImportdPublisher."""
+    """Test canonical.codehosting.codeimport.publish.ImportdPublisher."""
 
     def setUp(self):
         ImportdTestCase.setUp(self)
