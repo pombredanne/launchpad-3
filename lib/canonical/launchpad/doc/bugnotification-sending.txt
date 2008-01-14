@@ -1012,3 +1012,62 @@ specified:
     False
     False
 
+
+== Verbose bug notifications ==
+
+It is possible for users to have all the bug notifications which they
+receive include the bug description. This helps in those cases where the
+user doesn't save bug notifications, which can make subsequent
+notifications seem somewhat obscure.
+
+To demonstrate this, we'll subscribe Martin Pitt, who receives verbose
+bug notifications, to bug 15.
+
+    >>> bug_15 = getUtility(IBugSet).get(15)
+    >>> mpitt = getUtility(IPersonSet).getByName('mpitt')
+    >>> mpitt.verbose_bugnotifications
+    True
+
+    >>> bug_15.subscribe(mpitt)
+    <...>
+
+The subscription will produce a notification, which we'll expire because
+we're not interested in it.
+
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    1
+
+    >>> from canonical.launchpad.scripts.bugnotification import (
+    ...     get_email_notifications)
+    >>> for bug_notifications, messages in get_email_notifications(
+    ...     notifications):
+    ...     for message in messages:
+    ...         print_notification(message)
+
+    >>> notifications[0].date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
+
+If we then add a comment to the bug, mpitt will receieve a notification
+containing that comment.
+
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a really simple comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_15.addCommentNotification(comment)
+
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    1
+
+If we pass this notifcation to get_email_notifications we can see that
+mpitt will receieve a notification which contains the bug description.
+
+    >>> from canonical.launchpad.scripts.bugnotification import (
+    ...     get_email_notifications)
+    >>> for bug_notifications, messages in get_email_notifications(
+    ...     notifications):
+    ...     for message in messages:
+    ...         print_notification(message)
