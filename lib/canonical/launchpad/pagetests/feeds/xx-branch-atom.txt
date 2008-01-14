@@ -41,8 +41,8 @@ The feed for a person's branches will show the most recent 25 branches
 which will include an entry for each branch.
 
     >>> browser.open('http://feeds.launchpad.dev/~name12/branches.atom')
-    >>> print browser.title
-    Branches for Sample Person
+    >>> BSS(browser.contents).title.contents
+    [u'Branches for Sample Person']
     >>> ids = parse_ids(browser.contents)
     >>> for id_ in ids:
     ...     print id_
@@ -89,8 +89,8 @@ Since we are logged in the owner's email is displayed in the entry content:
 If an anonymous user fetches the same feed the email addresses will be hidden:
 
     >>> anon_browser.open('http://feeds.launchpad.dev/~name12/branches.atom')
-    >>> print anon_browser.title
-    Branches for Sample Person
+    >>> BSS(anon_browser.contents).title.contents
+    [u'Branches for Sample Person']
     >>> 'foo@localhost' in anon_browser.contents
     False
     >>> 'email address hidden' in anon_browser.contents
@@ -103,8 +103,8 @@ The feed for a product's branches will show the most recent 25 branches
 which will include an entry for each branch.
 
     >>> browser.open('http://feeds.launchpad.dev/firefox/branches.atom')
-    >>> print browser.title
-    Branches for Mozilla Firefox
+    >>> BSS(browser.contents).title.contents
+    [u'Branches for Mozilla Firefox']
     >>> ids = parse_ids(browser.contents)
     >>> for id_ in ids:
     ...     print id_
@@ -133,8 +133,8 @@ The feed for a project's branches will show the most recent 25 branches
 which will include an entry for each branch.
 
     >>> browser.open('http://feeds.launchpad.dev/mozilla/branches.atom')
-    >>> print browser.title
-    Branches for the Mozilla Project
+    >>> BSS(browser.contents).title.contents
+    [u'Branches for the Mozilla Project']
     >>> ids = parse_ids(browser.contents)
     >>> for id_ in ids:
     ...     print id_
@@ -165,8 +165,8 @@ different entry.
 
     >>> url = 'http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom'
     >>> browser.open(url)
-    >>> print browser.title
-    Latest Revisions for Branch Mozilla Firefox 0.9.1
+    >>> BSS(browser.contents).title.contents
+    [u'Latest Revisions for Branch Mozilla Firefox 0.9.1']
     >>> print browser.url
     http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom
 

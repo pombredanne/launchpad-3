@@ -20,7 +20,7 @@ import operator
 import os
 import time
 from xml.sax.saxutils import escape as xml_escape
-from BeautifulSoup import BeautifulSoup
+from BeautifulSoup import BeautifulStoneSoup
 from datetime import datetime
 
 from zope.app.datetimeutils import rfc1123_date
@@ -278,10 +278,10 @@ class FeedTypedData:
         if self.content_type in ('text', 'html'):
             return xml_escape(self._content)
         elif self.content_type == 'xhtml':
-            soup = BeautifulSoup(
+            soup = BeautifulStoneSoup(
                 self._content,
-                convertEntities=BeautifulSoup.HTML_ENTITIES)
-            return unicode(soup.prettify())
+                convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
+            return unicode(soup)
 
 
 class FeedPerson:
