@@ -7,10 +7,12 @@ then you will get 'xx' as your default alternate language.
 We'll start by showing the translation page for Spanish (Mexican), which
 should have the Spanish language selected as its alternate, by default.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://localhost/evolution/trunk/+pots/evolution-2.2/es_MX/+translate')
-  >>> browser.url
-  'http://localhost/evolution/trunk/+pots/evolution-2.2/es_MX/+translate'
+  >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
+  ...     'evolution-2.2/es_MX/+translate')
+  >>> print browser.url
+  http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es_MX/+translate
 
   >>> browser.getControl(name='field.alternative_language', index=0).value
   ['es']
@@ -18,9 +20,11 @@ should have the Spanish language selected as its alternate, by default.
 There are some exceptions. pt_BR is quite independent of pt, so we should
 not show pt by default for pt_BR translators:
 
-  >>> browser.open('http://localhost/evolution/trunk/+pots/evolution-2.2/pt_BR/+translate')
-  >>> browser.url
-  'http://localhost/evolution/trunk/+pots/evolution-2.2/pt_BR/+translate'
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
+  ...     'evolution-2.2/pt_BR/+translate')
+  >>> print browser.url
+  http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/pt_BR/+translate
 
   >>> browser.getControl(name='field.alternative_language', index=0).value
   ['']
@@ -28,9 +32,11 @@ not show pt by default for pt_BR translators:
 And of course, we also would not show an alternate language for something like
 French!
 
-  >>> browser.open('http://localhost/evolution/trunk/+pots/evolution-2.2/fr/+translate')
-  >>> browser.url
-  'http://localhost/evolution/trunk/+pots/evolution-2.2/fr/+translate'
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
+  ...     'evolution-2.2/fr/+translate')
+  >>> print browser.url
+  http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/fr/+translate
 
   >>> browser.getControl(name='field.alternative_language', index=0).value
   ['']

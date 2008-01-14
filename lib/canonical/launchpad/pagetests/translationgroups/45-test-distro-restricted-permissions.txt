@@ -9,7 +9,7 @@ is not a designated translator.
   ...     'http://translations.launchpad.dev/ubuntu/+changetranslators')
 
   >>> admin_browser.getControl(
-  ...     'Translation Permission System').value = ['Restricted']
+  ...     'Translation Permission System').value = ['RESTRICTED']
   >>> admin_browser.getControl('Change').click()
   >>> print admin_browser.url
   http://translations.launchpad.dev/ubuntu/+changetranslators
@@ -23,10 +23,8 @@ Sotho. We expect them to be told they can only make contributions:
 
   >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
   >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/st/+translate')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/st/+translate'
   >>> 'Your translations will be held for review' in browser.contents
   True
 
@@ -36,10 +34,8 @@ directly.
 First, we show that the message 137 is not translated.
 
   >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/cy/8/+translate')
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/cy/8/+translate'
   >>> '(no translation yet)' in browser.contents
   True
 
@@ -52,14 +48,12 @@ POST and see that all goes well:
   >>> browser.getControl(
   ...     name='msgset_137_cy_translation_0_new').value = 'evolution minikaart'
   >>> browser.getControl(name='submit_translations').click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/cy/9/+translate'
+  >>> print browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/cy/9/+translate
 
 And finally, let's take a look again, and we should have a translation added.
 
   >>> browser.getLink('Previous').click()
-  >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/cy/8/+translate'
   >>> '(no translation yet)' in browser.contents
   False
   >>> 'evolution minikaart' in browser.contents

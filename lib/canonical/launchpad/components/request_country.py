@@ -6,7 +6,7 @@ import re
 from zope.component import getUtility
 from canonical.launchpad.interfaces import IGeoIP
 
-__all__ = ['request_country']
+__all__ = ['request_country', 'ipaddress_from_request']
 
 def request_country(request):
     """Adapt a request to the country in which the request was made.
@@ -28,7 +28,7 @@ def ipaddress_from_request(request):
     """Determine the IP address for this request.
 
     Returns None if the IP address cannot be determined or is localhost.
-    
+
     The remote IP address is determined by the X-Forwarded-For: header,
     or failing that, the REMOTE_ADDR CGI environment variable.
 

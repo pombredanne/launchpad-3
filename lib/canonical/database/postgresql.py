@@ -15,7 +15,7 @@ def listReferences(cur, table, column, _state=None):
 
     `table` and `column` are both case sensitive strings (so they should
     usually be lowercase strings as per PostgreSQL default behavior).
-    
+
     `cur` is an open DB-API cursor
 
     returns `[(from_table, from_column, to_table, to_column, update, delete)]`
@@ -148,7 +148,7 @@ def listUniques(cur, table, column):
     # Initialize our return value
     rv = []
 
-    # Retrive the UNIQUE indexes. 
+    # Retrive the UNIQUE indexes.
     sql = '''
         SELECT
             i.indkey
@@ -229,7 +229,7 @@ def listSequences(cur):
 
 def resetSequences(cur):
     """Reset table sequences to match the data in them.
-    
+
     Goes through the database resetting the values of sequences to match
     what is in their corresponding tables, where corresponding tables are
     known.
@@ -371,6 +371,9 @@ def drop_tables(cur, tables):
 
 def allow_sequential_scans(cur, permission):
     """Allow database to ignore indexes and scan sequentially when it wants?
+
+    DO NOT USE THIS WITHOUT REVIEW BY A DBA.  When you find yourself wanting
+    this function, chances are you're really hiding a bug in your code.
 
     This is an unfortunate hack.  In some cases we have found that postgres
     will resort to costly sequential scans when a perfectly good index is

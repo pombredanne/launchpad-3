@@ -1,8 +1,19 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <tal:do-this-first condition="view/form_action" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -10,7 +21,6 @@
     </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
@@ -46,6 +56,7 @@
         <blockquote>
         <kbd>gpg --fingerprint</kbd>
         </blockquote>
+        </li>
 
         <li>Have you published your key to a public key
         server? You can do that by by entering in a terminal: 
@@ -105,7 +116,7 @@
       created by software such as GnuPG.
       These are used to sign <a href="/codeofconduct">codes of conduct</a>,
       modify bugs through <a
-      href="https://help.launchpad.net/UsingMaloneEmail">the email interface</a>,
+      href="https://help.launchpad.net/BugTrackerEmailInterface">the email interface</a>,
       and to build and upload packages using <abbr>Soyuz</abbr>.
     </p>
 
@@ -208,7 +219,9 @@
           </p>
           <div><input type="submit" name="import" value="Import Key"/></div>
         </li>
+        </ol>
       </form>
     </div>
   </body>
 </html>
+</tal:root>

@@ -33,11 +33,12 @@ from contrib.glock import GlobalLock
 
 from canonical.database.sqlbase import sqlvalues, cursor
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet)
+    IDistributionSet, IPersonSet, PackagePublishingStatus,
+    PackagePublishingPocket)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.librarian.client import LibrarianClient
-from canonical.lp import dbschema, initZopeless
+from canonical.lp import initZopeless
 
 
 reject_message = ""
@@ -404,8 +405,8 @@ def read_current_source(distro_series, valid_components="", arguments=None):
     #     distro_series which is not what we want.
     if Options.all:
         spp = distro_series.getSourcePackagePublishing(
-            status=dbschema.PackagePublishingStatus.PUBLISHED,
-            pocket=dbschema.PackagePublishingPocket.RELEASE
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE
             )
     else:
         spp = []
@@ -452,7 +453,7 @@ def read_current_binaries(distro_series):
     #
     #     for distroarchseries in distro_series.architectures:
     #         bpp = distroarchseries.getAllReleasesByStatus(
-    #             dbschema.PackagePublishingStatus.PUBLISHED)
+    #             PackagePublishingStatus.PUBLISHED)
     #
     #         for bp in bpp:
     #             component = bp.component.name
@@ -466,20 +467,23 @@ def read_current_binaries(distro_series):
     #                     B[pkg] = [version, component]
 
     # XXX James Troup 2006-02-22: so... let's fall back on raw SQL
-    dar_ids = ", ".join([(str(dar.id)) for dar in distro_series.architectures])
+    das_ids = [das.id for das in distro_series.architectures]
+    archive_ids = [a.id for a in Options.todistro.all_distro_archives]
     cur = cursor()
-
     query = """
     SELECT bpn.name, bpr.version, c.name
     FROM binarypackagerelease bpr, binarypackagename bpn, component c,
-        securebinarypackagepublishinghistory sbpph, distroarchrelease dar
+        securebinarypackagepublishinghistory sbpph, distroarchseries dar
     WHERE
         bpr.binarypackagename = bpn.id AND
              sbpph.binarypackagerelease = bpr.id AND
         sbpph.component = c.id AND
-        sbpph.distroarchrelease = dar.id AND
-        sbpph.status = %s AND dar.id in (%s)
-     """ % (dbschema.PackagePublishingStatus.PUBLISHED, dar_ids)
+        sbpph.distroarchseries = dar.id AND
+        sbpph.status = %s AND
+        sbpph.archive IN %s AND
+        dar.id IN %s
+     """ % sqlvalues(
+        PackagePublishingStatus.PUBLISHED, archive_ids, das_ids)
     cur.execute(query)
 
     print "Getting binaries for %s..." % (distro_series.name)
@@ -544,6 +548,7 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     files = Sources[pkg]["files"]
     for filename in files:
         # First see if we can find the source in the librarian
+        archive_ids = [a.id for a in Options.todistro.all_distro_archives]
         query = """
         SELECT DISTINCT ON (LibraryFileContent.sha1, LibraryFileContent.filesize)
             LibraryFileAlias.id
@@ -551,8 +556,9 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
         WHERE
           LibraryFileAlias.id = SourcePackageFilePublishing.libraryfilealias AND
           LibraryFileContent.id = LibraryFileAlias.content AND
-          SourcePackageFilePublishing.libraryfilealiasfilename = %s
-        """ % sqlvalues(filename)
+          SourcePackageFilePublishing.libraryfilealiasfilename = %s AND
+          SourcePackageFilePublishing.archive IN %s
+        """ % sqlvalues(filename, archive_ids)
         cur = cursor()
         cur.execute(query)
         results = cur.fetchall()

@@ -7,10 +7,12 @@ import unittest
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.launchpad.translationformat import TranslationImporter
 from canonical.launchpad.interfaces import (
-    IPersonSet, IProductSet, IPOTemplateSet, ITranslationImporter)
-from canonical.lp.dbschema import TranslationFileFormat
+    IPersonSet, IProductSet, IPOTemplateSet, ITranslationImporter,
+    TranslationFileFormat)
+from canonical.launchpad.translationformat import (
+    importers, is_identical_translation, TranslationImporter,
+    TranslationMessageData)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -74,6 +76,13 @@ class TranslationImporterTestCase(unittest.TestCase):
         self.failUnless(po_format_importer is not None, (
             'There is no importer for PO file format!'))
 
+        kdepo_format_importer = (
+            self.translation_importer.getTranslationFormatImporter(
+                TranslationFileFormat.KDEPO))
+
+        self.failUnless(kdepo_format_importer is not None, (
+            'There is no importer for KDE PO file format!'))
+
         xpi_format_importer = (
             self.translation_importer.getTranslationFormatImporter(
                 TranslationFileFormat.XPI))
@@ -81,11 +90,99 @@ class TranslationImporterTestCase(unittest.TestCase):
         self.failUnless(xpi_format_importer is not None, (
             'There is no importer for XPI file format!'))
 
+    def testGetTranslationFileFormatByFileExtension(self):
+        """Checked whether file format precedence works correctly."""
+
+        # Even if the file extension is the same for both PO and KDEPO
+        # file formats, a PO file containing no KDE-style messages is
+        # recognized as regular PO file.
+        po_format = self.translation_importer.getTranslationFileFormat(
+            ".po", u'msgid "message"\nmsgstr ""')
+
+        self.failUnless(po_format==TranslationFileFormat.PO, (
+            'Regular PO file is not recognized as such!'))
+
+        # And PO file with KDE-style messages is recognised as KDEPO file.
+        kde_po_format = self.translation_importer.getTranslationFileFormat(
+            ".po", u'msgid "_: kde context\nmessage"\nmsgstr ""')
+
+        self.failUnless(kde_po_format==TranslationFileFormat.KDEPO, (
+            'KDE PO file is not recognized as such!'))
+
+        xpi_format = self.translation_importer.getTranslationFileFormat(
+            ".xpi", u"")
+
+        self.failUnless(xpi_format==TranslationFileFormat.XPI, (
+            'Mozilla XPI file is not recognized as such!'))
+
+    def testNoConflictingPriorities(self):
+        """Check that no two importers for the same file extension have
+        exactly the same priority."""
+        all_extensions = self.translation_importer.supported_file_extensions
+        for file_extension in all_extensions:
+            priorities = []
+            for format, importer in importers.iteritems():
+                if file_extension in importer.file_extensions:
+                    self.failUnless(
+                        importer.priority not in priorities,
+                        "Duplicate priority %d for file extension %s." % (
+                            importer.priority, file_extension))
+                    priorities.append(importer.priority)
+
     def testFileExtensionsWithImporters(self):
         """Check whether we get the right list of file extensions handled."""
         self.assertEqual(
-            self.translation_importer.file_extensions_with_importer,
+            self.translation_importer.supported_file_extensions,
             ['.po', '.pot', '.xpi'])
+
+    def testIsIdenticalTranslation(self):
+        """Test `is_identical_translation`."""
+        msg1 = TranslationMessageData()
+        msg2 = TranslationMessageData()
+        msg1.fuzzy = False
+        msg1.msgid_singular = "foo"
+        msg2.msgid_singular = "foo"
+
+        self.assertTrue(is_identical_translation(msg1, msg2),
+            "Two blank translation messages do not evaluate as identical.")
+        msg2.flags = "fuzzy"
+        self.assertFalse(is_identical_translation(msg1, msg2),
+            "Fuzzy message is not distinguished from non-fuzzy one.")
+        msg2.flags = ""
+        self.assertTrue(is_identical_translation(msg1, msg2),
+            "Clearing flags string does not make message identical to "
+            "non-fuzzy equivalent.")
+
+        msg1.msgid_plural = "foos"
+        self.assertFalse(is_identical_translation(msg1, msg2),
+            "Message with fewer plural forms is accepted as identical.")
+        msg2.msgid_plural = "splat"
+        self.assertFalse(is_identical_translation(msg1, msg2),
+            "Messages with different plurals accepted as identical.")
+        msg2.msgid_plural = "foos"
+        self.assertTrue(is_identical_translation(msg1, msg2),
+            "Messages with identical plural forms not accepted as identical.")
+
+        msg1._translations = ["le foo"]
+        self.assertFalse(is_identical_translation(msg1, msg2),
+            "Failed to distinguish translated message from untranslated one.")
+        msg2._translations = ["le foo"]
+        self.assertTrue(is_identical_translation(msg1, msg2),
+            "Identical translations not accepted as identical.")
+
+        msg1._translations = ["le foo", "les foos"]
+        self.assertFalse(is_identical_translation(msg1, msg2),
+            "Failed to distinguish message with missing plural translation.")
+        msg2._translations = ["le foo", "les foos"]
+        self.assertTrue(is_identical_translation(msg1, msg2),
+            "Identical plural translations not accepted as equal.")
+
+        msg1._translations = ["le foo", "les foos", "beaucoup des foos"]
+        self.assertFalse(is_identical_translation(msg1, msg2),
+            "Failed to distinguish message with extra plural translations.")
+        msg2._translations = ["le foo", "les foos", "beaucoup des foos", None]
+        self.assertTrue(is_identical_translation(msg1, msg2),
+            "Identical multi-form messages not accepted as identical.")
 
 
 def test_suite():

@@ -1,9 +1,9 @@
-SourcePackage View Classes
-==========================
+= SourcePackage View Classes = 
 
   >>> from zope.component import queryView
   >>> from zope.publisher.browser import TestRequest
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistributionSet, PackagePublishingPocket)
 
 Empty request.
 
@@ -27,7 +27,7 @@ and a list of packages represented by IDistroSeriesSourcePackageRelease
 as 'packages', as:
 
   [
-   {'pocketdetails': dbschema.PackagePublishingPocket,
+   {'pocketdetails': PackagePublishingPocket,
     'packages': [IDistroSeriesSourcePackagerelease, ...]}
    ...
   ]
@@ -60,20 +60,13 @@ have only on binary.
 
   >>> for bin_name, archs in firefox_view.binaries().items():
   ...    print bin_name, archs
-  mozilla-firefox [u'i386']
-
-Check dependency related view attributes:
-
-  >>> pmount_view.has_build_depends()
-  False
-
-  >>> firefox_view.has_build_depends()
-  True
+  mozilla-firefox [u'hppa', u'i386']
+  mozilla-firefox-data [u'hppa', u'i386']
 
 Check the formatted dependency lines provided by the view class, they
 return a IPackageRelationshipSet object (see package-relationship.txt).
 
-  >>> firefox_parsed_depends = firefox_view.builddepends()
+  >>> firefox_parsed_depends = firefox_view.builddepends
 
   >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.launchpad.interfaces import IPackageRelationshipSet
@@ -90,7 +83,7 @@ return a IPackageRelationshipSet object (see package-relationship.txt).
   ('pmount', None, '', u'http://launchpad.dev/ubuntu/warty/+package/pmount')
 
 
-  >>> firefox_parsed_dependsindep = firefox_view.builddependsindep()
+  >>> firefox_parsed_dependsindep = firefox_view.builddependsindep
 
   >>> verifyObject(IPackageRelationshipSet, firefox_parsed_dependsindep)
   True
@@ -107,12 +100,12 @@ sourcepackagename before passing to regexp.
 
   >>> libc = hoary.getSourcePackage('libstdc++')['b8p']
   >>> libc_view = queryView(libc, "+changelog", request)
-  >>> print libc_view.changelog()
-  libstdc++ (<a href="../../../hoary/+source/libstdc++/9.9-1">9.9-1</a>) hoary; urgency=high
+  >>> print libc_view.changelog_entry
+  libstdc++ (9.9-1) hoary; urgency=high
   <BLANKLINE>
    * Placeholder
   <BLANKLINE>
-   -- Sample Person &lt;test@canonical.com&gt; Tue, 10 Feb 2006 10:10:08 +0300
+   -- Sample Person &lt;email address hidden&gt; Tue, 10 Feb 2006 10:10:08 +0300
   <BLANKLINE>
   <BLANKLINE>
 

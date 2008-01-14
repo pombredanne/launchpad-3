@@ -165,7 +165,7 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         if subscription is None:
             # XXX thumper 2007-06-14 bug=117980:
             # Restrictive policy is being enforced in the view
-            # rather than the model. 
+            # rather than the model.
             admins = getUtility(ILaunchpadCelebrities).admin
             if (person.isTeam() and not self.user.inTeam(person)
                 and not self.user.inTeam(admins)):

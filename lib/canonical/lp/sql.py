@@ -46,7 +46,7 @@ def confirmEncoding(*args, **kw):
 def confirmNoAddMissingFrom(*args, **kw):
     '''Raise a warning if add_missing_from is turned on (dangerous default).
 
-    This will become an error in the future. Subscribed to 
+    This will become an error in the future. Subscribed to
     zope.app.appsetup.IProcessStartingEvent
 
     '''

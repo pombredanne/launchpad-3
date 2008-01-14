@@ -41,7 +41,8 @@ Useful properties:
 
 List of current 'pmount in Ubuntu' as ISourcePackage:
 
-    >>> [(sp.name, sp.distroseries.name) for sp in dsp.by_distroseriess]
+    >>> [(sp.name, sp.distroseries.name)
+    ...     for sp in dsp.get_distroseries_packages()]
     [(u'pmount', u'hoary')]
 
 Publishing history of 'pmount in Ubuntu':
@@ -117,5 +118,6 @@ archive (bug #60440):
     u'alsa-utils 1.0.9a-4 (source) in ubuntutest'
 
     >>> for pub in alsa_dspr.publishing_history:
-    ...     print pub.distroseries.name, pub.status.name
-    breezy-autotest REMOVED
+    ...     is_removed = pub.dateremoved is not None
+    ...     print pub.distroseries.name, pub.status.name, is_removed
+    breezy-autotest DELETED True

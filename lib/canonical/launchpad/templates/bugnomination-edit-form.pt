@@ -1,3 +1,6 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  omit-tag="">
 <tal:process condition="view/processNominationDecision" />
 <form action="#"
       method="post"
@@ -7,3 +10,4 @@
   <input tal:condition="view/shouldShowDeclineButton"
          type="submit" name="decline" value="Decline" id="decline" />
 </form>
+</tal:root>

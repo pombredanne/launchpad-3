@@ -105,7 +105,7 @@ class LoopTuner:
         logging.info(
             "Done. %d items in %d iterations, "
             "%.3f seconds, "
-            "average size %f (%s/s)" % 
+            "average size %f (%s/s)" %
                 (total_size, iteration, total_time, average_size,
                  average_speed))
 

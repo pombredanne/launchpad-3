@@ -1,0 +1,393 @@
+= Milestones =
+
+
+== Milestone listings ==
+
+Products, distributions, product series, distribution series and projects have
+a page in which all of their milestones are listed.
+
+
+=== Distributions ===
+
+    >>> anon_browser.open('http://launchpad.dev/debian/+milestones')
+    >>> anon_browser.url
+    'http://launchpad.dev/debian/+milestones'
+
+    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
+    ...     print extract_text(li)
+    3.1-rc1 Expected for 2056-02-16 For WOODY
+    3.1 Expected for 2056-05-16 For WOODY
+
+
+=== Distribution Series ===
+
+    >>> anon_browser.open('http://launchpad.dev/debian/woody/+milestones')
+    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
+    ...     print extract_text(li)
+    3.1-rc1 Expected for 2056-02-16 For WOODY
+    3.1 Expected for 2056-05-16 For WOODY
+
+    >>> anon_browser.open('http://launchpad.dev/debian/sarge/+milestones')
+    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
+    ...     print extract_text(li)
+
+
+=== Products ===
+
+    >>> anon_browser.open('http://launchpad.dev/firefox/+milestones')
+    >>> anon_browser.url
+    'http://launchpad.dev/firefox/+milestones'
+
+    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
+    ...     print extract_text(li)
+    1.0 Expected for 2056-10-16 For Mozilla Firefox Series: trunk
+
+
+=== Product Series ===
+
+    >>> anon_browser.open('http://launchpad.dev/firefox/trunk/+milestones')
+    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
+    ...     print extract_text(li)
+    1.0 Expected for 2056-10-16 For Mozilla Firefox Series: trunk
+
+    >>> anon_browser.open('http://launchpad.dev/firefox/1.0/+milestones')
+    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
+    ...     print extract_text(li)
+
+
+=== Projects ===
+
+The main project page has a portlet "Active milestones":
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.ftests.test_project_milestone import (
+    ...     ProjectMilestoneTest)
+    >>> login('foo.bar@canonical.com')
+    >>> test_helper = ProjectMilestoneTest(helper_only=True)
+    >>> test_helper.setUpProjectMilestoneTests()
+    >>> logout()
+    >>> anon_browser.open('http://launchpad.dev/gnome')
+    >>> milestones = find_portlet(anon_browser.contents, 'Active milestones')
+    >>> print extract_text(milestones)
+    Active milestones
+    1.1
+    1.1.
+    1.2
+    All milestones
+
+The page "All milestones" lists all milestones, including the inactive ones:
+
+    >>> anon_browser.getLink('All milestones').click()
+    >>> for milestone in find_tags_by_class(
+    ...     anon_browser.contents, 'milestone'):
+    ...     print extract_text(milestone)
+    1.1 Expected for 2010-04-01
+    1.1. Expected for 2010-04-02
+    1.2 Expected for 2011-04-01
+    1.3 (Inactive) Expected for 2012-04-01
+
+
+== Individual milestones ==
+
+Pages for the individual milestones show all specifications and bugtasks
+associated with that milestone for products of this project:
+
+    >>> anon_browser.getLink('1.1').click()
+    >>> specs = find_tag_by_id(anon_browser.contents, 'milestone_specs')
+    >>> print extract_text(specs)
+    Specification Product Priority Assignee Delivery
+    Title evolution specification Evolution Evolution ... High ...  Unknown
+    Title gnomebaker specification gnomebaker gnomebaker ... High ... Unknown
+
+    >>> bugtasks = find_tag_by_id(anon_browser.contents, 'milestone_bugtasks')
+    >>> print extract_text(bugtasks)
+    Report Product Importance Assignee Status ...
+    Milestone test bug for evolution Evolution ... Undecided ... Confirmed ...
+    Milestone test bug for gnomebaker gnomebaker ... Undecided ... Confirmed
+
+
+=== Duplicate bugs ===
+
+Milestone bug listings do not show bugs that are marked as duplicates of other
+bugs.
+
+To demonstrate this, we'll begin by filing a couple of bugs for the Mozilla
+Firefox product:
+
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://bugs.launchpad.dev/firefox/')
+    >>> browser.getLink('Report a bug').click()
+    >>> browser.getLink('complicated bug filing form').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Report a bug...
+    >>> report_bug_url = browser.url
+
+    >>> browser.getControl('Summary').value = 'Test Bug 1'
+    >>> browser.getControl('Further information').value = 'Test Bug 1'
+    >>> browser.getControl('Submit').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Thank you for your bug report...
+    >>> bug_1_url = browser.url
+
+    >>> browser.open(report_bug_url)
+    >>> browser.getControl('Summary').value = 'Test Bug 2'
+    >>> browser.getControl('Further information').value = 'Test Bug 2'
+    >>> browser.getControl('Submit').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Thank you for your bug report...
+    >>> bug_2_url = browser.url
+
+To make it easy to refer to the bugs, we'll give each bug a nickname:
+
+    >>> bug_1_nickname = 'test-bug-1'
+    >>> browser.open(bug_1_url)
+    >>> browser.getLink('Edit description/tags').click()
+    >>> browser.getControl('Nickname').value = bug_1_nickname
+    >>> browser.getControl('Change').click()
+
+    >>> bug_2_nickname = 'test-bug-2'
+    >>> browser.open(bug_2_url)
+    >>> browser.getLink('Edit description/tags').click()
+    >>> browser.getControl('Nickname').value = bug_2_nickname
+    >>> browser.getControl('Change').click()
+
+Next, we'll target each bug to the 1.0 milestone:
+
+    >>> milestone = '1.0'
+
+    >>> browser.open(bug_1_url)
+    >>> browser.getLink('[edit]').click()
+    >>> browser.getControl('Milestone').displayValue = [milestone]
+    >>> browser.getControl('Save Changes').click()
+
+    >>> browser.open(bug_2_url)
+    >>> browser.getLink('[edit]').click()
+    >>> browser.getControl('Milestone').displayValue = [milestone]
+    >>> browser.getControl('Save Changes').click()
+
+Observe that both bugs are listed in the 1.0 milestone listing:
+
+    >>> browser.open('http://launchpad.dev/firefox')
+    >>> browser.getLink('All milestones').click()
+    >>> browser.getLink(milestone).click()
+    >>> print browser.title
+    Milestone 1.0 for Mozilla Firefox...
+    >>> milestone_url = browser.url
+
+    >>> browser.getLink('Test Bug 1').click()
+    >>> browser.url == bug_1_url
+    True
+
+    >>> browser.open(milestone_url)
+    >>> browser.getLink('Test Bug 2').click()
+    >>> browser.url == bug_2_url
+    True
+
+Now we'll mark the second bug as a duplicate of the first:
+
+    >>> browser.open(bug_2_url)
+    >>> browser.getLink('Mark as duplicate').click()
+    >>> browser.getControl('Duplicate').value = bug_1_nickname
+    >>> browser.getControl('Change').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Bug...This report is a duplicate...
+
+Since duplicate bugs are not listed in milestone listings, only our first bug
+is listed in the 1.0 milestone listing:
+
+    >>> browser.open(milestone_url)
+    >>> browser.getLink('Test Bug 1').click()
+    >>> browser.url == bug_1_url
+    True
+
+    >>> browser.open(milestone_url)
+    >>> print browser.getLink('Test Bug 2')
+    Traceback (most recent call last):
+        ...
+    LinkNotFoundError
+
+However, it's also possible to clear the duplicate status of our second bug:
+
+    >>> browser.open(bug_2_url)
+    >>> browser.getLink('Mark as duplicate').click()
+    >>> browser.getControl('Duplicate').value = ''
+    >>> browser.getControl('Change').click()
+    >>> 'This report is a duplicate' in find_main_content(browser.contents)
+    False
+
+Now both bugs are listed in the 1.0 milestone listing once again:
+
+    >>> browser.open(milestone_url)
+    >>> browser.getLink('Test Bug 1').click()
+    >>> browser.url == bug_1_url
+    True
+
+    >>> browser.open(milestone_url)
+    >>> browser.getLink('Test Bug 2').click()
+    >>> browser.url == bug_2_url
+    True
+
+
+=== Bugs targeted to multiple series ===
+
+Bugs targeted to the same milestone across more than one series will result in
+duplicate entries in the milestone listing (one for each series target).
+
+To demonstrate this, we'll begin by creating a new series "2.0" for the
+Mozilla Firefox product, to complement the existing series "1.0":
+
+    >>> browser.open('http://launchpad.dev/firefox')
+    >>> browser.getLink('Register a series').click()
+    >>> print browser.title
+    Register a new Mozilla Firefox release series
+
+    >>> browser.getControl('Name').value = '2.0'
+    >>> browser.getControl('Summary').value = 'The Firefox 2.0 Series'
+    >>> browser.getControl('Register Series').click()
+    >>> print browser.title
+    Overview of Mozilla Firefox Series: 2.0
+
+We'll also create a new test milestone within the "trunk" series:
+
+    >>> browser.open('http://launchpad.dev/firefox')
+    >>> browser.getLink('trunk').click()
+    >>> print browser.title
+    Overview of Mozilla Firefox Series: trunk
+
+    >>> browser.getLink('Add milestone').click()
+    >>> print browser.title
+    Add new milestone for Mozilla Firefox Series: trunk
+
+    >>> milestone = 'test-milestone'
+    >>> browser.getControl('Name').value = milestone
+    >>> browser.getControl('Date Targeted').value = '2100-08-08'
+    >>> browser.getControl('Add').click()
+    >>> print browser.title
+    Overview of Mozilla Firefox Series: trunk
+
+    >>> print extract_text(find_portlet(browser.contents,
+    ...                                 'Active milestones'))
+    Active milestones...
+    test-milestone...
+
+    >>> browser.getLink('test-milestone').click()
+    >>> print browser.title
+    Milestone test-milestone for Mozilla Firefox...
+    >>> milestone_url = browser.url
+
+Let's target an existing bug to both series "1.0" and series "2.0":
+
+    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> browser.open(bug_1_url)
+    >>> print backslashreplace(browser.title)
+    Bug...in Mozilla Firefox...
+
+    >>> browser.getLink('Target to release').click()
+    >>> print browser.title
+    Target bug...to series
+
+    >>> browser.getControl('1.0').selected = True
+    >>> browser.getControl('2.0').selected = True
+    >>> browser.getControl('Submit').click()
+
+The bug page now lists a bug task for each series:
+
+    >>> print extract_text(first_tag_by_class(browser.contents, 'listing'))
+    Affects Status Importance ...
+    1.0     New    Undecided  ...
+    2.0     New    Undecided  ...
+
+Now we'll add each bug task to the same test milestone. Each bug task has a
+link to an "edit status" form that can be used to choose the milestone we're
+interested in. However, we need to be careful when matching these links, as
+they may contain the same text as other links. We'll use a specific URL
+pattern to avoid matching unrelated links.
+
+Let's start with the first bug task:
+
+    >>> import re
+    >>> edit_status_url = re.compile(r'1.0/\+bug/[0-9]+/\+editstatus')
+    >>> browser.getLink(url=edit_status_url).click()
+
+Completing the "edit status" form allows us to add the bug task to the
+milestone:
+
+    >>> browser.getControl('Milestone').displayValue = [milestone]
+    >>> browser.getControl('Importance').value = ['CRITICAL']
+    >>> browser.getControl('Save Changes').click()
+
+    >>> print extract_text(first_tag_by_class(browser.contents, 'listing'))
+    Affects Status Importance ...
+    1.0     New    Critical   ...
+
+Now we'll add the second bug task to the test milestone, using the same
+method. However this time we'll use a different importance:
+
+    >>> edit_status_url = re.compile(r'2.0/\+bug/[0-9]+/\+editstatus')
+    >>> browser.getLink(url=edit_status_url).click()
+    >>> browser.getControl('Milestone').displayValue = [milestone]
+    >>> browser.getControl('Importance').value = ['HIGH']
+    >>> browser.getControl('Save Changes').click()
+
+    >>> print extract_text(first_tag_by_class(browser.contents, 'listing'))
+    Affects Status Importance ...
+    2.0     New    High       ...
+
+Observe that both bug tasks are now listed in the test milestone listing:
+
+    >>> browser.open(milestone_url)
+    >>> print extract_text(find_tag_by_id(browser.contents,
+    ...                                   'milestone_bugtasks'))
+    Report         Importance ...
+    Test Bug 1 ... Critical   ...
+    Test Bug 1 ... High       ...
+
+
+=== Bugs targeted to development focus series ===
+
+When a bug is raised for a product or distribution, it is implicitly targeted
+to the development focus series for that product or distribution ("trunk" by
+default).
+
+Ordinarily, targeting a bug to a milestone causes the bug to appear in that
+milestone's bug listing:
+
+    >>> browser.open(bug_2_url)
+    >>> browser.getLink('[edit]').click()
+    >>> print browser.url
+    http://bugs.launchpad.dev/firefox/+bug/.../+editstatus
+
+    >>> browser.getControl('Milestone').displayValue = [milestone]
+    >>> browser.getControl('Save Changes').click()
+
+    >>> browser.open(milestone_url)
+    >>> print extract_text(find_tag_by_id(browser.contents,
+    ...                                   'milestone_bugtasks'))
+    Report...
+    Test Bug 2...
+
+When we explicitly target the bug to the development focus series, the bug
+still appears in the milestone's bug listing:
+
+    >>> browser.open(bug_2_url)
+    >>> browser.getLink('Target to release').click()
+    >>> print browser.url
+    http://bugs.launchpad.dev/firefox/+bug/.../+nominate
+
+    >>> browser.getControl('Trunk').selected = True
+    >>> browser.getControl('Submit').click()
+    >>> print extract_text(first_tag_by_class(browser.contents, 'listing'))
+    Affects            Status                  ...
+    Mozilla Firefox    Status tracked in Trunk ...
+
+    >>> browser.open(milestone_url)
+    >>> bugtasks = extract_text(find_tag_by_id(browser.contents,
+    ...                                        'milestone_bugtasks'))
+    >>> print bugtasks
+    Report...
+    Test Bug 2...
+
+Moreover, the bug appears only once in the listing:
+
+    >>> print bugtasks.count('Test Bug 2')
+    1

@@ -25,8 +25,7 @@ bug.
 
   >>> browser.getControl('Description').value= ''
   >>> browser.getControl('Create').click()
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> for tag in soup('div', 'message'):
   ...   print tag.string
   Required input is missing.
@@ -42,8 +41,7 @@ and description and redirects the user to the bug page.
   >>> browser.getControl('Create').click()
   >>> browser.url
   '.../firefox/+bug/...'
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> for tag in soup('h1'):
   ...     print tag.string
   W3C SVG demo doesn't work in Firefox
@@ -78,7 +76,7 @@ It works with distribution questions as well.
   >>> browser.getControl('Create Bug Report').click()
   >>> browser.url
   '.../ubuntu/+bug/...'
-  >>> soup = BeautifulSoup(browser.contents)
+  >>> soup = find_main_content(browser.contents)
   >>> for tag in soup('div', 'informational message'):
   ...   print tag.string
   Thank you! Bug...created.

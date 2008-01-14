@@ -20,7 +20,7 @@ class InvalidDatabaseRevision(Exception):
 def confirm_dbrevision(cur):
     """Check that the database we are connected to is the same
     database patch level as expected by the code.
-    
+
     Raises an InvalidDatabaseRevision exception if the database patch level
     is not what is expected.
     """
@@ -43,7 +43,7 @@ def confirm_dbrevision(cur):
     # are no longer stored on the filesystem.
     fs_major = fs_patches[0][0]
     cur.execute("""
-        SELECT major, minor, patch FROM LaunchpadDatabaseRevision 
+        SELECT major, minor, patch FROM LaunchpadDatabaseRevision
         ORDER BY major, minor, patch
         """)
     db_patches = [

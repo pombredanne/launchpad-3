@@ -29,9 +29,81 @@
     />
 
   <content class="canonical.launchpad.database.Person">
-    <allow interface="canonical.launchpad.interfaces.IPerson" />
-    <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
+    <allow attributes="account_status account_status_comment activesignatures
+      addLanguage addressline1 addressline2 allwikis
+      approver_specs archive assignKarma
+      assigned_specs assigned_specs_in_progress authored_branches
+      branches browsername city
+      claimedBounties clearInTeamCache convertToTeam country created_specs
+      creation_comment creation_rationale currentShipItRequest
+      datecreated defaultRenewalPeriodIsRequiredForSomeTeams
+      defaultexpirationdate
+      defaultmembershipperiod defaultrenewalperiod
+      defaultrenewedexpirationdate
+      displayname drafted_specs entitlements
+      feedback_specs findPathToTeam getActiveMemberships
+      getAdministratedTeams getBranch getBugContactOpenBugCounts
+      getBugContactPackages getDirectAnswerQuestionTargets
+      getInactiveMemberships
+      getInvitedMemberships getLatestApprovedMembershipsForPerson
+      getLatestMaintainedPackages
+      getLatestUploadedButNotMaintainedPackages getLatestUploadedPPAPackages
+      getOwnedOrDrivenPillars
+      getProjectsAndCategoriesContributedTo getProposedMemberships
+      getSuperTeams
+      getTeamAdminsEmailAddresses getTeamAnswerQuestionTargets gpgkeys
+      guessedemails hasParticipationEntryFor hide_email_addresses
+      homepage_content id inTeam
+      inactivegpgkeys inactivesignatures ircnicknames isBugContributor
+      isBugContributorInTarget
+      isTeam isUploader is_openid_enabled
+      is_trusted_on_shipit is_ubuntero is_valid_person
+      is_valid_person_or_team iterTopProjectsContributedTo jabberids
+      join karma karma_category_caches
+      languages lastShippedRequest latestKarma
+      leave mailing_list merged
+      myactivememberships name open_membership_invitations
+      openid_identifier organization otherwikis
+      ownedBounties password pastShipItRequests
+      pendinggpgkeys personCannotHaveIcon phone
+      postcode preferredemail preferredemail_sha1
+      province registered_branches registrant
+      removeLanguage renewal_policy reviewerBounties
+      safe_email_or_blank searchTasks setContactAddress
+      setMembershipData setPreferredEmail
+      shippedShipItRequestsOfCurrentSeries
+      signedcocs sshkeys subscribedBounties
+      subscribed_branches subscribed_specs subscriptionpolicy
+      team_mentorships teamdescription teamowner
+      teamownerID teams_indirectly_participated_in teams_participated_in
+      teams_with_icons timezone title
+      translatable_languages translation_groups translation_history
+      ubuntuwiki unique_displayname unvalidatedemails
+      validateAndEnsurePreferredEmail validatedemails visibility"
+      />
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+    <allow interface="canonical.launchpad.interfaces.IHasSpecifications"/>
+    <allow interface="canonical.launchpad.interfaces.IHasMentoringOffers"/>
+    <allow interface="canonical.launchpad.interfaces.IQuestionCollection"/>
+    <allow interface="canonical.launchpad.interfaces.IHasLogo"/>
+    <allow interface="canonical.launchpad.interfaces.IHasMugshot"/>
+    <allow interface="canonical.launchpad.interfaces.IHasIcon"/>
+
+    <require
+      permission="launchpad.View"
+      attributes="
+        active_member_count activemembers adminmembers all_member_count
+        allmembers approvedmembers deactivated_member_count
+        deactivatedmembers expired_member_count expiredmembers
+        getDirectAdministrators getMembersByStatus getSubTeams
+        inactive_member_count inactivemembers invited_member_count
+        invited_members pendingmembers proposed_member_count
+        proposedmembers"
+      />
+    <require
+      permission="launchpad.Edit"
+      attributes="addMember"
+      />
     <require
       permission="launchpad.Edit"
       set_schema="canonical.launchpad.interfaces.IPerson"
@@ -44,6 +116,10 @@
       permission="launchpad.Edit"
       attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf
                   renewTeamMembership"
+      />
+    <require
+      permission="launchpad.Admin"
+      attributes="deactivateAllMembers"
       />
   </content>
 
@@ -105,6 +181,14 @@
   </browser:editform>
 
   <browser:page
+    name="+claimteam"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.BeginTeamClaimView"
+    permission="launchpad.AnyPerson"
+    template="../templates/person-claim-team.pt"
+    />
+
+  <browser:page
     name="+claim"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonClaimView"
@@ -133,7 +217,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonEditView"
     permission="launchpad.Edit"
-    template="../templates/person-edit.pt" 
+    template="../templates/person-edit.pt"
     />
 
   <browser:page
@@ -141,7 +225,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonBrandingView"
     permission="launchpad.Edit"
-    template="../templates/object-branding.pt" 
+    template="../templates/object-branding.pt"
     />
 
   <browser:page
@@ -149,17 +233,14 @@
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonEditHomePageView"
     permission="launchpad.Edit"
-    template="../templates/person-edithomepage.pt" 
+    template="../templates/person-edithomepage.pt"
     />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IPerson"
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonView">
-    <browser:page
-      name="+index"
-      template="../templates/person-index.pt"
-      />
+
     <browser:page
       name="+ask-a-question-button"
       template="../templates/null.pt"
@@ -197,11 +278,33 @@
       name="+portlet-details"
       template="../templates/person-portlet-details.pt"
       />
+    <browser:page
+      name="+pagelet-details"
+      template="../templates/person-pagelet-details.pt"
+      />
+    <browser:page
+      name="+pagelet-contact-details"
+      template="../templates/person-pagelet-contact-details.pt"
+      />
     <!-- this should be on IPerson because we don't always know if it is a
     team or a person -->
     <browser:page
       name="+teamlist"
-      template="../templates/team-listing.pt" 
+      template="../templates/team-listing.pt"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonIndexView">
+    <browser:page
+      name="+index"
+      template="../templates/person-index.pt"
+      />
+    <browser:page
+      name="+xrds"
+      attribute="xrds"
       />
   </browser:pages>
 
@@ -230,12 +333,20 @@
     />
 
   <browser:page
+    name="+translations"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
+    />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     name="+translations"
     facet="translations"
     class="canonical.launchpad.browser.PersonTranslationView"
     permission="zope.Public"
-    template="../templates/person-translations.pt" 
+    template="../templates/person-translations.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <browser:page
@@ -320,7 +431,7 @@
     facet="bugs"
     class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
     permission="zope.Public"
-    template="../templates/person-packagebugs-search.pt" 
+    template="../templates/person-packagebugs-search.pt"
     />
 
   <!-- This page is a generalform because it uses widget values to
@@ -333,7 +444,7 @@
     facet="bugs"
     class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
     permission="zope.Public"
-    template="../templates/person-packagebugs-overview.pt" 
+    template="../templates/person-packagebugs-overview.pt"
     />
 
   <browser:page
@@ -363,15 +474,6 @@
     template="../templates/archive-activate.pt"
     />
 
-  <browser:page
-    name="+ppa-tos"
-    facet="overview"
-    for="canonical.launchpad.interfaces.IPerson"
-    permission="zope.Public"
-    template="../templates/archive-ppa-tos.pt"
-    />
-
-
   <!-- Adding SSH keys is the only possibly harmful thing that can be done
   without the user's password, so we use a special permission here to make
   sure only the user (and not launchpad admins) will be able to edit her own
@@ -382,7 +484,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     permission="launchpad.Special"
     class="canonical.launchpad.browser.PersonEditSSHKeysView"
-    template="../templates/person-editsshkeys.pt" 
+    template="../templates/person-editsshkeys.pt"
     />
 
   <browser:page
@@ -390,7 +492,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     permission="launchpad.Special"
     class="canonical.launchpad.browser.PersonDeactivateAccountView"
-    template="../templates/person-deactivate-account.pt" 
+    template="../templates/person-deactivate-account.pt"
     />
 
   <browser:page
@@ -398,7 +500,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     permission="launchpad.Edit"
     class="canonical.launchpad.browser.PersonCodeOfConductEditView"
-    template="../templates/person-codesofconduct.pt" 
+    template="../templates/person-codesofconduct.pt"
     />
 
   <browser:page
@@ -406,7 +508,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     permission="launchpad.Edit"
     class="canonical.launchpad.browser.PersonEditWikiNamesView"
-    template="../templates/person-editwikinames.pt" 
+    template="../templates/person-editwikinames.pt"
     />
 
   <browser:page
@@ -414,7 +516,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     permission="launchpad.Edit"
     class="canonical.launchpad.browser.PersonEditIRCNicknamesView"
-    template="../templates/person-editircnicknames.pt" 
+    template="../templates/person-editircnicknames.pt"
     />
 
   <browser:page
@@ -422,7 +524,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     permission="launchpad.Edit"
     class="canonical.launchpad.browser.PersonEditJabberIDsView"
-    template="../templates/person-editjabberids.pt" 
+    template="../templates/person-editjabberids.pt"
     />
 
   <browser:page
@@ -449,7 +551,7 @@
     permission="zope.Public"
     facet="branches"
     name="+branches"
-    template="../templates/person-branches.pt" 
+    template="../templates/person-branches.pt"
     />
 
   <browser:page
@@ -458,7 +560,7 @@
     permission="zope.Public"
     facet="branches"
     name="+authoredbranches"
-    template="../templates/person-branches.pt" 
+    template="../templates/person-branches.pt"
     />
 
   <browser:page
@@ -467,7 +569,7 @@
     permission="zope.Public"
     facet="branches"
     name="+subscribedbranches"
-    template="../templates/person-branches.pt" 
+    template="../templates/person-branches.pt"
     />
 
   <browser:page
@@ -476,7 +578,7 @@
     permission="zope.Public"
     facet="branches"
     name="+registeredbranches"
-    template="../templates/person-branches.pt" 
+    template="../templates/person-branches.pt"
     />
 
   <browser:page
@@ -514,11 +616,19 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="launchpad.Edit"
-    class="canonical.launchpad.browser.TeamEmailView"
-    name="+editemail"
-    template="../templates/team-editemail.pt"
+    class="canonical.launchpad.browser.TeamContactAddressView"
+    name="+contactaddress"
+    template="../templates/team-contactaddress.pt"
     />
-    
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.TeamMailingListConfigurationView"
+    name="+mailinglist"
+    template="../templates/team-mailinglist.pt"
+    />
+
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="launchpad.Edit"
@@ -532,7 +642,7 @@
     for="canonical.launchpad.interfaces.ITeam"
     class="canonical.launchpad.browser.TeamEditView"
     permission="launchpad.Edit"
-    template="../templates/team-edit.pt" 
+    template="../templates/team-edit.pt"
     />
 
   <browser:page
@@ -540,7 +650,7 @@
     for="canonical.launchpad.interfaces.ITeam"
     class="canonical.launchpad.browser.TeamBrandingView"
     permission="launchpad.Edit"
-    template="../templates/team-edit.pt" 
+    template="../templates/team-edit.pt"
     />
 
   <browser:page
@@ -625,7 +735,7 @@
     class="canonical.launchpad.browser.PersonBranchAddView"
     facet="branches"
     permission="launchpad.AnyPerson"
-    template="../templates/person-branch-add.pt" 
+    template="../templates/person-branch-add.pt"
     />
 
   <browser:page
@@ -656,7 +766,7 @@
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPersonSet"
-    name="+index" 
+    name="+index"
     />
 
   <browser:navigation
@@ -669,7 +779,7 @@
     for="canonical.launchpad.interfaces.IPersonSet"
     class="canonical.launchpad.browser.PersonAddView"
     permission="launchpad.Admin"
-    template="../templates/people-newperson.pt" 
+    template="../templates/people-newperson.pt"
     />
 
   <browser:page
@@ -720,7 +830,7 @@
       />
     <browser:page
       name="+portlet-stats"
-      template="../templates/people-portlet-stats.pt" 
+      template="../templates/people-portlet-stats.pt"
       />
   </browser:pages>
 
@@ -734,15 +844,19 @@
     template="../templates/people-requestmerge.pt"
     />
 
-  <browser:pages
+  <browser:page
     for="canonical.launchpad.interfaces.IPersonSet"
     permission="launchpad.Admin"
-    class="canonical.launchpad.browser.AdminRequestPeopleMergeView">
-    <browser:page
-      name="+adminrequestmerge"
-      template="../templates/people-adminrequestmerge.pt"
-      />
-  </browser:pages>
+    class="canonical.launchpad.browser.AdminPeopleMergeView"
+    name="+adminpeoplemerge"
+    template="../templates/people-adminrequestmerge.pt" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPersonSet"
+    permission="launchpad.Admin"
+    class="canonical.launchpad.browser.AdminTeamMergeView"
+    name="+adminteammerge"
+    template="../templates/people-adminrequestmerge.pt" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IPersonSet"
@@ -769,7 +883,7 @@
     permission="zope.Public">
       <browser:page
         name="+portlet-about"
-        template="../templates/people-portlet-about.pt" 
+        template="../templates/people-portlet-about.pt"
         />
   </browser:pages>
 </facet>
@@ -877,12 +991,18 @@
     module="canonical.launchpad.browser"
     classes="PersonAnswersMenu"
     />
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.RestrictedMembershipsPersonView"
+    name="+restricted-membership"
+    permission="zope.Public"
+    />
 </facet>
 
-<adapter 
+<adapter
   for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
   provides="canonical.launchpad.interfaces.IPerson"
-  factory="canonical.launchpad.components.person.personFromPrincipal" 
+  factory="canonical.launchpad.components.person.personFromPrincipal"
   />
 
 </configure>

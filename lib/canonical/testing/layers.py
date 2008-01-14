@@ -41,6 +41,8 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
 import canonical.launchpad.mail.stub
 from canonical.launchpad.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.webapp.servers import (
+    register_launchpad_request_publication_factories)
 from canonical.lp import initZopeless
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
@@ -158,6 +160,13 @@ class BaseLayer:
             raise LayerIsolationError(
                     "Zopeless environment was setup and not torn down."
                     )
+
+        # Detect a test that forgot to reset the default socket timeout.
+        # This safety belt is cheap and protects us from very nasty
+        # intermittent test failures: see bug #140068 for an example.
+        if socket.getdefaulttimeout() is not None:
+            raise LayerIsolationError(
+                "Test didn't reset the socket default timeout.")
 
 
 class LibrarianLayer(BaseLayer):
@@ -393,6 +402,12 @@ class FunctionalLayer(BaseLayer):
         if not is_ca_available():
             raise LayerInvariantError("Component architecture failed to load")
 
+        # If our request publication factories were defined using ZCML,
+        # they'd be set up by FunctionalTestSetup().setUp(). Since
+        # they're defined by Python code, we need to call that code
+        # here.
+        register_launchpad_request_publication_factories()
+
     @classmethod
     @profiled
     def tearDown(cls):
@@ -445,6 +460,12 @@ class ZopelessLayer(BaseLayer):
             raise LayerInvariantError(
                 "Component architecture not loaded by execute_zcml_for_scripts"
                 )
+
+        # If our request publication factories were defined using
+        # ZCML, they'd be set up by execute_zcml_for_scripts(). Since
+        # they're defined by Python code, we need to call that code
+        # here.
+        register_launchpad_request_publication_factories()
 
     @classmethod
     @profiled

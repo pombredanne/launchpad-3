@@ -428,7 +428,7 @@ class GiveAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
 
     def test_giveAnswerByOwner(self):
         """Test giveAnswerByOwner().
-        
+
         Test that giveAnswer can be called by the questions owner when the
         question status is one of OPEN, NEEDSINFO or ANSWERED and check
         that it returns a valid IQuestionMessage.
@@ -454,7 +454,7 @@ class GiveAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             """
             self.assertEquals(None, self.question.answer)
             self.assertEquals(self.owner, self.question.answerer)
-            self.assertEquals(message.datecreated, self.question.dateanswered)
+            self.assertEquals(message.datecreated, self.question.date_solved)
 
         self._testValidTransition(
             [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
@@ -467,7 +467,7 @@ class GiveAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             transition_method_args=(
                 self.owner, "I found the solution.",),
             transition_method_kwargs={'datecreated': self.nowPlus(3)},
-            edited_fields=['status', 'messages', 'dateanswered', 'answerer',
+            edited_fields=['status', 'messages', 'date_solved', 'answerer',
                            'datelastquery'])
 
     def test_giveAnswerPermission(self):
@@ -504,7 +504,7 @@ class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
         def checkFAQ(message):
             """Check that the FAQ attribute was set correctly."""
             self.assertEquals(self.question.faq, self.faq)
-    
+
         self._testValidTransition(
             [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
              QuestionStatus.ANSWERED],
@@ -525,8 +525,8 @@ class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
             """
             checkFAQ(message)
             self.assertEquals(self.owner, self.question.answerer)
-            self.assertEquals(message.datecreated, self.question.dateanswered)
-            
+            self.assertEquals(message.datecreated, self.question.date_solved)
+
         self._testValidTransition(
             [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
              QuestionStatus.ANSWERED],
@@ -538,7 +538,7 @@ class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
             transition_method_args=(
                 self.owner, self.faq, "I found the solution in that FAQ.",),
             transition_method_kwargs={'datecreated': self.nowPlus(3)},
-            edited_fields=['status', 'messages', 'dateanswered', 'answerer',
+            edited_fields=['status', 'messages', 'date_solved', 'answerer',
                            'datelastquery'])
 
     def test_linkFAQPermission(self):
@@ -609,7 +609,7 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             # Check the attributes that are set when an answer is confirmed.
             self.assertEquals(answer_message, self.question.answer)
             self.assertEquals(self.answerer, self.question.answerer)
-            self.assertEquals(message.datecreated, self.question.dateanswered)
+            self.assertEquals(message.datecreated, self.question.date_solved)
 
         self._testValidTransition(
             [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
@@ -622,7 +622,7 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             transition_method_args=("That was very useful.",),
             transition_method_kwargs={'answer': answer_message,
                                       'datecreated' : self.nowPlus(2)},
-            edited_fields=['status', 'messages', 'dateanswered', 'answerer',
+            edited_fields=['status', 'messages', 'date_solved', 'answerer',
                            'answer', 'datelastquery'])
 
     def test_confirmAnswerAfterSOLVED(self):
@@ -643,7 +643,7 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             # Check the attributes that are set when an answer is confirmed.
             self.assertEquals(answer_message, self.question.answer)
             self.assertEquals(self.answerer, self.question.answerer)
-            self.assertEquals(message.datecreated, self.question.dateanswered)
+            self.assertEquals(message.datecreated, self.question.date_solved)
 
         self._testValidTransition(
             [QuestionStatus.SOLVED],
@@ -655,7 +655,7 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             transition_method_args=("The space bar also works.",),
             transition_method_kwargs={'answer': answer_message,
                                       'datecreated' : self.nowPlus(2)},
-            edited_fields=['messages', 'dateanswered', 'answerer',
+            edited_fields=['messages', 'date_solved', 'answerer',
                            'answer', 'datelastquery'])
 
     def testCannotConfirmAnAnswerFromAnotherQuestion(self):
@@ -718,9 +718,9 @@ class ReopenTestCase(BaseAnswerTrackerWorkflowTestCase):
 
     def test_reopenFromSOLVEDByOwner(self):
         """Test that reopen() can be called when the question is in the
-        SOLVED state (by the question owner) and that it returns an 
+        SOLVED state (by the question owner) and that it returns an
         appropriate IQuestionMessage. This transition should also clear
-        the dateanswered, answered and answerer attributes.
+        the date_solved, answered and answerer attributes.
         """
         self.setUpEventListeners()
         # Mark the question as solved by the user.
@@ -740,14 +740,14 @@ class ReopenTestCase(BaseAnswerTrackerWorkflowTestCase):
             expected_status=QuestionStatus.OPEN)
         self.checkTransitionEvents(
             message, ['status', 'messages', 'answerer',
-                      'dateanswered', 'datelastquery'],
+                      'date_solved', 'datelastquery'],
             QuestionStatus.OPEN.title)
 
     def test_reopenFromSOLVEDByAnswerer(self):
         """Test that reopen() can be called when the question is in the
         SOLVED state (answer confirmed by the question owner) and that it
         returns an appropriate IQuestionMessage. This transition should
-        also clear the dateanswered, answered and answerer attributes.
+        also clear the date_solved, answered and answerer attributes.
         """
         self.setUpEventListeners()
         # Mark the question as solved by the user.
@@ -768,7 +768,7 @@ class ReopenTestCase(BaseAnswerTrackerWorkflowTestCase):
             expected_status=QuestionStatus.OPEN)
         self.checkTransitionEvents(
             message, ['status', 'messages', 'answerer', 'answer',
-                      'dateanswered'],
+                      'date_solved'],
             QuestionStatus.OPEN.title)
 
     def test_reopenPermission(self):
@@ -853,7 +853,7 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
             # the question.
             self.assertEquals(message, self.question.answer)
             self.assertEquals(self.answerer, self.question.answerer)
-            self.assertEquals(message.datecreated, self.question.dateanswered)
+            self.assertEquals(message.datecreated, self.question.date_solved)
 
         self._testValidTransition(
             valid_statuses,
@@ -864,7 +864,7 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
             transition_method=self.question.reject,
             transition_method_args=(
                 self.answerer, 'This is lame.'),
-            edited_fields=['status', 'messages', 'answerer', 'dateanswered',
+            edited_fields=['status', 'messages', 'answerer', 'date_solved',
                            'answer', 'datelastresponse'])
 
     def testRejectPermission(self):

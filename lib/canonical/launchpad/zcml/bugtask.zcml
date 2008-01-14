@@ -26,9 +26,10 @@
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
         <allow attributes="id bug bugID target date_assigned datecreated
-                           date_confirmed date_inprogress date_closed
-                           bug_subscribers is_complete canTransitionToStatus
-                           isMentor canMentor isSubscribed" />
+                           date_confirmed date_incomplete date_inprogress
+                           date_closed bug_subscribers is_complete
+                           canTransitionToStatus isMentor canMentor
+                           isSubscribed getPackageComponent" />
         <require
             permission="launchpad.View"
             attributes="bugtargetname bugtargetdisplayname
@@ -116,10 +117,9 @@
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
       class="canonical.launchpad.browser.BugTaskTableRowView"
-      name="+bugtasks-and-nominations-table-row"
       permission="launchpad.View"
+      name="+bugtasks-and-nominations-table-row"
       template="../templates/bugtask-tasks-and-nominations-table-row.pt" />
-
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTask"
@@ -148,6 +148,14 @@
         class="canonical.launchpad.browser.BugMarkAsDuplicateView"
         permission="launchpad.AnyPerson"
         template="../templates/bug-mark-as-duplicate.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTask"
+        name="+text"
+        class="canonical.launchpad.browser.BugTaskTextView"
+        permission="zope.Public"
+        attribute="__call__"
+        />
 
     <!-- NullBugTask -->
     <content class="canonical.launchpad.database.bugtask.NullBugTask">
@@ -206,14 +214,10 @@
         permission="launchpad.Edit"
         template="../templates/bug-nominate-for-series.pt" />
 
-    <browser:generalform
+    <browser:page
         name="+addbranch"
-        schema="canonical.launchpad.interfaces.IBugBranch"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugBranchAddView"
-        label="Add a branch"
-        fields="branch whiteboard"
-        keyword_arguments="branch whiteboard"
         permission="launchpad.AnyPerson"
         template="../templates/bug-branch-add.pt"
         />
@@ -225,22 +229,6 @@
         permission="launchpad.View"
         template="../templates/bugtask-index.pt" />
 
-    <browser:addform
-        name="+addurl"
-        schema="canonical.launchpad.interfaces.IBugExternalRef"
-        for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.BugExtRefAddView"
-        fields="url title"
-        arguments=""
-        keyword_arguments="url title"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-extref-add.pt">
-        <browser:widget
-            field="url"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30" />
-    </browser:addform>
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         name="+index" />
@@ -248,25 +236,21 @@
     <browser:page
         name="+choose-affected-product"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.ChooseAffectedProductView"
-        permission="launchpad.AnyPerson"
-        template="../templates/bugtask-choose-affected-product.pt" />
+        class="canonical.launchpad.browser.BugAlsoAffectsProductMetaView"
+        permission="launchpad.AnyPerson" />
 
     <browser:page
-        name="+add-affected-product"
+        name="+affects-new-product"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAlsoReportInView"
+        class="canonical.launchpad.browser.BugAlsoAffectsProductWithProductCreationView"
         permission="launchpad.AnyPerson"
-        attribute="render_upstreamtask">
-    </browser:page>
+        template="../templates/bugtask-affects-new-product.pt" />
 
     <browser:page
         name="+distrotask"
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        permission="launchpad.AnyPerson"
-        attribute="render_distrotask"
-        />
+        class="canonical.launchpad.browser.BugAlsoAffectsDistroMetaView"
+        permission="launchpad.AnyPerson" />
 
     <browser:page
         name="+editstatus-page"
@@ -354,6 +338,20 @@
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt">
     </browser:page>
+
+    <browser:page
+      for="canonical.launchpad.interfaces.IBugTask"
+      name="+create-question"
+      class="canonical.launchpad.browser.BugTaskCreateQuestionView"
+      permission="launchpad.Edit"
+      template="../templates/bug-create-question.pt" />
+
+    <browser:page
+      for="canonical.launchpad.interfaces.IBugTask"
+      name="+remove-question"
+      class="canonical.launchpad.browser.BugTaskRemoveQuestionView"
+      permission="launchpad.Edit"
+      template="../templates/bug-remove-question.pt" />
 
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"

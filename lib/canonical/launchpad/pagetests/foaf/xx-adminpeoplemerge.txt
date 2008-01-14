@@ -1,113 +1,124 @@
-There's an admin interface to merge accounts. Let's test it.
+= Merging people or teams =
 
-First, it shouldn't be possible to access the page without the proper
-authorization. Sample Person isn't allowed here.
+Launchpad admins can merge any two people or teams, without the need of
+any email address confirmation or something like that.  There's one page
+for merging people and another one for merging teams, which obviously
+are only accessible to LP admins.
 
-  >>> print http(r"""
-  ... GET /people/+adminrequestmerge HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 403 Forbidden
-  ...Not allowed here...
-  ...
-  ...You are logged in as <span>Sample Person</span>...
-  ...
+    >>> user_browser.open('http://launchpad.dev/people/+adminpeoplemerge')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+    >>> user_browser.open('http://launchpad.dev/people/+adminteammerge')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
 
+When there are email addresses associated with the person/team being
+merged into another one, a notification is shown to inform the user
+these emails are going to be transferred.
 
-Now we try to access the +adminrequestmerge page with the FooBar admin.
+    >>> admin_browser.open('http://launchpad.dev/people/+adminpeoplemerge')
+    >>> admin_browser.getControl('Duplicated Person').value = 'spiv'
+    >>> admin_browser.getControl('Target Person').value = 'salgado'
+    >>> admin_browser.getControl('Merge').click()
 
-  >>> print http(r"""
-  ... GET /people/+adminrequestmerge HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Merge Launchpad accounts...
-  ...
+    >>> admin_browser.url
+    'http://launchpad.dev/people/+adminpeoplemerge'
+    >>> print get_feedback_messages(admin_browser.contents)[0]
+    The following email addresses are owned by Andrew Bennetts and are going
+    to be transferred to Guilherme Salgado: andrew.bennetts@ubuntulinux.com
 
+If the user confirms, spiv will be merged into salgado.
 
-We choose an invalid account and try to merge it.
+    >>> admin_browser.getControl('Reassign E-mails and Merge').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/~salgado'
 
-  >>> print http(r"""
-  ... POST /people/+adminrequestmerge HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... field.dupe_account=aaaaaa&field.target_account=mark&continue=Continue""")
-  HTTP/1.1 200 Ok
-  ...
-  ...<p class="error message">aaaaaa is an invalid account.</p>...
-  ...
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from canonical.launchpad.interfaces import IMailingListSet, IPersonSet
+    >>> login(ANONYMOUS)
+    >>> person_set = getUtility(IPersonSet)
+    >>> person_set.getByEmail('andrew.bennetts@ubuntulinux.com').name
+    u'salgado'
 
+    >>> spiv = person_set.getByName('spiv-merged', ignore_merged=False)
+    >>> spiv.merged.name
+    u'salgado'
 
-Now we choose the same account as the dupe and target accounts.
+    >>> logout()
 
-  >>> print http(r"""
-  ... POST /people/+adminrequestmerge HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... field.dupe_account=sabdfl&field.target_account=mark%40hbd.com&continue=Continue""")
-  HTTP/1.1 200 Ok
-  ...
-  ...<p class="error message">You can't merge sabdfl into itself.</p>...
-  ...
+As said before, there's a separate page for merging teams.  In the case of
+teams, though, we can't merge teams with active members, so the user will
+first have to confirm that the members should be deactivated before the
+teams are merged.
 
-Before merging we'll check the email addresses owned by the dupe account
-  
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
-  >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> admin_browser.open('http://launchpad.dev/people/+adminteammerge')
+    >>> admin_browser.getControl('Duplicated Team').value = (
+    ...     'landscape-developers')
+    >>> admin_browser.getControl('Target Team').value = 'guadamen'
+    >>> admin_browser.getControl('Merge').click()
 
-  >>> login(ANONYMOUS)
-  >>> emailset = getUtility(IEmailAddressSet)
-  >>> dupe_account = getUtility(IPersonSet).getByName('debonzi')
-  >>> [email.email for email in emailset.getByPerson(dupe_account)]
-  [u'daniel.debonzi@canonical.com']
-  >>> logout()
+    >>> admin_browser.url
+    'http://launchpad.dev/people/+adminteammerge'
+    >>> print get_feedback_messages(admin_browser.contents)[0]
+    Landscape Developers has 2 active members which will have to be
+    deactivated before the teams can be merged.
 
-And finally we choose two valid accounts to merge
+    >>> admin_browser.getControl('Deactivate Members and Merge').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/~guadamen'
 
-  >>> print http(r"""
-  ... POST /people/+adminrequestmerge HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... merge=Merge&dupe_name=debonzi&target_name=cprov""")
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/~cprov
-  ...
-  ..."informational message">Merge completed...
-  ...
+    >>> login(ANONYMOUS)
+    >>> landscape = person_set.getByName(
+    ...     'landscape-developers-merged', ignore_merged=False)
+    >>> landscape.merged.name
+    u'guadamen'
 
-After the merge we can verify that the email is now owned by the target
-account.
+If the duplicated team is associated to mailing list, it can't be
+merged, though.
 
-  >>> login(ANONYMOUS)
-  >>> target_account = getUtility(IPersonSet).getByName('cprov')
-  >>> [email.email for email in emailset.getByPerson(target_account)]
-  [u'celso.providelo@canonical.com', u'cprov@ubuntu.com', u'daniel.debonzi@canonical.com']
-  >>> logout()
+    >>> guadamen = person_set.getByName('guadamen')
+    >>> mailing_list = getUtility(IMailingListSet).new(guadamen)
+    >>> logout()
 
-Now we check that we can't access the duplicated account page.
+    >>> admin_browser.open('http://launchpad.dev/people/+adminteammerge')
+    >>> admin_browser.getControl('Duplicated Team').value = 'guadamen'
+    >>> admin_browser.getControl('Target Team').value = 'ubuntu-team'
+    >>> admin_browser.getControl('Merge').click()
 
-  >>> print http(r"""
-  ... GET /~debonzi HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 404 Not Found 
-  ...
-  ...Page not found...
-  ...
+    >>> admin_browser.url
+    'http://launchpad.dev/people/+adminteammerge'
 
+    >>> print get_feedback_messages(admin_browser.contents)
+    [u'There is 1 error.',
+     u"guadamen is associated with a Launchpad mailing list;
+       we can't merge it."]
 
-And can access the target page which now has the email from the dupe account.
+We also can't (for obvious reasons) merge any person/team into itself.
 
-  >>> print http(r"""
-  ... GET /~cprov/+editemails HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Your e-mail addresses...
-  ...
-  ...daniel.debonzi@canonical.com...
-  ...
+    >>> admin_browser.getControl('Duplicated Team').value = 'ubuntu-team'
+    >>> admin_browser.getControl('Target Team').value = 'ubuntu-team'
+    >>> admin_browser.getControl('Merge').click()
+
+    >>> admin_browser.url
+    'http://launchpad.dev/people/+adminteammerge'
+
+    >>> print get_feedback_messages(admin_browser.contents)
+    [u'There is 1 error.', u"You can't merge ubuntu-team into itself."]
+
+Nor can we merge a person into a team or a team into a person.
+
+    >>> admin_browser.getControl('Duplicated Team').value = 'ubuntu-team'
+    >>> admin_browser.getControl('Target Team').value = 'salgado'
+    >>> admin_browser.getControl('Merge').click()
+
+    >>> admin_browser.url
+    'http://launchpad.dev/people/+adminteammerge'
+
+    # Yes, the error message is not of much help, but this UI is only for
+    # admins and they're supposed to know what they're doing.
+    >>> print get_feedback_messages(admin_browser.contents)
+    [u'There is 1 error.', u'Constraint not satisfied']
+

@@ -29,7 +29,7 @@ CREATE TABLE SessionPkgData (
     product_id text NOT NULL,
     key        text NOT NULL,
     pickle     bytea NOT NULL,
-    CONSTRAINT sessiondata_key UNIQUE (client_id, product_id, key)
+    CONSTRAINT sessionpkgdata_pkey PRIMARY KEY (client_id, product_id, key)
     ) WITHOUT OIDS;
 COMMENT ON TABLE SessionPkgData IS 'Stores the actual session data as a Python pickle.';
 

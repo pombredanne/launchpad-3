@@ -19,8 +19,7 @@ and that going directly to the page redirects to login
 Now we will try as Mark Shuttleworth on Debian, where he is the owner.
 This time we expect to be able to see the link and the page.
 
-  >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
-
+  >>> browser = setupBrowser(auth="Basic mark@hbd.com:test")
   >>> browser.open("http://localhost/debian")
   >>> browser.getLink("Add series").click()
   >>> browser.url

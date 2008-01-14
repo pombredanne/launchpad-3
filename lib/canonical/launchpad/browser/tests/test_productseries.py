@@ -5,15 +5,15 @@ import unittest
 from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
-from canonical.launchpad.browser.productseries import ProductSeriesSourceView
+from canonical.launchpad.browser.productseries import (
+    ProductSeriesSourceView, UIRevisionControlSystems)
 from canonical.launchpad.ftests.harness import login, logout, ANONYMOUS
-from canonical.launchpad.interfaces import IProductSet
+from canonical.launchpad.interfaces import IProductSet, RevisionControlSystems
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.lp.dbschema import RevisionControlSystems
 from canonical.testing import LaunchpadFunctionalLayer
 
 
-class RcsTypeWidgetDisectionTestCase(unittest.TestCase):
+class RcsTypeWidgetDissectionTestCase(unittest.TestCase):
 
     layer = LaunchpadFunctionalLayer
 
@@ -23,8 +23,8 @@ class RcsTypeWidgetDisectionTestCase(unittest.TestCase):
     def tearDown(self):
         logout()
 
-    def testDisectRcsTypeWidget(self):
-        # Test that the rcstype widget is disected correctly
+    def testDissectRcsTypeWidget(self):
+        # Test that the rcstype widget is dissected correctly.
         product = getUtility(IProductSet).getByName('firefox')
         context = product.getSeries('trunk')
         request = LaunchpadTestRequest()
@@ -36,11 +36,14 @@ class RcsTypeWidgetDisectionTestCase(unittest.TestCase):
         self.assertInputElement(
             view.rcstype_none, 'radio', 'field.rcstype', '', checked=True)
         self.assertInputElement(
+            view.rcstype_bzr, 'radio', 'field.rcstype',
+            UIRevisionControlSystems.BZR.name, checked=False)
+        self.assertInputElement(
             view.rcstype_cvs, 'radio', 'field.rcstype',
-            RevisionControlSystems.CVS.title, checked=False)
+            UIRevisionControlSystems.CVS.name, checked=False)
         self.assertInputElement(
             view.rcstype_svn, 'radio', 'field.rcstype',
-            RevisionControlSystems.SVN.title, checked=False)
+            UIRevisionControlSystems.SVN.name, checked=False)
         self.assertInputElement(
             view.rcstype_emptymarker, 'hidden', 'field.rcstype-empty-marker',
             '1')
@@ -57,7 +60,7 @@ class RcsTypeWidgetDisectionTestCase(unittest.TestCase):
             view.rcstype_none, 'radio', 'field.rcstype', '', checked=False)
         self.assertInputElement(
             view.rcstype_cvs, 'radio', 'field.rcstype',
-            RevisionControlSystems.CVS.title, checked=True)
+            UIRevisionControlSystems.CVS.name, checked=True)
 
     def assertInputElement(self, data, type, name, value, checked=False):
         soup = BeautifulSoup(data)

@@ -129,10 +129,11 @@ class MilestoneView(LaunchpadView):
 
 
 class MilestoneAddView:
-    def create(self, name, dateexpected=None):
+    def create(self, name, dateexpected=None, description=None):
         """We will use the newMilestone method on the ProductSeries or
         DistroSeries context to make the milestone."""
-        return self.context.newMilestone(name, dateexpected=dateexpected)
+        return self.context.newMilestone(
+            name, dateexpected=dateexpected, description=description)
 
     def add(self, content):
         """Skipping 'adding' this content to a container, because

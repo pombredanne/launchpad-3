@@ -1,0 +1,16 @@
+#! /bin/bash
+
+# This script pushes each of your branches in ~/canonical/lp-branches/ to
+# devpad.canonical.com, assuming your ~/.bazaar/locations.conf has been
+# setup correctly by rocketfuel-setup
+
+cd ~/canonical/lp-branches
+for branch in *; do
+  if [ ${branch} != "trunk" ] && test -d ${branch} ; then
+    echo "Pushing ${branch}"
+    cd ${branch}
+    bzr push
+    cd ..
+  fi;
+done;
+

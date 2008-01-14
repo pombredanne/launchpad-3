@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="view/macro:page/applicationhome"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="launchpad"
 >
 
 <body>
@@ -120,6 +126,7 @@
       <tr>
         <td>add-large</td>
         <td><img alt="" src="/@@/add-large" /></td>
+      </tr>
       <tr>
         <td>arrowUp</td>
         <td><img src="/@@/arrowUp" /></td>
@@ -361,6 +368,15 @@
         row.</td>
       </tr>
       <tr>
+        <td>rss</td>
+        <td><img src="/@@/rss" /></td>
+        <td rowspan="2">There is an RSS feed here.</td>
+      </tr>
+      <tr>
+        <td>rss-large</td>
+        <td><img src="/@@/rss-large" /></td>
+      </tr>
+      <tr>
         <td>search</td>
         <td><img src="/@@/search" /></td>
         <td>Search - used to indicate search fields or tags.</td>
@@ -493,6 +509,7 @@
             other people using their code on the fixes for those bugs.
           </strong>
         </td>
+      </tr>
       <tr>
         <td>bug</td>
         <td><img src="/@@/bug" /></td>

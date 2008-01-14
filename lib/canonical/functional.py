@@ -99,6 +99,17 @@ class MockRootFolder:
         pass
 
 
+def setUpMockRootFolder():
+    """Install a mock ZODB in the ZopePublication root."""
+
+    # Fake a root folder to keep Z3 ZODB dependencies happy.
+    fs = FunctionalTestSetup()
+    if not fs.connection:
+        fs.connection = fs.db.open()
+    root = fs.connection.root()
+    root[ZopePublication.root_name] = MockRootFolder()
+
+
 def FunctionalDocFileSuite(*paths, **kw):
     kwsetUp = kw.get('setUp')
 
@@ -127,12 +138,8 @@ def FunctionalDocFileSuite(*paths, **kw):
     def setUp(test):
         if kwsetUp is not None:
             kwsetUp(test)
-        # Fake a root folder to keep Z3 ZODB dependancies happy
-        fs = FunctionalTestSetup()
-        if not fs.connection:
-            fs.connection = fs.db.open()
-        root = fs.connection.root()
-        root[ZopePublication.root_name] = MockRootFolder()
+
+        setUpMockRootFolder()
 
         if stdout_logging:
             log = StdoutHandler('')

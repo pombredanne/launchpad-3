@@ -18,12 +18,12 @@ Changes:
  .
    * Initial version
 Files: 
- e141550e889260e3b900e28548ca70d7 652 commercial/devel optional foocomm_1.0-1_i386.deb
+ ecb7561590c70633ebb9fb9bffbd2298 650 partner/devel optional foocomm_1.0-1_i386.deb
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.6 (GNU/Linux)
 
-iD8DBQFGeEMHjn63CGxkqMURAkpuAJ9H/Zob5zYOGSr0KR/JFOOaM+fjmQCeII/Z
-dzhD1Hubbcuww6sdjBzT6IQ=
-=sH/m
+iD8DBQFG2+mzjn63CGxkqMURAsyaAJkBQFdIW3guOPZvHXhwK7kGuWg94gCdFqp1
+5VkiTVKeY+GiHsmSywGUs2Q=
+=urSl
 -----END PGP SIGNATURE-----

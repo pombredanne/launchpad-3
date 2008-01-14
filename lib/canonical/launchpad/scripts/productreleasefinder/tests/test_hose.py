@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 from canonical.testing import reset_logging
-from canonical.launchpad.scripts.importd.tests.helpers import (
+from canonical.codehosting.codeimport.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 
 
@@ -135,7 +135,7 @@ class Hose_LimitWalk(unittest.TestCase):
     def testHoseLimitsWalk(self):
         # Test that the hose limits the directory walk to places that
         # could contain a match.
-        
+
         # Set up the releases tree:
         for directory in ['bar',
                           'foo',
@@ -161,7 +161,7 @@ class Hose_LimitWalk(unittest.TestCase):
         from canonical.launchpad.scripts.productreleasefinder.hose import Hose
         from canonical.launchpad.scripts.productreleasefinder.filter import (
             FilterPattern)
-        pattern = FilterPattern("key", self.release_url + 
+        pattern = FilterPattern("key", self.release_url +
                                 "/foo/1.*/source/foo-1.*.tar.gz")
         hose = Hose([pattern])
 

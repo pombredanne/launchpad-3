@@ -84,7 +84,7 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
 
 class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
     """A view used to register your attendance at a sprint."""
-                
+
     schema = ISprintAttendance
     field_names = ['time_starts', 'time_ends']
     custom_widget('time_starts', LocalDateTimeWidget)

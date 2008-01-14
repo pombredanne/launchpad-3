@@ -22,7 +22,7 @@ class TestLaunchpadTestCase(LaunchpadTestCase):
         con = self.connect()
         cur = con.cursor()
         cur.execute("""
-            select count(*) from person 
+            select count(*) from person
             where displayname='Mark Shuttleworth'
             """)
         r = cur.fetchone()
@@ -36,7 +36,7 @@ class TestLaunchpadFunctionalTestCase(LaunchpadFunctionalTestCase):
         con = self.connect()
         cur = con.cursor()
         cur.execute("""
-            select count(*) from person 
+            select count(*) from person
             where displayname='Mark Shuttleworth'
             """)
         r = cur.fetchone()

@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:block condition="not: context/rcstype">
 <tal:block condition="not: view/user_branch_visible">
   <div id="branch-details">
@@ -32,22 +38,22 @@
 	  </tr>
 	  <tr>
             <th>Root:</th>
-            <td tal:content="context/cvsroot">
+            <td id="cvs-root" tal:content="context/cvsroot">
               :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome</td>
 	  </tr>
 	  <tr>
 	    <th>Module:</th>
-	    <td tal:content="context/cvsmodule">evolution</td>
+	    <td id="cvs-module" tal:content="context/cvsmodule">evolution</td>
           </tr>
           <tr>
             <th>Branch:</th>
-            <td tal:content="context/cvsbranch">MAIN</td>
+            <td id="cvs-branch" tal:content="context/cvsbranch">MAIN</td>
           </tr>
         </tal:block>
         <tal:block condition="context/rcstype/enumvalue:SVN">
           <tr>
             <th>Subversion:</th>
-            <td tal:content="context/svnrepository">http://svn.gnome.org/evolution/trunk</td>
+            <td id="svn-url" tal:content="context/svnrepository">http://svn.gnome.org/evolution/trunk</td>
           </tr>
         </tal:block>
         <tr tal:condition="context/importstatus">
@@ -88,3 +94,4 @@
     </tbody>
   </table>
 </tal:block>
+</tal:root>

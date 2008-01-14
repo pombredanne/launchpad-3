@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:block condition="request/lp:person">
 <tal:block condition="not: context/hide_email_addresses">
   <tal:block condition="python:context.validatedemails or context.preferredemail">
@@ -37,3 +43,4 @@
   </tal:block>
 </tal:block>
 </tal:block>
+</tal:root>

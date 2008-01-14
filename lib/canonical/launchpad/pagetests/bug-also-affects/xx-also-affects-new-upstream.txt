@@ -1,0 +1,132 @@
+= Registering an upstream affected by a given bug =
+
+Sometimes users want to indicate that a bug also affects another upstream but
+then they realize that upstream is not yet registered in Launchpad.  In order
+to make their life easier, we allow them to register a new upstream and
+indicate that it's affected by a given bug, all at once.
+
+The page where this can be done is linked to from the popup widget included in
+the +choose-affected-product page.  Since the link is a javascript popup, we
+can't follow it directly, so let's extract the real URL and open it manually.
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/firefox/+bug/1/+choose-affected-product')
+    >>> choose_link = user_browser.getLink('Choose')
+    >>> choose_link.url
+    "javascript:popup_window('@@popup-search-upstream?vocabulary=Product&field=field.product&search='+escape(document.getElementById('field.product').value),'field.product','300','420')"
+    >>> import re
+    >>> choose_url = re.search(
+    ...     "popup_window\('([^']*)'", choose_link.url).group(1)
+    >>> user_browser.open(
+    ...  'http://launchpad.dev/firefox/+bug/1/' + choose_url)
+    >>> user_browser.title
+    'Select a project'
+
+Whenever a search is done in this page (which is rendered to the user in a
+popup window), a link is included at the bottom of the page inviting the user
+to register a new project in case he didn't find the one he was looking for.
+
+    >>> user_browser.getControl(name='search').value = 'mozilla'
+    >>> user_browser.getControl('Search').click()
+
+    >>> user_browser.getLink('Register it').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1/+affects-new-product'
+    >>> user_browser.getControl('Bug URL').value = (
+    ...     'http://bugs.foo.org/bugs/show_bug.cgi?id=42')
+    >>> user_browser.getControl('Project name').value = 'The Foo Project'
+    >>> user_browser.getControl('Project ID').value = 'foo'
+    >>> user_browser.getControl('Project summary').value = 'The Foo Project'
+    >>> user_browser.getControl('Continue').click()
+
+We're now redirected to the newly created bugtask page.
+
+    >>> user_browser.title
+    'Bug #1 in The Foo Project...'
+
+When creating a new upstream through this page we'll check if there's any
+upstream already registered in Launchpad which uses the same bugtracker as
+the one specified by the user. If there are any we present them as options
+for the user to use as the affected upstream.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/tomcat/+bug/2/+affects-new-product')
+    >>> user_browser.title
+    'Bug #2 - Record as affecting another project'
+    >>> user_browser.getControl('Bug URL').value = (
+    ...     'http://bugs.foo.org/bugs/show_bug.cgi?id=421')
+    >>> user_browser.getControl('Project name').value = 'The Bar Project'
+    >>> user_browser.getControl('Project ID').value = 'bar'
+    >>> user_browser.getControl('Project summary').value = 'The Bar Project'
+    >>> user_browser.getControl('Continue').click()
+
+    >>> user_browser.title
+    'Bug #2 - Record as affecting another project'
+
+    >>> print "\n".join(get_feedback_messages(user_browser.contents))
+    There are some projects using the bug tracker you specified. One of
+    these may be the one you were trying to register.
+    >>> user_browser.getControl(name='field.existing_product').displayValue
+    ['\xa0The Foo Project']
+
+Now we can either choose to report the bug as affecting our existing Foo
+Project or create the new Bar Project.
+
+    >>> user_browser.getControl('Use Existing Project')
+    <SubmitControl name='field.actions.use_existing_product' type='submit'>
+    >>> user_browser.getControl('Continue')
+    <SubmitControl name='field.actions.continue' type='submit'>
+
+First, let's use the existing project.
+
+    >>> user_browser.getControl('Use Existing Project').click()
+    >>> user_browser.title
+    'Bug #2 in The Foo Project...'
+
+    >>> from canonical.launchpad.ftests.bug import print_remote_bugtasks
+    >>> print_remote_bugtasks(user_browser.contents)
+    The Foo Project     auto-bugs.foo.org #421
+
+If we try using that same existing project again, we'll get an error
+explaining we can't because it's already known that it's affected by
+this bug.
+
+    >>> user_browser.goBack()
+    >>> user_browser.getControl('Use Existing Project').click()
+    >>> user_browser.title
+    'Bug #2 - Record as affecting another project' 
+    >>> print get_feedback_messages(user_browser.contents)[-1]
+    A fix for this bug has already been requested for The Foo Project
+
+Now we'll tell Launchpad to not use the existing upstream as we want to report
+the bug as affecting another (unregistered) upstream.
+
+    >>> user_browser.goBack()
+    >>> user_browser.getControl('Bug URL').value = (
+    ...     'http://bugs.foo.org/bugs/show_bug.cgi?id=123')
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.title
+    'Bug #2 in The Bar Project:...
+    >>> print_remote_bugtasks(user_browser.contents)
+    The Bar Project     auto-bugs.foo.org #123
+    The Bar Project     auto-bugs.foo.org #421
+
+== Error handling ==
+
+If the URL of the remote bug is not recognized by Launchpad, we'll tell the
+user and ask him to check if it's correct.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+bug/1/+affects-new-product')
+    >>> user_browser.getControl('Bug URL').value = (
+    ...     'http://foo.org/notabug.cgi?id=42')
+    >>> user_browser.getControl('Project name').value = 'Foo Project'
+    >>> user_browser.getControl('Project ID').value = 'bazfoo'
+    >>> user_browser.getControl('Project summary').value = 'The Foo Project'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.title
+    'Bug #1 - Record as affecting another project'
+    >>> print "\n".join(get_feedback_messages(user_browser.contents))
+    There is 1 error.
+    Launchpad does not recognize the bug tracker at this URL.
+

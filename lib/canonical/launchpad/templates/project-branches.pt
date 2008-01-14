@@ -1,53 +1,59 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">    
-      <h1>Revision control summary for <span tal:replace="context/title" /></h1>
-    </metal:heading>
 
-    <div tal:content="context/summary">Project Summary</div>
+<body>
 
-    <div tal:repeat="prod context/products">
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
 
-        <br clear="right" />
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
 
-        <h2 tal:content="prod/title">Project Title</h2>
+<metal:heading fill-slot="pageheading">
+  <h1>Bazaar branches for <tal:project-name replace="context/displayname"/></h1>
+</metal:heading>
 
-        <table class="listing"
-               style="float: right;">
-            <tr>
-              <th>Bazaar Branch Names</th>
-            </tr>
-            <tr tal:repeat="branch prod/branches">
-                <td tal:content="branch/title">x
-                </td>
-            </tr>
-            <tr tal:condition="not: prod/branches">
-                <td>No Bazaar branches for this project group.</td>
-            </tr>
-            <tr>
-              <th>Primary Release Branches</th>
-            </tr>
-            <tr tal:repeat="series prod/serieses">
-                <td tal:content="series/title">x
-                </td>
-            </tr>
-            <tr tal:condition="not: prod/serieses">
-                <td>No release branches for this project group.</td>
-            </tr>
-        </table>
+<div metal:fill-slot="main"
+     tal:define="branches view/branches">
 
+  <tal:branchlisting content="structure branches/@@+branch-listing" />
 
-        <p tal:content="prod/summary">Project Summary</p>
+</div>
 
-        <p><img alt="" src="/@@/list" />
-           <a href="#" tal:attributes="href prod/name">See all
-           branches for <span tal:replace="prod/displayname">project</span>...</a></p>
+<metal:block fill-slot="help">
 
-    </div>
+  <p>Launchpad is integrated with the <a
+    href="http://bazaar-vcs.org/">Bazaar</a> version control system. (<a
+    href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>).</p>
 
-  </body>
+  <p>This page lists all the branches that are associated to a project group.
+     Here, you can see what code contributions are being worked on or proposed
+     for inclusion in this project group.</p>
+
+  <p>From this page you can:</p>
+
+  <ul>
+    <li>Browse to every listed branch.</li>
+
+    <li>See this listing in a more detailed format.</li>
+  </ul>
+
+  <p>
+    If you want
+    to <a href="https://help.launchpad.net/CreatingAHostedBranch">create
+    an <em>upload</em> branch</a> on Launchpad, you do not need to
+    use this page.
+  </p>
+</metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
+
+</body>
 </html>

@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -14,10 +21,11 @@
   <h2>Ask your question!</h2>
 
   <p>
-    You can to post questions directly to the <a
+    You can post questions directly to the <a
     tal:attributes="href
         modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/answers/rooturl">Launchpad
     answer</a> tracker.
+  </p>
     <ul>
         <li><a tal:attributes="href
         string:${context/fmt:url}/+questions">Search through existing questions</a></li>

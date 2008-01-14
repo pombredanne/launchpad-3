@@ -1,9 +1,14 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -13,12 +18,8 @@
   nice.
 </div>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
+<metal:portlets fill-slot="portlets">
+</metal:portlets>
 
 <div metal:fill-slot="main">
 
@@ -66,6 +67,6 @@
   </div>
 
 </div>
-    
+
 </body>
 </html>

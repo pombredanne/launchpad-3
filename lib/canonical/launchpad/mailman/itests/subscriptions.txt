@@ -1,0 +1,162 @@
+= Mailing list subscriptions =
+
+Both direct and indirect members of a team may subscribe to a team's mailing
+list.  First, create the mailing list.
+
+    >>> import itest_helper
+    >>> browser = itest_helper.make_browser()
+    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.getControl(name='field.name').value = 'itest-one'
+    >>> browser.getControl('Display Name').value = 'ITest One'
+    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    ...     'Open Team']
+    >>> browser.getControl('Create').click()
+
+XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
+program in order to apply for mailing lists.  When mailing lists go public,
+this stanza can be removed.
+
+    >>> itest_helper.beta_program_enable('itest-one')
+
+    >>> browser.reload()
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Apply for Mailing List').click()
+
+    >>> list_one = itest_helper.review_list('itest-one')
+    >>> itest_helper.wait_for_mailman()
+    >>> from Mailman.Utils import list_names
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    ['itest-one']
+
+Because subscriptions are not yet exposed through the web, we'll add some
+people and join them to teams through the backdoor.
+
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     get_alternative_email, new_person)
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from zope.component import getUtility
+    >>> person_set = getUtility(IPersonSet)
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')    
+    >>> team_one = person_set.getByName('itest-one')
+
+    # Subscribe Anne with her preferred address.
+    >>> anne = new_person('Anne')
+    >>> anne.join(team_one)
+    >>> from canonical.launchpad.ftests import sync
+    >>> sync(list_one)
+    >>> list_one.subscribe(anne)
+
+    # Subscribe Bart with his alternative address.
+    >>> bart = new_person('Bart')
+    >>> bart.join(team_one)
+    >>> list_one.subscribe(bart, get_alternative_email(bart))
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
+
+Both Anne and Bart are now members of the mailing list.  Both have two
+subscribed addresses (because both are validated with Launchpad), but only one
+of them is enabled.
+
+    >>> from Mailman.MailList import MailList
+    >>> from Mailman.MemberAdaptor import ENABLED
+    >>> def print_members(mailing_list):
+    ...     for key in sorted(mailing_list.getMembers()):
+    ...         address = mailing_list.getMemberCPAddress(key)
+    ...         fullname = mailing_list.getMemberName(key)
+    ...         is_enabled = (mailing_list.getDeliveryStatus(key) == ENABLED)
+    ...         print fullname, '<%s>' % address, is_enabled
+
+    >>> mailing_list = MailList('itest-one', lock=False)
+    >>> print_members(mailing_list)
+    Anne Person <anne.person@example.com> True
+    Anne Person <aperson@example.org> False
+     <archive@mail-archive.com> True
+    Bart Person <bart.person@example.com> False
+    Bart Person <bperson@example.org> True
+
+Cris and Dirk now subscribe to the team and its list.  Anne changes her
+preferred email address, and Bart unsubscribes from the mailing list.
+
+    >>> team_one = person_set.getByName('itest-one')
+    >>> sync(list_one)
+
+    # Subscribe Cris with her preferred address.
+    >>> cris = new_person('Cris')
+    >>> cris.join(team_one)
+    >>> list_one.subscribe(cris)
+
+    # Subscribe Dirk with his preferred address.
+    >>> dirk = new_person('Dirk')
+    >>> dirk.join(team_one)
+    >>> list_one.subscribe(dirk)
+
+    # Unsubscribe Bart.
+    >>> bart = person_set.getByName('bart')
+    >>> list_one.unsubscribe(bart)
+
+    # Change Anne's email address to her alternative.
+    >>> sync(anne)
+    >>> anne.setPreferredEmail(get_alternative_email(anne))
+    >>> logout()
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
+
+Anne is now subscribed with her alternate email address, and Cris and Dirk are
+the only other members.
+
+    # Reload the list data.
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list)
+    Anne Person <anne.person@example.com> False
+    Anne Person <aperson@example.org> True
+     <archive@mail-archive.com> True
+    Cris Person <cperson@example.org> False
+    Cris Person <cris.person@example.com> True
+    Dirk Person <dirk.person@example.com> True
+    Dirk Person <dperson@example.org> False
+
+
+== Alternative addresses ==
+
+Now Anne decides to register another email address with Launchpad, however
+before she can validate this address, subscriptions for the list are
+synchronized with Mailman.  Anne's non-validated address does not appear in
+the membership list, either as an enabled or disabled address.
+
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> login('foo.bar@canonical.com')    
+    >>> email_set = getUtility(IEmailAddressSet)
+    >>> email = email_set.new('anne.x.person@example.net', anne)
+    >>> logout()
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
+
+    # Reload the list data.
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list)
+    Anne Person <anne.person@example.com> False
+    Anne Person <aperson@example.org> True
+     <archive@mail-archive.com> True
+    Cris Person <cperson@example.org> False
+    Cris Person <cris.person@example.com> True
+    Dirk Person <dirk.person@example.com> True
+    Dirk Person <dperson@example.org> False
+
+Once Anne validates her address though, she may post from it.
+
+    >>> from canonical.launchpad.interfaces import EmailAddressStatus
+    >>> email.status = EmailAddressStatus.VALIDATED
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list)
+    Anne Person <anne.person@example.com> False
+    Anne Person <anne.x.person@example.net> False
+    Anne Person <aperson@example.org> True
+     <archive@mail-archive.com> True
+    Cris Person <cperson@example.org> False
+    Cris Person <cris.person@example.com> True
+    Dirk Person <dirk.person@example.com> True
+    Dirk Person <dperson@example.org> False

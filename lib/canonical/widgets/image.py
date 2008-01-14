@@ -183,7 +183,7 @@ class GotchiTiedWithHeadingWidget(ImageChangeWidget):
         original_content = StringIO(self._image.read())
         image = PIL.Image.open(original_content)
         width, height = image.size
-        if (width <= self.resized_image_width and 
+        if (width <= self.resized_image_width and
             height <= self.resized_image_height):
             # No resize needed.
             content = original_content

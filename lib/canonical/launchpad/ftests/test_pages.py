@@ -4,6 +4,10 @@
 
 Set up the test data in the database first.
 """
+# Stop lint warning about not initializing TestCase parent on
+# PageStoryTestCase, see the comment bellow.
+# pylint: disable-msg=W0231
+
 __metaclass__ = type
 
 import doctest
@@ -13,6 +17,7 @@ import unittest
 
 from BeautifulSoup import (BeautifulSoup, Comment, Declaration,
     NavigableString, PageElement, ProcessingInstruction, SoupStrainer, Tag)
+from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.testbrowser.testing import Browser
@@ -41,7 +46,8 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
         HTTPCaller.__init__(self, *args, **kw)
     def __call__(self, *args, **kw):
         if self._debug:
-            import pdb; pdb.set_trace()
+            import pdb
+            pdb.set_trace()
         try:
             return HTTPCaller.__call__(self, *args, **kw)
         finally:
@@ -77,15 +83,16 @@ def find_tags_by_class(content, class_, only_first=False):
     """Find and return one or more tags matching the given class(es)"""
     match_classes = set(class_.split())
     def class_matcher(value):
-        if value is None: return False
+        if value is None:
+            return False
         classes = set(value.split())
         return match_classes.issubset(classes)
     soup = BeautifulSoup(
         content, parseOnlyThese=SoupStrainer(attrs={'class': class_matcher}))
     if only_first:
-        find=BeautifulSoup.find
+        find = BeautifulSoup.find
     else:
-        find=BeautifulSoup.findAll
+        find = BeautifulSoup.findAll
     return find(soup, attrs={'class': class_matcher})
 
 
@@ -106,21 +113,17 @@ def find_portlet(content, name):
 
 def find_main_content(content):
     """Find and return the main content area of the page"""
-    # Look for standard page with portlets first.
-    tag = find_tag_by_id(content, 'maincontent')
-    if tag:
-        return tag
-    # Fall back to looking for the single-column page.
-    return find_tag_by_id(content, 'singlecolumn')
+    return find_tag_by_id(content, 'maincontent')
 
 
-def get_feedback_messages(browser):
+def get_feedback_messages(content):
     """Find and return the feedback messages of the page."""
-    message_classes = ['message', 'informational message', 'error message']
+    message_classes = ['message', 'informational message', 'error message',
+                       'warning message']
     soup = BeautifulSoup(
-        browser.contents,
+        content,
         parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
-    return [tag.string for tag in soup]
+    return [extract_text(tag) for tag in soup]
 
 
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
@@ -131,10 +134,28 @@ ELEMENTS_INTRODUCING_NEWLINE = [
 
 
 NEWLINES_RE = re.compile(u'\n+')
-LEADING_AND_TRAILING_SPACES_RE = re.compile(u'(^[ \t]+)|([ \t]$)', re.MULTILINE)
+LEADING_AND_TRAILING_SPACES_RE = re.compile(
+    u'(^[ \t]+)|([ \t]$)', re.MULTILINE)
 TABS_AND_SPACES_RE = re.compile(u'[ \t]+')
 NBSP_RE = re.compile(u'&nbsp;|&#160;')
 
+
+def extract_link_from_tag(tag, base=None):
+    """Return a link from <a> `tag`, optionally considered relative to `base`.
+
+    A `tag` should contain a 'href' attribute, and `base` will commonly
+    be extracted from browser.url.
+    """
+    if not isinstance(tag, PageElement):
+        link = BeautifulSoup(tag)
+    else:
+        link = tag
+
+    href = dict(link.attrs).get('href')
+    if base is None:
+        return href
+    else:
+        return urljoin(base, href)
 
 def extract_text(content):
     """Return the text stripped of all tags.
@@ -184,6 +205,9 @@ def parse_relationship_section(content):
     soup = BeautifulSoup(content)
     section = soup.find('ul')
     whitespace_re = re.compile('\s+')
+    if section is None:
+        print 'EMPTY SECTION'
+        return
     for li in section.findAll('li'):
         if li.a:
             link = li.a
@@ -211,22 +235,40 @@ def print_action_links(content):
     actions = find_portlet(content, 'Actions')
     entries = actions.findAll('li')
     for entry in entries:
-        print '%s: %s' % (entry.a.string, entry.a['href'])
+        if entry.a:
+            print '%s: %s' % (entry.a.string, entry.a['href'])
+        elif entry.strong:
+            print entry.strong.string
+
+def print_comments(page):
+    """Print the comments on a BugTask index page."""
+    main_content = find_main_content(page)
+    for comment in main_content('div', 'boardCommentBody'):
+        for li_tag in comment('li'):
+            print "Attachment: %s" % li_tag.a.renderContents()
+        print comment.div.renderContents()
+        print "-"*40
+
+
+def setupBrowser(auth=None):
+    """Create a testbrowser object for use in pagetests.
+
+    :param auth: HTTP authentication string. None for the anonymous user, or a
+        string of the form 'Basic email:password' for an authenticated user.
+    :return: A `Browser` object.
+    """
+    # Set up our Browser objects with handleErrors set to False, since
+    # that gives a tracebacks instead of unhelpful error messages.
+    browser = Browser()
+    browser.handleErrors = False
+    if auth is not None:
+        browser.addHeader("Authorization", auth)
+    return browser
 
 
 def setUpGlobs(test):
     # Our tests report being on a different port.
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
-
-    # Set up our Browser objects with handleErrors set to False, since
-    # that gives a tracebacks instead of unhelpful error messages.
-    def setupBrowser(auth=None):
-        browser = Browser()
-        browser.handleErrors = False
-        if auth is not None:
-            browser.addHeader("Authorization", auth)
-        return browser
-
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
@@ -241,10 +283,12 @@ def setUpGlobs(test):
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
     test.globs['get_feedback_messages'] = get_feedback_messages
+    test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_comments'] = print_comments
 
 
 class PageStoryTestCase(unittest.TestCase):
@@ -309,7 +353,7 @@ class PageStoryTestCase(unittest.TestCase):
 # but does follow the convention of the other doctest related *Suite()
 # functions.
 
-def PageTestSuite(storydir, package=None):
+def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     """Create a suite of page tests for files found in storydir.
 
     :param storydir: the directory containing the page tests.
@@ -343,14 +387,14 @@ def PageTestSuite(storydir, package=None):
     checker = SpecialOutputChecker()
     suite = PageTestDocFileSuite(
         package=package, checker=checker,
-        layer=PageTestLayer, setUp=setUpGlobs,
+        layer=PageTestLayer, setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in unnumberedfilenames])
 
     # Add numbered tests to the suite as a single story.
     storysuite = PageTestDocFileSuite(
         package=package, checker=checker,
-        layer=PageTestLayer, setUp=setUpGlobs,
+        layer=PageTestLayer, setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in numberedfilenames])
     suite.addTest(PageStoryTestCase(abs_storydir, storysuite))
@@ -376,6 +420,3 @@ def test_suite():
     for storydir in stories:
         suite.addTest(PageTestSuite(storydir))
     return suite
-
-if __name__ == '__main__':
-    r = unittest.TextTestRunner().run(test_suite())

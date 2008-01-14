@@ -1,4 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Temporary blob storage interfaces."""
 
@@ -33,13 +34,13 @@ class ITemporaryBlobStorage(Interface):
 
 class ITemporaryStorageManager(Interface):
     """A tool to create temporary blobs."""
-    
+
     def new(blob, expires=None):
         """Create a new blob for storage in the database, returning the
         UUID assigned to it.
 
         May raise a BlobTooLarge exception.
-        
+
         Default expiry timestamp is calculated using
         config.launchpad.default_blob_expiry
         """

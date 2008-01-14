@@ -74,6 +74,13 @@ For SourcePackage, it's only possible to filter by state.
   >>> print check_builds_options(browser.contents)
   State present, Name not present
 
+The source package default state is "all states":
+
+  >>> soup = find_main_content(browser.contents)
+  >>> [results] = soup.findAll(attrs={'selected': 'selected'})
+  >>> print extract_text(results)
+  All states
+
 Check the contents of the distro builds list page.
 
   >>> browser.open("http://launchpad.dev/ubuntu/+builds")
@@ -87,9 +94,12 @@ initialised' one (fix bug #52704)
 
   >>> browser.getControl(name="build_state").value = ['all']
   >>> browser.getControl("Update").click()
-  >>> print find_tags_by_class(browser.contents, 'builds_list')[0].renderContents()
+  >>> print find_tags_by_class(
+  ...     browser.contents, 'builds_list')[0].renderContents()
   <BLANKLINE>
   ...
+  ...FULLYBUILT...
+  ...hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE...
   ...FULLYBUILT...
   ...i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE...
   ...FAILEDTOUPLOAD...
@@ -98,14 +108,15 @@ initialised' one (fix bug #52704)
   ...i386 build of cdrkit 1.0 in ubuntu warty RELEASE...
   ...FAILEDTOBUILD...
   ...i386 build of foobar 1.0 in ubuntu warty RELEASE...
-  ...NEEDSBUILD...
-  ...i386 build of at 0.00 in ubuntu warty RELEASE...
 
   # We had too many results. Some of them are on the second batch.
   >>> browser.getLink("Next").click()
-  >>> print find_tags_by_class(browser.contents, 'builds_list')[0].renderContents()
+  >>> print find_tags_by_class(
+  ...     browser.contents, 'builds_list')[0].renderContents()
   <BLANKLINE>
   ...
+  ...NEEDSBUILD...
+  ...i386 build of at 0.00 in ubuntu warty RELEASE...
   ...SUPERSEDED...
   ...i386 build of at 0.00 in ubuntu warty RELEASE...
   ...SUPERSEDED...
@@ -126,20 +137,28 @@ Check the results of some searches on build state.
 
   >>> browser.getControl(name="build_state").value = ['built']
   >>> browser.getControl("Update").click()
-  >>> browser.contents
-  '...i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE...
-  ...i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest...'
+  >>> print browser.contents
+  <BLANKLINE>
+  ...
+  ...hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE...
+  ...i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE...
+  ...
 
   >>> browser.getControl(name="build_state").value = ['depwait']
   >>> browser.getControl("Update").click()
-  >>> browser.contents
-  '...i386 build of libstdc++ b8p in ubuntu hoary...'
+  >>> print browser.contents
+  <BLANKLINE>
+  ...
+  ...i386 build of libstdc++ b8p in ubuntu hoary...
+  ...
 
   >>> browser.getControl(name="build_state").value = ['failed']
   >>> browser.getControl("Update").click()
-  >>> browser.contents
-  '...i386 build of pmount 0.1-1 in ubuntu warty...'
-
+  >>> print browser.contents
+  <BLANKLINE>
+  ...
+  ...i386 build of pmount 0.1-1 in ubuntu warty...
+  ...
 
 Checking UnexpectedFormData on unknown build_state values (bug #41104)
 
@@ -162,35 +181,81 @@ to raise the correct exception:
   UnexpectedFormData: No suitable state found for value "foo"
 
 
-Check if page still working for sourcepackages with no builds. (bug #62545)
+== Builds page messages ==
 
-  >>> browser.open(
-  ...    "http://launchpad.dev/ubuntu/hoary/+source/pmount/+builds")
-  >>> browser.getControl(name="build_state").value = ['all']
-  >>> browser.getControl("Update").click()
-
-  >>> print find_tag_by_id(browser.contents, 'empty-result')
-   <div id="empty-result">
-           No builds for pmount in Test Distro Hoary.
-   </div>
-
-
-Checking that we show the right message for a distribution that
-doesn't have any builds.
+When you first view the builds page for a distribution that has no
+builds, for instance 'debian' in our sampledata, the page says 'No
+packages are currently building'. We assume that this is your first
+view if there are no GET arguments.
 
   >>> browser.open("http://launchpad.dev/debian/+builds")
-  >>> browser.contents
-  '...No Currently building builds for Debian GNU/Linux...'
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, 'no-default-result'))
+  No packages currently building.
+  >>> find_tag_by_id(browser.contents, 'empty-result') is None
+  True
+
+When the user updates the page, the message changes to say that 'No
+matching builds' be found. This message clearly differentiate first
+page loads from searches, helping the user to figure out exactly what
+was done before.
 
   >>> browser.getControl(name="build_state").value = ['all']
   >>> browser.getControl("Update").click()
-  >>> browser.contents
-  '...No builds for Debian GNU/Linux...'
+  >>> find_tag_by_id(browser.contents, 'no-default-result') is None
+  True
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, 'empty-result'))
+  No matching builds.
+
+If there *are* builds present, we don't display any special
+message. (We added this to catch bug #160331.)"
+
+  >>> browser.open("http://launchpad.dev/ubuntu/+builds")
+  >>> find_tag_by_id(browser.contents, 'empty-result') is None
+  True
+  >>> find_tag_by_id(browser.contents, 'no-default-result') is None
+  True
+
+The same mechanism still works for a SourcePackage-Builds page with
+no builds, see bug 62545.
+
+After opening a empty SourcePackage Builds page we will repeat the
+same set of tests done for Distribution Builds page.
+
+  >>> browser.open(
+  ...    "http://launchpad.dev/ubuntu/hoary/+source/mozilla-firefox/+builds")
+
+First load only 'No packages currently building' message is presented.
+
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, 'no-default-result'))
+  No packages currently building.
+  >>> find_tag_by_id(browser.contents, 'empty-result') is None
+  True
+
+When the user updates the page, the message for empty results changes
+to 'No matching builds'.
+
+  >>> browser.getControl(name="build_state").value = ['all']
+  >>> browser.getControl("Update").click()
+
+  >>> find_tag_by_id(browser.contents, 'no-default-result') is None
+  True
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, 'empty-result'))
+  No matching builds.
+
+The described mechanism should work similarly for:
+
+ * Builder History;
+ * DistroSeries Builds and
+ * DistroArchSeries Builds.
 
 
-== Commercial builds ==
+== Partner builds ==
 
-Builds of commercial packages show up on the builds page as any other package
+Builds of partner packages show up on the builds page as any other package
 from the primary archive.
 
   >>> browser.open(
@@ -206,3 +271,27 @@ And also on the distro series builds page:
   >>> print extract_text(find_tags_by_class(browser.contents, 'listing')[0])
   i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
   ...
+
+
+== Upload status ==
+
+A (distro) source package release page shows any builds for that source and
+the status of the build.  If the build has been uploaded, then an upload
+status is shown in parentheses after the build status.
+
+    >>> browser.open("http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9")
+    >>> print extract_text(find_tag_by_id(browser.contents,"portlet-builds"))
+    Builds
+    warty
+    hppa
+    Successfully built
+    hoary
+    i386
+    Currently building
+    breezy-autotest
+    i386
+    Successfully built (NEW)
+    warty
+    i386
+    Successfully built
+

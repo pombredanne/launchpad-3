@@ -13,10 +13,12 @@ cvename = xsd:string { pattern = "(19|20)[0-9][0-9]-[0-9][0-9][0-9][0-9]" }
 # rest of Launchpad.  However, there are not yet any tests for this.
 #     https://bugs.launchpad.net/bugs/105401
 status = (
-  "UNCONFIRMED"  |
-  "NEEDSINFO"    |
-  "REJECTED"     |
+  "NEW"          |
+  "INCOMPLETE"   |
+  "INVALID"      |
+  "WONTFIX"      |
   "CONFIRMED"    |
+  "TRIAGED"      |
   "INPROGRESS"   |
   "FIXCOMMITTED" |
   "FIXRELEASED"  |
@@ -63,6 +65,9 @@ bug = element bug {
   }? &
   element tags {
     element tag { lpname }*
+  }? &
+  element bugwatches {
+    element bugwatch { attribute href { xsd:anyURI } }*
   }? &
   element subscriptions {
     element subscriber { person }*

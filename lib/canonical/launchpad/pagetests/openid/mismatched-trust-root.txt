@@ -23,7 +23,7 @@ as a trust root but with a return URL from a different domain.  We
 need to temporarily turn on error handling so that the
 UntrustedReturnURL error gets converted to an OpenID response.
 
-    >>> from canonical.launchpad.ftests.openid import (
+    >>> from canonical.launchpad.ftests.openidhelpers import (
     ...     install_consumer, uninstall_consumer)
     >>> install_consumer()
 

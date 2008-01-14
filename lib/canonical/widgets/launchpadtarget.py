@@ -26,7 +26,7 @@ from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 
 
 class LaunchpadTargetWidget(BrowserWidget, InputWidget):
-    """Widget for selecting a product, distribution or sourcepackage target."""
+    """Widget for selecting a product, distribution or package target."""
 
     implements(IAlwaysSubmittedWidget, IMultiLineWidgetLayout, IInputWidget)
 
@@ -45,7 +45,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 default=getUtility(ILaunchpadCelebrities).ubuntu),
             Choice(
                 __name__='package', title=u"Package",
-                required=False, vocabulary='SourcePackageName'),
+                required=False, vocabulary='BinaryAndSourcePackageName'),
             ]
         self.distribution_widget = CustomWidgetFactory(LaunchpadDropdownWidget)
         for field in fields:
@@ -110,7 +110,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                     entered_name = self.request.form_ng.getOne(
                         '%s.package' % self.name)
                     raise LaunchpadValidationError(
-                        "There is no source package name '%s' published in %s",
+                        "There is no package name '%s' published in %s",
                         entered_name, distribution.displayname)
                 if package_name is None:
                     return distribution
@@ -119,7 +119,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                         package_name.name)
                 except NotFoundError:
                     raise LaunchpadValidationError(
-                        "There is no source package name '%s' published in %s",
+                        "There is no package name '%s' published in %s",
                         package_name.name, distribution.displayname)
                 return distribution.getSourcePackage(source_name)
             else:

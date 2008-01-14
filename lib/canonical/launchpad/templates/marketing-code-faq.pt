@@ -1,4 +1,14 @@
-<html metal:use-macro="context/@@marketing_template/master">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@marketing_template/master"
+  i18n:domain="launchpad"
+>
 <body>
 <div id="faq" metal:fill-slot="contents">
   <div id="primary">
@@ -31,8 +41,9 @@
           branches.</li>
       <li>Free hosting for your Bazaar branches.</li>
       <li>Free backup for your and other people's Bazaar branches.</li>
-      <li>Daily imports from CVS and Subversion, allowing you to use Bazaar to
-          work on projects using other systems.</li>
+      <li><a href="https://help.launchpad.net/VcsImports">Daily imports</a>
+      from CVS and Subversion, allowing you to use Bazaar to work on projects
+          using other revision control systems.</li>
       <li>Attach branches to bugs reported using Launchpad's Bug Tracker.</li>
       <li>Attach branches to blueprints in Launchpad's Feature Tracker.</li>
     </ul>

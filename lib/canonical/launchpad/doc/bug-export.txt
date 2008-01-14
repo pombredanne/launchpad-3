@@ -157,7 +157,8 @@ By default a bug export will not include any private bugs.  However,
 they can be included by passing the --include-private flag to the
 import script.  To test this, we'll make a bug private:
 
-  >>> bug1.private = True
+  >>> bug1.setPrivate(True, getUtility(ILaunchBag).user)
+  True
   >>> ztm.commit()
 
 

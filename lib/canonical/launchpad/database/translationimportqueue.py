@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd. All rights reserved.
+# Copyright 2005-2007 Canonical Ltd. All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -25,11 +26,12 @@ from canonical.launchpad.interfaces import (
     IDistribution, IDistroSeries, IHasTranslationImports, ILanguageSet,
     IPerson, IPOFileSet, IPOTemplateSet, IProduct, IProductSeries,
     ISourcePackage, ITranslationImporter, ITranslationImportQueue,
-    ITranslationImportQueueEntry, NotFoundError)
+    ITranslationImportQueueEntry, NotFoundError, RosettaImportStatus,
+    TranslationFileFormat)
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.lp.dbschema import RosettaImportStatus, TranslationFileFormat
 
 from canonical.launchpad.database.pillar import pillar_sort_key
+
 
 # Number of days when the DELETED and IMPORTED entries are removed from the
 # queue.
@@ -50,7 +52,7 @@ class TranslationImportQueueEntry(SQLBase):
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=False, default=None)
     distroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='distrorelease', notNull=False, default=None)
+        dbName='distroseries', notNull=False, default=None)
     productseries = ForeignKey(foreignKey='ProductSeries',
         dbName='productseries', notNull=False, default=None)
     is_published = BoolCol(dbName='is_published', notNull=True)
@@ -247,13 +249,13 @@ class TranslationImportQueueEntry(SQLBase):
             pofile = potemplate.newPOFile(
                 language.code, variant=variant, requester=self.importer)
 
-        if self.is_published and pofile.path != self.path:
+        if self.is_published:
             # This entry comes from upstream, which means that the path we got
             # is exactly the right one. If it's different from what pofile
             # has, that would mean that either the entry changed its path
             # since previous upload or that we had to guess it and now that we
             # got the right path, we should fix it.
-            pofile.path = self.path
+            pofile.setPathIfUnique(self.path)
 
         if (sourcepackagename is None and
             potemplate.sourcepackagename is not None):
@@ -312,7 +314,7 @@ class TranslationImportQueueEntry(SQLBase):
             return self._guessed_pofile_from_path
 
         return self._get_pofile_from_language(guessed_language,
-            self.potemplate.potemplatename.translationdomain,
+            self.potemplate.translation_domain,
             sourcepackagename=self.potemplate.sourcepackagename)
 
     def _guess_multiple_directories_with_pofile(self):
@@ -369,7 +371,7 @@ class TranslationImportQueueEntry(SQLBase):
             # We need to extract the language information from the package
             # name
 
-            # Here we have the set of language codes that have special meanings.
+            # These language codes have special meanings.
             lang_mapping = {
                 'engb': 'en_GB',
                 'ptbr': 'pt_BR',
@@ -400,13 +402,13 @@ class TranslationImportQueueEntry(SQLBase):
             dir_name = os.path.basename(dir_path)
 
             if dir_name == 'messages' or dir_name == 'LC_MESSAGES':
-                # We have another directory between the language code directory
-                # and the filename (second and third case).
+                # We have another directory between the language code
+                # directory and the filename (second and third case).
                 dir_path = os.path.dirname(dir_path)
                 lang_code = os.path.basename(dir_path)
             else:
-                # The .po file is stored inside the directory with the language
-                # code as its name or an unsupported layout.
+                # The .po file is stored inside the directory with the
+                # language code as its name or an unsupported layout.
                 lang_code = dir_name
 
             if lang_code is None:
@@ -436,7 +438,7 @@ class TranslationImportQueueEntry(SQLBase):
                 # We were not able to find such template, someone should
                 # review it manually.
                 return None
-            translation_domain = potemplate.potemplatename.translationdomain
+            translation_domain = potemplate.translation_domain
         else:
             # The guessed language from the directory doesn't math the
             # language from the filename. Leave it for an admin.
@@ -464,10 +466,10 @@ class TranslationImportQueueEntry(SQLBase):
     def getTemplatesOnSameDirectory(self):
         """See ITranslationImportQueueEntry."""
         path = os.path.dirname(self.path)
-        query = ("path LIKE %s || '%%.pot' AND id <> %s" % 
+        query = ("path LIKE %s || '%%.pot' AND id <> %s" %
                  (quote_like(path), self.id))
         if self.distroseries is not None:
-            query += ' AND distrorelease = %s' % sqlvalues(
+            query += ' AND distroseries = %s' % sqlvalues(
                 self.distroseries)
         if self.sourcepackagename is not None:
             query += ' AND sourcepackagename = %s' % sqlvalues(
@@ -560,12 +562,12 @@ class TranslationImportQueue:
         root, ext = os.path.splitext(filename)
         translation_importer = getUtility(ITranslationImporter)
         if format is None:
-            # Get it based on the file extension.
-            format = (
-                translation_importer.getTranslationFileFormatByFileExtension(
-                    ext))
+            # Get it based on the file extension and file content.
+            format = translation_importer.getTranslationFileFormat(
+                ext, content)
         format_importer = translation_importer.getTranslationFormatImporter(
             format)
+
         # Upload the file into librarian.
         size = len(content)
         file = StringIO(content)
@@ -575,22 +577,35 @@ class TranslationImportQueue:
             contentType=format_importer.content_type)
 
         # Check if we got already this request from this user.
+        queries = ['TranslationImportQueueEntry.path = %s' % sqlvalues(path)]
+        queries.append(
+            'TranslationImportQueueEntry.importer = %s' % sqlvalues(importer))
+        if potemplate is not None:
+            queries.append(
+                'TranslationImportQueueEntry.potemplate = %s' % sqlvalues(
+                    potemplate))
+        if pofile is not None:
+            queries.append(
+                'TranslationImportQueueEntry.pofile = %s' % sqlvalues(pofile))
         if sourcepackagename is not None:
             # The import is related with a sourcepackage and a distribution.
-            entry = TranslationImportQueueEntry.selectOne(
-                "TranslationImportQueueEntry.path = %s AND"
-                " TranslationImportQueueEntry.importer = %s AND"
-                " TranslationImportQueueEntry.sourcepackagename = %s AND"
-                " TranslationImportQueueEntry.distrorelease = %s" % sqlvalues(
-                    path, importer.id, sourcepackagename.id, distroseries.id)
-                )
+            queries.append(
+                'TranslationImportQueueEntry.sourcepackagename = %s' % (
+                    sqlvalues(sourcepackagename)))
+            queries.append(
+                'TranslationImportQueueEntry.distroseries = %s' % sqlvalues(
+                    distroseries))
         else:
-            entry = TranslationImportQueueEntry.selectOne(
-                "TranslationImportQueueEntry.path = %s AND"
-                " TranslationImportQueueEntry.importer = %s AND"
-                " TranslationImportQueueEntry.productseries = %s" % sqlvalues(
-                    path, importer.id, productseries.id)
-                )
+            # The import is related with a productseries.
+            assert productseries is not None, (
+                'sourcepackagename and productseries cannot be both None at'
+                ' the same time.')
+
+            queries.append(
+                'TranslationImportQueueEntry.productseries = %s' % sqlvalues(
+                    productseries))
+
+        entry = TranslationImportQueueEntry.selectOne(' AND '.join(queries))
 
         if entry is not None:
             # It's an update.
@@ -619,8 +634,8 @@ class TranslationImportQueue:
                 entry.status = RosettaImportStatus.NEEDS_REVIEW
 
             entry.date_status_changed = UTC_NOW
+            entry.format = format
             entry.sync()
-            return entry
         else:
             # It's a new row.
             entry = TranslationImportQueueEntry(path=path, content=alias,
@@ -628,7 +643,8 @@ class TranslationImportQueue:
                 distroseries=distroseries, productseries=productseries,
                 is_published=is_published, potemplate=potemplate,
                 pofile=pofile, format=format)
-            return entry
+
+        return entry
 
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
@@ -696,15 +712,15 @@ class TranslationImportQueue:
             elif IProductSeries.providedBy(target):
                 queries.append('productseries = %s' % sqlvalues(target))
             elif IDistribution.providedBy(target):
-                queries.append('distrorelease = DistroRelease.id')
+                queries.append('distroseries = DistroSeries.id')
                 queries.append(
-                    'DistroRelease.distribution = %s' % sqlvalues(target))
-                clause_tables.append('DistroRelease')
+                    'DistroSeries.distribution = %s' % sqlvalues(target))
+                clause_tables.append('DistroSeries')
             elif IDistroSeries.providedBy(target):
-                queries.append('distrorelease = %s' % sqlvalues(target))
+                queries.append('distroseries = %s' % sqlvalues(target))
             elif ISourcePackage.providedBy(target):
                 queries.append(
-                    'distrorelease = %s' % sqlvalues(target.distroseries))
+                    'distroseries = %s' % sqlvalues(target.distroseries))
                 queries.append(
                     'sourcepackagename = %s' % sqlvalues(
                         target.sourcepackagename))
@@ -714,9 +730,10 @@ class TranslationImportQueue:
                     ' IProductSeries, IDistribution, IDistroSeries or'
                     ' ISourcePackage')
         if status is not None:
-            queries.append('status = %s' % sqlvalues(status.value))
+            queries.append('status = %s' % sqlvalues(status))
         if file_extension is not None:
-            queries.append("path LIKE '%%' || %s" % quote_like(file_extension))
+            queries.append(
+                "path LIKE '%%' || %s" % quote_like(file_extension))
 
         return queries, clause_tables
 
@@ -740,11 +757,11 @@ class TranslationImportQueue:
             ISourcePackage.providedBy(target)):
             # If the Distribution series has actived the option to defer
             # translation imports, we ignore those entries.
-            if 'DistroRelease' not in clause_tables:
-                clause_tables.append('DistroRelease')
-                queries.append('distrorelease = DistroRelease.id')
+            if 'DistroSeries' not in clause_tables:
+                clause_tables.append('DistroSeries')
+                queries.append('distroseries = DistroSeries.id')
 
-            queries.append('DistroRelease.defer_translation_imports IS FALSE')
+            queries.append('DistroSeries.defer_translation_imports IS FALSE')
 
         return TranslationImportQueueEntry.selectFirst(
             " AND ".join(queries), clauseTables=clause_tables,
@@ -757,10 +774,10 @@ class TranslationImportQueue:
         from canonical.launchpad.database.distroseries import DistroSeries
         from canonical.launchpad.database.product import Product
 
-        query = []
-        query.append('ProductSeries.product=Product.id')
-        query.append(
-            'TranslationImportQueueEntry.productseries=ProductSeries.id')
+        query = [
+            'ProductSeries.product = Product.id',
+            'TranslationImportQueueEntry.productseries = ProductSeries.id'
+            ]
         if status is not None:
             query.append('TranslationImportQueueEntry.status=%s' % sqlvalues(
                 status))
@@ -770,11 +787,10 @@ class TranslationImportQueue:
             clauseTables=['ProductSeries', 'TranslationImportQueueEntry'],
             distinct=True)
 
-        query = []
-        query.append('TranslationImportQueueEntry.distrorelease IS NOT NULL')
-        query.append(
-            'TranslationImportQueueEntry.distrorelease=DistroRelease.id')
-        query.append('DistroRelease.defer_translation_imports IS FALSE')
+        query = [
+            'TranslationImportQueueEntry.distroseries = DistroSeries.id',
+            'DistroSeries.defer_translation_imports IS FALSE'
+            ]
         if status is not None:
             query.append('TranslationImportQueueEntry.status=%s' % sqlvalues(
                 status))

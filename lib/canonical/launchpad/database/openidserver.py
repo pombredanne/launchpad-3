@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """OpenID related database classes."""
 
@@ -151,7 +152,7 @@ class LaunchpadOpenIdStore(PostgreSQLStore):
 
     def _callInTransaction(self, func, *args, **kwargs):
         """Open a fresh cursor and call the given method.
-        
+
         No transactional semantics in Launchpad because Z3 is already
         fully transactional so there is no need to reinvent the wheel.
         """

@@ -61,6 +61,11 @@ and the rejection message is added to the question board.
     >>> print content.findAll('div', 'boardCommentBody')[-1].renderContents()
     <p>Rejecting because it's a duplicate of <a...>bug #1</a>.</p>
 
+The call to help with this problem is not displayed.
+
+    >>> print content.find(id='can-you-help-with-this-problem')
+    None
+
 Selecting the 'Reject' action again, will simply display a message
 stating that the question is already rejected:
 

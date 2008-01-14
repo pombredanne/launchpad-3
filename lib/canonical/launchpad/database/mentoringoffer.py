@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -97,7 +98,7 @@ class MentoringOfferSet:
         via_specs = MentoringOffer.select("""
             MentoringOffer.date_created > %s AND
             """ % sqlvalues(yearago) + """
-            Specification.id = MentoringOffer.specification AND 
+            Specification.id = MentoringOffer.specification AND
             (""" + Specification.completeness_clause +")",
             clauseTables=['Specification'],
             distinct=True)

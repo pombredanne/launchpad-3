@@ -47,6 +47,17 @@
         permission="zope.Public"
         />
 
+    <!-- Protocol errors (eg. HTTP 405 or 415 errors) should be published
+         with a minimalist template. -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadProtocolError"
+        class="canonical.launchpad.webapp.error.ProtocolErrorView"
+        template="launchpad/templates/protocol-error.pt"
+        name="index.html"
+        permission="zope.Public"
+        />
+
+
     <!-- This is an index.html view on the root object.
         The root object is not ever published itself.  Only its views are.
         -->
@@ -57,6 +68,14 @@
         name="index.html"
         template="launchpad/templates/root-index.pt"
         permission="zope.Public"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="canonical.launchpad.browser.FeaturedProjectsView"
+        name="+featuredprojects"
+        template="launchpad/templates/root-featuredprojects.pt"
+        permission="launchpad.Admin"
         />
 
     <!-- The following directives set up root front pages for the different

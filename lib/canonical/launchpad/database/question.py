@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Question models."""
 
@@ -12,7 +13,10 @@ __all__ = [
     'QuestionTargetMixin',
     ]
 
+from datetime import datetime
 import operator
+import pytz
+
 from email.Utils import make_msgid
 
 from zope.component import getUtility
@@ -25,12 +29,12 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, IDistribution, IDistributionSet,
+    BugTaskStatus, IBugLinkTarget, IDistribution, IDistributionSet,
     IDistributionSourcePackage, IFAQ, InvalidQuestionStateError, ILanguage,
     ILanguageSet, ILaunchpadCelebrities, IMessage, IPerson, IProduct,
     IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
-    QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionSort,
-    QuestionStatus, QuestionParticipation, QuestionPriority)
+    QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionParticipation,
+    QuestionPriority, QuestionSort, QuestionStatus)
 
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -64,7 +68,7 @@ class notify_question_modified:
 
     The list of edited_fields will be computed by comparing the snapshot
     with the modified question. The fields that are checked for
-    modifications are: status, messages, dateanswered, answerer, answer,
+    modifications are: status, messages, date_solved, answerer, answer,
     datelastquery and datelastresponse.
 
     The user triggering the event is taken from the returned message.
@@ -78,7 +82,7 @@ class notify_question_modified:
             msg = func(self, *args, **kwargs)
 
             edited_fields = ['messages']
-            for field in ['status', 'dateanswered', 'answerer', 'answer',
+            for field in ['status', 'date_solved', 'answerer', 'answer',
                           'datelastquery', 'datelastresponse', 'target']:
                 if getattr(self, field) != getattr(old_question, field):
                     edited_fields.append(field)
@@ -119,7 +123,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     datedue = UtcDateTimeCol(notNull=False, default=None)
     datelastquery = UtcDateTimeCol(notNull=True, default=DEFAULT)
     datelastresponse = UtcDateTimeCol(notNull=False, default=None)
-    dateanswered = UtcDateTimeCol(notNull=False, default=None)
+    date_solved = UtcDateTimeCol(notNull=False, default=None)
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False, default=None)
     distribution = ForeignKey(
@@ -217,7 +221,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         # information as well.
         self.answerer = None
         self.answer = None
-        self.dateanswered = None
+        self.date_solved = None
 
         return self._newMessage(
             user, comment, datecreated=datecreated,
@@ -298,7 +302,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             new_status=new_status)
 
         if self.owner == user:
-            self.dateanswered = msg.datecreated
+            self.date_solved = msg.datecreated
             self.answerer = user
 
         return msg
@@ -312,7 +316,11 @@ class Question(SQLBase, BugLinkTargetMixin):
         assert self.faq != faq, (
             'cannot call linkFAQ() with already linked FAQ')
         self.faq = faq
-        return self._giveAnswer(user, comment, datecreated)
+        if self.can_give_answer:
+            return self._giveAnswer(user, comment, datecreated)
+        else:
+            # The question's status is Solved or Invalid.
+            return self.addComment(user, comment, datecreated)
 
     @property
     def can_confirm_answer(self):
@@ -345,7 +353,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             action=QuestionAction.CONFIRM,
             new_status=QuestionStatus.SOLVED)
         if answer:
-            self.dateanswered = msg.datecreated
+            self.date_solved = msg.datecreated
             self.answerer = answer.owner
             self.answer = answer
 
@@ -381,7 +389,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             user, comment, datecreated=datecreated,
             action=QuestionAction.REJECT, new_status=QuestionStatus.INVALID)
         self.answerer = user
-        self.dateanswered = msg.datecreated
+        self.date_solved = msg.datecreated
         self.answer = msg
         return msg
 
@@ -413,7 +421,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             action=QuestionAction.REOPEN, new_status=QuestionStatus.OPEN)
         self.answer = None
         self.answerer = None
-        self.dateanswered = None
+        self.date_solved = None
         return msg
 
     # subscriptions
@@ -538,15 +546,28 @@ class QuestionSet:
 
     def findExpiredQuestions(self, days_before_expiration):
         """See `IQuestionSet`."""
-        return Question.select(
-            """status IN (%s, %s)
-                    AND (datelastresponse IS NULL
-                         OR datelastresponse < (
-                            current_timestamp -interval '%s days'))
-                    AND
-                    datelastquery  < (current_timestamp - interval '%s days')
-                    AND assignee IS NULL
+        # This query joins to bugtasks that are not BugTaskStatus.INVALID
+        # because there are many bugtasks to one question. A question is
+        # included when BugTask.status IS NULL.
+        return Question.select("""
+            id in (SELECT Question.id
+                FROM Question
+                    LEFT OUTER JOIN QuestionBug
+                        ON Question.id = QuestionBug.question
+                    LEFT OUTER JOIN BugTask
+                        ON QuestionBug.bug = BugTask.bug
+                            AND BugTask.status != %s
+                WHERE
+                    Question.status IN (%s, %s)
+                    AND (Question.datelastresponse IS NULL
+                         OR Question.datelastresponse < (CURRENT_TIMESTAMP
+                            AT TIME ZONE 'UTC' - interval '%s days'))
+                    AND Question.datelastquery < (CURRENT_TIMESTAMP
+                            AT TIME ZONE 'UTC' - interval '%s days')
+                    AND Question.assignee IS NULL
+                    AND BugTask.status IS NULL)
             """ % sqlvalues(
+                BugTaskStatus.INVALID,
                 QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
                 days_before_expiration, days_before_expiration))
 
@@ -565,7 +586,7 @@ class QuestionSet:
     def getMostActiveProjects(self, limit=5):
         """See `IQuestionSet`."""
         cur = cursor()
-        cur.execute('''
+        cur.execute("""
             SELECT product, distribution, count(*) AS "question_count"
             FROM (
                 SELECT product, distribution
@@ -583,7 +604,7 @@ class QuestionSet:
             GROUP BY product, distribution
             ORDER BY question_count DESC
             LIMIT %s
-            ''' % sqlvalues(limit))
+            """ % sqlvalues(limit))
 
         projects = []
         product_set = getUtility(IProductSet)
@@ -841,7 +862,7 @@ class QuestionTargetSearch(QuestionSearch):
 
     def getConstraints(self):
         """See `QuestionSearch`.
-        
+
         Return target and language constraints in addition to the base class
         constraints.
         """
@@ -945,7 +966,7 @@ class QuestionPersonSearch(QuestionSearch):
 
     def getConstraints(self):
         """See `QuestionSearch`.
-        
+
         Return the base class constraints plus additional constraints upon
         the Person's participation in Questions.
         """
@@ -976,12 +997,31 @@ class QuestionTargetMixin:
         return {}
 
     def newQuestion(self, owner, title, description, language=None,
-                  datecreated=None):
+        datecreated=None):
         """See `IQuestionTarget`."""
-        return QuestionSet.new(
+        question = QuestionSet.new(
             title=title, description=description, owner=owner,
             datecreated=datecreated, language=language,
             **self.getTargetTypes())
+        notify(SQLObjectCreatedEvent(question))
+        return question
+
+    def createQuestionFromBug(self, bug):
+        """See `IQuestionTarget`."""
+        question = self.newQuestion(
+            bug.owner, bug.title, bug.description,
+            datecreated=bug.datecreated)
+        # Give the datelastresponse a current datetime, otherwise the
+        # Launchpad Janitor would quickly expire questions made from old bugs.
+        question.datelastresponse = datetime.now(pytz.timezone('UTC'))
+        question.linkBug(bug)
+        for message in bug.messages[1:]:
+            # Bug.message[0] is the original message, and probably a duplicate
+            # of Bug.description.
+            question.addComment(
+                message.owner, message.text_contents,
+                datecreated=message.datecreated)
+        return question
 
     def getQuestion(self, question_id):
         """See `IQuestionTarget`."""

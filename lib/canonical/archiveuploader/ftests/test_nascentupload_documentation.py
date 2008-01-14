@@ -15,8 +15,8 @@ from canonical.archiveuploader.tests import (
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.ftests.test_system_documentation import (
     LayeredDocFileSuite, setUp as standard_setup)
-from canonical.launchpad.interfaces import IDistributionSet
-from canonical.lp.dbschema import DistroSeriesStatus
+from canonical.launchpad.interfaces import (
+    DistroSeriesStatus, IDistributionSet)
 from canonical.testing import LaunchpadZopelessLayer
 
 

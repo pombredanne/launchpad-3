@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Project-related interfaces for Launchpad."""
 
@@ -6,24 +7,33 @@ __metaclass__ = type
 
 __all__ = [
     'IProject',
+    'IProjectSeries',
     'IProjectSet',
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Text, TextLine
+from zope.schema import Bool, Choice, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, URIField
-from canonical.launchpad.interfaces import (
-    IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy, IHasIcon,
-    IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
-    IHasSpecifications, IKarmaContext, PillarNameField)
+from canonical.launchpad.interfaces.branchvisibilitypolicy import (
+    IHasBranchVisibilityPolicy)
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.karma import IKarmaContext
+from canonical.launchpad.interfaces.launchpad import (
+    IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
+    IHasOwner)
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
+from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.specificationtarget import (
+    IHasSpecifications)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
-    IconImageUpload, LogoImageUpload, MugshotImageUpload)
+    IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
 
 class ProjectNameField(PillarNameField):
@@ -33,10 +43,12 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
-               IHasIcon, IHasLogo, IHasMentoringOffers, IHasMilestones,
-               IHasMugshot, IHasOwner, IHasSpecifications, IHasSprints,
-               IHasTranslationGroup, IKarmaContext):
+class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
+               IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
+               IHasMentoringOffers, IHasMilestones, IHasMugshot,
+               IHasOwner, IHasSpecifications, IHasSprints,
+               IHasTranslationGroup, IMakesAnnouncements,
+               IKarmaContext):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -51,7 +63,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     name = ProjectNameField(
         title=_('Name'),
         required=True,
-        description=_("""A unique name, used in URLs, identifying the project 
+        description=_("""A unique name, used in URLs, identifying the project
             group.  All lowercase, no special characters.
             Examples: apache, mozilla, gimp."""),
         constraint=name_validator)
@@ -70,18 +82,20 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     summary = Summary(
         title=_('Project Group Summary'),
-        description=_("""A brief (one-paragraph) summary of the project group."""))
+        description=_(
+            """A brief (one-paragraph) summary of the project group."""))
 
     description = Text(
         title=_('Description'),
         description=_("""A detailed description of the project group,
-            including details like when it was founded, 
+            including details like when it was founded,
             how many contributors there are,
             and how it is organised and coordinated."""))
 
     datecreated = TextLine(
         title=_('Date Created'),
-        description=_("""The date this project group was created in Launchpad."""))
+        description=_(
+            """The date this project group was created in Launchpad."""))
 
     driver = Choice(
         title=_("Driver"),
@@ -99,7 +113,8 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         title=_('Homepage URL'),
         required=False,
         allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
-        description=_("""The project group home page. Please include the http://"""))
+        description=_(
+            """The project group home page. Please include the http://"""))
 
     wikiurl = URIField(
         title=_('Wiki URL'),
@@ -139,8 +154,8 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         default_image_resource='/@@/project',
         description=_(
             "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this project group. The icon will be "
-            "displayed in Launchpad everywhere that we link to this "
+            "that can be used to identify this project group. The icon will "
+            "be displayed in Launchpad everywhere that we link to this "
             "project group. For example in listings or tables of active "
 	    "project groups."))
 
@@ -149,8 +164,8 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         default_image_resource='/@@/project-logo',
         description=_(
             "An image of exactly 64x64 pixels that will be displayed in "
-            "the heading of all pages related to this project group. It should "
-            "be no bigger than 50kb in size."))
+            "the heading of all pages related to this project group. It "
+            "should be no bigger than 50kb in size."))
 
     mugshot = MugshotImageUpload(
         title=_("Brand"), required=False,
@@ -182,7 +197,9 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         """Get a product with name `name`."""
 
     def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this project group. Return None.
+        """Ensure that the bounty is linked to this project group.
+
+        Return None.
         """
 
     def translatables():
@@ -195,6 +212,9 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         """Returns True if a project has products associated with it, False
         otherwise.
         """
+
+    def getSeries(series_name):
+        """Return a ProjectSeries object with name `series_name`."""
 
 
 # Interfaces for set
@@ -248,3 +268,26 @@ class IProjectSet(Interface):
     def forSyncReview():
         """Return a list of projects that have productseries ready to
         import which need review."""
+
+class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
+                     IHasOwner):
+    """Interface for ProjectSeries.
+
+    This class provides the specifications related to a "virtual project
+    series", i.e., to those specifactions that are assigned to a series
+    of a product which is part of this project.
+    """
+    name = TextLine(title=u'The name of the product series.',
+                    required=True, readonly=True,
+                    constraint=name_validator)
+
+    displayname = TextLine(title=u'Alias for name.',
+                           required=True, readonly=True,
+                           constraint=name_validator)
+
+    title = TextLine(title=u'The title for this project series.', required=True,
+                     readonly=True)
+
+    project = Object(schema=IProject, 
+                     title=u"The project this series belongs to",
+                     required=True, readonly=True)

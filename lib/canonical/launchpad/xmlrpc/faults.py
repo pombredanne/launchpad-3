@@ -2,6 +2,9 @@
 
 """Launchpad XMLRPC faults."""
 
+# Note: When you add a fault to this file, be sure to add it to configure.zcml
+# in this directory.
+
 __metaclass__ = type
 
 __all__ = [
@@ -12,12 +15,16 @@ __all__ = [
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
     'InvalidBranchUrl',
+    'InvalidBranchIdentifier',
     'NoSuchBranch',
+    'NoBranchForSeries',
     'NoSuchBug',
     'NoSuchDistribution',
     'NoSuchPackage',
     'NoSuchPerson',
+    'NoSuchPersonWithUsername',
     'NoSuchProduct',
+    'NoSuchSeries',
     'NoSuchTeamMailingList',
     'RequiredParameterMissing',
     'UnexpectedStatusReport',
@@ -218,3 +225,50 @@ class BadStatus(LaunchpadFault):
 
     def __init__(self, team_name, status):
         LaunchpadFault.__init__(self, team_name=team_name, status=status)
+
+
+class NoBranchForSeries(LaunchpadFault):
+    """The series has no branch registered with it."""
+
+    error_code = 170
+    msg_template = (
+        'Series %(series_name)s on %(product_name)s has no branch associated '
+        'with it')
+
+    def __init__(self, series):
+        LaunchpadFault.__init__(
+            self, series_name=series.name, product_name=series.product.name)
+
+
+class NoSuchSeries(LaunchpadFault):
+    """There is no such series on a particular project."""
+
+    error_code = 180
+    msg_template = (
+        'Project %(product_name)s has no series called "%(series_name)s"')
+
+    def __init__(self, series_name, product):
+        LaunchpadFault.__init__(
+            self, series_name=series_name, product_name=product.name)
+
+
+class InvalidBranchIdentifier(LaunchpadFault):
+    """The branch identifier didn't begin with a tilde."""
+
+    error_code = 190
+    msg_template = (
+        'Invalid branch identifier: %(branch_path)r')
+
+    def __init__(self, branch_path):
+        LaunchpadFault.__init__(self, branch_path=branch_path)
+
+
+class NoSuchPersonWithUsername(LaunchpadFault):
+    """There's no Person with the specified login registered in Launchpad."""
+
+    error_code = 200
+    msg_template = 'No such person: %(username)s'
+
+    def __init__(self, username):
+        LaunchpadFault.__init__(self, username=username)
+

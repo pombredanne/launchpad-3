@@ -54,7 +54,7 @@ class LaunchBag:
     @property
     def login(self):
         return getattr(self._store, 'login', None)
-    
+
     def setDeveloper(self, is_developer):
         '''See IOpenLaunchBag.'''
         self._store.developer = is_developer

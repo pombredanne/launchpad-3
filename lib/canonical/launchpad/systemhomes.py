@@ -3,7 +3,10 @@
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
 
 __all__ = [
+    'AuthServerApplication',
     'BazaarApplication',
+    'CodeImportScheduler',
+    'FeedsApplication',
     'MailingListApplication',
     'MaloneApplication',
     'RegistryApplication',
@@ -15,14 +18,30 @@ __metaclass__ = type
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.publisher.interfaces import IPublishTraverse, NotFound
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IBazaarApplication, IBugExternalRefSet,
-    IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistroSeriesSet,
-    ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication,
-    IOpenIdApplication, IProductSet, IRegistryApplication,
-    IRosettaApplication, IShipItApplication, ITranslationGroupSet)
+    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication, IBugSet,
+    IBugTaskSet, IBugTrackerSet, IBugWatchSet,
+    ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
+    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
+    IMailingListApplication, IMaloneApplication, IOpenIdApplication,
+    IProductSet, IRegistryApplication, IRosettaApplication,
+    IShipItApplication, ITranslationGroupSet, IWebServiceApplication)
+from canonical.launchpad.rest import ServiceRootResource
+
+class AuthServerApplication:
+    """AuthServer End-Point."""
+    implements(IAuthServerApplication)
+
+    title = "Auth Server"
+
+
+class CodeImportSchedulerApplication:
+    """CodeImportScheduler End-Point."""
+    implements(ICodeImportSchedulerApplication)
+
+    title = "Code Import Scheduler"
 
 
 class RegistryApplication:
@@ -35,6 +54,10 @@ class ShipItApplication:
 
 class MailingListApplication:
     implements(IMailingListApplication)
+
+
+class FeedsApplication:
+    implements(IFeedsApplication)
 
 
 class MaloneApplication:
@@ -55,10 +78,6 @@ class MaloneApplication:
     @property
     def bugwatch_count(self):
         return getUtility(IBugWatchSet).search().count()
-
-    @property
-    def bugextref_count(self):
-        return getUtility(IBugExternalRefSet).search().count()
 
     @property
     def bugtask_count(self):
@@ -164,3 +183,20 @@ class RosettaApplication:
         """See IRosettaApplication."""
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('translator_count')
+
+
+class HWDBApplication:
+    implements(IHWDBApplication)
+
+
+class WebServiceApplication:
+    """See IWebServiceApplication."""
+    implements(IWebServiceApplication, IPublishTraverse)
+
+    def publishTraverse(self, request, name):
+        """Right now there are no resources below the root."""
+        raise NotFound(self, name)
+
+    def __call__(self, REQUEST=None):
+        if REQUEST:
+            return ServiceRootResource(REQUEST)()

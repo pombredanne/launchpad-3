@@ -17,7 +17,7 @@ from twisted.python.failure import Failure
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IDistroArchSeries, IDistroSeries, ILaunchpadCelebrities,
-    UnableToFetchCDImageFileList, MirrorStatus)
+    UnableToFetchCDImageFileList, MirrorFreshness)
 
 
 # The requests/timeouts ratio has to be at least 3 for us to keep issuing
@@ -69,7 +69,7 @@ class RequestManager:
 
 
 class MultiLock(defer._ConcurrencyPrimitive):
-    """A lock that acquires multiple underlying locks before it is acquired."""
+    """Lock that acquires multiple underlying locks before it is acquired."""
 
     def __init__(self, overall_lock, host_lock):
         defer._ConcurrencyPrimitive.__init__(self)
@@ -94,7 +94,7 @@ class ProberProtocol(HTTPClient):
         """Simply requests path presence."""
         self.makeRequest()
         self.headers = {}
-        
+
     def makeRequest(self):
         """Request path presence via HTTP/1.1 using HEAD.
 
@@ -103,7 +103,7 @@ class ProberProtocol(HTTPClient):
         self.sendCommand('HEAD', self.factory.connect_path)
         self.sendHeader('HOST', self.factory.connect_host)
         self.endHeaders()
-        
+
     def handleStatus(self, version, status, message):
         # According to http://lists.debian.org/deity/2001/10/msg00046.html,
         # apt intentionally handles only '200 OK' responses, so we do the
@@ -115,7 +115,7 @@ class ProberProtocol(HTTPClient):
         self.transport.loseConnection()
 
     def handleResponse(self, response):
-        # The status is all we need, so we don't need to do anything with 
+        # The status is all we need, so we don't need to do anything with
         # the response
         pass
 
@@ -188,7 +188,7 @@ class ProberFactory(protocol.ClientFactory):
         # NOTE: We don't want to issue connections to any outside host when
         # running the mirror prober in a development machine, so we do this
         # hack here.
-        if (self.connect_host != 'localhost' 
+        if (self.connect_host != 'localhost'
             and config.distributionmirrorprober.localhost_only):
             reactor.callLater(0, self.succeeded, '200')
             logger.debug("Forging a successful response on %s as we've been "
@@ -234,7 +234,7 @@ class ProberFactory(protocol.ClientFactory):
     def setURL(self, url):
         self.url = url
         scheme, host, port, path = _parse(url)
-        # XXX Guilherme Salgado 2006-09-19: 
+        # XXX Guilherme Salgado 2006-09-19:
         # We don't actually know how to handle FTP responses, but we
         # expect to be behind a squid HTTP proxy with the patch at
         # http://www.squid-cache.org/bugs/show_bug.cgi?id=1758 applied. So, if
@@ -282,7 +282,7 @@ class RedirectAwareProberFactory(ProberFactory):
 
             logger = logging.getLogger('distributionmirror-prober')
             logger.debug('Got redirected from %s to %s' % (self.url, url))
-            # XXX Guilherme Salgado 2007-04-23 bug=109223: 
+            # XXX Guilherme Salgado 2007-04-23 bug=109223:
             # We can't assume url to be absolute here.
             self.setURL(url)
         except (InfiniteLoopDetected, UnknownURLScheme), e:
@@ -383,7 +383,7 @@ class ArchiveMirrorProberCallbacks(object):
         failure.trap(*self.expected_failures)
 
     def ensureMirrorSeries(self, http_status):
-        """Make sure we have a mirror for self.series, self.pocket and 
+        """Make sure we have a mirror for self.series, self.pocket and
         self.component.
         """
         msg = ('Ensuring %s of %s with url %s exists in the database.\n'
@@ -396,11 +396,11 @@ class ArchiveMirrorProberCallbacks(object):
         self.log_file.write(msg)
         return mirror
 
-    def updateMirrorStatus(self, arch_or_source_mirror):
-        """Update the status of this MirrorDistro{ArchSeries,SeriesSource}.
+    def updateMirrorFreshness(self, arch_or_source_mirror):
+        """Update the freshness of this MirrorDistro{ArchSeries,SeriesSource}.
 
-        This is done by issuing HTTP HEAD requests on that mirror looking for 
-        some packages found in our publishing records. Then, knowing what 
+        This is done by issuing HTTP HEAD requests on that mirror looking for
+        some packages found in our publishing records. Then, knowing what
         packages the mirror contains and when these packages were published,
         we can have an idea of when that mirror was last updated.
         """
@@ -411,43 +411,46 @@ class ArchiveMirrorProberCallbacks(object):
             return
 
         scheme, host, port, path = _parse(self.url)
-        status_url_mapping = arch_or_source_mirror.getURLsToCheckUpdateness()
-        if not status_url_mapping or should_skip_host(host):
+        freshness_url_mapping = arch_or_source_mirror.getURLsToCheckUpdateness()
+        if not freshness_url_mapping or should_skip_host(host):
             # Either we have no publishing records for self.series,
             # self.pocket and self.component or we got too may timeouts from
             # this host and thus should skip it, so it's better to delete this
             # MirrorDistroArchSeries/MirrorDistroSeriesSource than to keep
-            # it with an UNKNOWN status.
+            # it with an UNKNOWN freshness.
             self.deleteMethod(self.series, self.pocket, self.component)
             return
 
         request_manager = RequestManager()
         deferredList = []
-        # We start setting the status to unknown, and then we move on trying to
-        # find one of the recently published packages mirrored there.
-        arch_or_source_mirror.status = MirrorStatus.UNKNOWN
-        for status, url in status_url_mapping.items():
+        # We start setting the freshness to unknown, and then we move on
+        # trying to find one of the recently published packages mirrored
+        # there.
+        arch_or_source_mirror.freshness = MirrorFreshness.UNKNOWN
+        for freshness, url in freshness_url_mapping.items():
             prober = ProberFactory(url)
             deferred = request_manager.run(prober.request_host, prober.probe)
             deferred.addCallback(
-                self.setMirrorStatus, arch_or_source_mirror, status, url)
+                self.setMirrorFreshness, arch_or_source_mirror, freshness,
+                url)
             deferred.addErrback(self.logError, url)
             deferredList.append(deferred)
         return defer.DeferredList(deferredList)
 
-    def setMirrorStatus(self, http_status, arch_or_source_mirror, status, url):
-        """Update the status of the given arch or source mirror.
+    def setMirrorFreshness(
+            self, http_status, arch_or_source_mirror, freshness, url):
+        """Update the freshness of the given arch or source mirror.
 
-        The status is changed only if the given status refers to a more 
+        The freshness is changed only if the given freshness refers to a more
         recent date than the current one.
         """
-        if status < arch_or_source_mirror.status:
-            msg = ('Found that %s exists. Updating %s of %s status to %s.\n'
-                   % (url, self.mirror_class_name,
-                      self._getSeriesPocketAndComponentDescription(), 
-                      status.title))
+        if freshness < arch_or_source_mirror.freshness:
+            msg = ('Found that %s exists. Updating %s of %s freshness to '
+                   '%s.\n' % (url, self.mirror_class_name,
+                              self._getSeriesPocketAndComponentDescription(),
+                              freshness.title))
             self.log_file.write(msg)
-            arch_or_source_mirror.status = status
+            arch_or_source_mirror.freshness = freshness
 
     def _getSeriesPocketAndComponentDescription(self):
         """Return a string containing the name of the series, pocket and
@@ -462,12 +465,12 @@ class ArchiveMirrorProberCallbacks(object):
                      self.series.architecturetag))
         else:
             text = "Series %s" % self.series.title
-        text += (", Component %s and Pocket %s" % 
+        text += (", Component %s and Pocket %s" %
                  (self.component.name, self.pocket.title))
         return text
 
     def logError(self, failure, url):
-        msg = ("%s on %s of %s\n" 
+        msg = ("%s on %s of %s\n"
                % (failure.getErrorMessage(), url,
                   self._getSeriesPocketAndComponentDescription()))
         if failure.check(*self.expected_failures) is not None:
@@ -505,10 +508,10 @@ class MirrorCDImageProberCallbacks(object):
                     self.distroseries, self.flavour)
                 if response.check(*self.expected_failures) is None:
                     msg = ("%s on mirror %s. Check its logfile for more "
-                           "details.\n" 
+                           "details.\n"
                            % (response.getErrorMessage(), self.mirror.name))
-                    # This is not an error we expect from an HTTP server, so 
-                    # we log it using the cronscript's logger and wait for 
+                    # This is not an error we expect from an HTTP server, so
+                    # we log it using the cronscript's logger and wait for
                     # kiko to complain about it.
                     logger = logging.getLogger('distributionmirror-prober')
                     logger.error(msg)
@@ -611,7 +614,7 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger):
         deferred.addCallbacks(
             callbacks.ensureMirrorSeries, callbacks.deleteMirrorSeries)
 
-        deferred.addCallback(callbacks.updateMirrorStatus)
+        deferred.addCallback(callbacks.updateMirrorFreshness)
         deferred.addErrback(logger.error)
 
         deferred.addBoth(checkComplete, url, unchecked_keys)
@@ -619,7 +622,7 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger):
 
 def probe_cdimage_mirror(mirror, logfile, unchecked_keys, logger):
     """Probe a cdimage mirror for its contents.
-    
+
     This is done by checking the list of files for each flavour and series
     returned by get_expected_cdimage_paths(). If a mirror contains all
     files for a given series and flavour, then we consider that mirror is

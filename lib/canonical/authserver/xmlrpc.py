@@ -11,7 +11,7 @@ class UserDetailsResource(xmlrpc.XMLRPC):
 
     def xmlrpc_getUser(self, loginID):
         """Get a user
-        
+
         :returns: user dict if loginID exists, otherwise empty dict
         """
         if self.debug:
@@ -20,7 +20,7 @@ class UserDetailsResource(xmlrpc.XMLRPC):
 
     def xmlrpc_authUser(self, loginID, sshaDigestedPassword):
         """Authenticate a user
-        
+
         :returns: user dict if authenticated, otherwise empty dict
         """
         if self.debug:
@@ -30,11 +30,11 @@ class UserDetailsResource(xmlrpc.XMLRPC):
 
     def xmlrpc_getSSHKeys(self, loginID):
         """Retrieve SSH public keys for a given user
-        
+
         :param loginID: a login ID.
         :returns: list of 2-tuples of (key type, key text).  This list will be
             empty if the user has no keys or does not exist.
-        
+
         :returns: user dict if loginID exists, otherwise empty dict
         """
         if self.debug:
@@ -46,12 +46,13 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
     """A new (and simpler) version of the user details XML-RPC API."""
 
     def __init__(self, storage, debug=False):
+        xmlrpc.XMLRPC.__init__(self)
         self.storage = storage
         self.debug = debug
 
     def xmlrpc_getUser(self, loginID):
         """Get a user
-        
+
         :returns: user dict if loginID exists, otherwise empty dict
         """
         if self.debug:
@@ -60,16 +61,16 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
 
     def xmlrpc_authUser(self, loginID, password):
         """Authenticate a user
-        
+
         :returns: user dict if authenticated, otherwise empty dict
         """
         if self.debug:
             print 'authUser(%r, %r)' % (loginID, password)
         return self.storage.authUser(loginID, password)
-        
+
     def xmlrpc_getSSHKeys(self, loginID):
         """Retrieve SSH public keys for a given user
-        
+
         :param loginID: a login ID.
         :returns: list of 2-tuples of (key type, key text).  This list will be
             empty if the user has no keys or does not exist.
@@ -99,11 +100,11 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
         return self.storage.createBranch(
             loginID, personName, productName, branchName)
 
-    def xmlrpc_requestMirror(self, branchID):
+    def xmlrpc_requestMirror(self, loginID, branchID):
         """See IHostedBranchStorage."""
         if self.debug:
-            print 'requestMirror(%r)' % (branchID,)
-        return self.storage.requestMirror(branchID)
+            print 'requestMirror(%r, %r)' % (loginID, branchID)
+        return self.storage.requestMirror(loginID, branchID)
 
     def xmlrpc_getBranchInformation(self, loginID, userName, productName,
                                     branchName):

@@ -155,7 +155,7 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                 name, owner, displayname, title, summary, description
                 )
                 VALUES (
-                    'whatever', 1, 'whatever', 'whatever', 
+                    'whatever', 1, 'whatever', 'whatever',
                     'whatever', 'whatever'
                     )
             """)

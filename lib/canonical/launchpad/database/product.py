@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
 
@@ -6,6 +7,7 @@ __metaclass__ = type
 __all__ = ['Product', 'ProductSet']
 
 
+import operator
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
@@ -24,14 +26,15 @@ from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
-from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.productbounty import ProductBounty
+from canonical.launchpad.database.productlicense import ProductLicense
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.question import (
@@ -43,22 +46,24 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, ICalendarOwner, IFAQTarget,
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    ILaunchpadStatisticSet, IPersonSet, IProduct, IProductSet,
-    IQuestionTarget, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.lp.dbschema import (
-    TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus)
+    DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, IFAQTarget, IHasIcon,
+    IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    ILaunchpadStatisticSet, ILaunchpadUsage, IPersonSet, IProduct,
+    IProductSet, IQuestionTarget, License, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationSort, SpecificationFilter,
+    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    TranslationPermission)
 
 
-class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
-              KarmaContextMixin, BranchVisibilityPolicyMixin,
-              QuestionTargetMixin, HasTranslationImportsMixin):
+class Product(SQLBase, BugTargetBase, MakesAnnouncements,
+              HasSpecificationsMixin, HasSprintsMixin, KarmaContextMixin,
+              BranchVisibilityPolicyMixin, QuestionTargetMixin,
+              HasTranslationImportsMixin):
+
     """A Product."""
 
-    implements(IProduct, ICalendarOwner, IFAQTarget, IQuestionTarget,
-               IHasLogo, IHasMugshot, IHasIcon)
+    implements(IFAQTarget, IHasLogo, IHasMugshot, IHasIcon,
+               ILaunchpadUsage, IProduct, IQuestionTarget)
 
     _table = 'Product'
 
@@ -111,6 +116,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
         dbName='official_rosetta', notNull=True, default=False)
+    enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
+        notNull=True, default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     private_bugs = BoolCol(
@@ -124,10 +131,44 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     development_focus = ForeignKey(
         foreignKey="ProductSeries", dbName="development_focus", notNull=False,
         default=None)
+    bug_reporting_guidelines = StringCol(default=None)
 
-    calendar = ForeignKey(
-        dbName='calendar', foreignKey='Calendar', default=None,
-        forceDBName=True)
+    license_info = StringCol(dbName='license_info', default=None)
+
+    def _getLicenses(self):
+        """Get the licenses as a tuple."""
+        return tuple(
+            product_license.license
+            for product_license 
+                in ProductLicense.selectBy(product=self, orderBy='license'))
+
+    def _setLicenses(self, licenses):
+        """Set the licenses from a tuple of license enums.
+
+        The licenses parameter must not be an empty tuple.
+        """
+        licenses = set(licenses)
+        old_licenses = set(self.licenses)
+        if licenses == old_licenses:
+            return
+        # $product/+edit doesn't require a license if a license hasn't
+        # already been set, but updateContextFromData() updates all the
+        # fields, so we have to avoid this assertion when the attribute
+        # isn't actually being changed.
+        assert len(licenses) != 0, "licenses argument must not be empty"
+        for license in licenses:
+            if license not in License:
+                raise AssertionError("%s is not a License" % license)
+
+        for license in old_licenses.difference(licenses):
+            product_license = ProductLicense.selectOneBy(product=self, 
+                                                         license=license)
+            product_license.destroySelf()
+
+        for license in licenses.difference(old_licenses):
+            ProductLicense(product=self, license=license)
+
+    licenses = property(_getLicenses, _setLicenses)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
@@ -157,13 +198,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See `IBugTarget`."""
         return get_bug_tags_open_count(
             "BugTask.product = %s" % sqlvalues(self), user)
-
-    def getOrCreateCalendar(self):
-        if not self.calendar:
-            self.calendar = Calendar(
-                title='%s Product Calendar' % self.displayname,
-                revision=0)
-        return self.calendar
 
     branches = SQLMultipleJoin('Branch', joinColumn='product',
         orderBy='id')
@@ -316,7 +350,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     def getTargetTypes(self):
         """See `QuestionTargetMixin`.
-        
+
         Defines product as self.
         """
         return {'product': self}
@@ -345,20 +379,27 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def translatable_packages(self):
         """See `IProduct`."""
         packages = set(package for package in self.sourcepackages
-                       if len(package.currentpotemplates) > 0)
+                       if len(package.getCurrentTranslationTemplates()) > 0)
         # Sort packages by distroseries.name and package.name
         return sorted(packages, key=lambda p: (p.distroseries.name, p.name))
 
     @property
     def translatable_series(self):
         """See `IProduct`."""
-        series = ProductSeries.select('''
-            POTemplate.productseries = ProductSeries.id AND
-            ProductSeries.product = %d
-            ''' % self.id,
-            clauseTables=['POTemplate'],
-            orderBy='datecreated', distinct=True)
-        return list(series)
+        translatable_product_series = set(
+            product_series for product_series in self.serieses
+            if len(product_series.getCurrentTranslationTemplates()) > 0)
+        return sorted(
+            translatable_product_series,
+            key=operator.attrgetter('datecreated'))
+
+    @property
+    def obsolete_translatable_series(self):
+        """See `IProduct`."""
+        obsolete_product_series = set(
+            product_series for product_series in self.serieses
+            if len(product_series.getObsoleteTranslationTemplates()) > 0)
+        return sorted(obsolete_product_series, key=lambda s: s.datecreated)
 
     @property
     def primary_translatable(self):
@@ -366,14 +407,14 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         packages = self.translatable_packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         targetseries = ubuntu.currentseries
-        series = self.translatable_series
+        product_series = self.translatable_series
 
         # First, go with development focus branch
-        if series and self.development_focus in series:
+        if product_series and self.development_focus in product_series:
             return self.development_focus
         # Next, go with the latest product series that has templates:
-        if series:
-            return series[-1]
+        if product_series:
+            return product_series[-1]
         # Otherwise, look for an Ubuntu package in the current distroseries:
         for package in packages:
             if package.distroseries == targetseries:
@@ -477,7 +518,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = (
-                ['-priority', 'Specification.definition_status', 'Specification.name'])
+                ['-priority', 'Specification.definition_status',
+                 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -506,9 +548,10 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                          SpecificationDefinitionStatus.SUPERSEDED)
+            query += (' AND Specification.definition_status NOT IN '
+                '( %s, %s ) ' % sqlvalues(
+                    SpecificationDefinitionStatus.OBSOLETE,
+                    SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -549,10 +592,10 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         distros = Distribution.select(
             "Packaging.productseries = ProductSeries.id AND "
             "ProductSeries.product = %s AND "
-            "Packaging.distrorelease = DistroRelease.id AND "
-            "DistroRelease.distribution = Distribution.id"
+            "Packaging.distroseries = DistroSeries.id AND "
+            "DistroSeries.distribution = Distribution.id"
             "" % sqlvalues(self.id),
-            clauseTables=['Packaging', 'ProductSeries', 'DistroRelease'],
+            clauseTables=['Packaging', 'ProductSeries', 'DistroSeries'],
             orderBy='name',
             distinct=True
             )
@@ -643,8 +686,8 @@ class ProductSet:
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
                       reviewed=False, mugshot=None, logo=None,
-                      icon=None):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
+                      icon=None, licenses=(), license_info=None):
+        """See `IProductSet`."""
         product = Product(
             owner=owner, name=name, displayname=displayname,
             title=title, project=project, summary=summary,
@@ -653,13 +696,17 @@ class ProductSet:
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
             programminglang=programminglang, reviewed=reviewed,
-            icon=icon, logo=logo, mugshot=mugshot)
+            icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
+
+        if len(licenses) > 0:
+            product.licenses = licenses
 
         # Create a default trunk series and set it as the development focus
-        trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
-            'represents the primary line of development rather than '
-            'a stable release branch. This is sometimes also called MAIN '
-            'or HEAD.')
+        trunk = product.newSeries(
+            owner, 'trunk',
+            ('The "trunk" series represents the primary line of development '
+             'rather than a stable release branch. This is sometimes also '
+             'called MAIN or HEAD.'))
         product.development_focus = trunk
 
         return product
@@ -753,5 +800,3 @@ class ProductSet:
 
     def count_codified(self):
         return self.stats.value('products_with_branches')
-
-

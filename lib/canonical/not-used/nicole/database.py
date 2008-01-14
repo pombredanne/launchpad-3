@@ -29,7 +29,7 @@ class SQLThing:
 
     def commit(self):
         return self.db.commit()
-    
+
     def close(self):
         return self.db.close()
 
@@ -46,14 +46,14 @@ class SQLThing:
     def _query_to_dict(self, query, args=None):
         cursor = self._exec(query, args)
         return self._get_dicts(cursor)
-        
+
     def _query(self, query, args=None):
         #print repr(query), repr(args)
         cursor = self.db.cursor()
         cursor.execute(query, args or [])
         results = cursor.fetchall()
         return results
-    
+
     def _query_single(self, query, args=None):
         q = self._query(query, args)
         if len(q) == 1:
@@ -104,7 +104,7 @@ class SQLThing:
 
 # XXX: cprov 2005-01-26:
 # This class needs a lot of Love, it is fitting and cleaning data
-# for the DB backend classes  
+# for the DB backend classes
 class FitData(object):
     pdisplayname = None
     pemail = None
@@ -156,7 +156,7 @@ class FitData(object):
             self.displayname = data_sanitizer(data['product'])
             self.title = data_sanitizer(data['product'])
 
-        ## both have summary        
+        ## both have summary
         if 'summary' in data.keys():
             self.summary = data_sanitizer(data['summary'])
         else:
@@ -176,12 +176,12 @@ class FitData(object):
             plang_list = data['programminglang']
             temp_plang = ''
             for plang in plang_list:
-                temp_plang += ' ' + plang  
+                temp_plang += ' ' + plang
 
             plang = data_sanitizer(temp_plang)
         except KeyError:
             pass
-        
+
         try:
             screenshot = data_sanitizer(data['screenshot'])
         except KeyError:
@@ -195,7 +195,7 @@ class FitData(object):
         except IndexError:
             listurl = None
 
-    
+
         if 'sf' in data.keys():
             self.sourceforgeproject = data_sanitizer(data['sf'])
         else:
@@ -205,8 +205,8 @@ class FitData(object):
             self.freshmeatproject = data_sanitizer(data['fm'])
         else:
             self.freshmeatproject = None
- 
- 
+
+
 class Doap(SQLThing):
     #
     # SourcePackageName
@@ -239,8 +239,8 @@ class Doap(SQLThing):
 
     def getPersonByEmail(self, email):
         return self._query_single("""SELECT
-            Person.id FROM Person,emailaddress 
-            WHERE email = %s AND 
+            Person.id FROM Person,emailaddress
+            WHERE email = %s AND
             Person.id = emailaddress.person;""", (email,))
 
     def getPersonByName(self, name):
@@ -275,12 +275,12 @@ class Doap(SQLThing):
         self._insert("person", data)
         pid = self._query_single("SELECT CURRVAL('person_id_seq')")[0]
         self.createEmail(pid, email)
- 
+
     def createEmail(self, pid, email):
         data = {
             "email":    email,
             "person":   pid,
-            "status":   1, # Status 'New' 
+            "status":   1, # Status 'New'
         }
         self._insert("emailaddress", data)
 
@@ -313,7 +313,7 @@ class Doap(SQLThing):
         if not data:
             print '@\t No data available for Update'
             return
-        
+
         fit = FitData(data, productname)
 
         # only update peripheral data, rather than the summary and
@@ -328,7 +328,7 @@ class Doap(SQLThing):
                 }
 
         # the query reinforces the requirement that we only update when the
-        # autoupdate field is true        
+        # autoupdate field is true
         self._update("product", dbdata, ("name='%s' and autoupdate=True"
                                          % productname))
         print '@\tProduct %s Updated' % productname
@@ -407,7 +407,7 @@ class Doap(SQLThing):
         # Hardcoded Role too Member
         role = 1
 
-        ## create productrole        
+        ## create productrole
         self.createProductRole(owner, product, role)
 
         ## productseries
@@ -424,14 +424,14 @@ class Doap(SQLThing):
         revision control system for %s. Releases on this
         series are usually development milestones and test
         releases.""" % fit.displayname
-        
+
         self.createProductSeries(product, name, displayname, summary)
-        
+
 
     def ensurePackaging(self, productname, packagename, distroname):
-        
+
         product = self.getProductByName(productname)
-        
+
         if product:
             product_id = product[0]
         else:
@@ -440,7 +440,7 @@ class Doap(SQLThing):
             return
 
         sourcepackage = self.getSourcePackageByName(packagename, distroname)
-        
+
         if not sourcepackage:
             ## Aborting !!!
             return
@@ -464,4 +464,4 @@ class Doap(SQLThing):
         print '@\tPackaging %s - %s Created' % (productname, packagename)
         # finished with success
         return True
-        
+

@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -148,7 +149,7 @@ class KarmaCacheManager:
     def _getEntry(self, person_id, category_id, product_id=None, distribution_id=None,
                   sourcepackagename_id=None, project_id=None):
         """Return the KarmaCache entry with the given arguments.
-        
+
         Return None if it's not found.
         """
         # Can't use selectBy() because product/distribution/sourcepackagename
@@ -190,7 +191,7 @@ class KarmaCategory(SQLBase):
 
 class KarmaContextMixin:
     """A mixin to be used by classes implementing IKarmaContext.
-    
+
     This would be better as an adapter for Product and Distribution, but a
     mixin should be okay for now.
     """

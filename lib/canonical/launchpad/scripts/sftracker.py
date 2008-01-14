@@ -41,14 +41,12 @@ except ImportError:
 from zope.component import getUtility
 from zope.app.content_types import guess_content_type
 
-from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType)
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugActivitySet, IBugAttachmentSet, IBugExternalRefSet,
-    IEmailAddressSet, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IMessageSet, IPersonSet, CreateBugParams, NotFoundError,
-    PersonCreationRationale)
+    BugAttachmentType, BugTaskImportance, BugTaskStatus, CreateBugParams,
+    IBugActivitySet, IBugAttachmentSet, IBugSet, IEmailAddressSet,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessageSet, IPersonSet,
+    NotFoundError, PersonCreationRationale)
 
 logger = logging.getLogger('canonical.launchpad.scripts.sftracker')
 
@@ -258,7 +256,7 @@ class TrackerImporter:
         """Get the Launchpad user corresponding to the given SF user ID"""
         if sf_userid in [None, '', 'nobody']:
             return None
-        
+
         email = '%s@users.sourceforge.net' % sf_userid
 
         launchpad_id = self._person_id_cache.get(sf_userid)
@@ -327,7 +325,7 @@ class TrackerImporter:
         exists, the import is skipped.
         """
         logger.info('Handling Sourceforge tracker item #%s', item.item_id)
-        
+
         nickname = 'sf%s' % item.item_id
         try:
             bug = getUtility(IBugSet).getByNameOrID(nickname)
@@ -345,6 +343,8 @@ class TrackerImporter:
         # The first comment is used as the bug description, so we pop
         # it off the list.
         date, userid, text = comments.pop(0)
+        # Add a link back to the original SourceForge bug report:
+        text = text + '\n\n[' + item.url + ']'
         msg = self.createMessage(item.title, date, userid, text)
         comments_by_date_and_user[(date, userid)] = msg
 
@@ -416,13 +416,6 @@ class TrackerImporter:
                 attach_type=attach_type,
                 title=attachment.title,
                 message=msg)
-
-        # create a back reference to the original SourceForge bug report
-        getUtility(IBugExternalRefSet).createBugExternalRef(
-            bug=bug,
-            url=item.url,
-            title='SF #%s' % item.item_id,
-            owner=self.bug_importer)
 
         # Make a note of the import in the activity log:
         getUtility(IBugActivitySet).new(

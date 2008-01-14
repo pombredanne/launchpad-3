@@ -91,8 +91,19 @@ class PouringLoop:
         self.transaction_manager.commit()
         self.transaction_manager.begin()
         self.cur = cursor()
+        # Disable slow sequential scans.  The database server is reluctant to
+        # use indexes on tables that undergo large changes, such as the
+        # deletion of large numbers of rows in this case.  Usually it's
+        # right but in this case it seems to slow things down dramatically and
+        # unnecessarily.  We disable sequential scans for every commit since
+        # initZopeless by default resets our database connection with every
+        # new transaction.
+        # MultiTableCopy disables sequential scans for the first batch; this
+        # just renews our setting after the connection is reset.
+        postgresql.allow_sequential_scans(self.cur, False)
 
-    def prepareBatch(self, from_table, to_table, batch_size, begin_id, end_id):
+    def prepareBatch(
+        self, from_table, to_table, batch_size, begin_id, end_id):
         """If batch_pouring_callback is defined, call it."""
         if self.batch_pouring_callback is not None:
             self.batch_pouring_callback(
@@ -114,7 +125,7 @@ class MultiTableCopy:
     and Y to the algorithm, then x2's instance of that foreign key will refer
     not to y1 but to the new y2.  Any rows in X whose associated rows of Y are
     not copied, are also not copied.  This can be useful when copying data in
-    entire sub-trees of the schema graph, e.g. "one distrorelease and all the
+    entire sub-trees of the schema graph, e.g. "one distroseries and all the
     translations associated with it."
 
     All this happens in a two-stage process:
@@ -211,7 +222,9 @@ class MultiTableCopy:
         :param restartable: whether you want the remaining data to be
             available for recovery if the connection (or the process) fails
             while in the pouring stage.  If False, will extract to temp
-            tables.
+            tables.  CAUTION: our connections currently get reset every time
+            we commit a transaction, obliterating any temp tables possibly in
+            the middle of the pouring process!
         :param logger: a logger to write informational output to.  If none is
             given, the default is used.
         """
@@ -223,6 +236,7 @@ class MultiTableCopy:
         self.last_extracted_table = None
         self.restartable = restartable
         self.batch_pouring_callbacks = {}
+        self.pre_pouring_callbacks = {}
         if logger is not None:
             self.logger = logger
         else:
@@ -261,8 +275,8 @@ class MultiTableCopy:
         return foreign_key
 
     def extract(self, source_table, joins=None, where_clause=None,
-        id_sequence=None, inert_where=None, batch_pouring_callback=None,
-        external_joins=None):
+        id_sequence=None, inert_where=None, pre_pouring_callback=None,
+        batch_pouring_callback=None, external_joins=None):
         """Extract (selected) rows from source_table into a holding table.
 
         The holding table gets an additional new_id column with identifiers
@@ -294,7 +308,8 @@ class MultiTableCopy:
             `_pointsToTable` method to provide the right target table for each
             foreign key that the operation should know about.
         :param where_clause: Boolean SQL expression characterizing rows to be
-            extracted.
+            extracted.  The WHERE clause may refer to rows from table being
+            extracted as "source."
         :param id_sequence: SQL sequence that should assign new identifiers
             for the extracted rows.  Defaults to `source_table` with "_seq_id"
             appended, which by SQLObject/Launchpad convention is the sequence
@@ -310,6 +325,14 @@ class MultiTableCopy:
             values they had in `source_table`, but for each "x" of these
             foreign keys, the holding table will have a column "new_x" that
             holds the redirected foreign key.
+        :param pre_pouring_callback: a callback that is called just before
+            pouring this table.  At that time the holding table will no longer
+            have its new_id column, its values having been copied to the
+            regular id column.  This means that the copied rows' original ids
+            are no longer known.  The callback takes as arguments the holding
+            table's name and the source table's name.  The callback may be
+            invoked more than once if pouring is interrupted and later
+            resumed.
         :param batch_pouring_callback: a callback that is called before each
             batch of rows is poured, within the same transaction that pours
             those rows.  It takes as arguments the holding table's name; the
@@ -335,9 +358,8 @@ class MultiTableCopy:
         if joins is None:
             joins = []
 
-        if batch_pouring_callback is not None:
-            callbacks = self.batch_pouring_callbacks
-            callbacks[source_table] = batch_pouring_callback
+        self.batch_pouring_callbacks[source_table] = batch_pouring_callback
+        self.pre_pouring_callbacks[source_table] = pre_pouring_callback
 
         if external_joins is None:
             external_joins = []
@@ -374,8 +396,8 @@ class MultiTableCopy:
         new_id column.
         """
         source_table = str(source_table)
-        select = ['%s.*' % source_table]
-        from_list = [source_table]
+        select = ['source.*']
+        from_list = ["%s source" % source_table]
         where = []
 
         for join in joins:
@@ -386,7 +408,8 @@ class MultiTableCopy:
 
             self._checkForeignKeyOrder(column, referenced_table)
 
-            select.append('%s.new_id AS new_%s' % (referenced_holding, column))
+            select.append('%s.new_id AS new_%s' % (
+                referenced_holding, column))
             from_list.append(referenced_holding)
             where.append('%s = %s.id' % (column, referenced_holding))
 
@@ -408,7 +431,6 @@ class MultiTableCopy:
             'holding_table': holding_table,
             'id_sequence': "nextval('%s'::regclass)" % id_sequence,
             'inert_where': inert_where,
-            'main': source_table,
             'source_tables': ','.join(from_list),
             'where': where_text,
             'temp': '',
@@ -425,10 +447,11 @@ class MultiTableCopy:
             # holding table), we assign new_ids right in the same query.
             cur.execute('''
                 CREATE %(temp)s TABLE %(holding_table)s AS
-                SELECT DISTINCT ON (%(main)s.id)
+                SELECT DISTINCT ON (source.id)
                     %(columns)s, %(id_sequence)s AS new_id
                 FROM %(source_tables)s
-                %(where)s''' % table_creation_parameters)
+                %(where)s
+                ORDER BY id''' % table_creation_parameters)
         else:
             # Some of the rows may have to have null new_ids.  To avoid
             # wasting "address space" on the sequence, we populate the entire
@@ -436,10 +459,11 @@ class MultiTableCopy:
             # rows that do not match the "inert_where" condition.
             cur.execute('''
                 CREATE %(temp)s TABLE %(holding_table)s AS
-                SELECT DISTINCT ON (%(main)s.id)
+                SELECT DISTINCT ON (source.id)
                     %(columns)s, NULL::integer AS new_id
                 FROM %(source_tables)s
-                %(where)s''' % table_creation_parameters)
+                %(where)s
+                ORDER BY id''' % table_creation_parameters)
             cur.execute('''
                 UPDATE %(holding_table)s AS holding
                 SET new_id = %(id_sequence)s
@@ -566,6 +590,10 @@ class MultiTableCopy:
 
             cur = self._commit(transaction_manager)
 
+        # In future, let the database perform sequential scans again if it
+        # decides that's best.
+        postgresql.allow_sequential_scans(cur, True)
+
     def _pourTable(
         self, holding_table, table, has_new_id, transaction_manager):
         """Pour contents of a holding table back into its source table.
@@ -582,6 +610,10 @@ class MultiTableCopy:
             cur.execute("ALTER TABLE %s DROP COLUMN new_id" % holding_table)
             self._commit(transaction_manager)
             self.logger.debug("...rearranged ids...")
+
+        callback = self.pre_pouring_callbacks.get(table)
+        if callback is not None:
+            callback(holding_table, table)
 
         # Now pour holding table's data into its source table.  This is where
         # we start writing to tables that other clients will be reading, and

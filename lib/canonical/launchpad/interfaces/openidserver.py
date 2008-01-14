@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """OpenId related interfaces."""
 
@@ -6,6 +7,7 @@ __metaclass__ = type
 __all__ = [
         'IOpenIdAuthorization',
         'IOpenIdAuthorizationSet',
+        'IOpenIDPersistentIdentity',
         'IOpenIDRPConfig',
         'IOpenIDRPConfigSet',
         'ILaunchpadOpenIdStoreFactory',
@@ -13,13 +15,14 @@ __all__ = [
         'ILoginServiceLoginForm',
         ]
 
-from zope.schema import Choice, Datetime, Int, List, Object, TextLine
+from zope.component import getUtility
+from zope.schema import Choice, Datetime, Int, List, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PasswordField
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.fields import (
+    BaseImageUpload, PasswordField, UniqueField)
 from canonical.launchpad.interfaces.person import PersonCreationRationale
 
 
@@ -41,7 +44,7 @@ class IOpenIdAuthorization(Interface):
 
 class IOpenIdAuthorizationSet(Interface):
     def isAuthorized(person, trust_root, client_id):
-        """Check the authorization list to see if the trust_root is authorized.
+        """Check to see if the trust_root is authorized.
 
         Returns True or False.
         """
@@ -67,6 +70,27 @@ class ILaunchpadOpenIdStoreFactory(Interface):
         """Create a LaunchpadOpenIdStore instance."""
 
 
+class TrustRootField(UniqueField):
+    """An OpenID Relying Party trust root, which is unique."""
+
+    attribute = 'trust_root'
+    errormessage = _("%s is already in use for another Relying Party.")
+
+    @property
+    def _content_iface(self):
+        return IOpenIDRPConfig
+
+    def _getByAttribute(self, trust_root):
+        return getUtility(IOpenIDRPConfigSet).getByTrustRoot(trust_root)
+
+
+class RPLogoImageUpload(BaseImageUpload):
+
+    dimensions = (400, 100)
+    exact_dimensions = False
+    max_size = 100*1024
+    default_image_resource = '/@@/nyet-logo'
+
 
 sreg_fields_vocabulary = SimpleVocabulary([
     SimpleTerm('fullname', 'fullname', 'Full name'),
@@ -86,19 +110,21 @@ sreg_fields_vocabulary = SimpleVocabulary([
 class IOpenIDRPConfig(Interface):
     """Configuration for a particular OpenID Relying Party."""
     id = Int(title=u'ID', required=True)
-    trust_root = TextLine(
+    trust_root = TrustRootField(
         title=_('Trust Root'), required=True,
-        description=_('The openid.trust_root value sent by the Relying Party'))
+        description=_('The openid.trust_root value sent by the '
+                      'Relying Party'))
     displayname = TextLine(
         title=_('Display Name'), required=True,
         description=_('A human readable name for the Relying Party'))
-    description = TextLine(
+    description = Text(
         title=_('Description'), required=True,
         description=_('A description of the Relying Party, explaining why '
                       'the user should authenticate.'))
-    logo = Object(
-        title=_('Logo'), schema=ILibraryFileAlias, required=False,
-        description=_('A banner that identifies the Relying Party'))
+    logo = RPLogoImageUpload(
+        title=_('Logo'), required=False,
+        description=_('A banner that identifies the Relying Party, '
+                      'no larger than 400x100 pixels.'))
     allowed_sreg = List(
         title=_('Allowed Sreg Fields'),
         description=_('The simple registration fields that may be '
@@ -113,8 +139,9 @@ class IOpenIDRPConfig(Interface):
 
 class IOpenIDRPConfigSet(Interface):
     """The set of OpenID Relying Party configurations."""
-    def new(trust_root, displayname, description, logo=None, allowed_sreg=None,
-            creation_rationale=PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT):
+    def new(trust_root, displayname, description, logo=None,
+            allowed_sreg=None, creation_rationale=PersonCreationRationale
+            .OWNER_CREATED_UNKNOWN_TRUSTROOT):
         """Create a new IOpenIdRPConfig"""
 
     def get(id):
@@ -125,6 +152,14 @@ class IOpenIDRPConfigSet(Interface):
 
     def getByTrustRoot(trust_root):
         """Return the IOpenIdRPConfig for a particular trust root"""
+
+
+class IOpenIDPersistentIdentity(Interface):
+    """An object that represents a persistent user identity URL.
+
+    This interface is used purely for use in the UI.
+    """
+    person = Attribute('The IPerson this is for')
 
 
 class ILoginServiceAuthorizeForm(Interface):

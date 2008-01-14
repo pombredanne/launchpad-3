@@ -1,4 +1,3 @@
-
 = Published Package =
 
 This database view gives us information on which packages are published in
@@ -34,7 +33,7 @@ upon.
  >>> ff_sp = warty.getSourcePackage('mozilla-firefox')
  >>> ff_drspr = ff_sp['0.9']
  >>> len(ff_drspr.meta_binaries)
- 1
+ 3
 
  >>> from canonical.launchpad.interfaces import IDistroSeriesBinaryPackage
  >>> verifyObject(IDistroSeriesBinaryPackage, ff_drspr.meta_binaries[0])

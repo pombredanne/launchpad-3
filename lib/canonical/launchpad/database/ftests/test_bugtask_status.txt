@@ -2,7 +2,7 @@
 
     >>> from canonical.launchpad.interfaces import (
     ...     CreateBugParams, IPersonSet, IProductSet)
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> nopriv_user = getUtility(IPersonSet).getByName('no-priv')

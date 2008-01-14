@@ -1,3 +1,5 @@
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0703
 
 import os
 import re
@@ -26,6 +28,7 @@ class Bug:
             self.tags = tags
         if report:
             self.report = report
+        description = None
 
     def is_open(self):
         #return not self.done and 'fixed' not in self.tags
@@ -117,12 +120,12 @@ class Database:
                        match.group('originator'),
                        match.group('severity'),
                        match.group('tags').split(' '))
-                       
+
     def load(self, bug, name):
         if name in ('originator', 'date', 'subject', 'msgid', 'package',
                     'tags', 'done', 'forwarded', 'mergedwith', 'severity'):
             self.load_summary(bug)
-        elif name == 'report':
+        elif name in ('report', 'description'):
             self.load_report(bug)
         elif name in ('comments',):
             self.load_log(bug)
@@ -193,12 +196,22 @@ class Database:
         bug.report = fd.read()
         fd.close()
 
+        report_msg = email.message_from_string(bug.report)
+        charset = report_msg.get_content_charset('ascii')
+        description = report_msg.get_payload(decode=True)
+        bug.description = description.decode(charset)
+
     def load_log(self, bug):
         log = os.path.join(self.root, 'db-h', self._hash(bug), '%d.log' % bug.id)
         comments = []
 
+        # We set the perl path manually so that debbugs-log.pl can
+        # always find the Debbugs::Log module.
+        debbugs_path = os.path.dirname(self.debbugs_pl)
+        command = "perl -I %s %s %s" % (debbugs_path, self.debbugs_pl, log)
+
         try:
-            logreader = os.popen(self.debbugs_pl + ' %s' % log, 'r')
+            logreader = os.popen(command, 'r')
             comment = cStringIO.StringIO()
             for line in logreader:
                 if line == '.\n':

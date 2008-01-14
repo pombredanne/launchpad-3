@@ -2,7 +2,7 @@ Foo Bar files a security (private) bug on Ubuntu Linux. He gets
 redirected to the bug page. (Note that only the advanced bug
 filing page, not the simple one, supports filing security bugs.)
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser = setupBrowser("Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/ubuntu/+filebug-advanced")
 
 Ubuntu has no security contact, so the Ubuntu maintainer, Ubuntu Team,

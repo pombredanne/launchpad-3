@@ -1,18 +1,24 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0401
 
 from canonical.launchpad.database.codeimport import *
+from canonical.launchpad.database.codeimportevent import *
+from canonical.launchpad.database.codeimportjob import *
 from canonical.launchpad.database.codeimportmachine import *
+from canonical.launchpad.database.codeimportresult import *
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.pillar import *
 from canonical.launchpad.database.product import *
 from canonical.launchpad.database.productbounty import *
 from canonical.launchpad.database.packaging import *
+from canonical.launchpad.database.productlicense import *
 from canonical.launchpad.database.productseries import *
 from canonical.launchpad.database.productrelease import *
 from canonical.launchpad.database.project import *
 from canonical.launchpad.database.projectbounty import *
 from canonical.launchpad.database.poll import *
+from canonical.launchpad.database.announcement import *
 from canonical.launchpad.database.answercontact import *
 from canonical.launchpad.database.bug import *
 from canonical.launchpad.database.bugbranch import *
@@ -24,21 +30,16 @@ from canonical.launchpad.database.bugmessage import *
 from canonical.launchpad.database.bugtask import *
 from canonical.launchpad.database.bugactivity import *
 from canonical.launchpad.database.bugattachment import *
-from canonical.launchpad.database.bugextref import *
 from canonical.launchpad.database.bugnomination import *
 from canonical.launchpad.database.bugnotification import *
 from canonical.launchpad.database.cve import *
 from canonical.launchpad.database.cvereference import *
 from canonical.launchpad.database.bugtracker import *
-from canonical.launchpad.database.potemplatename import *
 from canonical.launchpad.database.pofile import *
 from canonical.launchpad.database.potemplate import *
 from canonical.launchpad.database.potmsgset import *
 from canonical.launchpad.database.pomsgid import *
-from canonical.launchpad.database.pomsgidsighting import *
-from canonical.launchpad.database.pomsgset import *
 from canonical.launchpad.database.potranslation import *
-from canonical.launchpad.database.posubmission import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.launchpadstatistic import *
 from canonical.launchpad.database.infestation import *
@@ -65,13 +66,12 @@ from canonical.launchpad.database.distroarchseriesbinarypackage import *
 from canonical.launchpad.database.distroarchseriesbinarypackagerelease import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.language import *
+from canonical.launchpad.database.languagepack import *
 from canonical.launchpad.database.translationgroup import *
 from canonical.launchpad.database.translationimportqueue import *
+from canonical.launchpad.database.translationmessage import *
 from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
-from canonical.launchpad.database.manifest import *
-from canonical.launchpad.database.manifestentry import *
-from canonical.launchpad.database.manifestancestry import *
 from canonical.launchpad.database.branch import *
 from canonical.launchpad.database.branchmergeproposal import *
 from canonical.launchpad.database.branchrevision import *
@@ -82,6 +82,7 @@ from canonical.launchpad.database.builder import *
 from canonical.launchpad.database.buildqueue import *
 from canonical.launchpad.database.publishing import *
 from canonical.launchpad.database.faq import *
+from canonical.launchpad.database.featuredproject import *
 from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
 from canonical.launchpad.database.bountymessage import *
@@ -101,7 +102,6 @@ from canonical.launchpad.database.spokenin import *
 from canonical.launchpad.database.sprint import *
 from canonical.launchpad.database.sprintattendance import *
 from canonical.launchpad.database.sprintspecification import *
-from canonical.launchpad.database.cal import *
 from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *
 from canonical.launchpad.database.component import *
@@ -118,7 +118,6 @@ from canonical.launchpad.database.questionmessage import *
 from canonical.launchpad.database.questionreopening import *
 from canonical.launchpad.database.questionsubscription import *
 from canonical.launchpad.database.poexportrequest import *
-from canonical.launchpad.database.developmentmanifest import *
 from canonical.launchpad.database.distrocomponentuploader import *
 from canonical.launchpad.database.revision import *
 from canonical.launchpad.database.gpgkey import *
@@ -127,3 +126,4 @@ from canonical.launchpad.database.emailaddress import *
 from canonical.launchpad.database.openidserver import *
 from canonical.launchpad.database.entitlement import *
 from canonical.launchpad.database.mailinglist import *
+from canonical.launchpad.database.hwdb import *

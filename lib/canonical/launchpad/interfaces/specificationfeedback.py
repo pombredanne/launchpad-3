@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Specification queueing interfaces. It is possible to put a specification
 into somebody's queue, along with a message telling that person what they

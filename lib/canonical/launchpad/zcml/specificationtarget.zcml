@@ -44,7 +44,7 @@
     class="canonical.launchpad.browser.RegisterABlueprintButtonView"
     permission="zope.Public"
     />
-    
+
 
 </facet>
 

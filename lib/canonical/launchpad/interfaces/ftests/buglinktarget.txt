@@ -84,7 +84,8 @@ if he is an administrator:
 
     >>> login('no-priv@canonical.com')
     >>> private_bug = bugset.get(6)
-    >>> private_bug.private = True
+    >>> private_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> target.linkBug(private_bug)
     Traceback (most recent call last):
       ...

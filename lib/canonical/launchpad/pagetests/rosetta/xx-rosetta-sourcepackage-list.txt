@@ -32,8 +32,8 @@ indicate that these languages have never been edited my anyone.
     >>> table = content.findAll('table')[0]
     >>> for row in table.findAll('tr'):
     ...     print extract_text(row)
-    Language        Untranslated Status Last    Edited By
-    Afrikaans       22           100.00 &mdash; &mdash;
-    Sotho, Southern 22           100.00 &mdash; &mdash;
-    Xhosa           22           100.00 &mdash; &mdash;
-    Zulu            22           100.00 &mdash; &mdash;
+    Language        Status Untranslated Need review Changed Last    Edited By
+    Afrikaans       100.00 22 22        0 ...       0 ...   &mdash; &mdash;
+    Sotho, Southern 100.00 22 22        0 ...       0 ...   &mdash; &mdash;
+    Xhosa           100.00 22 22        0 ...       0 ...   2005-06-15 &mdash;
+    Zulu            100.00 22 22        0 ...       0 ...   &mdash; &mdash;

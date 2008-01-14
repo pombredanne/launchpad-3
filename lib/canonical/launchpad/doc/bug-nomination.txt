@@ -161,7 +161,7 @@ as "Nominated".
 Nomination status changes have an associated workflow. For this reason,
 setting status directly is not possible.
 
-    >>> from canonical.lp.dbschema import BugNominationStatus
+    >>> from canonical.launchpad.interfaces import BugNominationStatus
 
     >>> nomination.status = BugNominationStatus.APPROVED
     Traceback (most recent call last):
@@ -631,7 +631,7 @@ Nominating a bug for an obsolete distroseries raises a
 NominationSeriesObsoleteError. Let's mark warty obsolete to
 demonstrate.
 
-    >>> from canonical.lp.dbschema import DistroSeriesStatus
+    >>> from canonical.launchpad.interfaces import DistroSeriesStatus
 
 (Temporarily log in as an admin user to change the series status.)
 

@@ -4,9 +4,12 @@ This page shows a list of PO templates contained within all source
 packages for the distroseries that is the translation focus for a
 given distribution.
 
-    >>> browser.open('http://translations.launchpad.dev/ubuntu')
-    >>> browser.url
-    'http://translations.launchpad.dev/ubuntu'
+We can reach it from the main distribution page:
+
+    >>> browser.open('http://launchpad.dev/ubuntu')
+    >>> browser.getLink('Help translate').click()
+    >>> print browser.title
+    Translating Ubuntu
 
 Check that there aren't disabled languages shown here:
 

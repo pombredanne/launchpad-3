@@ -25,11 +25,12 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.launchpad.browser.build import BuildRecordsView
 
-from canonical.launchpad.interfaces import (
-    IPerson, IBuilderSet, IBuilder, IBuildSet, NotFoundError
-    )
+from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.helpers import shortlist
 
-from canonical.lp.dbschema import BuildStatus
+from canonical.launchpad.interfaces import (
+    BuildStatus, IPerson, IBuilderSet, IBuilder, IBuildSet, NotFoundError
+    )
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, Navigation, stepthrough, Link,
@@ -139,6 +140,14 @@ class BuilderSetView(CommonBuilderView):
     """
     __used_for__ = IBuilderSet
 
+    @cachedproperty
+    def buildQueueDepthByArch(self):
+        return shortlist(self.context.getBuildQueueDepthByArch())
+
+    @cachedproperty
+    def hasQueuedBuilds(self):
+        return bool(self.buildQueueDepthByArch)
+
 
 class BuilderView(CommonBuilderView, BuildRecordsView):
     """Default Builder view class
@@ -157,7 +166,7 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         # BuilderSlave class added by dsilvers, but I won't release it
         # until we can test it properly, since we can only 'abort' slaves
         # in BUILDING state it does depends of the major issue for testing
-        # Auto Build System, getting slave building something sane. 
+        # Auto Build System, getting slave building something sane.
         return '<p>Cancel (%s). Not implemented yet</p>' % builder_id
 
     def defaultBuildState(self):

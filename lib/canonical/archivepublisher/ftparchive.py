@@ -5,18 +5,13 @@ from select import select
 import subprocess
 from StringIO import StringIO
 
-from sqlobject import AND
-
 from canonical.database.sqlbase import expire_from_cache, sqlvalues
-
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
     SourcePackageFilePublishing, BinaryPackageFilePublishing)
+from canonical.launchpad.interfaces import (
+    PackagePublishingStatus, PackagePublishingPocket, pocketsuffix)
 
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket)
-
-from canonical.launchpad.interfaces import pocketsuffix
 
 def package_name(filename):
     """Extract a package name from a debian package filename."""
@@ -59,7 +54,7 @@ def run_subprocess_with_logging(process_and_args, log, prefix):
     buf = ""
     while open_readers:
         rlist, wlist, xlist = select(open_readers, [], [])
-        
+
         for reader in rlist:
             chunk = os.read(reader.fileno(), 1024)
             if chunk == "":
@@ -72,11 +67,11 @@ def run_subprocess_with_logging(process_and_args, log, prefix):
                 for line in lines[0:-1]:
                     log.debug("%s%s" % (prefix, line))
                 buf = lines[-1]
-        
+
     ret = proc.wait()
     return ret
 
-    
+
 DEFAULT_COMPONENT = "main"
 
 CONFIG_HEADER = """
@@ -160,7 +155,7 @@ class FTPArchiveHandler:
         self.log.debug("Filepath: %s" % apt_config_filename)
         ret = run_subprocess_with_logging(["apt-ftparchive", "--no-contents",
                                            "generate", apt_config_filename],
-                                          self.log, "a-f: ")        
+                                          self.log, "a-f: ")
         if ret:
             raise AssertionError(
                 "Failure from apt-ftparchive. Return code %s" % ret)
@@ -203,7 +198,8 @@ class FTPArchiveHandler:
         """
         suite_special = self.release_files_needed.setdefault(
             suite_name, {})
-        suite_component_special = suite_special.setdefault(component_name, set())
+        suite_component_special = suite_special.setdefault(
+            component_name, set())
         suite_component_special.add(arch_name)
 
     def createEmptyPocketRequest(self, distroseries, suffix, comp):
@@ -248,8 +244,8 @@ class FTPArchiveHandler:
             f_touch(self._config.overrideroot,
                     "_".join([full_distroseries_name, comp, "binary-"+arch]))
             f_touch(self._config.overrideroot,
-                    "_".join([full_distroseries_name, comp, "debian-installer",
-                              "binary-"+arch]))
+                    "_".join([full_distroseries_name, comp,
+                              "debian-installer", "binary-"+arch]))
 
     #
     # Override Generation
@@ -259,12 +255,12 @@ class FTPArchiveHandler:
         """Return SelectResults containing SourcePackagePublishingHistory."""
         return SourcePackagePublishingHistory.select(
             """
-            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.distroseries = %s AND
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.pocket = %s AND
             SourcePackagePublishingHistory.status = %s
             """ % sqlvalues(distroseries,
-                            distroseries.main_archive,
+                            self.publisher.archive,
                             pocket,
                             PackagePublishingStatus.PUBLISHED),
             prejoins=["sourcepackagerelease.sourcepackagename"],
@@ -274,21 +270,21 @@ class FTPArchiveHandler:
         """Return SelectResults containing BinaryPackagePublishingHistory."""
         return BinaryPackagePublishingHistory.select(
             """
-            BinaryPackagePublishingHistory.distroarchrelease =
-            DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.distroarchseries =
+            DistroArchSeries.id AND
+            DistroArchSeries.distroseries = %s AND
             BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.pocket = %s AND
             BinaryPackagePublishingHistory.status = %s
             """ % sqlvalues(distroseries,
-                            distroseries.main_archive,
+                            self.publisher.archive,
                             pocket,
                             PackagePublishingStatus.PUBLISHED),
             prejoins=["binarypackagerelease.binarypackagename"],
-            orderBy="id", clauseTables=["DistroArchRelease"])
+            orderBy="id", clauseTables=["DistroArchSeries"])
 
     def generateOverrides(self, fullpublish=False):
-        """Collect packages that need overrides generated, and generate them."""
+        """Collect packages that need overrides, and generate them."""
         for distroseries in self.distro.serieses:
             for pocket in PackagePublishingPocket.items:
                 if not fullpublish:
@@ -393,7 +389,8 @@ class FTPArchiveHandler:
                 self.generateOverrideForComponent(overrides, distroseries,
                                                   component)
 
-    def generateOverrideForComponent(self, overrides, distroseries, component):
+    def generateOverrideForComponent(self, overrides, distroseries,
+                                     component):
         """Generates overrides for a specific component."""
         src_overrides = list(overrides[distroseries][component]['src'])
         src_overrides.sort()
@@ -460,7 +457,7 @@ class FTPArchiveHandler:
                 for header, values in headers.items():
                     ef.write("\t".join([pkg, header, ", ".join(values)]))
                     ef.write("\n")
-            # XXX: dsilvers 2006-08-23 bug=3900: As above, 
+            # XXX: dsilvers 2006-08-23 bug=3900: As above,
             # this needs to be integrated into the database at some point.
         ef.close()
 
@@ -480,9 +477,9 @@ class FTPArchiveHandler:
     #
 
     def generateFileLists(self, fullpublish=False):
-        """Collect currently published FilePublishings and write file lists."""
+        """Collect currently published FilePublishings and write filelists."""
         for distroseries in self.distro.serieses:
-             for pocket in pocketsuffix:
+            for pocket in pocketsuffix:
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
                         continue
@@ -496,9 +493,9 @@ class FTPArchiveHandler:
                     archive = %s AND
                     publishingstatus = %s AND
                     pocket = %s AND
-                    distroreleasename = %s
+                    distroseriesname = %s
                     """ % sqlvalues(self.distro,
-                                    self.distro.main_archive,
+                                    self.publisher.archive,
                                     PackagePublishingStatus.PUBLISHED,
                                     pocket,
                                     distroseries.name),
@@ -510,9 +507,9 @@ class FTPArchiveHandler:
                     archive = %s AND
                     publishingstatus = %s AND
                     pocket = %s AND
-                    distroreleasename = %s
+                    distroseriesname = %s
                     """ % sqlvalues(self.distro,
-                                    self.distro.main_archive,
+                                    self.publisher.archive,
                                     PackagePublishingStatus.PUBLISHED,
                                     pocket,
                                     distroseries.name),
@@ -637,15 +634,14 @@ class FTPArchiveHandler:
                         self.log.debug("Skipping a-f stanza for %s/%s" %
                                            (distroseries_name, pocket.name))
                         continue
-                    if not distroseries.isUnstable():
-                        # See similar condition in Publisher.B_dominate
-                        assert pocket != PackagePublishingPocket.RELEASE
+                    self.publisher.checkDirtySuiteBeforePublishing(
+                        distroseries, pocket)
                 else:
                     if not self.publisher.isAllowed(distroseries, pocket):
                         continue
 
-                subtext = self.generateConfigForPocket(apt_config,
-                            distroseries, distroseries_name, pocket)
+                subtext = self.generateConfigForPocket(
+                    apt_config, distroseries, distroseries_name, pocket)
 
         # And now return that string.
         s = apt_config.getvalue()

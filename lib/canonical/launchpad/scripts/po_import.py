@@ -9,8 +9,14 @@ import time
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ITranslationImportQueue
-from canonical.lp.dbschema import RosettaImportStatus
+from canonical.config import config
+from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad import helpers
+from canonical.launchpad.interfaces import (
+    ITranslationImportQueue, RosettaImportStatus)
+from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.mailnotification import MailWrapper
+
 
 class ImportProcess:
     """Import .po and .pot files attached to Rosetta."""
@@ -59,25 +65,67 @@ class ImportProcess:
             # would accidentally favour queues that happened to come out at
             # the front of the list.
             for queue in importqueues:
+                # Make sure our previous state changes hit the database.
+                # Otherwise, getFirstEntryToImport() might pick up an entry
+                # we've already processed but haven't flushed yet.
+                # XXX: JeroenVermeulen 2007-11-29 bug=3989: should become
+                # unnecessary once Zopeless commit() improves.
+                flush_database_updates()
+
                 entry_to_import = queue.getFirstEntryToImport()
                 if entry_to_import is None:
                     continue
 
                 if entry_to_import.import_into is None:
+                    if entry_to_import.sourcepackagename is not None:
+                        package = entry_to_import.sourcepackagename.name
+                    elif entry_to_import.productseries is not None:
+                        package = (
+                            entry_to_import.productseries.product.displayname)
+                    else:
+                        raise AssertionError(
+                            "Import queue entry %d has neither a "
+                            "source package name nor a product series."
+                            % entry_to_import.id)
                     raise AssertionError(
-                        "Entry '%s' is broken: it's Approved but lacks the "
-                        "place where it should be imported!  A DBA will need "
-                        "to fix this by hand."
-                        % entry_to_import.displayname())
+                        "Broken translation import queue entry %d (for %s): "
+                        "it's Approved but lacks the place where it should "
+                        "be imported!  A DBA will need to fix this by hand."
+                        % (entry_to_import.id, package))
 
                 # Do the import.
                 title = '[Unknown Title]'
                 try:
                     title = entry_to_import.import_into.title
                     self.logger.info('Importing: %s' % title)
-                    entry_to_import.import_into.importFromQueue(self.logger)
+
+                    (mail_subject, mail_body) = (
+                        entry_to_import.import_into.importFromQueue(
+                            entry_to_import, self.logger))
+
+                    from_email = config.rosetta.rosettaadmin.email
+                    to_email = helpers.contactEmailAddresses(
+                        entry_to_import.importer)
+                    text = MailWrapper().format(mail_body)
+
+                    # XXX: JeroenVermeulen 2007-11-29 bug=29744: email isn't
+                    # transactional in zopeless mode.  That means that our
+                    # current transaction can fail after we already sent out a
+                    # success notification.  To prevent that, we commit the
+                    # import (attempt) before sending out the email.  That
+                    # way, the worst that can happen is that an email goes
+                    # missing.  Once bug 29744 is fixed, this commit must die
+                    # so the email and the import will be in a single atomic
+                    # operation.
+                    self.ztm.commit()
+                    self.ztm.begin()
+
+                    simple_sendmail(from_email, to_email, mail_subject, text)
+
                 except KeyboardInterrupt:
                     self.ztm.abort()
+                    raise
+                except AssertionError:
                     raise
                 except:
                     # If we have any exception, log it, abort the transaction
@@ -93,7 +141,8 @@ class ImportProcess:
                     self.ztm.begin()
                     translation_import_queue = getUtility(
                         ITranslationImportQueue)
-                    entry_to_import = translation_import_queue[failed_entry_id]
+                    entry_to_import = translation_import_queue[
+                        failed_entry_id]
                     entry_to_import.status = RosettaImportStatus.FAILED
                     self.ztm.commit()
                     self.ztm.begin()
@@ -111,10 +160,13 @@ class ImportProcess:
                 except:
                     # If we have any exception, we log it and abort the
                     # transaction.
-                    self.logger.error('We got an unexpected exception while'
-                                      ' committing the transaction', exc_info=1)
+                    self.logger.error(
+                        'We got an unexpected exception while committing the '
+                        'transaction',
+                        exc_info=1)
                     self.ztm.abort()
                     self.ztm.begin()
+
             # Refresh the list of objects with pending imports.
             importqueues = (
                 translation_import_queue.getPillarObjectsWithImports(
@@ -124,6 +176,7 @@ class ImportProcess:
             self.logger.info("Import requests completed.")
         else:
             self.logger.info("Used up available time.")
+
 
 class AutoApproveProcess:
     """Attempt to approve some PO/POT imports without human intervention."""

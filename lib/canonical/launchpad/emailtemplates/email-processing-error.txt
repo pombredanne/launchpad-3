@@ -9,4 +9,4 @@ Error message:
 
 -- 
 For more information about using Malone by e-mail, see
-https://help.launchpad.net/UsingMaloneEmail
+https://help.launchpad.net/BugTrackerEmailInterface

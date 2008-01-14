@@ -13,11 +13,12 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.browser.branch import BranchAddView, BranchView
+from canonical.launchpad.browser.branch import (
+    BranchAddView, BranchMirrorStatusView)
 from canonical.launchpad.ftests.harness import login, logout, ANONYMOUS
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatus, IBranchSet, IPersonSet, IProductSet)
+    BranchLifecycleStatus, BranchType, IBranchSet, IPersonSet, IProductSet)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -36,7 +37,7 @@ class TestBranchView(unittest.TestCase):
     def testMirrorStatusMessageIsTruncated(self):
         """mirror_status_message is truncated if the text is overly long."""
         branch = getUtility(IBranchSet).get(28)
-        branch_view = BranchView(branch, self.request)
+        branch_view = BranchMirrorStatusView(branch, self.request)
         self.assertEqual(
             truncate_text(branch.mirror_status_message,
                           branch_view.MAXIMUM_STATUS_MESSAGE_LENGTH) + ' ...',
@@ -45,9 +46,18 @@ class TestBranchView(unittest.TestCase):
     def testMirrorStatusMessage(self):
         """mirror_status_message on the view is the same as on the branch."""
         branch = getUtility(IBranchSet).get(5)
-        branch_view = BranchView(branch, self.request)
+        branch.mirrorFailed("This is a short error message.")
+        branch_view = BranchMirrorStatusView(branch, self.request)
+        self.assertTrue(
+            len(branch.mirror_status_message)
+            <= branch_view.MAXIMUM_STATUS_MESSAGE_LENGTH,
+            "branch.mirror_status_message longer than expected: %r"
+            % (branch.mirror_status_message,))
         self.assertEqual(
             branch.mirror_status_message, branch_view.mirror_status_message())
+        self.assertEqual(
+            "This is a short error message.",
+            branch_view.mirror_status_message())
 
     def testBranchAddRequestsMirror(self):
         """Registering a mirrored branch requests a mirror."""
@@ -58,6 +68,7 @@ class TestBranchView(unittest.TestCase):
             add_view = BranchAddView(arbitrary_person, self.request)
             add_view.initialize()
             data = {
+                'branch_type': BranchType.MIRRORED,
                 'name': 'some-branch',
                 'url': 'http://example.com',
                 'title': 'Branch Title',
@@ -69,15 +80,15 @@ class TestBranchView(unittest.TestCase):
                 'product': arbitrary_product
                 }
             add_view.add_action.success(data)
-            # Make sure that mirror_request_time is a datetime, not an
-            # sqlbuilder expression.
+            # Make sure that next_mirror_time is a datetime, not an sqlbuilder
+            # expression.
             removeSecurityProxy(add_view.branch).sync()
             now = datetime.now(pytz.timezone('UTC'))
-            self.assertNotEqual(None, add_view.branch.mirror_request_time)
+            self.assertNotEqual(None, add_view.branch.next_mirror_time)
             self.assertTrue(
-                add_view.branch.mirror_request_time < now,
-                "mirror_request_time not set to UTC_NOW: %s < %s"
-                % (add_view.branch.mirror_request_time, now))
+                add_view.branch.next_mirror_time < now,
+                "next_mirror_time not set to UTC_NOW: %s < %s"
+                % (add_view.branch.next_mirror_time, now))
         finally:
             logout()
 

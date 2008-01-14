@@ -1,8 +1,21 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
-__all__ = ['IPoll', 'IPollSet', 'IPollSubset', 'IPollOption',
-           'IPollOptionSet', 'IVote', 'IVoteCast', 'PollStatus', 'IVoteSet',
-           'IVoteCastSet', 'OptionIsNotFromSimplePoll']
+__all__ = [
+    'IPoll',
+    'IPollSet',
+    'IPollSubset',
+    'IPollOption',
+    'IPollOptionSet',
+    'IVote',
+    'IVoteCast',
+    'PollAlgorithm',
+    'PollSecrecy',
+    'PollStatus',
+    'IVoteSet',
+    'IVoteCastSet',
+    'OptionIsNotFromSimplePoll'
+    ]
 
 # Imports from zope
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
@@ -11,10 +24,11 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
-from canonical.lp.dbschema import PollSecrecy, PollAlgorithm
 from canonical.launchpad.interfaces import ITeam
-from canonical.launchpad.fields import (
-            ContentNameField, Description, Summary, Title)
+from canonical.launchpad.fields import ContentNameField
+
+from canonical.lazr.enum import DBEnumeratedType, DBItem
+
 
 class PollNameField(ContentNameField):
 
@@ -29,6 +43,55 @@ class PollNameField(ContentNameField):
         if team is None:
             team = self.context.team
         return getUtility(IPollSet).getByTeamAndName(team, name)
+
+
+class PollAlgorithm(DBEnumeratedType):
+    """The algorithm used to accept and calculate the results."""
+
+    SIMPLE = DBItem(1, """
+        Simple Voting
+
+        The most simple method for voting; you just choose a single option.
+        """)
+
+    CONDORCET = DBItem(2, """
+        Condorcet Voting
+
+        One of various methods used for calculating preferential votes. See
+        http://www.electionmethods.org/CondorcetEx.htm for more information.
+        """)
+
+
+class PollSecrecy(DBEnumeratedType):
+    """The secrecy of a given Poll."""
+
+    OPEN = DBItem(1, """
+        Public Votes (Anyone can see a person's vote)
+
+        Everyone who wants will be able to see a person's vote.
+        """)
+
+    ADMIN = DBItem(2, """
+        Semi-secret Votes (Only team administrators can see a person's vote)
+
+        All team owners and administrators will be able to see a person's vote.
+        """)
+
+    SECRET = DBItem(3, """
+        Secret Votes (It's impossible to track a person's vote)
+
+        We don't store the option a person voted in our database,
+        """)
+
+
+class PollStatus:
+    """This class stores the constants used when searching for polls."""
+
+    OPEN = 'open'
+    CLOSED = 'closed'
+    NOT_YET_OPENED = 'not-yet-opened'
+    ALL = frozenset([OPEN, CLOSED, NOT_YET_OPENED])
+
 
 class IPoll(Interface):
     """A poll for a given proposition in a team."""
@@ -63,7 +126,7 @@ class IPoll(Interface):
 
     type = Choice(
         title=_('The type of this poll.'), required=True,
-        readonly=False, vocabulary='PollAlgorithm',
+        readonly=False, vocabulary=PollAlgorithm,
         default=PollAlgorithm.CONDORCET)
 
     allowspoilt = Bool(
@@ -72,7 +135,7 @@ class IPoll(Interface):
 
     secrecy = Choice(
         title=_('The secrecy of the Poll.'), required=True,
-        readonly=False, vocabulary='PollSecrecy',
+        readonly=False, vocabulary=PollSecrecy,
         default=PollSecrecy.SECRET)
 
     def isOpen(when=None):
@@ -183,15 +246,6 @@ class IPoll(Interface):
         See http://www.electionmethods.org/CondorcetEx.htm for an example of a
         pairwise matrix.
         """
-
-
-class PollStatus:
-    """This class stores the constants used when searching for polls."""
-
-    OPEN = 'open'
-    CLOSED = 'closed'
-    NOT_YET_OPENED = 'not-yet-opened'
-    ALL = frozenset([OPEN, CLOSED, NOT_YET_OPENED])
 
 
 class IPollSet(Interface):

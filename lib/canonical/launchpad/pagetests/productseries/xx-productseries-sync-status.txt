@@ -12,10 +12,10 @@ browser to see the changes we make to the content object. See bug 3989.
 -- David Allouche 2007-03-23
 
 >>> import transaction
->>> from canonical.lp.dbschema import ImportStatus
 >>> from canonical.database.constants import UTC_NOW
 >>> from canonical.database.sqlbase import flush_database_updates
 >>> from canonical.launchpad.database import ProductSeries
+>>> from canonical.launchpad.interfaces import ImportStatus
 
 Get a product series with an attached import branch, and set it to syncing for
 the following tests.

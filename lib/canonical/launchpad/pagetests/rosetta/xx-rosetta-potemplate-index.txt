@@ -4,7 +4,7 @@ The index page for a POTemplate lists all available translations
 for a source package. No Privileges Person visits the 
 evolution-2.2 POTemplate page.
 
-    >>> anon_browser.open("http://launchpad.dev/"
+    >>> anon_browser.open("http://translations.launchpad.dev/"
     ...     "ubuntu/hoary/+source/evolution/+pots/evolution-2.2/")
     >>> anon_browser.title
     'Translation status for...
@@ -24,13 +24,13 @@ that represents, when the translation was updated, and by whom.
     >>> table = content.findAll('table')[0]
     >>> for row in table.findAll('tr'):
     ...     print extract_text(row).encode('us-ascii', 'backslashreplace')
-    Language        Untranslated Status Last    Edited By
-    Afrikaans       22           100.00 &mdash; &mdash;
-    Japanese        21           095.45 ...     Carlos Perell\xf3 Mar\xedn
-    Sotho, Southern 22           100.00 &mdash; &mdash;
-    Spanish         15           068.18 ...     Foo Bar
-    Xhosa           22           100.00 &mdash; &mdash;
-    Zulu            22           100.00 &mdash; &mdash;
+    Language        Status  Untranslated Need review Changed Last    Edited By
+    Afrikaans       100.00  22 22        0 ...       0 ...   &mdash; &mdash;
+    Japanese        095.45  21 21        0 ...       0 ...   ...     Carlos...
+    Sotho, Southern 100.00  22 22        0 ...       0 ...   &mdash; &mdash;
+    Spanish         068.18  15 15        1 1         1 1     ...     Valentina Commissari
+    Xhosa           100.00  22 22        0 ...       0 ...   ...     &mdash;
+    Zulu            100.00  22 22        0 ...       0 ...   &mdash; &mdash;
 
 The 'Template details' portlet summarizes the state of the POTemplate.
 
@@ -48,7 +48,7 @@ The 'Template details' portlet summarizes the state of the POTemplate.
 When products have more than one template, the page informs the user
 that there are alternates that may be translated.
 
-    >>> anon_browser.open("http://launchpad.dev/"
+    >>> anon_browser.open("http://translations.launchpad.dev/"
     ...     "evolution/trunk/+pots/evolution-2.2-test")
     >>> alternate_notice = find_main_content(
     ...     anon_browser.contents).findAll('p')[1]
@@ -71,12 +71,12 @@ English translations, but they are not displayed to the user.
     >>> table = find_tag_by_id(anon_browser.contents, 'language-chart')
     >>> for row in table.findAll('tr')[0:6]:
     ...     print extract_text(row).encode('us-ascii', 'backslashreplace')
-    Language    Untranslated Status  Last  Edited By
-    Afrikaans   9            100.00  ...   &mdash;
-    Czech       0            000.00  ...   Miroslav Kure
-    Danish      0            000.00  ...   Morten Brix Pedersen
-    Dutch       0            000.00  ...   Luk Claes
-    Finnish     0            000.00  ...   P\xf6ll\xe4
+    Language    Status  Untranslated Need review Changed Last  Edited By
+    Afrikaans   100.00  9 9          0 ...       0 ...   ...   &mdash;
+    Czech       000.00  0 ...        0 ...       0 ...   ...   Miroslav Kure
+    Danish      000.00  0 ...        0 ...       0 ...   ...   Morten Brix...
+    Dutch       000.00  0 ...        0 ...       0 ...   ...   Luk Claes
+    Finnish     000.00  0 ...        0 ...       0 ...   ...   P\xf6ll\xe4
 
 We are presented not only with links to alternate templates from the same
 source, but also with links to the same template in (other) distroseries.

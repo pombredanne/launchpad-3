@@ -1,15 +1,15 @@
-Malone Bug Notifications
-========================
 
-What is a bug notification?
----------------------------
+= Bug notifications =
+
+
+== What is a bug notification? ==
 
 A bug notification gets added when something interesting happens to the
 bug. It's stored in a a table, and later on a cronscript constructs an
 email and sends the notification to the bug's subscribers.
 
-When do bug notifications get added?
------------------------------------
+
+== When do bug notifications get added? ==
 
 Not *every* change on a bug causes a notification to be added. This
 section will give a rundown of the things that do cause notifications to
@@ -20,13 +20,13 @@ be sent. To start with, let's login:
 Here are the things that cause bug notifications to be add, and what
 those notifications look like.
 
-1. Filing a new bug
+
+=== Reporting a new bug ===
 
     >>> from zope.event import notify
     >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.event.sqlobjectevent import (
-    ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
-    ...     SQLObjectCreatedEvent)
+    ...     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import (
     ...     IProductSet, IPersonSet, IDistributionSet, IDistroSeriesSet,
     ...     ISourcePackageNameSet, IBugSet, CreateBugParams)
@@ -50,7 +50,8 @@ those notifications look like.
     >>> print latest_notification.message.text_contents
     this is a comment
 
-2. Editing a bug
+
+=== Editing a bug report ===
 
     >>> from zope.interface import implements
     >>> from canonical.launchpad.interfaces import IBug
@@ -78,12 +79,14 @@ those notifications look like.
     ** Description changed:
     ...
 
-3. Filing a new task on an existing bug
+
+=== Filing a new task on an existing bug ===
 
 There are three kinds of tasks that can be added to an existing
 bug. Let's take a look at each type.
 
-  3.1 Distro Task
+
+    ==== Distro Task ====
 
     A task that says this bug must be fixed in a certain distro. Because no
     specific series is specified, the developer will assume that the fix
@@ -109,7 +112,8 @@ bug. Let's take a look at each type.
     ** Also affects: mozilla-firefox (Debian)
     ...
 
-  3.2 Distro Series Task
+
+    ==== Distro Series Task ====
 
     Similar to a distro task, except that a task filed on a specific
     distro series is meant to be used for backport fixes (critical data
@@ -133,7 +137,8 @@ bug. Let's take a look at each type.
     ** Also affects: mozilla-firefox (Debian Sid)
     ...
 
-  3.3 Upstream Task
+
+    ==== Upstream Task ====
 
     An upstream tasks notes that a bug needs to be fixed upstream. "Upstream"
     is a somewhat ambiguous term -- it can have different meanings in the eyes
@@ -159,7 +164,8 @@ bug. Let's take a look at each type.
     ** Also affects: evolution
     ...
 
-  3.4 ProductSeries Task
+
+    ==== ProductSeries Task ====
 
     Similar to an upstream task, except that a task filed on a specific
     product series is meant to target a bug to a specific series.
@@ -180,7 +186,7 @@ bug. Let's take a look at each type.
     ...
 
 
-4. Commenting on a bug
+=== Commenting on a bug report ===
 
     >>> from canonical.launchpad.interfaces import IBugMessageSet
 
@@ -200,13 +206,14 @@ bug. Let's take a look at each type.
     >>> print latest_notification.message.text_contents
     just a test comment
 
-5. Editing a task.
+
+=== Editing a task ===
 
 Let's demonstrate a notification email where Sample Person marks a
 task Fixed, and assigns himself to it.
 
-    >>> from canonical.launchpad.interfaces import IDistroBugTask
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskStatus, IDistroBugTask)
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
     >>> bugtask_before_modification = Snapshot(
@@ -251,7 +258,7 @@ task Fixed, and assigns himself to it.
     ...
 
 
-6. Adding and editing a bug watch.
+=== Adding and editing a bug watch ===
 
 A bug watch can be added to a bug to watch the status of this bug in a
 remote bug tracker. A notification is sent out to the bug notification
@@ -306,15 +313,15 @@ the changes made:
     ** Bug watch removed: The Mozilla.org Bug Tracker #2000
     https://bugzilla.mozilla.org/show_bug.cgi?id=2000
 
-7. Adding and editing a CVE ref.
+
+=== Adding and editing a CVE reference ===
 
 Adding a CVE reference to a bug also causes a notification email to go
 out to the bug notification recipient list. Let's create a CVE ref and
 attach it to the firefox_crashes bug that we've been using throughout
 this document:
 
-    >>> from canonical.launchpad.interfaces import ICveSet
-    >>> from canonical.lp.dbschema import CveStatus
+    >>> from canonical.launchpad.interfaces import CveStatus, ICveSet
     >>> cve = getUtility(ICveSet).new(sequence="2004-0276",
     ...     description="a brief CVE description", status=CveStatus.ENTRY)
     >>> from canonical.launchpad.database import Bug
@@ -330,55 +337,8 @@ this document:
     >>> print latest_notification.message.text_contents
     ** CVE added: http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=2004-0276
 
-8. Adding an external URL reference.
 
-When someone adds a web link to a bug report (e.g. to a related
-mailing list discussion), an email is sent to the notification
-recipients. We'll demonstrate by creating an external link and
-publishing an object created event.
-
-    >>> from canonical.launchpad.interfaces import IBugExternalRefSet
-    >>> extref = getUtility(IBugExternalRefSet).createBugExternalRef(
-    ...     bug=1, url="http://www.example.com", title="test",
-    ...     owner=12)
-    >>> extref_added = SQLObjectCreatedEvent(extref)
-    >>> notify(extref_added)
-
-    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
-    Sample Person
-
-    >>> latest_notification.is_comment
-    False
-    >>> print latest_notification.message.text_contents
-    ** Web link added: http://www.example.com
-
-When a link is edited, the notification will look as follows:
-
-    >>> extref_before_modification = MockObject()
-    >>> extref_before_modification.url = extref.url
-    >>> extref_before_modification.title = extref.title
-    >>> extref.url = "http://www.example.com/somewhere.html"
-
-    >>> extref_changed = SQLObjectModifiedEvent(
-    ...     object_before_modification=extref_before_modification,
-    ...     object=extref,
-    ...     edited_fields=["url"])
-    >>> notify(extref_changed)
-
-    >>> remove_notification, add_notification = BugNotification.select(
-    ...     orderBy='id')[-2:]
-    >>> print remove_notification.message.owner.displayname
-    Sample Person
-
-    >>> add_notification.is_comment
-    False
-    >>> print remove_notification.message.text_contents
-    ** Web link removed: http://www.example.com
-    >>> print add_notification.message.text_contents
-    ** Web link added: http://www.example.com/somewhere.html
-
-9. Marking a bug as a duplicate
+=== Marking a bug as a duplicate ===
 
 When a bug is marked as a duplicate, its subscribers are notified.
 
@@ -461,7 +421,7 @@ message is sent.
        Bug Title Test
 
 
-10. Expiring Notifications
+=== Expiring notifications ===
 
 During bulk imports or changes of bugs, we often want to suppress
 email notifications.  Due to the previous operation, there are pending
@@ -478,5 +438,3 @@ method:
     >>> notifications = BugNotification.selectBy(bugID=6, date_emailed=None)
     >>> notifications.count()
     0
-
-

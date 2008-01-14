@@ -8,9 +8,8 @@ __metaclass__ = type
 # Utility functions/classes for testing the archive publisher.
 
 from canonical.archivepublisher.tests import datadir
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus,
-    DistroSeriesStatus)
+from canonical.launchpad.interfaces import (
+    DistroSeriesStatus, PackagePublishingPocket, PackagePublishingStatus)
 
 __all__ = ['FakeLogger']
 
@@ -88,7 +87,7 @@ class FakeBinary:
 class FakeSourcePublishing:
     """Mocks a SourcePackagePublishingHistory object."""
     id = 1
-    
+
     def __init__(self, source, component, alias, section, ds):
         class Dummy: id = 1
         self.sourcepackagerelease = Dummy()
@@ -114,7 +113,7 @@ class FakeSourcePublishing:
 class FakeBinaryPublishing:
     """Mocks a BinaryPackagePublishingHistory object."""
     id = 1
-    
+
     def __init__(self, binary, source, component, alias,
                  section, ds, prio, archtag):
         class Dummy: id = 1

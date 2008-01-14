@@ -6,8 +6,13 @@
 
     <content class="canonical.launchpad.database.MailingList">
         <allow interface="canonical.launchpad.interfaces.IMailingList"/>
-        <require permission="zope.Public"
+        <require permission="launchpad.AnyPerson"
                  set_attributes="welcome_message"/>
+    </content>
+
+    <content class="canonical.launchpad.database.MailingListSubscription">
+        <allow
+         interface="canonical.launchpad.interfaces.IMailingListSubscription"/>
     </content>
 
     <securedutility
@@ -25,8 +30,8 @@
 
     <xmlrpc:view
         for="canonical.launchpad.interfaces.IMailingListApplication"
-        interface="canonical.launchpad.interfaces.IRequestedMailingListAPI"
-        class="canonical.launchpad.xmlrpc.RequestedMailingListAPI"
+        interface="canonical.launchpad.interfaces.IMailingListAPIView"
+        class="canonical.launchpad.xmlrpc.MailingListAPIView"
         permission="zope.Public"
         />
 

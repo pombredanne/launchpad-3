@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -21,9 +28,13 @@
     distribution and upstream maintainers share bugs, patches, and translations
     efficiently.</p>
 
-  <p class="error message" tal:condition="view/status_message"
+  <p class="informational message" tal:condition="view/status_message"
      tal:content="view/status_message">
      Status Message Here
+  </p>
+  <p class="error message" tal:condition="view/error_message"
+     tal:content="view/error_message">
+     Error Message Here
   </p>
 
   <p class="informational message" tal:condition="not: context/productseries">
@@ -51,11 +62,6 @@
          tal:condition="view/productseries_widget/hint"
          tal:content="view/productseries_widget/hint">Some Help Text
       </p>
-
-      <p class="error message"
-           tal:define="error view/productseries_widget/error"
-           tal:condition="error"
-           tal:content="structure error">An Error Message</p>
 
     </div>
 

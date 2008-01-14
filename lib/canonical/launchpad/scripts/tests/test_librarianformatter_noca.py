@@ -1,30 +1,16 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Python harness for librarianformatter_noca.txt."""
 
 __metaclass__ = type
 
-import sys
-import time
 import unittest
-import logging
-from urllib2 import urlopen
-from StringIO import StringIO
 
 from zope.testing import doctest
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-from canonical.launchpad.ftests import login, ANONYMOUS
-from canonical.librarian.ftests.harness import LibrarianTestSetup
-from canonical.functional import FunctionalTestSetup
 from canonical.testing import reset_logging
-
-import os.path
-
-this_directory = os.path.dirname(__file__)
 
 def setUp(test):
     # Suck this modules environment into the test environment
-    test.globs.update(globals())
     reset_logging()
 
 def tearDown(test):

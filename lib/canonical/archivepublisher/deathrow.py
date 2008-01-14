@@ -8,6 +8,9 @@ import logging
 import pytz
 import os
 
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.archivepublisher import ELIGIBLE_DOMINATION_STATES
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.diskpool import DiskPool
 
@@ -18,9 +21,8 @@ from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, SecureSourcePackagePublishingHistory,
     BinaryPackageFilePublishing, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
-    NotInPool, ISecureSourcePackagePublishingHistory,
-    ISecureBinaryPackagePublishingHistory)
-from canonical.lp.dbschema import PackagePublishingStatus
+    ArchivePurpose, ISecureSourcePackagePublishingHistory,
+    ISecureBinaryPackagePublishingHistory, NotInPool)
 
 
 def getDeathRow(archive, log, pool_root_override):
@@ -30,7 +32,8 @@ def getDeathRow(archive, log, pool_root_override):
                     DeathRow object.
     :param log: Use this logger for script debug logging.
     :param pool_root_override: Use this pool root for the archive instead of
-                               its publisher configured value.
+         the one provided by the publishing-configuration, it will be only
+         used for PRIMARY archives.
     """
     log.debug("Grab Lucille config.")
     try:
@@ -39,16 +42,21 @@ def getDeathRow(archive, log, pool_root_override):
         log.error(info)
         raise
 
-    if pool_root_override is not None:
+    pubconf = removeSecurityProxy(pubconf)
+
+    if (pool_root_override is not None and
+        archive.purpose == ArchivePurpose.PRIMARY):
         pool_root = pool_root_override
     else:
         pool_root = pubconf.poolroot
 
     log.debug("Preparing on-disk pool representation.")
-    dp = DiskPool(pool_root, pubconf.temproot,
-        logging.getLogger("DiskPool"))
+
+    diskpool_log = logging.getLogger("DiskPool")
     # Set the diskpool's log level to INFO to suppress debug output
-    dp.logger.setLevel(20)
+    diskpool_log.setLevel(20)
+
+    dp = DiskPool(pool_root, pubconf.temproot, diskpool_log)
 
     log.debug("Preparing death row.")
     return DeathRow(archive, dp, log)
@@ -63,7 +71,6 @@ class DeathRow:
     """
     def __init__(self, archive, diskpool, logger):
         self.archive = archive
-        self.distribution = archive.distribution
         self.diskpool = diskpool
         self._removeFile = diskpool.removeFile
         self.logger = logger
@@ -71,7 +78,7 @@ class DeathRow:
     def reap(self, dry_run=False):
         """Reap packages that should be removed from the distribution.
 
-        Looks through all packages that are in PENDINGREMOVAL status and
+        Looks through all packages that are in condemned states and
         have scheduleddeletiondate is in the past, try to remove their
         files from the archive pool (which may be impossible if they are
         used by other packages which are published), and mark them as
@@ -93,26 +100,32 @@ class DeathRow:
 
     def _collectCondemned(self):
         source_files = SourcePackageFilePublishing.select("""
-            publishingstatus = %s AND
+            publishingstatus IN %s AND
             sourcepackagefilepublishing.archive = %s AND
             SourcePackagePublishingHistory.id =
                  SourcePackageFilePublishing.sourcepackagepublishing AND
+            SourcePackagePublishingHistory.dateremoved is NULL AND
+            SourcePackagePublishingHistory.scheduleddeletiondate
+                 is not NULL AND
             SourcePackagePublishingHistory.scheduleddeletiondate <= %s
-            """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.archive, UTC_NOW),
+            """ % sqlvalues(ELIGIBLE_DOMINATION_STATES, self.archive,
+                            UTC_NOW),
             clauseTables=['SourcePackagePublishingHistory'],
             orderBy="id")
 
         self.logger.debug("%d Sources" % source_files.count())
 
         binary_files = BinaryPackageFilePublishing.select("""
-            publishingstatus = %s AND
+            publishingstatus IN %s AND
             binarypackagefilepublishing.archive = %s AND
             BinaryPackagePublishingHistory.id =
                  BinaryPackageFilePublishing.binarypackagepublishing AND
+            BinaryPackagePublishingHistory.dateremoved is NULL AND
+            BinaryPackagePublishingHistory.scheduleddeletiondate
+                 is not NULL AND
             BinaryPackagePublishingHistory.scheduleddeletiondate <= %s
-            """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.archive, UTC_NOW),
+            """ % sqlvalues(ELIGIBLE_DOMINATION_STATES, self.archive,
+                            UTC_NOW),
             clauseTables=['BinaryPackagePublishingHistory'],
             orderBy="id")
 
@@ -135,24 +148,22 @@ class DeathRow:
         if ISecureSourcePackagePublishingHistory.implementedBy(
             publication_class):
             clauses.append("""
-                SecureSourcePackagePublishingHistory.status != %s AND
                 SecureSourcePackagePublishingHistory.archive = %s AND
+                SecureSourcePackagePublishingHistory.dateremoved is NULL AND
                 SecureSourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageReleaseFile.sourcepackagerelease AND
                 SourcePackageReleaseFile.libraryfile = LibraryFileAlias.id
-            """ % sqlvalues(PackagePublishingStatus.REMOVED,
-                            self.distribution.main_archive))
+            """ % sqlvalues(self.archive))
             clauseTables.append('SourcePackageReleaseFile')
         elif ISecureBinaryPackagePublishingHistory.implementedBy(
             publication_class):
             clauses.append("""
-                SecureBinaryPackagePublishingHistory.status != %s AND
                 SecureBinaryPackagePublishingHistory.archive = %s AND
+                SecureBinaryPackagePublishingHistory.dateremoved is NULL AND
                 SecureBinaryPackagePublishingHistory.binarypackagerelease =
                     BinaryPackageFile.binarypackagerelease AND
                 BinaryPackageFile.libraryfile = LibraryFileAlias.id
-            """ % sqlvalues(PackagePublishingStatus.REMOVED,
-                            self.distribution.main_archive))
+            """ % sqlvalues(self.archive))
             clauseTables.append('BinaryPackageFile')
         else:
             raise AssertionError("%r is not supported." % publication_class)
@@ -170,11 +181,14 @@ class DeathRow:
         right_now = datetime.datetime.now(pytz.timezone('UTC'))
         for pub in all_publications:
             # Deny removal if any reference is still active.
-            if (pub.status != PackagePublishingStatus.PENDINGREMOVAL):
+            if pub.status not in ELIGIBLE_DOMINATION_STATES:
+                return False
+            # Deny removal if any reference wasn't dominated yet.
+            if pub.scheduleddeletiondate is None:
                 return False
             # Deny removal if any reference is still in 'quarantine'.
             # See PubConfig.pendingremovalduration value.
-            if (pub.scheduleddeletiondate > right_now):
+            if pub.scheduleddeletiondate > right_now:
                 return False
 
         return True
@@ -251,6 +265,5 @@ class DeathRow:
         self.logger.debug("Marking %s condemned packages as removed." %
                           len(condemned_records))
         for record in condemned_records:
-            record.status = PackagePublishingStatus.REMOVED
             record.dateremoved = UTC_NOW
 

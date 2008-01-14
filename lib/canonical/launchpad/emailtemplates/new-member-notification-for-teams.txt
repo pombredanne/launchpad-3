@@ -1,4 +1,4 @@
-Hello,
+Hello %(recipient_name)s,
 
 %(reviewer)s added %(member)s (which you are a member of) as a member of %(team)s.
 

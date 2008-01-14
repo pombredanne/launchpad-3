@@ -261,7 +261,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         inline list with links to see the questions for each language:
         '_Hungarian_ (2), _Romanian_ (1)'. An empty string is returned
         when all questions are in a language spoken by the answer contacts.
-        
+
         This method is relevant to QuestionTargets. Subclasses of this
         View that want to list unspoken languages for other objects must
         provide their own implementation.
@@ -414,7 +414,11 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         Return an URL to the support page of the source package related
         to question or mdash if there is no related source package.
         """
-        assert self.context == question.distribution
+        # XXX sinzui 2007-11-27 bug=164435:
+        # SQLObject can refetch the question, so we are comparing ids.
+        assert self.context.id == question.distribution.id, (
+            "The question.distribution (%s) must be equal to the context (%s)"
+            % (question.distribution, self.context))
         if not question.sourcepackagename:
             return "&mdash;"
         else:
@@ -613,11 +617,6 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                 required=False),
             custom_widget=self.custom_widgets['answer_contact_teams'])
 
-    @cachedproperty
-    def administrated_teams(self):
-        """Return the list of teams for which the user is an administrator."""
-        return self.user.getAdministratedTeams()
-
     @property
     def initial_values(self):
         """Return a dictionary of the default values for the form_fields."""
@@ -664,6 +663,14 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                           'for $context.', mapping=replacements))
 
         self.next_url = canonical_url(self.context, rootsite='answers')
+
+    @property
+    def administrated_teams(self):
+        from canonical.launchpad.browser.person import (
+            RestrictedMembershipsPersonView)
+        restricted_view = RestrictedMembershipsPersonView(self.user,
+                                                          self.request)
+        return restricted_view.administrated_teams
 
     def _updatePreferredLanguages(self, person_or_team):
         """Check or update the Person's preferred languages as needed.

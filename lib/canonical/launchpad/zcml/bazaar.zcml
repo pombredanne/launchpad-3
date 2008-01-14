@@ -41,10 +41,6 @@
             name="+index"
             template="../templates/bazaar-index.pt"
             />
-        <browser:page
-            name="+portlet-importstats"
-            template="../templates/bazaar-portlet-importstats.pt"
-            />
     </browser:pages>
 
 <xmlrpc:view
@@ -52,6 +48,13 @@
   interface="canonical.launchpad.xmlrpc.IBranchSetAPI"
   class="canonical.launchpad.xmlrpc.BranchSetAPI"
   permission="launchpad.AnyPerson"
+  />
+
+<xmlrpc:view
+  for="canonical.launchpad.interfaces.IBazaarApplication"
+  interface="canonical.launchpad.xmlrpc.IPublicCodehostingAPI"
+  class="canonical.launchpad.xmlrpc.PublicCodehostingAPI"
+  permission="zope.Public"
   />
 
 </configure>

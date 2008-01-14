@@ -1,8 +1,15 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="rosetta"
 >
+
 <body>
 
 <metal:rightportlets fill-slot="portlets_one">
@@ -40,12 +47,15 @@
           <th>Length</th>
           <th>Status</th>
           <th>Untranslated</th>
+          <th>Need review</th>
+          <th>Changed</th>
           <th>Last Edited</th>
           <th>By</th>
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="entry view/batchnav/currentBatch">
+        <tr tal:repeat="entry view/batchnav/currentBatch"
+            tal:attributes="id string:${entry/potemplate/name}">
           <td>
             <a tal:attributes="href string:${entry/fmt:url}/+translate"
                tal:content="entry/potemplate/name">
@@ -66,43 +76,73 @@
               tal:content="entry/untranslatedCount">
               0
             </span>
-            <span
+            <a tal:attributes="href string:${entry/fmt:url}/+translate?show=untranslated"
               tal:condition="entry/untranslatedCount"
-              tal:replace="entry/untranslatedCount"
+              tal:content="entry/untranslatedCount"
               >
               0
-            </span>
-            <tal:block condition="not: entry/untranslatedCount">
+            </a>
+            <tal:count tal:condition="not: entry/untranslatedCount">
                 &mdash;
-            </tal:block>
+            </tal:count>
+          </td>
+          <td>
+            <span class="sortkey"
+              tal:content="entry/unreviewedCount">
+              0
+            </span>
+            <a tal:attributes="href string:${entry/fmt:url}/+translate?show=new_suggestions"
+              tal:condition="entry/unreviewedCount"
+              tal:content="entry/unreviewedCount"
+              >
+              0
+            </a>
+            <tal:count tal:condition="not: entry/unreviewedCount">
+                &mdash;
+            </tal:count>
+          </td>
+          <td>
+            <span class="sortkey"
+              tal:content="entry/updatesCount">
+              0
+            </span>
+            <a tal:attributes="href string:${entry/fmt:url}/+translate?show=changed_in_launchpad"
+              tal:condition="entry/updatesCount"
+              tal:content="entry/updatesCount"
+              >
+              0
+            </a>
+            <tal:count condition="not: entry/updatesCount">
+                &mdash;
+            </tal:count>
           </td>
           <td tal:attributes="id string:${entry/potemplate/name}-time">
             <span class="sortkey"
-              tal:condition="entry/last_touched_pomsgset"
+              tal:condition="entry/date_changed"
               tal:content="
-                entry/last_touched_pomsgset/latest_change_date/fmt:datetime">
+                entry/date_changed/fmt:datetime">
               time sort key
             </span>
             <span
-              tal:condition="entry/last_touched_pomsgset"
+              tal:condition="entry/date_changed"
               tal:attributes="
-                title entry/last_touched_pomsgset/latest_change_date/fmt:datetime"
+                title entry/date_changed/fmt:datetime"
               tal:content="
-                entry/last_touched_pomsgset/latest_change_date/fmt:approximatedate"
+                entry/date_changed/fmt:approximatedate"
               >
               2007-02-10
             </span>
-            <tal:block condition="not: entry/last_touched_pomsgset">
+            <tal:block condition="not: entry/date_changed">
                 &mdash;
             </tal:block>
           </td>
           <td tal:attributes="id string:${entry/potemplate/name}-person">
-            <tal:block condition="entry/last_touched_pomsgset">
-              <a tal:condition="entry/last_touched_pomsgset/latest_change_person"
-                 tal:attributes="href entry/last_touched_pomsgset/latest_change_person/fmt:url"
-                 tal:content="entry/last_touched_pomsgset/latest_change_person/browsername/fmt:shorten/25"></a>
+            <tal:block condition="entry/lasttranslator">
+              <a tal:condition="entry/lasttranslator"
+                 tal:attributes="href entry/lasttranslator/fmt:url"
+                 tal:content="entry/lasttranslator/browsername/fmt:shorten/25"></a>
             </tal:block>
-            <tal:block condition="not: entry/last_touched_pomsgset">
+            <tal:block condition="not: entry/lasttranslator">
                 &mdash;
             </tal:block>
           </td>

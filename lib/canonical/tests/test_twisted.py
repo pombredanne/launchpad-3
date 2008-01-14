@@ -73,7 +73,7 @@ class SignalRestorationTestCase(TestCase):
         result = TestResult()
         # Constructing the test case shouldn't change the signal handlers
         self.assertSignalsUnchanged(sigint, sigterm, sigchld)
-        
+
         for testcase in [passing_test_case, fails_test_case, error_test_case]:
             # Run the test case
             testcase(result)
@@ -86,7 +86,7 @@ class SignalRestorationTestCase(TestCase):
         self.assertEqual(sigint, signal.getsignal(signal.SIGINT))
         self.assertEqual(sigterm, signal.getsignal(signal.SIGTERM))
         self.assertEqual(sigchld, signal.getsignal(signal.SIGCHLD))
-        
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

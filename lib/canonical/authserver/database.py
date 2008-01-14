@@ -21,20 +21,23 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchType, IBranchSet, IPersonSet, IProductSet,
+    BranchCreationException, BranchType, IBranchSet, IPersonSet, IProductSet,
     UnknownBranchTypeError)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.database.sqlbase import clear_current_connection_cache
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
-    IUserDetailsStorageV2, READ_ONLY, WRITABLE)
+    IUserDetailsStorageV2, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
+    READ_ONLY, WRITABLE)
 
 from twisted.internet.threads import deferToThread
 from twisted.python.util import mergeFunctionMetadata
+from twisted.web.xmlrpc import Fault
+
 
 UTC = pytz.timezone('UTC')
-
 
 def utf8(x):
     if isinstance(x, unicode):
@@ -43,7 +46,7 @@ def utf8(x):
 
 
 def read_only_transaction(function):
-    """Decorate 'function' by wrapping it in a transaction and Zope session."""
+    """Wrap 'function' in a transaction and Zope session."""
     def transacted(*args, **kwargs):
         transaction.begin()
         clear_current_connection_cache()
@@ -57,7 +60,7 @@ def read_only_transaction(function):
 
 
 def writing_transaction(function):
-    """Decorate 'function' by wrapping it in a transaction and Zope session."""
+    """Wrap 'function' in a transaction and Zope session."""
     def transacted(*args, **kwargs):
         transaction.begin()
         clear_current_connection_cache()
@@ -189,7 +192,8 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     """Launchpad-database backed implementation of IUserDetailsStorage"""
     # Note that loginID always refers to any name you can login with (an email
     # address, or a nickname, or a numeric ID), whereas personID always refers
-    # to the numeric ID, which is the value found in Person.id in the database.
+    # to the numeric ID, which is the value found in Person.id in the
+    # database.
     implements(IUserDetailsStorage)
 
     def __init__(self, connectionPool):
@@ -235,8 +239,8 @@ def saltFromDigest(digest):
     """
     if isinstance(digest, unicode):
         # Make sure digest is a str, because unicode objects don't have a
-        # decode method in python 2.3.  Base64 should always be representable in
-        # ASCII.
+        # decode method in python 2.3. Base64 should always be representable
+        # in ASCII.
         digest = digest.encode('ascii')
     return digest.decode('base64')[20:].encode('base64')
 
@@ -351,39 +355,50 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
         See `IHostedBranchStorage`.
         """
+
+        owner = getUtility(IPersonSet).getByName(personName)
+        if owner is None:
+            raise Fault(
+                NOT_FOUND_FAULT_CODE,
+                "User/team %r does not exist." % personName)
+
         if productName == '+junk':
             product = None
         else:
             product = getUtility(IProductSet).getByName(productName)
+            if product is None:
+                raise Fault(
+                    NOT_FOUND_FAULT_CODE,
+                    "Project %r does not exist." % productName)
 
-        person_set = getUtility(IPersonSet)
-        owner = person_set.getByName(personName)
-
-        branch_set = getUtility(IBranchSet)
         try:
-            branch = branch_set.new(
+            branch = getUtility(IBranchSet).new(
                 BranchType.HOSTED, branchName, requester, owner,
                 product, None, None, author=requester)
-        except BranchCreationForbidden:
-            return ''
+        except (BranchCreationException, LaunchpadValidationError), e:
+            raise Fault(PERMISSION_DENIED_FAULT_CODE, str(e))
         else:
             return branch.id
 
-    def requestMirror(self, branchID):
+    def requestMirror(self, requester, branchID):
         """See `IHostedBranchStorage`."""
-        return deferToThread(self._requestMirrorInteraction, branchID)
+        return deferToThread(
+            self._requestMirrorInteraction, requester, branchID)
 
     @writing_transaction
-    def _requestMirrorInteraction(self, branchID):
+    @run_as_requester
+    def _requestMirrorInteraction(self, requester, branchID):
         """The synchronous implementation of `requestMirror`.
 
         See `IHostedBranchStorage`.
         """
         branch = getUtility(IBranchSet).get(branchID)
+        # We don't really care who requests a mirror of a branch.
         branch.requestMirror()
         return True
 
-    def getBranchInformation(self, loginID, userName, productName, branchName):
+    def getBranchInformation(self, loginID, userName, productName,
+                             branchName):
         """See `IHostedBranchStorage`."""
         return deferToThread(
             self._getBranchInformationInteraction, loginID, userName,
@@ -408,6 +423,9 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         if (requester.inTeam(branch.owner)
             and branch.branch_type == BranchType.HOSTED):
             return branch_id, WRITABLE
+        elif branch.branch_type == BranchType.REMOTE:
+            # Can't even read remote branches.
+            return '', ''
         else:
             return branch_id, READ_ONLY
 
@@ -436,6 +454,9 @@ class DatabaseBranchDetailsStorage:
             `unique_name` property without the initial '~'.
         """
         branch = removeSecurityProxy(branch)
+        if branch.branch_type == BranchType.REMOTE:
+            raise AssertionError(
+                'Remote branches should never be in the pull queue.')
         return (branch.id, branch.getPullURL(), branch.unique_name[1:])
 
     def getBranchPullQueue(self, branch_type):

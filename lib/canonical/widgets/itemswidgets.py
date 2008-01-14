@@ -8,7 +8,10 @@ __all__ = [
     'LaunchpadDropdownWidget',
     'LabeledMultiCheckBoxWidget',
     'LaunchpadRadioWidget',
+    'CheckBoxMatrixWidget',
     ]
+
+import math
 
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser import MultiCheckBoxWidget
@@ -50,7 +53,7 @@ class LaunchpadRadioWidget(RadioWidget):
         return contents
 
     def renderItems(self, value):
-        """Render the items with with the correct radio button selected."""
+        """Render the items with the correct radio button selected."""
         # XXX Brad Bollenbach 2006-08-11: Workaround the fact that
         # value is a value taken directly from the form, when it should
         # instead have been already converted to a vocabulary term, to
@@ -88,3 +91,41 @@ class LaunchpadRadioWidget(RadioWidget):
             items.insert(0, option)
 
         return items
+
+class CheckBoxMatrixWidget(LabeledMultiCheckBoxWidget):
+    """A CheckBox widget which organizes the inputs in a grid.
+
+    The column_count attribute can be set in the view to change
+    the number of columns in the matrix.
+    """
+
+    column_count = 1
+
+    def renderValue(self, value):
+        """Render the checkboxes inside a <table>."""
+        rendered_items = self.renderItems(value)
+        html = ['<table>']
+        if self.orientation == 'horizontal':
+            for i in range(0, len(rendered_items), self.column_count): 
+                html.append('<tr>')
+                for j in range(0, self.column_count):
+                    index = i + j
+                    if index >= len(rendered_items):
+                        break
+                    html.append('<td>%s</td>' % rendered_items[index])
+                html.append('</tr>')
+        else:
+            row_count = int(math.ceil(
+                len(rendered_items) / float(self.column_count)))
+            for i in range(0, row_count):
+                html.append('<tr>')
+                for j in range(0, self.column_count):
+                    index = i + (j * row_count)
+                    if index >= len(rendered_items):
+                        break
+                    html.append('<td>%s</td>' % rendered_items[index])
+                html.append('</tr>')
+
+        html.append('</table>')
+        return '\n'.join(html)
+

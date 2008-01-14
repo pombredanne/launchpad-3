@@ -7,5 +7,5 @@ import sys
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromModule(sys.modules[__name__])
-    
+
 

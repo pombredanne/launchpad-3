@@ -54,8 +54,9 @@ class SystemErrorView:
         self.computeDebugOutput()
         if config.show_tracebacks:
             self.show_tracebacks = True
-        if canonical.launchpad.layers.PageTestLayer.providedBy(self.request):
-            self.pagetesting = True
+        # if canonical.launchpad.layers.PageTestLayer.providedBy(self.request):
+        #     self.pagetesting = True
+        # XXX 20080109 mpt: We don't use this any more. See bug 181472.
         if canonical.launchpad.layers.DebugLayer.providedBy(self.request):
             self.debugging = True
         self.specialuser = getUtility(ILaunchBag).developer
@@ -129,6 +130,22 @@ class SystemErrorView:
         else:
             return self.index()
 
+
+class ProtocolErrorView(SystemErrorView):
+    """View for protocol errors.
+
+    Problems to do with an HTTP request that need to be handled more
+    subtly than with a 500 response code. Used to handle a
+    `ProtocolErrorException`.
+    """
+
+    def __call__(self):
+        """Set the appropriate status code and headers."""
+        exception = self.context
+        self.request.response.setStatus(exception.status)
+        for header, value in exception.headers.items():
+            self.request.response.setHeader(header, value)
+        return self.index()
 
 class NotFoundView(SystemErrorView):
 

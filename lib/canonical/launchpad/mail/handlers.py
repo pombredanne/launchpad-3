@@ -5,12 +5,12 @@ __metaclass__ = type
 import re
 from urlparse import urlunparse
 
-import transaction
 from zope.component import getUtility
 from zope.interface import implements
 from zope.event import notify
 
 from canonical.config import config
+from canonical.database.sqlbase import rollback
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
     IBugEditEmailCommand, IBugTaskEditEmailCommand,
@@ -254,7 +254,7 @@ class MaloneHandler:
                     notify(bugtask_event)
 
         except IncomingEmailError, error:
-            transaction.abort()
+            rollback()
             send_process_error_notification(
                 str(getUtility(ILaunchBag).user.preferredemail.email),
                 'Submit Request Failure',
@@ -330,7 +330,7 @@ class AnswerTrackerHandler:
         In the other status, the message is a comment without status change.
         """
         if question.status in [
-            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
 	    QuestionStatus.ANSWERED]:
             question.giveAnswer(message.owner, message)
         else:

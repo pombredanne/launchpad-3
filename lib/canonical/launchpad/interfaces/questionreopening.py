@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interface for a QuestionReopening."""
 
@@ -40,8 +41,8 @@ class IQuestionReopening(Interface):
                 "the question."),
         required=True, readonly=True, schema=IPerson)
 
-    dateanswered = Datetime(
-        title=_("The date it had previously been answered."), required=True,
+    date_solved = Datetime(
+        title=_("The date it had previously been solved."), required=True,
         readonly=True)
 
     priorstate = Choice(

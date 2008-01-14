@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
 
@@ -13,13 +19,21 @@
         <a href="/+forgottenpassword">reset it</a> first.
       </p>
 
-      <p metal:fill-slot="extra_bottom">
-        By deactivating your account, you give up the ability to log into
-        Launchpad, and you will not receive any further emails from us.
-        <strong>You may want to simply 
-        <a tal:attributes="href string:${context/fmt:url}/+edit">change
-        your account details</a> rather than deactivate it.</strong>
-      </p>
+      <div metal:fill-slot="extra_bottom">
+        <p>
+          <strong>If you have multiple accounts, you should
+            <a href="/people/+requestmerge">merge them instead!</a>
+          </strong>
+        </p>
+
+        <p>
+          By deactivating your account, you give up the ability to log into
+          Launchpad, and you will not receive any further emails from us.
+          <strong>You may want to simply 
+          <a tal:attributes="href string:${context/fmt:url}/+edit">change
+          your account details</a> rather than deactivate it.</strong>
+        </p>
+      </div>
     </div>
   </div>
 

@@ -1,6 +1,6 @@
 Foo Bar, an LP admin, is about to make bug #2 private.
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open(
     ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
     ...     "+bug/2/+secrecy")

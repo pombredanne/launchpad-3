@@ -4,9 +4,8 @@
 application."""
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IProduct, QuestionAction)
+    BugTaskStatus, IDistribution, IProduct, QuestionAction)
 from canonical.launchpad.mailnotification import get_bug_delta
-from canonical.lp.dbschema import BugTaskStatus
 
 
 def bug_created(bug, event):
@@ -75,11 +74,6 @@ def bugwatch_added(bugwatch, event):
 def cve_added(cve, event):
     """Assign karma to the user which added :cve:."""
     _assignKarmaUsingBugContext(event.user, cve.bug, 'bugcverefadded')
-
-
-def extref_added(extref, event):
-    """Assign karma to the user which added :extref:."""
-    _assignKarmaUsingBugContext(event.user, extref.bug, 'bugextrefadded')
 
 
 def bugtask_modified(bugtask, event):

@@ -26,9 +26,10 @@ from canonical.launchpad.components.branch import BranchDelta
 from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    IBranch, IBugTask, IEmailAddressSet, INotificationRecipientSet, IPerson,
-    ISpecification, ITeamMembershipSet, IUpstreamBugTask, QuestionAction,
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel, IBranch,
+    IBugTask, IEmailAddressSet, ILaunchpadCelebrities,
+    INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
+    ITeamMembershipSet, IUpstreamBugTask, QuestionAction,
     TeamMembershipStatus, UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
@@ -336,6 +337,11 @@ class BugNotificationRecipients(NotificationRecipientSet):
         self._addReason(person, text, reason)
 
 
+def format_rfc2822_date(date):
+    """Formats a date according to RFC2822's desires."""
+    return formatdate(rfc822.mktime_tz(date.utctimetuple() + (0,)))
+
+
 def construct_bug_notification(bug, from_address, address, body, subject,
         email_date, rationale_header=None, references=None, msgid=None):
     """Constructs a MIMEText message based on a bug and a set of headers."""
@@ -346,8 +352,7 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     if references is not None:
         msg['References'] = ' '.join(references)
     msg['Sender'] = config.bounce_address
-    msg['Date'] = formatdate(
-        rfc822.mktime_tz(email_date.utctimetuple() + (0,)))
+    msg['Date'] = format_rfc2822_date(email_date)
     if msgid is not None:
         msg['Message-Id'] = msgid
     subject_prefix = "[Bug %d]" % bug.id
@@ -432,6 +437,11 @@ def update_security_contact_subscriptions(modified_bugtask, event):
 
 def get_bugmail_from_address(person, bug):
     """Returns the right From: address to use for a bug notification."""
+    if person == getUtility(ILaunchpadCelebrities).janitor:
+        return format_address(
+            'Launchpad Bug Tracker',
+            "%s@%s" % (bug.id, config.launchpad.bugs_domain))
+
     if person.preferredemail is not None:
         return format_address(person.displayname, person.preferredemail.email)
 
@@ -531,7 +541,7 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
     that the new recipients have been subscribed to the bug. Otherwise
     it's just a notification of a new bug report.
     """
-    subject = u"[Bug %d] %s" % (bug.id, bug.title)
+    subject = u"[Bug %d] [NEW] %s" % (bug.id, bug.title)
 
     if bug.private:
         # This is a confidential bug.
@@ -550,7 +560,7 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
             # There's a person assigned to fix this task, so show that
             # information too.
             bug_info.append(
-                u"     Assignee: %s" % bugtask.assignee.displayname)
+                u"     Assignee: %s" % bugtask.assignee.unique_displayname)
         bug_info.append(u"         Status: %s\n" % bugtask.status.title)
 
     if bug.tags:
@@ -692,14 +702,6 @@ def get_bug_edit_notification_texts(bug_delta):
         if removed_tags:
             changes.append(u'** Tags removed: %s' % ' '.join(removed_tags))
 
-    if bug_delta.external_reference is not None:
-        old_ext_ref = bug_delta.external_reference.get('old')
-        if old_ext_ref is not None:
-            changes.append(u'** Web link removed: %s' % old_ext_ref.url)
-        new_ext_ref = bug_delta.external_reference['new']
-        if new_ext_ref is not None:
-            changes.append(u'** Web link added: %s' % new_ext_ref.url)
-
     if bug_delta.bugwatch is not None:
         old_bug_watch = bug_delta.bugwatch.get('old')
         if old_bug_watch:
@@ -752,9 +754,11 @@ def get_bug_edit_notification_texts(bug_delta):
                 oldval_display = u"(unassigned)"
                 newval_display = u"(unassigned)"
                 if bugtask_delta.assignee.get('old'):
-                    oldval_display = bugtask_delta.assignee['old'].browsername
+                    oldval_display = (
+                        bugtask_delta.assignee['old'].unique_displayname)
                 if bugtask_delta.assignee.get('new'):
-                    newval_display = bugtask_delta.assignee['new'].browsername
+                    newval_display = (
+                        bugtask_delta.assignee['new'].unique_displayname)
 
                 changerow = (
                     u"%(label)13s: %(oldval)s => %(newval)s\n" % {
@@ -792,8 +796,8 @@ def get_bug_edit_notification_texts(bug_delta):
                 added_bugtask.importance.title)
             if added_bugtask.assignee:
                 assignee = added_bugtask.assignee
-                change_info += u"%13s: %s <%s>\n" % (
-                    u"Assignee", assignee.name, assignee.preferredemail.email)
+                change_info += u"%13s: %s\n" % (u"Assignee",
+                    assignee.unique_displayname)
             change_info += u"%13s: %s" % (
                 u"Status", added_bugtask.status.title)
             changes.append(change_info)
@@ -873,7 +877,6 @@ def notify_bug_modified(modified_bug, event):
         new_bug=event.object, user=event.user)
 
     assert bug_delta is not None
-
     add_bug_change_notifications(bug_delta)
 
 
@@ -935,42 +938,6 @@ def notify_bug_comment_added(bugmessage, event):
     """
     bug = bugmessage.bug
     bug.addCommentNotification(bugmessage.message)
-
-
-def notify_bug_external_ref_added(ext_ref, event):
-    """Notify CC'd list that a new web link has been added for this
-    bug.
-
-    ext_ref must be an IBugExternalRef. event must be an
-    ISQLObjectCreatedEvent.
-    """
-    bug_delta = BugDelta(
-        bug=ext_ref.bug,
-        bugurl=canonical_url(ext_ref.bug),
-        user=event.user,
-        external_reference={'new' : ext_ref})
-
-    add_bug_change_notifications(bug_delta)
-
-
-def notify_bug_external_ref_edited(edited_ext_ref, event):
-    """Notify CC'd list that a web link has been edited.
-
-    edited_ext_ref must be an IBugExternalRef. event must be an
-    ISQLObjectModifiedEvent.
-    """
-    old = event.object_before_modification
-    new = event.object
-    if ((old.url != new.url) or (old.title != new.title)):
-        # A change was made that's worth sending an edit
-        # notification about.
-        bug_delta = BugDelta(
-            bug=new.bug,
-            bugurl=canonical_url(new.bug),
-            user=event.user,
-            external_reference={'old' : old, 'new' : new})
-
-        add_bug_change_notifications(bug_delta)
 
 
 def notify_bug_watch_added(watch, event):
@@ -1036,6 +1003,20 @@ def notify_bug_cve_deleted(bugcve, event):
     add_bug_change_notifications(bug_delta)
 
 
+def notify_bug_became_question(event):
+    """Notify CC'd list that a bug was made into a question.
+
+    The event must contain the bug that became a question, and the question
+    that the bug became.
+    """
+    bug = event.bug
+    question = event.question
+    change_info = '\n'.join([
+        '** bug changed to question:\n'
+        '   %s' %  canonical_url(question)])
+    bug.addChangeNotification(change_info, person=event.user)
+
+
 def notify_bug_attachment_added(bugattachment, event):
     """Notify CC'd list that a new attachment has been added.
 
@@ -1082,19 +1063,21 @@ def notify_invitation_to_join_team(event):
 
     reviewer = membership.reviewer
     admin_addrs = member.getTeamAdminsEmailAddresses()
-    from_addr = format_address('Launchpad', config.noreply_from_address)
-    subject = (
-        'Launchpad: %s was invited to join %s' % (member.name, team.name))
+    from_addr = format_address(team.displayname, config.noreply_from_address)
+    subject = 'Invitation for %s to join' % member.name
     templatename = 'membership-invitation.txt'
     template = get_email_template(templatename)
-    msg = template % {
+    replacements = {
         'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
         'member': '%s (%s)' % (member.browsername, member.name),
         'team': '%s (%s)' % (team.browsername, team.name),
         'membership_invitations_url':
             "%s/+invitation/%s" % (canonical_url(member), team.name)}
-    msg = MailWrapper().format(msg)
-    simple_sendmail(from_addr, admin_addrs, subject, msg)
+    for address in admin_addrs:
+        recipient = getUtility(IPersonSet).getByEmail(address)
+        replacements['recipient_name'] = recipient.displayname
+        msg = MailWrapper().format(template % replacements)
+        simple_sendmail(from_addr, address, subject, msg)
 
 
 def notify_team_join(event):
@@ -1115,26 +1098,28 @@ def notify_team_join(event):
         TeamMembershipStatus.PROPOSED]
     admin_addrs = team.getTeamAdminsEmailAddresses()
 
-    from_addr = format_address('Launchpad', config.noreply_from_address)
+    from_addr = format_address(team.displayname, config.noreply_from_address)
 
     if reviewer != person and membership.status in [approved, admin]:
         # Somebody added this person as a member, we better send a
         # notification to the person too.
         member_addrs = contactEmailAddresses(person)
 
-        subject = (
-            'Launchpad: %s is now a member of %s' % (person.name, team.name))
+        subject = '%s joined %s' % (person.name, team.name)
         templatename = 'new-member-notification.txt'
         if person.isTeam():
             templatename = 'new-member-notification-for-teams.txt'
 
         template = get_email_template(templatename)
-        msg = template % {
+        replacements = {
             'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
             'member': '%s (%s)' % (person.browsername, person.name),
             'team': '%s (%s)' % (team.browsername, team.name)}
-        msg = MailWrapper().format(msg)
-        simple_sendmail(from_addr, member_addrs, subject, msg)
+        for address in member_addrs:
+            recipient = getUtility(IPersonSet).getByEmail(address)
+            replacements['recipient_name'] = recipient.displayname
+            msg = MailWrapper().format(template % replacements)
+            simple_sendmail(from_addr, address, subject, msg)
 
         # The member's email address may be in admin_addrs too; let's remove
         # it so the member don't get two notifications.
@@ -1154,19 +1139,20 @@ def notify_team_join(event):
     if membership.status in [approved, admin]:
         template = get_email_template(
             'new-member-notification-for-admins.txt')
-        subject = (
-            'Launchpad: %s is now a member of %s' % (person.name, team.name))
+        subject = '%s joined %s' % (person.name, team.name)
     elif membership.status == proposed:
         template = get_email_template('pending-membership-approval.txt')
-        subject = (
-            "Launchpad: %s wants to join team %s" % (person.name, team.name))
+        subject = "%s wants to join" % person.name
         headers = {"Reply-To": person.preferredemail.email}
     else:
         raise AssertionError(
             "Unexpected membership status: %s" % membership.status)
 
-    msg = MailWrapper().format(template % replacements)
-    simple_sendmail(from_addr, admin_addrs, subject, msg, headers=headers)
+    for address in admin_addrs:
+        recipient = getUtility(IPersonSet).getByEmail(address)
+        replacements['recipient_name'] = recipient.displayname
+        msg = MailWrapper().format(template % replacements)
+        simple_sendmail(from_addr, address, subject, msg, headers=headers)
 
 
 def dispatch_linked_question_notifications(bugtask, event):
@@ -1247,6 +1233,8 @@ class QuestionNotification:
             '%s status=%s; assignee=%s; priority=%s; language=%s' % (
                 target, question.status.title, assignee,
                 question.priority.title, question.language.code))
+        headers['Reply-To'] = 'question%s@%s' % (
+            self.question.id, config.answertracker.email_domain)
 
         return headers
 
@@ -1431,11 +1419,16 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         """Add a References header."""
         headers = QuestionNotification.getHeaders(self)
         if self.new_message:
-            # XXX flacoste 2007-02-02 bug=83846: 
+            # XXX flacoste 2007-02-02 bug=83846:
             # The first message cannot contain a References
             # because we don't create a Message instance for the
             # question description, so we don't have a Message-ID.
-            index = list(self.question.messages).index(self.new_message)
+
+            # XXX sinzui 2007-11-27 bug=164435:
+            # SQLObject can refetch the question, so we are using the ids.
+            message_ids = list([message.id
+                                for message in self.question.messages])
+            index = message_ids.index(self.new_message.id)
             if index > 0:
                 headers['References'] = (
                     self.question.messages[index-1].rfc822msgid)
@@ -1709,7 +1702,7 @@ def notify_specification_modified(spec, event):
 
 def email_branch_modified_notifications(branch, to_addresses,
                                         from_address, contents,
-                                        recipients):
+                                        recipients, subject=None):
     """Send notification emails using the branch email template.
 
     Emails are sent one at a time to the listed addresses.
@@ -1717,29 +1710,43 @@ def email_branch_modified_notifications(branch, to_addresses,
     branch_title = branch.title
     if branch_title is None:
         branch_title = ''
-    subject = '[Branch %s] %s' % (branch.unique_name, branch_title)
+    if subject is None:
+        subject = '[Branch %s] %s' % (branch.unique_name, branch_title)
     headers = {'X-Launchpad-Branch': branch.unique_name}
 
     template = get_email_template('branch-modified.txt')
-    params = {
-        'contents': contents,
-        'branch_title': branch_title,
-        'branch_url': canonical_url(branch),
-         }
     for address in to_addresses:
+        params = {
+            'contents': contents,
+            'branch_title': branch_title,
+            'branch_url': canonical_url(branch),
+            'unsubscribe': '',
+            'rationale': ('You are receiving this branch notification '
+                          'because you are subscribed to it.'),
+            }
         subscription, rationale = recipients.getReason(address)
-        if subscription.person.isTeam():
-            params['unsubscribe_url'] = canonical_url(subscription)
+        # The only time that the subscription will be empty is if the owner
+        # of the branch is being notified.
+        if subscription is None:
+            params['rationale'] = (
+                "You are getting this email as you are the owner of "
+                "the branch and someone has edited the details.")
+        elif not subscription.person.isTeam():
+            # Give the users a link to unsubscribe.
+            params['unsubscribe'] = (
+                "\nTo unsubscribe from this branch go to "
+                "%s/+edit-subscription." % canonical_url(branch))
         else:
-            params['unsubscribe_url'] = (
-                canonical_url(branch) + '/+edit-subscription')
+            # Don't give teams an option to unsubscribe.
+            pass
         headers['X-Launchpad-Message-Rationale'] = rationale
 
         body = template % params
         simple_sendmail(from_address, address, subject, body, headers)
 
 
-def send_branch_revision_notifications(branch, from_address, message, diff):
+def send_branch_revision_notifications(branch, from_address, message, diff,
+                                       subject):
     """Notify subscribers that a revision has been added (or removed)."""
     diff_size = diff.count('\n') + 1
 
@@ -1773,7 +1780,7 @@ def send_branch_revision_notifications(branch, from_address, message, diff):
         else:
             contents = "%s\n%s" % (message, diff)
         email_branch_modified_notifications(
-            branch, addresses, from_address, contents, recipients)
+            branch, addresses, from_address, contents, recipients, subject)
 
 
 def send_branch_modified_notifications(branch, event):
@@ -1784,6 +1791,11 @@ def send_branch_modified_notifications(branch, event):
         return
     # If there is no one interested, then bail out early.
     recipients = branch.getNotificationRecipients()
+    # If the person editing the branch isn't in the team of the owner
+    # then notify the branch owner of the changes as well.
+    if not event.user.inTeam(branch.owner):
+        # Existing rationales are kept.
+        recipients.add(branch.owner, None, "Owner")
 
     to_addresses = set()
     interested_levels = (
@@ -1791,7 +1803,9 @@ def send_branch_modified_notifications(branch, event):
         BranchSubscriptionNotificationLevel.FULL)
     for email_address in recipients.getEmails():
         subscription, ignored = recipients.getReason(email_address)
-        if subscription.notification_level in interested_levels:
+        if (subscription is None or
+            subscription.notification_level in interested_levels):
+            # The subscription is None if we added the branch owner above.
             to_addresses.add(email_address)
 
     indent = ' '*4
@@ -1873,7 +1887,7 @@ def notify_specification_subscription_modified(specsub, event):
     else:
         specsub_type = 'Participation non-essential'
     mailwrapper = MailWrapper(width=72)
-    body = mailwrapper.format(        
+    body = mailwrapper.format(
         'Your subscription to the blueprint '
         '%(blueprint_name)s - %(blueprint_title)s '
         'has changed to [%(specsub_type)s].\n\n'

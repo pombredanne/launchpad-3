@@ -8,6 +8,4 @@ means.
 
 Status
 ------
-Database is frozen. See the Launchpad google calender or wiki for
-timeframes.
-
+See the Launchpad google calender or wiki for timeframes.

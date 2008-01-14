@@ -6,7 +6,7 @@ settings of teams to which they belong.
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox')
-    >>> browser.getLink('Bugmail Settings').click()
+    >>> browser.getLink('Subscribe to bug mail').click()
     >>> subscribe_myself = browser.getControl(
     ...    'I want to receive all bugmail for this source package')
     >>> subscribe_myself.selected

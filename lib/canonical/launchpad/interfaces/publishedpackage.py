@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Published package interfaces."""
 
@@ -19,6 +20,7 @@ class IPublishedPackage(Interface):
     been published in a distribution."""
 
     id = Attribute("The id of the packagepublishing record")
+    archive = Attribute("The archive where the package is published.")
     distribution = Attribute("The distribution id")
     distroarchseries = Attribute("The distroarchseries.")
     distroseries = Attribute("The distribution series id")

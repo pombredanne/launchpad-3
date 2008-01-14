@@ -39,7 +39,7 @@ def test_simple_sendmail():
     'myMessageId'
 
     The TestMailer stores sent emails in memory (which we cleared in the
-    setUp() method). But the actual email has yet to be sent, as that 
+    setUp() method). But the actual email has yet to be sent, as that
     happens when the transaction is committed.
 
     >>> len(stub.test_emails)

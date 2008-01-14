@@ -5,9 +5,8 @@ page, together with the last failure message we got when mirroring.
     >>> content = anon_browser.contents
     >>> mirror_failure_tag = find_tag_by_id(content, 'mirror-failure')
     >>> print extract_text(mirror_failure_tag)
-    Launchpad could not mirror this branch on 2006-04-08.
-    The error was:
-    I do not like Arch, so I am pretending it failed to mirror.
+    This branch has not been mirrored, as Launchpad has been unable to
+    access it.
 
 If a branch failed to mirror but no failure message was stored, we properly
 report the absence of an error message.
@@ -16,8 +15,8 @@ report the absence of an error message.
     >>> content = anon_browser.contents
     >>> mirror_failure_tag = find_tag_by_id(content, 'mirror-failure')
     >>> print extract_text(mirror_failure_tag)
-    Launchpad could not mirror this branch on 2006-04-08.
-    No error message was recorded.
+    This branch has not been mirrored, as Launchpad has been unable to
+    access it.
 
 If a branch has a sftp or bzr+ssh URL, immediately display an error message
 (even before mirroring is attempted) and do not display the mirror failure

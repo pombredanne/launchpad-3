@@ -13,6 +13,7 @@ import gettextpo
 import os
 import random
 import re
+import sys
 import tarfile
 import warnings
 from StringIO import StringIO
@@ -22,12 +23,10 @@ import sha
 from zope.component import getUtility
 
 import canonical
-from canonical.lp.dbschema import (
-    SourcePackageFileType, BinaryPackageFormat, BinaryPackageFileType)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IRequestPreferredLanguages,
-    IRequestLocalLanguages, ITeam)
-from canonical.launchpad.translationformat.gettext_po_parser import POParser
+    BinaryPackageFormat, BinaryPackageFileType, ILaunchBag,
+    IRequestPreferredLanguages, IRequestLocalLanguages, ITeam,
+    SourcePackageFileType)
 
 
 def text_replaced(text, replacements, _cache={}):
@@ -111,11 +110,12 @@ def shortest(sequence):
     Return an empty list if the sequence is empty.
     """
     shortest_list = []
+    shortest_length = None
 
     for item in list(sequence):
         new_length = len(item)
 
-        if not shortest_list:
+        if shortest_length is None:
             # First item.
             shortest_list.append(item)
             shortest_length = new_length
@@ -370,18 +370,6 @@ def is_english_variant(language):
     return language.code[0:3] in ['en_']
 
 
-def check_po_syntax(s):
-    parser = POParser()
-
-    try:
-        parser.write(s)
-        parser.finish()
-    except:
-        return False
-
-    return True
-
-
 def is_tar_filename(filename):
     '''
     Check whether a filename looks like a filename that belongs to a tar file,
@@ -445,7 +433,8 @@ def get_filename_from_message_id(message_id):
     It generates a file name that's not easily guessable.
     """
     return '%s.msg' % (
-            canonical.base.base(long(sha.new(message_id).hexdigest(), 16), 62))
+            canonical.base.base(
+                long(sha.new(message_id).hexdigest(), 16), 62))
 
 
 def getFileType(fname):

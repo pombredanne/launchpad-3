@@ -31,7 +31,7 @@ otherwise be possible to renew that membership, the user could manually
 craft the URL to get to it, so in this case the page will simply say the
 membership can't be renewed and explain why.
 
-    >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~karl/+expiringmembership/'
     ...              'ubuntu-mirror-admins')
     >>> browser.getControl('Renew')
@@ -54,11 +54,7 @@ Other users (apart from Karl) can't see that page.
 If we change the team's renewal policy it still won't be possible for
 the user to renew that membership because it's not about to expire.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> team_admin_browser = Browser()
-    >>> team_admin_browser.handleErrors = False
-    >>> team_admin_browser.addHeader(
-    ...     'Authorization', 'Basic mark@hbd.com:test')
+    >>> team_admin_browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-mirror-admins/+edit')
     >>> team_admin_browser.getControl(
@@ -149,10 +145,7 @@ team's renewal policy is ONDEMAND.
 Logged in as Sample Person (one of landscape developers' admins), we'll
 now renew the membership.
 
-    >>> browser = Browser()
-    >>> browser.handleErrors = False
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~landscape-developers'
     ...              '/+expiringmembership/ubuntu-mirror-admins')
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))

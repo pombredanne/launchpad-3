@@ -1,4 +1,4 @@
-<li>
+<li xmlns:tal="http://xml.zope.org/namespaces/tal">
   <div>
     <a tal:attributes="href context/fmt:url"
         tal:content="context/displayname">Mozilla Thunderbird 0.9.1</a>

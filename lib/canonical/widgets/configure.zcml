@@ -20,6 +20,15 @@
         template="templates/popup-window.pt"
         /> 
 
+    <browser:page
+        for="*"
+        class="canonical.widgets.popup.SearchForUpstreamPopupView"
+        allowed_interface="canonical.widgets.popup.ISinglePopupView"
+        permission="zope.Public"
+        name="popup-search-upstream"
+        template="templates/popup-window.pt"
+        /> 
+
     <!--
         XXX: anonymous 2004-08-14: Feed back into Zope3.
         The Zope3 WidgetInputError does not handle lists of validation

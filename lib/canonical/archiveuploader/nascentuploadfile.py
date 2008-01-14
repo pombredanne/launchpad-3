@@ -34,12 +34,10 @@ from canonical.archiveuploader.utils import (
     re_extract_src_version)
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
-    IComponentSet, ISectionSet, IBuildSet, ILibraryFileAliasSet,
-    IBinaryPackageNameSet)
+    ArchivePurpose, BinaryPackageFormat, BuildStatus, IComponentSet,
+    ISectionSet, IBuildSet, ILibraryFileAliasSet, IBinaryPackageNameSet,
+    PackagePublishingPriority, PackageUploadCustomFormat, PackageUploadStatus)
 from canonical.librarian.utils import filechunks
-from canonical.lp.dbschema import (
-    PackagePublishingPriority, PackageUploadCustomFormat,
-    PackageUploadStatus, BinaryPackageFormat, BuildStatus)
 
 
 apt_pkg.InitSystem()
@@ -125,7 +123,10 @@ class NascentUploadFile:
 
     @property
     def content_type(self):
-        """The content type for this file ready for adding to the librarian."""
+        """The content type for this file.
+
+        Return a value ready for adding to the librarian.
+        """
         for content_type_map in self.filename_ending_content_type_map.items():
             ending, content_type = content_type_map
             if self.filename.endswith(ending):
@@ -290,10 +291,18 @@ class PackageUploadFile(NascentUploadFile):
             # were forced to accept a package with a broken section
             # (linux-meta_2.6.12.16_i386). Result: packages with invalid
             # sections now get put into misc -- cprov 20060119
-            default_section = 'misc'
-            self.logger.warn("Unable to grok section %r, overriding it with %s"
-                      % (self.section_name, default_section))
-            self.section_name = default_section
+            if self.policy.archive.purpose == ArchivePurpose.PPA:
+                # PPA uploads should not override because it will probably
+                # make the section inconsistent with the one in the .dsc.
+                raise UploadError(
+                    "%s: Section %r is not valid" % (
+                    self.filename, self.section_name))
+            else:
+                default_section = 'misc'
+                self.logger.warn("Unable to grok section %r, "
+                                 "overriding it with %s"
+                          % (self.section_name, default_section))
+                self.section_name = default_section
 
         if self.component_name not in valid_components:
             raise UploadError(
@@ -519,7 +528,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         """
         if not re_valid_version.match(self.control_version):
             yield UploadError("%s: invalid version number %r."
-                              % (self.filename, control_version))
+                              % (self.filename, self.control_version))
 
         binary_match = re_isadeb.match(self.filename)
         filename_version = binary_match.group(2)
@@ -539,7 +548,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
         if control_arch not in valid_archs and control_arch != "all":
             yield UploadError(
-                "%s: Unknown architecture: %r" % (self.filename, control_arch))
+                "%s: Unknown architecture: %r" % (
+                self.filename, control_arch))
 
         if control_arch not in self.changes.architectures:
             yield UploadError(
@@ -577,8 +587,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         control_priority = self.control.get('Priority', '')
         if control_priority and self.priority_name != control_priority:
             yield UploadError(
-                "%s control file lists priority as %s but changes file has %s."
-                % (self.filename, control_priority, self.priority_name))
+                "%s control file lists priority as %s but changes file has "
+                "%s." % (self.filename, control_priority, self.priority_name))
 
     def verifyFormat(self):
         """Check if the DEB format is sane.
@@ -612,35 +622,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             yield UploadError(
                 "%s: second chunk is %s, expected control.tar.gz" % (
                 self.filename, control_tar))
-        if data_tar == "data.tar.bz2":
-            # Packages using bzip2 must Pre-Depend on dpkg >= 1.10.24
-            control_pre_depends = self.control.get('Pre-Depends', '')
-            for parsed_dep in apt_pkg.ParseDepends(control_pre_depends):
-                # apt_pkg is weird and returns a list containing lists
-                # containing a single tuple.
-                assert len(parsed_dep) == 1, (
-                    "apt_pkg does not seem to like this dependency line: %r"
-                    % parsed_dep)
-                dep, version, constraint = parsed_dep[0]
-                if dep != "dpkg":
-                    continue
-                if ((constraint == ">=" and
-                     apt_pkg.VersionCompare(version, "1.10.24") < 0) or
-                    (constraint == ">>" and
-                     apt_pkg.VersionCompare(version, "1.10.23") < 0)):
-                    yield UploadError(
-                        "%s uses bzip2 compression but pre-depends "
-                        "on an old version of dpkg: %s"
-                        % (self.filename, version))
-                break
-            else:
-                yield UploadError(
-                    "%s uses bzip2 compression but doesn't Pre-Depend "
-                    "on dpkg (>= 1.10.24)" % self.filename)
-        elif data_tar == "data.tar.gz":
-            # No tests are needed for tarballs, yay
-            pass
-        else:
+        if data_tar not in ("data.tar.gz", "data.tar.bz2"):
             yield UploadError(
                 "%s: third chunk is %s, expected data.tar.gz or "
                 "data.tar.bz2" % (self.filename, data_tar))
@@ -674,10 +656,10 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 else:
                     yield UploadError("Could not find data tarball in %s"
                                        % self.filename)
-                    deb_file.close();
+                    deb_file.close()
                     return
 
-            deb_file.close();
+            deb_file.close()
 
             future_files = tar_checker.future_files.keys()
             if future_files:
@@ -741,7 +723,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # XXX cprov 2006-08-09 bug=55774: Building from ACCEPTED is
             # special condition, not really used in production. We should
             # remove the support for this use case.
-            self.logger.debug("No source published, checking the ACCEPTED queue")
+            self.logger.debug(
+                "No source published, checking the ACCEPTED queue")
 
             queue_candidates = distroseries.getQueueItems(
                 status=PackageUploadStatus.ACCEPTED,
@@ -777,8 +760,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         if self.source_name != sourcepackagerelease.name:
             raise UploadError(
                 "source name %r for %s does not match name %r in "
-                "control file"
-                % (sourcepackagerelease.name, self.filename, self.source_name))
+                "control file" % (sourcepackagerelease.name, self.filename,
+                                  self.source_name))
 
     def findBuild(self, sourcepackagerelease):
         """Find and return a build for the given archtag, cached on policy.
@@ -869,6 +852,9 @@ class BaseBinaryUploadFile(PackageUploadFile):
             conflicts=encoded.get('Conflicts', ''),
             replaces=encoded.get('Replaces', ''),
             provides=encoded.get('Provides', ''),
+            pre_depends=encoded.get('Pre-Depends', ''),
+            enhances=encoded.get('Enhances', ''),
+            breaks=encoded.get('Breaks', ''),
             essential=is_essential,
             installedsize=installedsize,
             architecturespecific=architecturespecific)

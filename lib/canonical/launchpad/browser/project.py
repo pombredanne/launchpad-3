@@ -8,6 +8,7 @@ __all__ = [
     'ProjectAddProductView',
     'ProjectAddQuestionView',
     'ProjectAddView',
+    'ProjectBranchesView',
     'ProjectBrandingView',
     'ProjectNavigation',
     'ProjectDynMenu',
@@ -17,11 +18,13 @@ __all__ = [
     'ProjectSOP',
     'ProjectFacets',
     'ProjectOverviewMenu',
+    'ProjectSeriesSpecificationsMenu',
     'ProjectSpecificationsMenu',
     'ProjectBountiesMenu',
     'ProjectAnswersMenu',
     'ProjectTranslationsMenu',
     'ProjectSetContextMenu',
+    'ProjectView',
     'ProjectEditView',
     'ProjectAddProductView',
     'ProjectSetView',
@@ -39,10 +42,14 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
+    IBranchSet, IProductSet, IProject, IProjectSeries, IProjectSet,
     NotFoundError)
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
+from canonical.launchpad.browser.product import ProductAddViewBase
+from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
-from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.feeds import (
+    BugTargetLatestBugsFeedLink, FeedsMixin)
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
 from canonical.launchpad.browser.questiontarget import (
@@ -55,7 +62,7 @@ from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.helpers import shortlist
 
 
-class ProjectNavigation(Navigation, CalendarTraversalMixin):
+class ProjectNavigation(Navigation):
 
     usedfor = IProject
 
@@ -68,6 +75,14 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
+
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
+
+    @stepthrough('+series')
+    def traverse_series(self, series_name):
+        return self.context.getSeries(series_name)
 
 
 class ProjectDynMenu(DynMenu):
@@ -176,15 +191,12 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = IProject
 
-    enable_only = [
-        'overview', 'bugs', 'specifications', 'answers', 'translations']
+    enable_only = ['overview', 'branches', 'bugs', 'specifications',
+                   'answers', 'translations']
 
-    def calendar(self):
-        target = '+calendar'
-        text = 'Calendar'
-        # only link to the calendar if it has been created
-        enabled = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, enabled=enabled)
+    def branches(self):
+        text = 'Code'
+        return Link('', text, enabled=self.context.hasProducts())
 
     def bugs(self):
         site = 'bugs'
@@ -217,7 +229,8 @@ class ProjectOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'administer', 'branch_visibility', 'rdf']
+        'mentorship', 'announce', 'announcements', 'administer',
+        'branch_visibility', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -250,8 +263,19 @@ class ProjectOverviewMenu(ApplicationMenu):
         # We disable this link if the project has no products. This is for
         # consistency with the way the overview buttons behave in the same
         # circumstances.
-        return Link('+mentoring', text, icon='info', 
+        return Link('+mentoring', text, icon='info',
                     enabled=self.context.hasProducts())
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, icon='add')
+
+    def announcements(self):
+        text = 'Show announcements'
+        enabled = bool(self.context.announcements().count())
+        return Link('+announcements', text, enabled=enabled)
 
     def rdf(self):
         text = structured(
@@ -313,6 +337,7 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         summary = 'Register a new blueprint for %s' % self.context.title
         return Link('+addspec', text, summary, icon='add')
 
+
 class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
     """Menu for the answers facet of projects."""
 
@@ -336,15 +361,27 @@ class ProjectTranslationsMenu(ApplicationMenu):
         return Link('+changetranslators', text, icon='edit')
 
 
+class ProjectView(HasAnnouncementsView, FeedsMixin):
+    pass
+
+
+class ProjectBugView(ProjectView):
+    """Project view for bugs.launchpad.net.
+
+    Do not include announcement feed <link> tags on this page.
+    """
+    feed_types = (BugTargetLatestBugsFeedLink,)
+
+
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
-    label = "Change project details"
+    label = "Change project group details"
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
-        'homepageurl', 'bugtracker', 'sourceforgeproject',
-        'freshmeatproject', 'wikiurl']
+        'bug_reporting_guidelines', 'homepageurl', 'bugtracker',
+        'sourceforgeproject', 'freshmeatproject', 'wikiurl']
 
 
     @action('Change Details', name='change')
@@ -368,17 +405,7 @@ class ProjectReviewView(ProjectEditView):
     field_names = ['name', 'owner', 'active', 'reviewed']
 
 
-class ProjectAddProductView(LaunchpadFormView):
-
-    schema = IProduct
-    field_names = ['name', 'displayname', 'title', 'summary', 'description',
-                   'homepageurl', 'sourceforgeproject', 'freshmeatproject',
-                   'wikiurl', 'screenshotsurl', 'downloadurl',
-                   'programminglang']
-    custom_widget('homepageurl', TextWidget, displayWidth=30)
-    custom_widget('screenshotsurl', TextWidget, displayWidth=30)
-    custom_widget('wikiurl', TextWidget, displayWidth=30)
-    custom_widget('downloadurl', TextWidget, displayWidth=30)
+class ProjectAddProductView(ProductAddViewBase):
 
     label = "Register a new project that is part of this initiative"
     product = None
@@ -405,13 +432,11 @@ class ProjectAddProductView(LaunchpadFormView):
             sourceforgeproject=data['sourceforgeproject'],
             programminglang=data['programminglang'],
             project=self.context,
-            owner=self.user)
+            owner=self.user,
+            licenses = data['licenses'],
+            license_info=data['license_info'])
+        self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
-
-    @property
-    def next_url(self):
-        assert self.product is not None, 'No product has been created'
-        return canonical_url(self.product)
 
 
 class ProjectSetView(object):
@@ -524,7 +549,7 @@ class ProjectAddQuestionView(QuestionAddView):
         # Add a 'product' field to the beginning of the form.
         QuestionAddView.setUpFields(self)
         self.form_fields = self.createProductField() + self.form_fields
-        
+
     def setUpWidgets(self):
         # Only setup the widgets that needs validation
         if not self.add_action.submitted():
@@ -534,7 +559,7 @@ class ProjectAddQuestionView(QuestionAddView):
 
         # We need to initialize the widget in two phases because
         # the language vocabulary factory will try to access the product
-        # widget to find the final context.        
+        # widget to find the final context.
         self.widgets = form.setUpWidgets(
             fields.select('product'),
             self.prefix, self.context, self.request,
@@ -571,3 +596,55 @@ class ProjectAddQuestionView(QuestionAddView):
         else:
             return None
 
+
+class ProjectBranchesView(BranchListingView):
+    """View for branch listing for a project."""
+
+    extra_columns = ('author', 'product')
+
+    def _branches(self, lifecycle_status, show_dormant):
+        return getUtility(IBranchSet).getBranchesForProject(
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
+
+    @property
+    def no_branch_message(self):
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
+            message = (
+                'There are branches registered for %s '
+                'but none of them match the current filter criteria '
+                'for this page. Try filtering on "Any Status".')
+        else:
+            message = (
+                'There are no branches registered for %s '
+                'in Launchpad today. We recommend you visit '
+                '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
+                'for more information about how you can use the Bazaar '
+                'revision control system to improve community participation '
+                'in this project group.')
+        return message % self.context.displayname
+
+
+class ProjectSeriesSpecificationsMenu(ApplicationMenu):
+
+    usedfor = IProjectSeries
+    facet = 'specifications'
+    links = ['listall', 'doc', 'roadmap', 'assignments']
+
+    def listall(self):
+        text = 'List all blueprints'
+        return Link('+specs?show=all', text, icon='info')
+
+    def doc(self):
+        text = 'List documentation'
+        summary = 'Show all completed informational specifications'
+        return Link('+documentation', text, summary, icon="info")
+
+    def roadmap(self):
+        text = 'Roadmap'
+        return Link('+roadmap', text, icon='info')
+
+    def assignments(self):
+        text = 'Assignments'
+        return Link('+assignments', text, icon='info')

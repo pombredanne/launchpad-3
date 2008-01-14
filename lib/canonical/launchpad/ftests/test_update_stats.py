@@ -53,17 +53,17 @@ class UpdateStatsTest(LaunchpadFunctionalTestCase):
 
         # Destroy the messagecount caches on distroseries so we can confirm
         # they are all updated.
-        cur.execute("UPDATE DistroRelease SET messagecount=-1")
+        cur.execute("UPDATE DistroSeries SET messagecount=-1")
 
         # Delete half the entries in the DistroSeriesLanguage cache so we
         # can confirm they are created as required, and set the remainders
         # to invalid values so we can confirm they are updated.
         cur.execute("""
-            DELETE FROM DistroReleaseLanguage 
-            WHERE id > (SELECT max(id) FROM DistroReleaseLanguage)/2
+            DELETE FROM DistroSeriesLanguage
+            WHERE id > (SELECT max(id) FROM DistroSeriesLanguage)/2
             """)
         cur.execute("""
-            UPDATE DistroReleaseLanguage
+            UPDATE DistroSeriesLanguage
             SET
                 currentcount=-1, updatescount=-1, rosettacount=-1,
                 unreviewed_count=-1,contributorcount=-1,
@@ -72,7 +72,7 @@ class UpdateStatsTest(LaunchpadFunctionalTestCase):
 
         # Update stats should create missing distroserieslanguage,
         # so remember how many there are before the run.
-        cur.execute("SELECT COUNT(*) FROM DistroReleaseLanguage")
+        cur.execute("SELECT COUNT(*) FROM DistroSeriesLanguage")
         num_distroserieslanguage = cur.fetchone()[0]
 
         # Commit our changes so the subprocess can see them
@@ -101,52 +101,52 @@ class UpdateStatsTest(LaunchpadFunctionalTestCase):
 
         # Make sure all DistroSeries.messagecount entries are updated
         cur.execute(
-            "SELECT COUNT(*) FROM DistroRelease WHERE messagecount=-1")
+            "SELECT COUNT(*) FROM DistroSeries WHERE messagecount=-1")
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
         # Make sure we have created missing DistroSeriesLanguage entries
-        cur.execute("SELECT COUNT(*) FROM DistroReleaseLanguage")
+        cur.execute("SELECT COUNT(*) FROM DistroSeriesLanguage")
         self.failUnless(cur.fetchone()[0] > num_distroserieslanguage)
 
         # Make sure existing DistroSeriesLangauge entries have been updated.
         cur.execute("""
-            SELECT COUNT(*) FROM DistroReleaseLanguage, Language
-            WHERE DistroReleaseLanguage.language = Language.id AND
+            SELECT COUNT(*) FROM DistroSeriesLanguage, Language
+            WHERE DistroSeriesLanguage.language = Language.id AND
                   Language.visible = TRUE AND currentcount = -1
             """)
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
         cur.execute("""
-            SELECT COUNT(*) FROM DistroReleaseLanguage, Language
-            WHERE DistroReleaseLanguage.language = Language.id AND
+            SELECT COUNT(*) FROM DistroSeriesLanguage, Language
+            WHERE DistroSeriesLanguage.language = Language.id AND
                   Language.visible = TRUE AND updatescount = -1
             """)
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
         cur.execute("""
-            SELECT COUNT(*) FROM DistroReleaseLanguage, Language
-            WHERE DistroReleaseLanguage.language = Language.id AND
+            SELECT COUNT(*) FROM DistroSeriesLanguage, Language
+            WHERE DistroSeriesLanguage.language = Language.id AND
                   Language.visible = TRUE AND rosettacount = -1
             """)
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
         cur.execute("""
-            SELECT COUNT(*) FROM DistroReleaseLanguage, Language
-            WHERE DistroReleaseLanguage.language = Language.id AND
+            SELECT COUNT(*) FROM DistroSeriesLanguage, Language
+            WHERE DistroSeriesLanguage.language = Language.id AND
                   Language.visible = TRUE AND unreviewed_count = -1
             """)
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
         cur.execute("""
-            SELECT COUNT(*) FROM DistroReleaseLanguage, Language
-            WHERE DistroReleaseLanguage.language = Language.id AND
+            SELECT COUNT(*) FROM DistroSeriesLanguage, Language
+            WHERE DistroSeriesLanguage.language = Language.id AND
                   Language.visible = TRUE AND contributorcount = -1
             """)
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
         cur.execute("""
-            SELECT COUNT(*) FROM DistroReleaseLanguage, Language
-            WHERE DistroReleaseLanguage.language = Language.id AND
+            SELECT COUNT(*) FROM DistroSeriesLanguage, Language
+            WHERE DistroSeriesLanguage.language = Language.id AND
                   Language.visible = TRUE AND
                   dateupdated < now() - '2 days'::interval
             """)
@@ -226,7 +226,7 @@ class UpdateTranslationStatsTest(LaunchpadFunctionalTestCase):
         # values are the right ones.
         messagecount = 0
         currentcount = 0
-        for template in hoary.currentpotemplates:
+        for template in hoary.getCurrentTranslationTemplates():
             messagecount += template.messageCount()
             # Get the Spanish IPOFile.
             pofile = template.getPOFileByLang('es')
@@ -265,7 +265,7 @@ class UpdateTranslationStatsTest(LaunchpadFunctionalTestCase):
         # Commit the current transaction because the script will run in
         # another transaction and thus it won't see the changes done on this
         # test unless we commit.
-        # XXX CarlosPerelloMarin 2007-01-22 bug=3989: 
+        # XXX CarlosPerelloMarin 2007-01-22 bug=3989:
         # Unecessary flush_database_updates required.
         from canonical.database.sqlbase import flush_database_updates
         flush_database_updates()
@@ -303,7 +303,7 @@ class UpdateTranslationStatsTest(LaunchpadFunctionalTestCase):
         # script run recalculated.
         new_messagecount = 0
         new_currentcount = 0
-        for template in hoary.currentpotemplates:
+        for template in hoary.getCurrentTranslationTemplates():
             new_messagecount += template.messageCount()
             pofile = template.getPOFileByLang('es')
             if pofile is not None:
@@ -334,7 +334,7 @@ class UpdateTranslationStatsTest(LaunchpadFunctionalTestCase):
 
     def test_english(self):
         """Test that English is handled correctly by DistroSeries.
-        
+
         English exists in the POFile data, but it cannot be used by Launchpad
         since the messages that are to be translated are stored as English.
         A DistroSeriesLanguage can never be English since it represents a

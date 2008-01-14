@@ -61,14 +61,14 @@ class Katie:
     def _query_to_dict(self, query, args=None):
         cursor = self._exec(query, args)
         return self._get_dicts(cursor)
-        
+
     def _query(self, query, args=None):
         #print repr(query), repr(args)
         cursor = self.db.cursor()
         cursor.execute(query, args or [])
         results = cursor.fetchall()
         return results
-    
+
     def _query_single(self, query, args=None):
         q = self._query(query, args)
         if len(q) == 1:
@@ -92,7 +92,7 @@ class Katie:
     def getSourcePackageRelease(self, name, version):
         log.debug("Hunting for release %s / %s" % (name, version))
         ret =  self._query_to_dict("""SELECT * FROM source, fingerprint
-                                      WHERE  source = %s 
+                                      WHERE  source = %s
                                       AND    source.sig_fpr = fingerprint.id
                                       AND    version = %s""", (name, version))
         if not ret:
@@ -102,15 +102,15 @@ class Katie:
 
         # XXX kiko 2005-10-21: what to do when the ubuntu lookup fails?
         return self._query_to_dict("""SELECT * FROM source, fingerprint
-                                      WHERE  source = %s 
+                                      WHERE  source = %s
                                       AND    source.sig_fpr = fingerprint.id
                                       AND    version like '%subuntu%s'""" %
                                       ("%s", version, "%"), name)
 
     def getBinaryPackageRelease(self, name, version, arch):
-        return self._query_to_dict("""SELECT * FROM binaries, architecture, 
+        return self._query_to_dict("""SELECT * FROM binaries, architecture,
                                                     fingerprint
-                                      WHERE  package = %s 
+                                      WHERE  package = %s
                                       AND    version = %s
                                       AND    binaries.sig_fpr = fingerprint.id
                                       AND    binaries.architecture =

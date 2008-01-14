@@ -28,13 +28,13 @@ class FileUploadProtocol(basic.LineReceiver):
         STORE 10000 foo.txt
         Optional-Header: value
         Optional-Header: value
-        
+
         <....10000 bytes....>
-    
+
     And this server will respond with::
 
         200 1234/5678
-    
+
     Where "1234" is the file id in our system, and "5678" is file alias id.
 
     Recognised headers are:
@@ -51,7 +51,7 @@ class FileUploadProtocol(basic.LineReceiver):
 
     The File-Content-ID and File-Alias-ID headers are also described in
     <https://launchpad.canonical.com/LibrarianTransactions>.
-    
+
     Unrecognised headers will be ignored.
 
     If something goes wrong, the server will reply with a 400 (bad request, i.e.
@@ -61,7 +61,7 @@ class FileUploadProtocol(basic.LineReceiver):
     Once the server has replied, the client may re-use the connection as if it
     were just established to start a new upload.
     """
-    
+
     delimiter = '\r\n'  # same as HTTP
     state = 'command'
 
@@ -78,7 +78,7 @@ class FileUploadProtocol(basic.LineReceiver):
         connection."""
         self.sendLine(code + ' ' + msg)
         self.transport.loseConnection()
-    
+
     def unknownError(self, failure=None):
         log.msg('Uncaught exception in FileUploadProtocol:')
         if failure is not None:
@@ -92,13 +92,13 @@ class FileUploadProtocol(basic.LineReceiver):
         failure.trap(WrongDatabaseError)
         exc = failure.value
         raise ProtocolViolation(
-            "Wrong database %r, should be %r" 
+            "Wrong database %r, should be %r"
             % (exc.clientDatabaseName, exc.serverDatabaseName))
 
     def protocolErrors(self, failure):
         failure.trap(ProtocolViolation)
         self.sendError(failure.value.msg)
-    
+
     def badLine(self, line):
         raise ProtocolViolation('Unexpected message from client: ' + line)
 
@@ -107,10 +107,10 @@ class FileUploadProtocol(basic.LineReceiver):
             command, args = line.split(None, 1)
         except ValueError:
             raise ProtocolViolation('Bad command: ' + line)
-        
+
         bad = lambda args: self.badCommand(line)
         getattr(self, 'command_' + command.upper(), bad)(args)
-                
+
     def line_header(self, line):
         # Blank line signals the end of the headers
         if line == '':
@@ -127,7 +127,7 @@ class FileUploadProtocol(basic.LineReceiver):
             # The Database-Name header is always required.
             if self.newFile.databaseName is None:
                 raise ProtocolViolation("Database-Name header is required")
-            
+
             # If that's ok, we're ready to receive the file.
             self.state = 'file'
             self.setRawMode()
@@ -148,7 +148,7 @@ class FileUploadProtocol(basic.LineReceiver):
         value = value.strip()
         name = name.lower().replace('-', '_')
         getattr(self, 'header_' + name, ignore)(value)
-                
+
     def badCommand(self, line):
         raise ProtocolViolation('Unknown command: ' + line)
 
@@ -195,7 +195,7 @@ class FileUploadProtocol(basic.LineReceiver):
 
         self.newFile.expires = datetime.fromtimestamp(
                 epoch).replace(tzinfo=utc)
-        
+
     def header_database_name(self, value):
         self.newFile.databaseName = value
 
@@ -250,7 +250,7 @@ if __name__ == '__main__':
     from canonical.librarian import db, storage
     from canonical.lp import initZopeless
     initZopeless()
-    
+
     try:
         os.mkdir('/tmp/fatsam')
     except:

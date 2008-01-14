@@ -66,11 +66,8 @@ Ubuntu needs a Bug Contact first of all:
 
 The new Bug Contact for Ubuntu can change the status to Won't Fix:
 
-    >>> from zope.testbrowser.testing import Browser
-
-    >>> bug_contact_browser = Browser()
-    >>> bug_contact_browser.addHeader(
-    ...     'Authorization', 'Basic test@canonical.com:test')
+    >>> bug_contact_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
 
     >>> bug_contact_browser.open(
     ...     'http://bugs.launchpad.dev/ubuntu/+source/'
@@ -130,3 +127,4 @@ The Bug Contact for Ubuntu can also change the status to Triaged:
     http://bugs.launchpad.dev/ubuntu/+source/iceweasel/+bug/1
     >>> print_highlighted_bugtask(bug_contact_browser)
     iceweasel (Ubuntu)  Triaged  Medium
+

@@ -29,34 +29,34 @@ from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.formlib import form
 from zope.publisher.browser import FileUpload
+from zope.schema import Choice
 
-from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
-from canonical.launchpad.helpers import browserLanguages, is_tar_filename
-from canonical.launchpad.interfaces import (
-    ICountry, IPOTemplateSet, ILaunchpadCelebrities,
-    ISourcePackageNameSet, IProductSeries, ITranslationImporter,
-    ITranslationImportQueue, IProductSeriesSet, NotFoundError)
+from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.launchpad import (
-    StructuralObjectPresentation, DefaultShortLink)
+    DefaultShortLink, StructuralObjectPresentation)
 from canonical.launchpad.browser.poexportrequest import BaseExportView
-from canonical.launchpad.browser.rosetta import TranslationsMixin
+from canonical.launchpad.browser.translations import TranslationsMixin
+from canonical.launchpad.helpers import browserLanguages, is_tar_filename
+from canonical.launchpad.interfaces import (
+    ICountry, ILaunchpadCelebrities, ImportStatus, IPOTemplateSet,
+    IProductSeries, IProductSeriesSet, ISourcePackageNameSet,
+    ITranslationImporter, ITranslationImportQueue, NotFoundError,
+    RevisionControlSystems)
 from canonical.launchpad.webapp import (
-    Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
-    canonical_url, LaunchpadView, StandardLaunchpadFacets,
-    LaunchpadEditFormView, action, custom_widget
-    )
-from canonical.launchpad.webapp.batching import BatchNavigator
+    action, ApplicationMenu, canonical_url, custom_widget,
+    enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
+    Link, Navigation, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu
-
+from canonical.lazr.enum import EnumeratedType, Item, use_template
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
-
-from canonical.launchpad import _
+from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 
 
 def quote(text):
@@ -118,9 +118,10 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'overview'
-    links = ['edit', 'driver', 'editsource', 'ubuntupkg',
-             'add_package', 'add_milestone', 'add_release',
-             'add_potemplate', 'rdf', 'review']
+    links = [
+        'edit', 'driver', 'editsource', 'ubuntupkg', 'add_package',
+        'add_milestone', 'add_release', 'rdf', 'review'
+        ]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -152,6 +153,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def add_release(self):
         text = 'Register a release'
         return Link('+addrelease', text, icon='add')
@@ -159,11 +161,6 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     def rdf(self):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
-
-    @enabled_with_permission('launchpad.Admin')
-    def add_potemplate(self):
-        text = 'Add translation template'
-        return Link('+addpotemplate', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def review(self):
@@ -266,12 +263,13 @@ class ProductSeriesTranslationsExportView(BaseExportView):
     def processForm(self):
         """Process form submission requesting translations export."""
         pofiles = []
-        for potemplate in self.context.potemplates:
-            pofiles += list(potemplate.pofiles)
-        return (self.context.potemplates, pofiles)
+        translation_templates = self.context.getCurrentTranslationTemplates()
+        for translation_template in translation_templates:
+            pofiles += list(translation_template.pofiles)
+        return (translation_templates, pofiles)
 
     def getDefaultFormat(self):
-        templates = self.context.potemplates
+        templates = self.context.getCurrentTranslationTemplates()
         if len(templates) == 0:
             return None
         return templates[0].source_file_format
@@ -303,7 +301,8 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         self.has_errors = False
 
         # Whether there is more than one PO template.
-        self.has_multiple_templates = len(self.context.currentpotemplates) > 1
+        self.has_multiple_templates = len(
+            self.context.getCurrentTranslationTemplates()) > 1
 
         # let's find out what source package is associated with this
         # productseries in the current release of ubuntu
@@ -427,7 +426,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
         root, ext = os.path.splitext(filename)
         translation_importer = getUtility(ITranslationImporter)
-        if (ext in translation_importer.file_extensions_with_importer):
+        if (ext in translation_importer.supported_file_extensions):
             # Add it to the queue.
             translation_import_queue_set.addOrUpdateEntry(
                 filename, content, True, self.user,
@@ -543,6 +542,29 @@ class ProductSeriesEditView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
+class UIRevisionControlSystems(EnumeratedType):
+    """A vocabulary to control the user visible choices.
+
+    The DBEnumeratedType `RevisionControlSystems` is being extended here
+    with the addition of an item for Bazaar.
+
+    If the user selects the Bazaar option, a `user_branch` value is stored
+    and the `rcstype` of the product series remains None.  The Bazaar option
+    in the user interface is purely a visual artifact rather than a database
+    one.
+    """
+
+    use_template(RevisionControlSystems)
+
+    sort_order = 'BZR', 'CVS', 'SVN'
+
+    BZR = Item("""
+        Bazaar
+
+        The Bazaar distributed revision control system.
+        """)
+
+
 class ProductSeriesSourceView(LaunchpadEditFormView):
     """View for editing upstream RCS details for the product series.
 
@@ -556,14 +578,53 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     extra buttons to certify the import or reset failed test imports.
     """
     schema = IProductSeries
-    field_names = ['rcstype', 'user_branch', 'cvsroot', 'cvsmodule',
+    # The rcstype field is now create separately below.
+    field_names = ['user_branch', 'cvsroot', 'cvsmodule',
                    'cvsbranch', 'svnrepository']
 
     custom_widget('rcstype', LaunchpadRadioWidget)
     custom_widget('cvsroot', StrippedTextWidget, displayWidth=50)
     custom_widget('cvsmodule', StrippedTextWidget, displayWidth=20)
     custom_widget('cvsbranch', StrippedTextWidget, displayWidth=20)
-    custom_widget('svnrepository', StrippedTextWidget, displayWidth=50)
+    custom_widget('svnrepository', URIWidget, displayWidth=50)
+
+    @property
+    def initial_values(self):
+        """Provide the correct value for rcstype."""
+        # Instead of magic casting or token values, be explicit in the
+        # default value.
+        if self.context.rcstype is None:
+            if self.context.user_branch is None:
+                rcstype_value = None
+            else:
+                rcstype_value = UIRevisionControlSystems.BZR
+        elif self.context.rcstype == RevisionControlSystems.CVS:
+            rcstype_value = UIRevisionControlSystems.CVS
+        elif self.context.rcstype == RevisionControlSystems.SVN:
+            rcstype_value = UIRevisionControlSystems.SVN
+        else:
+            raise AssertionError('Unknown rcstype %s' % self.context.rcstype)
+
+        return {'rcstype': rcstype_value}
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        LaunchpadEditFormView.setUpFields(self)
+        # Add in the special rcstype field.
+        self.form_fields = self.createRCSTypeField() + self.form_fields
+
+    def createRCSTypeField(self):
+        """Provide a different vocabulary for the rcstype field."""
+        return form.Fields(
+            Choice(__name__='rcstype',
+                 title=_('Type of RCS'),
+                 vocabulary=UIRevisionControlSystems,
+                 required=False,
+                 description=_(
+                    "The type of revision control used for the upstream "
+                    "branch of this series.")),
+            custom_widget=self.custom_widgets['rcstype'],
+            render_context=self.render_context)
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)
@@ -571,14 +632,21 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         # Extract the radio buttons from the rcstype widget, so we can
         # display them separately in the form.
         soup = BeautifulSoup(self.widgets['rcstype']())
-        [norcs_button, cvs_button,
+        [norcs_button, bzr_button, cvs_button,
          svn_button, empty_marker] = soup.findAll('input')
-        norcs_button['onclick'] = 'updateWidgets()'
+        bzr_button['onclick'] = 'updateWidgets()'
         cvs_button['onclick'] = 'updateWidgets()'
         svn_button['onclick'] = 'updateWidgets()'
-        self.rcstype_none = str(norcs_button)
+        norcs_button['onclick'] = 'updateWidgets()'
+        # These are just only in the page template.
+        # XXX thumper: 2008-01-06
+        #   When the new code import UI stuff is enabled, the product
+        #   series revision control details become read only, and this
+        #   view will be much simplified.
+        self.rcstype_bzr = str(bzr_button)
         self.rcstype_cvs = str(cvs_button)
         self.rcstype_svn = str(svn_button)
+        self.rcstype_none = str(norcs_button)
         self.rcstype_emptymarker = str(empty_marker)
 
     def validate(self, data):
@@ -586,26 +654,34 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         if 'rcstype' in data:
             # Make sure fields for unselected revision control systems
             # are blanked out:
-            if rcstype != RevisionControlSystems.CVS:
+            if rcstype != UIRevisionControlSystems.BZR:
+                data['user_branch'] = None
+            if rcstype != UIRevisionControlSystems.CVS:
                 data['cvsroot'] = None
                 data['cvsmodule'] = None
                 data['cvsbranch'] = None
-            if rcstype != RevisionControlSystems.SVN:
+            if rcstype != UIRevisionControlSystems.SVN:
                 data['svnrepository'] = None
 
-        if rcstype == RevisionControlSystems.CVS:
+        if rcstype == UIRevisionControlSystems.BZR:
+            if not data.get('user_branch'):
+                self.setFieldError('user_branch',
+                                   'Enter the Bazaar branch.')
+            del data['rcstype']
+        elif rcstype == UIRevisionControlSystems.CVS:
+            data['rcstype'] = RevisionControlSystems.CVS
             cvsroot = data.get('cvsroot')
             cvsmodule = data.get('cvsmodule')
             cvsbranch = data.get('cvsbranch')
             # Make sure there is an error set for these fields if they
             # are unset.
-            if not (cvsroot or self.getWidgetError('cvsroot')):
+            if not (cvsroot or self.getFieldError('cvsroot')):
                 self.setFieldError('cvsroot',
                                    'Enter a CVS root.')
-            if not (cvsmodule or self.getWidgetError('cvsmodule')):
+            if not (cvsmodule or self.getFieldError('cvsmodule')):
                 self.setFieldError('cvsmodule',
                                    'Enter a CVS module.')
-            if not (cvsbranch or self.getWidgetError('cvsbranch')):
+            if not (cvsbranch or self.getFieldError('cvsbranch')):
                 self.setFieldError('cvsbranch',
                                    'Enter a CVS branch.')
             if cvsroot and cvsmodule and cvsbranch:
@@ -619,9 +695,10 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                            quote(series.product.displayname),
                            quote(series.displayname)))
 
-        elif rcstype == RevisionControlSystems.SVN:
+        elif rcstype == UIRevisionControlSystems.SVN:
+            data['rcstype'] = RevisionControlSystems.SVN
             svnrepository = data.get('svnrepository')
-            if not (svnrepository or self.getWidgetError('svnrepository')):
+            if not (svnrepository or self.getFieldError('svnrepository')):
                 self.setFieldError('svnrepository',
                     "Enter the URL of a Subversion branch.")
             if svnrepository:
@@ -636,12 +713,12 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                            quote(series.displayname)))
 
         if self.resettoautotest_action.submitted():
-            if rcstype is None:
-                self.addError('Can not rerun import without CVS or '
+            if rcstype is None or rcstype == UIRevisionControlSystems.BZR:
+                self.addError('Cannot rerun import without CVS or '
                               'Subversion details.')
         elif self.certify_action.submitted():
-            if rcstype is None:
-                self.addError('Can not certify import without CVS or '
+            if rcstype is None or rcstype == UIRevisionControlSystems.BZR:
+                self.addError('Cannot certify import without CVS or '
                               'Subversion details.')
             if self.context.syncCertified():
                 self.addError('Import has already been approved.')
@@ -652,18 +729,19 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         # all such actions the same though, so we ignore it.
         return check_permission('launchpad.Admin', self.context)
 
-    @action(_('Update RCS Details'), name='update')
+    @action(_('Update Details'), name='update')
     def update_action(self, action, data):
         old_rcstype = self.context.rcstype
         self.updateContextFromData(data)
         if self.context.rcstype is None:
+            # Don't import Bazaar branches.
             self.context.importstatus = None
         else:
             if not self.isAdmin() or (old_rcstype is None and
                                       self.context.rcstype is not None):
                 self.context.importstatus = ImportStatus.TESTING
         self.request.response.addInfoNotification(
-            'Upstream RCS details updated.')
+            'Upstream source details updated.')
 
     def allowResetToAutotest(self, action):
         return self.isAdmin() and self.context.autoTestFailed()
@@ -679,8 +757,8 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     def allowCertify(self, action):
         return self.isAdmin() and not self.context.syncCertified()
 
-    @action(_('Approve import for production and publication'), name='certify',
-            condition=allowCertify)
+    @action(_('Approve import for production and publication'),
+            name='certify', condition=allowCertify)
     def certify_action(self, action, data):
         self.updateContextFromData(data)
         self.context.certifyForSync()
@@ -768,7 +846,6 @@ class ProductSeriesSourceSetView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.ready = request.form.get('ready', None)
         self.text = request.form.get('text', None)
         try:
             self.importstatus = int(request.form.get('state', None))
@@ -776,15 +853,11 @@ class ProductSeriesSourceSetView:
             self.importstatus = None
         # setup the initial values if there was no form submitted
         if request.form.get('search', None) is None:
-            self.ready = 'on'
             self.importstatus = ImportStatus.TESTING.value
 
-        self.batchnav = BatchNavigator(self.search(), request)
-
-    def search(self):
-        return self.context.search(ready=self.ready, text=self.text,
-                                   forimport=True,
-                                   importstatus=self.importstatus)
+        results = self.context.searchImports(
+            text=self.text, importstatus=self.importstatus)
+        self.batchnav = BatchNavigator(results, request)
 
     def sourcestateselector(self):
         html = '<select name="state">\n'
@@ -799,30 +872,6 @@ class ProductSeriesSourceSetView:
             html += '>' + str(enum.title) + '</option>\n'
         html += '</select>\n'
         return html
-        html += '  <option value="DONTSYNC"'
-        if self.importstatus == 'DONTSYNC':
-            html += ' selected'
-        html += '>Do Not Sync</option>\n'
-        html += '  <option value="TESTING"'
-        if self.importstatus == 'TESTING':
-            html += ' selected'
-        html += '>Testing</option>\n'
-        html += '  <option value="AUTOTESTED"'
-        if self.importstatus == 'AUTOTESTED':
-            html += ' selected'
-        html += '>Auto-Tested</option>\n'
-        html += '  <option value="PROCESSING"'
-        if self.importstatus == 'PROCESSING':
-            html += ' selected'
-        html += '>Processing</option>\n'
-        html += '  <option value="SYNCING"'
-        if self.importstatus == 'SYNCING':
-            html += ' selected'
-        html += '>Syncing</option>\n'
-        html += '  <option value="STOPPED"'
-        if self.importstatus == 'STOPPED':
-            html += ' selected'
-        html += '>Stopped</option>\n'
 
 
 class ProductSeriesShortLink(DefaultShortLink):

@@ -23,7 +23,9 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslator"
-        name="+edit" />
+        name="+edit"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:page
         name="+edit"
@@ -31,6 +33,7 @@
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.TranslatorEditView"
         template="../templates/translator-edit.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:page
@@ -39,6 +42,7 @@
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.TranslatorRemoveView"
         template="../templates/translator-remove.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
 </facet>

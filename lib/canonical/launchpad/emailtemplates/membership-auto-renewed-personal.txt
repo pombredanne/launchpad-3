@@ -1,4 +1,4 @@
-Hello,
+Hello %(recipient_name)s,
 
 Your membership in the %(team_name)s team has been automatically renewed until %(dateexpires)s.
 

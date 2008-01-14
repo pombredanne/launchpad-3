@@ -1,4 +1,4 @@
-<tr>
+<tr xmlns:tal="http://xml.zope.org/namespaces/tal">
   <td class="icon left" tal:content="structure context/image:icon" />
   <td>
     <div>

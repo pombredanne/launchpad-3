@@ -68,7 +68,7 @@ class GPGHandler:
             """Remove GNUPGHOME directory."""
             if os.path.exists(home):
                 shutil.rmtree(home)
-                
+
         atexit.register(removeHome, self.home)
 
     def sanitizeFingerprint(self, fingerprint):
@@ -185,13 +185,13 @@ class GPGHandler:
         except GPGKeyNotFoundError:
             raise GPGVerificationError(
                 "Unable to map subkey: %s" % signature.fpr)
-        
+
         # return the signature container
         return PymeSignature(fingerprint=key.fingerprint,
                              plain_data=plain.getvalue())
 
     def importPublicKey(self, content):
-        """See IGPGHandler."""        
+        """See IGPGHandler."""
         assert isinstance(content, str)
         context = gpgme.Context()
         context.armor = True
@@ -272,11 +272,11 @@ class GPGHandler:
     def retrieveKey(self, fingerprint):
         """See IGPGHandler."""
         # XXX cprov 2005-07-05:
-        # Integrate it with the furure proposal related 
-        # synchronization of the local key ring with the 
+        # Integrate it with the furure proposal related
+        # synchronization of the local key ring with the
         # global one. It should basically consists of be
         # aware of a revoked flag coming from the global
-        # key ring, but it needs "specing" 
+        # key ring, but it needs "specing"
         key = PymeKey(fingerprint.encode('ascii'))
         if not key.exists_in_local_keyring:
             result, pubkey = self._getPubKey(fingerprint)
@@ -347,8 +347,8 @@ class GPGHandler:
         try:
             f = urllib2.urlopen(url)
         except urllib2.URLError, e:
-            return False, '%s at %s' % (e, url) 
-            
+            return False, '%s at %s' % (e, url)
+
         page = f.read()
         f.close()
 
@@ -428,7 +428,7 @@ class PymeKey:
         self.emails = [uid.email for uid in self.uids
                        if valid_email(uid.email) and not uid.revoked]
 
-    def setOwnerTrust(self, value): 
+    def setOwnerTrust(self, value):
         """Set the ownertrust on the actual gpg key"""
         if value not in (gpgme.VALIDITY_UNDEFINED, gpgme.VALIDITY_NEVER,
                          gpgme.VALIDITY_MARGINAL, gpgme.VALIDITY_FULL,
@@ -440,7 +440,7 @@ class PymeKey:
         gpgme.editutil.edit_trust(ctx, key, value)
         # set the cached copy of owner_trust
         self.owner_trust = value
-    
+
     @property
     def displayname(self):
         return '%s%s/%s' % (self.keysize, self.algorithm, self.keyid)

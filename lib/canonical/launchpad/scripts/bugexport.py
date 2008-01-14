@@ -58,7 +58,7 @@ def serialise_bugtask(bugtask):
         tags_node.text = tags_node.tail = '\n'
         for tag in bug.tags:
             addnode(tags_node, 'tag', tag)
-    
+
     subscribers = bug.getDirectSubscribers()
     if subscribers:
         subs_node = ET.SubElement(bug_node, 'subscriptions')

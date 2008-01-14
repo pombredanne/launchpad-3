@@ -197,7 +197,12 @@ class _ZopelessConnectionDescriptor(object):
 
     def _deactivate(self):
         """Deactivate SQLBase._connection for the current thread."""
-        del self.transactions[thread.get_ident()]
+        tid = thread.get_ident()
+        assert tid in self.transactions, (
+            "Deactivating a non-active connection descriptor for this thread.")
+        self.transactions[tid]._connection.close()
+        self.transactions[tid]._makeObsolete()
+        del self.transactions[tid]
 
     def __get__(self, inst, cls=None):
         """Return Transaction object for this thread (if it exists) or None."""
@@ -266,6 +271,12 @@ class ZopelessTransactionManager(object):
     _installed = None
     alreadyInited = False
 
+    # Reset database connection at end of every transaction?  We do this by
+    # default to protect us against leaks and accidentally carrying over
+    # state between logically unconnected requests, but sometimes we do need
+    # to carry over state such as temporary tables.
+    reset_after_transaction = True
+
     def __new__(cls, connectionURI, sqlClass=SQLBase, debug=False,
                 implicitBegin=True, isolation=DEFAULT_ISOLATION):
         if cls._installed is not None:
@@ -314,7 +325,7 @@ class ZopelessTransactionManager(object):
 
     def set_isolation_level(self, level):
         """Set the transaction isolation level.
-        
+
         Level can be one of AUTOCOMMIT_ISOLATION, READ_COMMITTED_ISOLATION
         or SERIALIZABLE_ISOLATION. As changing the isolation level must be
         done before any other queries are issued in the current transaction,
@@ -367,11 +378,12 @@ class ZopelessTransactionManager(object):
     def commit(self):
         self.manager.get().commit()
 
-        # We always remove the existing transaction & connection, for
-        # simplicity.  SQLObject does connection pooling, and we don't have any
-        # indication that reconnecting every transaction would be a performance
-        # problem anyway.
-        self.desc._deactivate()
+        # By default we close the connection after completing a transaction,
+        # to safeguard against cached SQLObject data and SQL session state
+        # spilling out of their transactions.  Connection pooling keeps the
+        # performance penalty acceptably low.
+        if self.reset_after_transaction:
+            self.desc._deactivate()
 
         if self.implicitBegin:
             self.begin()
@@ -382,7 +394,8 @@ class ZopelessTransactionManager(object):
         for obj in objects:
             obj.reset()
             obj.expire()
-        self.desc._deactivate()
+        if self.reset_after_transaction:
+            self.desc._deactivate()
         if self.implicitBegin:
             self.begin()
 
@@ -624,7 +637,7 @@ def flush_database_caches():
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid
 # passing the transaction manager all through your code.
-# XXX Andrew Bennetts 2005-02-11: 
+# XXX Andrew Bennetts 2005-02-11:
 # Make these use and work with Zope 3's transaction machinery instead!
 
 def begin():
@@ -689,7 +702,7 @@ class FakeZopelessTransactionManager:
         FakeZopelessConnectionDescriptor.uninstall()
         ZopelessTransactionManager._installed = None
 
-    # XXX Andrew Bennetts 2005-07-12: 
+    # XXX Andrew Bennetts 2005-07-12:
     #      Ideally I'd be able to re-use some of the ZopelessTransactionManager
     #      implementation of begin, commit and abort.
     def begin(self):

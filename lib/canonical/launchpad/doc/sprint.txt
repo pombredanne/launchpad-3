@@ -69,10 +69,10 @@ approved, not ones where the only specs are proposed.  So, we'll change
 the specs related to the Ubuntu "futurista" sprint to "proposed", and
 then check the coming sprints and all sprints.
 
-    >>> from canonical.lp.dbschema import SprintSpecificationStatus
+    >>> from canonical.launchpad.interfaces import SprintSpecificationStatus
 
 We're directly using the database classes here, bypassing the security
-proxies becuase this is just set-up for the next step, it's not the exact
+proxies because this is just set-up for the next step, it's not the exact
 functionality we're testing.
 
     >>> from canonical.launchpad.database import SprintSet
@@ -104,7 +104,7 @@ informational.
 
  >>> ubz = sprintset["ubz"]
 
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 
 First, there should be no informational specs for ubz:

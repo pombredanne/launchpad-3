@@ -42,6 +42,7 @@
         permission="zope.Public"
         template="../templates/language-index.pt"
         name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
     <browser:page
         for="canonical.launchpad.interfaces.ILanguage"
@@ -49,13 +50,15 @@
         permission="launchpad.Admin"
         template="../templates/language-admin.pt"
         name="+admin"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <!-- Language portlets -->
     <browser:pages
         for="canonical.launchpad.interfaces.ILanguage"
         class="canonical.launchpad.browser.LanguageView"
-        permission="zope.Public" >
+        permission="zope.Public"
+        layer="canonical.launchpad.layers.TranslationsLayer" >
         <browser:page
             name="+portlet-details"
             template="../templates/language-portlet-details.pt"
@@ -91,6 +94,7 @@
         permission="zope.Public"
         template="../templates/languageset-index.pt"
         name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
     <browser:page
@@ -99,6 +103,7 @@
         permission="launchpad.Admin"
         template="../templates/language-add.pt"
         name="+add"
+        layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
 </facet>

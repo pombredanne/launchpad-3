@@ -1,4 +1,14 @@
-<html metal:use-macro="context/@@marketing_template/master">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@marketing_template/master"
+  i18n:domain="launchpad"
+>
   <ul metal:fill-slot="breadcrumbs">
     <li><a href="/">Home</a></li>
     <li class="current">About</li>
@@ -71,7 +81,7 @@
         <p>The Launchpad team offers a managed migration service for open
           source projects using any Launchpad tool -
           <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#104;&#101;&#108;&#112;&#64;&#108;&#97;&#117;&#110;&#99;&#104;&#112;&#97;&#100;&#46;&#110;&#101;&#116;">contact us for
-            more details</a>
+            more details</a></p>
       </div>
     </div> <!-- content -->
   </div>

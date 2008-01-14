@@ -5,18 +5,19 @@
 __metaclass__ = type
 
 import os
+import shutil
 import subprocess
 import sys
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IDistributionSet, IPersonSet)
+    ArchivePurpose, IArchiveSet, IDistributionSet, IPersonSet,
+    PackagePublishingStatus)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
-from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingStatus)
 
 class TestPublishDistro(TestNativePublishingBase):
     """Test the publish-distro.py script works properly."""
@@ -31,7 +32,7 @@ class TestPublishDistro(TestNativePublishingBase):
         stdout, stderr = process.communicate()
         return (process.returncode, stdout, stderr)
 
-    def testRun(self):
+    def testPublishDistroRun(self):
         """Try a simple publish-distro run.
 
         Expect database publishing record to be updated to PUBLISHED and
@@ -42,11 +43,31 @@ class TestPublishDistro(TestNativePublishingBase):
 
         rc, out, err = self.runPublishDistro([])
 
+        pub_source.sync()
         self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
 
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'foo')
+
+        # Let's make the source DELETED to see if the dirty pocket processing
+        # works for deletions.
+        # XXX Julian 2007-12-05
+        # This should really be its own test but I want to avoid additional
+        # calls to runPublishDistro where possible because it is calling a
+        # script, which considerably slows down the test harness.  A separate
+        # test would mean *two* calls to the script; one to set things up and
+        # one one to do the test.  We need to refactor publish-distro so its
+        # internals can be called from this test harness.
+        random_person = getUtility(IPersonSet).getByName('name16')
+        pub_source.requestDeletion(random_person)
+        self.layer.txn.commit()
+        self.assertTrue(pub_source.scheduleddeletiondate is None,
+            "pub_source.scheduleddeletiondate should not be set, and it is.")
+        rc, out, err = self.runPublishDistro([])
+        pub_source.sync()
+        self.assertTrue(pub_source.scheduleddeletiondate is not None,
+            "pub_source.scheduleddeletiondate should be set, and it's not.")
 
     def assertExists(self, path):
         """Assert if the given path exists."""
@@ -73,14 +94,72 @@ class TestPublishDistro(TestNativePublishingBase):
 
         self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
 
+        pub_source.sync()
+        pub_source2.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
-        self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(
+            pub_source2.status, PackagePublishingStatus.PUBLISHED)
 
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertNotExists(foo_path)
 
         baz_path = "%s/main/b/baz/baz.dsc" % self.pool_dir
         self.assertEqual('baz', open(baz_path).read().strip())
+
+    def publishToArchiveWithOverriddenDistsroot(self, archive):
+        """Publish a test package to the specified archive.
+
+        Publishes a test package but overrides the distsroot.
+        :return: A tuple of the path to the overridden distsroot and the
+                 configured distsroot, in that order.
+        """
+        self.getPubSource(filecontent="flangetrousers", archive=archive)
+        self.layer.txn.commit()
+        pubconf = removeSecurityProxy(archive.getPubConfig())
+        tmp_path = "/tmp/tmpdistroot"
+        if os.path.exists(tmp_path):
+            shutil.rmtree(tmp_path)
+        os.mkdir(tmp_path)
+        myargs = ['-R', tmp_path]
+        if archive.purpose == ArchivePurpose.PARTNER:
+            myargs.append('--partner')
+        rc, out, err = self.runPublishDistro(myargs)
+        return tmp_path, pubconf.distsroot
+
+    def testDistsrootOverridePrimaryArchive(self):
+        """Test the -R option to publish-distro.
+
+        Make sure that -R works with the primary archive.
+        """
+        main_archive = getUtility(IDistributionSet)['ubuntutest'].main_archive
+        tmp_path, distsroot = self.publishToArchiveWithOverriddenDistsroot(
+            main_archive)
+        distroseries = 'breezy-autotest'
+        self.assertExists(os.path.join(tmp_path, distroseries, 'Release'))
+        self.assertNotExists(
+            os.path.join("%s" % distsroot, distroseries, 'Release'))
+        shutil.rmtree(tmp_path)
+
+    def testDistsrootOverridePartnerArchive(self):
+        """Test the -R option to publish-distro.
+
+        Make sure the -R option affects the partner archive.
+        """
+        # XXX cprov 20071201: Disabling this test temporarily while we are
+        # publishing partner archive with apt-ftparchive as a quick solution
+        # for bug #172275. Once bug #172308 (adding extra field in packages
+        # tables) is fixed we can switch back to NoMoreAptFtparchive and
+        # re-enable this test.
+        return
+        ubuntu = getUtility(IDistributionSet)['ubuntutest']
+        partner_archive = ubuntu.getArchiveByComponent('partner')
+        tmp_path, distsroot = self.publishToArchiveWithOverriddenDistsroot(
+            partner_archive)
+        distroseries = 'breezy-autotest'
+        self.assertExists(os.path.join(tmp_path, distroseries, 'Release'))
+        self.assertNotExists(
+            os.path.join("%s" % distsroot, distroseries, 'Release'))
+        shutil.rmtree(tmp_path)
 
     def testForPPA(self):
         """Try to run publish-distro in PPA mode.
@@ -101,7 +180,6 @@ class TestPublishDistro(TestNativePublishingBase):
             sourcename='bar', filecontent='bar', archive=name16.archive)
 
         # Override PPAs distributions
-        from zope.security.proxy import removeSecurityProxy
         naked_archive = removeSecurityProxy(cprov.archive)
         naked_archive.distribution = self.ubuntutest
         naked_archive = removeSecurityProxy(name16.archive)
@@ -113,9 +191,14 @@ class TestPublishDistro(TestNativePublishingBase):
 
         self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
 
+        pub_source.sync()
+        pub_source2.sync()
+        pub_source3.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
-        self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
-        self.assertEqual(pub_source3.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(
+            pub_source2.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(
+            pub_source3.status, PackagePublishingStatus.PUBLISHED)
 
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(False, os.path.exists(foo_path))
@@ -139,13 +222,14 @@ class TestPublishDistro(TestNativePublishingBase):
         rc, out, err = self.runPublishDistro(
             ['-A', '-s', 'hoary-test-updates', '-s', 'hoary-test-backports'])
 
-        self.assertEqual(0, rc)
+        self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
 
         # Check "Release" files
         release_path = "%s/hoary-test-updates/Release" % self.config.distsroot
         self.assertExists(release_path)
 
-        release_path = "%s/hoary-test-backports/Release" % self.config.distsroot
+        release_path = (
+            "%s/hoary-test-backports/Release" % self.config.distsroot)
         self.assertExists(release_path)
 
         release_path = "%s/hoary-test/Release" % self.config.distsroot

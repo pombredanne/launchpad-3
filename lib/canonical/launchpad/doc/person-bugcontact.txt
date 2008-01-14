@@ -69,7 +69,7 @@ If we mark the bug as critical, the open_critical count will increase.
 
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.interfaces import BugTaskImportance
     >>> [ubuntu_firefox_bugtask] = bug.bugtasks
     >>> ubuntu_firefox_bugtask.importance = BugTaskImportance.CRITICAL
     >>> syncUpdate(ubuntu_firefox_bugtask)
@@ -100,7 +100,7 @@ decrease.
 
 If we mark the bug as In Progress, the open_inprogress will increase.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> ubuntu_firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
     >>> syncUpdate(ubuntu_firefox_bugtask)
@@ -120,7 +120,8 @@ Only those bugs that the user has access to are shown, so if we mark the
 bug as private, No Privileges Person will only see that there is one
 open bug, even though there are two.
 
-    >>> bug.private = True
+    >>> bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(bug)
 
     >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')

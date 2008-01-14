@@ -90,13 +90,8 @@ We're redirected to the +members page
 Now check Jeff's subscription. Jeff's also an administrator and his
 subscription never expires, but he can demote himself.
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> jdub_browser = Browser()
-  >>> jdub_browser.handleErrors = False
-  >>> jdub_browser.addHeader(
-  ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> jdub_browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
   >>> jdub_browser.open('http://launchpad.dev/~ubuntu-team/+members')
-
   >>> url = '/~ubuntu-team/+member/jdub' 
   >>> jdub_browser.getLink(url=url).click()
 
@@ -135,11 +130,7 @@ should succeed and the second one receive a nice error message.
   >>> url = '/~name18/+member/justdave'
   >>> browser.getLink(url=url).click()
 
-  >>> second_browser = Browser()
-  >>> second_browser.handleErrors = False
-
-  >>> second_browser.addHeader(
-  ...     'Authorization', 'Basic foo.bar@canonical.com:test')
+  >>> second_browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
   >>> second_browser.open('http://launchpad.dev' + url)
 
 Approve the membership in the first browser.
@@ -184,7 +175,7 @@ just make sure that this page is displaying without errors in several cases:
 
 First, Kiko has not joined any teams:
 
-  >>> browser = Browser()
+  >>> browser = setupBrowser()
   >>> browser.open('http://launchpad.dev/~kiko/+participation')
   >>> 'has not yet joined any teams' in browser.contents
   True
@@ -196,16 +187,18 @@ First, Kiko has not joined any teams:
   None
 
 
-Next, Mark Shuttleworth is only a direct member:
+Next, Alexander Limi is only a direct member:
 
-  >>> browser.open('http://launchpad.dev/~sabdfl/+participation')
+  >>> browser.open('http://launchpad.dev/~limi/+participation')
   >>> 'has not yet joined any teams' in browser.contents
   False
-  >>> direct = find_portlet(browser.contents, 'Direct membership')
-  >>> 'Launchpad Administrators' in direct.renderContents()
-  True
-  >>> indirect = find_portlet(browser.contents, 'Indirect membership')
-  >>> print indirect
+  >>> print extract_text(find_portlet(browser.contents, 'Direct membership'))
+  Direct membership
+  Ubuntu Gnome Team
+  Joined on ...
+  Ubuntu Team
+  Joined on ...
+  >>> print find_portlet(browser.contents, 'Indirect membership')
   None
 
 

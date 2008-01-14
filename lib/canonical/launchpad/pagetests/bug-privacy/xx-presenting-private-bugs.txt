@@ -2,22 +2,77 @@
 
 When a bug report is public, it appears like any other Launchpad page.
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/bugs/4")
-    >>> print find_tag_by_id(browser.contents, 'privatestyle')
-    None
+    >>> print find_tag_by_id(browser.contents, 'container')
+    <div id="container">...</div>
     >>> print find_tag_by_id(browser.contents, 'privatebadge')
     None
 
-But when marked private, it gains the standard Launchpad presentation for
-private things.
+But when marked private, it gains the standard Launchpad presentation
+for private things. The date and time at which the bug report was
+marked private and the person who did it is also shown (as a
+title/tooltip):
 
     >>> browser.open("http://bugs.launchpad.dev/firefox/+bug/4/+secrecy")
     >>> browser.getControl("This bug report should be private").selected = True
     >>> browser.getControl("Change").click()
     >>> print browser.url
     http://bugs.launchpad.dev/firefox/+bug/4
-    >>> print find_tag_by_id(browser.contents, 'privatestyle')
-    <style.../style>
+    >>> print find_tag_by_id(browser.contents, 'container')
+    <div...class="private"...</div>
     >>> print find_tag_by_id(browser.contents, 'privatebadge')
-    <img...>
+    <img... title="This bug report was made private by Foo Bar ... ago"...>
+
+Bugs created before we started recording the date and time and who
+marked the bug private show only a simple message:
+
+    >>> browser.open("http://launchpad.dev/bugs/14")
+    >>> print find_tag_by_id(browser.contents, 'container')
+    <div...class="private"...</div>
+    >>> print find_tag_by_id(browser.contents, 'privatebadge')
+    <img... title="This bug report is private"...>
+
+But newer bugs that are filed private at creation time (like security
+bugs or where the product requests that bugs are private by default)
+have the full message:
+
+    >>> browser.open("http://bugs.launchpad.dev/firefox/+filebug")
+    >>> browser.getControl('Summary').value = (
+    ...     'Firefox crashes when I change the default route')
+    >>> browser.getControl('Continue').click()
+
+    >>> browser.getControl("Further information").value = "foo"
+    >>> browser.getControl(
+    ...     "This bug is a security vulnerability").selected = True
+    >>> browser.getControl("Submit Bug Report").click()
+
+    >>> print browser.url
+    http://bugs.launchpad.dev/firefox/+bug/...
+    >>> print find_tag_by_id(browser.contents, 'privatebadge')
+    <img... title="This bug report was made private by Foo Bar ... ago"...>
+
+If you visit the private bugs page through its shortcut URL, we don't
+redirect you unless you are actually able to see the bug. The reason for
+this is that redirecting you already discloses what product or distro
+the private bug is in.
+
+Of course, Foo Bar gets redirected:
+
+    >>> browser.open('http://bugs.launchpad.dev/bugs/4')
+    >>> browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/4'
+
+But poor old no privs does not, and neither do anonymous users:
+
+    >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+    >>> browser.open('http://bugs.launchpad.dev/bugs/4')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Bug 4 is private
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/bugs/4')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Bug 4 is private
+

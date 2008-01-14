@@ -1,4 +1,14 @@
-<html metal:use-macro="view/macro:page/default" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/default"
+  i18n:domain="launchpad"
+>
   <body>
 
     <metal:portlets fill-slot="portlets">
@@ -7,6 +17,10 @@
     </metal:portlets>
 
     <div metal:fill-slot="main">
+
+    <p id="project-inactive" tal:condition="not: context/active" class="warning message"> 
+      This project is currently inactive <a href="+review">(change this)</a>
+    </p>
 
     <tal:block condition="view/required:launchpad.Edit">
       <p tal:condition="not: context/products" class="warning message"> 
@@ -27,22 +41,18 @@
         summarising the project group's purpose.
       </div>
 
-      <div
-        class="description"
-        tal:content="structure context/description/fmt:text-to-html"
-      >
-        This is the Project Group Description,
-        which is a much more substantial description of the project group. 
-	It should be several paragraphs long, and give you a very clear 
-        insight into the
-        work of the Project, and the people behind it. It should describe the
-        project history, and organisation.
+      <div class="description"
+           tal:content="structure context/description/fmt:text-to-html">
+        This is the Project Group Description, which is a much more
+        substantial description of the project group.  It should be
+        several paragraphs long, and give you a very clear insight into
+        the work of the Project, and the people behind it. It should
+        describe the project history, and organisation.
 
         The Project Description should also mention the major project or
-        projects that make up the aggregate project. For example, the Apache
-        Project description
-        would highlight its work on the Apache Server, and mention other
-        projects such as APR.
+        projects that make up the aggregate project. For example, the
+        Apache Project description would highlight its work on the
+        Apache Server, and mention other projects such as APR.
       </div>
 
       <ul tal:condition="context/homepageurl">
@@ -60,11 +70,7 @@
           </a>
         </li>
         <li tal:content="structure context/@@+ask-a-question-button" />
-        <li>
-          <a href="+translations">
-            <img alt="Help translate" src="/+icing/but-sml-helptranslate.gif" />
-          </a>
-        </li>
+        <li tal:content="structure context/@@+help-translate-button" />
         <li tal:define="has_mentoring context/mentoring_offers/count">
           <a href="+mentoring" tal:condition="has_mentoring">
             <img alt="Mentoring available"
@@ -80,6 +86,10 @@
         <div
           class="section"
           tal:content="structure context/@@+portlet-coming-sprints"
+        />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestannouncements"
         />
         <div class="portlet" id="products">
           <h2>Projects</h2>
@@ -126,7 +136,7 @@
         <div tal:replace="structure context/@@+portlet-latestspecs" />
       </div>
       <div class="right">
-        <div tal:replace="structure context/@@+portlet-details" />
+        <div tal:replace="structure context/@@+details" />
         <div tal:replace="structure context/@@+portlet-top-contributors" />
         <div tal:replace="structure context/@@+portlet-latestbugs" />
         <div

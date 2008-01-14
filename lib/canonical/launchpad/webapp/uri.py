@@ -65,7 +65,7 @@ _default_port = {
     'ssh': '22',
     'svn': '3690',
     'svn+ssh': '22',
-    }    
+    }
 
 # Regular expressions adapted from the ABNF in the RFC
 
@@ -259,7 +259,7 @@ class URI:
             not self.host):
             raise InvalidURIError('%s URIs must have a host name' %
                                   self.scheme)
-            
+
 
     def _normalise(self):
         """Perform normalisation of URI components."""
@@ -346,7 +346,7 @@ class URI:
             fragment=self.fragment)
         baseparts.update(parts)
         return self.__class__(**baseparts)
-        
+
     def resolve(self, reference):
         """Resolve the given URI reference relative to this URI.
 
@@ -358,7 +358,7 @@ class URI:
             return self.__class__(reference)
         except InvalidURIError:
             pass
-        
+
         match = relative_ref_pat.match(reference)
         if match is None:
             raise InvalidURIError("Invalid relative reference")
@@ -543,7 +543,7 @@ possible_uri_re = r'''
 (?: # fragment
   \#
   [%(unreserved)s:@/\?]*
-)?          
+)?
 ''' % {'unreserved': "-a-zA-Z0-9._~%!$&'()*+,;="}
 
 possible_uri_pat = re.compile(possible_uri_re, re.IGNORECASE | re.VERBOSE)

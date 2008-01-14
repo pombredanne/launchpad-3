@@ -69,7 +69,7 @@ def gpgv_get_status_output(cmd, status_read, status_write):
                 os.close(errout)
             except:
                 pass
-            
+
             break
 
     return output, status, exit_status
@@ -158,7 +158,7 @@ def verify_signed_file(filename, keyrings, detached_sigfile = None):
         """Quick and dirty function to append 'reject' messages to a queue.
         Allows us to collect up the rejection message neatly"""
         rejr.append(m)
-    
+
     # Ensure the filename contains no shell meta-characters or other badness
     if not re_taint_free.match(os.path.basename(filename)):
         raise TaintedFileNameError("%s: potentially dangerous metacharacters in filename" % (filename))
@@ -169,7 +169,7 @@ def verify_signed_file(filename, keyrings, detached_sigfile = None):
 
     if type(keyrings) != list:
         raise GPGInternalError("<keyrings>: list expected, got %s", type(keyrings))
-    
+
 
     keyrings = [ "'" + k + "'" for k in keyrings ]
     keyrings.insert(0, "")
@@ -255,7 +255,7 @@ def verify_signed_file(filename, keyrings, detached_sigfile = None):
             raise VerificationError("%s: internal error while checking signature" % (filename))
         else:
             fingerprint = args[0]
-            
+
     if not keywords.has_key("GOODSIG"):
         raise NoGoodSignatureError("%s: signature does not appear to be valid [No GOODSIG]" % (filename))
     if not keywords.has_key("SIG_ID"):

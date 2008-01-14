@@ -14,7 +14,7 @@ from canonical.launchpad.daemons.tachandler import TacTestSetup
 
 class AuthserverTacTestSetup(TacTestSetup):
     root = '/tmp/authserver-test'
-    
+
     def setUpRoot(self):
         if os.path.isdir(self.root):
             shutil.rmtree(self.root)

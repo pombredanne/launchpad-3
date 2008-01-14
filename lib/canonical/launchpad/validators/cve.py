@@ -10,4 +10,4 @@ def valid_cve(name):
     if re.match(pat, name):
         return True
     return False
-    
+

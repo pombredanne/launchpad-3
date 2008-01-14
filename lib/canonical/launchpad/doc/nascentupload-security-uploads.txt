@@ -27,7 +27,7 @@ managed archive.
 
   >>> security_policy = getPolicy(name='security', distro='ubuntu')
 
-We are going to use 'warty/powerpc' distroarchrelease and its
+We are going to use 'warty/powerpc' distroarchseries and its
 respective processorfamily and processor. Let's create them
 on-the-fly:
 

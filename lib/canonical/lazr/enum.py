@@ -183,7 +183,6 @@ class DBItem(BaseItem):
 
     def __repr__(self):
         return "<DBItem %s.%s, (%d) %s>" % (
-
             self.enum.name, self.name, self.value, self.title)
 
     def __sqlrepr__(self, dbname):

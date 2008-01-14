@@ -45,8 +45,8 @@ able to mark the branch as private.
 Since the branch is now private, it will have the standard Launchpad
 presentation for private things.
 
-    >>> print find_tag_by_id(browser.contents, 'privatestyle')
-    <style...</style>
+    >>> print find_tag_by_id(browser.contents, 'container')
+    <div...class="private"...</div>
     >>> print find_tag_by_id(browser.contents, 'privatebadge')
     <img...private...>
 
@@ -56,8 +56,8 @@ reverts to its normal presentation.
     >>> browser.getLink('Change branch details').click()
     >>> browser.getControl('Keep branch confidential').selected = False
     >>> browser.getControl('Change Branch').click()
-    >>> print find_tag_by_id(browser.contents, 'privatestyle')
-    None
+    >>> print find_tag_by_id(browser.contents, 'container')
+    <div id="container">...</div>
     >>> print find_tag_by_id(browser.contents, 'privatebadge')
     None
 
@@ -80,8 +80,8 @@ Mark the public branch private.
 
 The branch is now private, so it assumes the standard private presentation.
 
-    >>> print find_tag_by_id(browser.contents, 'privatestyle')
-    <style...</style>
+    >>> print find_tag_by_id(browser.contents, 'container')
+    <div...class="private"...</div>
     >>> print find_tag_by_id(browser.contents, 'privatebadge')
     <img...private...>
 

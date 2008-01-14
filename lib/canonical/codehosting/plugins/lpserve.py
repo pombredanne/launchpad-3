@@ -10,9 +10,7 @@ __metaclass__ = type
 __all__ = ['cmd_launchpad_server']
 
 
-import signal
 import sys
-import thread
 import xmlrpclib
 
 from bzrlib.commands import Command, register_command
@@ -121,6 +119,9 @@ class cmd_launchpad_server(Command):
         if authserver_url is None:
             authserver_url = config.codehosting.authserver
 
+        debug_log = transport.set_up_logging()
+        debug_log.debug('Running smart server for %s', user_id)
+
         upload_url = urlutils.local_path_to_url(upload_directory)
         mirror_url = urlutils.local_path_to_url(mirror_directory)
         authserver = xmlrpclib.ServerProxy(authserver_url)
@@ -129,23 +130,11 @@ class cmd_launchpad_server(Command):
             authserver, user_id, upload_url, mirror_url)
         lp_server.setUp()
 
-        def clean_up(signal, frames):
-            # XXX: JonathanLange 2007-06-15: The lpserve process is interrupted
-            # by SIGHUP as a matter of course. When this happens, we still want
-            # to perform cleanup operations -- in particular, notifying the
-            # authserver of modified branches. This signal handler runs the
-            # operations we need to run (i.e. lp_server.tearDown) and does its
-            # best to trigger 'finally' blocks across the rest of bzrlib.
-            lp_server.tearDown()
-            thread.interrupt_main()
-
-        signal.signal(signal.SIGHUP, clean_up)
         try:
-            transport = get_transport(lp_server.get_url())
-            smart_server = self.get_smart_server(transport, port, inet)
+            lp_transport = get_transport(lp_server.get_url())
+            smart_server = self.get_smart_server(lp_transport, port, inet)
             self.run_server(smart_server)
         finally:
-            signal.signal(signal.SIGHUP, signal.SIG_DFL)
             lp_server.tearDown()
 
 

@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces for things which have Specifications."""
 
@@ -16,7 +17,7 @@ from canonical.launchpad import _
 
 class IHasSpecifications(Interface):
     """An object that has specifications attached to it.
-    
+
     For example, people, products and distributions have specifications
     associated with them, and you can use this interface to query those.
     """

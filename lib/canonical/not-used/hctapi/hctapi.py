@@ -58,25 +58,22 @@ __metaclass__  = type
 import commands
 import urlparse
 
-from psycopg import IntegrityError
 from sqlobject.main import SQLObjectNotFound
 
 import canonical.lp
-from canonical.launchpad.interfaces import NotFoundError
 
 from pybaz import NameParser
 
-from canonical.lp.dbschema import (
-    ManifestEntryType, ManifestEntryHint, RevisionControlSystems
-    )
+from canonical.lp.dbschema import ManifestEntryType, ManifestEntryHint
+
 from canonical.librarian.db import Library
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import (
      Product, ProductSeries, ProductRelease, Distribution,
-     DistroRelease, DistroReleaseSet, DistributionSourcePackage,
+     DistroSeries, DistroSeriesSet, DistributionSourcePackage,
      DistributionSourcePackageRelease, ManifestAncestry, Branch,
-     DistroReleaseSourcePackageRelease, SourcePackageName,
+     DistroSeriesSourcePackageRelease, SourcePackageName,
      SourcePackage, SourcePackageRelease, Manifest, ManifestEntry,
      )
 
@@ -216,12 +213,12 @@ def get_object(url, resolve=False):
                 except SQLObjectNotFound:
                     pass
 
-                objs = DistroReleaseSet().findByName(part)
+                objs = DistroSeriesSet().findByName(part)
                 if objs.count() == 1:
                     obj = objs[0]
                     continue
 
-                objs = DistroReleaseSet().findByVersion(part)
+                objs = DistroSeriesSet().findByVersion(part)
                 if objs.count() == 1:
                     # XXX: SteveAlexander 2005-07-11:
                     # This code path is not tested.
@@ -300,7 +297,7 @@ def get_object(url, resolve=False):
                     "found in URL: '%s'" % (part, url)
                     )
 
-        elif isinstance(obj, DistroRelease):
+        elif isinstance(obj, DistroSeries):
             # The part of a URL after a distribution release is always a
             # source package name, for which the currently published version
             # is returned.  A +sources part is optional for compatibility
@@ -329,7 +326,7 @@ def get_object(url, resolve=False):
                         )
 
             spr = objs[-1].sourcepackagerelease
-            obj = DistroReleaseSourcePackageRelease(obj, spr)
+            obj = DistroSeriesSourcePackageRelease(obj, spr)
 
         elif isinstance(obj, DistributionSourcePackage):
             # The part of the URL after a source package is always a
@@ -389,9 +386,9 @@ def where_am_i(obj):
 
 
     if isinstance(obj, SourcePackageRelease):
-        obj = DistroReleaseSourcePackageRelease(obj.uploaddistrorelease, obj)
+        obj = DistroSeriesSourcePackageRelease(obj.upload_distroseries, obj)
 
-    if isinstance(obj, DistroReleaseSourcePackageRelease):
+    if isinstance(obj, DistroSeriesSourcePackageRelease):
         obj = DistributionSourcePackageRelease(
             obj.distribution, obj.sourcepackagerelease)
 
@@ -409,7 +406,7 @@ def where_am_i(obj):
         obj = obj.distribution
 
 
-    if isinstance(obj, DistroRelease):
+    if isinstance(obj, DistroSeries):
         parts.append(obj.name)
         obj = obj.distribution
 
@@ -462,7 +459,7 @@ def resolve_object(obj):
     if isinstance(obj, DistributionSourcePackageRelease):
         return obj.sourcepackagerelease
 
-    if isinstance(obj, DistroReleaseSourcePackageRelease):
+    if isinstance(obj, DistroSeriesSourcePackageRelease):
         return obj.sourcepackagerelease
 
     if isinstance(obj, SourcePackageRelease):
@@ -644,14 +641,14 @@ def get_package(url, distro_url=None):
             obj = SourcePackage(obj.sourcepackagename,
                                 obj.distribution.currentrelease)
 
-        if isinstance(obj, DistroReleaseSourcePackageRelease):
+        if isinstance(obj, DistroSeriesSourcePackageRelease):
             version = obj.version
             obj = SourcePackage(obj.sourcepackagerelease.sourcepackagename,
-                                obj.distrorelease)
+                                obj.distroseries)
 
         if isinstance(obj, SourcePackageRelease):
             version = obj.version
-            obj = SourcePackage(obj.sourcepackagename, obj.uploaddistrorelease)
+            obj = SourcePackage(obj.sourcepackagename, obj.upload_distroseries)
 
         if isinstance(obj, SourcePackage):
             productseries = obj.productseries
@@ -669,8 +666,8 @@ def get_package(url, distro_url=None):
         # Locate the distribution
         distro = get_object(distro_url)
 
-        # Find the sourcepackage in the given distrorelease
-        if isinstance(distro, DistroRelease):
+        # Find the sourcepackage in the given distroseries
+        if isinstance(distro, DistroSeries):
             package = productseries.getPackage(distro)
             if not package.currentrelease:
                 raise LaunchpadError(
@@ -678,7 +675,7 @@ def get_package(url, distro_url=None):
                             url, distro_url
                             )
                         )
-            return where_am_i(DistroReleaseSourcePackageRelease(
+            return where_am_i(DistroSeriesSourcePackageRelease(
                 distro, package.currentrelease))
 
         # Or in the distribution
@@ -765,7 +762,7 @@ def put_manifest(url, manifest):
     begin_transaction()
     try:
         obj = get_object(url)
-        if isinstance(obj, DistroReleaseSourcePackageRelease):
+        if isinstance(obj, DistroSeriesSourcePackageRelease):
             obj = obj.sourcepackagerelease
         if isinstance(obj, DistributionSourcePackageRelease):
             obj = obj.sourcepackagerelease

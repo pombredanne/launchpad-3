@@ -25,7 +25,7 @@
     />
 
   <browser:pages
-    for="canonical.launchpad.database.BinaryPackageRelease" 
+    for="canonical.launchpad.database.BinaryPackageRelease"
     class="canonical.launchpad.browser.BinaryPackageView"
     facet="overview"
     permission="zope.Public">
@@ -65,6 +65,19 @@
       name="+portlet-suggests"
       template="../templates/binarypackagerelease-portlet-suggests.pt"
       />
+    <browser:page
+      name="+portlet-predepends"
+      template="../templates/binarypackagerelease-portlet-predepends.pt"
+      />
+    <browser:page
+      name="+portlet-enhances"
+      template="../templates/binarypackagerelease-portlet-enhances.pt"
+      />
+    <browser:page
+      name="+portlet-breaks"
+      template="../templates/binarypackagerelease-portlet-breaks.pt"
+      />
+
   </browser:pages>
 
 

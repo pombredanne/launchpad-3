@@ -4,7 +4,6 @@ __metaclass__ = type
 
 from zope.publisher.publish import mapply
 
-from new import instancemethod
 import thread
 import traceback
 import urllib
@@ -78,22 +77,15 @@ class LaunchpadBrowserPublication(
         self.db = db
 
     def annotateTransaction(self, txn, request, ob):
-        """Set some useful meta-information on the transaction. This
-        information is used by the undo framework, for example.
+        """See `zope.app.publication.zopepublication.ZopePublication`.
 
-        This method is not part of the `IPublication` interface, since
-        it's specific to this particular implementation.
+        We override the method to simply save the authenticated user id
+        in the transaction.
         """
         # It is possible that request.principal is None if the principal has
         # not been set yet.
-
         if request.principal is not None:
             txn.setUser(request.principal.id)
-
-        # Work around methods that are usually used for views
-        bare = removeSecurityProxy(ob)
-        if isinstance(bare, instancemethod):
-            ob = bare.im_self
 
         return txn
 
@@ -269,6 +261,12 @@ class LaunchpadBrowserPublication(
         """
         if request.method != 'POST':
             return
+        # XXX: jamesh 2007-11-23 bug=124421:
+        # Allow offsite posts to our OpenID endpoint.  Ideally we'd
+        # have a better way of marking this URL as allowing offsite
+        # form posts.
+        if request['PATH_INFO'] == '/+openid':
+            return
         referrer = request.getHeader('referer') # match HTTP spec misspelling
         if not referrer:
             return
@@ -289,21 +287,64 @@ class LaunchpadBrowserPublication(
             raise OffsiteFormPostError(referrer)
 
     def callObject(self, request, ob):
+        """See `zope.publisher.interfaces.IPublication`.
 
-        # Don't render any content on a redirect.
+        Our implementation make sure that no result is returned on
+        redirect.
+
+        It also sets the launchpad.userid and launchpad.pageid WSGI
+        environment variables.
+        """
         if request.response.getStatus() in [301, 302, 303, 307]:
             return ''
 
-        # Set the launchpad user-id and page-id (if available) in the
-        # wsgi environment, so that the request logger can access it.
-        request.setInWSGIEnvironment('launchpad.userid', request.principal.id)
-        usedfor = getattr(removeSecurityProxy(ob), '__used_for__', None)
-        if usedfor is not None:
-            name = getattr(removeSecurityProxy(ob), '__name__', '')
-            pageid = '%s:%s' % (usedfor.__name__, name)
-            request.setInWSGIEnvironment('launchpad.pageid', pageid)
+        request.setInWSGIEnvironment(
+            'launchpad.userid', request.principal.id)
+
+        # launchpad.pageid contains an identifier of the form 
+        # ContextName:ViewName. It will end up in the page log.
+        unrestricted_ob = removeSecurityProxy(ob)
+        context = removeSecurityProxy(
+            getattr(unrestricted_ob, 'context', None))
+        if context is None:
+            pageid = ''
+        else:
+            # ZCML registration will set the name under which the view
+            # is accessible in the instance __name__ attribute. We use
+            # that if it's available, otherwise fall back to the class
+            # name.
+            if getattr(unrestricted_ob, '__name__', None) is not None:
+                view_name = unrestricted_ob.__name__
+            else:
+                view_name = unrestricted_ob.__class__.__name__
+            pageid = '%s:%s' % (context.__class__.__name__, view_name)
+        request.setInWSGIEnvironment('launchpad.pageid', pageid)
 
         return mapply(ob, request.getPositionalArguments(), request)
+
+    def afterCall(self, request, ob):
+        """See `zope.publisher.interfaces.IPublication`.
+
+        Our implementation aborts() the transaction on read-only requests.
+        Because of this we cannot chain to the superclass and implement
+        the whole behaviour here.
+        """
+
+        # Annotate the transaction with user data. That was done by
+        # zope.app.publication.zopepublication.ZopePublication.
+        txn = transaction.get()
+        self.annotateTransaction(txn, request, ob)
+
+        # Abort the transaction on a read-only request.
+        if request.method in ['GET', 'HEAD']:
+            txn.abort()
+        else:
+            txn.commit()
+
+        # Don't render any content for a HEAD.  This was done
+        # by zope.app.publication.browser.BrowserPublication
+        if request.method == 'HEAD':
+            request.response.setResult('')
 
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
@@ -340,8 +381,8 @@ class LaunchpadBrowserPublication(
 
     def handleException(self, object, request, exc_info, retry_allowed=True):
         # Reraise Retry exceptions rather than log.
-        # TODO: Remove this when the standard handleException method
-        # we call does this (bug to be fixed upstream) -- StuartBishop 20060317
+        # XXX stub 20070317: Remove this when the standard
+        # handleException method we call does this (bug to be fixed upstream)
         if retry_allowed and isinstance(exc_info[1], Retry):
             raise
         # Retry the request if we get a database disconnection.
@@ -352,8 +393,8 @@ class LaunchpadBrowserPublication(
                                    retry_allowed)
         # If it's a HEAD request, we don't care about the body, regardless of
         # exception.
-        # UPSTREAM: Should this be part of zope, or is it only required because
-        #           of our customisations?
+        # UPSTREAM: Should this be part of zope,
+        #           or is it only required because of our customisations?
         #        - Andrew Bennetts, 2005-03-08
         if request.method == 'HEAD':
             request.response.setResult('')

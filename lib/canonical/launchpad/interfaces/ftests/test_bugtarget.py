@@ -1,6 +1,13 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Test harness for running tests agains IBugTarget implementations."""
+"""Test harness for running tests agains IBugTarget implementations.
+
+This module runs the interface test against the Product, ProductSeries
+Project, DistributionSourcePackage, and DistroSeries implementations
+IBugTarget. It runs the bugtarget-bugcount.txt, and
+bugtarget-questiontarget.txt tests.
+"""
+# pylint: disable-msg=C0103
 
 __metaclass__ = type
 
@@ -13,8 +20,8 @@ from zope.component import getUtility
 
 from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IBugTaskSet, IDistributionSet, ILaunchBag, IProductSet,
-    IProjectSet)
+    BugTaskStatus, CreateBugParams, IBugTaskSet, IDistribution,
+    IDistributionSet, ILaunchBag, IProductSet, IProjectSet)
 from canonical.launchpad.ftests.test_system_documentation import (
     default_optionflags, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
@@ -27,9 +34,11 @@ def bugtarget_filebug(bugtarget, summary, status=None):
 
 
 def productSetUp(test):
+    """Setup the `IProduct` test."""
     setUp(test)
     test.globs['bugtarget'] = getUtility(IProductSet).getByName('firefox')
     test.globs['filebug'] = bugtarget_filebug
+    test.globs['question_target'] = test.globs['bugtarget']
 
 
 def project_filebug(project, summary, status=None):
@@ -45,6 +54,7 @@ def project_filebug(project, summary, status=None):
 
 
 def projectSetUp(test):
+    """Setup the `IProject` test."""
     setUp(test)
     test.globs['bugtarget'] = getUtility(IProjectSet).getByName('mozilla')
     test.globs['filebug'] = project_filebug
@@ -65,23 +75,29 @@ def productseries_filebug(productseries, summary, status=None):
 
 
 def productSeriesSetUp(test):
+    """Setup the `IProductSeries` test."""
     setUp(test)
     firefox = getUtility(IProductSet).getByName('firefox')
     test.globs['bugtarget'] = firefox.getSeries('trunk')
     test.globs['filebug'] = productseries_filebug
+    test.globs['question_target'] = firefox
 
 
 def distributionSetUp(test):
+    """Setup the `IDistribution` test."""
     setUp(test)
     test.globs['bugtarget'] = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['filebug'] = bugtarget_filebug
+    test.globs['question_target'] = test.globs['bugtarget']
 
 
 def distributionSourcePackageSetUp(test):
+    """Setup the `IDistributionSourcePackage` test."""
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['bugtarget'] = ubuntu.getSourcePackage('mozilla-firefox')
     test.globs['filebug'] = bugtarget_filebug
+    test.globs['question_target'] = test.globs['bugtarget']
 
 
 def distroseries_filebug(distroseries, summary, sourcepackagename=None,
@@ -100,10 +116,12 @@ def distroseries_filebug(distroseries, summary, sourcepackagename=None,
 
 
 def distributionSeriesSetUp(test):
+    """Setup the `IDistroSeries` test."""
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    test.globs['bugtarget'] = ubuntu.getSeries('warty')
+    test.globs['bugtarget'] = ubuntu.getSeries('hoary')
     test.globs['filebug'] = distroseries_filebug
+    test.globs['question_target'] = ubuntu
 
 
 def sourcepackage_filebug(source_package, summary, status=None):
@@ -114,26 +132,61 @@ def sourcepackage_filebug(source_package, summary, status=None):
     return bug
 
 
+def sourcepackage_filebug_for_question(source_package, summary, status=None):
+    """Setup a bug with only one BugTask that can provide a QuestionTarget."""
+    bug = sourcepackage_filebug(source_package, summary, status=status)
+    # The distribution bugtask interferes with bugtarget-questiontarget.txt.
+    for bugtask in bug.bugtasks:
+        if IDistribution.providedBy(bugtask.target):
+            bugtask.transitionToStatus(
+                BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
+    return bug
+
+
 def sourcePackageSetUp(test):
+    """Setup the `ISourcePackage` test."""
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     warty = ubuntu.getSeries('warty')
     test.globs['bugtarget'] = warty.getSourcePackage('mozilla-firefox')
     test.globs['filebug'] = sourcepackage_filebug
+    test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
+
+
+def sourcePackageForQuestionSetUp(test):
+    """Setup the `ISourcePackage` test for QuestionTarget testing."""
+    setUp(test)
+    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    warty = ubuntu.getSeries('warty')
+    test.globs['bugtarget'] = warty.getSourcePackage('mozilla-firefox')
+    test.globs['filebug'] = sourcepackage_filebug_for_question
+    test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
 
 
 def test_suite():
+    """Return the `IBugTarget` TestSuite."""
     suite = unittest.TestSuite()
 
     setUpMethods = [
         productSetUp,
         productSeriesSetUp,
-        projectSetUp,
         distributionSetUp,
         distributionSourcePackageSetUp,
         distributionSeriesSetUp,
-        sourcePackageSetUp,
+        sourcePackageForQuestionSetUp,
         ]
+
+    for setUpMethod in setUpMethods:
+        test = FunctionalDocFileSuite('bugtarget-questiontarget.txt',
+            setUp=setUpMethod, tearDown=tearDown,
+            optionflags=default_optionflags, package=__name__,
+            layer=LaunchpadFunctionalLayer)
+        suite.addTest(test)
+
+
+    setUpMethods.remove(sourcePackageForQuestionSetUp)
+    setUpMethods.append(sourcePackageSetUp)
+    setUpMethods.append(projectSetUp)
 
     for setUpMethod in setUpMethods:
         test = FunctionalDocFileSuite('bugtarget-bugcount.txt',
@@ -141,4 +194,5 @@ def test_suite():
             optionflags=default_optionflags, package=__name__,
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)
+
     return suite

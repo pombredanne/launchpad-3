@@ -24,7 +24,7 @@ from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
-from canonical.launchpad.interfaces import UnexpectedFormData
+from canonical.launchpad.webapp.interfaces import UnexpectedFormData
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.vhosts import allvhosts
 

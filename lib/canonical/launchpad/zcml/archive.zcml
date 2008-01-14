@@ -54,11 +54,6 @@
       facet="overview"
       name="+ppa-row"
       />
-    <browser:page
-      template="../templates/archive-view-tos.pt"
-      facet="overview"
-      name="+view-tos"
-      />
   </browser:pages>
 
   <browser:pages

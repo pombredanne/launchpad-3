@@ -9,7 +9,7 @@
     <!-- Poll -->
     <content class="canonical.launchpad.database.Poll">
         <allow interface="canonical.launchpad.interfaces.IPoll" />
-        <require 
+        <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IPoll" />
     </content>
@@ -107,7 +107,7 @@
     <!-- PollOption -->
     <content class="canonical.launchpad.database.PollOption">
         <allow interface="canonical.launchpad.interfaces.IPollOption" />
-        <require 
+        <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IPollOption" />
     </content>
@@ -144,7 +144,7 @@
     against the logged in user. -->
     <content class="canonical.launchpad.database.Vote">
         <allow interface="canonical.launchpad.interfaces.IVote" />
-        <require 
+        <require
             permission="zope.Public"
             set_attributes="option preference" />
     </content>

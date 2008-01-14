@@ -63,5 +63,5 @@ class AgingAdapter:
                         age = "%d week" % weeks
                         if weeks > 1:
                             age += "s"
-                
+
         return age

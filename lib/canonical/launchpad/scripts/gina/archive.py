@@ -112,7 +112,7 @@ class ArchiveComponentItems:
                                        distroseries, component, arch)
                 except NoBinaryArchive:
                     log.warn("The archive for %s/%s doesn't contain "
-                             "a directory for %s, skipping" % 
+                             "a directory for %s, skipping" %
                              (distroseries, component, arch))
                 else:
                     # Hold it in a list.

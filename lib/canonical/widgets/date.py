@@ -33,9 +33,9 @@ from canonical.launchpad.interfaces import ILaunchBag
 
 class IDateWidget(IDisplayWidget, IInputWidget, IBrowserWidget):
     """A date selection widget
-    
+
     Date with no time or timezone information
-    
+
     """
     minyear = Int(title=_('Minimum Year'), required=True, default=1900)
     maxyear = Int(title=_('Maximum Year'), required=True, default=2038)

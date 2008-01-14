@@ -57,19 +57,19 @@ class LibrarianStorageTestCase(unittest.TestCase):
 
     def test_sameFile(self):
         # Make sure sameFile returns True when the files are the same
-        self.failUnless(self._sameFileTestHelper('data ' * 5000, 
+        self.failUnless(self._sameFileTestHelper('data ' * 5000,
                                                  'data ' * 5000))
-        
+
     def test_notSameFile(self):
         # Make sure sameFile returns False when the files are different, even if
         # they are the same length.
         self.failIf(self._sameFileTestHelper('data ' * 5000, 'fred ' * 5000))
-        
+
     def test_differentFileShorter(self):
         # Make sure sameFile returns False when the second file is shorter than
         # the first, even if they were the same up to that length.
         self.failIf(self._sameFileTestHelper('data ' * 5000, 'data ' * 4999))
-        
+
     def test_differentFileLonger(self):
         # Make sure sameFile returns False when the second file is longer than
         # the first, even if they were the same up to that length.
@@ -109,7 +109,7 @@ class LibrarianStorageTestCase(unittest.TestCase):
         self.failUnless(self.storage.hasFile(fileid))
         # ...and no longer at the temporary location
         self.failIf(os.path.exists(newfile.tmpfilepath))
-        
+
     def test_transactionAbort(self):
         # Use a stub library that doesn't really use the DB, but does record if
         # the Storage tried to commit the transaction on the fake DB.
@@ -160,7 +160,7 @@ class LibrarianStorageTestCase(unittest.TestCase):
         # Did the files both get stored?
         self.failUnless(self.storage.hasFile(fileid1))
         self.failUnless(self.storage.hasFile(fileid2))
-        
+
 
 class StubLibrary:
     # Used by test_transactionCommit/Abort
@@ -184,7 +184,7 @@ class StubLibrary:
 
 class StubLibrary2(StubLibrary):
     # Used by test_multipleFilesInOnePrefixedDirectory
-    
+
     id = 0x11111110
 
     def add(self, digest, size):

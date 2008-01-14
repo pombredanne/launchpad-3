@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Packaging interfaces."""
 
@@ -7,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'IPackaging',
     'IPackagingUtil',
+    'PackagingType',
     ]
 
 from zope.schema import Choice, Datetime, Int
@@ -14,6 +16,35 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
+
+from canonical.lazr.enum import DBEnumeratedType, DBItem
+
+
+class PackagingType(DBEnumeratedType):
+    """Source packages.
+
+    Source packages include software from one or more Upstream open source
+    projects. This schema shows the relationship between a source package
+    and the upstream open source products that it might incorporate. This
+    schema is used in the Packaging table.
+    """
+
+    PRIME = DBItem(1, """
+        Primary Product
+
+        This is the primary product packaged in this source package. For
+        example, a source package "apache2" would have a "prime" Packaging
+        relationship with the "apache2" product from the Apache Project.
+        The product and package don't have to have the same name.
+        """)
+
+    INCLUDES = DBItem(2, """
+        SourcePackage Includes Product
+
+        This source package includes some part or all of the product. For
+        example, the "cadaver" source package has an "includes" Packaging
+        relationship with the libneon product.
+        """)
 
 
 class IPackaging(IHasOwner):
@@ -41,7 +72,7 @@ class IPackaging(IHasOwner):
         vocabulary='DistroSeries')
 
     packaging = Choice(
-        title=_('Packaging'), required=True, vocabulary='PackagingType')
+        title=_('Packaging'), required=True, vocabulary=PackagingType)
 
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
@@ -56,6 +87,9 @@ class IPackagingUtil(Interface):
     def createPackaging(productseries, sourcepackagename,
                         distroseries, packaging, owner):
         """Create Packaging entry."""
+
+    def deletePackaging(productseries, sourcepackagename, distroseries):
+        """Delete a packaging entry."""
 
     def packagingEntryExists(productseries, sourcepackagename,
                              distroseries):

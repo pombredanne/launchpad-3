@@ -1,4 +1,14 @@
-<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform" 
+  i18n:domain="launchpad"
+>
   <head>
     <metal:style fill-slot="head_epilogue">
       <style type="text/css">
@@ -18,7 +28,7 @@
       <p>We track the status of page templates with comments of the form
       <code>&lt;!-- 1-0 todo Something --&gt;</code>,
       <code>&lt;!-- 1-0 inprogress Something --&gt;</code>, or
-      <code>&lt;!-- 1-0 done Something --&gt;</code>.
+      <code>&lt;!-- 1-0 done Something --&gt;</code>.</p>
 
       <h2>Pages</h2>
       <p>These are '.pt' files that contain an 'html' element, or contain a
