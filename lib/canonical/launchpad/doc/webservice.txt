@@ -145,7 +145,7 @@ an example.
     >>> from canonical.launchpad.systemhomes import WebServiceApplication
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> class MyWebServiceApplication(WebServiceApplication):
-    ...       TOP_LEVEL_COLLECTIONS = { 'recipes' : RecipeCollection }
+    ...       top_level_collections = { 'recipes' : RecipeCollection }
     >>> app = MyWebServiceApplication()
     >>> request = LaunchpadTestRequest()
     >>> resource = app.publishTraverse(request, "recipes")
@@ -165,11 +165,8 @@ If the user requests a collection that's not registered, the result is
 a NotFound exception:
 
     >>> from zope.publisher.interfaces import NotFound
-    >>> try:
-    ...     app.publishTraverse(request, "nosuchcollection")
-    ... except NotFound, e:
-    ...     print e
-    NotFound: ... name: 'nosuchcollection'
+    >>> app.publishTraverse(request, "nosuchcollection")
+    <zope.publisher.interfaces.NotFound instance ...>
 
 Right now, only top-level traversal is implemented. Eventually a
 collection will be responsible for implementing publishTraverse() to

@@ -14,6 +14,7 @@ __all__ = [
 import simplejson
 from zope.component import getAdapter
 from zope.interface import implements
+from zope.schema.interfaces import IField
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IHTTPResource, IJSONPublishable)
 
@@ -71,8 +72,10 @@ class EntryResource:
         """
         dict = {}
         entry_resource = getAdapter(self.context, IEntry)
-        for name in entry_resource.schema.names():
-            dict[name] = getattr(entry_resource, name)
+        schema = entry_resource.schema
+        for name in schema.names():
+            if IField.providedBy(schema.get(name)):
+                dict[name] = getattr(entry_resource, name)
         return dict
 
 
