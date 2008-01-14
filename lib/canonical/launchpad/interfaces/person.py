@@ -688,7 +688,8 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         readonly=True)
 
     verbose_bugnotifications = Bool(
-        title=_("Should this person receive verbose bug notifications?"),
+        title=_("Bug notifications sent to me should include the bug's "
+            "description and status."),
         required=False, default=True)
 
     defaultmembershipperiod = Int(
