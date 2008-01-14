@@ -130,8 +130,8 @@ list.
     1
     >>> print messages[0].as_string()
     Subject: Auto-discard notification
-    From: itest-one-bounces@launchpad.dev
-    To: itest-one-owner@launchpad.dev
+    From: itest-one-bounces@lists.launchpad.dev
+    To: itest-one-owner@lists.launchpad.dev
     ...
     <BLANKLINE>
     The attached message has been automatically discarded.
@@ -196,14 +196,14 @@ Here's the copy sent to Anne...
     Message-ID: <fifth-injection>
     Subject: [Itest-one] A member post
     ...
-    Sender: itest-one-bounces+anne.person=example.com@launchpad.dev
-    Errors-To: itest-one-bounces+anne.person=example.com@launchpad.dev
+    Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     Hi, I am now a member of this team's list!
     _______________________________________________
     Itest-one mailing list
-    Itest-one@launchpad.dev
+    Itest-one@lists.launchpad.dev
     http://lists.launchpad.dev/mailman/listinfo/itest-one
     <BLANKLINE>
     <BLANKLINE>
@@ -216,14 +216,14 @@ Here's the copy sent to Anne...
     Message-ID: <fifth-injection>
     Subject: [Itest-one] A member post
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     Hi, I am now a member of this team's list!
     _______________________________________________
     Itest-one mailing list
-    Itest-one@launchpad.dev
+    Itest-one@lists.launchpad.dev
     http://lists.launchpad.dev/mailman/listinfo/itest-one
     <BLANKLINE>
     <BLANKLINE>
@@ -271,14 +271,14 @@ However, once she validates this address, she can post from it.
     Message-ID: <sixth-injection>
     Subject: [Itest-one] A member post
     ...
-    Sender: itest-one-bounces+anne.person=example.com@launchpad.dev
-    Errors-To: itest-one-bounces+anne.person=example.com@launchpad.dev
+    Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     Hi, I am now a verified member of this team!
     _______________________________________________
     Itest-one mailing list
-    Itest-one@launchpad.dev
+    Itest-one@lists.launchpad.dev
     http://lists.launchpad.dev/mailman/listinfo/itest-one
     <BLANKLINE>
     <BLANKLINE>
@@ -289,14 +289,14 @@ However, once she validates this address, she can post from it.
     Message-ID: <sixth-injection>
     Subject: [Itest-one] A member post
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     Hi, I am now a verified member of this team!
     _______________________________________________
     Itest-one mailing list
-    Itest-one@launchpad.dev
+    Itest-one@lists.launchpad.dev
     http://lists.launchpad.dev/mailman/listinfo/itest-one
     <BLANKLINE>
     <BLANKLINE>

@@ -59,7 +59,6 @@ SMTPPORT = %(smtp_port)d
 XMLRPC_URL = '%(xmlrpc_url)s'
 XMLRPC_SLEEPTIME = %(xmlrpc_sleeptime)s
 
-DEFAULT_EMAIL_HOST = 'launchpad.dev'
 SITE_LIST_OWNER = '%(site_list_owner)s'
 
 # Extend the global pipeline with a handler that ensures posters are Launchpad

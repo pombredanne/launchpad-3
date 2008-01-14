@@ -143,21 +143,21 @@ Here is the message to Anne, a member of the mailing list.
     From: No Privileges Person <question...@answers.launchpad.net>
     ...
     Subject: [Itest-one] [Question #...]: A new question
-    X-BeenThere: itest-one@launchpad.dev
+    X-BeenThere: itest-one@lists.launchpad.dev
     X-Mailman-Version: ...
     Reply-To: question...@answers.launchpad.net
-    List-Id: <itest-one.launchpad.dev>
+    List-Id: <itest-one.lists.launchpad.dev>
     List-Unsubscribe: <http://lists.launchpad.dev/mailman/listinfo/itest-one>,
-      <mailto:itest-one-request@launchpad.dev?subject=unsubscribe>
+      <mailto:itest-one-request@lists.launchpad.dev?subject=unsubscribe>
     List-Archive: <http://lists.launchpad.dev/pipermail/itest-one>
-    List-Post: <mailto:itest-one@launchpad.dev>
-    List-Help: <mailto:itest-one-request@launchpad.dev?subject=help>
+    List-Post: <mailto:itest-one@lists.launchpad.dev>
+    List-Help: <mailto:itest-one-request@lists.launchpad.dev?subject=help>
     List-Subscribe: <http://lists.launchpad.dev/mailman/listinfo/itest-one>,
-      <mailto:itest-one-request@launchpad.dev?subject=subscribe>
+      <mailto:itest-one-request@lists.launchpad.dev?subject=subscribe>
     Content-Type: text/plain; charset="us-ascii"
     Content-Transfer-Encoding: 7bit
-    Sender: itest-one-bounces+anne.person=example.com@launchpad.dev
-    Errors-To: itest-one-bounces+anne.person=example.com@launchpad.dev
+    Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     New question #... on Mozilla Firefox:
@@ -170,7 +170,7 @@ Here is the message to Anne, a member of the mailing list.
     ITest One, which is an answer contact for Mozilla Firefox.
     _______________________________________________
     Itest-one mailing list
-    Itest-one@launchpad.dev
+    Itest-one@lists.launchpad.dev
     http://lists.launchpad.dev/mailman/listinfo/itest-one
     <BLANKLINE>
     <BLANKLINE>
@@ -181,8 +181,8 @@ Here is the message to the archive submission address.
     >>> print messages[2].as_string()
     MIME-Version: 1.0
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
     ...
     <BLANKLINE>
     <BLANKLINE>
@@ -212,10 +212,10 @@ This one gets sent to Anne...
     From: No Privileges Person <no-priv@canonical.com>
     ...
     Subject: [Itest-one] [Blueprint canvas] Support <canvas> Objects
-    X-BeenThere: itest-one@launchpad.dev
+    X-BeenThere: itest-one@lists.launchpad.dev
     ...
-    Sender: itest-one-bounces+anne.person=example.com@launchpad.dev
-    Errors-To: itest-one-bounces+anne.person=example.com@launchpad.dev
+    Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     You are now subscribed to the blueprint canvas - Support <canvas>
@@ -225,7 +225,7 @@ This one gets sent to Anne...
       http://blueprints.launchpad.dev/firefox/+spec/canvas
     _______________________________________________
     Itest-one mailing list
-    Itest-one@launchpad.dev
+    Itest-one@lists.launchpad.dev
     http://lists.launchpad.dev/mailman/listinfo/itest-one
     <BLANKLINE>
     <BLANKLINE>
@@ -238,10 +238,10 @@ This one gets sent to Anne...
     From: No Privileges Person <no-priv@canonical.com>
     ...
     Subject: [Itest-one] [Blueprint canvas] Support <canvas> Objects
-    X-BeenThere: itest-one@launchpad.dev
+    X-BeenThere: itest-one@lists.launchpad.dev
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     You are now subscribed to the blueprint canvas - Support <canvas>
@@ -251,7 +251,7 @@ This one gets sent to Anne...
       http://blueprints.launchpad.dev/firefox/+spec/canvas
     _______________________________________________
     Itest-one mailing list
-    Itest-one@launchpad.dev
+    Itest-one@lists.launchpad.dev
     http://lists.launchpad.dev/mailman/listinfo/itest-one
     <BLANKLINE>
     <BLANKLINE>
@@ -369,16 +369,16 @@ address both get copies of the message.
     To: itest-one@lists.launchpad.dev
     Message-ID: <first-injection>
     Subject: [Itest-one] A member post
-    X-BeenThere: itest-one@launchpad.dev
+    X-BeenThere: itest-one@lists.launchpad.dev
     ...
-    Sender: itest-one-bounces+anne.person=example.com@launchpad.dev
-    Errors-To: itest-one-bounces+anne.person=example.com@launchpad.dev
+    Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     Hi, I am a member of Launchpad.
     _______________________________________________
     Itest-one mailing list
-    Itest-one@launchpad.dev
+    Itest-one@lists.launchpad.dev
     http://lists.launchpad.dev/mailman/listinfo/itest-one
     <BLANKLINE>
     <BLANKLINE>
@@ -388,16 +388,16 @@ address both get copies of the message.
     To: itest-one@lists.launchpad.dev
     Message-ID: <first-injection>
     Subject: [Itest-one] A member post
-    X-BeenThere: itest-one@launchpad.dev
+    X-BeenThere: itest-one@lists.launchpad.dev
     ...
-    Sender: itest-one-bounces+archive=mail-archive.com@launchpad.dev
-    Errors-To: itest-one-bounces+archive=mail-archive.com@launchpad.dev
+    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
     Received: by smtp2mbox
     <BLANKLINE>
     Hi, I am a member of Launchpad.
     _______________________________________________
     Itest-one mailing list
-    Itest-one@launchpad.dev
+    Itest-one@lists.launchpad.dev
     http://lists.launchpad.dev/mailman/listinfo/itest-one
     <BLANKLINE>
     <BLANKLINE>
