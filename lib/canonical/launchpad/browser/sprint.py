@@ -264,14 +264,14 @@ class SprintView(HasSpecificationsView, LaunchpadView):
     @property
     def local_start(self):
         """The sprint start time, in the local time zone, as text."""
-        tz = pytz.timezone(self.time_zone)
+        tz = pytz.timezone(self.context.time_zone)
         return self.context.time_starts.astimezone(tz).strftime(
                     self._local_timeformat)
 
     @property
     def local_end(self):
         """The sprint end time, in the local time zone, as text."""
-        tz = pytz.timezone(self.time_zone)
+        tz = pytz.timezone(self.context.time_zone)
         return self.context.time_ends.astimezone(tz).strftime(
                     self._local_timeformat)
 
