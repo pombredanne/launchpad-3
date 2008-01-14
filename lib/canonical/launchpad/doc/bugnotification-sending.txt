@@ -1033,8 +1033,8 @@ them:
     ...     flush_database_updates()
 
 
-To demonstrate this, we'll subscribe David Allouche, who receives verbose
-bug notifications, to bug 15.
+To demonstrate verbose notifications, we'll subscribe David Allouche,
+who receives verbose bug notifications, to bug 15.
 
     >>> bug_15 = getUtility(IBugSet).get(15)
     >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
