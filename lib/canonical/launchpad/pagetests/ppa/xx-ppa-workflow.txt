@@ -252,8 +252,8 @@ The administration procedure allow us to:
     PPA whiteboard:
     Here lives a lazy community.
 
-There is a maximum size allowed for authorized_size that is set by Postgres,
-and is currently (2**30)-1 bytes.  Submitting the form with an
+There is a maximum size allowed for authorized_size that is set by
+Postgres, and is currently (2**30)-1 bytes.  Submitting the form with an
 authorized_size that is too large will result in an error:
 
     >>> admin_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
