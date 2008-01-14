@@ -1,5 +1,4 @@
-Sending the Bug Notifications
-=============================
+= Sending the Bug Notifications =
 
 As explained in bugnotifications.txt, a change to a bug causes a bug
 notification to be added. These notifications should be assembled into
@@ -718,8 +717,8 @@ notification will be sent to all members individually.
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
 
-Bug Filed Notification
-----------------------
+
+== Bug Filed Notification ==
 
 Generating notifications when a new bug is filed is just a special case
 of a comment notification. If we add a comment notification for the
@@ -770,8 +769,8 @@ initial message of the bug, it will result in a bug filed notification:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
 
-Duplicates
-----------
+
+== Duplicates ==
 
 If the bug is a duplicate of another bug, a marker gets inserted at the
 top of the email:
@@ -865,8 +864,7 @@ subscriber of bug one.
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
 
-The cronscript
---------------
+== The cronscript ==
 
 There's a cronsript which does the sending of the email. Let's add a
 few notifications to show that it works.
@@ -975,8 +973,8 @@ makes it write out the emails it sends.
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
 
-The X-Launchpad-Bug header
---------------------------
+
+== The X-Launchpad-Bug header ==
 
 When a notification is sent out about a bug, the X-Launchpad-Bug header is
 filled with data about that bug:
