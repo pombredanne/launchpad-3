@@ -26,8 +26,8 @@
     <div metal:fill-slot="extra_info" class="documentDescription">
       Indicate the times during which you will be available for meetings at
       the sprint. The sprint runs from
-      <tal:start replace="context/local_start" />, till
-      <tal:end replace="context/local_end" /> in the time zone:
+      <tal:start replace="view/local_start" />, till
+      <tal:end replace="view/local_end" /> in the time zone:
       <tal:tz replace="context/time_zone">UTC</tal:tz>.
     </div>
 

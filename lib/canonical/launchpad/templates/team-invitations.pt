@@ -12,7 +12,7 @@
 
 <body>
 
-<metal:portlets fill-slot="portlets_one">
+<metal:portlets fill-slot="portlets">
 </metal:portlets>
 
 <div metal:fill-slot="main">

@@ -26,8 +26,8 @@
 
   <p>
     <strong>
-      <tal:start replace="context/local_start" /> till
-      <tal:end replace="context/local_end" />
+      <tal:start replace="view/local_start" /> till
+      <tal:end replace="view/local_end" />
     </strong>
   </p>
 

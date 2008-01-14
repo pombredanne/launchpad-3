@@ -5,6 +5,7 @@
  - fix in-code tests to dela with user timezone and required timezone
  - add test to show that the "change zone" link on the datetimewidget takes
    you to the page where you set your own time zone
+ - test date picker ranges
 
  (20:32:25) statik: sabdfl: there is a trivial doctest for canonical_name in lib/canonical/webapp/publisher.py
  (20:32:50) statik: you can see how the doctests are tied into our testing machinery by looking in lib/canonical/launchpad/webapp/tests/test_publisher.py

@@ -75,21 +75,6 @@ class Sprint(SQLBase):
             return [self.driver, self.owner]
         return [self.owner,]
 
-    _local_timeformat = '%H:%M on %A, %Y-%m-%d'
-    @property
-    def local_start(self):
-        """See `ISprint`."""
-        tz = pytz.timezone(self.time_zone)
-        return self.time_starts.astimezone(tz).strftime(
-                    self._local_timeformat)
-
-    @property
-    def local_end(self):
-        """See `ISprint`."""
-        tz = pytz.timezone(self.time_zone)
-        return self.time_ends.astimezone(tz).strftime(
-                    self._local_timeformat)
-
     # useful joins
     attendees = SQLRelatedJoin('Person',
         joinColumn='sprint', otherColumn='attendee',

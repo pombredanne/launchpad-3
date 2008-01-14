@@ -260,6 +260,21 @@ class SprintView(HasSpecificationsView, LaunchpadView):
         dt = dt.astimezone(self.tzinfo)
         return dt.strftime('%Y-%m-%d')
 
+    _local_timeformat = '%H:%M on %A, %Y-%m-%d'
+    @property
+    def local_start(self):
+        """The sprint start time, in the local time zone, as text."""
+        tz = pytz.timezone(self.time_zone)
+        return self.context.time_starts.astimezone(tz).strftime(
+                    self._local_timeformat)
+
+    @property
+    def local_end(self):
+        """The sprint end time, in the local time zone, as text."""
+        tz = pytz.timezone(self.time_zone)
+        return self.context.time_ends.astimezone(tz).strftime(
+                    self._local_timeformat)
+
 
 class SprintAddView(LaunchpadFormView):
     """Form for creating sprints"""

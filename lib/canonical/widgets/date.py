@@ -21,14 +21,14 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.webapp import ExportedFolder
+from canonical.lazr import ExportedFolder
 
 
 class PopCalXPFolder(ExportedFolder):
     """Export the PopCalXP Date picker resources."""
 
-    folder = './popcalxp/'
-    here = os.path.dirname(os.path.realpath(__file__))
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../../contrib/popcalxp')
 
 
 class DateTimeWidget(TextWidget):
@@ -59,8 +59,9 @@ class DateTimeWidget(TextWidget):
         """
         if self.required_timezone is not None:
             return self.required_timezone
-        if self.user_timezone is None:
-            raise AssertionError, 'DateTime widget needs a time zone.'
+        assert (
+            self.user_timezone is not None,
+            'DateTime widget needs a time zone.')
         return self.user_timezone
 
     @property

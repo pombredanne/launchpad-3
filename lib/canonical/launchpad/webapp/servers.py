@@ -578,9 +578,9 @@ class LaunchpadTestRequest(TestRequest):
     It also provides the  hooks for popup calendar iframes:
 
     >>> request.needs_datetimepicker_iframe
-    True
+    False
     >>> request.needs_datepicker_iframe
-    True
+    False
     """
     implements(INotificationRequest, IBasicLaunchpadRequest,
                canonical.launchpad.layers.LaunchpadLayer)
@@ -592,8 +592,8 @@ class LaunchpadTestRequest(TestRequest):
             skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
         self.breadcrumbs = []
         self.traversed_objects = []
-        self.needs_datepicker_iframe = True
-        self.needs_datetimepicker_iframe = True
+        self.needs_datepicker_iframe = False
+        self.needs_datetimepicker_iframe = False
 
     @property
     def uuid(self):

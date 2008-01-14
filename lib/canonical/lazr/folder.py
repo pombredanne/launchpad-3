@@ -78,7 +78,7 @@ class ExportedFolder:
         if os.path.sep in name:
             raise ValueError(
                 'os.path.sep appeared in the resource name: %s' % name)
-        filename = os.path.join(self.here, self.folder, name)
+        filename = os.path.join(self.folder, name)
         try:
             fileobj = File(filename, name)
         except IOError, ioerror:
@@ -113,10 +113,4 @@ class ExportedFolder:
         raise (
             NotImplementedError,
             'Your subclass of ExportedFolder should have its own folder.')
-
-    @property
-    def here(self):
-        raise (
-            NotImplementedError,
-            'Your subclass of ExportedFolder should define its location.')
 

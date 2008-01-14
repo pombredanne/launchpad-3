@@ -40,6 +40,7 @@ from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
 from canonical.config import config
+from canonical.lazr import ExportedFolder
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
     IAnnouncementSet,
@@ -80,7 +81,7 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueue,
     )
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, ExportedFolder, Link,
+    StandardLaunchpadFacets, ContextMenu, Link,
     LaunchpadView, LaunchpadFormView, Navigation, stepto, canonical_name,
     canonical_url, custom_widget)
 from canonical.launchpad.webapp.interfaces import POSTToNonCanonicalURL
@@ -665,8 +666,8 @@ class OneZeroTemplateStatus(LaunchpadView):
 class IcingFolder(ExportedFolder):
     """Export the Launchpad icing."""
 
-    folder = '../icing/'
-    here = os.path.dirname(os.path.realpath(__file__))
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing/')
 
 
 class StructuralHeaderPresentationView(LaunchpadView):

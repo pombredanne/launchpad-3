@@ -50,9 +50,6 @@ import re
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.folder import (
-    ExportedFolder
-    )
 from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory
     )

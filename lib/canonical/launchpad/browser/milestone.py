@@ -143,9 +143,9 @@ class MilestoneAddView(LaunchpadFormView):
     def register_action(self, action, data):
         """Use the newMilestone method on the context to make a milestone."""
         milestone = self.context.newMilestone(
-            name = data.get('name'),
-            dateexpected = data.get('dateexpected'),
-            description = data.get('description'))
+            name=data.get('name'),
+            dateexpected=data.get('dateexpected'),
+            description=data.get('description'))
         self.next_url = canonical_url(self.context)
 
     @property
