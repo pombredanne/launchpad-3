@@ -2,25 +2,28 @@
 
 __metaclass__ = type
 
-__all__ = ['ProductSeriesNavigation',
-           'ProductSeriesDynMenu',
-           'ProductSeriesSOP',
-           'ProductSeriesFacets',
-           'ProductSeriesOverviewMenu',
-           'ProductSeriesBugsMenu',
-           'ProductSeriesSpecificationsMenu',
-           'ProductSeriesTranslationMenu',
-           'ProductSeriesTranslationsExportView',
-           'ProductSeriesView',
-           'ProductSeriesEditView',
-           'ProductSeriesSourceView',
-           'ProductSeriesRdfView',
-           'ProductSeriesSourceSetView',
-           'ProductSeriesReviewView',
-           'ProductSeriesLinkBranchView',
-           'ProductSeriesShortLink',
-           'ProductSeriesFileBugRedirect',
-           'get_series_branch_error']
+__all__ = [
+    'get_series_branch_error',
+    'ProductSeriesBugsMenu',
+    'ProductSeriesDynMenu',
+    'ProductSeriesEditView',
+    'ProductSeriesFacets',
+    'ProductSeriesFileBugRedirect',
+    'ProductSeriesLinkBranchView',
+    'ProductSeriesLinkBranchFromCodeView',
+    'ProductSeriesNavigation',
+    'ProductSeriesOverviewMenu',
+    'ProductSeriesRdfView',
+    'ProductSeriesReviewView',
+    'ProductSeriesShortLink',
+    'ProductSeriesSOP',
+    'ProductSeriesSourceSetView',
+    'ProductSeriesSourceView',
+    'ProductSeriesSpecificationsMenu',
+    'ProductSeriesTranslationMenu',
+    'ProductSeriesTranslationsExportView',
+    'ProductSeriesView',
+    ]
 
 import cgi
 import os.path
@@ -113,7 +116,15 @@ class ProductSeriesSOP(StructuralObjectPresentation):
 class ProductSeriesFacets(StandardLaunchpadFacets):
 
     usedfor = IProductSeries
-    enable_only = ['overview', 'bugs', 'specifications', 'translations']
+    enable_only = [
+        'overview', 'branches', 'bugs', 'specifications', 'translations']
+
+    def branches(self):
+        # Override to go to the branches for the product.
+        text = 'Code'
+        summary = 'View related branches of code'
+        link = canonical_url(self.context.product, rootsite='code')
+        return Link(link, text, summary=summary)
 
 
 class ProductSeriesOverviewMenu(ApplicationMenu):
@@ -570,15 +581,27 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
             self.context.cvsroot = None
             self.context.cvsmodule = None
             self.context.cvsbranch = None
-        if self.context.rcstype == RevisionControlSystems.SVN:
+        elif self.context.rcstype == RevisionControlSystems.SVN:
             self.context.rcstype = None
             self.context.svnrepository = None
+        else:
+            # Nothing to clear out.
+            assert self.context.rcstype is None, "rcstype is not None"
         self.request.response.addInfoNotification(
             'Series code location updated.')
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         """Do nothing and go back to the product series page."""
+
+
+class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
+    """Set the branch link from the code overview page."""
+
+    @property
+    def next_url(self):
+        """Take the user back to the code overview page."""
+        return canonical_url(self.context.product, rootsite="code")
 
 
 class UIRevisionControlSystems(EnumeratedType):

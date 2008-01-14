@@ -46,6 +46,8 @@
 
   <table>
     <tbody>
+      <tal:edit-link define="series_link series/fmt:url;
+                             edit_link string:${series_link}/+linkbranchtoseries">
       <tr>
         <th>Series:</th>
         <tal:comment condition="nothing">
@@ -61,11 +63,6 @@
             </a>
           </strong>
           <em tal:condition="is_focus">Current development focus</em>
-
-          <tal:edit-link condition="series/required:launchpad.Edit">
-            (<a tal:attributes="href string:${series/name}/+linkbranch"
-            >Set branch for series</a>)
-          </tal:edit-link>
         </td>
       </tr>
 
@@ -74,20 +71,27 @@
           <th>Branch:</th>
           <td>
             <tal:branch replace="structure series/series_branch/fmt:project-link"/>
+            <tal:edit-link condition="series/required:launchpad.Edit">
+              (<a tal:attributes="href edit_link"
+              >change</a>)
+            </tal:edit-link>
           </td>
         </tr>
+
         <tr class="lesser">
           <td></td>
           <td>
             To get a copy of this branch, use the command:<br/>
-            <tt style="padding-left:2em; font-weight: bold">
-              bzr branch
-            <tal:dev-focus condition="is_focus">
-              lp:<tal:product replace="context/name"/>
-            </tal:dev-focus>
-            <tal:not-dev-focus condition="not: is_focus">
-              lp:<tal:product replace="context/name"/>/<tal:series replace="series/name"/>
-            </tal:not-dev-focus>
+            <tt>
+              <strong>
+                bzr branch
+                <tal:dev-focus condition="is_focus">
+                  lp:<tal:product replace="context/name"/>
+                </tal:dev-focus>
+                <tal:not-dev-focus condition="not: is_focus">
+                  lp:<tal:product replace="context/name"/>/<tal:series replace="series/name"/>
+                </tal:not-dev-focus>
+              </strong>
             </tt>
           </td>
         </tr>
@@ -95,11 +99,17 @@
 
       <tal:no_branch condition="not: series/series_branch">
         <tr>
-          <td colspan="2">
-            No branch specified
+          <th>Branch:</th>
+          <td>
+            None specified
+            <tal:edit-link condition="series/required:launchpad.Edit">
+              (<a tal:attributes="href edit_link"
+              >set</a>)
+            </tal:edit-link>
           </td>
         </tr>
       </tal:no_branch>
+      </tal:edit-link>
     </tbody>
   </table>
 
