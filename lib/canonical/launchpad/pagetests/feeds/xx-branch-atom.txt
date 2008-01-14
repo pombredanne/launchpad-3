@@ -102,6 +102,30 @@ If an anonymous user fetches the same feed the email addresses will be hidden:
     >>> 'email address hidden' in anon_browser.contents
     True
 
+If a branch is marked private it will not be displayed.  The Landscape
+developers team has two branches which are both private.
+
+    >>> browser.open('http://code.launchpad.dev/~landscape-developers')
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    ...     print row.first('img').get('title')
+    feature-x   ...New  landscape...
+    Private
+    trunk       ...New  landscape...
+    Private
+
+If we look at the feed for landscape developers there will be no
+branches listed, just an id for the feed.
+
+    >>> browser.open('http://feeds.launchpad.dev/~landscape-developers/branches.atom')
+    >>> BSS(browser.contents).title.contents
+    [u'Branches for Landscape Developers']
+    >>> ids = parse_ids(browser.contents)
+    >>> for id_ in ids:
+    ...     print id_
+    <id>tag:launchpad.net,2006-07-11:/code/~landscape-developers</id>
+
 
 == Feed for a product's branches ==
 
