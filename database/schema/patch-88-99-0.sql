@@ -3,10 +3,8 @@ SET client_min_messages=ERROR;
 ALTER TABLE BugSubscription
 ADD COLUMN subscribed_by integer NULL REFERENCES Person;
 
--- Make all existing subscriptions
--- subscribed_by the Launchpad Janitor
 UPDATE BugSubscription
-SET subscribed_by = 65
+SET subscribed_by = person
 WHERE subscribed_by IS NULL;
 
 ALTER TABLE BugSubscription
