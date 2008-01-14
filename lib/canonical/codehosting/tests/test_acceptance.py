@@ -621,6 +621,9 @@ class OOPSReportingSmartserverTests(SmartserverTests):
         # Note the last oops reported before we start.
         existing_report = globalErrorUtility.getLastOopsReport()
 
+        real_stderr = sys.stderr
+        sys.stderr = StringIO()
+
         @deferToThread
         def cause_exception_in_ssh_server():
             """Trigger an unhandled exception in the code hosting ssh server.
@@ -650,8 +653,11 @@ class OOPSReportingSmartserverTests(SmartserverTests):
                 self.assertNotEqual(new_report.id, existing_report.id)
             self.assertIn('Not allowed to execute', new_report.value)
 
+        def restore_stderr(ignored):
+            sys.stderr = real_stderr
+
         return defer_cause_exception.addCallback(
-            check_new_oops_has_been_reported)
+            check_new_oops_has_been_reported).addBoth(restore_stderr)
 
 def make_server_tests(base_suite, servers):
     from canonical.codehosting.tests.helpers import (
