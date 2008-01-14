@@ -194,11 +194,12 @@ class WebServiceApplication:
     """See IWebServiceApplication."""
     implements(IWebServiceApplication, IPublishTraverse)
 
+    TOP_LEVEL_COLLECTIONS = { 'people' : PersonCollection }
+
     def publishTraverse(self, request, name):
-        """Right now there are no resources below the root."""
-        if name == "people":
-            return CollectionResource(
-                PersonCollection(), request)
+        collection = self.TOP_LEVEL_COLLECTIONS.get(name)
+        if collection is not None:
+            return CollectionResource(collection(), request)
         else:
             raise NotFound(self, name)
 

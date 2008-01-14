@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 
-from zope.component import adapts, getAdapter, getUtility
+from zope.component import adapts, getUtility
 from zope.interface import implements
 from canonical.lazr.interfaces import ICollection
 from canonical.lazr.rest import EntryResource
