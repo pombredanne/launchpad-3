@@ -1527,6 +1527,7 @@ class Trac(ExternalBugTracker):
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`"""
         status_map = {
+            'accepted': BugTaskStatus.CONFIRMED,
             'assigned': BugTaskStatus.CONFIRMED,
             # XXX: 2007-08-06 Graham Binns:
             #      We should follow dupes if possible.

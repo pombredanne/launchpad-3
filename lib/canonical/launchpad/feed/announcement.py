@@ -16,13 +16,13 @@ __all__ = [
     ]
 
 
-import cgi
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import canonical_url, urlappend
 from canonical.launchpad.interfaces import (
     IAnnouncementSet, IDistribution, IHasAnnouncements, IProduct, IProject)
 from canonical.launchpad.interfaces import IFeedsApplication
+from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData)
 
@@ -63,7 +63,8 @@ class AnnouncementsFeedBase(FeedBase):
         # escaped to account for any special characters the user may have
         # entered, such as '&' and '<' because it will be embedded in the XML
         # document.
-        content = FeedTypedData(cgi.escape(announcement.summary))
+        formatted_summary = FormattersAPI(announcement.summary).text_to_html()
+        content = FeedTypedData(formatted_summary, content_type="html")
         # The entry for an announcement has distinct dates for created,
         # updated, and published.  For some data, the created and published
         # dates will be the same.  The announcements also only have a singe

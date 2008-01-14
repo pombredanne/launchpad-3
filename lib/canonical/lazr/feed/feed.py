@@ -185,7 +185,14 @@ class FeedBase(LaunchpadFormView):
 
     def renderAtom(self):
         """See `IFeed`."""
-        return ViewPageTemplateFile(self.template_files['atom'])(self)
+        self.request.response.setHeader('content-type',
+                                        'application/atom+xml;charset=utf-8')
+        template_file = ViewPageTemplateFile(self.template_files['atom'])
+        result = template_file(self)
+        # XXX EdwinGrubbs 2008-01-10 bug=181903
+        # Zope3 requires the content-type to start with "text/" if
+        # the result is a unicode object.
+        return result.encode('utf-8')
 
     def renderHTML(self):
         """See `IFeed`."""

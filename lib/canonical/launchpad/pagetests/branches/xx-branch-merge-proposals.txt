@@ -249,6 +249,7 @@ is shown.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/trunk')
     >>> admin_browser.getLink('Edit source').click()
+    >>> admin_browser.getControl('Bazaar').click()
     >>> admin_browser.getControl(name='field.user_branch').value = (
     ...     '~name12/firefox/main')
     >>> admin_browser.getControl('Update Details').click()

@@ -49,8 +49,7 @@ from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import (
-    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
-    PersonLatestBugsFeedLink)
+    BugTargetLatestBugsFeedLink, FeedsMixin)
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
 from canonical.launchpad.browser.questiontarget import (
@@ -595,9 +594,10 @@ class ProjectBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
 
-    def _branches(self, lifecycle_status):
+    def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesForProject(
-            self.context, lifecycle_status, self.user, self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
 
     @property
     def no_branch_message(self):
