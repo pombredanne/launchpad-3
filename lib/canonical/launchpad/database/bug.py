@@ -199,6 +199,7 @@ class Bug(SQLBase):
         'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
     number_of_duplicates = IntCol(notNull=True, default=0)
+    number_of_comments = IntCol(notNull=True, default=0)
 
     @property
     def displayname(self):

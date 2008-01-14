@@ -37,7 +37,8 @@
                         getAlsoNotifiedSubscribers getBugWatch getBugTask
                         canBeNominatedFor getNominationFor getNominations
                         date_last_message number_of_duplicates
-                        getQuestionCreatedFromBug canBeAQuestion"
+			number_of_comments getQuestionCreatedFromBug
+			canBeAQuestion"
             />
         <require
             permission="launchpad.Edit"

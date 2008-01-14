@@ -207,6 +207,9 @@ class IBug(IMessageTarget, ICanBeMentored):
     number_of_duplicates = Int(
         title=_('The number of bugs marked as duplicates of this bug'),
         required=True, readonly=True)
+    number_of_comments = Int(
+        title=_('The number of comments on this bug'),
+        required=True, readonly=True)
 
 
     def followup_subject():
