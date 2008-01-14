@@ -79,7 +79,13 @@ updated field in all of the entries.
     >>> assert feed_updated == entry_dates[0], (
     ...     "Feed <update> value is not the same as latest entry.")
 
+# XXX: BradCrittenden 2008-01-14 bug=182869: Authenticated users
+# should be treated as anonymous for the purpose of feeds content.
+# When this bug is fixed all email addresses will be hidden for all
+# users and the following test will need to be updated.
+
 Since we are logged in the owner's email is displayed in the entry content:
+
 
     >>> 'foo@localhost' in browser.contents
     True
