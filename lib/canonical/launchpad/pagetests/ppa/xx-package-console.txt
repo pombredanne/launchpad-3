@@ -1,0 +1,249 @@
+= PPA package console =
+
+The 'Package console' view allows users to perform actions upon PPAs
+such as copy and delete. Only the owner of the PPA and Launchpad
+administrators may access the console for a user's archive.
+
+Anonymous and an ordinary user cannot access Celso's PPA package
+console, even if they try the URL directly.
+
+    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> anon_browser.getLink('Package console').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/+console')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ..., 'launchpad.Edit')
+
+    >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> user_browser.getLink('Package console').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> user_browser.open('http://launchpad.dev/~cprov/+archive/+console')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ..., 'launchpad.Edit')
+
+Only Celso and Foo bar can access the PPA package console for Celso's PPA.
+
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> cprov_browser.getLink('Package console').click()
+    >>> cprov_browser.title
+    'Package console for PPA for Celso Providelo'
+
+    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> admin_browser.getLink('Package console').click()
+    >>> admin_browser.title
+    'Package console for PPA for Celso Providelo'
+
+Once accessed the page provides:
+
+ * A search form, implemented via GET
+ * A empty search results section which will be only populated when
+   'Search' button is hit.
+ * A deletion form, implemented via POST.
+
+    >>> def print_ppa_packages(contents):
+    ...     packages = find_tags_by_class(contents, 'ppa_package_row')
+    ...     for pkg in packages:
+    ...         print extract_text(pkg)
+    ...     empty_section = find_tag_by_id(
+    ...         admin_browser.contents, 'empty-result')
+    ...     if empty_section is not None:
+    ...         print extract_text(empty_section)
+    ...     if not packages and not empty_section:
+    ...         print 'Search results not rendered.'
+
+When the console page is loaded no results are presented to avoid
+unnecessary queries and delays.
+
+    >>> print_ppa_packages(admin_browser.contents)
+    Search results not rendered.
+
+In order to see any result the user is forced to 'search' for
+something.
+
+    >>> admin_browser.getControl("Search").click()
+
+Then the page will present a list of results.
+
+    >>> print_ppa_packages(admin_browser.contents)
+    Source           Published   Status     Series          Section
+    cdrkit - 1.0     2007-07-09  Published  breezy-autotest editors
+    iceweasel - 1.0  2007-07-09  Published  warty           editors
+    pmount - 0.1-1   2007-07-09  Published  warty           editors
+
+The 'search' form functions similarly to the one available in the
++index page.
+
+    >>> admin_browser.getControl(
+    ...     name='field.name_filter').value = 'nonexistentpackage'
+    >>> admin_browser.getControl("Search").click()
+    >>> print_ppa_packages(admin_browser.contents)
+    No matching package for 'nonexistentpackage'.
+
+    >>> admin_browser.getControl(
+    ...     name='field.name_filter').value = 'pmount'
+    >>> admin_browser.getControl("Search").click()
+    >>> print_ppa_packages(admin_browser.contents)
+    Source           Published   Status     Series          Section
+    pmount - 0.1-1   2007-07-09  Published  warty           editors
+
+    >>> admin_browser.getControl(
+    ...     name='field.name_filter').value = ''
+    >>> admin_browser.getControl(
+    ...    name='field.status_filter').value = ['superseded']
+    >>> admin_browser.getControl("Search").click()
+    >>> print_ppa_packages(admin_browser.contents)
+    No matching package for ''.
+
+    >>> admin_browser.getControl(
+    ...    name='field.status_filter').value = ['any']
+    >>> admin_browser.getControl("Search").click()
+    >>> print_ppa_packages(admin_browser.contents)
+    Source           Published   Status     Series          Section
+    cdrkit - 1.0     2007-07-09  Published  breezy-autotest editors
+    iceweasel - 1.0  2007-07-09  Published  warty           editors
+    pmount - 0.1-1   2007-07-09  Published  warty           editors
+
+The main difference is that a checkbox is rendered for each result
+table row.
+
+Foo Bar can select one or more rows to perform an action upon.
+
+Actions with empty comments are not allowed.
+
+    >>> admin_browser.getControl('Comment').value
+    ''
+
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['27']
+    >>> admin_browser.getControl("Delete").click()
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    There is 1 error.
+    Required input is missing.
+
+Recovering from an error is done by clicking in 'Search' button
+again, because we always have empty results after the form is issued.
+
+    >>> print_ppa_packages(admin_browser.contents)
+    Search results not rendered.
+
+    >>> admin_browser.getControl("Search").click()
+    >>> print_ppa_packages(admin_browser.contents)
+    Source           Published   Status     Series          Section
+    cdrkit - 1.0     2007-07-09  Published  breezy-autotest editors
+    iceweasel - 1.0  2007-07-09  Published  warty           editors
+    pmount - 0.1-1   2007-07-09  Published  warty           editors
+
+If a action is requested without having selected row a error is issued.
+
+    >>> admin_browser.getControl("Comment").value = "DO IT"
+    >>> admin_browser.getControl("Delete").click()
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    There is 1 error.
+    No published sources selected.
+
+Once the deletion is successfully requested, Foo Bar sees an
+informational message containing the summary of the action
+performed. Search results are not presented.
+
+    >>> admin_browser.getControl("Search").click()
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['27']
+    >>> admin_browser.getControl("Comment").value = "DO IT"
+    >>> admin_browser.getControl("Delete").click()
+
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    Sources and binaries deleted by Foo Bar request:
+    cdrkit 1.0 in breezy-autotest
+    Deletion comment: DO IT
+
+    >>> print_ppa_packages(admin_browser.contents)
+    Search results not rendered.
+
+The deleted record is now presented accordingly.
+
+    >>> admin_browser.getControl(
+    ...    name='field.status_filter').value = ['superseded']
+    >>> admin_browser.getControl("Search").click()
+
+    >>> print_ppa_packages(admin_browser.contents)
+    Source           Published   Status     Series          Section
+    cdrkit - 1.0     2007-07-09  Deleted    breezy-autotest editors
+
+    >>> admin_browser.getControl(
+    ...    name='field.status_filter').value = ['published']
+    >>> admin_browser.getControl("Search").click()
+
+    >>> print_ppa_packages(admin_browser.contents)
+    Source           Published   Status     Series          Section
+    iceweasel - 1.0  2007-07-09  Published  warty           editors
+    pmount - 0.1-1   2007-07-09  Published  warty           editors
+
+    >>> admin_browser.getControl(
+    ...    name='field.status_filter').value = ['any']
+    >>> admin_browser.getControl("Search").click()
+
+    >>> print_ppa_packages(admin_browser.contents)
+    Source           Published   Status     Series          Section
+    cdrkit - 1.0     2007-07-09  Deleted    breezy-autotest editors
+    iceweasel - 1.0  2007-07-09  Published  warty           editors
+    pmount - 0.1-1   2007-07-09  Published  warty           editors
+
+Multiple packages can be deleted in one single batch.
+
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['28', '29']
+    >>> admin_browser.getControl(
+    ...    name='field.comment').value = "DO IT AGAIN !"
+    >>> admin_browser.getControl("Delete").click()
+
+    >>> len(find_tags_by_class(admin_browser.contents, 'ppa_package_row'))
+    0
+
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    Sources and binaries deleted by Foo Bar request:
+    iceweasel 1.0 in warty
+    pmount 0.1-1 in warty
+    Deletion comment: DO IT AGAIN !
+
+Foo Bar can see that all packages present in Cprov's PPA are deleted.
+
+    >>> admin_browser.getControl(
+    ...    name='field.status_filter').value = ['any']
+    >>> admin_browser.getControl("Search").click()
+
+    >>> print_ppa_packages(admin_browser.contents)
+    Source           Published   Status     Series          Section
+    cdrkit - 1.0     2007-07-09  Deleted    breezy-autotest editors
+    iceweasel - 1.0  2007-07-09  Deleted    warty           editors
+    pmount - 0.1-1   2007-07-09  Deleted    warty           editors
+
+Attempts to delete a already deleted package will result in an error.
+
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['27']
+    >>> admin_browser.getControl(
+    ...    name='field.comment').value = "DO IT"
+    >>> admin_browser.getControl("Delete").click()
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    There is 1 error.
+    Cannot delete non-published source (cdrkit 1.0 in breezy-autotest)

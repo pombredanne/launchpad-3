@@ -17,7 +17,7 @@ __all__ = [
     ]
 
 from zope.schema import Choice
-from zope.app.form.browser import TextAreaWidget, CheckBoxWidget
+from zope.app.form.browser import TextAreaWidget
 from zope.app.form.utility import setUpWidget
 from zope.app.form.interfaces import IInputWidget
 from zope.component import getUtility
@@ -36,7 +36,6 @@ from canonical.launchpad.webapp import (
     stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.authorization import check_permission
 
 
 class ArchiveNavigation(Navigation):
@@ -89,7 +88,7 @@ class ArchiveOverviewMenu(ApplicationMenu):
         text = 'View build records'
         return Link('+builds', text, icon='info')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Edit')
     def console(self):
         text = 'Package console'
         return Link('+console', text, icon='edit')
@@ -98,20 +97,30 @@ class ArchiveOverviewMenu(ApplicationMenu):
 class ArchiveViewBase(LaunchpadView):
     """Common features for Archive view classes."""
 
-    # Whether to present or not default results on page load.
+    # Whether to present or not results on page load.
     show_default_results = True
 
     @property
     def is_active(self):
+        """Whether or not this PPA already have publications in it. """
         return bool(self.context.getPublishedSources())
 
+    @property
+    def search_requested(self):
+        """Whether or not the search form was used."""
+        return self.name_filter is not None
+
+    @property
     def source_count_text(self):
+        """Return the correct form of the source counter notice."""
         if self.context.number_of_sources == 1:
             return '%s source package' % self.context.number_of_sources
         else:
             return '%s source packages' % self.context.number_of_sources
 
+    @property
     def binary_count_text(self):
+        """Return the correct form of the binary counter notice."""
         if self.context.number_of_binaries == 1:
             return '%s binary package' % self.context.number_of_binaries
         else:
@@ -171,14 +180,12 @@ class ArchiveViewBase(LaunchpadView):
         self.sources_list_entries = SourcesListEntriesView(
             entries, self.request)
 
-    def setupPackageFilters(self):
-        """Setup of the package search form."""
+    def setupPackageFilterAndResults(self):
+        """Setup of the package search form and results."""
         self.name_filter = self.request.get('field.name_filter')
         status_filter = self.request.get('field.status_filter', 'published')
         self.setupStatusFilterWidget(status_filter)
 
-    def setupPackageSearchResult(self):
-        """Setup a list of results for the package search."""
         if self.name_filter is not None or self.show_default_results:
             publishing = self.context.getPublishedSources(
                 name=self.name_filter,
@@ -190,17 +197,21 @@ class ArchiveViewBase(LaunchpadView):
 
 
 class ArchiveView(ArchiveViewBase):
-    """Default Archive view class
+    """Default Archive view class.
 
-    Implements useful actions and collects useful sets for the pagetemplate.
+    Implements useful actions and collects useful sets for the page template.
     """
 
     __used_for__ = IArchive
 
     def initialize(self):
+        """Setup infrastructure for the PPA index page.
+
+        Setup sources list entries widget, package filter widget and the
+        search result list.
+        """
         self.setupSourcesListEntries()
-        self.setupPackageFilters()
-        self.setupPackageSearchResult()
+        self.setupPackageFilterAndResults()
 
 
 class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
@@ -216,18 +227,24 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
     show_default_results = False
 
     def initialize(self):
-        LaunchpadFormView.initialize(self)
-        self.setupPackageFilters()
-        self.setupPackageSearchResult()
+        """Setup infrastructure for the PPA console page.
 
-# XXX cprov 20080111: ideally 'field.selected_sources' should get validated
-# by the zope infrastructure and obtained in delete action via data dictionary.
-# Currently this field is also poorly rendered inside:
-#   sourcepackagepublishing-listing-ppa-details.pt template
-# which is not only confusing but also broken since it will be rendered in the
-# wrong place (+index) if the user has launchpad.Admin permission.
+        Setup the package filter widget and the search result list.
+        """
+        LaunchpadFormView.initialize(self)
+        self.setupPackageFilterAndResults()
+
 
     def _getSelectedSources(self):
+        """Retrieve 'selected_sources' form value directly from request.
+
+        'select_sources' is the name of all checkboxes rendered for each
+        result containing the corresponding `ISourcePackagePublishingHistory`
+        IDs.
+
+        Returns an empty list if nothing was selected, otherwise return a
+        list of corresponding `ISourcePackagePublishingHistory` records.
+        """
         selected_sources_ids = self.request.get('field.selected_sources')
 
         if selected_sources_ids is None:
@@ -255,6 +272,8 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         if len(self.errors) != 0:
             return
 
+        # XXX cprov 20080111: ideally 'field.selected_sources' should get
+        # retrieved and validated by the zope infrastructure.
         selected_sources = self._getSelectedSources()
         if not selected_sources:
             self.addError("No published sources selected.")
@@ -268,20 +287,20 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         # Finally inject 'selected_sources' in the validated form data.
         data['selected_sources'] = selected_sources
 
-    @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def action_cancel(self, action, data):
-        self.next_url = canonical_url(self.context)
-
     @action(_("Delete"), name="delete")
     def action_delete(self, action, data):
+        """Perform the deletion of the selected packages.
+
+        Respecting the auxiliary parameter, 'including_binaries' and
+        'comment'.
+        """
         include_binaries = data.get('include_binaries')
         comment = data.get('comment')
         selected_sources = data.get('selected_sources')
-        messages = []
+
+        # Perform deletion.
         for source in selected_sources:
             source.requestDeletion(self.user, comment)
-            messages.append(
-                '<p>%s</p>' % source.displayname)
             if include_binaries:
                 for bin in source.getPublishedBinaries():
                     bin.requestDeletion(self.user, comment)
@@ -291,10 +310,17 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
             target = "Sources and binaries"
         else:
             target = "Sources"
+
+        messages = []
+        for source in selected_sources:
+            messages.append(
+                '<p>%s</p>' % source.displayname)
+
         messages.insert(
             0, '<p>%s deleted by %s request:</p>' % (
             target, self.user.displayname))
         messages.append("Deletion comment: %s" % comment)
+
         notification = "\n".join(messages)
 
         self.request.response.addNotification(notification)

@@ -465,7 +465,7 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 
 
 class IPublishingSet(Interface):
-    """Utiltity to retrieve publishing records in browser domain."""
+    """Utility to retrieve publishing records."""
 
     def getSource(pub_id):
         """Return the corresponding `ISourcePackagePublishingHistory`."""

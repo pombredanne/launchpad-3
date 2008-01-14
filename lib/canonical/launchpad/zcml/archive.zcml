@@ -91,7 +91,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IArchive"
-    permission="launchpad.Admin"
+    permission="launchpad.Edit"
     class="canonical.launchpad.browser.ArchiveConsoleView">
     <browser:page
       template="../templates/archive-console.pt"
@@ -109,17 +109,6 @@
     class="canonical.launchpad.database.ArchiveSet"
     provides="canonical.launchpad.interfaces.IArchiveSet">
     <allow interface="canonical.launchpad.interfaces.IArchiveSet" />
-  </securedutility>
-
-  <!-- PublishingSet (XXX cprov 20080109: this place is wrong) -->
-  <content class="canonical.launchpad.database.PublishingSet">
-    <allow interface="canonical.launchpad.interfaces.IPublishingSet"/>
-  </content>
-
-  <securedutility
-    class="canonical.launchpad.database.PublishingSet"
-    provides="canonical.launchpad.interfaces.IPublishingSet">
-    <allow interface="canonical.launchpad.interfaces.IPublishingSet" />
   </securedutility>
 
 </configure>

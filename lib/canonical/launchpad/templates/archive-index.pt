@@ -45,8 +45,7 @@
         This PPA does not contain any packages yet.
       </p>
 
-      <tal:active_ppa condition="ppa_active"
-                      define="allow_actions context/required:launchpad.Edit">
+      <tal:active_ppa condition="ppa_active">
 
       <div>
         <ul id="package_counters">
@@ -76,7 +75,7 @@
       <div style="padding-top: 1em;" tal:define="batch view/search_results">
 
       <tal:navigation_top
-           condition="python: view.name_filter is not None"
+           condition="view/search_requested"
            replace="structure view/batchnav/@@+navigation-links-upper" />
 
       <table class="listing" id="packages_list" tal:condition="batch">
@@ -90,7 +89,6 @@
             <th>Section</th>
           </tr>
         </thead>
-
         <tbody>
           <tal:block repeat="publishing batch"
                      replace="structure publishing/@@+listing-ppa-detailed">
@@ -99,7 +97,7 @@
       </table>
 
       <tal:navigation_bottom
-           condition="python: view.name_filter is not None"
+           condition="view/search_requested"
            replace="structure view/batchnav/@@+navigation-links-lower" />
 
         <div id="empty-result" tal:condition="not: batch">
@@ -107,6 +105,7 @@
               No matching package for '<span tal:replace="view/name_filter" />'.
            </tal:has_filter>
         </div>
+
       </div>
 
       </tal:active_ppa>

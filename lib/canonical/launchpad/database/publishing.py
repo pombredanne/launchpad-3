@@ -4,9 +4,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'IndexStanzaFields',
     'BinaryPackageFilePublishing',
     'BinaryPackagePublishingHistory',
+    'IndexStanzaFields',
     'SecureBinaryPackagePublishingHistory',
     'SecureSourcePackagePublishingHistory',
     'SourcePackageFilePublishing',
@@ -28,8 +28,9 @@ from canonical.launchpad.interfaces import (
     IArchiveSafePublisher, IBinaryPackageFilePublishing,
     IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
-    ISourcePackagePublishingHistory, IPublishingSet, PackagePublishingPriority,
-    PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
+    ISourcePackagePublishingHistory, IPublishingSet,
+    PackagePublishingPriority, PackagePublishingStatus,
+    PackagePublishingPocket, PoolFileOverwriteError)
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 
 
@@ -777,6 +778,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
 
 class PublishingSet:
+    """Utility for dealing with publishing records in general."""
 
     implements(IPublishingSet)
     title = "Publishing record utility"

@@ -17,11 +17,16 @@
 
 <div metal:fill-slot="main" tal:define="ppa_active view/is_active">
 
+
+  <h2><span tal:replace="context/title" /> package console</h2>
+
   <p tal:condition="not: ppa_active">
     This PPA does not contain any packages yet.
   </p>
 
   <tal:active_ppa condition="ppa_active">
+
+  <p>Search for package which you want to manipulate</p>
 
   <div style="padding-bottom: 1em;">
     <form name="package_search" action="" method="GET">
@@ -37,15 +42,15 @@
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info"
+         tal:condition="view/search_requested"
          tal:define="batch view/search_results">
 
        <tal:navigation_top
-            condition="python: view.name_filter is not None"
             replace="structure view/batchnav/@@+navigation-links-upper" />
 
        <table class="listing" id="packages_list" tal:condition="batch">
          <thead>
-           <tr>
+           <tr class="ppa_package_row">
              <th colspan="2">Source</th>
              <th tal:condition="context/owner/isTeam">Uploader</th>
              <th>Published</th>
@@ -57,41 +62,20 @@
 
          <tbody>
           <tal:block repeat="publishing batch"
-                     replace="structure publishing/@@+listing-ppa-detailed">
+                     replace="structure publishing/@@+listing-ppa-detailed-selectable">
           </tal:block>
          </tbody>
        </table>
 
        <tal:navigation_bottom
-            condition="python: view.name_filter is not None"
             replace="structure view/batchnav/@@+navigation-links-lower" />
 
        <div id="empty-result" tal:condition="not: batch">
-          <tal:has_filter condition="view/name_filter">
-             No matching package for '<span tal:replace="view/name_filter" />'.
-          </tal:has_filter>
+          No matching package for '<span tal:replace="view/name_filter" />'.
        </div>
 
     </div> <!--extra_info -->
 
-    <div style="padding-top: 1em;" class="form" metal:fill-slot="widgets">
-
-      <div tal:define="widget nocall:view/widgets/include_binaries|nothing"
-           tal:condition="widget">
-        <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-      </div>
-
-      <div tal:define="widget nocall:view/widgets/comment|nothing"
-           tal:condition="widget">
-         <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-      </div>
-
-    </div> <!--form fields -->
-
-    <div class="actions" metal:fill-slot="buttons">
-      <input tal:replace="structure view/actions/field.actions.delete/render" />
-      <input tal:replace="structure view/actions/field.actions.cancel/render" />
-    </div>
 
   </div> <!-- launchpad_form -->
 
@@ -100,7 +84,12 @@
 </div> <!--main -->
 
 <p metal:fill-slot="help">
-       Not yet ...
+   In this page you should be able to search for packages and then
+   select one or more results for deletion. A deleted package will
+   disapear from the archive indexes within 20 minutes and the related
+   files will be gone once they are not required in the archive
+   anymore. You can browse throught deleted packages using the
+   'Superseded' or the 'Any Status' status filters.
 </p>
 
 </body>
