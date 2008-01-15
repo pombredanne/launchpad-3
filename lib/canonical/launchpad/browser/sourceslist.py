@@ -37,21 +37,14 @@ class SourcesListEntriesView(LaunchpadView):
         self.terms = []
         if self._initially_hidden:
             self.terms.append(SimpleTerm(
-                None, 'none', 'Choose a Distribution series'))
+                None, 'YOUR_DISTRO_SERIES_HERE',
+                'Choose a Distribution series'))
         for series in self.context.valid_series:
             self.terms.append(SimpleTerm(series, series.name, series.title))
         field = Choice(__name__='series', title=_("Distro Series"),
                        vocabulary=SimpleVocabulary(self.terms), required=True)
         setUpWidget(self, 'series',  field, IInputWidget)
         self.series_widget.extra = "onChange='updateSeries(this);'"
-
-    @property
-    def initial_visibility(self):
-        """The initial visibility of the source.list entries."""
-        if self._initially_hidden:
-            return 'hidden'
-        else:
-            return 'visible'
 
     @property
     def plain_series_widget(self):

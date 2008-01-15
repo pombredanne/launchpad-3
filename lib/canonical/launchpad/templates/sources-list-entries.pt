@@ -1,12 +1,6 @@
 <script>
 <!--
     function updateSeries(select) {
-        entries = document.getElementById('sources-list-entries');
-        if (select.value == 'none') {
-            entries.style.visibility = 'hidden';
-        } else {
-            entries.style.visibility = 'visible';
-        }
         var deb = document.getElementById('series-deb');
         deb.innerHTML = select.value;
         var deb_src = document.getElementById('series-deb-src');
@@ -21,8 +15,7 @@
   </form>
 </div>
 
-<pre tal:attributes="style string:border: 1px solid gray;; padding: 0.3em;; visibility: ${view/initial_visibility};;"
-     id="sources-list-entries">
+<pre style="border: 1px solid gray; padding: 0.3em" id="sources-list-entries">
 deb <a tal:attributes="href context/archive_url"
  tal:content="context/archive_url" /> <span id="series-deb"
        tal:content="view/default_series_name">gutsy</span> main
