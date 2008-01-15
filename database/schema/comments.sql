@@ -971,6 +971,7 @@ COMMENT ON COLUMN Person.mail_resumption_date IS 'A NULL resumption date or a da
 COMMENT ON COLUMN Person.mailing_list_auto_subscribe_policy IS 'The auto-subscription policy for the person, i.e. whether and how the user is automatically subscribed to mailing lists for teams they join.  Values are described in dbschema.MailingListAutoSubscribePolicy.';
 COMMENT ON COLUMN Person.mailing_list_receive_duplicates IS 'True means the user wants to receive list copies of messages on which they are explicitly named as a recipient.';
 COMMENT ON COLUMN Person.visibility IS 'person.PersonVisibility enumeration which can be set to Public, Public with Private Membership, or Private.';
+COMMENT ON COLUMN Person.verbose_bugnotifications  IS 'If true, all bugnotifications sent to this Person will include the bug description.';
 
 COMMENT ON TABLE ValidPersonOrTeamCache IS 'A materialized view listing the Person.ids of all valid people and teams.';
 
@@ -1293,6 +1294,7 @@ COMMENT ON COLUMN Builder.trusted IS 'Whether or not the builder is able to buil
 COMMENT ON COLUMN Builder.url IS 'The url to the build slave. There may be more than one build slave on a given host so this url includes the port number to use. The default port number for a build slave is 8221';
 COMMENT ON COLUMN Builder.manual IS 'Whether or not builder was manual mode, i.e., collect any result from the it, but do not dispach anything to it automatically.';
 COMMENT ON COLUMN Builder.vm_host IS 'The virtual machine host associated to this builder. It should be empty for "native" builders (old fashion or architectures not yet supported by XEN).';
+COMMENT ON COLUMN Builder.active IS 'Whether to present or not the builder in the public list of builders avaialble. It is used to hide transient or defunct builders while they get fixed.';
 
 -- BuildQueue
 COMMENT ON TABLE BuildQueue IS 'BuildQueue: The queue of builds in progress/scheduled to run. This table is the core of the build daemon master. It lists all builds in progress or scheduled to start.';
@@ -1615,6 +1617,7 @@ COMMENT ON COLUMN Archive.authorized_size IS 'Size in bytes allowed for this PPA
 COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventions made in the PPA configuration.';
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
+COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
