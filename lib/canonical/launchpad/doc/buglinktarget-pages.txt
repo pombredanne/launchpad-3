@@ -2,7 +2,7 @@
 
 The +linkbug and +unlinkbug views operates on IBugLinkTarget.
 
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.interfaces import (
     ...     IBugLinkTarget, IBugSet, ICveSet)
@@ -31,7 +31,7 @@ to. After it links the bug, it sends a SQLObjectModifiedEvent.
     >>> request = LaunchpadTestRequest(
     ...     method="POST",
     ...     form={'field.actions.link':'Link', 'field.bug' : '1'})
-    >>> linkView = getView(cve, '+linkbug', request)
+    >>> linkView = getMultiAdapter((cve, request), name='+linkbug')
     >>> linkView.initialize()
 
 One notification should have been added to the response.
@@ -76,7 +76,7 @@ event.
     >>> request = LaunchpadTestRequest(
     ...     method="POST",
     ...     form={'field.actions.remove':'Remove', 'field.bugs' : ['1', '2']})
-    >>> unlinkView = getView(cve, '+unlinkbug', request)
+    >>> unlinkView = getMultiAdapter((cve, request), name='+unlinkbug')
     >>> unlinkView.initialize()
 
 One notification by removed bugs should have been added to the response.
@@ -120,10 +120,10 @@ We will give bug #2 a very bad title, then link the cve to the bug.
     >>> request = LaunchpadTestRequest(
     ...     method="POST",
     ...     form={'field.actions.link':'Link', 'field.bug' : '2'})
-    >>> linkView = getView(cve, '+linkbug', request)
+    >>> linkView = getMultiAdapter((cve, request), name='+linkbug')
     >>> linkView.initialize()
 
-The nonfiction contains the escaped bug title.
+The notification contains the escaped bug title.
 
     >>> for notification in request.response.notifications:
     ...     print notification.message.encode('utf8')

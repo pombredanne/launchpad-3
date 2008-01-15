@@ -54,7 +54,8 @@ class BugLinkView(LaunchpadFormView):
                 'bug',
                 'You are not allowed to link to private bug #%d.'% bug.id)
             return
-        # XXX sinzui 2008-01-15 bug=183277:
+        # XXX sinzui 2008-01-15 bug=183357:
+        # addNotification() should know to escape the bug.title.
         # We need to escape the bug.title when it is interpolated with the
         # notification to prevent a XSS vulnerability.
         bug_props = {'bugid': bug.id, 'title': cgi.escape(bug.title)}
