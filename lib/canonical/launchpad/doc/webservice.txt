@@ -193,16 +193,22 @@ that (for instance) /recipes/10 is mapped to the "Raw celery" Entry.
 
     >>> entry = collection.publishTraverse(request, "10")
     >>> entry
-    <canonical.lazr.rest.resource.CollectionResource object ...>
+    <canonical.lazr.rest.resource.EntryResource object ...>
     >>> entry()
-    '{"name": "Raw celery"}]'
+    '{"name": "Raw celery"}'
 
-If the user requests a collection that's not registered, the result is
-a NotFound exception:
+If the user tries to traverse to a nonexistent object, the result is a
+NotFound exception:
 
     >>> from zope.publisher.interfaces import NotFound
     >>> try:
     ...     app.publishTraverse(request, "nosuchcollection")
+    ... except NotFound, e:
+    ...     print "Not found."
+    Not found.
+
+    >>> try:
+    ...     collection.publishTraverse(request, "104")
     ... except NotFound, e:
     ...     print "Not found."
     Not found.
