@@ -52,6 +52,12 @@ Here's a simple RecipeSet with a predefined list of recipes.
     ...
     ...     def getAll(self):
     ...         return self.recipes
+    ...
+    ...     def get(self, id):
+    ...         match = [r for r in self.recipes if r.id == id]
+    ...         if len(match) > 0:
+    ...             return match[0]
+    ...         return None
 
 
 == Defining the resources ==
@@ -124,6 +130,11 @@ returns the business objects in the collection.
     ...     def find(self):
     ...        """Find all the recipes."""
     ...        return self.context.getAll()
+    ...
+    ...     def lookupEntry(self, id):
+    ...        """Find a single recipe by ID."""
+    ...        return self.context.get(int(id))
+
     >>> from canonical.lazr.interfaces import ICollection
     >>> provideAdapter(RecipeCollection, [IRecipeSet], ICollection)
 
@@ -162,10 +173,10 @@ an example.
     ...       top_level_collections = { 'recipes' : RecipeSet }
     >>> app = MyWebServiceApplication()
     >>> request = LaunchpadTestRequest()
-    >>> resource = app.publishTraverse(request, "recipes")
-    >>> resource
+    >>> collection = app.publishTraverse(request, "recipes")
+    >>> collection
     <canonical.lazr.rest.resource.CollectionResource object ...>
-    >>> resource()
+    >>> collection()
     '[{"name": "Green eggs and ham"}, ... {"name": "Raw celery"}]'
 
 Calling the CollectionResource object makes it process the incoming
@@ -174,6 +185,17 @@ the resource to the web. A CollectionResource is made up of a bunch of
 EntryResources, and the base EntryResource class knows how to use the
 entry schema class (in this case, IRecipeEntry) to publish a JSON
 document.
+
+A CollectionResource object also implements publishTraverse(): you can
+navigate from a collection to one of the entries in that collection.
+It's the corresponding Collection's job to implement lookupEntry() so
+that (for instance) /recipes/10 is mapped to the "Raw celery" Entry.
+
+    >>> entry = collection.publishTraverse(request, "10")
+    >>> entry
+    <canonical.lazr.rest.resource.CollectionResource object ...>
+    >>> entry()
+    '{"name": "Raw celery"}]'
 
 If the user requests a collection that's not registered, the result is
 a NotFound exception:
