@@ -83,7 +83,7 @@ class EntryResource(ReadOnlyResource):
         return dict
 
     def do_GET(self):
-        """Render the entry as JSON as JSON."""
+        """Render the entry as JSON."""
         self.request.response.setHeader('Content-type', 'application/json')
         return ResourceJSONEncoder().encode(self)
 
