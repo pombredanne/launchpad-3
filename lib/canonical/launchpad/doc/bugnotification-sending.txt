@@ -1028,9 +1028,10 @@ them:
     >>> len(notifications)
     1
 
+    >>> from canonical.launchpad.ftests import syncUpdate
     >>> for notification in notifications:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    ...     flush_database_updates()
+    ...     syncUpdate(notification)
 
 
 To demonstrate verbose notifications, we'll subscribe David Allouche,
