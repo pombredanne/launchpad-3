@@ -93,24 +93,25 @@ class MenuAPI:
             self._request = get_current_browser_request()
             self._selectedfacetname = None
 
-        # Create all call backs for inline navigation.
-        # This will allow things like: context/menu:translations/admin or
-        # context/menu:bugs/edit
+        # Populate all dictionaries for retrieval of individual Links of any
+        # given facet (e.g. context/menu:bugs/subscribe).
         for facet_entry in self.facet():
             setattr(self, facet_entry.name, self._getLinks(facet_entry.name))
 
     def _getLinks(self, facet_name):
-        """Return a dictionary with all links available in the given facet."""
+        """Return a dictionary with all links available in the given facet.
+
+        If the facet name is not valid, we get a TraversalError exception that
+        is raised outside this method.
+        """
         menu = queryAdapter(
             self._context, IApplicationMenu, facet_name)
         if menu is None:
             return {}
         else:
-            links_available = {}
             menu.request = self._request
-            for menu_link in menu.iterlinks(requesturi=self._requesturi()):
-                links_available[menu_link.name] = menu_link
-            return links_available
+            links = menu.iterlinks(requesturi=self._requesturi()
+            return dict((link.name, link) for link in links)
 
     def _nearest_menu(self, menutype):
         try:

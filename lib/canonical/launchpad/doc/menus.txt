@@ -973,7 +973,7 @@ is selected, we get a couple of menus.
     ...     print link.url
     http://launchpad.dev/sesamestreet/number73/+first
 
-Also, we can retrieve a concrete menu entry in a concrete facet:
+You can traverse to an individual menu item from the facet menu:
 
     >>> link = test_tales(
     ...     'CONTEXTS/menu:foo/first', context=house, view=view,
@@ -981,8 +981,7 @@ Also, we can retrieve a concrete menu entry in a concrete facet:
     >>> print link.url
     http://launchpad.dev/sesamestreet/number73/+first
 
-But, if we select a non existing entry, we report that it doesn't
-exist.
+But if a non-existing entry is requested, a KeyError is raised:
 
     >>> test_tales(
     ...     'CONTEXTS/menu:foo/broken', context=house, view=view,
@@ -991,7 +990,8 @@ exist.
     ...
     KeyError: 'broken'
 
-Also, we report also when the selected facet does not exist.
+Also, we report also when the selected facet does not exist with
+a TraversalError exception:
 
     >>> test_tales(
     ...     'CONTEXTS/menu:broken/bar', context=house, view=view,
