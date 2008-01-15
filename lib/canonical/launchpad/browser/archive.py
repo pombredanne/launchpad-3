@@ -102,7 +102,7 @@ class ArchiveViewBase(LaunchpadView):
 
     @property
     def is_active(self):
-        """Whether or not this PPA already have publications in it. """
+        """Whether or not this PPA already have publications in it."""
         return bool(self.context.getPublishedSources())
 
     @property
@@ -234,7 +234,6 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         LaunchpadFormView.initialize(self)
         self.setupPackageFilterAndResults()
 
-
     def _getSelectedSources(self):
         """Retrieve 'selected_sources' form value directly from request.
 
@@ -281,7 +280,7 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
 
         for source in selected_sources:
             if source.status != PackagePublishingStatus.PUBLISHED:
-                self.addError('Cannot delete non-published source (%s)'
+                self.addError('Cannot delete non-published source (%s).'
                               % source.displayname)
                 return
         # Finally inject 'selected_sources' in the validated form data.
@@ -291,8 +290,8 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
     def action_delete(self, action, data):
         """Perform the deletion of the selected packages.
 
-        Respecting the auxiliary parameter, 'including_binaries' and
-        'comment'.
+        The deletion will be performed upon the 'selected_sources' contents
+        respecting the auxiliary parameter, 'including_binaries' and 'comment'.
         """
         include_binaries = data.get('include_binaries')
         comment = data.get('comment')
@@ -312,17 +311,15 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
             target = "Sources"
 
         messages = []
+        messages.append(
+            '<p>%s deleted by %s request:' % (target, self.user.displayname))
         for source in selected_sources:
-            messages.append(
-                '<p>%s</p>' % source.displayname)
+            messages.append('<br/>%s' % source.displayname)
+        messages.append('</p>')
 
-        messages.insert(
-            0, '<p>%s deleted by %s request:</p>' % (
-            target, self.user.displayname))
-        messages.append("Deletion comment: %s" % comment)
+        messages.append("<p>Deletion comment: %s</p>" % comment)
 
         notification = "\n".join(messages)
-
         self.request.response.addNotification(notification)
 
 

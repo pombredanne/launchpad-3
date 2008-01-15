@@ -18,7 +18,7 @@
 <div metal:fill-slot="main" tal:define="ppa_active view/is_active">
 
 
-  <h2><span tal:replace="context/title" /> package console</h2>
+  <h2><tal:title replace="context/title" /> package console</h2>
 
   <p tal:condition="not: ppa_active">
     This PPA does not contain any packages yet.
@@ -84,12 +84,12 @@
 </div> <!--main -->
 
 <p metal:fill-slot="help">
-   In this page you should be able to search for packages and then
-   select one or more results for deletion. A deleted package will
-   disapear from the archive indexes within 20 minutes and the related
-   files will be gone once they are not required in the archive
-   anymore. You can browse throught deleted packages using the
-   'Superseded' or the 'Any Status' status filters.
+   You can manage your parackages with the PPA Console. Search for
+   packages, then select one of more of them for deletion. A deleted
+   package will disappear from the archive indexes within 20 minutes
+   and the related files will be gone once they are not required in
+   the archive anymore. You can browse through deleted packages using
+   the 'Superseded' or the 'Any Status' status filters.
 </p>
 
 </body>

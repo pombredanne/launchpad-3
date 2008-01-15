@@ -29,7 +29,8 @@ console, even if they try the URL directly.
     ...
     Unauthorized: ..., 'launchpad.Edit')
 
-Only Celso and Foo bar can access the PPA package console for Celso's PPA.
+Only Celso and Foo bar can access the PPA package console for Celso's
+PPA.
 
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
@@ -145,7 +146,7 @@ again, because we always have empty results after the form is issued.
     iceweasel - 1.0  2007-07-09  Published  warty           editors
     pmount - 0.1-1   2007-07-09  Published  warty           editors
 
-If a action is requested without having selected row a error is issued.
+If a action is requested without having selected row an error is issued.
 
     >>> admin_browser.getControl("Comment").value = "DO IT"
     >>> admin_browser.getControl("Delete").click()
@@ -223,7 +224,7 @@ Multiple packages can be deleted in one single batch.
     pmount 0.1-1 in warty
     Deletion comment: DO IT AGAIN !
 
-Foo Bar can see that all packages present in Cprov's PPA are deleted.
+Foo Bar can see that all packages present in Celso's PPA are deleted.
 
     >>> admin_browser.getControl(
     ...    name='field.status_filter').value = ['any']
@@ -246,4 +247,4 @@ Attempts to delete a already deleted package will result in an error.
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    Cannot delete non-published source (cdrkit 1.0 in breezy-autotest)
+    Cannot delete non-published source (cdrkit 1.0 in breezy-autotest).
