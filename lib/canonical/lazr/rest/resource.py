@@ -4,7 +4,9 @@
 
 __metaclass__ = type
 __all__ = [
+    'Collection',
     'CollectionResource',
+    'Entry',
     'EntryResource',
     'HTTPResource',
     'ReadOnlyResource'
@@ -19,8 +21,15 @@ from canonical.lazr.interfaces import (
 
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
+    """A JSON encoder for JSON-exposable resources like entry resources.
+
+    This class works with simplejson to encode objects as JSON if they
+    implement IJSONPublishable. All EntryResource subclasses, for
+    instance, should implement IJSONPublishable.
+    """
 
     def default(self, obj):
+        """Convert the given object to a simple data structure."""
         if IJSONPublishable.providedBy(obj):
             return obj.toDataForJSON()
         return super(ResourceJSONEncoder, self).default(obj)
@@ -51,7 +60,7 @@ class ReadOnlyResource(HTTPResource):
             self.request.response.setHeader("Allow", "GET")
 
 
-class EntryResource:
+class EntryResource(ReadOnlyResource):
     """An individual object, published to the web.
 
     This is not a real resource yet--you can't really access it from the
@@ -92,3 +101,20 @@ class CollectionResource(ReadOnlyResource):
                            for entry in self.context.find()]
         self.request.response.setHeader('Content-type', 'application/json')
         return ResourceJSONEncoder().encode(entry_resources)
+
+
+class Entry:
+    """An individual entry."""
+    implements(IEntry)
+
+    def __init__(self, context):
+        """Associate the entry with some database business object."""
+        self.context = context
+
+class Collection:
+    """A collection of entries."""
+    implements(ICollection)
+
+    def __init__(self, context):
+        """Associate the entry with some database business object."""
+        self.context = context

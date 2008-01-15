@@ -87,14 +87,12 @@ original business object:
     >>> from zope.component import provideAdapter
     >>> from zope.component import adapts
     >>> from canonical.lp import decorates
-    >>> class RecipeEntry:
+    >>> from canonical.lazr.rest import Entry
+    >>> class RecipeEntry(Entry):
     ...     """A recipe, as exposed through the web service."""
     ...     adapts(IRecipe)
     ...     decorates(IRecipeEntry)
     ...     schema = IRecipeEntry
-    ...
-    ...     def __init__(self, context):
-    ...         self.context = context
 
 The "schema" attribute points to the interface class that defines the
 attributes exposed through the web service. In this case, it's
@@ -119,17 +117,14 @@ to expose the RecipeSet collection through the web service. A
 collection must define a method called find(), which returns the
 business objects in the collection.
 
-    >>> from canonical.lazr.interfaces import ICollection
-    >>> from canonical.lazr.rest import EntryResource
-    >>> class RecipeCollection:
+    >>> from canonical.lazr.rest import Collection
+    >>> class RecipeCollection(Collection):
     ...     """A collection of recipes, as exposed through the web service."""
-    ...     implements(ICollection)
-    ...
-    ...     def __init__(self, context):
-    ...         self.context = context
     ...
     ...     def find(self):
+    ...        """Find all the recipes."""
     ...        return self.context.getAll()
+    >>> from canonical.lazr.interfaces import ICollection
     >>> provideAdapter(RecipeCollection, [IRecipeSet], ICollection)
 
 
