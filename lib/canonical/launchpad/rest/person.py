@@ -4,48 +4,41 @@
 
 __metaclass__ = type
 __all__ = [
-    'PersonResource',
-    'PersonCollectionResource',
+    'PersonEntry',
+    'PersonCollection',
     ]
 
 
-from zope.component import (adapts, getUtility)
+from zope.component import adapts, getUtility
 from zope.interface import implements
+from canonical.lazr.interfaces import ICollection
+from canonical.lazr.rest import EntryResource
+from canonical.launchpad.interfaces import IPerson, IPersonEntry, IPersonSet
 from canonical.lp import decorates
-from canonical.lazr.rest import (CollectionResource, EntryResource)
-from canonical.launchpad.interfaces import (
-    IPerson, IPersonResource, IPersonSet)
 
 
-class PersonResource(EntryResource):
+class PersonEntry:
     """A person."""
-    implements(IPersonResource)
-    decorates(IPersonResource, context="person")
     adapts(IPerson)
+    decorates(IPersonEntry)
+    schema = IPersonEntry
 
-    def __init__(self, person):
-        """Associate this resource with a specific person."""
-        self.person = person
-
-    def resourceInterface(self):
-        return IPersonResource
-
-    @property
-    def name(self):
-        return self.person.name
+    def __init__(self, context):
+        self.context = context
 
 
-class PersonCollectionResource(CollectionResource):
+class PersonCollection:
     """A collection of people."""
+    implements(ICollection)
 
-    def lookupEntry(self, request, name):
+    def lookupEntry(self, name):
         """Find a person by name."""
         person = getUtility(IPersonSet).getByName(name)
         if person is None:
             return None
         else:
-            return PersonResource(person)
+            return EntryResource(person, self.request)
 
     def find(self):
-        return [PersonResource(p) for p in
+        return [EntryResource(p, self.request) for p in
                 getUtility(IPersonSet).getAllValidPersons()]

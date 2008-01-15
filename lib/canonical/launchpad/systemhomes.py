@@ -28,8 +28,8 @@ from canonical.launchpad.interfaces import (
     IMailingListApplication, IMaloneApplication, IOpenIdApplication,
     IProductSet, IRegistryApplication, IRosettaApplication,
     IShipItApplication, ITranslationGroupSet, IWebServiceApplication)
-from canonical.launchpad.rest import (
-    PersonCollectionResource, ServiceRootResource)
+from canonical.lazr.rest import CollectionResource
+from canonical.launchpad.rest import PersonCollection, ServiceRootResource
 
 class AuthServerApplication:
     """AuthServer End-Point."""
@@ -194,13 +194,13 @@ class WebServiceApplication:
     """See IWebServiceApplication."""
     implements(IWebServiceApplication, IPublishTraverse)
 
+    top_level_collections = { 'people' : PersonCollection }
+
     def publishTraverse(self, request, name):
-        """Right now there are no resources below the root."""
-        if name == "people":
-            return PersonCollectionResource()
-        else:
-            raise NotFound(self, name)
+        if name not in self.top_level_collections:
+            return NotFound(self, name)
+        return CollectionResource(self.top_level_collections[name](request), request)
 
     def __call__(self, REQUEST=None):
         if REQUEST:
-            return ServiceRootResource(REQUEST)()
+            return ServiceRootResource(None, REQUEST)()

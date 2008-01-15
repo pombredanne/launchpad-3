@@ -1,0 +1,177 @@
+= RESTful Web Services =
+
+LAZR builds on Zope conventions to make it easy to expose your
+business objects as RESTful HTTP resources.
+
+== Setup ==
+
+Here's the interface for a simple business object that contains a
+recipe.
+
+    >>> __metaclass__ = type
+
+    >>> from zope.interface import Interface
+    >>> from zope.schema import Int, TextLine
+    >>> class IRecipe(Interface):
+    ...     name = Int(title=u"Unique ID", required=True)
+    ...     name = TextLine(title=u"Name", required=True)
+
+Here's the interface for the 'set' object that manages the individual
+recipes:
+
+    >>> class IRecipeSet(Interface):
+    ...     def getAll(self):
+    ...         "Get all recipes."
+
+Here's a dummy implementation of Recipe.
+
+    >>> from zope.interface import implements
+    >>> class Recipe:
+    ...     implements(IRecipe)
+    ...     def __init__(self, id, name):
+    ...         self.id = id
+    ...         self.name = name
+
+Here are the "business objects" themselves:
+
+    >>> R1 = Recipe(1, "Green eggs and ham")
+    >>> R2 = Recipe(7, "Steak au poivre")
+    >>> R3 = Recipe(10, "Raw celery")
+
+Here's a dummy RecipeSet, with a single instance and a 
+
+    >>> class RecipeSet:
+    ...     implements(IRecipeSet)
+    ...     def __init__(self):
+    ...         self.recipes = [R1, R2, R3]
+    ...
+    ...     def getAll(self):
+    ...         return self.recipes
+
+
+== Defining the resources ==
+
+We don't want to expose our business objects directly through the web
+service. There will be fields we don't want to expose, synthetic
+fields we do want to expose, fields we want to expose under a
+different name, and so on. The first step is to define the interface
+we _do_ want to expose through the web service. LAZR provides an
+interface, IEntry, for the individual business object. Right now it's
+just a marker interface, but it's expected to define a number of
+attributes.
+
+    >>> from canonical.lazr.interfaces import IEntry
+    >>> class IRecipeEntry(IEntry):
+    ...     """The part of a recipe that we expose through the web service."""
+    ...     name = TextLine()
+
+Here's the implementation of that interface: a simple decorator on the
+original business object:
+
+    >>> from zope.component import adapts
+    >>> from canonical.lp import decorates
+    >>> class RecipeEntry:
+    ...     """A recipe, as exposed through the web service."""
+    ...     adapts(IRecipe)
+    ...     decorates(IRecipeEntry)
+    ...     schema = IRecipeEntry
+    ...
+    ...     def __init__(self, context):
+    ...         self.context = context
+
+The "schema" attribute points to the object that defines the
+attributes exposed through the web service. In this case, it's
+IRecipeEntry, which exposes only 'name'.
+
+We need to register RecipeEntry as an adapter from IRecipe to
+IRecipeEntry. In ZCML it would look like this.
+
+    <adapter
+        for="canonical.launchpad.interfaces.IRecipe"
+        provides="canonical.launchpad.interfaces.IRecipeEntry"
+        factory="canonical.launchpad.rest.RecipeEntry"
+        />
+
+Since we're in the middle of a Python test we need to do the equivalent
+in Python code:
+
+    >>> from zope.component import provideAdapter
+    >>> provideAdapter(RecipeEntry, [IRecipe], IRecipeEntry)
+
+LAZR also defines an interface for collections of objects. I'll use it
+to expose the RecipeSet collection through the web service. A
+collection must define a method called find(), which returns the items
+in the collection.
+
+    >>> from canonical.lazr.interfaces import ICollection
+    >>> from canonical.lazr.rest import EntryResource
+    >>> class RecipeCollection:
+    ...     """A collection of recipes, as exposed through the web service."""
+    ...     implements(ICollection)
+    ...
+    ...     def find(self):
+    ...        return [EntryResource(r) for r in RecipeSet().getAll()]
+
+Note how find() returns EntryResource objects, not Recipe
+objects. That makes this a good time to talk about Resource objects.
+
+== Resource objects ==
+
+LAZR's Resource objects are the objects that actually handle incoming
+HTTP requests. There are a few very common types of HTTP resources,
+and LAZR defines classes for some of them. For instance, there's the
+"collection" resource that responds to GET (to get the items in the
+collection) and POST (to add a new item in the collection). LAZR
+implements this as a CollectionResource which collects the HTTP
+arguments and passes them into methods like find() and createNew()
+(createNew() isn't implemented yet).
+
+Of course, a CollectionResource has to expose a collection _of_
+something. That's why each CollectionResource is associated with some
+concrete implementation of ICollection, like RecipeCollection. All you
+have to do is define the behavior of the collection, and
+CollectionResource takes care of exposing the collection through HTTP.
+Similarly, you can implement RecipeEntry to the IEntry interface, and
+expose it through the web as an EntryResource.
+
+== The WebServiceApplication ==
+
+How are these Resource objects connected to the web? The
+WebServiceApplication has a list of top-level collections and
+implements PublishTraverse so that a request to a registered
+collection is delegated to the appropriate CollectionResource. Here's
+an example.
+
+    >>> from canonical.launchpad.systemhomes import WebServiceApplication
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> class MyWebServiceApplication(WebServiceApplication):
+    ...       top_level_collections = { 'recipes' : RecipeCollection }
+    >>> app = MyWebServiceApplication()
+    >>> request = LaunchpadTestRequest()
+    >>> resource = app.publishTraverse(request, "recipes")
+    >>> resource
+    <canonical.lazr.rest.resource.CollectionResource object ...>
+    >>> resource()
+    '[{"name": "Green eggs and ham"}, ... {"name": "Raw celery"}]'
+
+Calling the CollectionResource object makes it process the incoming
+request. Since this is a GET request, calling the resource publishes
+the resource to the web. A CollectionResource is made up of a bunch of
+EntryResources, and the base EntryResource class knows how to use the
+entry schema class (in this case, IRecipeEntry) to publish a JSON
+document.
+
+If the user requests a collection that's not registered, the result is
+a NotFound exception:
+
+    >>> from zope.publisher.interfaces import NotFound
+    >>> app.publishTraverse(request, "nosuchcollection")
+    <zope.publisher.interfaces.NotFound instance ...>
+
+Right now, only top-level traversal is implemented. Eventually a
+collection will be responsible for implementing publishTraverse() to
+that collection's individual resources (/recipes/10 or
+/recipes/Raw%20celery), and an entry will be responsible for
+implementing publishTraverse() to related entries (/recipes/10/owner)
+and collections (/recipes/10/ingredients).
+
