@@ -47,11 +47,11 @@ user.
 He will decide to make all bug notifications that are sent to him
 verbose.
 
-    >>> browser.getControl("Attach bug descriptions when sending me "
+    >>> browser.getControl("Include bug descriptions when sending me "
     ...     "bug notifications").selected
     False
 
-    >>> browser.getControl("Attach bug descriptions when sending me "
+    >>> browser.getControl("Include bug descriptions when sending me "
     ...     "bug notifications").click()
     >>> browser.getControl('Save').click()
 
@@ -62,7 +62,7 @@ We now check to ensure that the verbose bug notifications option was
 changed:
 
     >>> browser.open('http://launchpad.dev/~foobar/+edit')
-    >>> browser.getControl("Attach bug descriptions when sending me "
+    >>> browser.getControl("Include bug descriptions when sending me "
     ...     "bug notifications").selected
     True
 
