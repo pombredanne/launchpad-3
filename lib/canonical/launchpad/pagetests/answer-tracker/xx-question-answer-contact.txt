@@ -195,7 +195,7 @@ subscribed to Spanish questions.
 
     >>> portlet = find_tag_by_id(browser.contents, 'portlet-subscribers')
     >>> print extract_text(portlet)
-    Subscribers to question #10
+    Subscribers
     Sample Person
     Also notified:
     Sample Person
@@ -214,7 +214,7 @@ Question:
 
     >>> portlet = find_tag_by_id(browser.contents, 'portlet-subscribers')
     >>> print extract_text(portlet).encode('ASCII', 'backslashreplace')
-    Subscribers to question #12
+    Subscribers
     Carlos Perell\xf3 Mar\xedn
     Also notified:
     Landscape Developers
