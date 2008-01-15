@@ -108,8 +108,8 @@ A SQLObjectModifiedEvent was sent:
 
 Bug titles may legitimately contain HTML markup, such as reporting that
 there is "Too much space between <h1> and <h2>". Notifications, like the
-the bug link notification, are may also contain HTML markup. To prevent
-a XSS vulnerability, the bug title is escaped before it is interpolated
+the bug link notification, may also contain HTML markup. To prevent a
+XSS vulnerability, the bug title is escaped before it is interpolated
 with the notification message. (see bug 183277).
 
 We will give bug #2 a very bad title, then link the cve to the bug.
