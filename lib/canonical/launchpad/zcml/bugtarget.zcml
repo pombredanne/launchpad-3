@@ -7,6 +7,12 @@
   <facet facet="bugs">
 
     <browser:page
+        for="*"
+        name="bug-attachment-macros"
+        permission="zope.Public"
+        template="../templates/bug-attachment-macros.pt" />
+
+    <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
         class="canonical.launchpad.browser.BugTargetView"
         name="+portlet-latestbugs"
