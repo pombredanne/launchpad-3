@@ -6,11 +6,11 @@ features by defining some business objects for managing recipes, and
 then publishing them as resources through a web service.
 
 
-== Example Business objects ==
+== Example business objects ==
 
 Here's the interface for a simple business object that contains a
-recipe. This is the kinds business object you'd find in any Zope
-application, and it knows nothing about web services.
+recipe. This is the kind of business object you'd find in any Zope
+application, with know special knowledge of web services.
 
     >>> # All classes defined in this test should be new-style classes.
     >>> __metaclass__ = type
@@ -59,7 +59,7 @@ Here's a simple RecipeSet with a predefined list of recipes.
 LAZR provides an interface, IEntry, for the individual business object
 exposed through the resource. Right now it's just a marker interface,
 but it's expected to define a number of data fields: the same kind of
-fields defined by an interface like IRecipe.
+fields defined by a business object interface like IRecipe.
 
 If we wanted to expose our IRecipe business objects through the web
 service exactly as they are, we could simply define a class that
@@ -74,8 +74,8 @@ directly through the web service. There will be fields we don't want
 to expose, synthetic fields we do want to expose, fields we want to
 expose under a different name, and so on. In that case, our IEntry
 subclass will define the interface we _do_ want to expose through the
-web service. Here, it's being used to display the recipe's name but
-not its ID:
+web service. Here, we're exposing an IEntry that exposes the
+underlying recipe's name but not its ID:
 
     >>> class IRecipeEntry(IEntry):
     ...     """The part of a recipe that we expose through the web service."""
@@ -84,7 +84,6 @@ not its ID:
 Here's the implementation of IRecipeEntry: a simple decorator on the
 original business object:
 
-    >>> from zope.component import provideAdapter
     >>> from zope.component import adapts
     >>> from canonical.lp import decorates
     >>> from canonical.lazr.rest import Entry
@@ -110,12 +109,13 @@ IRecipeEntry. In ZCML it would look like this.
 Since we're in the middle of a Python test we need to do the equivalent
 in Python code:
 
+    >>> from zope.component import provideAdapter
     >>> provideAdapter(RecipeEntry, [IRecipe], IRecipeEntry)
 
-LAZR also defines an interface for collections of objects. I'll use it
-to expose the RecipeSet collection through the web service. A
-collection must define a method called find(), which returns the
-business objects in the collection.
+LAZR also defines an interface and a base class for collections of
+objects. I'll use it to expose the RecipeSet collection through the
+web service. A collection must define a method called find(), which
+returns the business objects in the collection.
 
     >>> from canonical.lazr.rest import Collection
     >>> class RecipeCollection(Collection):
@@ -134,10 +134,10 @@ LAZR's Resource objects are the objects that actually handle incoming
 HTTP requests. There are a few very common types of HTTP resources,
 and LAZR defines classes for some of them. For instance, there's the
 "collection" resource that responds to GET (to get the items in the
-collection) and POST (to add a new item in the collection). LAZR
-implements this as a CollectionResource which collects the HTTP
-arguments and passes them into methods like find() and createNew()
-(createNew() isn't implemented yet).
+collection) and POST (to add a new item to the collection). LAZR
+implements this as a CollectionResource which uses the HTTP arguments
+to drive Collection methods like find() and createNew() (createNew()
+isn't implemented yet).
 
 Of course, a CollectionResource has to expose a collection _of_
 something. That's why each CollectionResource is associated with some
@@ -146,6 +146,7 @@ have to do is define the behavior of the collection, and
 CollectionResource takes care of exposing the collection through HTTP.
 Similarly, you can implement RecipeEntry to the IEntry interface, and
 expose it through the web as an EntryResource.
+
 
 == The WebServiceApplication ==
 
