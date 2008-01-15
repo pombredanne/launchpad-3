@@ -273,7 +273,11 @@ class Config:
     @property
     def extends(self):
         """See `IStackableConfig`."""
-        return self.overlays[1]
+        if len(self.overlays) > 1:
+            return self.overlays[1]
+        else:
+            # The only config in the overlays stack was made from the schema.
+            return None
 
     @property
     def overlays(self):
@@ -408,9 +412,14 @@ class Config:
         return removed_overlays
 
     def _getIndexOfOverlay(self, conf_name):
-        """Return the index of the config named conf_name."""
+        """Return the index of the config named conf_name.
+
+        The bottom of the stack cannot never be returned because it was
+        made from the schema.
+        """
+        bottom_index = len(self.overlays) - 1
         for index, config_data in enumerate(self.overlays):
-            if config_data.name == conf_name:
+            if config_data.name == conf_name and index != bottom_index:
                 return index + 1
         # The config data was not found in the overlays.
         raise NoConfigError('No config with name: %s.' % conf_name)

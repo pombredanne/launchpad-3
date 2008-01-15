@@ -314,14 +314,16 @@ The bad_config example will be used for validation tests.
 
 == Config ==
 
-The config represents the local configuration of the process on system.
-It is validated with a schema. It extends the schema, or other conf
-files to define the specific differences from the extended files that
-are required to run the local processes.
+The config represents the local configuration of the process on a
+system. It is validated with a schema. It extends the schema, or other
+conf files to define the specific differences from the extended files
+that are required to run the local processes.
 
-The config created above provides both the IConfigData and
-IStackableConfig interfaces. They represent the data access and data
-manipulation methods respectively.
+The object returned by load() provides both the IConfigData and
+IStackableConfig interfaces. IConfigData is for read-only access to the
+configuration data. A process configuration is made up of a stack of
+different IConfigData. The IStackableConfig interface provides the
+methods used to manipulate that stack of configuration overlays.
 
     >>> from canonical.lazr.interfaces import IConfigData, IStackableConfig
     >>> verifyObject(IConfigData, config)
@@ -715,3 +717,19 @@ Call the pop() method with an unknown conf_name raises an error
     Traceback (most recent call last):
       ...
     NoConfigError: No config with name: bad-name.
+
+A Config must have at least one ConfigData in the overlays stack so that
+it has data. The bottom ConfigData in the overlays was made from the
+schema's required sections. It cannot be removed by the pop() method.
+
+    >>> overlays = config.pop('base.conf')
+    Traceback (most recent call last):
+      ...
+    NoConfigError: No config with name: base.conf.
+
+If all but the bottom ConfigData is popped from overlays, the extends
+property returns None.
+
+    >>> overlays = config.pop('shared.conf')
+    >>> print config.extends
+    None
