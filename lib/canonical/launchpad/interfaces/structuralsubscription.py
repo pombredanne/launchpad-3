@@ -1,13 +1,13 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 
 """StructuralSubscription interfaces."""
 
 __metaclass__ = type
 
 __all__ = [
-    'IStructuralSubscription',
-    'BugNotificationLevel',
     'BlueprintNotificationLevel'
+    'BugNotificationLevel',
+    'IStructuralSubscription',
     ]
 
 from zope.interface import Attribute, Interface

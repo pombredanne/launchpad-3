@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['StructuralSubscription']
@@ -64,7 +64,7 @@ class StructuralSubscription(SQLBase):
         """See `IStructuralSubscription`."""
         if self.product is not None:
             return self.product
-        if self.productseries is not None:
+        elif self.productseries is not None:
             return self.productseries
         elif self.project is not None:
             return self.project
