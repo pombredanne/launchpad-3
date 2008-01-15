@@ -1,5 +1,4 @@
-IBugLinkTarget Views
-====================
+= IBugLinkTarget Views =
 
 The +linkbug and +unlinkbug views operates on IBugLinkTarget.
 
@@ -23,12 +22,11 @@ The +linkbug and +unlinkbug views operates on IBugLinkTarget.
     >>> login('no-priv@canonical.com')
 
 
-Link Bug View
--------------
+== Link Bug View ==
 
-The +linkbug view is used to link bugs to IBugLinkTarget. It has a simple
-widget to enter the bug number or nickname of the bug to link to. After it
-links the bug, it sends a SQLObjectModifiedEvent.
+The +linkbug view is used to link bugs to IBugLinkTarget. It has a
+simple widget to enter the bug number or nickname of the bug to link
+to. After it links the bug, it sends a SQLObjectModifiedEvent.
 
     >>> request = LaunchpadTestRequest(
     ...     method="POST",
@@ -64,8 +62,7 @@ A SQLObjectModifiedEvent was sent:
     >>> collected_events = []
 
 
-Unlink Bugs View
-----------------
+== Unlink Bugs View ==
 
     (Link some other bugs first.)
     >>> link = cve.linkBug(bugset.get(2))
@@ -73,7 +70,8 @@ Unlink Bugs View
 
 
 The +unlinkbug view is used to unlink a selection of bugs from an
-IBugLinkTarget. After removing the bugs, it sends a SQLObjectModified event.
+IBugLinkTarget. After removing the bugs, it sends a SQLObjectModified
+event.
 
     >>> request = LaunchpadTestRequest(
     ...     method="POST",
@@ -105,8 +103,35 @@ A SQLObjectModifiedEvent was sent:
     >>> print [bug.id for bug in event.object_before_modification.bugs]
     [1, 2, 3]
 
-Cleanup
--------
 
-    (Desactivate the event listener.)
+== Bug titles are escaped in notifications ==
+
+Bug titles may legitimately contain HTML markup, such as reporting that
+there is "Too much space between <h1> and <h2>". Notifications, like the
+the bug link notification, are may also contain HTML markup. To prevent
+a XSS vulnerability, the bug title is escaped before it is interpolated
+with the notification message. (see bug 183277).
+
+We will give bug #2 a very bad title, then link the cve to the bug.
+
+    >>> bug = bugset.get(2)
+    >>> bug.title = '<script>window.alert("Hello!")</script>'
+
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.actions.link':'Link', 'field.bug' : '2'})
+    >>> linkView = getView(cve, '+linkbug', request)
+    >>> linkView.initialize()
+
+The nonfiction contains the escaped bug title.
+
+    >>> for notification in request.response.notifications:
+    ...     print notification.message.encode('utf8')
+    Added link to bug #2:
+    ...&lt;script&gt;window.alert("Hello!")&lt;/script&gt;....
+
+
+== Cleanup ==
+
+    (Deactivate the event listener.)
     >>> modified_listener.unregister()
