@@ -39,6 +39,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscription)
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
@@ -1907,6 +1909,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         search_params = BugTaskSearchParams(user=user, assignee=self)
         bugtask_count = target.searchTasks(search_params).count()
         return bugtask_count > 0
+
+    @property
+    def structural_subscriptions(self):
+        """See `IPerson`."""
+        return StructuralSubscription.selectBy(
+            subscriber=self, orderBy=['-date_created'])
 
 
 class PersonSet:

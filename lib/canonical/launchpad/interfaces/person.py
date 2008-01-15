@@ -761,6 +761,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         required=True, vocabulary=PersonVisibility,
         default=PersonVisibility.PUBLIC)
 
+    structural_subscriptions = Attribute(
+        "The structural subscriptions for this person.")
+
     @invariant
     def personCannotHaveIcon(person):
         """Only Persons can have icons."""
