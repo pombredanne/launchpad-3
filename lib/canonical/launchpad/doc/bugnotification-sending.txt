@@ -1078,6 +1078,10 @@ with demonstrating this, we'll define a helper function.
     >>> [(bug_notifications, messages)] = (
     ...     get_email_notifications(notifications))
     >>> sorted_messages = sort_messages_by_recipient(messages)
+
+We can see that foo.bar@canonical.com doesn't receive verbose
+notifications:
+
     >>> print_notification(sorted_messages['foo.bar@canonical.com'][0])
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
@@ -1093,6 +1097,8 @@ with demonstrating this, we'll define a helper function.
     of the bug.
     <BLANKLINE>
     ---------------------------------------------------------------------- 
+
+Whereas ddaa does:
 
     >>> print_notification(
     ...     sorted_messages['david.allouche@canonical.com'][0])
