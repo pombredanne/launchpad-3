@@ -69,6 +69,31 @@ show a link to the atom feed for that product's latest bugs.
 
 An announcements feed link should also be shown on the main product page.
 
+    >>> browser.open('http://launchpad.dev/jokosher')
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [<link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/jokosher/announcements.atom"
+        title="Announcements for Jokosher" />,
+     <link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/jokosher/latest-bugs.atom"
+        title="Latest Bugs for Jokosher" />]
+
+Only bug feeds should be linked to on bugs.launchpad.net.
+
+    >>> browser.open('http://bugs.launchpad.dev/jokosher')
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    [<link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/jokosher/latest-bugs.atom"
+        title="Latest Bugs for Jokosher" />]
+
+
+== Escaping the title ==
+
+Since the link title attribute contains the displayname of the project,
+it must have quotes and html escaped.
+
     >>> browser.open('http://launchpad.dev/bad-displayname')
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
@@ -78,16 +103,6 @@ An announcements feed link should also be shown on the main product page.
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/bad-displayname/latest-bugs.atom"
         title="Latest Bugs for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />]
-
-Only bug feeds should be linked to on bugs.launchpad.net.
-
-    >>> browser.open('http://bugs.launchpad.dev/bad-displayname')
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> soup.head.findAll('link', type='application/atom+xml')
-    [<link rel="alternate" type="application/atom+xml"
-        href="http://feeds.launchpad.dev/bad-displayname/latest-bugs.atom"
-        title="Latest Bugs for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />]
-
 
 == Latest Bugs for a Project ==
 

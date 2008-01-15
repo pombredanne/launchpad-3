@@ -643,6 +643,7 @@ Here are a few quick high points of what’s new:
 - 12 new items (plus many old favorites) including t-shirts, stickers and more.
 - interactive features including a Store Blog, Community Spotlight', 'http://blog.mozilla.com/blog/2007/08/17/announcing-the-grand-re-opening-of-the-mozilla-store/', true, NULL);
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (22, '2007-11-25 01:32:06.722004', NULL, 1, NULL, NULL, 4, 'Google become Platinum Sponsor of Mozilla', 'In a landmark deal for an open source project, Mozilla and Google have agreed that Google will provide free food to all Mozilla contributors, regardless of their domicile.', NULL, true, NULL);
+
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (23, '2007-11-23 01:32:06.722004', '2007-11-23 01:32:06.722004', 1, NULL, 1, NULL, 'Ampersand="&" LessThan="<" GreaterThan=">"', 'This is to test that special characters get escaped and displayed correctly.
 Ampersand="&"
 LessThan="<"
@@ -651,7 +652,6 @@ Newline="
 "
 url="http://www.ubuntu.com" (The text-to-html formatter should make this an <a> tag)
 ', NULL, true, NULL);
-
 
 ALTER TABLE announcement ENABLE TRIGGER ALL;
 
@@ -669,18 +669,18 @@ ALTER TABLE answercontact ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4, false);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4);
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
