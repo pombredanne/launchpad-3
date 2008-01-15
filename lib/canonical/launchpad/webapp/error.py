@@ -11,6 +11,7 @@ from zope.component import getUtility
 from zope.app.exception.interfaces import ISystemErrorView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 import canonical.launchpad.layers
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -93,7 +94,7 @@ class SystemErrorView:
             del tb
 
     def inside_div(self, html):
-        """Returns the given html text inside a div of an appropriate class."""
+        """Returns the given HTML inside a div of an appropriate class."""
 
         return ('<div class="highlighted" '
                 'style="font-family: monospace; font-size: smaller;">'
@@ -153,6 +154,18 @@ class NotFoundView(SystemErrorView):
 
     def __call__(self):
         return self.index()
+
+    @cachedproperty
+    def referrer(self):
+        """If there is a referring page, return its URL.
+        
+        Otherwise return None.
+        """
+        referrer = self.request.get('HTTP_REFERER')
+        if referrer:
+            return referrer
+        else:
+            return None
 
 
 class RequestExpiredView(SystemErrorView):
