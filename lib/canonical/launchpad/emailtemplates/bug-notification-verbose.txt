@@ -5,5 +5,7 @@
 %(bug_url)s
 %(notification_rationale)s
 
+%(bug_statuses)s
+
 Bug description:
 %(bug_description)s

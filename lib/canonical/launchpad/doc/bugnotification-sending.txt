@@ -1016,9 +1016,9 @@ specified:
 == Verbose bug notifications ==
 
 It is possible for users to have all the bug notifications which they
-receive include the bug description. This helps in those cases where the
-user doesn't save bug notifications, which can make subsequent
-notifications seem somewhat obscure.
+receive include the bug description and status. This helps in those
+cases where the user doesn't save bug notifications, which can make
+subsequent notifications seem somewhat obscure.
 
 We'll expire all existing notifications since we're not interested in
 them:
@@ -1058,9 +1058,9 @@ containing that comment.
     1
 
 If we pass this notifcation to get_email_notifications we can see that
-ddaa will receieve a notification which contains the bug description.
-All other subscribers will receive standard notifications that don't
-include the bug description.
+ddaa will receieve a notification which contains the bug description and
+its status in all of its targets. All other subscribers will receive
+standard notifications that don't include the bug description.
 
     >>> from canonical.launchpad.scripts.bugnotification import (
     ...     get_email_notifications)
@@ -1080,6 +1080,9 @@ include the bug description.
     http://bugs.launchpad.dev/bugs/15
     You received this bug notification because you are a direct subscriber
     of the bug.
+    <BLANKLINE>
+    Status in Redfish: New
+    Status in Mozilla Thunderbird: New
     <BLANKLINE>
     Bug description:
     Like this one, natch.

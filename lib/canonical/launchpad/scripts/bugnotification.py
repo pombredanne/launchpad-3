@@ -98,6 +98,14 @@ def construct_email_notifications(bug_notifications):
         if person.verbose_bugnotifications:
             email_template = 'bug-notification-verbose.txt'
             body_data['bug_description'] = bug.description
+
+            status_base = "Status in %s: %s"
+            status_strings = []
+            for bug_task in bug.bugtasks:
+                status_strings.append(status_base % (bug_task.target.title,
+                    bug_task.status.title))
+
+            body_data['bug_statuses'] = "\n".join(status_strings)
         else:
             email_template = 'bug-notification.txt'
 
