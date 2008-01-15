@@ -273,11 +273,11 @@ class Config:
     @property
     def extends(self):
         """See `IStackableConfig`."""
-        if len(self.overlays) > 1:
-            return self.overlays[1]
-        else:
-            # The only config in the overlays stack was made from the schema.
+        if len(self.overlays) == 1:
+            # The ConfigData made from the schema defaults extends nothing.
             return None
+        else:
+            return self.overlays[1]
 
     @property
     def overlays(self):
@@ -357,6 +357,10 @@ class Config:
                 extends, meta_errors = self._loadMetaData(parser)
                 errors.extend(meta_errors)
                 continue
+            if (section_name.endswith('.template')
+                or section_name.endswith('.optional')):
+                # This section is a schema directive.
+                continue
             if section_name not in self.schema:
                 # Any section not in the the schema is an error.
                 msg = "%s does not have a %s section." % (
@@ -417,9 +421,11 @@ class Config:
         The bottom of the stack cannot never be returned because it was
         made from the schema.
         """
-        bottom_index = len(self.overlays) - 1
+        schema_index = len(self.overlays) - 1
         for index, config_data in enumerate(self.overlays):
-            if config_data.name == conf_name and index != bottom_index:
+            if index == schema_index and config_data.name == conf_name:
+                raise NoConfigError("Cannot pop the schema's default config.")
+            if config_data.name == conf_name:
                 return index + 1
         # The config data was not found in the overlays.
         raise NoConfigError('No config with name: %s.' % conf_name)

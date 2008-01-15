@@ -555,7 +555,6 @@ errors in the config.
     ...         print  "%s: %s" % (error.__class__.__name__, error)
     ConfigErrors: bad conf is not valid.
     UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in ... range(128)
-    UnknownSectionError: base.conf does not have a section-3.template section.
     UnknownKeyError: The meta section does not have a metakey key.
     UnknownKeyError: section-1 does not have a keyn key.
     UnknownSectionError: base.conf does not have a unknown-section section.
@@ -592,6 +591,9 @@ config file that was loaded.
 
     >>> verifyObject(IConfigData, config.overlays[-1])
     True
+
+
+=== push() ===
 
 Raw config data can be merged with the config to create a new overlay
 for testing. The push() method accepts a string of config data. The
@@ -676,6 +678,30 @@ The config's sections are updated with 'section-3.app-a' too.
     section-3.app-b
     section-5
 
+A config file may state that it extends its schema (to clearly connect
+the config to the schema). The schema can also be pushed to reset the
+values in the config to the schema's default values.
+
+    >>> extnder_conf_name = path.normpath(path.join(
+    ...     path.dirname(__file__), '..', 'ftests', 'testfiles',
+    ...     'extender.conf'))
+    >>> extender_conf_data = '\n'.join([
+    ...     "[meta]",
+    ...     "extends: base.conf"])
+    >>> config.push(extnder_conf_name, extender_conf_data)
+    >>> for config_data in config.overlays:
+    ...     print config_data.name
+    extender.conf
+    base.conf
+    test app-a
+    test config
+    local.conf
+    shared.conf
+    base.conf
+
+
+=== pop() ===
+
 ConfigData can be removed from the stack of overlays using the pop()
 method. The methods returns the list of ConfigData that was removed--a
 slice from the specified ConfigData to the top of the stack.
@@ -683,6 +709,8 @@ slice from the specified ConfigData to the top of the stack.
     >>> overlays = config.pop('test config')
     >>> for config_data in overlays:
     ...     config_data.name
+    'extender.conf'
+    'base.conf'
     'test app-a'
     'test config'
 
@@ -725,7 +753,7 @@ schema's required sections. It cannot be removed by the pop() method.
     >>> overlays = config.pop('base.conf')
     Traceback (most recent call last):
       ...
-    NoConfigError: No config with name: base.conf.
+    NoConfigError: Cannot pop the schema's default config.
 
 If all but the bottom ConfigData is popped from overlays, the extends
 property returns None.
