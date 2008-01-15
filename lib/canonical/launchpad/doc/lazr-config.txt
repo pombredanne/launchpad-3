@@ -699,6 +699,16 @@ values in the config to the schema's default values.
     shared.conf
     base.conf
 
+The 'section-1' section was restored to the schema's default values.
+
+    >>> for key in sorted(config['section-1']):
+    ...     print key, ':', config['section-1'][key]
+    key1 : foo
+    key2 : bar and baz
+    key3 : Launchpad&nbsp;rocks
+    key4 : F&#028c;k yeah!
+    key5 :
+
 
 === pop() ===
 
