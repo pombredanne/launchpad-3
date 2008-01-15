@@ -72,6 +72,18 @@ Selecting a valid product will take us to the next filebug step.
     #5 Firefox install instructions should be complete
     Open, last updated 2006-07-14
 
+The user can now choose to add an attachment to the bug. We create a
+file-like object to demonstrate this.
+
+    >>> from cStringIO import StringIO
+    >>> example_file = StringIO('Traceback...')
+    >>> example_file.seek(0)
+
+    >>> user_browser.getControl('Attachment').add_file(
+    ...   example_file, 'text/plain', 'example.txt')
+    >>> user_browser.getControl('Description').value = ("A description "
+    ...     "of the attachment.")
+
 Entering a description and submitting the bug takes the user to the bug
 page.
 
