@@ -334,6 +334,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
         """
         bug_url = data.get('bug_url', '')
         target = self.getTarget(data)
+        newcontext_escaped = cgi.escape(target.displayname)
         if (not self.request.get('ignore_missing_remote_bug') and 
             not target.official_malone and not bug_url):
             # We have no URL for the remote bug and the target does not use
@@ -351,8 +352,8 @@ class BugTaskCreationStep(AlsoAffectsStep):
             self.notifications.append(_(dedent("""
                 %s doesn't use Launchpad as its bug tracker. Without a bug
                 URL to watch, the %s status will not update automatically.
-                %s""" % (cgi.escape(self.getTarget().displayname),
-                cgi.escape(self.getTarget().displayname), confirm_button))))
+                %s""" % (newcontext_escaped, newcontext_escaped,
+                confirm_button))))
             return None
 
         extracted_bug = None
