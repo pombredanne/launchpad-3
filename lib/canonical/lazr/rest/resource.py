@@ -12,11 +12,10 @@ __all__ = [
 
 
 import simplejson
-from zope.component import getAdapter
 from zope.interface import implements
 from zope.schema.interfaces import IField
 from canonical.lazr.interfaces import (
-    ICollectionResource, IEntry, IHTTPResource, IJSONPublishable)
+    ICollection, ICollectionResource, IEntry, IHTTPResource, IJSONPublishable)
 
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
@@ -60,9 +59,10 @@ class EntryResource:
     """
     implements(IJSONPublishable)
 
-    def __init__(self, context):
-        """Associate this resource with a specific object."""
-        self.context = context
+    def __init__(self, context, request):
+        """Associate this resource with a specific object and request."""
+        self.context = IEntry(context)
+        self.request = request
 
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
@@ -71,11 +71,10 @@ class EntryResource:
         the resource interface.
         """
         dict = {}
-        entry_resource = getAdapter(self.context, IEntry)
-        schema = entry_resource.schema
+        schema = self.context.schema
         for name in schema.names():
             if IField.providedBy(schema.get(name)):
-                dict[name] = getattr(entry_resource, name)
+                dict[name] = getattr(self.context, name)
         return dict
 
 
@@ -83,8 +82,13 @@ class CollectionResource(ReadOnlyResource):
     """A resource that serves a list of entry resources."""
     implements(ICollectionResource)
 
+    def __init__(self, context, request):
+        self.context = ICollection(context)
+        self.request = request
+
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
-        entry_resources = self.context.find()
+        entry_resources = [EntryResource(entry, self.request)
+                           for entry in self.context.find()]
         self.request.response.setHeader('Content-type', 'application/json')
         return ResourceJSONEncoder().encode(entry_resources)

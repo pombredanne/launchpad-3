@@ -19,9 +19,6 @@ from zope.publisher.interfaces import IPublishTraverse
 class IHTTPResource(IPublishTraverse):
     """An object published through HTTP."""
 
-    def __init__(self, request):
-        """Associate the object with an incoming request."""
-
     def __call__(self):
         """Publish the object."""
 
@@ -64,4 +61,6 @@ class ICollection(Interface):
     """A collection, driven by an ICollectionResource."""
 
     def find(self):
-        """Retrieve all items in the collection."""
+        """Retrieve all entries in the collection.
+
+        :return: A list of IEntry objects."""

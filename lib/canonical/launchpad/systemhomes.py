@@ -26,10 +26,10 @@ from canonical.launchpad.interfaces import (
     ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication, IOpenIdApplication,
-    IProductSet, IRegistryApplication, IRosettaApplication,
+    IPersonSet, IProductSet, IRegistryApplication, IRosettaApplication,
     IShipItApplication, ITranslationGroupSet, IWebServiceApplication)
-from canonical.lazr.rest import CollectionResource
 from canonical.launchpad.rest import PersonCollection, ServiceRootResource
+from canonical.lazr.rest import CollectionResource
 
 class AuthServerApplication:
     """AuthServer End-Point."""
@@ -194,11 +194,11 @@ class WebServiceApplication:
     """See IWebServiceApplication."""
     implements(IWebServiceApplication, IPublishTraverse)
 
-    top_level_collections = { 'people' : PersonCollection }
+    top_level_collections = { 'people' : lambda : getUtility(IPersonSet) }
 
     def publishTraverse(self, request, name):
         if name not in self.top_level_collections:
-            return NotFound(self, name)
+            raise NotFound(self, name)
         return CollectionResource(self.top_level_collections[name](), request)
 
     def __call__(self, REQUEST=None):

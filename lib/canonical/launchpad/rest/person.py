@@ -9,11 +9,11 @@ __all__ = [
     ]
 
 
-from zope.component import adapts, getUtility
+from zope.component import adapts
 from zope.interface import implements
 from canonical.lazr.interfaces import ICollection
 from canonical.lazr.rest import EntryResource
-from canonical.launchpad.interfaces import IPerson, IPersonEntry, IPersonSet
+from canonical.launchpad.interfaces import IPerson, IPersonEntry
 from canonical.lp import decorates
 
 
@@ -31,6 +31,8 @@ class PersonCollection:
     """A collection of people."""
     implements(ICollection)
 
+    def __init__(self, context):
+        self.context = context
+
     def find(self):
-        return [EntryResource(p) for p in
-                getUtility(IPersonSet).getAllValidPersons()]
+        return self.context.getAllValidPersons()
