@@ -29,13 +29,13 @@ class SourcesListEntriesView(LaunchpadView):
     __used_for__ = SourcesListEntries
     template = ViewPageTemplateFile('../templates/sources-list-entries.pt')
 
-    def __init__(self, context, request, initially_hidden=False):
+    def __init__(self, context, request, initially_without_selection=False):
         LaunchpadView.__init__(self, context, request)
-        self._initially_hidden = initially_hidden
+        self._initially_without_selection = initially_without_selection
 
     def initialize(self):
         self.terms = []
-        if self._initially_hidden:
+        if self._initially_without_selection:
             self.terms.append(SimpleTerm(
                 None, 'YOUR_DISTRO_SERIES_HERE',
                 'Choose a Distribution series'))
@@ -60,15 +60,15 @@ class SourcesListEntriesView(LaunchpadView):
     def default_series_name(self):
         """Return the name of the default series.
 
-        If sources.list entries should be hidden by default, returns a generic
-        text (YOUR_DISTRO_SERIES_HERE) to note that the user should edit
-        the text before it's useful. If it's shown and there are packages in
-        this PPA, return the latest series in which packages are published.
-        If not, return the name of the current series.
+        If sources.list entries should be not have any distro series selected,
+        returns a generic text (YOUR_DISTRO_SERIES_HERE) to note that the user
+        should edit the text before it's useful. If it's shown and there are
+        packages in this PPA, return the latest series in which packages are
+        published. If not, return the name of the current series.
         """
         if len(self.terms) == 0:
             return self.context.distribution.currentseries.name
-        elif self._initially_hidden:
+        elif self._initially_without_selection:
             # There are no distro series entries shown.
             return 'YOUR_DISTRO_SERIES_HERE'
         return self.terms[0].value.name

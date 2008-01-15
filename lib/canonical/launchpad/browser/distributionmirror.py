@@ -94,7 +94,7 @@ class DistributionMirrorView(LaunchpadView):
                                      self.context.base_url,
                                      valid_series)
         self.sources_list_entries = SourcesListEntriesView(
-            entries, self.request, initially_hidden=True)
+            entries, self.request, initially_without_selection=True)
 
     @cachedproperty
     def probe_records(self):

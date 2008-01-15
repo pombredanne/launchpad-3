@@ -52,20 +52,12 @@ is only available using FTP.
     Content: Archive
 
 The archive mirror does have sources list entries pointing to the
-FTP server.
+FTP server. By default, sources-list-entries has a generic text for the
+distro series until a user selects a distro series in the form and
+thus, the text doesn't have the distro series information.
 
-    >>> sources_list_entries = find_tag_by_id(
-    ...     browser.contents, 'sources-list-entries')
-
-By default, sources-list-entries section is hidden until a user selects
-a distro series in the form.
-
-    >>> print sources_list_entries
-    <... id="sources-list-entries" style="... visibility: hidden;...
-
-And thus, the text doesn't have the distro series information.
-
-    >>> print extract_text(sources_list_entries)
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'sources-list-entries'))
     deb ftp://my.ftpmirror.com/pub/ YOUR_DISTRO_SERIES_HERE main
     deb-src ftp://my.ftpmirror.com/pub/ YOUR_DISTRO_SERIES_HERE main
 
