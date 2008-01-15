@@ -11,6 +11,7 @@ containing the archive mirrors for that country.
 import os
 import tempfile
 
+# pylint: disable-msg=W0403
 import _pythonpath
 
 from zope.component import getUtility
