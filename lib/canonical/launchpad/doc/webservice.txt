@@ -217,10 +217,6 @@ NotFound exception:
     ...     print "Not found."
     Not found.
 
-Right now, only top-level traversal is implemented. Eventually a
-collection will be responsible for implementing publishTraverse() to
-that collection's individual resources (/recipes/10 or
-/recipes/Raw%20celery), and an entry will be responsible for
-implementing publishTraverse() to related entries (/recipes/10/owner)
-and collections (/recipes/10/ingredients).
-
+Eventually, an entry will be responsible for implementing
+publishTraverse() to related entries (/recipes/10/owner) and
+collections (/recipes/10/ingredients).
