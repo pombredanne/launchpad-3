@@ -186,6 +186,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person', default=None)
     hide_email_addresses = BoolCol(notNull=True, default=False)
+    verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
     # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
     languages = SQLRelatedJoin('Language', joinColumn='person',
