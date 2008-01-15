@@ -372,8 +372,6 @@ class Archive(SQLBase):
         # Unfortunately SQLObject has got a bug where it ignores DISTINCT
         # on a .sum() operation, so resort to Python addition.
         size = sum([lfc.filesize for lfc in result])
-        if size is None:
-            return 0
         return size
 
     @property
