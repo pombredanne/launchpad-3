@@ -88,7 +88,8 @@ underlying recipe's name but not its ID:
     ...     name = IRecipe.get('name')
 
 Here's the implementation of IRecipeEntry: a simple decorator on the
-original business object:
+original business object. It subclasses Entry, a simple base class
+that defines a constructor.
 
     >>> from zope.component import adapts
     >>> from canonical.lp import decorates
@@ -137,6 +138,9 @@ returns the business objects in the collection.
 
     >>> from canonical.lazr.interfaces import ICollection
     >>> provideAdapter(RecipeCollection, [IRecipeSet], ICollection)
+
+As with Entry, Collection is a simple base class that defines a
+constructor.
 
 
 == Resource objects ==
