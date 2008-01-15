@@ -66,8 +66,8 @@ a distro series in the form.
 And thus, the text doesn't have the distro series information.
 
     >>> print extract_text(sources_list_entries)
-    deb ftp://my.ftpmirror.com/pub/ PUT_YOUR_DISTRO_SERIES_HERE main
-    deb-src ftp://my.ftpmirror.com/pub/ PUT_YOUR_DISTRO_SERIES_HERE main
+    deb ftp://my.ftpmirror.com/pub/ YOUR_DISTRO_SERIES_HERE main
+    deb-src ftp://my.ftpmirror.com/pub/ YOUR_DISTRO_SERIES_HERE main
 
 Finally, we create an archive mirror for Ubuntu distribution that uses
 HTTP server.
@@ -92,8 +92,8 @@ The archive mirror does have sources list entries.
 
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'sources-list-entries'))
-    deb http://my.mirror.com/pub/ PUT_YOUR_DISTRO_SERIES_HERE main
-    deb-src http://my.mirror.com/pub/ PUT_YOUR_DISTRO_SERIES_HERE main
+    deb http://my.mirror.com/pub/ YOUR_DISTRO_SERIES_HERE main
+    deb-src http://my.mirror.com/pub/ YOUR_DISTRO_SERIES_HERE main
 
 
 == Updating a Mirror ==

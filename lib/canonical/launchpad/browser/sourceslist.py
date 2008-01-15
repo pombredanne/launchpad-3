@@ -29,13 +29,13 @@ class SourcesListEntriesView(LaunchpadView):
     __used_for__ = SourcesListEntries
     template = ViewPageTemplateFile('../templates/sources-list-entries.pt')
 
-    def __init__(self, context, request, hidden_by_default=False):
+    def __init__(self, context, request, initially_hidden=False):
         LaunchpadView.__init__(self, context, request)
-        self._hidden_by_default = hidden_by_default
+        self._initially_hidden = initially_hidden
 
     def initialize(self):
         self.terms = []
-        if self._hidden_by_default:
+        if self._initially_hidden:
             self.terms.append(SimpleTerm(
                 None, 'none', 'Choose a Distribution series'))
         for series in self.context.valid_series:
@@ -48,7 +48,7 @@ class SourcesListEntriesView(LaunchpadView):
     @property
     def initial_visibility(self):
         """The initial visibility of the source.list entries."""
-        if self._hidden_by_default:
+        if self._initially_hidden:
             return 'hidden'
         else:
             return 'visible'
@@ -68,14 +68,14 @@ class SourcesListEntriesView(LaunchpadView):
         """Return the name of the default series.
 
         If sources.list entries should be hidden by default, returns a generic
-        text (PUT_YOUR_DISTRO_SERIES_HERE) to note that the user should edit
+        text (YOUR_DISTRO_SERIES_HERE) to note that the user should edit
         the text before it's useful. If it's shown and there are packages in
         this PPA, return the latest series in which packages are published.
         If not, return the name of the current series.
         """
         if len(self.terms) == 0:
             return self.context.distribution.currentseries.name
-        elif self._hidden_by_default:
-            # There is no distro series entries shown.
-            return 'PUT_YOUR_DISTRO_SERIES_HERE'
+        elif self._initially_hidden:
+            # There are no distro series entries shown.
+            return 'YOUR_DISTRO_SERIES_HERE'
         return self.terms[0].value.name
