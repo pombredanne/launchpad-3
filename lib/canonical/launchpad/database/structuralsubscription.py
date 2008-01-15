@@ -72,7 +72,15 @@ class StructuralSubscription(SQLBase):
             return self.milestone
         elif self.distribution is not None:
             if self.sourcepackagename is not None:
-                return (self.distribution, self.sourcepackagename)
+                # XXX intellectronica 2008-01-15:
+                #   We're importing this pseudo db object
+                #   here because importing it from the top
+                #   doesn't play well with the loading
+                #   sequence.
+                from canonical.launchpad.database import (
+                    DistributionSourcePackage)
+                return DistributionSourcePackage(
+                    self.distribution, self.sourcepackagename)
             else:
                 return self.distribution
         elif self.distroseries is not None:

@@ -38,6 +38,7 @@ distribution.
     ...     sourcepackagename=evolution, subscriber=sampleperson,
     ...     subscribed_by=foobar)
     >>> evolution_sub.target
-    (<Distribution at ...>, <SourcePackageName at ...>)
+    <...DistributionSourcePackage object at ...>
+
     >>> sampleperson.structural_subscriptions.count()
     3
