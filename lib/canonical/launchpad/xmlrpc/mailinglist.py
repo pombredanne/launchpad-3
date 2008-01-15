@@ -8,10 +8,10 @@ __all__ = [
     ]
 
 
-from operator import itemgetter
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
     IMailingListSet, MailingListStatus)
@@ -23,9 +23,11 @@ from canonical.launchpad.xmlrpc import faults
 # 'make mailman_instance').  In that case, this import will fail, but in that
 # case just use the constant value directly.
 try:
-    from Mailman.MemberAdaptor import ENABLED
+    # pylint: disable-msg=F0401
+    from Mailman.MemberAdaptor import ENABLED, BYUSER
 except ImportError:
     ENABLED = 0
+    BYUSER = 2
 
 
 class MailingListAPIView(LaunchpadXMLRPCView):
@@ -113,26 +115,54 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             mailing_list = listset.get(team_name)
             if mailing_list is None:
                 return faults.NoSuchTeamMailingList(team_name)
-            members = []
-            for address in mailing_list.getAddresses():
-                email_address = emailset.getByEmail(address)
+            # Map {address -> (real_name, flags, status)}
+            members = {}
+            # Hard code flags to 0 currently, meaning the member will get
+            # regular (not digest) delivery, will not get post
+            # acknowledgements, will receive their own posts, and will not
+            # be moderated.  A future phase may change some of these
+            # values.
+            flags = 0
+            # Start by getting all addresses for all users who are subscribed.
+            # These are the addresses that are allowed to post to the mailing
+            # list, but may not get deliveries of posted messages.
+            for email_address in mailing_list.getSenderAddresses():
                 real_name = email_address.person.displayname
-                # Hard code flags to 0 currently, meaning the member will get
-                # regular (not digest) delivery, will not get post
-                # acknowledgements, will receive their own posts, and will not
-                # be moderated.  A future phase may change some of these
-                # values.
-                flags = 0
-                # Hard code the status to ENABLED so that the member will
-                # receive list messages.  A future phase may change this when
-                # bounce processing is added.
-                status = ENABLED
-                members.append((address, real_name, flags, status))
-            response[team_name] = sorted(members, key=itemgetter(0))
+                # We'll mark the status of these addresses as disabled BYUSER,
+                # which seems like the closest mapping to the semantics we
+                # intend.  It doesn't /really/ matter as long as it's disabled
+                # because the reason is only evident in the Mailman web u/i,
+                # which we're not using.
+                members[email_address.email] = (real_name, flags, BYUSER)
+            # Now go through just the subscribed addresses, the main
+            # difference now being that these addresses are enabled for
+            # delivery.  If there are overlaps, the enabled flag wins.
+            for email_address in mailing_list.getSubscribedAddresses():
+                real_name = email_address.person.displayname
+                members[email_address.email] = (real_name, flags, ENABLED)
+            # Finally, add the archive recipient if there is one.  This
+            # address should never be registered in Launchpad, meaning
+            # specifically that the isRegisteredInLaunchpad() test below
+            # should always fail for it.  That way, the address can never be
+            # used to forge spam onto a list.
+            if config.mailman is not None and config.mailman.archive_address:
+                members[config.mailman.archive_address] = ('', flags, ENABLED)
+            # The response must be a list of tuples.
+            response[team_name] = [
+                (address, members[address][0],
+                 members[address][1], members[address][2])
+                for address in sorted(members)]
         return response
 
     def isRegisteredInLaunchpad(self, address):
         """See `IMailingListAPIView.`."""
+        if (config.mailman is not None and
+            config.mailman.archive_address and
+            address == config.mailman.archive_address):
+            # Hard code that the archive address is never registered in
+            # Launchpad, so forged messages from that sender will always be
+            # discarded.
+            return False
         email_address = getUtility(IEmailAddressSet).getByEmail(address)
         return (email_address is not None and
                 email_address.status in (EmailAddressStatus.VALIDATED,

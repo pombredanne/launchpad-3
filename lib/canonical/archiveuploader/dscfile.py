@@ -511,6 +511,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             maintainer=self.maintainer['person'],
             builddepends=encoded.get('build-depends', ''),
             builddependsindep=encoded.get('build-depends-indep', ''),
+            build_conflicts=encoded.get('build-conflicts', ''),
+            build_conflicts_indep=encoded.get('build-conflicts-indep', ''),
             architecturehintlist=encoded.get('architecture', ''),
             creator=self.changes.changed_by['person'],
             urgency=self.changes.converted_urgency,

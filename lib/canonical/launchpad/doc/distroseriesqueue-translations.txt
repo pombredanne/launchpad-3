@@ -47,7 +47,7 @@ queue:
   ...     pmount_sourcepackagename, "0.9.7-2ubuntu2", dapper.owner,
   ...     None, None, 'i386', Component.get(1), dapper.owner,
   ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
-  ...     None, None, None, None, dapper.main_archive, 'copyright ?!')
+  ...     '', '', '', '', dapper.main_archive, 'copyright ?!', '', '')
 
   >>> publishing_history = SecureSourcePackagePublishingHistory(
   ...     distroseries=dapper.id,

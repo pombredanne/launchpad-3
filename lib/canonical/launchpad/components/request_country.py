@@ -6,7 +6,7 @@ import re
 from zope.component import getUtility
 from canonical.launchpad.interfaces import IGeoIP
 
-__all__ = ['request_country']
+__all__ = ['request_country', 'ipaddress_from_request']
 
 def request_country(request):
     """Adapt a request to the country in which the request was made.
