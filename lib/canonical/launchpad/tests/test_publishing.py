@@ -146,8 +146,6 @@ class SoyuzTestPublisher:
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.breezy_autotest
-        if archive is None:
-            archive = self.breezy_autotest.main_archive
         sourcename = "%s" % binaryname.split('-')[0]
         if pub_source is None:
             pub_source = self.getPubSource(
@@ -161,6 +159,8 @@ class SoyuzTestPublisher:
             pub_source, legal_archs, distroseries)
 
         # Build and publish binaries.
+        if archive is None:
+            archive = pub_source.archive
         spr = pub_source.sourcepackagerelease
         published_binaries = []
         for arch in archs:
