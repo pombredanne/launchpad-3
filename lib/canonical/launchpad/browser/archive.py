@@ -291,7 +291,8 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         """Perform the deletion of the selected packages.
 
         The deletion will be performed upon the 'selected_sources' contents
-        respecting the auxiliary parameter, 'including_binaries' and 'comment'.
+        respecting the auxiliary parameter, 'including_binaries' and
+        'comment'.
         """
         include_binaries = data.get('include_binaries')
         comment = data.get('comment')
