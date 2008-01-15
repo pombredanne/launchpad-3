@@ -33,7 +33,7 @@ from canonical.lazr.interfaces import IFeed
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication,
-    IShipItApplication)
+    IShipItApplication, IWebServiceApplication)
 
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
@@ -177,7 +177,7 @@ class VirtualHostRequestPublicationFactory:
         self.request_factory = request_factory
         self.publication_factory = publication_factory
         self.port = port
-        if methods  is None:
+        if methods is None:
             methods = ['GET', 'HEAD', 'POST']
         self.methods = methods
         self.handle_default_host = handle_default_host
@@ -321,6 +321,34 @@ class XMLRPCRequestPublicationFactory(VirtualHostRequestPublicationFactory):
                 # 415 - Unsupported Media Type
                 publication_factory = ProtocolErrorPublicationFactory(415)
         return request_factory, publication_factory
+
+
+class WebServiceRequestPublicationFactory(
+    VirtualHostRequestPublicationFactory):
+    """A VirtualHostRequestPublicationFactory for requests against
+    resources published through a web service.
+    """
+
+    def __init__(self, vhost_name, request_factory, publication_factory,
+                 port=None):
+        """This factory accepts requests that use all five major HTTP methods.
+        """
+        super(WebServiceRequestPublicationFactory, self).__init__(
+            vhost_name, request_factory, publication_factory, port,
+            ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+
+
+    def canHandle(self, environment):
+        """See `IRequestPublicationFactory`.
+
+        XXX: This factory only accepts calls if the web service is
+        exposed. Once we launch the web service this method will be
+        removed.-- Leonard Richardson 2008-01-04
+        (https://launchpad.net/launchpad/+spec/api-bugs-remote)
+        """
+        result = super(WebServiceRequestPublicationFactory, self).canHandle(
+            environment)
+        return result and config.launchpad.vhosts.expose_webservice
 
 
 class NotFoundRequestPublicationFactory:
@@ -826,6 +854,33 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
     """Request type for a launchpad feed."""
     implements(canonical.launchpad.layers.FeedsLayer)
 
+# ---- web service
+
+class WebServicePublication(LaunchpadBrowserPublication):
+    """The publication used for Launchpad web service requests."""
+
+    root_object_interface = IWebServiceApplication
+
+    def getDefaultTraversal(self, request, ob):
+        """Publish the WebServiceApplication as the top-level object.
+
+        This is called when the client requests '/' and traversal
+        bottoms out at the IWebServiceApplication itself. It's needed
+        because WebServiceRequest inherits (through LaunchpadRequest)
+        the BrowserRequest semantics. In these semantics,
+        getDefaultTraversal (defined by IBrowserPublication) is called
+        unless the object provides IBrowserPublisher.
+
+        Rather than making our resources provide an unrelated
+        interface (IBrowserPublisher), we implement this as the
+        equivalent of a no-op.
+        """
+        return (ob, None)
+
+
+class WebServiceClientRequest(LaunchpadBrowserRequest):
+    """Request type for a resource published through the web service."""
+
 # ---- openid
 
 class OpenIdPublication(LaunchpadBrowserPublication):
@@ -988,6 +1043,8 @@ def register_launchpad_request_publication_factories():
         VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
              ShipItPublication),
         VHRP('feeds', FeedsBrowserRequest, FeedsPublication),
+        WebServiceRequestPublicationFactory('api', WebServiceClientRequest,
+                                            WebServicePublication),
         XMLRPCRequestPublicationFactory('xmlrpc', PublicXMLRPCRequest,
                                         PublicXMLRPCPublication)
         ]

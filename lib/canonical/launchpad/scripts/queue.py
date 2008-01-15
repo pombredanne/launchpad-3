@@ -108,7 +108,7 @@ class QueueAction:
             config.uploader.default_recipient_name,
             config.uploader.default_recipient_address)
         self.display = display
-        self.log=log
+        self.log = log
 
     @cachedproperty
     def size(self):
@@ -179,7 +179,8 @@ class QueueAction:
 
                 if item.status != self.queue:
                     raise QueueActionError(
-                        'Item %s is in queue %s' % (item.id, item.status.name))
+                        'Item %s is in queue %s' % (
+                            item.id, item.status.name))
 
                 if (item.distroseries != self.distroseries or
                     item.pocket != self.pocket):
@@ -262,7 +263,8 @@ class QueueAction:
 
         self.display("%8d | %s%s | %s | %s | %s" %
                      (queue_item.id, source_tag, build_tag,
-                      displayname.ljust(20)[:20], version.ljust(20)[:20], age))
+                      displayname.ljust(20)[:20], version.ljust(20)[:20],
+                      age))
 
     def displayInfo(self, queue_item, only=None):
         """Displays additional information about the provided queue item.
@@ -480,8 +482,9 @@ class QueueActionAccept(QueueAction):
                     announce_list=self.announcelist, logger=self.log,
                     dry_run=self.no_mail)
             except QueueInconsistentStateError, info:
-                self.display('** %s could not be accepted due %s'
+                self.display('** %s could not be accepted due to %s'
                              % (queue_item.displayname, info))
+                continue
 
         self.displayRule()
         self.displayBottom()
@@ -490,7 +493,8 @@ class QueueActionAccept(QueueAction):
 class QueueActionOverride(QueueAction):
     """Override information in a queue item content.
 
-    queue override [-c|--component] [-x|--section] [-p|--priority] <override_stanza> <filter>
+    queue override [-c|--component] [-x|--section] [-p|--priority]
+        <override_stanza> <filter>
 
     Where override_stanza is one of:
     source
@@ -522,10 +526,10 @@ class QueueActionOverride(QueueAction):
         # class has a command at the start of the terms.
         # Our first term is "binary" or "source" to specify the type of
         # over-ride.
-        QueueAction.__init__(self, distribution_name, suite_name, queue, terms,
-                             component_name, section_name, priority_name,
-                             announcelist, display, no_mail=True,
-                             exact_match=False, log=log)
+        QueueAction.__init__(self, distribution_name, suite_name, queue,
+                             terms, component_name, section_name,
+                             priority_name, announcelist, display,
+                             no_mail=True, exact_match=False, log=log)
         self.terms_start_index = 1
 
     def run(self):
@@ -607,10 +611,12 @@ class QueueActionOverride(QueueAction):
                                         binary.priority.name))
                         binary.override(component=component, section=section,
                                         priority=priority)
-                # See if the new component requires a new archive on the build:
+                        self.displayInfo(queue_item, only=binary.name)
+                # See if the new component requires a new archive on the
+                # build:
                 if component:
-                    distribution = (
-                        build.build.distroarchseries.distroseries.distribution)
+                    distroarchseries = build.build.distroarchseries
+                    distribution = distroarchseries.distroseries.distribution
                     new_archive = distribution.getArchiveByComponent(
                         self.component_name)
                     if (new_archive != build.build.archive):
@@ -618,7 +624,6 @@ class QueueActionOverride(QueueAction):
                             "Overriding component to '%s' failed because it "
                             "would require a new archive."
                             % self.component_name)
-                self.displayInfo(queue_item, only=binary.name)
 
         not_overridden = set(self.package_names) - set(overridden)
         if len(not_overridden) > 0:

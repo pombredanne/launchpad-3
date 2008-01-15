@@ -82,6 +82,7 @@
     </sectiontype>
 
     <sectiontype name="mainsite" extends="virtual_host" />
+    <sectiontype name="api" extends="virtual_host" />
     <sectiontype name="blueprints" extends="virtual_host" />
     <sectiontype name="code" extends="virtual_host" />
     <sectiontype name="translations" extends="virtual_host" />
@@ -102,7 +103,17 @@
                 When false, use http URLs unless explicitly overridden.
             </description>
         </key>
+
+
+        <key name="expose_webservice" datatype="boolean" default="no">
+          <description>
+            Whether or not the web service is exposed. This is false
+            except in development. When the web service is ready to go
+            live, this variable will be removed.
+          </description>
+        </key>
         <section name="*" type="mainsite" attribute="mainsite" required="yes" />
+        <section name="*" type="api" attribute="api" required="yes" />
         <section name="*" type="blueprints" attribute="blueprints" required="yes" />
         <section name="*" type="code" attribute="code" required="yes" />
         <section name="*" type="translations" attribute="translations" required="yes" />
@@ -185,6 +196,8 @@ k            </description>
             default="50" />
         <key name="branchlisting_batch_size" datatype="integer" required="no"
             default="100" />
+        <key name="branch_dormant_days" datatype="integer" required="no"
+            default="180" />
         <key name="code_homepage_product_cloud_size" datatype="integer"
              required="no" default="120" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
@@ -1134,6 +1147,8 @@ k            </description>
              default="mailing-list-beta-testers" />
         <key name="archive_url_template" datatype="string"
              default="http://lists.launchpad.dev/archives/$team_name" />
+        <key name="archive_address" datatype="string"
+             default="archive@mail-archive.com" />
     </sectiontype>
 
     <sectiontype name="checkwatches">

@@ -88,7 +88,8 @@ from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget, ILanguage,
     ILaunchBag, IMailingListSet, IMilestoneSet, IPerson, IPersonSet,
-    IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
+    IPillarName, IProduct, IProductSeries, IProject, ISourcePackage,
+    ISpecification, ITeam,
     IUpstreamBugTask, LanguagePackType, MailingListStatus, PersonVisibility)
 
 from canonical.launchpad.webapp.vocabulary import (
@@ -272,7 +273,7 @@ class BranchVocabulary(BranchVocabularyBase):
 
 
 class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
-    """A vocabulary for searching branches restriced on product.
+    """A vocabulary for searching branches restricted on product.
 
     The query entered checks the name or URL of the branch, or the
     name of the registrant of the branch.
@@ -289,13 +290,16 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
         """See `BranchVocabularyBase`."""
         if IProduct.providedBy(self.context):
             restrict_sql = self._restrictToProduct(self.context)
+        elif IProductSeries.providedBy(self.context):
+            restrict_sql = self._restrictToProduct(self.context.product)
         elif IBranch.providedBy(self.context):
             restrict_sql = self._restrictToProduct(self.context.product)
         else:
             # An unexpected type.
             raise AssertionError('Unexpected context type')
 
-        base_sql = self._constructGeneralQuery(quoted_query, check_product=False)
+        base_sql = self._constructGeneralQuery(
+            quoted_query, check_product=False)
         if len(base_sql) > 0:
             return '%s AND %s' % (base_sql, restrict_sql)
         else:

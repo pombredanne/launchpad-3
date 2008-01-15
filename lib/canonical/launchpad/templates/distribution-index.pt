@@ -17,10 +17,6 @@
 
 <div metal:fill-slot="main">
 
-   <link rel="alternate" type="application/atom+xml" 
-         tal:attributes="title string:Announcements for ${context/displayname};
-                         href view/feed_url" />
-
       <span tal:replace="structure context/image:mugshot" />
       <h1 tal:content="context/title">Ubuntu Linux</h1>
       <div
@@ -106,7 +102,7 @@
       <div class="right">
         <div
           class="two column section"
-          tal:content="structure context/@@+portlet-details"
+          tal:content="structure context/@@+details"
         />
         <div
           class="two column section"

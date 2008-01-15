@@ -994,12 +994,26 @@ class BugTaskSet:
 
     def get(self, task_id):
         """See `IBugTaskSet`."""
+        # XXX: JSK: 2007-12-19: This method should probably return
+        # None when task_id is not present. See:
+        # https://bugs.edge.launchpad.net/launchpad/+bug/123592
         try:
             bugtask = BugTask.get(task_id)
         except SQLObjectNotFound:
             raise NotFoundError("BugTask with ID %s does not exist." %
                                 str(task_id))
         return bugtask
+
+    def getMultiple(self, task_ids):
+        """See `IBugTaskSet`."""
+        # Ensure we have a sequence of bug task IDs:
+        task_ids = [int(task_id) for task_id in task_ids]
+        # Query the database, returning the results in a dictionary:
+        if len(task_ids) > 0:
+            tasks = BugTask.select('id in %s' % sqlvalues(task_ids))
+            return dict([(task.id, task) for task in tasks])
+        else:
+            return {}
 
     def findSimilar(self, user, summary, product=None, distribution=None,
                     sourcepackagename=None):

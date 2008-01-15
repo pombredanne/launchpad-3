@@ -21,7 +21,7 @@ records to disk, including configuration and indexes.
     >>> cprov_archive.enabled
     True
     >>> cprov_archive.authorized_size
-    1234567
+    1024
     >>> cprov_archive.whiteboard
     u'It is not my fault.'
 
@@ -404,8 +404,8 @@ and 'exact_match' flag:
 == Package Counters ==
 
 IArchive provides properties to calculate the number and the size of
-the packages (sources and binaries) present in the archive. They are
-based in the publication lookup methods.
+the packages (sources and binaries) currently published in the
+archive. They are based in the publication lookup methods.
 
     >>> cprov_archive.number_of_sources
     3
@@ -480,6 +480,34 @@ computed again in the archive total size.
 
     >>> estimated_size == cprov_archive.estimated_size
     True
+
+As mentioned before the package counters do not include non-PUBLISHED
+packages, to verify this we will mark some package as SUPERSEDED and
+see if the counter decreases.
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+
+Superseding a source package and verifying that the source counter
+decreases.
+
+    >>> cprov_archive.number_of_sources
+    3
+    >>> unused = cprov_archive.getPublishedSources(
+    ...     name='cdrkit')[0].supersede()
+    >>> flush_database_updates()
+    >>> cprov_archive.number_of_sources
+    2
+
+Superseding a binary package and verifying that the binary counter
+decreases.
+
+    >>> cprov_archive.number_of_binaries
+    3
+    >>> unused = cprov_archive.getAllPublishedBinaries(
+    ...     name='mozilla-firefox')[0].supersede()
+    >>> flush_database_updates()
+    >>> cprov_archive.number_of_binaries
+    2
 
 
 == Build Lookup ==
@@ -619,10 +647,10 @@ A new Archive can be created by passing a name and an owner
     True
 
 We can take the opportunity to check if the default 'authorized_size'
-corresponds to what we state in our policy, 1 Gbyte:
+corresponds to what we state in our policy, 1024 Mbytes:
 
-    >>> name16.archive.authorized_size / (2 ** 30)
-    1
+    >>> name16.archive.authorized_size
+    1024
 
 IArchiveSet.ensure will either return an existing archive, or make a new
 one if there is no existing one.
