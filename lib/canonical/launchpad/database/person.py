@@ -2196,7 +2196,6 @@ class PersonSet:
         return Person.select("Person.teamowner IS NOT NULL",
             orderBy=['-datecreated'], limit=limit)
 
-
     def merge(self, from_person, to_person):
         """See `IPersonSet`."""
         # Sanity checks
