@@ -26,4 +26,10 @@
         provides="canonical.launchpad.interfaces.IPersonEntry"
         factory="canonical.launchpad.rest.PersonEntry"
         />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IPersonSet"
+        provides="canonical.lazr.interfaces.ICollection"
+        factory="canonical.launchpad.rest.PersonCollection"
+        />
 </configure>

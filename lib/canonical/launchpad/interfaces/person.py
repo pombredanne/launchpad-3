@@ -1254,7 +1254,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 class IPersonEntry(IEntry):
     """The part of a person that we expose through the web service."""
 
-    name = PersonNameField()
+    name = IPerson.get('name')
 
 
 class INewPersonForm(IPerson):

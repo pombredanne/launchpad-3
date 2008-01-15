@@ -4,7 +4,9 @@
 
 __metaclass__ = type
 __all__ = [
+    'Collection',
     'CollectionResource',
+    'Entry',
     'EntryResource',
     'HTTPResource',
     'ReadOnlyResource'
@@ -12,16 +14,22 @@ __all__ = [
 
 
 import simplejson
-from zope.component import getAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.schema.interfaces import IField
 from canonical.lazr.interfaces import (
-    ICollectionResource, IEntry, IHTTPResource, IJSONPublishable)
+    ICollection, ICollectionResource, IEntry, IHTTPResource, IJSONPublishable)
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
+    """A JSON encoder for JSON-exposable resources like entry resources.
+
+    This class works with simplejson to encode objects as JSON if they
+    implement IJSONPublishable. All EntryResource subclasses, for
+    instance, should implement IJSONPublishable.
+    """
 
     def default(self, obj):
+        """Convert the given object to a simple data structure."""
         if IJSONPublishable.providedBy(obj):
             return obj.toDataForJSON()
         return super(ResourceJSONEncoder, self).default(obj)
@@ -53,8 +61,13 @@ class ReadOnlyResource(HTTPResource):
 
 
 class EntryResource(ReadOnlyResource):
-    """A Launchpad object, published to the web."""
+    """An individual object, published to the web."""
     implements(IJSONPublishable)
+
+    def __init__(self, context, request):
+        """Associate this resource with a specific object and request."""
+        self.context = IEntry(context)
+        self.request = request
 
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
@@ -63,17 +76,25 @@ class EntryResource(ReadOnlyResource):
         the resource interface.
         """
         dict = {}
-        entry_resource = getAdapter(self.context, IEntry)
-        schema = entry_resource.schema
+        schema = self.context.schema
         for name in schema.names():
             if IField.providedBy(schema.get(name)):
-                dict[name] = getattr(entry_resource, name)
+                dict[name] = getattr(self.context, name)
         return dict
+
+    def do_GET(self):
+        """Render the entry as JSON as JSON."""
+        self.request.response.setHeader('Content-type', 'application/json')
+        return ResourceJSONEncoder().encode(self)
 
 
 class CollectionResource(ReadOnlyResource):
     """A resource that serves a list of entry resources."""
     implements(ICollectionResource)
+
+    def __init__(self, context, request):
+        self.context = ICollection(context)
+        self.request = request
 
     def publishTraverse(self, request, name):
         """Fetch an entry resource by name."""
@@ -81,10 +102,28 @@ class CollectionResource(ReadOnlyResource):
         if entry is None:
             raise NotFound(self, name)
         else:
-            return entry
+            return EntryResource(entry, self.request)
 
-    def do_GET(self, request):
+    def do_GET(self):
         """Fetch a collection and render it as JSON."""
-        entry_resources = self.context.find()
+        entry_resources = [EntryResource(entry, self.request)
+                           for entry in self.context.find()]
         self.request.response.setHeader('Content-type', 'application/json')
         return ResourceJSONEncoder().encode(entry_resources)
+
+
+class Entry:
+    """An individual entry."""
+    implements(IEntry)
+
+    def __init__(self, context):
+        """Associate the entry with some database business object."""
+        self.context = context
+
+class Collection:
+    """A collection of entries."""
+    implements(ICollection)
+
+    def __init__(self, context):
+        """Associate the entry with some database business object."""
+        self.context = context
