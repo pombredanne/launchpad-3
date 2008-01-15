@@ -133,10 +133,15 @@ def print_radio_button_field(content, name):
     (*) A checked option
     ( ) An unchecked option
     """
-    buttons =  find_main_content(content).findAll(
+    main = find_main_content(content)
+    buttons =  main.findAll(
         'input', {'name': 'field.%s' % name})
     for button in buttons:
-        label = extract_text(button.parent)
+        if button.parent.name == 'label':
+            label = extract_text(button.parent)
+        else:
+            label = extract_text(
+                main.find('label', attrs={'for': button['id']}))
         if button.get('checked', None):
             radio = '(*)'
         else:

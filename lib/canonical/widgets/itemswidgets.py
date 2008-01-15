@@ -98,17 +98,45 @@ class LaunchpadRadioWidget(RadioWidget):
 class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
     """Display the enumerated type description after the label.
 
-    This widget assumes that the vocabulary that has been supplied
-    is a LAZR enumerated type, and uses this information to get
-    the associated description for the items.
+    If the value of the vocabulary terms have a description this
+    is shown as text on a line under the label.
     """
 
-    _joinButtonToMessageTemplate = u"<label>%s&nbsp;%s</label> - %s"
+    _labelWithDescriptionTemplate = (
+        u'''<tr>
+              <td rowspan="2">%s</td>
+              <td><label for="%s">%s</label></td>
+            </tr>
+            <tr>
+              <td>%s</td>
+            </tr>
+         ''')
+    _labelWithoutDescriptionTemplate = (
+        u'''<tr>
+              <td>%s</td>
+              <td><label for="%s">%s</label></td>
+            </tr>
+         ''')
+
+    def _renderRow(self, text, value, id, elem):
+        """Render the table row for the widget depending on description."""
+        # Missing values are the empty string.
+        if value != '':
+            item = self.vocabulary.getTermByToken(value).value
+            # Use getattr so this widget works with vocabularies that don't
+            # specify a description.
+            description = getattr(item, 'description', None)
+        else:
+            description = None
+
+        if description is None:
+            return self._labelWithoutDescriptionTemplate % (elem, id, text)
+        else:
+            return self._labelWithDescriptionTemplate % (
+                elem, id, text, description)
 
     def renderItem(self, index, text, value, name, cssClass):
         """Render an item of the list."""
-        description = self.vocabulary.getTermByToken(value).value.description
-
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
                              value=value,
@@ -116,12 +144,10 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
                              id=id,
                              cssClass=cssClass,
                              type='radio')
-        return self._joinButtonToMessageTemplate % (elem, text, description)
+        return self._renderRow(text, value, id, elem)
 
     def renderSelectedItem(self, index, text, value, name, cssClass):
         """Render a selected item of the list."""
-        description = self.vocabulary.getTermByToken(value).value.description
-
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
                              value=value,
@@ -130,7 +156,12 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
                              cssClass=cssClass,
                              checked="checked",
                              type='radio')
-        return self._joinButtonToMessageTemplate % (elem, text, description)
+        return self._renderRow(text, value, id, elem)
+
+    def renderValue(self, value):
+        # Render the items in a table to align the descriptions.
+        rendered_items = self.renderItems(value)
+        return "<table>%s</table>" % ''.join(rendered_items)
 
 
 class CheckBoxMatrixWidget(LabeledMultiCheckBoxWidget):
@@ -147,7 +178,7 @@ class CheckBoxMatrixWidget(LabeledMultiCheckBoxWidget):
         rendered_items = self.renderItems(value)
         html = ['<table>']
         if self.orientation == 'horizontal':
-            for i in range(0, len(rendered_items), self.column_count): 
+            for i in range(0, len(rendered_items), self.column_count):
                 html.append('<tr>')
                 for j in range(0, self.column_count):
                     index = i + j
