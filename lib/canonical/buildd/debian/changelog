@@ -1,9 +1,13 @@
-launchpad-buildd (40) unstable; urgency=low
+launchpad-buildd (40) dapper-cat; urgency=low
 
   * sbuild: Don't allow versioned build-deps to be satisfied by provided
     packages, but force them to go through the "upgrade/downgrade" tests.
   * sbuild: Do --info and --contents on _all.deb packages as well, if
     we're building arch:all packages.
+  * sbuild: Don't process ENV_OVERRIDE anymore, we only had an override
+    for one thing anyway (LC_ALL), and this code caused bug #87077.
+  * sbuild-package: Call sbuild with LC_ALL=C explicitely, to compensate.
+  * Makefile: clean up the makefile a bit to DTRT (as I expect it).
 
  -- Adam Conrad <adconrad@ubuntu.com>  Tue, 15 Jan 2008 16:51:08 -0700
 

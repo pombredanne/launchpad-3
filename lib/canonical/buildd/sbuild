@@ -516,8 +516,6 @@ $SIG{'HUP'} = 'IGNORE';
 $main::distribution = "";
 $main::distribution = $conf::default_distribution if $conf::default_distribution;
 
-$ENV{$_} = $conf::ENV_OVERRIDES{$_} for keys %conf::ENV_OVERRIDES;
-
 chomp( $main::arch = `$conf::dpkg --print-installation-architecture` );
 $main::username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 $main::debug = 0;
