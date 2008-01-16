@@ -110,7 +110,7 @@ class MenuAPI:
             return {}
         else:
             menu.request = self._request
-            links = menu.iterlinks(requesturi=self._requesturi()
+            links = menu.iterlinks(requesturi=self._requesturi())
             return dict((link.name, link) for link in links)
 
     def _nearest_menu(self, menutype):
