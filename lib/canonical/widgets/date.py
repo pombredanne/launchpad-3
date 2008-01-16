@@ -62,14 +62,12 @@ class DateTimeWidget(TextWidget):
 
       >>> from canonical.launchpad.ftests import login
       >>> login('no-priv@canonical.com')
-      >>> field = Field(__name__='foo', title=u'Foo')
-      >>> widget = DateTimeWidget(field, TestRequest())
+      >>> widget.request.setPrincipal(getUtility(ILaunchBag).user)
 
       >>> 'change time zone' in widget()
       True
       >>> 'login to set time zone' in widget()
       False
-      >>> print widget()
 
     If there is a required time zone, then that overrides the user or system
     default, and the user is not invited to change the time zone:

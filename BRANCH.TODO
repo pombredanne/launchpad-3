@@ -1,6 +1,3 @@
 # Put your TODOs for this branch here, then make sure it is empty before
 # landing. There is a test to ensure it is empty in trunk.
 
- - add test to show that the "change zone" link on the datetimewidget takes
-   you to the page where you set your own time zone when logged in
-
