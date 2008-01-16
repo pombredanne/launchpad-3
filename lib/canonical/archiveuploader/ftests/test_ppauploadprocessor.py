@@ -887,6 +887,37 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
             version="1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
+    def testArchiveBinarySize(self):
+        """Test an archive's binaries_size reports correctly.
+
+        The binary size for an archive should only take into account one
+        occurrence of arch-independent files published in multiple locations.
+        """
+        # Make all breezy architectures PPA-supported.
+        for distroarchseries in self.breezy.architectures:
+            distroarchseries.ppa_supported = True
+
+        # We need to publish an architecture-independent package
+        # for a couple of distroseries in a PPA.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+
+        # Publish To Breezy:
+        pub_bin1 = publisher.getPubBinaries(
+            archive=self.name16.archive, distroseries=self.breezy,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # Publish To Warty:
+        warty = self.ubuntu['warty']
+        pub_bin2 = publisher.getPubBinaries(
+            archive=self.name16.archive, distroseries=warty,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # The result is 54 without the bug fix (see bug 180983).
+        size = self.name16.archive.binaries_size
+        self.assertEqual(size, 36,
+            "binaries_size returns %d, expected 36" % size)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

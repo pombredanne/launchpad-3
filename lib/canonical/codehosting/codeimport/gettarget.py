@@ -20,7 +20,7 @@ from bzrlib.upgrade import upgrade
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IProductSeriesSet
-from canonical.launchpad.scripts.importd.publish import mirror_url_from_series
+from canonical.codehosting.codeimport.publish import mirror_url_from_series
 
 
 class ImportdTargetGetter:
