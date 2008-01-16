@@ -51,7 +51,7 @@ bug watch.
 
 Let's confirm adding the task.
 
-    >>> user_browser.getControl('Yes').click()
+    >>> user_browser.getControl('Add Anyway').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/thunderbird/+bug/6'
 
