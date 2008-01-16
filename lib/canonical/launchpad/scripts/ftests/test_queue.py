@@ -108,6 +108,23 @@ class TestQueueTool(TestQueueBase):
         """Remove test contents from disk."""
         cleanupLibrarianFiles()
 
+    def uploadPackage(self, changesfile=None):
+        """Helper function to upload a package."""
+        if changesfile is None:
+            changesfile = "suite/bar_1.0-1/bar_1.0-1_source.changes"
+
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        sync_policy = getPolicy(
+            name='sync', distro='ubuntu', distroseries='breezy-autotest')
+        bar_src = NascentUpload(
+            datadir(changesfile),
+            sync_policy, mock_logger_quiet)
+        bar_src.process()
+        bar_src.do_accept()
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser('launchpad')
+        return bar_src
+
     def testBrokenAction(self):
         """Check if an unknown action raises CommandRunnerError."""
         self.assertRaises(
@@ -258,21 +275,12 @@ class TestQueueTool(TestQueueBase):
         # published, any bugs mentioned in the upload must be closed.
 
         # First we must upload the first version of 'bar' in Ubuntu Hoary.
-        LaunchpadZopelessLayer.switchDbUser("testadmin")
-        sync_policy = getPolicy(
-            name='sync', distro='ubuntu', distroseries='breezy-autotest')
-        bar_src = NascentUpload(
-            datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-            sync_policy, mock_logger_quiet)
-        bar_src.process()
-        bar_src.do_accept()
+        bar_src = self.uploadPackage()
         bar_src.queue_root.setAccepted()
         bar_src.queue_root.realiseUpload()
-        LaunchpadZopelessLayer.txn.commit()
 
         # Now make a new bugtask for the "bar" package.
         the_bug_id = 6
-        LaunchpadZopelessLayer.switchDbUser('launchpad')
         bugtask_owner = getUtility(IPersonSet).getByName('kinnison')
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         ubuntu_bar = ubuntu.getSourcePackage('bar')
@@ -291,16 +299,10 @@ class TestQueueTool(TestQueueBase):
             'Bug status is %s, expected NEW' % bug_status)
 
         # Now, make an upload for the next version of "bar".
-        LaunchpadZopelessLayer.switchDbUser("testadmin")
-        bar2_src = NascentUpload(
-            datadir('suite/bar_1.0-2/bar_1.0-2_source.changes'),
-            sync_policy, mock_logger_quiet)
-        bar2_src.process()
-        bar2_src.do_accept()
-        LaunchpadZopelessLayer.txn.commit()
+        bar2_src = self.uploadPackage(
+            changesfile="suite/bar_1.0-2/bar_1.0-2_source.changes")
 
         # Now accept the new bar upload with the queue tool.
-        LaunchpadZopelessLayer.switchDbUser("queued")
         queue_action = self.execute_command('accept bar', no_mail=False)
 
         # The upload wants to close bug 6:
@@ -325,6 +327,32 @@ class TestQueueTool(TestQueueBase):
             bug_status, 'FIXRELEASED',
             'Bug status is %s, expected FIXRELEASED')
 
+    def testAcceptNewSingleSourceUploadOverridesToUniverse(self):
+        """Check that NEW single source uploads are overridden to universe."""
+        # Upload a new package called "bar".
+        self.uploadPackage()
+
+        # bar starts life as "main":
+        queue_action = self.execute_command(
+            'info bar', queue_name='new')
+        [bar_item] = queue_action.items
+        self.assertEqual(
+            'main', bar_item.sources[0].sourcepackagerelease.component.name)
+
+        # Now accept it.
+        queue_action = self.execute_command(
+            'accept bar', queue_name='new')
+
+        # Its publishing record is now overridden to universe.
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+        published = breezy_autotest.getPublishedReleases(
+            'bar', include_pending=True)
+        [published_bar] = published
+        component_name = published_bar.component.name
+        self.assertEqual(
+            component_name, 'universe',
+            "Expected 'universe', got %s" % component_name)
 
     def testAcceptActionWithMultipleIDs(self):
         """Check if accepting multiple items at once works.

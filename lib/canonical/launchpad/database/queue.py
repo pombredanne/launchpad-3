@@ -35,7 +35,7 @@ from canonical.launchpad.database.publishing import (
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, ILaunchpadCelebrities, IPackageUpload,
+    ArchivePurpose, IComponentSet, ILaunchpadCelebrities, IPackageUpload,
     IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
@@ -193,6 +193,15 @@ class PackageUpload(SQLBase):
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
+        if (self._isSingleSourceUpload() and
+            self.status == PackageUploadStatus.NEW):
+            # If the queue item is coming from the NEW queue and is a single
+            # source upload, we override its component to 'universe' to save
+            # the archive admins some work, since they do this with the
+            # majority of new packages.
+            self.sources[0].sourcepackagerelease.component = getUtility(
+                IComponentSet)['universe']
+
         self.setAccepted()
         self.notify(announce_list=announce_list, logger=logger,
                     dry_run=dry_run)
@@ -202,9 +211,7 @@ class PackageUpload(SQLBase):
         # publishing records now so that the user doesn't have to
         # wait for a publisher cycle (which calls process-accepted
         # to do this).
-        if ((self.sources.count() == 1) and
-            (self.builds.count() == 0) and
-            (self.customfiles.count() == 0)):
+        if self._isSingleSourceUpload():
             self.realiseUpload()
 
         # When accepting packages, we must also check the changes file
@@ -216,6 +223,12 @@ class PackageUpload(SQLBase):
         self.setRejected()
         self.notify(logger=logger, dry_run=dry_run)
         self.syncUpdate()
+
+    def _isSingleSourceUpload(self):
+        """Return True if this upload contains only a single source."""
+        return ((self.sources.count() == 1) and
+                (self.builds.count() == 0) and
+                (self.customfiles.count() == 0))
 
     # XXX cprov 2006-03-14: Following properties should be redesigned to
     # reduce the duplicated code.
