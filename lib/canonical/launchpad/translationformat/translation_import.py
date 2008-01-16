@@ -403,6 +403,7 @@ class TranslationImporter:
                     message.msgid_singular, message.msgid_plural,
                     context=message.context)
 
+
             # If msgid_plural for this plural form is different from existing
             # plural form (and msgid matches)
             if (message.msgid_plural is not None and
@@ -484,7 +485,6 @@ class TranslationImporter:
                     potmsgset.sourcecomment = message.source_comment
                     potmsgset.filereferences = message.file_references
 
-
             # Store translations
             if use_pofile is None:
                 # It's neither an IPOFile nor an IPOTemplate that needs to
@@ -504,6 +504,7 @@ class TranslationImporter:
                     use_pofile, last_translator, message.translations,
                     fuzzy, translation_import_queue_entry.is_published,
                     lock_timestamp, force_edition_rights=is_editor)
+
             except TranslationConflict:
                 error = {
                     'potmsgset': potmsgset,

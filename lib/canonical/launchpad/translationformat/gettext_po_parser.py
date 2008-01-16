@@ -812,9 +812,14 @@ class POParser(object):
             # Note in the header that there are plural forms.
             self._translation_file.header.has_plural_forms = True
         elif self._section == 'msgstr':
-            self._message.addTranslation(
-                self._plural_form_mapping[self._plural_case],
-                self._parsed_content)
+            if self._message.msgid_plural is not None:
+                self._message.addTranslation(
+                    self._plural_form_mapping[self._plural_case],
+                    self._parsed_content)
+            else:
+                self._message.addTranslation(
+                    self._plural_case,
+                    self._parsed_content)
         else:
             raise AssertionError('Unknown section %s' % self._section)
 
