@@ -89,7 +89,7 @@ filebug page and file a bug directly.
 
     >>> user_browser.open('http://bugs.launchpad.dev/')
     >>> user_browser.getLink('Report a bug').click()
-    >>> user_browser.getLink('complicated bug filing form').click()
+    >>> user_browser.getLink('Advanced reporting options').click()
     >>> user_browser.title
     'Report a bug'
 
@@ -109,7 +109,7 @@ Launchpad Bugs results in an informational page being displayed.
 
     >>> user_browser.open('http://bugs.launchpad.dev/')
     >>> user_browser.getLink('Report a bug').click()
-    >>> user_browser.getLink('complicated bug filing form').click()
+    >>> user_browser.getLink('Advanced reporting options').click()
     >>> user_browser.getControl('Project').selected = True
     >>> user_browser.getControl(
     ...     name='field.bugtarget.product').value = 'thunderbird'

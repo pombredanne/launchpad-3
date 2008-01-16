@@ -181,7 +181,7 @@ first we'll register a couple of bugs for the Mozilla Firefox product:
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://bugs.launchpad.dev/firefox/')
     >>> browser.getLink('Report a bug').click()
-    >>> browser.getLink('complicated bug filing form').click()
+    >>> browser.getLink('Advanced reporting options').click()
     >>> print extract_text(find_main_content(browser.contents))
     Report a bug...
     >>> report_bug_url = browser.url
