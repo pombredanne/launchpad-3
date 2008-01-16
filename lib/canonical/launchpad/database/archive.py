@@ -46,7 +46,7 @@ class Archive(SQLBase):
     enabled = BoolCol(dbName='enabled', notNull=False, default=True)
 
     authorized_size = IntCol(
-        dbName='authorized_size', notNull=False, default=1073741824)
+        dbName='authorized_size', notNull=False, default=1024)
 
     whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
 
@@ -364,11 +364,14 @@ class Archive(SQLBase):
         """ % sqlvalues(self)
 
         clauseTables = ['LibraryFileAlias', 'BinaryPackageFilePublishing']
-        result = LibraryFileContent.select(query, clauseTables=clauseTables)
+        # We are careful to use DISTINCT here to eliminate files that
+        # are published in more than one place.
+        result = LibraryFileContent.select(query, clauseTables=clauseTables,
+            distinct=True)
 
-        size = result.sum('filesize')
-        if size is None:
-            return 0
+        # Unfortunately SQLObject has got a bug where it ignores DISTINCT
+        # on a .sum() operation, so resort to Python addition.
+        size = sum([lfc.filesize for lfc in result])
         return size
 
     @property

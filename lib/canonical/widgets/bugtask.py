@@ -8,10 +8,9 @@ import os
 from xml.sax.saxutils import escape
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implements, Interface
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
     IDisplayWidget, IInputWidget, InputErrors, WidgetInputError,
@@ -20,11 +19,15 @@ from zope.schema.interfaces import ValidationError, InvalidValue
 from zope.app.form import Widget, CustomWidgetFactory
 from zope.app.form.utility import setUpWidget
 
-from canonical.launchpad.interfaces import IBugWatch, ILaunchBag, NotFoundError
+from canonical.launchpad import _
+from canonical.launchpad.fields import URIField
+from canonical.launchpad.interfaces import (
+    IBugWatchSet, ILaunchBag, NoBugTrackerFound, NotFoundError,
+    UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 
 class BugTaskAssigneeWidget(Widget):
     """A widget for setting the assignee on an IBugTask."""
@@ -213,28 +216,38 @@ class BugTaskAssigneeWidget(Widget):
                 return self.assigned_to
 
 
+class BugWatchEditForm(Interface):
+    """Form field definition for the bug watch widget.
+
+    Used to edit the bug watch on the bugtask edit page.
+    """
+
+    url = URIField(
+        title=_('URL'), required=True,
+        allowed_schemes=['http', 'https'],
+        description=_("""The URL at which to view the remote bug."""))
+
+
 class BugTaskBugWatchWidget(RadioWidget):
     """A widget for linking a bug watch to a bug task."""
 
     def __init__(self, field, vocabulary, request):
         RadioWidget.__init__(self, field, vocabulary, request)
-        self.remotebug_widget = CustomWidgetFactory(TextWidget)
-        for field_name in ['bugtracker', 'remotebug']:
-            setUpWidget(
-                self, field_name, IBugWatch[field_name], IInputWidget,
-                context=field.context)
+        self.url_widget = CustomWidgetFactory(URIWidget)
+        setUpWidget(
+            self, 'url', BugWatchEditForm['url'], IInputWidget,
+            context=field.context)
         self.setUpJavascript()
 
     def setUpJavascript(self):
         """Set up JS to select the "new bugwatch" option automatically."""
         select_js = "selectWidget('%s.%s', event)" % (
             self.name, self._new_bugwatch_value)
-        self.remotebug_widget.extra = 'onKeyPress="%s"' % select_js
+        self.url_widget.extra = 'onKeyPress="%s"' % select_js
 
     def setPrefix(self, prefix):
         RadioWidget.setPrefix(self, prefix)
-        self.remotebug_widget.setPrefix(prefix)
-        self.bugtracker_widget.setPrefix(prefix)
+        self.url_widget.setPrefix(prefix)
         self.setUpJavascript()
 
     _messageNoValue = "None, the status of the bug is updated manually."
@@ -247,9 +260,13 @@ class BugTaskBugWatchWidget(RadioWidget):
         watch, otherwise look up an existing one.
         """
         if form_value == self._new_bugwatch_value:
-            bugtracker = self.bugtracker_widget.getInputValue()
             try:
-                remotebug = self.remotebug_widget.getInputValue()
+                url = self.url_widget.getInputValue()
+                bugtracker, remote_bug = getUtility(
+                    IBugWatchSet).extractBugTrackerAndBug(url)
+                bugtask = self.context.context
+                return bugtask.bug.addWatch(
+                    bugtracker, remote_bug, getUtility(ILaunchBag).user)
             except WidgetInputError, error:
                 # Prefix the error with the widget name, since the error
                 # will be display at the top of the page, and not right
@@ -257,9 +274,10 @@ class BugTaskBugWatchWidget(RadioWidget):
                 raise WidgetInputError(
                     self.context.__name__, self.label,
                     'Remote Bug: %s' % error.doc())
-            bugtask = self.context.context
-            return bugtask.bug.addWatch(
-                bugtracker, remotebug, getUtility(ILaunchBag).user)
+            except (NoBugTrackerFound, UnrecognizedBugTrackerURL), error:
+                raise WidgetInputError(
+                    self.context.__name__, self.label,
+                    'Invalid bug tracker URL.')
         else:
             return RadioWidget._toFieldValue(self, form_value)
 
@@ -337,8 +355,7 @@ class BugTaskBugWatchWidget(RadioWidget):
 
         # Add an option for creating a new bug watch.
         option_text = (
-            '<div>%s</div><div>Remote Bug #%s</div>' % (
-                self.bugtracker_widget(), self.remotebug_widget()))
+            '<div>URL: %s</div>' % self.url_widget())
         if value == self._new_bugwatch_value:
             option = self.renderSelectedItem(
                 self._new_bugwatch_value, option_text,

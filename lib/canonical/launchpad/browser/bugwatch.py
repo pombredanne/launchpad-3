@@ -10,16 +10,18 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import Interface
-from zope.schema import TextLine
+
+from canonical.widgets.textwidgets import URIWidget
 
 from canonical.launchpad import _
 from canonical.launchpad.browser import get_comments_for_bugtask
+from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces import (
     IBugWatch, IBugWatchSet, ILaunchBag, ILaunchpadCelebrities,
     NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadFormView, LaunchpadView, action,
-    canonical_url)
+    canonical_url, custom_widget)
 
 
 class BugWatchSetNavigation(GetitemNavigation):
@@ -61,8 +63,10 @@ class BugWatchView(LaunchpadView):
 class BugWatchEditForm(Interface):
     """Form definition for the bug watch edit view."""
 
-    url = TextLine(title=_('URL'), required=True,
-        description=_("The URL at which to view the remote bug."))
+    url = URIField(
+        title=_('URL'), required=True,
+        allowed_schemes=['http', 'https'],
+        description=_("""The URL at which to view the remote bug."""))
 
 
 class BugWatchEditView(LaunchpadFormView):
@@ -70,6 +74,7 @@ class BugWatchEditView(LaunchpadFormView):
 
     schema = BugWatchEditForm
     field_names = ['url']
+    custom_widget('url', URIWidget)
 
     @property
     def initial_values(self):
