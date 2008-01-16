@@ -215,7 +215,12 @@ one is considered an update.
 
 This even goes if the new file also omits the revision date.
 
-    >>> new_header.translation_revision_date = None
+    >>> new_header = POHeader("""
+    ...     Project-Id-Version: foo
+    ...     MIME-Version: 1.0
+    ...     Content-Type: text/plain; charset=UTF-8
+    ...     Content-Transfer-Encoding: 8bit
+    ...     """)
     >>> old_pofile.isTranslationRevisionDateOlder(new_header)
     False
 
