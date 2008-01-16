@@ -183,7 +183,7 @@
     It is expected that this macro is called from within a definition
     list (<dl></dl>)
   </tal:comment>
-  <dt>
+  <dt class="revision-details">
     <tal:comment condition="nothing">
       The end of the anchor and the start of the next tal expression
       has no whitespace between the elements as we do not want any
@@ -215,7 +215,7 @@
         content="rev_no/revision/revision_date/fmt:displaydate"
         >2005-10-05 14:34:22 WST</tal:revision-date>
   </dt>
-  <dd>
+  <dd class="revision-comment">
     <tal:commit-message
         replace="structure rev_no/revision/log_body/fmt:text-to-html">
       The revision commit message.
