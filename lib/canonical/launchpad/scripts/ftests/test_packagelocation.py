@@ -132,7 +132,7 @@ class TestPackageLocation(LaunchpadZopelessTestCase):
             person_name='cprov')
         self.assertEqual(
             str(location_cprov_ppa),
-            'PPA for Celso Providelo: hoary-RELEASE')
+            'cprov: hoary-RELEASE')
 
         location_ubuntu_partner = self.getPackageLocation(
             distribution_name='ubuntu', purpose=ArchivePurpose.PARTNER)

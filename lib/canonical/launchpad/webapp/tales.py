@@ -545,6 +545,13 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     """
     implements(ITraversable)
 
+    allowed_names = set([
+        'icon',
+        'logo',
+        'mugshot',
+        'badges',
+        ])
+
     icon_template = (
         '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
 
@@ -554,15 +561,13 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for icons with an optional rootsite."""
-        if name == 'icon':
-            return self.icon()
+        if name in self.allowed_names:
+            return getattr(self, name)()
         elif name.startswith('icon:'):
             rootsite = name.split(':', 1)[1]
             return self.icon(rootsite=rootsite)
-        elif name == 'badges':
-            return self.badges()
         else:
-            return None
+            raise TraversalError, name
 
     def icon(self, rootsite=None):
         """Display the icon dependent on the IBugTask.importance."""

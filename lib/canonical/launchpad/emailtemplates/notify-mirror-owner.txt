@@ -36,7 +36,10 @@ be the case, please help us by filing a bug at:
 
 [1] %(logfile_url)s
 
-Thanks,
+Following is a snippet of the log file above:
+-----------------------------------------------------------------------
+%(log_snippet)s
+-----------------------------------------------------------------------
 
+Regards,
 The Launchpad Team 
-
