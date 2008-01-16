@@ -38,6 +38,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
 
 
 class ArchiveNavigation(Navigation):
@@ -228,6 +229,7 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
     # Maximum number of 'selected_sources' options presented.
     max_options_presented = 10
 
+    custom_widget('comment', StrippedTextWidget, displayWidth=50)
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget,
                   orientation='vertical', visible=True)
 

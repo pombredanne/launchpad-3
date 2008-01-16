@@ -17,51 +17,37 @@
 
 <div metal:fill-slot="main" tal:define="ppa_active view/is_active">
 
-
   <h2><tal:title replace="context/title" /> package console</h2>
-
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
-    <div metal:fill-slot="extra_info">
-
-      <p tal:condition="not: ppa_active">
-         This PPA does not contain any packages yet.
-      </p>
-
-      <tal:active_ppa condition="ppa_active">
-         <p>Search for package which you want to manipulate</p>
-      </tal:active_ppa>
-
+    <div tal:condition="not: ppa_active" metal:fill-slot="extra_info">
+      <p>This PPA does not contain any packages yet.</p>
     </div> <!--extra_info -->
-
 
     <div class="form" tal:condition="ppa_active" metal:fill-slot="widgets">
 
-      <table>
+     <table width="100%">
 
-      <tal:name_filter define="widget nocall:view/widgets/name_filter|nothing"
-                       condition="widget">
-        <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-      </tal:name_filter>
+      <thead>
+       <tr><td><label>Search for packages that match:</label></td></tr>
+      </thead>
 
-      <tr>
-         <th><label for="field.status_filter">Package status:</label></th>
-         <td width="100%">
-             <div tal:content="structure view/plain_status_filter_widget" />
-	     <p class="formHelp">Display packages only in a given state.</p>
-         </td>
+      <tbody>
+      <tr tal:define="widget nocall:view/widgets/name_filter">
+        <td style="white-space: nowrap">
+            <label tal:attributes="for widget/name"
+            >Name</label> <input tal:replace="structure widget"
+            /><label for="field.status_filter">Status</label
+            > <div tal:replace="structure view/plain_status_filter_widget"
+            /> <input tal:replace="structure
+           view/actions/field.actions.search/render" />
+        </td>
       </tr>
-
-
       <tr tal:define="widget nocall:view/widgets/selected_sources|nothing;
                       widget_size python:len(widget.vocabulary)"
           tal:condition="widget">
-        <th>
-           <label tal:attributes="for widget/name"
-                  tal:content="string:${widget/label}:">Label</label>
-        </th>
-        <td tal:condition="widget_size">
+        <td tal:condition="widget_size" style="padding: 1em;">
 
            <table class="listing">
              <thead>
@@ -111,20 +97,37 @@
         </td>
       </tr>
 
-      <tal:include_binaries
-          define="widget nocall:view/widgets/include_binaries|nothing"
-          condition="widget">
-         <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-      </tal:include_binaries>
+      <tr>
+        <td>
+           <fieldset class="collapsible collapsed"
+                     style="border: 1px solid; padding: 1em">
+             <legend>Delete packages</legend>
+             <tal:include_binaries
+               define="widget nocall:view/widgets/include_binaries">
+               <label tal:attributes="for widget/name"
+                      tal:content="widget/label">Label</label>
+               <input tal:replace="structure widget" />
+             </tal:include_binaries>
+             <tal:comment_field
+               define="widget nocall:view/widgets/comment">
+               <label tal:attributes="for widget/name"
+                      tal:content="widget/label">Label</label>
+               <input tal:replace="structure widget" />
+             </tal:comment_field>
+             <input tal:replace="structure
+                view/actions/field.actions.delete/render" />
+           </fieldset>
+        </td>
+      </tr>
 
-      <tal:comment_field define="widget nocall:view/widgets/comment|nothing"
-          condition="widget">
-         <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-      </tal:comment_field>
-
+      </tbody>
       </table>
 
    </div> <!-- widgets -->
+
+  <div class="actions" metal:fill-slot="buttons">
+
+  </div> <!--empties buttons section -->
 
   </div> <!-- launchpad_form -->
 
