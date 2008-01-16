@@ -195,10 +195,10 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         if (self._isSingleSourceUpload() and
             self.status == PackageUploadStatus.NEW):
-            # If the queue item is coming from the NEW queue and is a single
-            # source upload, we override its component to 'universe' to save
-            # the archive admins some work, since they do this with the
-            # majority of new packages.
+            # If the queue item is coming from the NEW queue and is a
+            # single source upload, we override its component to
+            # 'universe' to save the archive admins some work, since
+            # they do this with the majority of new packages.
             self.sources[0].sourcepackagerelease.component = getUtility(
                 IComponentSet)['universe']
 

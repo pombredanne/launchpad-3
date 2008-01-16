@@ -108,11 +108,9 @@ class TestQueueTool(TestQueueBase):
         """Remove test contents from disk."""
         cleanupLibrarianFiles()
 
-    def uploadPackage(self, changesfile=None):
+    def uploadPackage(self,
+            changesfile="suite/bar_1.0-1/bar_1.0-1_source.changes"):
         """Helper function to upload a package."""
-        if changesfile is None:
-            changesfile = "suite/bar_1.0-1/bar_1.0-1_source.changes"
-
         LaunchpadZopelessLayer.switchDbUser("testadmin")
         sync_policy = getPolicy(
             name='sync', distro='ubuntu', distroseries='breezy-autotest')
@@ -328,7 +326,7 @@ class TestQueueTool(TestQueueBase):
             'Bug status is %s, expected FIXRELEASED')
 
     def testAcceptNewSingleSourceUploadOverridesToUniverse(self):
-        """Check that NEW single source uploads are overridden to universe."""
+        """Ensure new single source uploads are overridden to universe."""
         # Upload a new package called "bar".
         self.uploadPackage()
 
