@@ -79,7 +79,7 @@ GLOBAL_PIPELINE.insert(0, 'LaunchpadMember')
 index = GLOBAL_PIPELINE.index('CookHeaders')
 GLOBAL_PIPELINE.insert(index + 1, 'LaunchpadHeaders')
 
-DEFAULT_MSG_FOOTER = '''====================
+DEFAULT_MSG_FOOTER = '''_______________________________________________
 %(footer)s'''
 """ % dict(
     launchpad_top=launchpad_top,

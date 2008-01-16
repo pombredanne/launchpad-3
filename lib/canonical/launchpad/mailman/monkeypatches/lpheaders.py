@@ -54,16 +54,11 @@ def process(mlist, msg, msgdata):
         message_id = message_ids[0]
         del msg['message-id']
         msg['Message-ID'] = message_id
-    # See <http://wiki.list.org/display/DEV/Stable+URLs>
-    x_message_id_hash = b32encode(sha(message_id).digest())
-    msg['X-Message-ID-Hash'] = x_message_id_hash
-    archived_at = '%s/%s' % (list_archive, x_message_id_hash)
-    msg['Archived-At'] = '<%s>' % archived_at
-    # Set up message metadata for header/footer decoration interpolation.
+    # Set up message metadata for header/footer decoration interpolation in
+    # the Decorate handler.
     msgdata['decoration-data'] = dict(
         list_owner=list_owner,
         list_post=list_post,
         list_unsubscribe=list_unsubscribe,
         list_help=list_help,
-        archived_at=archived_at,
         )

@@ -152,10 +152,10 @@ This url should exactly match the link given on the team's overview page.
 
     >>> browser.open('http://launchpad.dev/~itest-one/')
     >>> browser.getLink(id='mailing-list-archive')
-    <Link text='http://lists.launchpad.dev/archives/itest-one'
-          url='http://lists.launchpad.dev/archives/itest-one'>
+    <Link text='http://lists.launchpad.dev/itest-one'
+          url='http://lists.launchpad.dev/itest-one'>
     >>> message['list-archive']
-    '<http://lists.launchpad.dev/archives/itest-one>'
+    '<http://lists.launchpad.dev/itest-one>'
 
 
 === List-Post ===
@@ -177,20 +177,6 @@ our case, w'll point this at the team owner.
     '<http://launchpad.dev/~itest-one>'
 
 
-== RFC 5064 ==
-
-RFC 5064 (draft) describes the Archived-At header which points to this exact
-message in the mailing list's archive.  While still in draft form and while
-not officially supported by Mailman yet, our mailing lists include this
-header.
-
-    # XXX BarryWarsaw 11-Jan-2008 we're still debating exactly how this will
-    # look, but the following seems to be the direction we're taking.  The
-    # token part is simply the Base32 encoded SHA1 hash of the Message-ID.
-    >>> message['archived-at']
-    '<http://lists.launchpad.dev/archives/itest-one/NKZW4WO4ZAKV42TY6UAGQJAIE444EMDX>'
-
-
 == Message footer ==
 
 Mailman appends a footer of helpful text on each message.  This footer
@@ -201,14 +187,13 @@ separator.
 
     >>> body_lines = message.get_payload().splitlines(True)
     >>> for line_number, line in enumerate(body_lines):
-    ...     if line.startswith('====='):
+    ...     if line.startswith('_____'):
     ...         break
     ... else:
     ...     raise AssertionError('No footer found')
     >>> print ''.join(body_lines[line_number + 1:])
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Archived at : http://lists.launchpad.dev/archives/itest-one/NKZW4WO4ZAKV42TY6UAGQJAIE444EMDX
     Unsubscribe : http://launchpad.dev/people/+me/+editemails
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>

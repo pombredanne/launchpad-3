@@ -1146,7 +1146,7 @@ k            </description>
         <key name="beta_testers_team" datatype="string"
              default="mailing-list-beta-testers" />
         <key name="archive_url_template" datatype="string"
-             default="http://lists.launchpad.net/archives/$team_name" />
+             default="http://lists.launchpad.net/$team_name" />
         <key name="archive_address" datatype="string"
              default="archive@mail-archive.com" />
         <key name="list_help_header" datatype="string"

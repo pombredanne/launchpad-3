@@ -203,9 +203,10 @@ Here's the copy sent to Anne...
     <BLANKLINE>
     Hi, I am now a member of this team's list!
     _______________________________________________
-    Itest-one mailing list
-    Itest-one@lists.launchpad.dev
-    http://lists.launchpad.dev/mailman/listinfo/itest-one
+    Mailing list: http://launchpad.dev/~itest-one
+    Post to     : itest-one@lists.launchpad.dev
+    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
 
@@ -223,9 +224,10 @@ Here's the copy sent to Anne...
     <BLANKLINE>
     Hi, I am now a member of this team's list!
     _______________________________________________
-    Itest-one mailing list
-    Itest-one@lists.launchpad.dev
-    http://lists.launchpad.dev/mailman/listinfo/itest-one
+    Mailing list: http://launchpad.dev/~itest-one
+    Post to     : itest-one@lists.launchpad.dev
+    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
 
@@ -278,9 +280,10 @@ However, once she validates this address, she can post from it.
     <BLANKLINE>
     Hi, I am now a verified member of this team!
     _______________________________________________
-    Itest-one mailing list
-    Itest-one@lists.launchpad.dev
-    http://lists.launchpad.dev/mailman/listinfo/itest-one
+    Mailing list: http://launchpad.dev/~itest-one
+    Post to     : itest-one@lists.launchpad.dev
+    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
 
@@ -296,9 +299,10 @@ However, once she validates this address, she can post from it.
     <BLANKLINE>
     Hi, I am now a verified member of this team!
     _______________________________________________
-    Itest-one mailing list
-    Itest-one@lists.launchpad.dev
-    http://lists.launchpad.dev/mailman/listinfo/itest-one
+    Mailing list: http://launchpad.dev/~itest-one
+    Post to     : itest-one@lists.launchpad.dev
+    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
 
