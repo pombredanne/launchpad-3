@@ -996,6 +996,8 @@ products_index = 'Projects registered in Launchpad'
 
 productseries_export = ContextTitle('Download translations for "%s"')
 
+productseries_linkbranch = ContextTitle('Link an existing branch to %s')
+
 productseries_index = ContextTitle('Overview of %s')
 
 productseries_packaging = ContextDisplayName(
