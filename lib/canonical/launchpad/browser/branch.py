@@ -870,6 +870,10 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     custom_widget('target_branch', TargetBranchWidget)
     custom_widget('dependent_branch', SinglePopupWidget, displayWidth=35)
 
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
     def initialize(self):
         """Show a 404 if the source branch is junk."""
         if self.context.product is None:
@@ -897,8 +901,12 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 dependent_branch=dependent_branch, whiteboard=whiteboard)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))
-        else:
-            self.next_url = canonical_url(source_branch)
+        #else:
+        #    self.next_url = canonical_url(source_branch)
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the branch page."""
 
     def validate(self, data):
         source_branch = self.context

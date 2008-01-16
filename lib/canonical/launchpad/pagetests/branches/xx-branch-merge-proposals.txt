@@ -214,10 +214,10 @@ Merge proposals can be deleted, when either abandoned or created in error.
 When a merge proposal is deleted, the user is taken back to the main page
 for the source_branch.
 
-    >>> sample_browser.getLink(url=edit_link).click()
-    >>> sample_browser.getControl('Delete').click()
+    >>> sample_browser.getLink('Edit details').click()
+    >>> sample_browser.getControl('Delete proposal').click()
     >>> print sample_browser.url
-    http://code.launchpad.dev/~name12/gnome-terminal/scanned
+    http://code.launchpad.dev/~sabdfl/firefox/release-0.9
 
     >>> printMergeProposals(sample_browser, 'landing-targets')
     None
@@ -232,24 +232,24 @@ the target branch.
     >>> sample_browser.getLink('Propose for merging').click()
     >>> sample_browser.getControl(
     ...     name='field.target_branch.target_branch').value = (
-    ...         '~name12/gnome-terminal/main')
+    ...         '~name12/firefox/main')
     >>> sample_browser.getControl('Dependent Branch').value = (
-    ...     '~name12/gnome-terminal/klingon')
+    ...     '~sabdfl/firefox/release-0.8')
     >>> sample_browser.getControl('Whiteboard').value = (
     ...     'This is the whiteboard')
     >>> sample_browser.getControl('Register').click()
-
     >>> printMergeProposals(sample_browser, 'landing-targets')
-    ~name12/gnome-terminal/main - view proposal details
+    ~name12/firefox/main - view proposal details
     This is the whiteboard
-    Dependent on ~name12/gnome-terminal/klingon
+    Merge proposed by Sample Person
+    Dependent on ~sabdfl/firefox/release-0.8
     Work in progress
 
 This association is also shown on the branch that is depended upon.
 
-    >>> sample_browser.getLink('~name12/gnome-terminal/klingon').click()
+    >>> sample_browser.getLink('~sabdfl/firefox/release-0.8').click()
     >>> printMergeProposals(sample_browser, 'dependent-branches')
-    ~name12/gnome-terminal/scanned - view proposal details
+    ~sabdfl/firefox/release-0.9 - view proposal details
     This is the whiteboard
     Work in progress
 
@@ -285,8 +285,10 @@ find one, then the current time is used as the date merged.
     >>> nopriv_browser.getControl('Merged Revision Number').value = '42'
     >>> nopriv_browser.getControl('Mark as Merged').click()
 
-The user is then taken to the source branch details page.
+The user is then taken to the proposal details page.  The source branch
+is shown as a link.
 
+    >>> nopriv_browser.getLink('~name12/gnome-terminal/klingon').click()
     >>> printMergeProposals(nopriv_browser, 'landing-targets')
     ~name12/gnome-terminal/main - view proposal details
       This is the whiteboard
