@@ -5,8 +5,10 @@
 __metaclass__ = type
 __all__ = ['BugSubscriptionAddView']
 
+from zope.component import getUtility
+
 from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.interfaces import IBug
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 
 class BugSubscriptionAddView(SQLObjectAddView):
@@ -17,7 +19,8 @@ class BugSubscriptionAddView(SQLObjectAddView):
         SQLObjectAddView.__init__(self, context, request)
 
     def create(self, person):
-        subscription = self.context.bug.subscribe(person)
+        subscription = self.context.bug.subscribe(
+            person, getUtility(ILaunchBag).user)
         if person.isTeam():
             message = '%(name)s team has been subscribed to this bug.'
         else:

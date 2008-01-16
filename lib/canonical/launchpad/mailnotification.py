@@ -432,7 +432,7 @@ def update_security_contact_subscriptions(modified_bugtask, event):
         new_product = bugtask_after_modification.product
         if new_product.security_contact:
             bugtask_after_modification.bug.subscribe(
-                new_product.security_contact)
+                new_product.security_contact, event.user)
 
 
 def get_bugmail_from_address(person, bug):

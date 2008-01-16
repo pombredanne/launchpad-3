@@ -1,5 +1,4 @@
-Sending the Bug Notifications
-=============================
+= Sending the Bug Notifications =
 
 As explained in bugnotifications.txt, a change to a bug causes a bug
 notification to be added. These notifications should be assembled into
@@ -694,7 +693,7 @@ notification will be sent to all members individually.
     ...     print member.preferredemail.email
     marilize@hbd.com
 
-    >>> bug_one.subscribe(shipit_admins)
+    >>> bug_one.subscribe(shipit_admins, shipit_admins)
     <...>
 
     >>> comment = getUtility(IMessageSet).fromText(
@@ -718,8 +717,8 @@ notification will be sent to all members individually.
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
 
-Bug Filed Notification
-----------------------
+
+== Bug Filed Notification ==
 
 Generating notifications when a new bug is filed is just a special case
 of a comment notification. If we add a comment notification for the
@@ -770,8 +769,8 @@ initial message of the bug, it will result in a bug filed notification:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
 
-Duplicates
-----------
+
+== Duplicates ==
 
 If the bug is a duplicate of another bug, a marker gets inserted at the
 top of the email:
@@ -865,8 +864,7 @@ subscriber of bug one.
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
 
-The cronscript
---------------
+== The cronscript ==
 
 There's a cronsript which does the sending of the email. Let's add a
 few notifications to show that it works.
@@ -975,15 +973,15 @@ makes it write out the emails it sends.
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
 
-The X-Launchpad-Bug header
---------------------------
+
+== The X-Launchpad-Bug header ==
 
 When a notification is sent out about a bug, the X-Launchpad-Bug header is
 filled with data about that bug:
 
     >>> from canonical.launchpad.interfaces import IMilestoneSet
     >>> bug_three = getUtility(IBugSet).get(3)
-    >>> subscription = bug_three.subscribe(sample_person)
+    >>> subscription = bug_three.subscribe(sample_person, sample_person)
 
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a short comment.', sample_person,
@@ -1013,4 +1011,115 @@ specified:
     True
     False
     False
+
+
+== Verbose bug notifications ==
+
+It is possible for users to have all the bug notifications which they
+receive include the bug description and status. This helps in those
+cases where the user doesn't save bug notifications, which can make
+subsequent notifications seem somewhat obscure.
+
+We'll expire all existing notifications since we're not interested in
+them:
+
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    1
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> for notification in notifications:
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    ...     syncUpdate(notification)
+
+
+To demonstrate verbose notifications, we'll subscribe David Allouche,
+who receives verbose bug notifications, to bug 15.
+
+    >>> bug_15 = getUtility(IBugSet).get(15)
+    >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
+    >>> ddaa.verbose_bugnotifications
+    True
+
+    >>> bug_15.subscribe(ddaa, sample_person)
+    <...>
+
+If we then add a comment to the bug, ddaa will receieve a notification
+containing that comment.
+
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a really simple comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_15.addCommentNotification(comment)
+
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    1
+
+If we pass this notifcation to get_email_notifications we can see that
+ddaa will receieve a notification which contains the bug description and
+its status in all of its targets. All other subscribers will receive
+standard notifications that don't include the bug description. To help
+with demonstrating this, we'll define a helper function.
+
+    >>> def sort_messages_by_recipient(messages):
+    ...     messages_by_recipient = {}
+    ...     for message in messages:
+    ...         if message['To'] in messages_by_recipient:
+    ...             messages_by_recipient[message['To']].append(message)
+    ...         else:
+    ...             messages_by_recipient[message['To']] = [message]
+    ...     return messages_by_recipient
+
+    >>> from canonical.launchpad.scripts.bugnotification import (
+    ...     get_email_notifications)
+    >>> [(bug_notifications, messages)] = (
+    ...     get_email_notifications(notifications))
+    >>> sorted_messages = sort_messages_by_recipient(messages)
+
+We can see that foo.bar@canonical.com doesn't receive verbose
+notifications:
+
+    >>> print_notification(sorted_messages['foo.bar@canonical.com'][0])
+    To: foo.bar@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 15] subject
+    X-Launchpad-Message-Rationale: Subscriber
+    <BLANKLINE>
+    a really simple comment.
+    <BLANKLINE>
+    -- 
+    Nonsensical bugs are useless
+    http://bugs.launchpad.dev/bugs/15
+    You received this bug notification because you are a direct subscriber
+    of the bug.
+    <BLANKLINE>
+    ---------------------------------------------------------------------- 
+
+Whereas ddaa does:
+
+    >>> print_notification(
+    ...     sorted_messages['david.allouche@canonical.com'][0])
+    To: david.allouche@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 15] subject
+    X-Launchpad-Message-Rationale: Subscriber
+    <BLANKLINE>
+    a really simple comment.
+    <BLANKLINE>
+    -- 
+    Nonsensical bugs are useless
+    http://bugs.launchpad.dev/bugs/15
+    You received this bug notification because you are a direct subscriber
+    of the bug.
+    <BLANKLINE>
+    Status in Redfish: New
+    Status in Mozilla Thunderbird: New
+    <BLANKLINE>
+    Bug description:
+    Like this one, natch.
+    <BLANKLINE>
+    ---------------------------------------------------------------------- 
 

@@ -1269,10 +1269,10 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 .statusNEW,           .statusNEW a           {color: #930;}
 .statusINCOMPLETE,    .statusINCOMPLETE a    {color: red;}
 .statusCONFIRMED,     .statusCONFIRMED a     {color: red;}
-.statusTRIAGED,       .statusTRIAGED a       {color: black;}
+.statusTRIAGED,       .statusTRIAGED a       {color: #f60;}
 .statusINPROGRESS,    .statusINPROGRESS a    {color: black;}
-.statusFIXRELEASED,   .statusFIXRELEASED a   {color: black;}
-.statusFIXCOMMITTED,  .statusFIXCOMMITTED a  {color: black;}
+.statusFIXCOMMITTED,  .statusFIXCOMMITTED a  {color: #050;}
+.statusFIXRELEASED,   .statusFIXRELEASED a   {color: green;}
 .statusINVALID,       .statusINVALID a       {color: gray;}
 .statusWONTFIX,       .statusWONTFIX a       {color: gray;}
 .importanceCRITICAL,  .importanceCRITICAL a  {color: red;}
