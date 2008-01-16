@@ -93,6 +93,26 @@ class MenuAPI:
             self._request = get_current_browser_request()
             self._selectedfacetname = None
 
+        # Populate all dictionaries for retrieval of individual Links of any
+        # given facet (e.g. context/menu:bugs/subscribe).
+        for facet_entry in self.facet():
+            setattr(self, facet_entry.name, self._getLinks(facet_entry.name))
+
+    def _getLinks(self, facet_name):
+        """Return a dictionary with all links available in the given facet.
+
+        If the facet name is not valid, we get a TraversalError exception that
+        is raised outside this method.
+        """
+        menu = queryAdapter(
+            self._context, IApplicationMenu, facet_name)
+        if menu is None:
+            return {}
+        else:
+            menu.request = self._request
+            links = menu.iterlinks(requesturi=self._requesturi())
+            return dict((link.name, link) for link in links)
+
     def _nearest_menu(self, menutype):
         try:
             return nearest_adapter(self._context, menutype)
