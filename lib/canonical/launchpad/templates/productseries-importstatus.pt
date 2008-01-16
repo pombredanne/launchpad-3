@@ -8,71 +8,65 @@
 <tal:block condition="not: view/user_branch_visible">
   <div id="branch-details">
 
-  <p id="no-rcs-details">
-    You haven't yet told Launchpad where your source code is for
-    <em>
-    <tal:series replace="context/title">evolution MAIN</tal:series></em>.
-  </p>
+    <tal:edit-link condition="context/required:launchpad.Edit">
+      <tal:comment condition="nothing">
+        We want to show different things depending on whether or not
+        the logged in user is able to alter the information for the
+        product series or not.
+      </tal:comment>
 
-  <h3>Launchpad already knows about my Bazaar branch</h3>
-
-  <p>
-    You can associate an existing branch with this series
-    using the '<a href="+linkbranch">Link branch</a>' action.
-  </p>
-
-  <h3>The code is already hosted in a Bazaar branch elsewhere</h3>
-
-  <tal:logged-in condition="view/user">
-    <tal:no-keys condition="not:view/user/sshkeys">
-      <p id="ssh-key-directions">
-        To authenticate with the Launchpad branch upload service, you need
-        to <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
-        register a SSH key </a>.
+      <p id="no-rcs-details">
+        You haven't yet told Launchpad where your source code is for
+        <em><tal:series replace="context/title">evolution MAIN</tal:series></em>.
       </p>
-    </tal:no-keys>
-    <tal:user-can-push condition="view/user/sshkeys">
+
+      <h3>Launchpad already knows about my Bazaar branch</h3>
+
       <p>
-        If you wanted to push a branch up for this project with the name
-        'trunk' then you would use a command line like this:<br/>
-        <tt><strong>bzr push lp:<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/trunk</strong></tt>
+        You can associate an existing branch with this series
+        using the '<a href="+linkbranch">Link to branch</a>' action.
       </p>
-    </tal:user-can-push>
-  </tal:logged-in>
-  <tal:not-logged-in condition="not: view/user">
-    <p>
-      Launchpad needs to know who you are in order to keep track
-      of your branches.
-    </p>
-  </tal:not-logged-in>
 
-  <p>
-    A branch can also be mirrored from a remote location as long as
-    it is publicly available by
-    <a tal:attributes="href string:/${context/product/name}/+addbranch">
-      registering a mirrored branch</a>.
-  </p>
+      <h3>The code is already hosted in a Bazaar branch elsewhere</h3>
 
-  <h3>The code is hosted in CVS or Subversion</h3>
+      <tal:no-keys condition="not:view/user/sshkeys">
+        <p id="ssh-key-directions">
+          To authenticate with the Launchpad branch upload service, you need
+          to <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+          register a SSH key </a>.
+        </p>
+      </tal:no-keys>
+      <tal:user-can-push condition="view/user/sshkeys">
+        <p>
+          If you wanted to push a branch up for this project with the name
+          <em>trunk</em> then you would use a command line like this:<br/>
+          <tt><strong>bzr push lp:<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/trunk</strong></tt>
+        </p>
+      </tal:user-can-push>
 
-  <p>Launchpad can import your code into a Bazaar branch.</p>
+      <p>
+        A branch can also be mirrored from a remote location as long as
+        it is publicly available by
+        <a tal:attributes="href string:/${context/product/name}/+addbranch">
+          registering a mirrored branch</a>.
+      </p>
 
+      <h3>The code is hosted in CVS or Subversion</h3>
 
+      <p>
+        Launchpad can import your code into a Bazaar branch.
+        The '<a href="+source">Edit source</a>' action is used
+        to specify the upstream location.
+      </p>
 
-1. You want to host the code on Launchpad using Bazaar: push now (recommended)
+    </tal:edit-link>
 
-2. Your code is : tell us where it is and we'll mirror it
-
-3. Your code is already hosted in CVS or Subversion: tell us where it is and we'll import it into Bazaar and mirror it
-
-each with a prominent link.
-
-
-
-  <p>If upstream is maintained in CVS or SVN, you can
-  specify the location of the upstream branch to
-  <a tal:attributes="href string:${context/fmt:url}/+source">
-  import</a> it as a Bazaar branch.</p>
+    <tal:user-cannot-edit condition="not: context/required:launchpad.Edit">
+      <p id="no-rcs-details">
+        No revision control details recorded for
+        <em><tal:series replace="context/title">evolution MAIN</tal:series></em>.
+      </p>
+    </tal:user-cannot-edit>
   </div>
 
 </tal:block>
