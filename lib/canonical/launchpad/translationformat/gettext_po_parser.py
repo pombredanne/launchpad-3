@@ -199,12 +199,13 @@ class POHeader:
 
     _strftime_text = '%F %R%z'
 
+    translation_revision_date = None
+
     def __init__(self, header_content, comment=None):
         self._raw_header = header_content
         self.is_fuzzy = False
         UTC = pytz.timezone('UTC')
         self.template_creation_date = datetime.datetime.now(UTC)
-        self.translation_revision_date = datetime.datetime.now(UTC)
         self._last_translator = 'FULL NAME <EMAIL@ADDRESS>'
         self.language_team = 'LANGUAGE <LL@li.org>'
         self.has_plural_forms = False
