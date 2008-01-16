@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import (
     BranchType, IBranchSet, IPersonSet, IRevisionSet)
 from canonical.codehosting.scanner.bzrsync import (
     BzrSync, RevisionModifiedError)
-from canonical.launchpad.scripts.importd.tests.helpers import (
+from canonical.codehosting.codeimport.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
 from canonical.testing import LaunchpadZopelessLayer
