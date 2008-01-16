@@ -48,6 +48,10 @@
     </tbody>
   </table>
 
+    <div class="action">
+      <p tal:condition="CONTEXTS/menu:bugs/newbugtracker/enabled">link goes here</p>
+    </div>
+
 </div>
 
 </body>
