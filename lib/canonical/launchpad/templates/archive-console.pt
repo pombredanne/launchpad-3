@@ -73,15 +73,17 @@
                        <p class="informational message"
                          >Presenting <tal:presented
                           replace="view/max_options_presented"
-                          /> / <tal:available
-                         replace="view/available_options_size" />.</p>
+                          /> of <tal:available
+                         replace="view/available_options_size" />
+                         available options.</p>
                    </td>
                    <td colspan="6" tal:condition="not: context/owner/isTeam">
                        <p class="informational message"
                          >Presenting <tal:presented
                           replace="view/max_options_presented"
-                          /> / <tal:available
-                         replace="view/available_options_size" />.</p>
+                          /> of <tal:available
+                         replace="view/available_options_size" />
+                         available options.</p>
                    </td>
                 </tr>
              </tfoot>
