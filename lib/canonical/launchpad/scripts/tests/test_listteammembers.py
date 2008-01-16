@@ -9,15 +9,12 @@ ubuntuteam_default = [
     u'jdub, jeff.waugh@ubuntulinux.com',
     u'kamion, colin.watson@ubuntulinux.com',
     u'kinnison, daniel.silverstone@canonical.com',
-    u'launchpad-beta-owner, beta-admin@launchpad.net',
-    u'launchpad-beta-testers, --none--',
     u'limi, --none--',
     u'name16, foo.bar@canonical.com',
     u'sabdfl, mark@hbd.com',
     u'stevea, --none--']
 
 ubuntuteam_email = [
-    u'beta-admin@launchpad.net',
     u'celso.providelo@canonical.com',
     u'colin.watson@ubuntulinux.com',
     u'cprov@ubuntu.com',
@@ -34,8 +31,6 @@ ubuntuteam_full = [
     u'ubuntu-team|26|kinnison|daniel.silverstone@canonical.com|Daniel Silverstone|no',
     u'ubuntu-team|28|cprov|celso.providelo@canonical.com|Celso Providelo|no',
     u'ubuntu-team|4|kamion|colin.watson@ubuntulinux.com|Colin Watson|no',
-    u'ubuntu-team|68|launchpad-beta-owner|beta-admin@launchpad.net|Launchpad Beta Testers Owner|no',
-    u'ubuntu-team|69|launchpad-beta-testers|--none--|Launchpad Beta Testers|no',
     u'ubuntu-team|6|jdub|jeff.waugh@ubuntulinux.com|Jeff Waugh|no']
 
 
