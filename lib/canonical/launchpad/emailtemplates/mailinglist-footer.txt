@@ -1,0 +1,5 @@
+Mailing list: $list_owner
+Post to     : $list_post
+Archived at : $archived_at
+Unsubscribe : $list_unsubscribe
+More help   : $list_help

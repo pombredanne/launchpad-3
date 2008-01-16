@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """XMLRPC runner for querying Launchpad."""
 
@@ -154,7 +154,6 @@ class XMLRPCRunner(Runner):
                 member_map = dict((address, (realname, flags, status))
                                   for address, realname, flags, status
                                   in info[list_name])
-                syslog('debug', '%s: %s', list_name, member_map)
                 # Start by calculating two sets: one is the set of new members
                 # who need to be added to the mailing list, and the other is
                 # the set of old members who need to be removed from the
@@ -290,7 +289,11 @@ class XMLRPCRunner(Runner):
                              ' no password ')
                 # Additional hard coded list defaults.
                 # - Personalize regular delivery so that we can VERP these.
+                # - Turn off RFC 2369 headers; we'll do them differently
+                # - enable $-string substitutions in headers/footers
                 mlist.personalize = 1
+                mlist.include_rfc2369_headers = False
+                mlist.use_dollar_strings = True
                 mlist.Save()
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.

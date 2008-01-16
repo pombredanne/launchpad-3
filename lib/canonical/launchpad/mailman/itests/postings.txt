@@ -30,6 +30,8 @@ this stanza can be removed.
     >>> browser.getControl('Apply for Mailing List').click()
 
     >>> list_one = itest_helper.review_list('itest-one')
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
     >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
@@ -79,7 +81,6 @@ equivalent to making it unvalidated.
     >>> alternative_email = get_alternative_email(anne)
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> alternative_email.status = EmailAddressStatus.NEW
-    >>> from canonical.database.sqlbase import commit
     >>> commit()
     >>> print alternative_email.email, alternative_email.statusname
     aperson@example.org New Email Address

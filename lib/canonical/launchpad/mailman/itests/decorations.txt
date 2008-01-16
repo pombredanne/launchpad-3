@@ -30,6 +30,8 @@ this stanza can be removed.
     >>> browser.getControl('Apply for Mailing List').click()
 
     >>> list_one = itest_helper.review_list('itest-one')
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
     >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
@@ -38,7 +40,6 @@ this stanza can be removed.
 Add a member of the mailing list so that we can post messages to the list.
 
     >>> from operator import itemgetter
-    >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -54,7 +55,7 @@ Add a member of the mailing list so that we can post messages to the list.
     >>> itest_helper.wait_for_mailman()
 
     >>> from Mailman.MailList import MailList
-    >>> m = MailList('itest-one')
+    >>> m = MailList('itest-one', lock=False)
     >>> sorted(m.getMembers())
     ['anne.person@example.com', 'aperson@example.org',
      'archive@mail-archive.com']
@@ -81,13 +82,6 @@ contents below.
     >>> messages = smtpd.getMessages()
     >>> messages.sort(key=itemgetter('sender'))
     >>> message = messages[0]
-
-    >>> print len(messages)
-    2
-    >>> print messages[0].as_string()
-    XXX
-    >>> print messages[1].as_string()
-    XXX
 
 
 == VERP headers ==
@@ -143,9 +137,9 @@ for a user to hit her email settings page.  The List-Subscribe header is
 similar.
 
     >>> message['list-subscribe']
-    'http://launchpad.dev/~anne/+editemails'
+    'http://launchpad.dev/people/+me/+editemails'
     >>> message['list-unsubscribe']
-    'http://launchpad.dev/~anne/+editemails'
+    'http://launchpad.dev/people/+me/+editemails'
 
 
 === List-Archive ===
@@ -157,10 +151,11 @@ list.  It is a list-wide url, not a url-specific to the individual message
 This url should exactly match the link given on the team's overview page.
 
     >>> browser.open('http://launchpad.dev/~itest-one/')
-    >>> browser.getLink('Mailing list archive').value
-    'http://lists.launchpad.dev/archives/itest-one'
+    >>> browser.getLink(id='mailing-list-archive')
+    <Link text='http://lists.launchpad.dev/archives/itest-one'
+          url='http://lists.launchpad.dev/archives/itest-one'>
     >>> message['list-archive']
-    <'http://lists.launchpad.dev/archives/itest-one'>
+    '<http://lists.launchpad.dev/archives/itest-one>'
 
 
 === List-Post ===
@@ -174,7 +169,12 @@ messages for this mailing list.
 
 === List-Owner ===
 
-Mailman currently does not support the List-Owner header.
+The List-Owner contains a url pointing to the human contact for the mailing
+list.  This header may be omitted if it is the same as the postmaster, but in
+our case, w'll point this at the team owner.
+
+    >>> message['list-owner']
+    '<http://launchpad.dev/~itest-one>'
 
 
 == RFC 5064 ==
@@ -188,7 +188,7 @@ header.
     # look, but the following seems to be the direction we're taking.  The
     # token part is simply the Base32 encoded SHA1 hash of the Message-ID.
     >>> message['archived-at']
-    'http://lists.launchpad.dev/archives/itest-one/NKZW4WO4ZAKV42TY6UAGQJAIE444EMDX'
+    '<http://lists.launchpad.dev/archives/itest-one/NKZW4WO4ZAKV42TY6UAGQJAIE444EMDX>'
 
 
 == Message footer ==
@@ -199,17 +199,20 @@ contains a link to this message's archive (which should be the same as the RFC
 The easiest way to see the footer is to just scan the message body for the
 separator.
 
-    >>> body_lines = message.get_payload().splitline(keep=True)
+    >>> body_lines = message.get_payload().splitlines(True)
     >>> for line_number, line in enumerate(body_lines):
-    ...     if line.startswith('-----'):
+    ...     if line.startswith('====='):
     ...         break
     ... else:
     ...     raise AssertionError('No footer found')
     >>> print ''.join(body_lines[line_number + 1:])
-    Mailing list: ITest One <http://lists.launchpad.dev/~itest-one>
+    Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Archived at : <http://lists.launchpad.dev/archives/itest-one/NKZW4WO4ZAKV42TY6UAGQJAIE444EMDX>
-    Unsubscribe : <http://launchpad.net/~anne/+editemails
+    Archived at : http://lists.launchpad.dev/archives/itest-one/NKZW4WO4ZAKV42TY6UAGQJAIE444EMDX
+    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    More help   : http://help.launchpad.dev/ListHelp
+    <BLANKLINE>
+    <BLANKLINE>
 
 
 == Clean up ==
