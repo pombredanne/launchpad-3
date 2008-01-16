@@ -40,7 +40,7 @@
         <p>
           If you wanted to push a branch up for this project with the name
           <em>trunk</em> then you would use a command line like this:<br/>
-          <tt><strong>bzr push lp:<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/trunk</strong></tt>
+          <tt><strong>bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/trunk</strong></tt>
         </p>
       </tal:user-can-push>
 
