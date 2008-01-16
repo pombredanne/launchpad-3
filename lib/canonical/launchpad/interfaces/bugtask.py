@@ -603,7 +603,7 @@ class IBugTaskSearch(IBugTaskSearchBase):
     tags_combinator = Choice(
         title=_("Tags combination"),
         description=_("Search for any or all of the tags specified."),
-        vocabulary=BugTagsSearchCombinator, required=True,
+        vocabulary=BugTagsSearchCombinator, required=False,
         default=BugTagsSearchCombinator.ANY)
 
 

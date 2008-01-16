@@ -572,6 +572,7 @@
               </td>
 	      <td>
 		<tal:combinator
+                 condition="python: 'tags_combinator' in view.widgets"
                  replace="structure view/widgets/tags_combinator" />
 	      </td>
 	    </tr>

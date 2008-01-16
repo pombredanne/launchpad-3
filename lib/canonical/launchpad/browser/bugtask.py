@@ -1764,6 +1764,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
             # in order to remain compatible with old saved search URLs.
             tags = data['tag']
             tags_combinator_all = (
+                'tags_combinator' in data and
                 data['tags_combinator'] == BugTagsSearchCombinator.ALL)
             if zope_isinstance(tags, (list, tuple)) and len(tags) > 0:
                 if tags_combinator_all:
