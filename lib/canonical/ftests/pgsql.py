@@ -85,10 +85,14 @@ class CursorWrapper:
     def execute(self, *args, **kwargs):
         # Detect if DML has been executed. This method isn't perfect,
         # but should be good enough.
-        mutating_commands = ['INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP']
+        mutating_commands = [
+                'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'INTO',
+                'TRUNCATE', 'REPLACE',
+                ]
         for command in mutating_commands:
             if command in args[0].upper():
                 ConnectionWrapper.dirty = True
+                break
 
         # Record the last query executed.
         if CursorWrapper.record_sql:
