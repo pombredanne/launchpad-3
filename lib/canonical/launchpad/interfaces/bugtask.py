@@ -373,7 +373,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         "True or False depending on whether or not there is more work "
         "required on this bug task.")
 
-    def subscribe(person):
+    def subscribe(person, subscribed_by):
         """Subscribe this person to the underlying bug.
 
         This method is required here so that MentorshipOffers can happen on
