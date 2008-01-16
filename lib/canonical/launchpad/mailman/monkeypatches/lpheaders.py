@@ -2,14 +2,10 @@
 
 """A global pipeline handler for inserting Launchpad specific headers."""
 
-from base64 import b32encode
 from email.Utils import make_msgid
-from sha import sha
 from string import Template
 
-from Mailman import Errors
 from Mailman import mm_cfg
-from Mailman.Logging.Syslog import syslog
 
 
 def process(mlist, msg, msgdata):

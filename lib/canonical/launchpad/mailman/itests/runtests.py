@@ -95,7 +95,8 @@ def integrationTestCleanUp(test):
             itest_helper.run_mailman('./rmlist', '-a', team_name)
         except itest_helper.IntegrationTestFailure:
             pass
-        backup_file = os.path.join(VAR_PREFIX, 'backups', '%s.tgz' % team_name)
+        backup_file = os.path.join(
+            VAR_PREFIX, 'backups', '%s.tgz' % team_name)
         try:
             os.remove(backup_file)
         except OSError, error:
