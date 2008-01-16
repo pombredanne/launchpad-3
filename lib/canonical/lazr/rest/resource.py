@@ -9,13 +9,15 @@ __all__ = [
     'Entry',
     'EntryResource',
     'HTTPResource',
-    'ReadOnlyResource'
+    'ReadOnlyResource',
+    'ServiceRoot',
+    'ServiceRootResource'
     ]
 
 
 import simplejson
 from zope.interface import implements
-from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces import IPublishTraverse, NotFound
 from zope.schema.interfaces import IField
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IHTTPResource, IJSONPublishable)
@@ -111,6 +113,13 @@ class CollectionResource(ReadOnlyResource):
         self.request.response.setHeader('Content-type', 'application/json')
         return ResourceJSONEncoder().encode(entry_resources)
 
+class ServiceRootResource(ReadOnlyResource):
+    """A resource that responds to GET by describing the service."""
+
+    def do_GET(self):
+        """Return a description of the resource."""
+        return "This is a web service."
+
 
 class Entry:
     """An individual entry."""
@@ -127,3 +136,19 @@ class Collection:
     def __init__(self, context):
         """Associate the entry with some database business object."""
         self.context = context
+
+
+class ServiceRoot:
+    """A web service."""
+    implements(IPublishTraverse)
+
+    top_level_collections = {}
+
+    def publishTraverse(self, request, name):
+        if name not in self.top_level_collections:
+            raise NotFound(self, name)
+        return CollectionResource(self.top_level_collections[name](), request)
+
+    def __call__(self, REQUEST=None):
+        if REQUEST:
+            return ServiceRootResource(None, REQUEST)()

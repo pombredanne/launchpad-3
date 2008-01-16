@@ -18,7 +18,6 @@ __metaclass__ = type
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.publisher.interfaces import IPublishTraverse, NotFound
 
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAuthServerApplication, IBazaarApplication, IBugSet,
@@ -28,8 +27,8 @@ from canonical.launchpad.interfaces import (
     IMailingListApplication, IMaloneApplication, IOpenIdApplication,
     IPersonSet, IProductSet, IRegistryApplication, IRosettaApplication,
     IShipItApplication, ITranslationGroupSet, IWebServiceApplication)
-from canonical.launchpad.rest import PersonCollection, ServiceRootResource
-from canonical.lazr.rest import CollectionResource
+from canonical.launchpad.rest import PersonCollection
+from canonical.lazr.rest import CollectionResource, ServiceRoot
 
 class AuthServerApplication:
     """AuthServer End-Point."""
@@ -190,17 +189,8 @@ class HWDBApplication:
     implements(IHWDBApplication)
 
 
-class WebServiceApplication:
+class WebServiceApplication(ServiceRoot):
     """See IWebServiceApplication."""
-    implements(IWebServiceApplication, IPublishTraverse)
+    implements(IWebServiceApplication)
 
     top_level_collections = { 'people' : lambda : getUtility(IPersonSet) }
-
-    def publishTraverse(self, request, name):
-        if name not in self.top_level_collections:
-            raise NotFound(self, name)
-        return CollectionResource(self.top_level_collections[name](), request)
-
-    def __call__(self, REQUEST=None):
-        if REQUEST:
-            return ServiceRootResource(None, REQUEST)()
