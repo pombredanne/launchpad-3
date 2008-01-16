@@ -1524,9 +1524,9 @@ class BugTaskSet:
 
         if not bug.private and bug.security_related:
             if product and product.security_contact:
-                bug.subscribe(product.security_contact)
+                bug.subscribe(product.security_contact, owner)
             elif distribution and distribution.security_contact:
-                bug.subscribe(distribution.security_contact)
+                bug.subscribe(distribution.security_contact, owner)
 
         assert (product or productseries or distribution or distroseries), (
             'Got no bugtask target.')
