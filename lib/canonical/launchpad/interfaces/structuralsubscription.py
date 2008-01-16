@@ -5,9 +5,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'BlueprintNotificationLevel'
+    'BlueprintNotificationLevel',
     'BugNotificationLevel',
-    'IStructuralSubscription',
+    'IStructuralSubscription'
     ]
 
 from zope.interface import Attribute, Interface
