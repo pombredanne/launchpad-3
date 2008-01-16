@@ -95,7 +95,7 @@ class BranchFeedBase(FeedBase):
         url = canonical_url(branch, rootsite=self.rootsite)
         content_view = BranchFeedContentView(branch, self.request, self)
         content = FeedTypedData(content=content_view.render(),
-                                content_type="xhtml")
+                                content_type="html")
         entry = BranchFeedEntry(title=title,
                                 link_alternate=url,
                                 date_created=branch.date_created,
@@ -238,7 +238,7 @@ class BranchFeed(BranchFeedBase):
         content_view = BranchFeedContentView(rev, self.request, self,
                                              'templates/branch-revision.pt')
         content = FeedTypedData(content=content_view.render(),
-                                content_type="xhtml")
+                                content_type="html")
         entry = BranchFeedEntry(
             title=title,
             link_alternate=url,
