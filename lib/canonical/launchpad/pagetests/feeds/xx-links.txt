@@ -91,9 +91,23 @@ Only bug feeds should be linked to on bugs.launchpad.net.
 
 == Escaping the title ==
 
-Since the link title attribute contains the displayname of the project,
+Since the link title attribute contains the displayname of the prodect,
 it must have quotes and html escaped.
 
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchBag, IProductSet, License)
+    >>> user = getUtility(ILaunchBag).user
+    >>> getUtility(IProductSet).createProduct(
+    ...     user, 'bad-displayname',
+    ...     'Bad displayname"><script>alert("h4x0r")</script>',
+    ...     'title foo', 'summary foo', licenses=[License.GPL])
+    <Product ...>
+    >>> flush_database_updates()
+    >>> logout()
     >>> browser.open('http://launchpad.dev/bad-displayname')
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')

@@ -4087,7 +4087,6 @@ INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (36, 'bzr', 21, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (37, 'redfish', 22, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (38, 'derby', 23, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (39, 'bad-displayname', 24, NULL, NULL, true);
 
 
 ALTER TABLE pillarname ENABLE TRIGGER ALL;
@@ -6889,7 +6888,6 @@ INSERT INTO product (id, project, "owner", name, displayname, title, summary, de
     * Derby also supports the more familiar client/server mode with the Derby Network Client JDBC driver and Derby Network Server.
     * Derby is easy to install, deploy, and use.
 ', '2007-11-19 12:44:30.603892', 'http://db.apache.org/derby/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 25, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs, license_info, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard) VALUES (24, NULL, 16, 'bad-displayname', 'Bad displayname"><script>alert("h4x0r")</script>', 'Bad displayname', 'This project''s displayname will blow up the page if it is not escaped properly.', NULL, '2008-01-15 19:53:50.40778', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, false, false, NULL, NULL, NULL, NULL, 26, NULL, NULL, NULL, NULL, false, false, false, NULL, false, false, NULL, NULL);
 
 
 ALTER TABLE product ENABLE TRIGGER ALL;
@@ -6916,7 +6914,6 @@ ALTER TABLE productlicense DISABLE TRIGGER ALL;
 INSERT INTO productlicense (id, product, license) VALUES (1, 1, 10);
 INSERT INTO productlicense (id, product, license) VALUES (2, 1, 20);
 INSERT INTO productlicense (id, product, license) VALUES (3, 23, 30);
-INSERT INTO productlicense (id, product, license) VALUES (4, 24, 10);
 
 
 ALTER TABLE productlicense ENABLE TRIGGER ALL;
@@ -7140,7 +7137,6 @@ INSERT INTO productseries (id, product, name, summary, import_branch, importstat
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (23, 21, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-27 16:28:27.763632', NULL, 12, NULL, NULL);
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (24, 22, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-04-18 20:58:56.846607', NULL, 12, NULL, NULL);
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (25, 23, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-11-19 12:44:30.603892', NULL, 1, NULL, NULL);
-INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (26, 24, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2008-01-15 19:53:50.40778', NULL, 16, NULL, NULL);
 
 
 ALTER TABLE productseries ENABLE TRIGGER ALL;
