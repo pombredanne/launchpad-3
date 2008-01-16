@@ -7,16 +7,74 @@
 <tal:block condition="not: context/rcstype">
 <tal:block condition="not: view/user_branch_visible">
   <div id="branch-details">
+
   <p id="no-rcs-details">
-    No revision control details recorded for <span
-    tal:replace="context/displayname">evolution MAIN</span>.
+    You haven't yet told Launchpad where your source code is for
+    <em>
+    <tal:series replace="context/title">evolution MAIN</tal:series></em>.
   </p>
+
+  <h3>Launchpad already knows about my Bazaar branch</h3>
+
+  <p>
+    You can associate an existing branch with this series
+    using the '<a href="+linkbranch">Link branch</a>' action.
+  </p>
+
+  <h3>The code is already hosted in a Bazaar branch elsewhere</h3>
+
+  <tal:logged-in condition="view/user">
+    <tal:no-keys condition="not:view/user/sshkeys">
+      <p id="ssh-key-directions">
+        To authenticate with the Launchpad branch upload service, you need
+        to <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+        register a SSH key </a>.
+      </p>
+    </tal:no-keys>
+    <tal:user-can-push condition="view/user/sshkeys">
+      <p>
+        If you wanted to push a branch up for this project with the name
+        'trunk' then you would use a command line like this:<br/>
+        <tt><strong>bzr push lp:<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/trunk</strong></tt>
+      </p>
+    </tal:user-can-push>
+  </tal:logged-in>
+  <tal:not-logged-in condition="not: view/user">
+    <p>
+      Launchpad needs to know who you are in order to keep track
+      of your branches.
+    </p>
+  </tal:not-logged-in>
+
+  <p>
+    A branch can also be mirrored from a remote location as long as
+    it is publicly available by
+    <a tal:attributes="href string:/${context/product/name}/+addbranch">
+      registering a mirrored branch</a>.
+  </p>
+
+  <h3>The code is hosted in CVS or Subversion</h3>
+
+  <p>Launchpad can import your code into a Bazaar branch.</p>
+
+
+
+1. You want to host the code on Launchpad using Bazaar: push now (recommended)
+
+2. Your code is : tell us where it is and we'll mirror it
+
+3. Your code is already hosted in CVS or Subversion: tell us where it is and we'll import it into Bazaar and mirror it
+
+each with a prominent link.
+
+
 
   <p>If upstream is maintained in CVS or SVN, you can
   specify the location of the upstream branch to
   <a tal:attributes="href string:${context/fmt:url}/+source">
   import</a> it as a Bazaar branch.</p>
   </div>
+
 </tal:block>
 </tal:block>
 
