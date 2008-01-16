@@ -55,7 +55,8 @@ and the select control that lets you update them:
     ...
     <select id="field.series" name="field.series" size="1"
             onchange="updateSeries(this);">
-      <option value="none">Choose a Distribution series</option>
+      <option
+        value="YOUR_DISTRO_SERIES_HERE">Choose a Distribution series</option>
       <option value="hoary">The Hoary Hedgehog Release</option>
       <option value="warty">The Warty Warthog Release</option>
     </select>
