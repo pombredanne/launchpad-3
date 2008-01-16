@@ -14,16 +14,13 @@
       <h1>Bug trackers registered in Launchpad</h1>
     </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-info" />
-</metal:leftportlets>
-
 <div metal:fill-slot="main">
 
       <p>
-        Registering a bug tracker lets you link Launchpad bug reports with
-        reports in that bug tracker, so that assignees in Launchpad will be
-        notified when the upstream bug report changes state.
+        Bug reports in Launchpad can be linked to the equivalent reports in
+        other bug trackers.
+        Subscribers to a Launchpad bug report are notified when
+        a linked external bug report changes state.
       </p>
 
   <table class="sortable listing" id="trackers">

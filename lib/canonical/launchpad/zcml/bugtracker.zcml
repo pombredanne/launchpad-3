@@ -96,10 +96,6 @@
             template="../templates/bugtrackers-index.pt"
             />
         <browser:page
-            name="+portlet-info"
-            template="../templates/bugtrackers-portlet-info.pt"
-            />
-        <browser:page
             name="+portlet-details"
             template="../templates/bugtrackers-portlet-details.pt"
             />
