@@ -126,7 +126,8 @@ Actions with empty comments are not allowed.
     iceweasel - 1.0  2007-07-09  Published  Warty           Editors
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
-If an action is requested without having selected row, an error is issued.
+If an action is requested without having selected a row, an error is
+issued.
 
     >>> admin_browser.getControl("Comment").value = "DO IT"
     >>> admin_browser.getControl("Delete").click()

@@ -80,10 +80,29 @@
                            replace="structure pub/@@+listing-ppa-detailed-selectable" />
              </tal:terms>
              </tbody>
+             <tfoot tal:condition="python: view.available_options_size >
+                                   view.max_options_presented">
+                <tr>
+                   <td colspan="7" tal:condition="context/owner/isTeam">
+                       <p class="informational message"
+                         >Presenting <tal:presented
+                          replace="view/max_options_presented"
+                          /> / <tal:available
+                         replace="view/available_options_size" />.</p>
+                   </td>
+                   <td colspan="6" tal:condition="not: context/owner/isTeam">
+                       <p class="informational message"
+                         >Presenting <tal:presented
+                          replace="view/max_options_presented"
+                          /> / <tal:available
+                         replace="view/available_options_size" />.</p>
+                   </td>
+                </tr>
+             </tfoot>
            </table>
 
-         <input tal:attributes="name string:${widget/name}-empty-marker"
-                type="hidden" value="1" />
+           <input tal:attributes="name string:${widget/name}-empty-marker"
+                  type="hidden" value="1" />
         </td>
         <td id="empty-result" class="message error" style="border: solid;"
             tal:condition="not:widget_size">
@@ -98,10 +117,10 @@
          <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
       </tal:include_binaries>
 
-      <tal:comment define="widget nocall:view/widgets/comment|nothing"
+      <tal:comment_field define="widget nocall:view/widgets/comment|nothing"
           condition="widget">
          <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-      </tal:comment>
+      </tal:comment_field>
 
       </table>
 

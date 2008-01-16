@@ -126,7 +126,7 @@ class ArchiveViewBase(LaunchpadView):
             return '%s binary packages' % self.context.number_of_binaries
 
     def setupStatusFilterWidget(self):
-        """Build customized publishing status select widget.
+        """Build a customized publishing status select widget.
 
         Receives the one of the established field values:
 
@@ -226,10 +226,10 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
     schema = IArchiveConsoleForm
 
     # Maximum number of 'selected_sources' options presented.
-    max_sources_presented = 10
+    max_options_presented = 10
 
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget,
-                  orientation='verical', visible=True)
+                  orientation='vertical', visible=True)
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -248,7 +248,9 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         will do the job for us.
         """
         terms = []
-        for pub in self.getPublishingRecords()[:self.max_sources_presented]:
+        all_options = self.getPublishingRecords()
+        self.available_options_size = all_options.count()
+        for pub in all_options[:self.max_options_presented]:
             terms.append(SimpleTerm(pub, str(pub.id), pub.displayname))
         return form.Fields(
             List(__name__='selected_sources',
@@ -263,20 +265,17 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
 
     @action(_("Search"), name="search")
     def action_search(self, action, data):
-        # Reset selection.
-        widget = self.widgets.get('selected_sources')
-        if widget:
-            widget.setRenderedValue([])
+        """Simply re-issue the form with the new values."""
 
     def validate_delete(self, action, data):
         """Validate deletion action."""
         comment = data.get('comment')
         selected_sources = data.get('selected_sources', [])
 
-        if not selected_sources:
+        if len(selected_sources) == 0:
             self.addError("No sources selected.")
 
-        if not comment:
+        if comment is None:
             self.addError("Comment should be provided for deletions.")
 
         # XXX cprov 20080115: this check belongs to the content class.
