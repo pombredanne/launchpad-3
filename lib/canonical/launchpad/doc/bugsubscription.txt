@@ -1,8 +1,9 @@
+= BugSubscription = 
+
 Users can get email notifications of changes to bugs by subscribing to
 them.
 
-Bug Subscriber APIs
-===================
+== Bug Subscriber APIs ==
 
 First, let's login:
 
@@ -21,8 +22,7 @@ IBug has a subscriptions attribute:
 This list returns only *direct* subscribers. Bugs can also have
 indirect subscribers.
 
-Direct vs. Indirect Subscriptions
----------------------------------
+=== Direct vs. Indirect Subscriptions ===
 
 A user is directly subscribed to a bug if they or someone else has
 subscribed them to the bug.
@@ -76,7 +76,7 @@ IBug.getDirectSubscribers().
 
     >>> sabdfl = personset.getByName("sabdfl")
 
-    >>> linux_source_bug.subscribe(sabdfl)
+    >>> linux_source_bug.subscribe(sabdfl, sabdfl)
     <BugSubscription ...>
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
@@ -365,14 +365,13 @@ be unsubscribed from dupes.
     >>> bug_five.isSubscribedToDupes(sample_person)
     False
 
-    >>> bug_six.subscribe(sample_person)
+    >>> bug_six.subscribe(sample_person, sample_person)
     <BugSubscription...>
 
     >>> bug_five.isSubscribedToDupes(sample_person)
     True
 
-Subscribing and Unsubscribing
-=============================
+== Subscribing and Unsubscribing ==
 
 To subscribe people to and unsubscribe people from a bug, use
 IBug.subscribe and IBug.unsubscribe:
@@ -381,7 +380,7 @@ IBug.subscribe and IBug.unsubscribe:
 
     >>> bug.isSubscribed(foobar)
     False
-    >>> bug.subscribe(foobar)
+    >>> bug.subscribe(foobar, foobar)
     <BugSubscription at ...>
     >>> bug.isSubscribed(foobar)
     True
@@ -414,8 +413,7 @@ the user was unsubscribed.
     >>> bug_six.isSubscribed(sample_person)
     False
 
-Automatic Subscriptions on Bug Creation
-=======================================
+== Automatic Subscriptions on Bug Creation ==
 
 When a new bug is opened, only the bug reporter is automatically, explicitly
 subscribed to the bug:
@@ -603,3 +601,41 @@ security bug filed on a package, because Ubuntu has no security contact:
 
     >>> getSubscribers(new_bug)
     ['foo.bar@canonical.com', 'support@ubuntu.com']
+
+
+== Subscribed by ==
+
+Each `BugSubscription` records who created it, and provides a handy
+utility method for formatting this information. The methods
+`getDirectSubscriptions` and `getSubscriptionsFromDuplicates` provide
+an equivalent to the -Subscribers methods, but returning the
+subscriptions themselves, rather than the subscribers.
+
+    >>> params = CreateBugParams(
+    ...     title="one more test bug",
+    ...     comment="one more test description",
+    ...     owner=sabdfl)
+    >>> ff_bug = firefox.createBug(params)
+    >>> ff_bug.subscribe(lifeless, sabdfl)
+    <BugSubscription at ...>
+    >>> for subscription in ff_bug.getDirectSubscriptions():
+    ...     print '%s (%s)' % (
+    ...         subscription.person.displayname,
+    ...         subscription.display_subscribed_by)
+    Mark Shuttleworth (Subscribed themselves)
+    Robert Collins (Subscribed by Mark Shuttleworth)
+    >>> params = CreateBugParams(
+    ...     title="one more dupe test bug",
+    ...     comment="one more dupe test description",
+    ...     owner=keybuk)
+    >>> dupe_ff_bug = firefox.createBug(params)
+    >>> dupe_ff_bug.duplicateof = ff_bug
+    >>> dupe_ff_bug.syncUpdate()
+    >>> dupe_ff_bug.subscribe(foobar, lifeless)
+    <BugSubscription at ...>
+    >>> for subscription in ff_bug.getSubscriptionsFromDuplicates():
+    ...     print '%s (%s)' % (
+    ...         subscription.person.displayname,
+    ...         subscription.display_subscribed_by)
+    Foo Bar (Subscribed by Robert Collins)
+    Scott James Remnant (Subscribed themselves)

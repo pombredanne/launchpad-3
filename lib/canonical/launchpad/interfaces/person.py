@@ -687,6 +687,10 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
                       "used as a key by FOAF RDF spec"),
         readonly=True)
 
+    verbose_bugnotifications = Bool(
+        title=_("Include bug descriptions when sending me bug notifications"),
+        required=False, default=True)
+
     defaultmembershipperiod = Int(
         title=_('Subscription period'), required=False,
         description=_(
@@ -760,6 +764,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         title=_("Teams may be Public, Private Membership, or Private."),
         required=True, vocabulary=PersonVisibility,
         default=PersonVisibility.PUBLIC)
+
+    structural_subscriptions = Attribute(
+        "The structural subscriptions for this person.")
 
     @invariant
     def personCannotHaveIcon(person):
