@@ -16,15 +16,17 @@ __all__ = [
     'MINUTES',
     ]
 
+from BeautifulSoup import BeautifulSoup
+from datetime import datetime
 import operator
 import os
 import time
+from urlparse import urljoin
 from xml.sax.saxutils import escape as xml_escape
-from BeautifulSoup import BeautifulSoup
-from datetime import datetime
 
 from zope.app.datetimeutils import rfc1123_date
 from zope.app.pagetemplate import ViewPageTemplateFile
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
@@ -32,6 +34,7 @@ from canonical.config import config
 # XXX - bac - 2007-09-20, modules in canonical.lazr should not import from
 # canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.  Bug 153795.
+from canonical.launchpad.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp import canonical_url, LaunchpadFormView, urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
@@ -60,6 +63,8 @@ class FeedBase(LaunchpadFormView):
     def __init__(self, context, request):
         super(FeedBase, self).__init__(context, request)
         self.format = self.feed_format
+        self.root_url = canonical_url(getUtility(ILaunchpadRoot),
+                                      rootsite=self.rootsite)
 
     def initialize(self):
         """See `IFeed`."""
@@ -267,22 +272,37 @@ class FeedTypedData:
 
     content_types = ['text', 'html', 'xhtml']
 
-    def __init__(self, content, content_type='text'):
+    def __init__(self, content, content_type='text', root_url=None):
         self._content = content
         if content_type not in self.content_types:
             raise UnsupportedFeedFormat("%s: is not valid" % content_type)
         self.content_type = content_type
+        self.root_url = root_url
 
     @property
     def content(self):
+        if (self.content_type in ('html', 'xhtml') and
+            self.root_url is not None):
+            # Unqualified hrefs must be qualified using the original subdomain
+            # or they will try be served from http://feeds.launchpad.net,
+            # which will not work.
+            soup = BeautifulSoup(self._content)
+            a_tags = soup.findAll('a')
+            for a_tag in a_tags:
+                if a_tag['href'].startswith('/'):
+                    a_tag['href'] = urljoin(self.root_url, a_tag['href'])
+            altered_content = unicode(soup)
+        else:
+            altered_content = self._content
+
         if self.content_type in ('text', 'html'):
-            return xml_escape(self._content)
+            altered_content = xml_escape(altered_content)
         elif self.content_type == 'xhtml':
             soup = BeautifulSoup(
-                self._content,
+                altered_content,
                 convertEntities=BeautifulSoup.HTML_ENTITIES)
-            return unicode(soup)
-
+            altered_content = unicode(soup)
+        return altered_content
 
 class FeedPerson:
     """See `IFeedPerson`.

@@ -11,6 +11,7 @@ __all__ = [
     'ProjectBranchFeed',
     ]
 
+from BeautifulSoup import BeautifulSoup
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -20,7 +21,7 @@ from canonical.launchpad.browser import (
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url, urlappend, urlparse
 from canonical.launchpad.interfaces import (
-    IBranch, IPerson, IProduct, IProject)
+    IBranch, ILaunchpadRoot, IPerson, IProduct, IProject)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.lazr.interfaces import (
@@ -94,8 +95,10 @@ class BranchFeedBase(FeedBase):
         title = FeedTypedData(branch.displayname)
         url = canonical_url(branch, rootsite=self.rootsite)
         content_view = BranchFeedContentView(branch, self.request, self)
-        content = FeedTypedData(content=content_view.render(),
-                                content_type="html")
+        content = content_view.render()
+        content_data = FeedTypedData(content=content,
+                                     content_type="html",
+                                     root_url=self.root_url)
         entry = BranchFeedEntry(title=title,
                                 link_alternate=url,
                                 date_created=branch.date_created,
@@ -105,7 +108,7 @@ class BranchFeedBase(FeedBase):
                                 # perhaps we should use them both?
                                 authors=[FeedPerson(branch.owner,
                                                     self.rootsite)],
-                                content=content)
+                                content=content_data)
         return entry
 
 
@@ -128,13 +131,8 @@ class BranchListingFeed(BranchFeedBase):
         delegate_view = self.delegate_view_class(self.context, self.request)
         delegate_view.initialize()
         branches_batch = delegate_view.branches()
-        batch_list = branches_batch.getBatches()
-        # Assuming the branches are unique.
-        branches = []
-        for batch in batch_list:
-            branches.extend(list(batch.list))
-            if len(branches) >= self.quantity:
-                break
+        batch = branches_batch.batch
+        branches = list(batch.list)
         return branches[:self.quantity]
 
 
@@ -238,7 +236,8 @@ class BranchFeed(BranchFeedBase):
         content_view = BranchFeedContentView(rev, self.request, self,
                                              'templates/branch-revision.pt')
         content = FeedTypedData(content=content_view.render(),
-                                content_type="html")
+                                content_type="html",
+                                root_url=self.root_url)
         entry = BranchFeedEntry(
             title=title,
             link_alternate=url,

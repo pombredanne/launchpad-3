@@ -64,7 +64,9 @@ class AnnouncementsFeedBase(FeedBase):
         # entered, such as '&' and '<' because it will be embedded in the XML
         # document.
         formatted_summary = FormattersAPI(announcement.summary).text_to_html()
-        content = FeedTypedData(formatted_summary, content_type="html")
+        content = FeedTypedData(formatted_summary,
+                                content_type="html",
+                                root_url=self.root_url)
         # The entry for an announcement has distinct dates for created,
         # updated, and published.  For some data, the created and published
         # dates will be the same.  The announcements also only have a singe
