@@ -359,7 +359,7 @@ class DatabaseLayer(BaseLayer):
         assert cls.mockdb_mode is None, 'mock db already installed'
 
         from canonical.testing.mockdb import (
-                cache_filename, MockDbConnection, RecordCache, ReplayCache,
+                script_filename, ScriptRecorder, ScriptPlayer,
                 )
 
         # We need a unique key for each test to store the mock db cache.
@@ -374,17 +374,17 @@ class DatabaseLayer(BaseLayer):
                 frame = frame.f_back
             test_key = str(frame.f_locals['test'])
         finally:
-            del frame # As per no-leak stack inspection in Python reference
+            del frame # As per no-leak stack inspection in Python reference.
 
         # Determine if we are in replay or record mode and setup our
         # mock db cache.
-        filename = cache_filename(test_key)
+        filename = script_filename(test_key)
         if os.path.exists(filename):
             cls.mockdb_mode = 'replay'
-            cls.cache = ReplayCache(test_key)
+            cls.cache = ScriptPlayer(test_key)
         else:
             cls.mockdb_mode = 'record'
-            cls.cache = RecordCache(test_key)
+            cls.cache = ScriptRecorder(test_key)
 
         global _org_connect
         _org_connect = psycopg.connect
@@ -399,17 +399,10 @@ class DatabaseLayer(BaseLayer):
         if cls.mockdb_mode is None:
             return # Already uninstalled
 
-        from canonical.testing.mockdb import (
-                cache_filename, MockDbConnection, RecordCache, ReplayCache,
-                )
-
         # Store results if we are recording
         if cls.mockdb_mode == 'record':
             cls.cache.store()
             assert os.path.exists(cls.cache.cache_filename)
-            assert isinstance(cls.cache, RecordCache)
-        else:
-            assert isinstance(cls.cache, ReplayCache)
 
         cls.mockdb_mode = None
         global _org_connect

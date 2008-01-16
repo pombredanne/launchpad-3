@@ -10,69 +10,68 @@ import os.path
 import unittest
 
 from zope.testing.doctestunit import DocTestSuite
+from zope.testing.testrunner import dont_retry, RetryTest
 
 from canonical.testing import mockdb
-from canonical.testing.mockdb import dont_retry, RetryTest
-
 
 class MockDbTestCase(unittest.TestCase):
     def setUp(self):
-        self.cache_filename = mockdb.cache_filename('_mockdb_unittest')
+        self.script_filename = mockdb.script_filename('_mockdb_unittest')
 
     def tearDown(self):
-        if os.path.exists(self.cache_filename):
-            os.unlink(self.cache_filename)
+        if os.path.exists(self.script_filename):
+            os.unlink(self.script_filename)
 
     @dont_retry
     def testSerialize(self):
-        # Ensure the caches can store and retrieve their logs
-        recorder = mockdb.RecordCache(self.cache_filename)
+        # Ensure the scripts can store and retrieve their logs
+        recorder = mockdb.ScriptRecorder(self.script_filename)
         recorder.log = ['Arbitrary Data']
         recorder.store()
 
-        replayer = mockdb.ReplayCache(self.cache_filename)
+        replayer = mockdb.ScriptPlayer(self.script_filename)
         self.failUnlessEqual(replayer.log, ['Arbitrary Data'])
 
     @dont_retry
-    def testHandleInvalidCache(self):
-        # Ensure a RetryTest exception is raised and the invalid cache
-        # file removed when handleInvalidCache() is called
-        recorder = mockdb.RecordCache(self.cache_filename)
+    def testHandleInvalidScript(self):
+        # Ensure a RetryTest exception is raised and the invalid script
+        # file removed when handleInvalidScript() is called
+        recorder = mockdb.ScriptRecorder(self.script_filename)
         recorder.store()
 
-        replayer = mockdb.ReplayCache(self.cache_filename)
+        replayer = mockdb.ScriptPlayer(self.script_filename)
 
         self.assertRaises(
-                mockdb.RetryTest, replayer.handleInvalidCache, 'Reason'
+                RetryTest, replayer.handleInvalidScript, 'Reason'
                 )
-        self.failIf(os.path.exists(self.cache_filename))
+        self.failIf(os.path.exists(self.script_filename))
 
     @dont_retry
-    def testShortCache(self):
+    def testShortScript(self):
         # Ensure a RetryTest exception is raised if an attempt to pull
-        # results from an exhausted cache.
-        recorder = mockdb.RecordCache(self.cache_filename)
+        # results from an exhausted script.
+        recorder = mockdb.ScriptRecorder(self.script_filename)
         recorder.store()
-        replayer = mockdb.ReplayCache(self.cache_filename)
-        self.assertRaises(mockdb.RetryTest, replayer.getNextEntry, None, None)
+        replayer = mockdb.ScriptPlayer(self.script_filename)
+        self.assertRaises(RetryTest, replayer.getNextEntry, None, None)
 
     @dont_retry
-    def testCacheFilename(self):
-        # Ensure evil characters in the key don't mess up the cache_filename
+    def testScriptFilename(self):
+        # Ensure evil characters in the key don't mess up the script_filename
         # results. Only '/' is really evil - others chars should all work
         # fine but we might as well sanitise ones that might be annoying.
         evil_chars = ['/', ' ', '*', '?', '~', '\0']
         for key in evil_chars:
-            path = mockdb.cache_filename(key)
+            path = mockdb.script_filename(key)
 
             # Ensure our initial path is correct
             self.failUnlessEqual(
-                    os.path.commonprefix([mockdb.CACHE_DIR, path]),
-                    mockdb.CACHE_DIR
+                    os.path.commonprefix([mockdb.SCRIPT_DIR, path]),
+                    mockdb.SCRIPT_DIR
                     )
 
             # And there are no path segments
-            self.failUnlessEqual(os.path.dirname(path), mockdb.CACHE_DIR)
+            self.failUnlessEqual(os.path.dirname(path), mockdb.SCRIPT_DIR)
 
             # And that the filename contains no evil or annoying characters
             filename = os.path.basename(path)

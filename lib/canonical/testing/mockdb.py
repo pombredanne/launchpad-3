@@ -4,17 +4,18 @@
 
 The first time a `MockDbConnection` is used, it functions as a proxy
 to the real database connection. Queries and results are recorded into
-a cache.
+a script.
 
 For subsequent runs, if the same queries are issued in the same order
-then results are returned from the cached log and the real database is
-not used. If the cache is detected as being invalid, it is removed and
+then results are returned from the script and the real database is
+not used. If the script is detected as being invalid, it is removed and
 a `RetryTest` exception raised for the test runner to deal with.
 """
 
 __metaclass__ = type
 __all__ = [
-        'MockDbConnection', 'RecordCache', 'ReplayCache', 'cache_filename',
+        'MockDbConnection', 'script_filename',
+        'ScriptPlayer', 'ScriptRecorder',
         ]
 
 import cPickle as pickle
@@ -23,21 +24,21 @@ import os.path
 import urllib
 
 import psycopg
-from zope.testing.testrunner import RetryTest, dont_retry
+from zope.testing.testrunner import RetryTest
 
 from canonical.config import config
 
 
-CACHE_DIR = os.path.join(config.root, 'mockdbcache~')
+SCRIPT_DIR = os.path.join(config.root, 'mockdbscripts~')
 
 
-def cache_filename(key):
-    """Calculate and return the cache filename to use."""
+def script_filename(key):
+    """Calculate and return the script filename to use."""
     key = urllib.quote(key, safe='')
-    return os.path.join(CACHE_DIR, key) + '.pickle.gz'
+    return os.path.join(SCRIPT_DIR, key) + '.pickle.gz'
 
 
-class CacheEntry:
+class ScriptEntry:
     """An entry in our test's log of database calls."""
 
     # The connection number used for this command. All connections used
@@ -53,18 +54,18 @@ class CacheEntry:
             self.connection_number = connection.connection_number
 
 
-class ConnectCacheEntry(CacheEntry):
+class ConnectScriptEntry(ScriptEntry):
     """An entry created instantiating a Connection."""
     args = None # Arguments passed to the connect() method.
     kw = None # Keyword arguments passed to the connect() method.
     
     def __init__(self, connection, *args, **kw):
-        super(ConnectCacheEntry, self).__init__(connection)
+        super(ConnectScriptEntry, self).__init__(connection)
         self.args = args
         self.kw = kw
 
 
-class ExecuteCacheEntry(CacheEntry):
+class ExecuteScriptEntry(ScriptEntry):
     """An entry created via Cursor.execute()."""
     query = None # Query passed to Cursor.execute().
     params = None # Parameters passed to Cursor.execute().
@@ -73,40 +74,40 @@ class ExecuteCacheEntry(CacheEntry):
     rowcount = None # Cursor.rowcount after Cursor.fetchall() as per DB-API.
 
     def __init__(self, connection, query, params):
-        super(ExecuteCacheEntry, self).__init__(connection)
+        super(ExecuteScriptEntry, self).__init__(connection)
         self.query = query
         self.params = params
 
 
-class CloseCacheEntry(CacheEntry):
+class CloseScriptEntry(ScriptEntry):
     """An entry created via Connection.close()."""
 
 
-class CommitCacheEntry(CacheEntry):
+class CommitScriptEntry(ScriptEntry):
     """An entry created via Connection.commit()."""
 
 
-class RollbackCacheEntry(CacheEntry):
+class RollbackScriptEntry(ScriptEntry):
     """An entry created via Connection.rollback()."""
 
 
-class SetIsolationLevelCacheEntry(CacheEntry):
+class SetIsolationLevelScriptEntry(ScriptEntry):
     """An entry created via Connection.set_isolation_level()."""
     level = None # The requested isolation level
     def __init__(self, connection, level):
-        super(SetIsolationLevelCacheEntry, self).__init__(connection)
+        super(SetIsolationLevelScriptEntry, self).__init__(connection)
         self.level = level
 
 
-class RecordCache:
-    key = None # The unique key to this test.
-    cache_filename = None # Path to our cache file.
+class ScriptRecorder:
+    key = None # A unique key identifying this test.
+    script_filename = None # Path to our script file.
     log = None
     connections = None
 
     def __init__(self, key):
         self.key = key
-        self.cache_filename = cache_filename(key)
+        self.script_filename = script_filename(key)
         self.log = []
         self.connections = []
 
@@ -125,17 +126,22 @@ class RecordCache:
         self.connections.append(connection)
         if connection is not None:
             connection.connection_number = self.connections.index(connection)
-        entry = ConnectCacheEntry(connection, *args, **kw)
+        entry = ConnectScriptEntry(connection, *args, **kw)
         self.log.append(entry)
         if exception:
             entry.exception = exception
             raise exception
         return connection
 
+    def cursor(self, connection):
+        """Return a MockDbCursor."""
+        real_cursor = connection.real_connection.cursor()
+        return MockDbCursor(connection, real_cursor)
+
     def execute(self, cursor, query, params=None):
         """Handle Cursor.execute()."""
         con = cursor.connection
-        entry = ExecuteCacheEntry(con, query, params)
+        entry = ExecuteScriptEntry(con, query, params)
 
         real_cursor = cursor.real_cursor
         try:
@@ -151,6 +157,9 @@ class RecordCache:
             entry.description = real_cursor.description
             # Might have changed now fetchall() has been done.
             entry.rowcount = real_cursor.rowcount
+        except (psycopg.InterfaceError, psycopg.DatabaseError,
+                psycopg.Warning):
+            raise
         except psycopg.Error:
             # No results, such as an UPDATE query.
             entry.results = None
@@ -160,7 +169,7 @@ class RecordCache:
 
     def close(self, connection):
         """Handle Connection.close()."""
-        entry = CloseCacheEntry(connection)
+        entry = CloseScriptEntry(connection)
         try:
             if connection.real_connection is not None:
                 connection.real_connection.close()
@@ -172,7 +181,7 @@ class RecordCache:
 
     def commit(self, connection):
         """Handle Connection.commit()."""
-        entry = CommitCacheEntry(connection)
+        entry = CommitScriptEntry(connection)
         try:
             connection.real_connection.commit()
             self.log.append(entry)
@@ -183,7 +192,7 @@ class RecordCache:
 
     def rollback(self, connection):
         """Handle Connection.rollback()."""
-        entry = RollbackCacheEntry(connection)
+        entry = RollbackScriptEntry(connection)
         try:
             connection.real_connection.rollback()
             self.log.append(entry)
@@ -194,7 +203,7 @@ class RecordCache:
 
     def set_isolation_level(self, connection, level):
         """Handle Connection.set_isolation_level()."""
-        entry = SetIsolationLevelCacheEntry(connection, level)
+        entry = SetIsolationLevelScriptEntry(connection, level)
         try:
             connection.real_connection.set_isolation_level(level)
             self.log.append(entry)
@@ -204,15 +213,16 @@ class RecordCache:
             raise
 
     def store(self):
-        """Store the log for future runs."""
-        # Create cache directory if necessary.
-        if not os.path.isdir(CACHE_DIR):
-            os.makedirs(CACHE_DIR, mode=0700)
+        """Store the script for future use by a ScriptPlayer."""
+        # Create script directory if necessary.
+        if not os.path.isdir(SCRIPT_DIR):
+            os.makedirs(SCRIPT_DIR, mode=0700)
 
-        # Insert our connection parameters into the list we will pickle.
+        # Save log to a pickle. The pickle contains the key for this test,
+        # followed by a list of ScriptEntry-derived objects.
         obj_to_store = [self.key] + self.log
         pickle.dump(
-                obj_to_store, gzip.open(self.cache_filename, 'wb'),
+                obj_to_store, gzip.open(self.script_filename, 'wb'),
                 pickle.HIGHEST_PROTOCOL
                 )
 
@@ -226,9 +236,9 @@ class RecordCache:
 
 def noop_if_invalid(func):
     """Decorator that causes the decorated method to be a noop if the
-    cache this method belongs too is invalid.
+    script this method belongs too is invalid.
 
-    This allows teardown to complete when a ReplayCache has
+    This allows teardown to complete when a ReplayScript has
     raised a RetryTest exception. Normally during teardown DB operations
     are made when doing things like aborting the transaction.
     """
@@ -240,52 +250,53 @@ def noop_if_invalid(func):
     return dont_retry_func
 
 
-class ReplayCache:
-    """Replay database queries from a cache."""
+class ScriptPlayer:
+    """Replay database queries from a script."""
 
     key = None # Unique key identifying this test.
-    cache_filename = None # File storing our statement/result cache.
-    log = None # List of CacheEntry objects loaded from _cache_filename.
-    connections = None # List of connections using this cache.
+    script_filename = None # File storing our statement/result script.
+    log = None # List of ScriptEntry objects loaded from _script_filename.
+    connections = None # List of connections using this script.
 
-    invalid = False # If True, the cache is invalid and we are tearing down.
+    invalid = False # If True, the script is invalid and we are tearing down.
 
     def __init__(self, key):
         self.key = key
-        self.cache_filename = cache_filename(key)
-        self.log = pickle.load(gzip.open(self.cache_filename, 'rb'))
+        self.script_filename = script_filename(key)
+        self.log = pickle.load(gzip.open(self.script_filename, 'rb'))
         try:
             stored_key = self.log.pop(0)
-            assert stored_key == key, "Cache loaded for wrong key."
+            assert stored_key == key, "Script loaded for wrong key."
         except IndexError:
-            self.handleInvalidCache(
-                    "Connection key not stored in cache."
+            self.handleInvalidScript(
+                    "Connection key not stored in script."
                     )
 
         self.connections = []
 
     def getNextEntry(self, connection, expected_entry_class):
-        """Pull the next entry from the cache.
+        """Pull the next entry from the script.
 
-        Invokes handleInvalidCache on error, including some entry validation.
+        Invokes handleInvalidScript on error, including some entry validation.
         """
         try:
             entry = self.log.pop(0)
         except IndexError:
-            self.handleInvalidCache('Ran out of commands.')
+            self.handleInvalidScript('Ran out of commands.')
 
-        if not isinstance(entry, CacheEntry):
-            self.handleInvalidCache('Unexpected object type in cache')
+        # This guards against file format changes as well as file corruption.
+        if not isinstance(entry, ScriptEntry):
+            self.handleInvalidScript('Unexpected object type in script')
 
         if connection.connection_number != entry.connection_number:
-            self.handleInvalidCache(
+            self.handleInvalidScript(
                     'Expected query to connection %s '
                     'but got query to connection %s'
                     % (entry.connection_number, connection.connection_number)
                     )
 
         if not isinstance(entry, expected_entry_class):
-            self.handleInvalidCache(
+            self.handleInvalidScript(
                     'Expected %s but got %s'
                     % (expected_entry_class, entry.__class__)
                     )
@@ -301,27 +312,31 @@ class ReplayCache:
         connection = MockDbConnection(self, None, *args, **kw)
         self.connections.append(connection)
         connection.connection_number = self.connections.index(connection)
-        entry = self.getNextEntry(connection, ConnectCacheEntry)
+        entry = self.getNextEntry(connection, ConnectScriptEntry)
         if (entry.args, entry.kw) != (args, kw):
-            self.handleInvalidCache("Connection parameters have changed.")
+            self.handleInvalidScript("Connection parameters have changed.")
         if entry.exception is not None:
             raise entry.exception
         return connection
+
+    def cursor(self, connection):
+        """Return a MockDbCursor."""
+        return MockDbCursor(connection, real_cursor=None)
 
     @noop_if_invalid
     def execute(self, cursor, query, params=None):
         """Handle Cursor.execute()."""
         connection = cursor.connection
-        entry = self.getNextEntry(connection, ExecuteCacheEntry)
+        entry = self.getNextEntry(connection, ExecuteScriptEntry)
 
         if query != entry.query:
-            self.handleInvalidCache(
+            self.handleInvalidScript(
                     'Unexpected command. Expected %s. Got %s.'
                     % (entry.query, query)
                     )
 
         if params != entry.params:
-            self.handleInvalidCache(
+            self.handleInvalidScript(
                     'Unexpected parameters. Expected %r. Got %r.'
                     % (entry.params, params)
                     )
@@ -334,36 +349,36 @@ class ReplayCache:
     @noop_if_invalid
     def close(self, connection):
         """Handle Connection.close()."""
-        entry = self.getNextEntry(connection, CloseCacheEntry)
+        entry = self.getNextEntry(connection, CloseScriptEntry)
         if entry.exception is not None:
             raise entry.exception
 
     def commit(self, connection):
         """Handle Connection.commit()."""
-        entry = self.getNextEntry(connection, CommitCacheEntry)
+        entry = self.getNextEntry(connection, CommitScriptEntry)
         if entry.exception is not None:
             raise entry.exception
 
     @noop_if_invalid
     def rollback(self, connection):
         """Handle Connection.rollback()."""
-        entry = self.getNextEntry(connection, RollbackCacheEntry)
+        entry = self.getNextEntry(connection, RollbackScriptEntry)
         if entry.exception is not None:
             raise entry.exception
 
     @noop_if_invalid
     def set_isolation_level(self, connection, level):
         """Handle Connection.set_isolation_level()."""
-        entry = self.getNextEntry(connection, SetIsolationLevelCacheEntry)
+        entry = self.getNextEntry(connection, SetIsolationLevelScriptEntry)
         if entry.level != level:
-            self.handleInvalidCache("Different isolation level requested.")
+            self.handleInvalidScript("Different isolation level requested.")
         if entry.exception is not None:
             raise entry.exception
 
-    def handleInvalidCache(self, reason):
-        """Remove the cache from disk and raise a RetryTest exception."""
-        if os.path.exists(self.cache_filename):
-            os.unlink(self.cache_filename)
+    def handleInvalidScript(self, reason):
+        """Remove the script from disk and raise a RetryTest exception."""
+        if os.path.exists(self.script_filename):
+            os.unlink(self.script_filename)
         self.invalid = True
         raise RetryTest(reason)
 
@@ -373,35 +388,35 @@ class MockDbConnection:
 
     real_connection = None
     connection_number = None
-    cache = None
+    script = None
 
-    def __init__(self, cache, real_connection, *args, **kw):
+    def __init__(self, script, real_connection, *args, **kw):
         """Initialize the `MockDbConnection`.
 
         `MockDbConnection` intances are generally only created in the
-        *Cache.connect() methods as the attempt needs to be recorded
+        *Script.connect() methods as the attempt needs to be recorded
         (even if it fails).
 
         If we have a real_connection, we are proxying and recording results.
-        If real_connection is None, we are replaying results from the cache.
+        If real_connection is None, we are replaying results from the script.
 
         *args and **kw are the arguments passed to open the real connection
-        and are used by the cache to confirm the db connection details have
-        not been changed; a RetryTest exception may be raised in replay mode.
+        and are used by the script to confirm the db connection details have
+        not been changed; a `RetryTest` exception may be raised in replay mode.
         """
-        self.cache = cache
+        self.script = script
         self.real_connection = real_connection
 
     def cursor(self):
         """As per DB-API."""
-        return MockDbCursor(self)
+        return self.script.cursor(self)
 
     _closed = False
 
     def _checkClosed(self):
         """Guard that raises an exception if the connection is closed."""
         if self._closed is True:
-            raise psycopg.Error('Connection closed.')
+            raise psycopg.InterfaceError('Connection closed.')
 
     def close(self):
         """As per DB-API."""
@@ -413,24 +428,24 @@ class MockDbConnection:
         # behavior. So we have to emulate it.
         if self._closed:
             return
-        self._checkClosed()
-        self.cache.close(self)
+        #self._checkClosed()
+        self.script.close(self)
         self._closed = True
 
     def commit(self):
         """As per DB-API."""
         self._checkClosed()
-        self.cache.commit(self)
+        self.script.commit(self)
 
     def rollback(self):
         """As per DB-API."""
         self._checkClosed()
-        self.cache.rollback(self)
+        self.script.rollback(self)
 
     def set_isolation_level(self, level):
         """As per psycopg1 extension."""
         self._checkClosed()
-        self.cache.set_isolation_level(self, level)
+        self.script.set_isolation_level(self, level)
 
     # Exceptions exposed on connection, as per optional DB-API extension.
     ## Disabled, as psycopg1 does not implement this extension.
@@ -447,48 +462,46 @@ class MockDbConnection:
 
 
 class MockDbCursor:
-    _cache_entry = None
+    """A fake DB-API cursor as produced by MockDbConnection.cursor.
+    
+    The real work is done by the associated ScriptRecorder or ScriptPlayer
+    using the common interface, making this class independant on what
+    more the mock database is running in.
+    """
+    _script_entry = None
 
     arraysize = 100 # As per DB-API.
     connection = None # As per DB-API optional extension.
+    real_cursor = None # The real cursor if there is one.
 
-    def __init__(self, connection):
+    def __init__(self, connection, real_cursor=None):
         self.connection = connection
+        self.real_cursor = real_cursor
 
     @property
     def description(self):
-        """As per DB-API, pulled from the cache entry."""
-        if self._cache_entry is None:
+        """As per DB-API, pulled from the script entry."""
+        if self._script_entry is None:
             return None
-        return self._cache_entry.description
+        return self._script_entry.description
 
     @property
     def rowcount(self):
         """Return the rowcount only if all the results have been consumed.
-       
-        As per DB-API, pulled from the cache entry.
+
+        As per DB-API, pulled from the script entry.
         """
-        if not isinstance(self._cache_entry, ExecuteCacheEntry):
+        if not isinstance(self._script_entry, ExecuteScriptEntry):
             return -1
 
-        results = self._cache_entry.results
+        results = self._script_entry.results
 
         if results is None: # DELETE or UPDATE set rowcount.
-            return self._cache_entry.rowcount
+            return self._script_entry.rowcount
         
         if results is None or self._fetch_position < len(results):
             return -1
-        return self._cache_entry.rowcount
-
-    _real_cursor = None # Used by real_cursor().
-
-    @property
-    def real_cursor(self):
-        """A real DB cursor is needed. Return it."""
-        self._checkClosed()
-        if self._real_cursor is None:
-            self._real_cursor = self.connection.real_connection.cursor()
-        return self._real_cursor
+        return self._script_entry.rowcount
 
     _closed = False
 
@@ -496,9 +509,9 @@ class MockDbCursor:
         """As per DB-API."""
         self._checkClosed()
         self._closed = True
-        if self._real_cursor is not None:
-            self._real_cursor.close()
-            self._real_cursor = None
+        if self.real_cursor is not None:
+            self.real_cursor.close()
+            self.real_cursor = None
             self.connection = None
 
     def _checkClosed(self):
@@ -515,7 +528,7 @@ class MockDbCursor:
     def execute(self, query, parameters=None):
         """As per DB-API."""
         self._checkClosed()
-        self._cache_entry = self.connection.cache.execute(
+        self._script_entry = self.connection.script.execute(
                 self, query, parameters
                 )
         self._fetch_position = 0
@@ -528,12 +541,12 @@ class MockDbCursor:
     def fetchone(self):
         """As per DB-API."""
         self._checkClosed()
-        if self._cache_entry is None:
+        if self._script_entry is None:
             raise psycopg.Error("No query issued yet")
-        if self._cache_entry.results is None:
+        if self._script_entry.results is None:
             raise psycopg.Error("Query returned no results")
         try:
-            row = self._cache_entry.results[self._fetch_position]
+            row = self._script_entry.results[self._fetch_position]
             self._fetch_position += 1
             return row
         except IndexError:
@@ -542,18 +555,16 @@ class MockDbCursor:
     def fetchmany(self, size=None):
         """As per DB-API."""
         self._checkClosed()
-        if size is None:
-            size = self.arraysize
         raise NotImplementedError('fetchmany')
 
     def fetchall(self):
         """As per DB-API."""
         self._checkClosed()
-        if self._cache_entry is None:
+        if self._script_entry is None:
             raise psycopg.Error('No query issued yet')
-        if self._cache_entry.results is None:
+        if self._script_entry.results is None:
             raise psycopg.Error('Query returned no results')
-        results = self._cache_entry.results[self._fetch_position:]
+        results = self._script_entry.results[self._fetch_position:]
         self._fetch_position = len(results)
         return results
 
@@ -578,7 +589,7 @@ class MockDbCursor:
     ##     """As per iterator spec and DB-API optional extension."""
     ##     row = self.fetchone()
     ##     if row is None:
-    ##         raise StopInteration
+    ##         raise StopIteration
     ##     else:
     ##         return row
 

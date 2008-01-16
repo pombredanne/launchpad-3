@@ -9,17 +9,18 @@ import os
 import unittest
 
 import psycopg
+from zope.testing.testrunner import dont_retry, RetryTest
 
 from canonical.config import config
 from canonical.testing import mockdb, DatabaseLayer
 from canonical.testing.mockdb import (
-        MockDbConnection, RecordCache, ReplayCache, RetryTest, dont_retry,
+        MockDbConnection, ScriptPlayer, ScriptRecorder,
         )
 
 
 class MockDbTestCase(unittest.TestCase):
     layer = DatabaseLayer
-    cache = None
+    script = None
     connections = None
 
     def setUp(self):
@@ -28,13 +29,13 @@ class MockDbTestCase(unittest.TestCase):
         DatabaseLayer.uninstallMockDb()
 
         self.test_key = '_mockdb_unittest'
-        self.cache_filename = mockdb.cache_filename(self.test_key)
+        self.script_filename = mockdb.script_filename(self.test_key)
         self.connections = []
         self.recordMode()
 
     def tearDown(self):
-        if os.path.exists(self.cache_filename):
-            os.unlink(self.cache_filename)
+        if os.path.exists(self.script_filename):
+            os.unlink(self.script_filename)
         self.directMode()
 
     def closeConnections(self):
@@ -49,12 +50,12 @@ class MockDbTestCase(unittest.TestCase):
 
     def directMode(self):
         self.closeConnections()
-        self.cache = None
+        self.script = None
         self.mode = 'direct'
 
     def recordMode(self):
         self.closeConnections()
-        self.cache = RecordCache(self.test_key)
+        self.script = ScriptRecorder(self.test_key)
         self.mode = 'record'
 
     def replayMode(self):
@@ -63,10 +64,10 @@ class MockDbTestCase(unittest.TestCase):
 
         if self.mode != 'replay':
             # If we are already in replay mode don't close connections, 
-            # as these close events won't be in the cache and will fail.
+            # as these close events won't be in the script and will fail.
             self.closeConnections()
 
-        self.cache = ReplayCache(self.test_key)
+        self.script = ScriptPlayer(self.test_key)
         self.mode = 'replay'
 
     def modes(self):
@@ -83,7 +84,7 @@ class MockDbTestCase(unittest.TestCase):
         yield 'record'
 
         # And finally, after storing the previous run, in replay mode.
-        self.cache.store()
+        self.script.store()
         self.replayMode()
         yield 'replay'
 
@@ -93,10 +94,11 @@ class MockDbTestCase(unittest.TestCase):
             connection_string = "dbname=%s user=launchpad host=%s" % (
                     config.dbname, config.dbhost
                     )
-        if self.cache is None:
+        if self.mode == 'direct':
             con = psycopg.connect(connection_string)
+            #con = canonical.ftests.pgsql._org_connect(connection_string)
         else:
-            con = self.cache.connect(psycopg.connect, connection_string)
+            con = self.script.connect(psycopg.connect, connection_string)
         self.connections.append(con)
         return con
 
@@ -105,7 +107,7 @@ class MockDbTestCase(unittest.TestCase):
         # Record nothing but a close on a single connection.
         con = self.connect()
         con.close()
-        self.cache.store()
+        self.script.store()
 
         # Replay correctly.
         self.replayMode()
@@ -125,7 +127,7 @@ class MockDbTestCase(unittest.TestCase):
         con2 = self.connect()
         con1.close()
         con2.close()
-        self.cache.store()
+        self.script.store()
 
         # Replay correctly.
         self.replayMode()
@@ -176,7 +178,7 @@ class MockDbTestCase(unittest.TestCase):
 
     @dont_retry
     def testSimpleQuery(self):
-        # Ensure that we can cache and replay a simple query.
+        # Ensure that we can script and replay a simple query.
         for mode in self.modes():
             con = self.connect()
             cur = con.cursor()
@@ -283,7 +285,6 @@ class MockDbTestCase(unittest.TestCase):
                 """)
             con.commit()
 
-
     @dont_retry
     def testRollback(self):
         # Confirm rollback behavior.
@@ -311,6 +312,37 @@ class MockDbTestCase(unittest.TestCase):
                     )
 
     @dont_retry
+    def testFailedCommit(self):
+        # Confirm exeptions raised on commit are recorded and replayed.
+        for mode in self.modes():
+            con = self.connect()
+            con.close()
+            self.assertRaises(psycopg.InterfaceError, con.commit)
+
+    def testFailedRollback(self):
+        # Confirm exeptions raised on commit are recorded and replayed.
+        for mode in self.modes():
+            con = self.connect()
+            con.close()
+            if mode == 'direct':
+                # canonical.ftests.pgsql's ConnectionWrapper
+                # swallows exceptions in Rollback, which is wrong
+                # but will likely need to stay until we switch to Storm.
+                con.rollback()
+            else:
+                self.assertRaises(psycopg.InterfaceError, con.rollback)
+
+    @dont_retry
+    def testFailedSetIsolationLevel(self):
+        # Confirm exeptions raised on commit are recorded and replayed.
+        for mode in self.modes():
+            con = self.connect()
+            con.close()
+            self.assertRaises(
+                    psycopg.InterfaceError, con.set_isolation_level, 666
+                    )
+
+    @dont_retry
     def testClose(self):
         # Confirm and record close behavior.
         for mode in self.modes():
@@ -318,7 +350,7 @@ class MockDbTestCase(unittest.TestCase):
             cur = con.cursor()
             con.close()
             self.assertRaises(
-                    psycopg.Error, cur.execute,
+                    psycopg.InterfaceError, cur.execute,
                     "SELECT name FROM Person WHERE name='stub'"
                     )
             # Should raise an exception according to the DB-API, but
@@ -329,7 +361,7 @@ class MockDbTestCase(unittest.TestCase):
             try:
                 con.close()
             except psycopg.Error:
-                self.fail("Connection.close() not DB-API compliant.")
+                self.fail("Connection.close() now DB-API compliant. Fix test.")
 
     @dont_retry
     def testCursorDescription(self):
