@@ -682,13 +682,13 @@ A config file may state that it extends its schema (to clearly connect
 the config to the schema). The schema can also be pushed to reset the
 values in the config to the schema's default values.
 
-    >>> extnder_conf_name = path.normpath(path.join(
+    >>> extender_conf_name = path.normpath(path.join(
     ...     path.dirname(__file__), '..', 'ftests', 'testfiles',
     ...     'extender.conf'))
     >>> extender_conf_data = '\n'.join([
     ...     "[meta]",
     ...     "extends: base.conf"])
-    >>> config.push(extnder_conf_name, extender_conf_data)
+    >>> config.push(extender_conf_name, extender_conf_data)
     >>> for config_data in config.overlays:
     ...     print config_data.name
     extender.conf
