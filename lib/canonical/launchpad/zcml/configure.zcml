@@ -104,7 +104,6 @@
     <include file="productseries.zcml" />
     <include file="product.zcml" />
     <include file="project.zcml" />
-    <include file="publishing.zcml" />
     <include file="publishedpackage.zcml" />
     <include file="queue.zcml" />
     <include file="registry.zcml" />

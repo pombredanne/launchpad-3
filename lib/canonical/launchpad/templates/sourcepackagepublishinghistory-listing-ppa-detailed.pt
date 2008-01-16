@@ -6,7 +6,7 @@
 
   <tr class="ppa_package_row">
      <td style="white-space: nowrap"><input
-            id="field.selected_sources" type="checkbox"
+            id="string:field.selected_sources.${context/id}" type="checkbox"
             tal:condition="view/allow_selection"
             tal:attributes="value context/id"
             name="field.selected_sources" /><a href="#"
@@ -31,14 +31,15 @@
          >2005-09-16</td>
      <td tal:content="context/status/title"
          >PUBLISHED</td>
-     <td tal:content="context/distroseries/name"
-         >dapper</td>
-     <td tal:content="context/section/name">base</td>
+     <td tal:content="context/distroseries/name/capitalize"
+         >Dapper</td>
+     <td tal:content="context/section/name/capitalize">Web</td>
   </tr>
   <tr tal:attributes="id string:pub${context/id}"
       tal:define="published_source_and_binary_files view/published_source_and_binary_files"
       style="display: none">
     <td colspan="5">
+      <tal:block replace="structure context/@@+record-details" />
       <span tal:condition="not: published_source_and_binary_files"
          style="padding-left: 1em">No files published for this package.</span>
       <ul tal:repeat="file published_source_and_binary_files"

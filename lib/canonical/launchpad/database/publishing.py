@@ -11,7 +11,6 @@ __all__ = [
     'SecureSourcePackagePublishingHistory',
     'SourcePackageFilePublishing',
     'SourcePackagePublishingHistory',
-    'PublishingSet',
     ]
 
 from warnings import warn
@@ -28,9 +27,8 @@ from canonical.launchpad.interfaces import (
     IArchiveSafePublisher, IBinaryPackageFilePublishing,
     IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
-    ISourcePackagePublishingHistory, IPublishingSet,
-    PackagePublishingPriority, PackagePublishingStatus,
-    PackagePublishingPocket, PoolFileOverwriteError)
+    ISourcePackagePublishingHistory, PackagePublishingPriority,
+    PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 
 
@@ -775,14 +773,3 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             datecreated=UTC_NOW,
             pocket=pocket,
             embargo=False)
-
-
-class PublishingSet:
-    """Utility for dealing with publishing records in general."""
-
-    implements(IPublishingSet)
-    title = "Publishing record utility"
-
-    def getSource(self, pub_id):
-        """See `IPublishingSet`."""
-        return SourcePackagePublishingHistory.get(pub_id)

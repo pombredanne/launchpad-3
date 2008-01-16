@@ -59,27 +59,14 @@ Once accessed the page provides:
     ...         admin_browser.contents, 'empty-result')
     ...     if empty_section is not None:
     ...         print extract_text(empty_section)
-    ...     if not packages and not empty_section:
-    ...         print 'Search results not rendered.'
 
-When the console page is loaded no results are presented to avoid
-unnecessary queries and delays.
-
-    >>> print_ppa_packages(admin_browser.contents)
-    Search results not rendered.
-
-In order to see any result the user is forced to 'search' for
-something.
-
-    >>> admin_browser.getControl("Search").click()
-
-Then the page will present a list of results.
+When the console page is loaded a list of published search is presented,
 
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
-    cdrkit - 1.0     2007-07-09  Published  breezy-autotest editors
-    iceweasel - 1.0  2007-07-09  Published  warty           editors
-    pmount - 0.1-1   2007-07-09  Published  warty           editors
+    cdrkit - 1.0     2007-07-09  Published  Breezy-autotest Editors
+    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
 The 'search' form functions similarly to the one available in the
 +index page.
@@ -95,7 +82,7 @@ The 'search' form functions similarly to the one available in the
     >>> admin_browser.getControl("Search").click()
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
-    pmount - 0.1-1   2007-07-09  Published  warty           editors
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = ''
@@ -110,9 +97,9 @@ The 'search' form functions similarly to the one available in the
     >>> admin_browser.getControl("Search").click()
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
-    cdrkit - 1.0     2007-07-09  Published  breezy-autotest editors
-    iceweasel - 1.0  2007-07-09  Published  warty           editors
-    pmount - 0.1-1   2007-07-09  Published  warty           editors
+    cdrkit - 1.0     2007-07-09  Published  Breezy-autotest Editors
+    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
 The main difference is that a checkbox is rendered for each result
 table row.
@@ -131,20 +118,13 @@ Actions with empty comments are not allowed.
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    Required input is missing.
+    Comment should be provided for deletions.
 
-Recovering from an error is done by clicking in 'Search' button
-again, because we always have empty results after the form is issued.
-
-    >>> print_ppa_packages(admin_browser.contents)
-    Search results not rendered.
-
-    >>> admin_browser.getControl("Search").click()
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
-    cdrkit - 1.0     2007-07-09  Published  breezy-autotest editors
-    iceweasel - 1.0  2007-07-09  Published  warty           editors
-    pmount - 0.1-1   2007-07-09  Published  warty           editors
+    cdrkit - 1.0     2007-07-09  Published  Breezy-autotest Editors
+    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
 If an action is requested without having selected row, an error is issued.
 
@@ -154,11 +134,11 @@ If an action is requested without having selected row, an error is issued.
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    No published sources selected.
+    No sources selected.
 
 Once the deletion is successfully requested, Foo Bar sees an
 informational message containing the summary of the action
-performed. Search results are not presented.
+performed. Search results is old (XXX ?)
 
     >>> admin_browser.getControl("Search").click()
     >>> admin_browser.getControl(
@@ -174,7 +154,11 @@ performed. Search results are not presented.
     Deletion comment: DO IT
 
     >>> print_ppa_packages(admin_browser.contents)
-    Search results not rendered.
+    Source           Published   Status     Series          Section
+    cdrkit - 1.0     2007-07-09  Published  Breezy-autotest Editors
+    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+
 
 The deleted record is now presented accordingly.
 
@@ -184,7 +168,7 @@ The deleted record is now presented accordingly.
 
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
-    cdrkit - 1.0     2007-07-09  Deleted    breezy-autotest editors
+    cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors
 
     >>> admin_browser.getControl(
     ...    name='field.status_filter').value = ['published']
@@ -192,8 +176,8 @@ The deleted record is now presented accordingly.
 
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
-    iceweasel - 1.0  2007-07-09  Published  warty           editors
-    pmount - 0.1-1   2007-07-09  Published  warty           editors
+    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
     >>> admin_browser.getControl(
     ...    name='field.status_filter').value = ['any']
@@ -201,9 +185,9 @@ The deleted record is now presented accordingly.
 
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
-    cdrkit - 1.0     2007-07-09  Deleted    breezy-autotest editors
-    iceweasel - 1.0  2007-07-09  Published  warty           editors
-    pmount - 0.1-1   2007-07-09  Published  warty           editors
+    cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors
+    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
 Multiple packages can be deleted in one single batch.
 
@@ -212,9 +196,6 @@ Multiple packages can be deleted in one single batch.
     >>> admin_browser.getControl(
     ...    name='field.comment').value = "DO IT AGAIN !"
     >>> admin_browser.getControl("Delete").click()
-
-    >>> len(find_tags_by_class(admin_browser.contents, 'ppa_package_row'))
-    0
 
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -232,9 +213,9 @@ Foo Bar can see that all packages present in Celso's PPA are deleted.
 
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
-    cdrkit - 1.0     2007-07-09  Deleted    breezy-autotest editors
-    iceweasel - 1.0  2007-07-09  Deleted    warty           editors
-    pmount - 0.1-1   2007-07-09  Deleted    warty           editors
+    cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors
+    iceweasel - 1.0  2007-07-09  Deleted    Warty           Editors
+    pmount - 0.1-1   2007-07-09  Deleted    Warty           Editors
 
 Attempts to delete a already deleted package will result in an error.
 

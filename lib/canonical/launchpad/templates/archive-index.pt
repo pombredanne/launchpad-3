@@ -66,7 +66,7 @@
            <label for="name">Package name contains:</label>
            <input id="field.name_filter" title="Package Name" size="20"
                   type="text" name="field.name_filter"
-                  tal:attributes="value view/name_filter"/>
+                  tal:attributes="value request/field.name_filter|nothing"/>
            <span tal:replace="structure view/plain_status_filter_widget" />
            <input type="submit" value="Search" />
         </form>
@@ -80,7 +80,7 @@
 
       <table class="listing" id="packages_list" tal:condition="batch">
         <thead>
-          <tr>
+          <tr class="ppa_package_row">
             <th colspan="2">Source</th>
             <th tal:condition="context/owner/isTeam">Uploader</th>
             <th>Published</th>
@@ -100,10 +100,10 @@
            condition="view/search_requested"
            replace="structure view/batchnav/@@+navigation-links-lower" />
 
-        <div id="empty-result" tal:condition="not: batch">
-           <tal:has_filter condition="view/name_filter">
-              No matching package for '<span tal:replace="view/name_filter" />'.
-           </tal:has_filter>
+        <div id="empty-result"
+             tal:define="name_filter request/field.name_filter|nothing"
+             tal:condition="not: batch">
+           No matching package for '<span tal:replace="name_filter" />'.
         </div>
 
       </div>

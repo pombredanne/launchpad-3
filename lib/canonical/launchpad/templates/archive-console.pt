@@ -20,66 +20,95 @@
 
   <h2><tal:title replace="context/title" /> package console</h2>
 
-  <p tal:condition="not: ppa_active">
-    This PPA does not contain any packages yet.
-  </p>
-
-  <tal:active_ppa condition="ppa_active">
-
-  <p>Search for package which you want to manipulate</p>
-
-  <div style="padding-bottom: 1em;">
-    <form name="package_search" action="" method="GET">
-       <label for="name">Package name contains:</label>
-       <input id="field.name_filter" title="Package Name" size="20"
-              type="text" name="field.name_filter"
-              tal:attributes="value view/name_filter"/>
-       <span tal:replace="structure view/plain_status_filter_widget" />
-       <input type="submit" value="Search" />
-    </form>
-  </div>
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
-    <div metal:fill-slot="extra_info"
-         tal:condition="view/search_requested"
-         tal:define="batch view/search_results">
+    <div metal:fill-slot="extra_info">
 
-       <tal:navigation_top
-            replace="structure view/batchnav/@@+navigation-links-upper" />
+      <p tal:condition="not: ppa_active">
+         This PPA does not contain any packages yet.
+      </p>
 
-       <table class="listing" id="packages_list" tal:condition="batch">
-         <thead>
-           <tr class="ppa_package_row">
-             <th colspan="2">Source</th>
-             <th tal:condition="context/owner/isTeam">Uploader</th>
-             <th>Published</th>
-             <th>Status</th>
-             <th>Series</th>
-             <th>Section</th>
-           </tr>
-         </thead>
-
-         <tbody>
-          <tal:block repeat="publishing batch"
-                     replace="structure publishing/@@+listing-ppa-detailed-selectable">
-          </tal:block>
-         </tbody>
-       </table>
-
-       <tal:navigation_bottom
-            replace="structure view/batchnav/@@+navigation-links-lower" />
-
-       <div id="empty-result" tal:condition="not: batch">
-          No matching package for '<span tal:replace="view/name_filter" />'.
-       </div>
+      <tal:active_ppa condition="ppa_active">
+         <p>Search for package which you want to manipulate</p>
+      </tal:active_ppa>
 
     </div> <!--extra_info -->
 
 
+    <div class="form" tal:condition="ppa_active" metal:fill-slot="widgets">
+
+      <table>
+
+      <tal:name_filter define="widget nocall:view/widgets/name_filter|nothing"
+                       condition="widget">
+        <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+      </tal:name_filter>
+
+      <tr>
+         <th><label for="field.status_filter">Package status:</label></th>
+         <td width="100%">
+             <div tal:content="structure view/plain_status_filter_widget" />
+	     <p class="formHelp">Display packages only in a given state.</p>
+         </td>
+      </tr>
+
+
+      <tr tal:define="widget nocall:view/widgets/selected_sources|nothing;
+                      widget_size python:len(widget.vocabulary)"
+          tal:condition="widget">
+        <th>
+           <label tal:attributes="for widget/name"
+                  tal:content="string:${widget/label}:">Label</label>
+        </th>
+        <td tal:condition="widget_size">
+
+           <table class="listing">
+             <thead>
+             <tr class="ppa_package_row">
+               <th colspan="2">Source</th>
+               <th tal:condition="context/owner/isTeam">Uploader</th>
+               <th>Published</th>
+               <th>Status</th>
+               <th>Series</th>
+               <th>Section</th>
+             </tr>
+             </thead>
+             <tbody>
+             <tal:terms tal:repeat="term widget/vocabulary">
+                <tal:block define="pub term/value"
+                           replace="structure pub/@@+listing-ppa-detailed-selectable" />
+             </tal:terms>
+             </tbody>
+           </table>
+
+         <input tal:attributes="name string:${widget/name}-empty-marker"
+                type="hidden" value="1" />
+        </td>
+        <td id="empty-result" class="message error" style="border: solid;"
+            tal:condition="not:widget_size">
+           <p>No matching package for '<span
+              tal:replace="request/field.name_filter" />'.</p>
+        </td>
+      </tr>
+
+      <tal:include_binaries
+          define="widget nocall:view/widgets/include_binaries|nothing"
+          condition="widget">
+         <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+      </tal:include_binaries>
+
+      <tal:comment define="widget nocall:view/widgets/comment|nothing"
+          condition="widget">
+         <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+      </tal:comment>
+
+      </table>
+
+   </div> <!-- widgets -->
+
   </div> <!-- launchpad_form -->
 
-  </tal:active_ppa>
 
 </div> <!--main -->
 

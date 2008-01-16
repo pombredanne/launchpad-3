@@ -16,11 +16,12 @@ __all__ = [
     'ArchiveAdminView',
     ]
 
-from zope.schema import Choice
 from zope.app.form.browser import TextAreaWidget
-from zope.app.form.utility import setUpWidget
 from zope.app.form.interfaces import IInputWidget
+from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
+from zope.formlib import form
+from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad import _
@@ -29,13 +30,14 @@ from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchive, IArchiveConsoleForm, IArchiveSet, IBuildSet,
-    IHasBuildRecords, ILaunchpadCelebrities, IPPAActivateForm, IPublishingSet,
+    IHasBuildRecords, ILaunchpadCelebrities, IPPAActivateForm,
     NotFoundError, PackagePublishingStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.widgets import LabeledMultiCheckBoxWidget
 
 
 class ArchiveNavigation(Navigation):
@@ -97,9 +99,6 @@ class ArchiveOverviewMenu(ApplicationMenu):
 class ArchiveViewBase(LaunchpadView):
     """Common features for Archive view classes."""
 
-    # Whether to present or not results on page load.
-    show_default_results = True
-
     @property
     def is_active(self):
         """Whether or not this PPA already have publications in it."""
@@ -108,7 +107,7 @@ class ArchiveViewBase(LaunchpadView):
     @property
     def search_requested(self):
         """Whether or not the search form was used."""
-        return self.name_filter is not None
+        return self.request.get('field.name_filter') is not None
 
     @property
     def source_count_text(self):
@@ -126,8 +125,8 @@ class ArchiveViewBase(LaunchpadView):
         else:
             return '%s binary packages' % self.context.number_of_binaries
 
-    def setupStatusFilterWidget(self, status_filter):
-        """Setup a customized publishing status select widget.
+    def setupStatusFilterWidget(self):
+        """Build customized publishing status select widget.
 
         Receives the one of the established field values:
 
@@ -138,7 +137,6 @@ class ArchiveViewBase(LaunchpadView):
          * Published:  PENDING and PUBLISHED records,
          * Superseded: SUPERSEDED and DELETED records,
          * Any Status
-
         """
         class StatusCollection:
             def __init__(self, collection=None):
@@ -158,6 +156,7 @@ class ArchiveViewBase(LaunchpadView):
             ]
         status_vocabulary = SimpleVocabulary(status_terms)
 
+        status_filter = self.request.get('field.status_filter', 'published')
         self.selected_status_filter = status_vocabulary.getTermByToken(
             status_filter)
 
@@ -180,19 +179,20 @@ class ArchiveViewBase(LaunchpadView):
         self.sources_list_entries = SourcesListEntriesView(
             entries, self.request)
 
-    def setupPackageFilterAndResults(self):
-        """Setup of the package search form and results."""
-        self.name_filter = self.request.get('field.name_filter')
-        status_filter = self.request.get('field.status_filter', 'published')
-        self.setupStatusFilterWidget(status_filter)
+    def getPublishingRecords(self):
+        """Return the publishing records results.
 
-        if self.name_filter is not None or self.show_default_results:
-            publishing = self.context.getPublishedSources(
-                name=self.name_filter,
-                status=self.selected_status_filter.value.collection)
-        else:
-            publishing = []
-        self.batchnav = BatchNavigator(publishing, self.request)
+        It requests 'self.selected_status_filter' to be set.
+        """
+        name_filter = self.request.get('field.name_filter')
+        return self.context.getPublishedSources(
+            name=name_filter,
+            status=self.selected_status_filter.value.collection)
+
+    def setupPackageBatchResult(self):
+        """Setup of the package search results."""
+        self.batchnav = BatchNavigator(
+            self.getPublishingRecords(), self.request)
         self.search_results = self.batchnav.currentBatch()
 
 
@@ -211,7 +211,8 @@ class ArchiveView(ArchiveViewBase):
         search result list.
         """
         self.setupSourcesListEntries()
-        self.setupPackageFilterAndResults()
+        self.setupStatusFilterWidget()
+        self.setupPackageBatchResult()
 
 
 class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
@@ -223,68 +224,66 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
     """
 
     schema = IArchiveConsoleForm
-    # Do not present search results if 'Search' button is not hit.
-    show_default_results = False
 
-    def initialize(self):
-        """Setup infrastructure for the PPA console page.
+    # Maximum number of 'selected_sources' options presented.
+    max_sources_presented = 10
 
-        Setup the package filter widget and the search result list.
+    custom_widget('selected_sources', LabeledMultiCheckBoxWidget,
+                  orientation='verical', visible=True)
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        LaunchpadFormView.setUpFields(self)
+
+        self.setupStatusFilterWidget()
+
+        self.form_fields = (
+            self.createSelectedSourcesField() + self.form_fields)
+
+    def createSelectedSourcesField(self):
+        """Creates the 'selected_sources' field.
+
+        'selected_sources' is a list of elements of a vocabulary based on
+        the search results presented. This way zope validation mechanisms
+        will do the job for us.
         """
-        LaunchpadFormView.initialize(self)
-        self.setupPackageFilterAndResults()
+        terms = []
+        for pub in self.getPublishingRecords()[:self.max_sources_presented]:
+            terms.append(SimpleTerm(pub, str(pub.id), pub.displayname))
+        return form.Fields(
+            List(__name__='selected_sources',
+                 title=_('Available sources'),
+                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                 required=False,
+                 default=[],
+                 description=_('Select one or more sources to be submitted '
+                               'to an action.')),
+            custom_widget=self.custom_widgets['selected_sources'],
+            render_context=self.render_context)
 
-    def _getSelectedSources(self):
-        """Retrieve 'selected_sources' form value directly from request.
+    @action(_("Search"), name="search")
+    def action_search(self, action, data):
+        # Reset selection.
+        widget = self.widgets.get('selected_sources')
+        if widget:
+            widget.setRenderedValue([])
 
-        'select_sources' is the name of all checkboxes rendered for each
-        result containing the corresponding `ISourcePackagePublishingHistory`
-        IDs.
+    def validate_delete(self, action, data):
+        """Validate deletion action."""
+        comment = data.get('comment')
+        selected_sources = data.get('selected_sources', [])
 
-        Returns an empty list if nothing was selected, otherwise return a
-        list of corresponding `ISourcePackagePublishingHistory` records.
-        """
-        selected_sources_ids = self.request.get('field.selected_sources')
-
-        if selected_sources_ids is None:
-            return []
-
-        if not isinstance(selected_sources_ids, list):
-            selected_sources_ids = [selected_sources_ids]
-
-        if not selected_sources_ids:
-            return []
-
-        pub_set = getUtility(IPublishingSet)
-        selected_sources = []
-        for source_id in selected_sources_ids:
-            source = pub_set.getSource(int(source_id))
-            selected_sources.append(source)
-
-        return selected_sources
-
-    def validate(self, data):
-        """Retrieve 'selected_sources' directly from the request.
-
-        Ensure we have only valid and published sources selected.
-        """
-        if len(self.errors) != 0:
-            return
-
-        # XXX cprov 20080111: ideally 'field.selected_sources' should get
-        # retrieved and validated by the zope infrastructure.
-        selected_sources = self._getSelectedSources()
         if not selected_sources:
-            self.addError("No published sources selected.")
-            return
+            self.addError("No sources selected.")
 
+        if not comment:
+            self.addError("Comment should be provided for deletions.")
+
+        # XXX cprov 20080115: this check belongs to the content class.
         for source in selected_sources:
             if source.status != PackagePublishingStatus.PUBLISHED:
                 self.addError('Cannot delete non-published source (%s).'
                               % source.displayname)
-                return
-        # Finally inject 'selected_sources' in the validated form data.
-        data['selected_sources'] = selected_sources
 
     @action(_("Delete"), name="delete")
     def action_delete(self, action, data):
@@ -294,6 +293,12 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         respecting the auxiliary parameter, 'including_binaries' and
         'comment'.
         """
+        # XXX cprov 20080115: using the 'validator' property passes empty
+        # 'data'. We are calling it manually for now.
+        self.validate_delete(action, data)
+        if len(self.errors) != 0:
+            return
+
         include_binaries = data.get('include_binaries')
         comment = data.get('comment')
         selected_sources = data.get('selected_sources')
@@ -310,14 +315,12 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
             target = "Sources and binaries"
         else:
             target = "Sources"
-
         messages = []
         messages.append(
             '<p>%s deleted by %s request:' % (target, self.user.displayname))
         for source in selected_sources:
             messages.append('<br/>%s' % source.displayname)
         messages.append('</p>')
-
         messages.append("<p>Deletion comment: %s</p>" % comment)
 
         notification = "\n".join(messages)
