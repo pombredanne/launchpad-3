@@ -403,7 +403,6 @@ class TranslationImporter:
                     message.msgid_singular, message.msgid_plural,
                     context=message.context)
 
-
             # If msgid_plural for this plural form is different from existing
             # plural form (and msgid matches)
             if (message.msgid_plural is not None and

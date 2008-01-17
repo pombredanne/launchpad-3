@@ -80,7 +80,7 @@ def plural_form_mapper(first_expression, second_expression):
             return identity_map
 
         # Is either result out of range?
-        if first_form not in [0,1,2,3] or second_form not in [0,1,2,3]:
+        if first_form not in [0, 1, 2, 3] or second_form not in [0, 1, 2, 3]:
             return identity_map
 
         if first_form in mapping:
@@ -102,6 +102,7 @@ class POSyntaxWarning(Warning):
     """ Syntax warning in a po file """
 
     def __init__(self, lno=0, msg=None):
+        Warning.__init__(self)
         self.lno = lno
         self.msg = msg
 
@@ -718,7 +719,8 @@ class POParser(object):
                 if string and not string.isspace():
                     raise TranslationFormatSyntaxError(
                         line_number=self._lineno,
-                        message="extra content found after string: (%s)" % string)
+                        message=("extra content found after string: (%s)" %
+                                 string))
                 break
             elif string[0] == '\\' and string[1] in escape_map:
                 # We got one of the special escaped chars we know about, we
@@ -905,7 +907,8 @@ class POParser(object):
             self._section = 'msgctxt'
             l = l[len('msgctxt'):]
         elif l.startswith('msgid'):
-            if self._section is not None and self._section.startswith('msgid'):
+            if (self._section is not None and
+                self._section.startswith('msgid')):
                 raise TranslationFormatSyntaxError(line_number=self._lineno)
             if self._section is not None:
                 self._dumpCurrentSection()
@@ -966,9 +969,9 @@ class POParser(object):
 def parse_assignments(text, separator=';', assigner='=', skipfirst=False):
     parts = {}
     if skipfirst:
-        start=1
+        start = 1
     else:
-        start=0
+        start = 0
     for assignment in text.split(separator)[start:]:
         if not assignment.strip():
             # empty
