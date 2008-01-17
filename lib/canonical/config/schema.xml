@@ -1152,9 +1152,15 @@ k            </description>
         <key name="beta_testers_team" datatype="string"
              default="mailing-list-beta-testers" />
         <key name="archive_url_template" datatype="string"
-             default="http://lists.launchpad.dev/archives/$team_name" />
+             default="http://lists.launchpad.net/$team_name" />
         <key name="archive_address" datatype="string"
              default="archive@mail-archive.com" />
+        <key name="list_help_header" datatype="string"
+             default="https://help.launchpad.net/ListHelp" />
+        <key name="list_subscription_headers" datatype="string"
+             default="https://launchpad.net/people/+me/+editemails" />
+        <key name="list_owner_header_template" datatype="string"
+             default="https://launchpad.net/~$team_name" />
     </sectiontype>
 
     <sectiontype name="checkwatches">

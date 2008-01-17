@@ -6,7 +6,7 @@
 These may be fed back into Zope3 at some point.
 
 """
-from date import IDateWidget, DateWidget, DatetimeDisplayWidget
+from date import DateWidget, DateTimeWidget, DatetimeDisplayWidget
 from image import GotchiTiedWithHeadingWidget, ImageChangeWidget
 from owner import IUserWidget, HiddenUserWidget
 from popup import (
