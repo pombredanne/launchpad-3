@@ -18,6 +18,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
@@ -83,10 +84,9 @@ class FeedsNavigation(Navigation):
         fields = sorted(query_string.split('&'))
         normalized_query_string = '&'.join(fields)
         if query_string != normalized_query_string:
-            # We must consume the stepstogo to prevent an error
-            # trying to call RedirectionView.publishTraverse().
-            while self.request.stepstogo.consume():
-                pass
+            # We must empty the traversal stack to prevent an error
+            # when calling RedirectionView.publishTraverse().
+            self.request.setTraversalStack([])
             target = "%s%s?%s" % (self.request.getApplicationURL(),
                                   self.request['PATH_INFO'],
                                   normalized_query_string)
@@ -98,6 +98,8 @@ class FeedsNavigation(Navigation):
         # http://feeds.launchpad.net/bugs/1/bug.atom
         if name == 'bugs':
             stack = self.request.getTraversalStack()
+            if len(stack) == 0:
+                raise NotFound(self, '', self.request)
             bug_id = stack.pop()
             if bug_id.startswith('+'):
                 if config.launchpad.is_bug_search_feed_active:
@@ -108,29 +110,23 @@ class FeedsNavigation(Navigation):
                 self.request.stepstogo.consume()
                 return getUtility(IBugSet).getByNameOrID(bug_id)
 
-        # Handle persons and teams.
-        # http://feeds.launchpad.net/~salgado/latest-bugs.html
-        if name.startswith('~'):
-            # Redirect to the canonical name before doing the lookup.
-            if canonical_name(name) != name:
-                return self.redirectSubTree(
-                    canonical_url(self.context) + canonical_name(name),
-                    status=301)
-            else:
-                person = getUtility(IPersonSet).getByName(name[1:])
-                return person
+        # Redirect to the canonical name before doing the lookup.
+        if canonical_name(name) != name:
+            return self.redirectSubTree(
+                canonical_url(self.context) + canonical_name(name),
+                status=301)
 
         try:
-            # Redirect to the canonical name before doing the lookup.
-            if canonical_name(name) != name:
-                return self.redirectSubTree(
-                    canonical_url(self.context) + canonical_name(name),
-                    status=301)
+            if name.startswith('~'):
+                # Handle persons and teams.
+                # http://feeds.launchpad.net/~salgado/latest-bugs.html
+                person = getUtility(IPersonSet).getByName(name[1:])
+                return person
             else:
+                # Otherwise, handle products, projects, and distros
                 return getUtility(IPillarNameSet)[name]
-
         except NotFoundError:
-            return None
+            raise NotFound(self, name, self.request)
 
 
 class FeedLinkBase:
