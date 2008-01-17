@@ -67,6 +67,27 @@
           <h2>What&#8217;s new here?</h2>
           <table>
             <tbody>
+             <tr>
+               <td><img src="/@@/news" alt="" /></td>
+               <td>
+                 <a href="https://help.launchpad.net/Feeds#branches">
+                   <strong>Branch feeds</strong><br />
+                   Follow the latest commits to a branch in your feed reader.
+                   Also receive updates on commits to branches associated with
+                   specific people, teams and projects.
+                 </a>
+               </td>
+             </tr>
+             <tr>
+               <td><img src="/@@/news" alt="" /></td>
+               <td>
+                 <a href="https://help.launchpad.net/logo">
+                   <strong>Logo competition!</strong><br />
+                   Submit your design for the new Launchpad logo for
+                   the chance to win an Ubuntu Messenger bag.
+                 </a>
+                </td>
+             </tr>
               <tr>
                 <td><img src="/@@/news" alt="" /></td>
                 <td>
@@ -88,29 +109,10 @@
                     </a>
                 </td>
               </tr>
-              <tr>
-                <td><img src="/@@/news" alt="" /></td>
-                <td>
-                  <a
-                    href="http://news.launchpad.net/?p=38">
-                    <strong>CMF adopts Launchpad</strong><br />
-                    Easy collaboration between Zope and CMF.</a>
-                </td>
-              </tr>
-              <tr>
-                <td><img src="/@@/news" alt="" /></td>
-                <td>
-                  <a href="https://help.launchpad.net/BugReportingGuidelines">
-                    <strong>Better quality bug reports</strong><br />
-                    Display your project's bug reporting guidelines to bug
-                    reporters.
-                  </a>
-                 </td>
-              </tr>
             </tbody>
           </table>
           <div class="discreet" style="text-align: right">
-            Updated 2007-12-20.
+            Updated 2008-01-24.
             <a href="http://news.launchpad.net">More...</a>
           </div>
         </div>
