@@ -105,7 +105,7 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
 
     _labelWithDescriptionTemplate = (
         u'''<tr>
-              <td rowspan="2" style="vertical-align: top">%s</td>
+              <td rowspan="2">%s</td>
               <td><label for="%s">%s</label></td>
             </tr>
             <tr>
