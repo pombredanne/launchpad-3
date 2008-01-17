@@ -901,8 +901,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 dependent_branch=dependent_branch, whiteboard=whiteboard)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))
-        #else:
-        #    self.next_url = canonical_url(source_branch)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
