@@ -41,7 +41,7 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
 
 class HTTPResource:
     """See `IHTTPResource`."""
-    implements(IHTTPResource)
+    implements(IHTTPResource, ICanonicalUrlData)
 
     def __init__(self, context, root_resource, request):
         self.context = context
@@ -67,7 +67,7 @@ class ReadOnlyResource(HTTPResource):
 
 class EntryResource(ReadOnlyResource):
     """An individual object, published to the web."""
-    implements(IJSONPublishable, ICanonicalUrlData)
+    implements(IJSONPublishable)
 
     @property
     def rootsite(self):
@@ -81,7 +81,8 @@ class EntryResource(ReadOnlyResource):
     def inside(self):
         """Find the top-level collection resource associated with this entry.
         """
-        return self.root_resource
+        return self.root_resource.topLevelCollectionResource(
+            self.context.parent_collection_name)
 
     def __init__(self, context, root_resource, request):
         """Associate this resource with a specific object and request."""
@@ -117,9 +118,28 @@ class CollectionResource(ReadOnlyResource):
     """A resource that serves a list of entry resources."""
     implements(ICollectionResource)
 
-    def __init__(self, context, root_resource, request):
+    def __init__(self, context, root_resource, collection_name, request):
         super(CollectionResource, self).__init__(ICollection(context),
                                                  root_resource, request)
+        self.collection_name = collection_name
+
+    @property
+    def rootsite(self):
+        """Find the ServiceRoot object associated with this entry.
+
+        Use that object's rootsite.
+        """
+        return self.root_resource.rootsite
+
+    @property
+    def inside(self):
+        """All collections are presumed to be inside the service root.
+        """
+        return self.root_resource
+
+    @property
+    def path(self):
+        return self.collection_name
 
     def publishTraverse(self, request, name):
         """Fetch an entry resource by name."""
@@ -140,13 +160,26 @@ class CollectionResource(ReadOnlyResource):
 
 class ServiceRootResource(ReadOnlyResource):
     """A resource that responds to GET by describing the service."""
-    implements(ICanonicalUrlData)
+    implements(ICanonicalUrlData, IPublishTraverse)
 
     @property
     def rootsite(self):
         return self.context.rootsite
     inside = None
     path = ''
+
+    def topLevelCollectionResource(self, name):
+        if name in self.context.top_level_collections:
+            return CollectionResource(
+                self.context.top_level_collections[name](), self,
+                name, self.request)
+        return None
+
+    def publishTraverse(self, request, name):
+        resource = self.topLevelCollectionResource(name)
+        if resource is None:
+            raise NotFound(self, name)
+        return resource
 
     def do_GET(self):
         """Return a description of the resource."""
@@ -177,16 +210,12 @@ class ServiceRoot:
 
     top_level_collections = {}
 
-    def as_resource(self, request):
+    def asResource(self, request):
         return ServiceRootResource(self, None, request)
 
     def publishTraverse(self, request, name):
-        root_resource = self.as_resource(request)
-        if name not in self.top_level_collections:
-            raise NotFound(self, name)
-        return CollectionResource(self.top_level_collections[name](),
-                                  root_resource, request)
+        return self.asResource(request).publishTraverse(request, name)
 
     def __call__(self, REQUEST=None):
         if REQUEST:
-            return self.as_resource(REQUEST)()
+            return self.asResource(REQUEST)()

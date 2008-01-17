@@ -12,7 +12,7 @@ __all__ = [
     'IJSONPublishable',
     ]
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 from zope.publisher.interfaces import IPublishTraverse
 
 
@@ -59,6 +59,8 @@ class ICollectionResource(IHTTPResource):
 class IEntry(IJSONPublishable):
     """An entry, exposed as a resource by an IEntryResource."""
 
+    parent_collection_name = Attribute("URI name of the parent collection.")
+
     def fragment(self):
         """Return a URI fragment that uniquely identifies this entry.
 
@@ -66,6 +68,7 @@ class IEntry(IJSONPublishable):
         It must be possible to use this fragment to find the entry again
         in a collection of all such entries.
         """
+
 
 class ICollection(Interface):
     """A collection, driven by an ICollectionResource."""

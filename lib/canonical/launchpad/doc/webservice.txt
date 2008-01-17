@@ -99,6 +99,9 @@ that defines a constructor.
     ...     adapts(IRecipe)
     ...     decorates(IRecipeEntry)
     ...     schema = IRecipeEntry
+    ...
+    ...     parent_collection_name = 'recipes'
+    ...
     ...     def fragment(self):
     ...         """Use the recipe's ID as its URI fragment."""
     ...         return str(self.context.id)
@@ -192,8 +195,18 @@ an example.
     >>> collection = app.publishTraverse(request, "recipes")
     >>> collection
     <canonical.lazr.rest.resource.CollectionResource object ...>
-    >>> collection()
-    '[{"name": "Green eggs and ham"}, ... {"name": "Raw celery"}]'
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> canonical_url(collection)
+    u'http://api.launchpad.dev/recipes'
+
+    >>> import simplejson
+    >>> representation = simplejson.loads(collection())
+    >>> len(representation)
+    3
+    >>> representation[0]['self_resource']
+    u'http://api.launchpad.dev/recipes/1'
+    >>> representation[0]['name']
+    u'Green eggs and ham'
 
 Calling the CollectionResource object makes it process the incoming
 request. Since this is a GET request, calling the resource publishes
@@ -210,8 +223,12 @@ that (for instance) /recipes/10 is mapped to the "Raw celery" Entry.
     >>> entry = collection.publishTraverse(request, "10")
     >>> entry
     <canonical.lazr.rest.resource.EntryResource object ...>
-    >>> entry()
-    '{"name": "Raw celery"}'
+    >>> canonical_url(entry)
+    u'http://api.launchpad.dev/recipes/10'
+
+    >>> simplejson.loads(entry())
+    {u'self_resource': u'http://api.launchpad.dev/recipes/10',
+     u'name': u'Raw celery'}
 
 If the user tries to traverse to a nonexistent object, the result is a
 NotFound exception:
