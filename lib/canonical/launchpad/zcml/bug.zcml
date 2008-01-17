@@ -17,7 +17,8 @@
         <allow attributes="id private bugtasks affected_pillars
                            permits_expiration can_expire
                            subscriptions syncUpdate  date_last_updated
-                           getDirectSubscribers getIndirectSubscribers
+                           getDirectSubscribers getDirectSubscriptions
+                           getIndirectSubscribers
                            mentoring_offers canMentor isMentor
                            getNullBugTask is_complete who_made_private
                            date_made_private"
@@ -34,10 +35,11 @@
                         isSubscribed messages getBugNotificationRecipients
                         hasBranch security_related tags getMessageChunks
                         isSubscribedToDupes getSubscribersFromDuplicates
+                        getSubscriptionsFromDuplicates
                         getAlsoNotifiedSubscribers getBugWatch getBugTask
                         canBeNominatedFor getNominationFor getNominations
                         date_last_message number_of_duplicates
-                        number_of_comments getQuestionCreatedFromBug
+                        message_count getQuestionCreatedFromBug
                         canBeAQuestion"
             />
         <require

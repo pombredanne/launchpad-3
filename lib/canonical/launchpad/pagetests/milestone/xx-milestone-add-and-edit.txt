@@ -1,5 +1,15 @@
 = Adding and editing milestones =
 
+We have a "milestones" portlet which shows active milestones for a
+structural object (product, project, distroseries, productseries). This
+utility function will print out the milestones in that portlet:
+
+    >>> def milestones_in_portlet(browser):
+    ...     portlet = find_portlet(browser.contents, 'Active milestones')
+    ...     if portlet is None:
+    ...         return 'NO MILESTONE PORTLET'
+    ...     return extract_text(portlet.find('table'))
+
 == Adding a milestone ==
 
 Let's make Sample Person the owner of Ubuntu and alsa-utils for this
@@ -58,16 +68,14 @@ create a new milestone.
 Once authorized, let's create 2 milestones!
 
     >>> test_browser.getControl('Name').value = 'milestone1'
-    >>> test_browser.getControl('Add').click()
-    >>> for tag in find_tags_by_class(test_browser.contents, 'milestone'):
-    ...     print extract_text(tag)
+    >>> test_browser.getControl('Register milestone').click()
+    >>> print milestones_in_portlet(test_browser)
     milestone1
 
     >>> test_browser.open('http://launchpad.dev/ubuntu/hoary/+addmilestone')
     >>> test_browser.getControl('Name').value = 'milestone2'
-    >>> test_browser.getControl('Add').click()
-    >>> for tag in find_tags_by_class(test_browser.contents, 'milestone'):
-    ...     print extract_text(tag)
+    >>> test_browser.getControl('Register milestone').click()
+    >>> print milestones_in_portlet(test_browser)
     milestone1
     milestone2
 
@@ -75,15 +83,14 @@ Now let's try to create another one named milestone1.
 
     >>> test_browser.open('http://launchpad.dev/ubuntu/hoary/+addmilestone')
     >>> test_browser.getControl('Name').value = 'milestone1'
-    >>> test_browser.getControl('Add').click()
+    >>> test_browser.getControl('Register milestone').click()
     >>> test_browser.url
     'http://launchpad.dev/ubuntu/hoary/+addmilestone'
 
     >>> for tag in find_tags_by_class(test_browser.contents, 'message'):
     ...     print tag
-    <p class="error message">An error occurred.</p>
-    <div class="message">The name milestone1 is already used by a milestone
-    in Ubuntu.</div>
+    <p class="error message">There is 1 error.</p>
+    <div class="message">The name milestone1 is already used by a milestone in Ubuntu.</div>
 
 Edit now...
 
@@ -93,30 +100,27 @@ already in use.
     >>> test_browser.open(
     ...     'http://launchpad.dev/ubuntu/+milestone/milestone2/+edit')
     >>> test_browser.getControl('Name').value = 'milestone1'
-    >>> test_browser.getControl('Change').click()
+    >>> test_browser.getControl('Update').click()
     >>> test_browser.url
     'http://launchpad.dev/ubuntu/+milestone/milestone2/+edit'
     >>> for tag in find_tags_by_class(test_browser.contents, 'message'):
     ...     print tag
-    <p class="error message"> There is a problem with the information you
-    entered. Please fix it and try again. </p>
-    <div class="message">The name milestone1 is already used by a milestone
-    in Ubuntu.</div>
+    <p class="error message">There is 1 error.</p>
+    <div class="message">The name milestone1 is already used by a milestone in Ubuntu.</div>
 
 Then we try to change milestone2's name to milestone3.
 
     >>> test_browser.open(
     ...     'http://launchpad.dev/ubuntu/+milestone/milestone2/+edit')
     >>> test_browser.getControl('Name').value = 'milestone3'
-    >>> test_browser.getControl('Change').click()
-    >>> for tag in find_tags_by_class(test_browser.contents, 'milestone'):
-    ...     print extract_text(tag)
+    >>> test_browser.getControl('Update').click()
+    >>> print milestones_in_portlet(test_browser)
     milestone1
     milestone3
 
 Now we do the same for a product instead of a distro.
 
-First we test the +addmilestone page.  
+First we test the +addmilestone page.
 
     >>> test_browser.open(
     ...     'http://launchpad.dev/alsa-utils/trunk/+addmilestone')
@@ -124,17 +128,15 @@ First we test the +addmilestone page.
 Once authorized, let's create 2 milestones!
 
     >>> test_browser.getControl('Name').value = 'milestone1'
-    >>> test_browser.getControl('Add').click()
-    >>> for tag in find_tags_by_class(test_browser.contents, 'milestone'):
-    ...     print extract_text(tag)
+    >>> test_browser.getControl('Register milestone').click()
+    >>> print milestones_in_portlet(test_browser)
     milestone1
-  
+
     >>> test_browser.open(
     ...     'http://launchpad.dev/alsa-utils/trunk/+addmilestone')
     >>> test_browser.getControl('Name').value = 'milestone2'
-    >>> test_browser.getControl('Add').click()
-    >>> for tag in find_tags_by_class(test_browser.contents, 'milestone'):
-    ...     print extract_text(tag)
+    >>> test_browser.getControl('Register milestone').click()
+    >>> print milestones_in_portlet(test_browser)
     milestone1
     milestone2
 
@@ -143,14 +145,13 @@ Now let's try to create another one named milestone1.
     >>> test_browser.open(
     ...     'http://launchpad.dev/alsa-utils/trunk/+addmilestone')
     >>> test_browser.getControl('Name').value = 'milestone1'
-    >>> test_browser.getControl('Add').click()
+    >>> test_browser.getControl('Register milestone').click()
     >>> test_browser.url
     'http://launchpad.dev/alsa-utils/trunk/+addmilestone'
     >>> for tag in find_tags_by_class(test_browser.contents, 'message'):
     ...     print tag
-    <p class="error message">An error occurred.</p>
-    <div class="message">The name milestone1 is already used by a milestone
-    in alsa-utils.</div>
+    <p class="error message">There is 1 error.</p>
+    <div class="message">The name milestone1 is already used by a milestone in alsa-utils.</div>
 
 Edit now...
 
@@ -160,24 +161,21 @@ already in use.
     >>> test_browser.open(
     ...     'http://launchpad.dev/alsa-utils/+milestone/milestone2/+edit')
     >>> test_browser.getControl('Name').value = 'milestone1'
-    >>> test_browser.getControl('Change').click()
+    >>> test_browser.getControl('Update').click()
     >>> test_browser.url
     'http://launchpad.dev/alsa-utils/+milestone/milestone2/+edit'
     >>> for tag in find_tags_by_class(test_browser.contents, 'message'):
     ...     print tag
-    <p class="error message"> There is a problem with the information you
-    entered. Please fix it and try again. </p>
-    <div class="message">The name milestone1 is already used by a milestone
-    in alsa-utils.</div>
-    
+    <p class="error message">There is 1 error.</p>
+    <div class="message">The name milestone1 is already used by a milestone in alsa-utils.</div>
+
 Then we try to change milestone2's name to milestone3.
 
     >>> test_browser.open(
     ...     'http://launchpad.dev/alsa-utils/+milestone/milestone2/+edit')
     >>> test_browser.getControl('Name').value = 'milestone3'
-    >>> test_browser.getControl('Change').click()
-    >>> for tag in find_tags_by_class(test_browser.contents, 'milestone'):
-    ...     print extract_text(tag)
+    >>> test_browser.getControl('Update').click()
+    >>> print milestones_in_portlet(test_browser)
     milestone1
     milestone3
 

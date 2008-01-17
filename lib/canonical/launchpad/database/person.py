@@ -39,6 +39,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscription)
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
@@ -186,6 +188,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person', default=None)
     hide_email_addresses = BoolCol(notNull=True, default=False)
+    verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
     # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
     languages = SQLRelatedJoin('Language', joinColumn='person',
@@ -1907,6 +1910,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         search_params = BugTaskSearchParams(user=user, assignee=self)
         bugtask_count = target.searchTasks(search_params).count()
         return bugtask_count > 0
+
+    @property
+    def structural_subscriptions(self):
+        """See `IPerson`."""
+        return StructuralSubscription.selectBy(
+            subscriber=self, orderBy=['-date_created'])
 
 
 class PersonSet:

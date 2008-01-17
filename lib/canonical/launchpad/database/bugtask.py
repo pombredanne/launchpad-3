@@ -422,9 +422,9 @@ class BugTask(SQLBase, BugTaskMixin):
         """
         return self.status in RESOLVED_BUGTASK_STATUSES
 
-    def subscribe(self, person):
+    def subscribe(self, person, subscribed_by):
         """See `IBugTask`."""
-        return self.bug.subscribe(person)
+        return self.bug.subscribe(person, subscribed_by)
 
     def isSubscribed(self, person):
         """See `IBugTask`."""
@@ -974,7 +974,7 @@ class BugTaskSet:
         "date_last_updated": "Bug.date_last_updated",
         "date_closed": "BugTask.date_closed",
         "number_of_duplicates": "Bug.number_of_duplicates",
-        "number_of_comments": "Bug.number_of_comments"
+        "message_count": "Bug.message_count"
         }
 
     _open_resolved_upstream = """
@@ -1526,9 +1526,9 @@ class BugTaskSet:
 
         if not bug.private and bug.security_related:
             if product and product.security_contact:
-                bug.subscribe(product.security_contact)
+                bug.subscribe(product.security_contact, owner)
             elif distribution and distribution.security_contact:
-                bug.subscribe(distribution.security_contact)
+                bug.subscribe(distribution.security_contact, owner)
 
         assert (product or productseries or distribution or distroseries), (
             'Got no bugtask target.')

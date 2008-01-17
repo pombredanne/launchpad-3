@@ -597,12 +597,12 @@ It is also possible to sort the results by the number of comments on a bug.
 Here is the list of bugs for Ubuntu, sorted by their number of comments.
 
     >>> params = BugTaskSearchParams(
-    ...     orderby='-number_of_comments', user=None)
+    ...     orderby='-message_count', user=None)
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
     ...     bug = bugtask.bug
     ...     print '%s %s [%s comments]' % (
-    ...     bug.id, bug.title, bug.number_of_comments)
+    ...     bug.id, bug.title, bug.message_count)
     2 Blackhole Trash folder [3 comments]
     1 Firefox does not support SVG [2 comments]
     10 another test bug [2 comments]
