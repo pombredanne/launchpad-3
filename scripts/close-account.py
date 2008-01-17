@@ -54,7 +54,7 @@ def close_account(con, log, username):
     cur.execute("""
         UPDATE Person
         SET displayname='Removed by request', password=NULL,
-            name=%(new_name)s, language=NULL, timezone='UTC',
+            name=%(new_name)s, language=NULL, 
             addressline1=NULL, addressline2=NULL, organization=NULL,
             city=NULL, province=NULL, country=NULL, postcode=NULL,
             phone=NULL, homepage_content=NULL, icon=NULL, mugshot=NULL,
@@ -110,6 +110,7 @@ def close_account(con, log, username):
         ('JabberId', 'person'),
         ('WikiName', 'person'),
         ('PersonLanguage', 'person'),
+        ('PersonLocation', 'person'),
         ('SshKey', 'person'),
         
         # Karma

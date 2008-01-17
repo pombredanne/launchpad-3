@@ -39,6 +39,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
 from canonical.launchpad.event.karma import KarmaAssignedEvent
@@ -76,6 +77,7 @@ from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.packagebugcontact import PackageBugContact
+from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.shipit import (
     MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT, ShippingRequest)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -216,7 +218,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
-    timezone = StringCol(dbName='timezone', default='UTC')
 
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
     visibility = EnumCol(
@@ -243,6 +244,24 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # doing and we don't want any email notifications to be sent.
         TeamMembershipSet().new(
             team_owner, self, TeamMembershipStatus.ADMIN, reviewer=team_owner)
+
+    def set_time_zone(self, timezone):
+        location = PersonLocation.selectOneBy(person=self)
+        if location is None:
+            return PersonLocation(
+                person=self,
+                latitude=None,
+                longitude=None,
+                time_zone=timezone,
+                last_modified_by=self)
+        location.time_zone = timezone
+
+    def get_time_zone(self):
+        location = PersonLocation.selectOneBy(person=self)
+        if location is None:
+            return None
+        return location.time_zone
+    timezone = property(get_time_zone, set_time_zone)
 
     # specification-related joins
     @property
@@ -2281,6 +2300,64 @@ class PersonSet:
 
         to_id = to_person.id
         from_id = from_person.id
+
+        # Update PersonLocation. If there is no PersonLocation for the
+        # to_person then we have no problem and just do an update. If there
+        # is an existing PersonLocation then we leave any data for the
+        # merged person as noise. Because "person decoration tables" are
+        # going to become more frequent, we create a helper function that
+        # can be used for other tables that decorate person.
+        def merge_person_decorator(
+            to_person, from_person, decorator_table, person_pointer_column,
+            additional_person_columns):
+            """This function merges tables that "decorate" Person.
+
+            A Person decorator is a table that uniquely references Person,
+            so that the information in the table "extends" the Person table.
+            Because the reference to Person is unique, there can only be one
+            row in the decorator table for any given Person. This function
+            checks if there is an existing decorator for the to_person, and
+            if so, it just leaves any from_person decorator in place as
+            "noise". Otherwise, it updates any from_person decorator to
+            point to the "to_person". There can also be other columns in the
+            decorator which point to Person, these are assumed to be
+            non-unique and will be updated to point to the to_person
+            regardless.
+            """
+            # First, update the main UNIQUE pointer row which links the
+            # decorator table to Person.
+            cur.execute(
+             """UPDATE %(decorator)s
+                SET %(person_pointer)s=%(to_id)d
+                WHERE %(person_pointer)s=%(from_id)d AND
+                      %(decorator)s.id NOT IN (
+                    SELECT id FROM %(decorator)s
+                    WHERE %(person_pointer)s=%(to_id)d)
+                """ % {
+                    'decorator': decorator_table,
+                    'person_pointer': person_pointer_column,
+                    'from_id': from_person.id,
+                    'to_id': to_person.id
+                    })
+            # Now, update any additional columns in the table which point to
+            # Person. Since these are assumed to be NOT UNIQUE, we don't
+            # have to worry about multiple rows pointing at the to_person.
+            for additional_column in additional_person_columns:
+                cur.execute(
+                 """UPDATE %(decorator)s
+                    SET %(column)s=%(to_id)d
+                    WHERE %(column)s=%(from_id)d
+                    """ % {
+                        'decorator': decorator_table,
+                        'from_id': from_person.id,
+                        'to_id': to_person.id,
+                        'column': additional_column
+                        })
+        # Update PersonLocation, which is a Person-decorator table
+        merge_person_decorator(
+            to_person, from_person, 'PersonLocation', 'person',
+            ['last_modified_by', ])
+        skip.append(('personlocation','person'))
 
         # Update GPGKey. It won't conflict, but our sanity checks don't
         # know that
