@@ -12,11 +12,11 @@ details about the team.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-approved'))
     Recently approved
+    Warty Gnome Team (warty-gnome)
     Daniel Silverstone (kinnison)
     Celso Providelo (cprov)
     Jeff Waugh (jdub)
     Colin Watson (kamion)
-    Steve Alexander (stevea)
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-applied'))
@@ -32,7 +32,7 @@ details about the team.
     Moderated Team:
         All subscriptions for this team are subject to approval by one
         of the team's administrators.
-    Membership:  8 active members
+    Membership: 10 active members
                  2 proposed members
                  1 invited members
                  1 inactive members
