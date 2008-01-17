@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IRegistryApplication, IRosettaApplication,
     IShipItApplication, ITranslationGroupSet, IWebServiceApplication)
 from canonical.launchpad.rest import PersonCollection
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.rest import CollectionResource, ServiceRoot
 
 class AuthServerApplication:
@@ -194,3 +195,4 @@ class WebServiceApplication(ServiceRoot):
     implements(IWebServiceApplication)
 
     top_level_collections = { 'people' : lambda : getUtility(IPersonSet) }
+    root_uri = allvhosts.configs['api'].rooturl

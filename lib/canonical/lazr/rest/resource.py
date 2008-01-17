@@ -45,6 +45,9 @@ class HTTPResource:
         self.context = context
         self.request = request
 
+    def uri(self):
+        return ""
+
     def __call__(self):
         """See `IHTTPResource`."""
         pass
@@ -115,6 +118,9 @@ class CollectionResource(ReadOnlyResource):
 
 class ServiceRootResource(ReadOnlyResource):
     """A resource that responds to GET by describing the service."""
+
+    def uri(self):
+        return self.context.root_uri
 
     def do_GET(self):
         """Return a description of the resource."""

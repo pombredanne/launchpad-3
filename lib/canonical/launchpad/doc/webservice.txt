@@ -165,18 +165,26 @@ expose it through the web as an EntryResource.
 
 == The WebServiceApplication ==
 
-How are these Resource objects connected to the web? The
-WebServiceApplication has a list of top-level collections and
+How are these Resource objects connected to the web? Through the
+ServiceRoot. This is an object that represents the web
+service itself.
+
+    >>> from canonical.lazr.rest import ServiceRoot
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> class MyServiceRoot(ServiceRoot):
+    ...       top_level_collections = { 'recipes' : RecipeSet }
+    ...       root_uri = 'http://test-api.launchpad.dev/'
+    >>> app = MyServiceRoot()
+
+    >>> request = LaunchpadTestRequest()
+    >>> app(request)
+    'This is a web service.'
+
+The WebServiceApplication has a list of top-level collections and
 implements IPublishTraverse, so that a request to a registered
 collection is delegated to the appropriate CollectionResource. Here's
 an example.
 
-    >>> from canonical.launchpad.systemhomes import WebServiceApplication
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> class MyWebServiceApplication(WebServiceApplication):
-    ...       top_level_collections = { 'recipes' : RecipeSet }
-    >>> app = MyWebServiceApplication()
-    >>> request = LaunchpadTestRequest()
     >>> collection = app.publishTraverse(request, "recipes")
     >>> collection
     <canonical.lazr.rest.resource.CollectionResource object ...>

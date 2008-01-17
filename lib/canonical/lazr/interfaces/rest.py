@@ -19,6 +19,9 @@ from zope.publisher.interfaces import IPublishTraverse
 class IHTTPResource(IPublishTraverse):
     """An object published through HTTP."""
 
+    def uri(self):
+        """Return the URI to this resource."""
+
     def __call__(self):
         """Publish the object."""
 
