@@ -926,3 +926,26 @@ $$;
 COMMENT ON FUNCTION set_bug_number_of_duplicates() IS
 'AFTER UPDATE trigger on Bug maintaining the Bug.number_of_duplicates column';
 
+CREATE OR REPLACE FUNCTION set_bug_number_of_comments() RETURNS TRIGGER
+LANGUAGE plpgsql VOLATILE AS
+$$
+BEGIN
+    -- For INSERT increase the corresponding bug's comment count
+    IF TG_OP = 'INSERT' THEN
+        UPDATE Bug SET number_of_comments = number_of_comments + 1
+            WHERE Bug.id = NEW.bug;
+    END IF;
+
+    -- For DELETE decrease the corresponding bug's comment count
+    IF TG_OP = 'DELETE' THEN
+        UPDATE Bug SET number_of_comments = number_of_comments - 1
+            WHERE Bug.id = NEW.bug;
+    END IF;
+
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION set_bug_number_of_comments() IS
+'AFTER UPDATE trigger on BugMessage maintaining the Bug.number_of_comments column';
+
