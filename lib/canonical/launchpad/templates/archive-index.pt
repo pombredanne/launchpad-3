@@ -50,14 +50,17 @@
       <div>
         <ul id="package_counters">
           <li id="source_counter">
-             <span tal:replace="view/source_count_text" />
-             (<span tal:replace="context/sources_size/fmt:bytes" />)</li>
+             <tal:source_count_text replace="view/source_count_text" />
+             (<tal:sources_size
+                replace="context/sources_size/fmt:bytes" />)</li>
           <li id="binary_counter">
-             <span tal:replace="view/binary_count_text" />
-             (<span tal:replace="context/binaries_size/fmt:bytes" />)</li>
+             <tal:binary_count_text replace="view/binary_count_text" />
+             (<tal:binaries_size
+                replace="context/binaries_size/fmt:bytes" />)</li>
           <li id="total_size">
              Estimated archive size:
-             <span tal:replace="context/estimated_size/fmt:bytes" /></li>
+             <tal:estimated_size
+               replace="context/estimated_size/fmt:bytes" /></li>
         </ul>
       </div>
 
@@ -67,7 +70,8 @@
            <input id="field.name_filter" title="Package Name" size="20"
                   type="text" name="field.name_filter"
                   tal:attributes="value request/field.name_filter|nothing"/>
-           <span tal:replace="structure view/plain_status_filter_widget" />
+           <tal:status_filter
+             replace="structure view/plain_status_filter_widget" />
            <input type="submit" value="Search" />
         </form>
       </div>
@@ -103,7 +107,7 @@
         <div id="empty-result"
              tal:define="name_filter request/field.name_filter|nothing"
              tal:condition="not: batch">
-           No matching package for '<span tal:replace="name_filter" />'.
+           No matching package for '<tal:name_fileter replace="name_filter" />'.
         </div>
 
       </div>

@@ -37,14 +37,15 @@
 
       <tal:search define="name_widget nocall:view/widgets/name_filter">
          <label tal:attributes="for name_widget/name"
-         > Source name matching: </label> <input
-         tal:replace="structure name_widget"/> <input
-         tal:replace="structure view/actions/field.actions.search/render" />
+         >Source name matching:</label>
+         <input tal:replace="structure name_widget"/>
+         <input
+             tal:replace="structure view/actions/field.actions.search/render" />
       </tal:search>
 
       <tal:no_sources tal:condition="not:view/available_sources_size">
-        <div id="empty-result" class="message error" style="border: 1px solid;">
-          <p>No matching package for '<span
+        <div id="empty-result" style="border: 1px solid;">
+          <p>No matching package for '<tal:name_filter
              tal:replace="request/field.name_filter" />'.</p>
         </div>
       </tal:no_sources>
@@ -65,21 +66,22 @@
             </thead>
             <tbody>
             <tal:terms tal:repeat="term widget/vocabulary">
-              <tal:block define="pub term/value" replace="structure
-               pub/@@+listing-ppa-detailed-selectable" />
+              <tal:block
+                define="pub term/value"
+                replace="structure pub/@@+listing-ppa-detailed-selectable" />
             </tal:terms>
             </tbody>
             <tfoot tal:condition="view/has_undisplayed_sources">
                <tr>
                  <td colspan="7" tal:condition="context/owner/isTeam">
-                  <p class="message">Presenting only <tal:presented replace="
-                   view/max_sources_presented"/> of <tal:available replace="
-                   view/available_sources_size" /> available sources.</p>
+                   <p class="message">Presenting only <tal:presented replace="
+                     view/max_sources_presented"/> of <tal:available replace="
+                     view/available_sources_size" /> available sources.</p>
                  </td>
                  <td colspan="6" tal:condition="not: context/owner/isTeam">
-                  <p class="message">Presenting only <tal:presented replace="
-                   view/max_sources_presented"/> of <tal:available replace="
-                   view/available_sources_size" /> available sources.</p>
+                   <p class="message">Presenting only <tal:presented replace="
+                     view/max_sources_presented"/> of <tal:available replace="
+                     view/available_sources_size" /> available sources.</p>
                  </td>
                </tr>
             </tfoot>

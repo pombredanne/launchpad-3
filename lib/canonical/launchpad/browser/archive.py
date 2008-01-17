@@ -230,8 +230,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
     max_sources_presented = 10
 
     custom_widget('comment', StrippedTextWidget, displayWidth=50)
-    custom_widget('selected_sources', LabeledMultiCheckBoxWidget,
-                  orientation='vertical', visible=True)
+    custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
