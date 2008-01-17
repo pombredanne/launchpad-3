@@ -27,8 +27,7 @@ from canonical.launchpad.interfaces import (
     IMailingListApplication, IMaloneApplication, IOpenIdApplication,
     IPersonSet, IProductSet, IRegistryApplication, IRosettaApplication,
     IShipItApplication, ITranslationGroupSet, IWebServiceApplication)
-from canonical.launchpad.rest import PersonCollection
-from canonical.lazr.rest import CollectionResource, ServiceRoot
+from canonical.lazr.rest import ServiceRoot
 
 class AuthServerApplication:
     """AuthServer End-Point."""
