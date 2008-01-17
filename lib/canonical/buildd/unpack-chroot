@@ -12,8 +12,9 @@
 # BUNZIP2 must un-bzip2
 # FILE must implement the -b and -i arguments (so a Debianish file)
 
-export PATH=/usr/bin:/bin:${PATH}
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin:${PATH}
 
+NTPDATE=ntpdate
 TAR=tar
 SUDO=sudo
 BUNZIP2=bunzip2
@@ -25,6 +26,14 @@ TARBALL="$2"
 set -e
 
 exec 2>&1
+
+if [ -f /etc/launchpad-buildd/default ]; then
+  eval `grep ntphost /etc/launchpad-buildd/default | sed 's/ //g'`
+fi
+if [ -n "$ntphost" ]; then
+  echo "Synching the system clock with the buildd NTP service..."
+  $SUDO $NTPDATE -u $ntphost
+fi
 
 MIMETYPE=$($FILE -bi "$TARBALL")
 

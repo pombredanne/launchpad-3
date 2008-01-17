@@ -30,20 +30,17 @@ class CodeImportResult(SQLBase):
         dbName='machine', foreignKey='CodeImportMachine', notNull=True)
 
     requesting_user = ForeignKey(
-        dbName='requesting_user', foreignKey='Person', notNull=False)
+        dbName='requesting_user', foreignKey='Person', default=None)
 
-    log_excerpt = StringCol(notNull=False)
+    log_excerpt = StringCol(default=None)
 
     log_file = ForeignKey(
-        dbName='log_file', foreignKey='LibraryFileAlias', notNull=False)
+        dbName='log_file', foreignKey='LibraryFileAlias', default=None)
 
     status = EnumCol(
         enum=CodeImportResultStatus, notNull=True)
 
-    # XXX MichaelHudson, 2007-10-11
-    # We should rename date_started to date_job_started in the database.
-    # See bug #151583.
-    date_job_started = UtcDateTimeCol(dbName='date_started', notNull=True)
+    date_job_started = UtcDateTimeCol(notNull=True)
 
     @property
     def date_job_finished(self):

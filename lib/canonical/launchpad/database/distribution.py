@@ -182,13 +182,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def all_milestones(self):
         """See `IDistribution`."""
         return Milestone.selectBy(
-            distribution=self, orderBy=['dateexpected', 'name'])
+            distribution=self, orderBy=['-dateexpected', 'name'])
 
     @property
     def milestones(self):
         """See `IDistribution`."""
         return Milestone.selectBy(
-            distribution=self, visible=True, orderBy=['dateexpected', 'name'])
+            distribution=self, visible=True, orderBy=['-dateexpected', 'name'])
 
     @property
     def archive_mirrors(self):
@@ -781,8 +781,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             log.debug("Considering source version %s" % spr.version)
             # changelog may be empty, in which case we don't want to add it
             # to the set as the join would fail below.
-            if spr.changelog is not None:
-                sprchangelog.add(spr.changelog)
+            if spr.changelog_entry is not None:
+                sprchangelog.add(spr.changelog_entry)
             binpkgs = BinaryPackageRelease.select("""
                 BinaryPackageRelease.build = Build.id AND
                 Build.sourcepackagerelease = %s

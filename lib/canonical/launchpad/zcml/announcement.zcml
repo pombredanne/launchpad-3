@@ -99,7 +99,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IHasAnnouncements"
-    class="canonical.launchpad.browser.announcement.HasAnnouncementsView"
+    class="canonical.launchpad.browser.AnnouncementSetView"
     facet="overview"
     permission="zope.Public">
     <browser:page
@@ -140,7 +140,7 @@
     for="canonical.launchpad.interfaces.IAnnouncementSet"
     name="+announcements"
     facet="overview"
-    class="canonical.launchpad.browser.HasAnnouncementsView"
+    class="canonical.launchpad.browser.AnnouncementSetView"
     permission="zope.Public"
     template="../templates/announcements-all.pt"
     />

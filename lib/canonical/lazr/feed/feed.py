@@ -19,6 +19,8 @@ __all__ = [
 import operator
 import os
 import time
+from xml.sax.saxutils import escape as xml_escape
+from BeautifulSoup import BeautifulStoneSoup
 from datetime import datetime
 
 from zope.app.datetimeutils import rfc1123_date
@@ -30,17 +32,20 @@ from canonical.config import config
 # XXX - bac - 2007-09-20, modules in canonical.lazr should not import from
 # canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.  Bug 153795.
-from canonical.launchpad.webapp import canonical_url, LaunchpadFormView
+from canonical.launchpad.webapp import canonical_url, LaunchpadFormView, urlparse
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
-    IFeed, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
+    IFeed, IFeedEntry, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
 
 SUPPORTED_FEEDS = ('.atom', '.html')
-MINUTES = 60 # seconds in a minute
+MINUTES = 60 # Seconds in a minute.
 
 
 class FeedBase(LaunchpadFormView):
-    """Base class for feeds."""
+    """See `IFeed`.
+
+    Base class for feeds.
+    """
 
     implements(IFeed)
 
@@ -48,12 +53,12 @@ class FeedBase(LaunchpadFormView):
     max_age = config.launchpad.max_feed_cache_minutes * MINUTES
     quantity = 25
     items = None
+    rootsite = 'mainsite'
     template_files = {'atom': 'templates/feed-atom.pt',
                       'html': 'templates/feed-html.pt'}
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(FeedBase, self).__init__(context, request)
         self.format = self.feed_format
 
     def initialize(self):
@@ -70,7 +75,7 @@ class FeedBase(LaunchpadFormView):
         raise NotImplementedError
 
     @property
-    def url(self):
+    def link_self(self):
         """See `IFeed`."""
         raise NotImplementedError
 
@@ -79,11 +84,43 @@ class FeedBase(LaunchpadFormView):
         """See `IFeed`."""
         return allvhosts.configs['mainsite'].rooturl[:-1]
 
+    @property
+    def link_alternate(self):
+        """See `IFeed`."""
+        return canonical_url(self.context, rootsite=self.rootsite)
+
+    @property
+    def feed_id(self):
+        """See `IFeed`.
+
+        Override this method if the context used does not create a
+        meaningful id.
+        """
+        # Get the creation date, if available.  Otherwise use a fixed date, as
+        # allowed by the RFC.
+        if hasattr(self.context, 'datecreated'):
+            datecreated = self.context.datecreated.date().isoformat()
+        elif hasattr(self.context, 'date_created'):
+            datecreated = self.context.date_created.date().isoformat()
+        else:
+            datecreated = "2008"
+        url_path = urlparse(self.link_alternate)[2]
+        if self.rootsite != 'mainsite':
+            id_ = 'tag:launchpad.net,%s:/%s%s' % (
+                datecreated,
+                self.rootsite,
+                url_path)
+        else:
+            id_ = 'tag:launchpad.net,%s:%s' % (
+                datecreated,
+                url_path)
+        return id_
+
     def getItems(self):
         """See `IFeed`."""
         raise NotImplementedError
 
-    def getPublicRawItems():
+    def getPublicRawItems(self):
         """See `IFeed`."""
         raise NotImplementedError
 
@@ -148,7 +185,14 @@ class FeedBase(LaunchpadFormView):
 
     def renderAtom(self):
         """See `IFeed`."""
-        return ViewPageTemplateFile(self.template_files['atom'])(self)
+        self.request.response.setHeader('content-type',
+                                        'application/atom+xml;charset=utf-8')
+        template_file = ViewPageTemplateFile(self.template_files['atom'])
+        result = template_file(self)
+        # XXX EdwinGrubbs 2008-01-10 bug=181903
+        # Zope3 requires the content-type to start with "text/" if
+        # the result is a unicode object.
+        return result.encode('utf-8')
 
     def renderHTML(self):
         """See `IFeed`."""
@@ -156,11 +200,17 @@ class FeedBase(LaunchpadFormView):
 
 
 class FeedEntry:
-    """An entry for a feed."""
+    """See `IFeedEntry`.
+
+    An individual entry for a feed.
+    """
+
+    implements(IFeedEntry)
+
     def __init__(self,
                  title,
-                 id_,
                  link_alternate,
+                 date_created,
                  date_updated,
                  date_published=None,
                  authors=None,
@@ -182,7 +232,21 @@ class FeedEntry:
         if contributors is None:
             contribuors = []
         self.contributors = contributors
-        self.id = id_
+        url_path = urlparse(link_alternate)[2]
+        # Strip the first portion of the path, which will be the
+        # project/product identifier but is not wanted in the <id> as it may
+        # change if the entry is re-assigned which would break the permanence
+        # of the <id>.
+        try:
+            unique_url_path = url_path[url_path.index('/', 1):]
+        except ValueError:
+            # This condition should not happen, but if the call to index
+            # raises a ValueError because '/' was not in the path, then fall
+            # back to using the entire path.
+            unique_url_path = url_path
+        self.id = 'tag:launchpad.net,%s:%s' % (
+            date_created.date().isoformat(),
+            unique_url_path)
 
     @property
     def last_modified(self):
@@ -199,10 +263,20 @@ class FeedTypedData:
     content_types = ['text', 'html', 'xhtml']
 
     def __init__(self, content, content_type='text'):
-        self.content = content
+        self._content = content
         if content_type not in self.content_types:
             raise UnsupportedFeedFormat("%s: is not valid" % content_type)
         self.content_type = content_type
+
+    @property
+    def content(self):
+        if self.content_type in ('text', 'html'):
+            return xml_escape(self._content)
+        elif self.content_type == 'xhtml':
+            soup = BeautifulStoneSoup(
+                self._content,
+                convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
+            return unicode(soup)
 
 
 class FeedPerson:

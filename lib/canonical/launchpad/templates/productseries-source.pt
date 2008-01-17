@@ -11,13 +11,9 @@
 >
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/product/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
+    <metal:portlets fill-slot="portlets">
+      <div tal:replace="structure context/@@+portlet-details" />
+    </metal:portlets>
 
 <metal:heading fill-slot="pageheading">
   <h1>Upstream source details</h1>
@@ -41,8 +37,8 @@
       <fieldset>
         <legend>
           <label>
-            <input tal:replace="structure view/rcstype_none" />
-            No revision control system, or Bazaar
+            <input tal:replace="structure view/rcstype_bzr" />
+            Bazaar
           </label>
         </legend>
         <table class="form">
@@ -87,6 +83,15 @@
         </table>
       </fieldset>
 
+      <fieldset>
+        <legend>
+          <label>
+            <input tal:replace="structure view/rcstype_none" />
+            No revision control system or not specifed here
+          </label>
+        </legend>
+      </fieldset>
+
       <input tal:replace="structure view/rcstype_emptymarker" />
 
       <tal:has-import-status condition="context/importstatus">
@@ -97,6 +102,12 @@
 
       <script type="text/javascript">
         //<![CDATA[
+        function updateField(field, enabled)
+        {
+          field.disabled = !enabled;
+          field.style.backgroundColor = enabled ? 'white' : 'lightgrey';
+        }
+
         function updateWidgets() {
           /* which rcs type radio button has been selected? */
           var rcstypes = document.getElementsByName('field.rcstype');
@@ -108,10 +119,14 @@
               break;
             }
           }
-          form['field.cvsroot'].disabled = (rcstype != 'CVS');
-          form['field.cvsbranch'].disabled = (rcstype != 'CVS');
-          form['field.cvsmodule'].disabled = (rcstype != 'CVS');
-          form['field.svnrepository'].disabled = (rcstype != 'SVN');
+          // BZR
+          updateField(form['field.user_branch'], rcstype == 'BZR');
+          // CVS
+          updateField(form['field.cvsroot'], rcstype == 'CVS');
+          updateField(form['field.cvsbranch'], rcstype == 'CVS');
+          updateField(form['field.cvsmodule'], rcstype == 'CVS');
+          // SVN
+          updateField(form['field.svnrepository'], rcstype == 'SVN');
         }
         updateWidgets();
         //]]>

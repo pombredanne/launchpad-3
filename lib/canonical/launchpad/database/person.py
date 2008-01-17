@@ -17,6 +17,7 @@ import sha
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
+from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, MultipleJoin, SQLMultipleJoin,
@@ -38,6 +39,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscription)
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
@@ -52,10 +55,11 @@ from canonical.launchpad.interfaces import (
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
     IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType, MailingListStatus,
-    PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
-    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType,
+    PersonCreationRationale, PersonVisibility,
+    QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
+    ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -184,6 +188,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person', default=None)
     hide_email_addresses = BoolCol(notNull=True, default=False)
+    verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
     # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
     languages = SQLRelatedJoin('Language', joinColumn='person',
@@ -214,6 +219,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     timezone = StringCol(dbName='timezone', default='UTC')
 
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
+    visibility = EnumCol(
+        enum=PersonVisibility,
+        default=PersonVisibility.PUBLIC)
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
@@ -1091,7 +1099,13 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             raise AssertionError(
                 "Unknown subscription policy: %s" % team.subscriptionpolicy)
 
-        team.addMember(self, reviewer=self, status=status)
+        # XXX Edwin Grubbs 2007-12-14 bug=117980
+        # removeSecurityProxy won't be necessary after addMember()
+        # is configured to call a method on the new member, so the
+        # security configuration will verify that the logged in user
+        # has the right permission to add the specified person to the team.
+        naked_team = removeSecurityProxy(team)
+        naked_team.addMember(self, reviewer=self, status=status)
 
     def clearInTeamCache(self):
         """See `IPerson`."""
@@ -1897,6 +1911,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         bugtask_count = target.searchTasks(search_params).count()
         return bugtask_count > 0
 
+    @property
+    def structural_subscriptions(self):
+        """See `IPerson`."""
+        return StructuralSubscription.selectBy(
+            subscriber=self, orderBy=['-date_created'])
+
 
 class PersonSet:
     """The set of persons."""
@@ -2183,7 +2203,6 @@ class PersonSet:
         """See `IPersonSet`."""
         return Person.select("Person.teamowner IS NOT NULL",
             orderBy=['-datecreated'], limit=limit)
-
 
     def merge(self, from_person, to_person):
         """See `IPersonSet`."""

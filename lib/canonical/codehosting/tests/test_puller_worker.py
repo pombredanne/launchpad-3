@@ -19,8 +19,7 @@ import bzrlib.branch
 from bzrlib import bzrdir
 from bzrlib.branch import BranchReferenceFormat
 from bzrlib.revision import NULL_REVISION
-from bzrlib.tests import (
-    TestCaseInTempDir, TestCaseWithMemoryTransport, TestCaseWithTransport)
+from bzrlib.tests import TestCaseWithTransport
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
 from bzrlib.transport import get_transport
@@ -33,20 +32,22 @@ from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
     PullerWorker, BadUrlSsh, BadUrlLaunchpad, BranchReferenceLoopError,
     BranchReferenceForbidden, BranchReferenceValueError,
-    get_canonical_url_for_branch_name, install_worker_progress_factory,
+    get_canonical_url_for_branch_name, install_worker_ui_factory,
     PullerWorkerProtocol)
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.uri import URI
+from canonical.launchpad.webapp.uri import InvalidURIError
 from canonical.testing import LaunchpadScriptLayer, reset_logging
 
 
 class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
 
     def __init__(self):
+        # We are deliberately not calling PullerWorkerProtocol.__init__:
+        # pylint: disable-msg=W0231
         self.calls = []
 
     def startMirroring(self, branch_to_mirror):
@@ -149,16 +150,16 @@ class ErrorHandlingTestCase(unittest.TestCase):
         return str(mirrorFailed[2])
 
     def runMirrorAndAssertErrorStartsWith(self, expected_error):
-        """Run mirror and check that we receive exactly one error, the str() of
-        which starts with `expected_error`.
+        """Run mirror and check that we receive exactly one error, the str()
+        of which starts with `expected_error`.
         """
         error = self.runMirrorAndGetError()
         if not error.startswith(expected_error):
             self.fail('Expected "%s" but got "%s"' % (expected_error, error))
 
     def runMirrorAndAssertErrorEquals(self, expected_error):
-        """Run mirror and check that we receive exactly one error, the str() of
-        which is equal to `expected_error`.
+        """Run mirror and check that we receive exactly one error, the str()
+        of which is equal to `expected_error`.
         """
         error = self.runMirrorAndGetError()
         self.assertEqual(error, expected_error)
@@ -209,15 +210,16 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
         reset_logging()
 
     def testMirrorKnitAsKnit(self):
-        # Create a source branch in knit format, and check that the mirror is in
-        # knit format.
+        # Create a source branch in knit format, and check that the mirror is
+        # in knit format.
         self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
+        self.repository_format = \
+            bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
         self._testMirrorFormat()
 
     def testMirrorMetaweaveAsMetaweave(self):
-        # Create a source branch in metaweave format, and check that the mirror
-        # is in metaweave format.
+        # Create a source branch in metaweave format, and check that the
+        # mirror is in metaweave format.
         self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
         self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
         self._testMirrorFormat()
@@ -238,7 +240,8 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
 
         # Change the branch to knit format.
         shutil.rmtree('src-branch')
-        self.repository_format = bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
+        self.repository_format = \
+            bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
         self._createSourceBranch()
 
         # Mirror again.  The mirrored branch should now be in knit format.
@@ -479,7 +482,8 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
 
     def testHostedBranchReference(self):
         """A branch reference for a hosted branch must cause an error."""
-        reference_url = self.createBranchReference('http://example.com/branch')
+        reference_url = self.createBranchReference(
+            'http://example.com/branch')
         self.branch.branch_type = BranchType.HOSTED
         self.branch.source = reference_url
         expected_msg = (
@@ -533,13 +537,15 @@ class TestCanTraverseReferences(unittest.TestCase, PullerWorkerMixin):
         AssertionError is raised.
         """
         remote_branch = self.makeBranch(BranchType.REMOTE)
-        self.assertRaises(AssertionError, remote_branch._canTraverseReferences)
+        self.assertRaises(
+            AssertionError, remote_branch._canTraverseReferences)
 
     def testErrorForBogusType(self):
         """If the branch type is a bogus value, AssertionError is raised.
         """
         bogus_branch = self.makeBranch(None)
-        self.assertRaises(AssertionError, bogus_branch._canTraverseReferences)
+        self.assertRaises(
+            AssertionError, bogus_branch._canTraverseReferences)
 
 
 class TestCheckBranchReference(unittest.TestCase):
@@ -733,9 +739,9 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
     def testNotBranchErrorImported(self):
-        """The not-a-branch error message for import branch should not disclose
-        the internal URL. Since there is no user-visible URL to blame, we do
-        not display any URL at all.
+        """The not-a-branch error message for import branch should not
+        disclose the internal URL. Since there is no user-visible URL to
+        blame, we do not display any URL at all.
         """
         def stubOpenSourceBranch():
             raise NotBranchError('http://canonical.example.com/internal/url')
@@ -755,10 +761,9 @@ class TestErrorHandling(ErrorHandlingTestCase):
         is raised. The worker catches this and reports it to the scheduler.
         """
         def stubCheckBranchReference():
-            raise URI("This is not a URL")
+            raise InvalidURIError("This is not a URL")
         self.branch._checkBranchReference = stubCheckBranchReference
-        self.runMirrorAndAssertErrorEquals(
-            '"This is not a URL" is not a valid URI')
+        self.runMirrorAndAssertErrorEquals("This is not a URL")
 
     def testBzrErrorHandling(self):
         def stubOpenSourceBranch():
@@ -849,11 +854,12 @@ class TestCanonicalUrl(unittest.TestCase):
         # webapp.canonical_url, if the provided unique_name is correct.
         branch = Branch.get(15)
         # Check that the unique_name used in this test is consistent with the
-        # sample data. This is an invariant of the test, so use a plain assert.
+        # sample data. This is an invariant of the test, so use a plain
+        # assert.
         unique_name = 'name12/gnome-terminal/main'
         assert branch.unique_name == '~' + unique_name
-        # Now check that our implementation of canonical_url is consistent with
-        # the canonical one.
+        # Now check that our implementation of canonical_url is consistent
+        # with the canonical one.
         self.assertEqual(
             canonical_url(branch),
             get_canonical_url_for_branch_name(unique_name))
@@ -881,7 +887,7 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
     def test_simple(self):
         # Even the simplest of pulls should call progressMade at least once.
         p = self.StubProtocol()
-        install_worker_progress_factory(p)
+        install_worker_ui_factory(p)
         b1 = self.make_branch('some-branch')
         b2_tree = self.make_branch_and_tree('some-other-branch')
         b2 = b2_tree.branch

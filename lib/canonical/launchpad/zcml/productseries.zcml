@@ -119,9 +119,6 @@
             name="+portlet-summary"
             template="../templates/object-portlet-summary.pt" />
         <browser:page
-            name="+portlet-source"
-            template="../templates/productseries-portlet-source.pt" />
-        <browser:page
             name="+portlet-packages"
             template="../templates/productseries-portlet-packages.pt" />
         <browser:page
@@ -148,6 +145,9 @@
             name="+importstatus"
             template="../templates/productseries-importstatus.pt"
             />
+        <browser:page
+            name="+portlet-source"
+            template="../templates/productseries-portlet-source.pt" />
     </browser:pages>
 
     <browser:page
@@ -215,14 +215,11 @@
             class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
-    <browser:addform
+    <browser:page
       name="+addmilestone"
-      for="canonical.launchpad.interfaces.IProductSeries"
-      schema="canonical.launchpad.interfaces.IMilestone"
-      class="canonical.launchpad.browser.milestone.MilestoneAddView"
       facet="overview"
-      fields="name dateexpected description"
-      keyword_arguments="name dateexpected"
+      for="canonical.launchpad.interfaces.IProductSeries"
+      class="canonical.launchpad.browser.milestone.MilestoneAddView"
       permission="launchpad.Edit"
       template="../templates/milestone-add.pt"
       />
@@ -232,6 +229,24 @@
         name="+source"
         class="canonical.launchpad.browser.ProductSeriesSourceView"
         template="../templates/productseries-source.pt"
+        facet="overview"
+        permission="launchpad.EditSource"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+linkbranch"
+        class="canonical.launchpad.browser.ProductSeriesLinkBranchView"
+        template="../templates/productseries-linkbranch.pt"
+        facet="overview"
+        permission="launchpad.EditSource"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+linkbranchtoseries"
+        class="canonical.launchpad.browser.ProductSeriesLinkBranchFromCodeView"
+        template="../templates/productseries-linkbranch.pt"
         facet="overview"
         permission="launchpad.EditSource"
         />

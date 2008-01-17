@@ -33,6 +33,9 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from canonical.launchpad.browser.feeds import (
+    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
+    PersonLatestBugsFeedLink)
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBug, IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IProduct,
@@ -112,7 +115,8 @@ class FileBugData:
                         content_type=part['Content-type'],
                         content=StringIO(part.get_payload(decode=True)))
                     if part.get('Content-Description'):
-                        attachment['description'] = part['Content-Description']
+                        attachment['description'] = (
+                            part['Content-Description'])
                     else:
                         attachment['description'] = attachment['filename']
                     self.attachments.append(attachment)
@@ -214,7 +218,8 @@ class FileBugViewBase(LaunchpadFormView):
         # subscribe to an existing bug.
         elif self.this_is_my_bug_action.submitted():
             if not data.get('bug_already_reported_as'):
-                self.setFieldError('bug_already_reported_as', "Please choose a bug.")
+                self.setFieldError('bug_already_reported_as',
+                                   "Please choose a bug.")
         else:
             # We only care about those two actions.
             pass
@@ -249,7 +254,8 @@ class FileBugViewBase(LaunchpadFormView):
                                 packagename, distribution.displayname))
                         self.setFieldError("packagename", packagename_error)
             else:
-                self.setFieldError("packagename", "Please enter a package name")
+                self.setFieldError("packagename", 
+                                   "Please enter a package name")
 
         # If we've been called from the frontpage filebug forms we must check
         # that whatever product or distro is having a bug filed against it
@@ -257,9 +263,10 @@ class FileBugViewBase(LaunchpadFormView):
         product_or_distro = self.getProductOrDistroFromContext()
         if (product_or_distro is not None and
             not product_or_distro.official_malone):
-            self.setFieldError('bugtarget',
-                               "%s does not use Launchpad as its bug tracker " %
-                               product_or_distro.displayname)
+            self.setFieldError(
+                'bugtarget',
+                "%s does not use Launchpad as its bug tracker " %
+                product_or_distro.displayname)
 
     def setUpWidgets(self):
         """Customize the onKeyPress event of the package name chooser."""
@@ -413,7 +420,7 @@ class FileBugViewBase(LaunchpadFormView):
                     # we'll just ignore it.
                     pass
                 else:
-                    bug.subscribe(person)
+                    bug.subscribe(person, self.user)
                     notifications.append(
                         '%s has been subscribed to this bug.' %
                         person.displayname)
@@ -446,7 +453,7 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(
                 "You are already subscribed to this bug.")
         else:
-            bug.subscribe(self.user)
+            bug.subscribe(self.user, self.user)
             self.request.response.addNotification(
                 "You have been subscribed to this bug.")
 
@@ -870,7 +877,8 @@ class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
             return bugtarget
 
 
-class FrontPageFileBugAdvancedView(FrontPageFileBugMixin, FileBugAdvancedView):
+class FrontPageFileBugAdvancedView(FrontPageFileBugMixin,
+                                   FileBugAdvancedView):
     """Browser view class for the top-level +filebug-advanced page."""
     schema = IFrontPageBugAddForm
     custom_widget('bugtarget', LaunchpadTargetWidget)
@@ -894,9 +902,10 @@ class FrontPageFileBugAdvancedView(FrontPageFileBugMixin, FileBugAdvancedView):
         # If we have a context that we can test for Malone use, we do so.
         if (product_or_distro is not None and
             not product_or_distro.official_malone):
-            self.setFieldError('bugtarget',
-                               "%s does not use Launchpad as its bug tracker" %
-                               product_or_distro.displayname)
+            self.setFieldError(
+                'bugtarget',
+                "%s does not use Launchpad as its bug tracker" %
+                product_or_distro.displayname)
         else:
             return super(FrontPageFileBugAdvancedView, self).validate(data)
 
@@ -948,8 +957,15 @@ class BugCountDataItem:
             self.color = 'MochiKit.Color.Color["%sColor"]()' % color
 
 
-class BugTargetBugsView(BugTaskSearchListingView):
+class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
     """View for the Bugs front page."""
+
+    # Only include <link> tags for bug feeds when using this view.
+    feed_types = (
+        BugFeedLink,
+        BugTargetLatestBugsFeedLink,
+        PersonLatestBugsFeedLink,
+        )
 
     # XXX: Bjorn Tillenius 2007-02-13:
     #      These colors should be changed. It's the same colors that are used
@@ -972,8 +988,8 @@ class BugTargetBugsView(BugTaskSearchListingView):
         bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
         if IDistroSeries.providedBy(self.context):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
-        bug_counts = sorted(
-            self.context.getBugCounts(self.user, bug_statuses_to_show).items())
+        bug_counts = sorted(self.context.getBugCounts(
+            self.user, bug_statuses_to_show).items())
         self.bug_count_items = [
             BugCountDataItem(status.title, count, self.status_color[status])
             for status, count in bug_counts]

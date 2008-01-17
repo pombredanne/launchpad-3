@@ -31,4 +31,11 @@
     class="canonical.launchpad.browser.LibraryFileAliasView"
     />
 
+  <browser:page
+    name="+md5"
+    permission="zope.Public"
+    for="canonical.launchpad.interfaces.ILibraryFileAlias"
+    class="canonical.launchpad.browser.LibraryFileAliasMD5View"
+    />
+
 </configure>

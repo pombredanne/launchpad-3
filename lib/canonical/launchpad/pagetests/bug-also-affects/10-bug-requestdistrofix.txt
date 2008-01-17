@@ -78,8 +78,7 @@ we add a bug watch as well.
     >>> browser.getLink(url='+distrotask').click()
     >>> browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+distrotask'
-    >>> browser.getControl(name='field.distribution').value
-    ['debian']
+    >>> browser.getControl(name='field.distribution').value = ['debian']
     >>> browser.getControl("Source Package Name").value = "alsa-utils"
     >>> browser.getControl('URL').value = (
     ...     'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=123')
@@ -138,8 +137,7 @@ Debian task without linking it to a bug watch, we have to confirm that
 we really want to do this.
 
     >>> browser.getLink(url='+distrotask').click()
-    >>> browser.getControl('Distribution').value
-    ['debian']
+    >>> browser.getControl('Distribution').value = ['debian']
     >>> browser.getControl('Source Package Name').value = 'evolution'
     >>> browser.getControl('Continue').click()
     >>> browser.url
@@ -165,7 +163,7 @@ notification will still be displayed.
 If we confirm that we indeed want to add an unlinked task, we get
 redirected to the bug page.
 
-    >>> browser.getControl('Yes').click()
+    >>> browser.getControl('Add Anyway').click()
     >>> browser.url
     'http://bugs.launchpad.dev/debian/+source/evolution/+bug/1'
     >>> print browser.contents

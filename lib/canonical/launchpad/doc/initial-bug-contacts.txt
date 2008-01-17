@@ -187,7 +187,7 @@ in the footer of the email with the bug title and URL.
     >>> msg['X-Launchpad-Message-Rationale']
     'Bug Contact (pmount in ubuntu)'
     >>> msg['Subject']
-    '[Bug 1] Firefox does not support SVG'
+    '[Bug 1] [NEW] Firefox does not support SVG'
     >>> print msg.get_payload(decode=True)
     You have been subscribed to a public bug:
     <BLANKLINE>
@@ -401,7 +401,7 @@ contact for Mozilla Firefox.
 
     >>> msg = email.message_from_string(raw_message)
     >>> msg['Subject']
-    '[Bug 2] Blackhole Trash folder'
+    '[Bug 2] [NEW] Blackhole Trash folder'
     >>> print msg.get_payload(decode=True)
     You have been subscribed to a public bug:
     ...

@@ -10,10 +10,6 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure context/@@+portlet-details" />
-    </metal:rightportlets>
-
     <metal:css fill-slot="head_epilogue">
       <style type="text/css">
         div.inlined-widget {

@@ -10,7 +10,7 @@ __all__ = [
 from apt_pkg import ParseDepends
 
 from canonical.launchpad.browser.packagerelationship import (
-    PackageRelationship, relationship_builder)
+    relationship_builder)
 from canonical.launchpad.interfaces import IBinaryPackageRelease
 from canonical.launchpad.webapp import Navigation
 
@@ -52,3 +52,12 @@ class BinaryPackageView:
 
     def provides(self):
         return self._relationship_parser(self.context.provides)
+
+    def pre_depends(self):
+        return self._relationship_parser(self.context.pre_depends)
+
+    def enhances(self):
+        return self._relationship_parser(self.context.enhances)
+
+    def breaks(self):
+        return self._relationship_parser(self.context.breaks)

@@ -438,3 +438,4 @@ method:
     >>> notifications = BugNotification.selectBy(bugID=6, date_emailed=None)
     >>> notifications.count()
     0
+
