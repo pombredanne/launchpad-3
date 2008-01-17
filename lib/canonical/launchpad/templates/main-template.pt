@@ -414,8 +414,5 @@
     </tal:datepicker>
   </body>
 </html>
-<tal:requestlog
-    define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
-    replace="structure string:&lt;!-- at least ${log} --&gt;" />
 </metal:page>
 <!-- 1-0 inprogress portlets wrong in IE/Mac -->
