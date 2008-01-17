@@ -50,8 +50,7 @@
 
       <p>
         If the code is in CVS or Subversion you can
-        <a href="https://help.launchpad.net/VcsImports">
-          import the branch to Bazaar</a>.
+        import the branch to Bazaar.
         The first step of this is to specify the
         <a href="+source">upstream location</a>.
       </p>
