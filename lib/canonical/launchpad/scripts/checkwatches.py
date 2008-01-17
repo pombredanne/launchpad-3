@@ -10,6 +10,7 @@ import socket
 
 from zope.component import getUtility
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBugTrackerSet)
@@ -95,6 +96,16 @@ class BugWatchUpdater(object):
         try:
             remotesystem = self._getExternalBugTracker(bug_tracker)
         except externalbugtracker.UnknownBugTrackerTypeError, error:
+            # We update all the bug watches to reflect the fact that
+            # this error occurred. We also update their last checked
+            # date to ensure that they don't get checked more than once
+            # every 24 hours.
+            error_type = (
+                externalbugtracker.get_bugwatcherrortype_for_error(error))
+            for bug_watch in bug_watches_to_update:
+                bug_watch.last_error_type = error_type
+                bug_watch.lastchecked = UTC_NOW
+
             self.log.info(
                 "ExternalBugtracker for BugTrackerType '%s' is not "
                 "known." % (error.bugtrackertypename))
