@@ -72,7 +72,7 @@
       safe_email_or_blank searchTasks setContactAddress
       setMembershipData setPreferredEmail
       shippedShipItRequestsOfCurrentSeries
-      signedcocs sshkeys subscribedBounties
+      signedcocs sshkeys structural_subscriptions subscribedBounties
       subscribed_branches subscribed_specs subscriptionpolicy
       team_mentorships teamdescription teamowner
       teamownerID teams_indirectly_participated_in teams_participated_in
@@ -280,12 +280,8 @@
       template="../templates/person-portlet-details.pt"
       />
     <browser:page
-      name="+pagelet-details"
-      template="../templates/person-pagelet-details.pt"
-      />
-    <browser:page
-      name="+pagelet-contact-details"
-      template="../templates/person-pagelet-contact-details.pt"
+      name="+portlet-contact-details"
+      template="../templates/person-portlet-contact-details.pt"
       />
     <!-- this should be on IPerson because we don't always know if it is a
     team or a person -->

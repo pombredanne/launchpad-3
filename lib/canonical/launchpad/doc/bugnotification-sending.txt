@@ -693,7 +693,7 @@ notification will be sent to all members individually.
     ...     print member.preferredemail.email
     marilize@hbd.com
 
-    >>> bug_one.subscribe(shipit_admins)
+    >>> bug_one.subscribe(shipit_admins, shipit_admins)
     <...>
 
     >>> comment = getUtility(IMessageSet).fromText(
@@ -981,7 +981,7 @@ filled with data about that bug:
 
     >>> from canonical.launchpad.interfaces import IMilestoneSet
     >>> bug_three = getUtility(IBugSet).get(3)
-    >>> subscription = bug_three.subscribe(sample_person)
+    >>> subscription = bug_three.subscribe(sample_person, sample_person)
 
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a short comment.', sample_person,
@@ -1042,7 +1042,7 @@ who receives verbose bug notifications, to bug 15.
     >>> ddaa.verbose_bugnotifications
     True
 
-    >>> bug_15.subscribe(ddaa)
+    >>> bug_15.subscribe(ddaa, sample_person)
     <...>
 
 If we then add a comment to the bug, ddaa will receieve a notification

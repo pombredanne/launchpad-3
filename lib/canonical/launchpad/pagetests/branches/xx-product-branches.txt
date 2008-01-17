@@ -22,7 +22,7 @@ overview page.
 To get to the complete branch listing, the user clicks on the
 link:
 
-    >>> browser.getLink('List currently active branches').click()
+    >>> browser.getLink('List branches').click()
     >>> print browser.title
     Gnome Applets's Bazaar branches registered in Launchpad
     >>> print extract_text(find_main_content(browser.contents).h1)

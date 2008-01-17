@@ -393,12 +393,17 @@ class ProductBranchesMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'branches'
-    links = ['branch_add', ]
+    links = ['branch_add', 'list_branches']
 
     def branch_add(self):
         text = 'Register branch'
         summary = 'Register a new Bazaar branch for this project'
         return Link('+addbranch', text, summary, icon='add')
+
+    def list_branches(self):
+        text = 'List branches'
+        summary = 'List the branches for this project'
+        return Link('+branches', text, summary, icon='add')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
