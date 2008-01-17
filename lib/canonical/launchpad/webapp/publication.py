@@ -424,10 +424,6 @@ class LaunchpadBrowserPublication(
             and isinstance(exc_info[1], (Retry, da.DisconnectionError))):
             # Remove variables used for counting ticks as this request is
             # going to be retried.
-            if hasattr(request, '_traversalticks_start'):
-                del request._traversalticks_start
-            if hasattr(request, '_publicationticks_start'):
-                del request._publicationticks_start
             orig_env.pop('launchpad.traversalticks', None)
             orig_env.pop('launchpad.publicationticks', None)
             if isinstance(exc_info[1], Retry):
