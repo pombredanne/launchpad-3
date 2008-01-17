@@ -19,7 +19,7 @@ import unittest
 
 from bzrlib.urlutils import local_path_to_url
 
-from canonical.launchpad.scripts.importd.sourcetransport import (
+from canonical.codehosting.codeimport.sourcetransport import (
     ImportdSourceTransport)
 from canonical.testing import reset_logging
 from importd.tests.helpers import SandboxTestCase

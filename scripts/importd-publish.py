@@ -24,11 +24,11 @@ from optparse import OptionParser
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger, log)
-from canonical.launchpad.scripts.importd.bzr_progress import (
+from canonical.codehosting.codeimport.bzr_progress import (
     setup_batch_progress)
 from canonical.config import config
 
-from canonical.launchpad.scripts.importd.publish import ImportdPublisher
+from canonical.codehosting.codeimport.publish import ImportdPublisher
 
 
 def parse_args(args):

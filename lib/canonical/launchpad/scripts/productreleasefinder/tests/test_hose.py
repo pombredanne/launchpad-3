@@ -6,7 +6,7 @@ import tempfile
 import unittest
 
 from canonical.testing import reset_logging
-from canonical.launchpad.scripts.importd.tests.helpers import (
+from canonical.codehosting.codeimport.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 
 
