@@ -234,8 +234,8 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
 
     schema = IArchiveConsoleForm
 
-    # Maximum number of 'selected_sources' options presented.
-    max_options_presented = 10
+    # Maximum number of 'sources' presented.
+    max_sources_presented = 2
 
     custom_widget('status_filter', PublishingStatusDropdownWidget)
     custom_widget('comment', StrippedTextWidget, displayWidth=50)
@@ -245,13 +245,24 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpFields(self)
-        # XXX cprov 20080117: we have to setup the schema widget earlier
-        # because some values (name & status) are required to setup
-        # 'selected_sources'. Ideally we could skip them in setUpWidgets
-        # but re-setup doesn't seem to hurt.
-        LaunchpadFormView.setUpWidgets(self)
+        # We have to setup the 'name_filter' and  'status_filter' schema
+        # widget earlier because their values are required to setup
+        # 'selected_sources' field.
+        self.widgets = form.setUpWidgets(
+            self.form_fields.select('name_filter', 'status_filter'),
+            self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False)
+
         self.form_fields = (
             self.createSelectedSourcesField() + self.form_fields)
+
+    def setUpWidgets(self):
+        """See `LaunchpadFormView`."""
+        # Omitting the fields already processed in setUpFields.
+        self.widgets += form.setUpWidgets(
+            self.form_fields.omit('name_filter', 'status_filter'),
+            self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False)
 
     def createSelectedSourcesField(self):
         """Creates the 'selected_sources' field.
@@ -261,7 +272,7 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         will do the job for us.
         """
         terms = []
-        for pub in self.sources[:self.max_options_presented]:
+        for pub in self.sources[:self.max_sources_presented]:
             terms.append(SimpleTerm(pub, str(pub.id), pub.displayname))
         return form.Fields(
             List(__name__='selected_sources',
@@ -284,7 +295,6 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
             name_filter = self.widgets['name_filter'].getInputValue()
         else:
             name_filter = None
-
         if self.widgets['status_filter'].hasInput():
             status_filter = self.widgets['status_filter'].getInputValue()
         else:
@@ -294,18 +304,21 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
             name=name_filter, status=status_filter)
 
     @cachedproperty
-    def available_options_size(self):
-        """Number of available source options."""
+    def available_sources_size(self):
+        """Number of available sources."""
         return self.sources.count()
 
     @property
-    def has_ignored_options(self):
-        """Whether of not some options got ignored."""
-        return self.available_options_size > self.max_options_presented
+    def has_undisplayed_sources(self):
+        """Whether of not some sources are not displayed in the widget."""
+        return self.available_sources_size > self.max_sources_presented
 
     @action(_("Search"), name="search")
     def action_search(self, action, data):
         """Simply re-issue the form with the new values."""
+        # The search considering 'name_filter' and 'status_filter' input
+        # values will be always performed when building the
+        # 'selected_sources' widget.
         pass
 
     def validate_delete(self, action, data):
@@ -325,7 +338,7 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
                 self.addError('Cannot delete non-published source (%s).'
                               % source.displayname)
 
-    @action(_("Delete"), name="delete")
+    @action(_("Delete"), name="delete",)
     def action_delete(self, action, data):
         """Perform the deletion of the selected packages.
 
@@ -333,9 +346,8 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         respecting the auxiliary parameter, 'including_binaries' and
         'comment'.
         """
-        # XXX cprov 20080115: using the "@action(validator='validate_delete')
-        # property passes empty 'data'. We are calling it manually for now.
         self.validate_delete(action, data)
+
         if len(self.errors) != 0:
             return
 

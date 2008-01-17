@@ -46,7 +46,7 @@
       </tr>
       <tr tal:define="widget nocall:view/widgets/selected_sources|nothing"
           tal:condition="widget">
-        <td tal:condition="view/available_options_size" style="padding: 1em;">
+        <td tal:condition="view/available_sources_size" style="padding: 1em;">
 
            <table class="listing">
              <thead>
@@ -65,23 +65,23 @@
                            replace="structure pub/@@+listing-ppa-detailed-selectable" />
              </tal:terms>
              </tbody>
-             <tfoot tal:condition="view/has_ignored_options">
+             <tfoot tal:condition="view/has_undisplayed_sources">
                 <tr>
                    <td colspan="7" tal:condition="context/owner/isTeam">
-                       <p class="informational message"
+                       <p class="message"
                          >Presenting <tal:presented
-                          replace="view/max_options_presented"
+                          replace="view/max_sources_presented"
                           /> of <tal:available
-                         replace="view/available_options_size" />
-                         available options.</p>
+                         replace="view/available_sources_size" />
+                         available sources.</p>
                    </td>
                    <td colspan="6" tal:condition="not: context/owner/isTeam">
-                       <p class="informational message"
+                       <p class="message"
                          >Presenting <tal:presented
-                          replace="view/max_options_presented"
+                          replace="view/max_sources_presented"
                           /> of <tal:available
-                         replace="view/available_options_size" />
-                         available options.</p>
+                         replace="view/available_sources_size" />
+                         available sources.</p>
                    </td>
                 </tr>
              </tfoot>
@@ -90,17 +90,18 @@
            <input tal:attributes="name string:${widget/name}-empty-marker"
                   type="hidden" value="1" />
         </td>
-        <td id="empty-result" class="message error" style="border: solid;"
-            tal:condition="not:view/available_options_size">
+        <td id="empty-result" class="message error"
+            style="border: 1px solid;"
+            tal:condition="not:view/available_sources_size">
            <p>No matching package for '<span
               tal:replace="request/field.name_filter" />'.</p>
         </td>
       </tr>
-
+      </tbody>
+      <tfoot tal:condition="view/available_sources_size">>
       <tr>
         <td>
-           <fieldset class="collapsible collapsed"
-                     style="border: 1px solid; padding: 1em">
+           <fieldset style="border: 1px solid; padding: 1em">
              <legend>Delete packages</legend>
              <tal:include_binaries
                define="widget nocall:view/widgets/include_binaries">
@@ -119,8 +120,7 @@
            </fieldset>
         </td>
       </tr>
-
-      </tbody>
+      </tfoot>
       </table>
 
    </div> <!-- widgets -->
