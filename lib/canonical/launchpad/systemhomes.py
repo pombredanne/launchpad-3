@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces import (
     IMailingListApplication, IMaloneApplication, IOpenIdApplication,
     IPersonSet, IProductSet, IRegistryApplication, IRosettaApplication,
     IShipItApplication, ITranslationGroupSet, IWebServiceApplication)
-from canonical.lazr.rest import ServiceRoot
+from canonical.lazr.rest import ServiceRootResource
 
 class AuthServerApplication:
     """AuthServer End-Point."""
@@ -188,7 +188,7 @@ class HWDBApplication:
     implements(IHWDBApplication)
 
 
-class WebServiceApplication(ServiceRoot):
+class WebServiceApplication(ServiceRootResource):
     """See IWebServiceApplication."""
     implements(IWebServiceApplication)
 
