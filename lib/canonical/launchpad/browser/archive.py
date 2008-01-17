@@ -301,12 +301,11 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
     @action(_("Search"), name="search")
     def action_search(self, action, data):
         """Simply re-issue the form with the new values."""
-        # The search considering 'name_filter' and 'status_filter' input
-        # values will be always performed when building the
-        # 'selected_sources' widget.
+        # The 'selected_sources' widget will always be refresehed
+        # considering 'name_filter' input value when the page is loaded.
         pass
 
-    @action(_("Delete"), name="delete",)
+    @action(_("Delete packages"), name="delete",)
     def action_delete(self, action, data):
         """Perform the deletion of the selected packages.
 

@@ -74,12 +74,12 @@
             <tfoot tal:condition="view/has_undisplayed_sources">
                <tr>
                  <td colspan="7" tal:condition="context/owner/isTeam">
-                   <p class="message">Presenting only <tal:presented replace="
+                   <p>Presenting only <tal:presented replace="
                      view/max_sources_presented"/> of <tal:available replace="
                      view/available_sources_size" /> available sources.</p>
                  </td>
                  <td colspan="6" tal:condition="not: context/owner/isTeam">
-                   <p class="message">Presenting only <tal:presented replace="
+                   <p>Presenting only <tal:presented replace="
                      view/max_sources_presented"/> of <tal:available replace="
                      view/available_sources_size" /> available sources.</p>
                  </td>
@@ -91,18 +91,13 @@
                type="hidden" value="1" />
       </tal:sources>
 
-      <tal:actions condition="view/available_sources_size">
-        <fieldset style="border: 1px solid; padding: 1em">
-          <legend>Delete packages</legend>
-          <tal:comment_field
-            define="widget nocall:view/widgets/comment">
-            <label tal:attributes="for widget/name"
-                   tal:content="widget/label">Label</label>
-            <input tal:replace="structure widget" />
-          </tal:comment_field>
-          <input tal:replace="structure
-             view/actions/field.actions.delete/render" />
-        </fieldset>
+      <tal:actions condition="view/available_sources_size"
+                   define="widget nocall:view/widgets/comment">
+        <label tal:attributes="for widget/name"
+               tal:content="widget/label">Label</label>
+        <input tal:replace="structure widget" />
+        <input tal:replace="structure
+           view/actions/field.actions.delete/render" />
       </tal:actions>
 
    </div> <!-- widgets -->
@@ -115,10 +110,9 @@
 
 <p metal:fill-slot="help">
    Search for the wanted packages, then select one of more of them for
-   deletion. Not all packages matching the queried text will be
-   presented, only the first 10, if you see a message pointing that
-   there were found more than 10 results and the package you are
-   interested is not listed, please refine your search. A deleted
+   deletion. A message is displayed below the list of packages if
+   there were more than 10 packages found; you may want to refine your
+   search if the packages you are interested is not listed. A deleted
    package will disappear from the archive indexes within 20 minutes
    and the related files will be gone once they are not required in
    the archive anymore.
