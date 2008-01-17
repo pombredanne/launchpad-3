@@ -270,7 +270,7 @@ ConfigSchema implements the two methods in the IConfigLoader interface.
 A Config is created by a schema using either the load() or loadFile()
 methods to return a Config instance.
 
-    >>> from canonical.lazr.interfaces import IConfig, IConfigLoader
+    >>> from canonical.lazr.interfaces import IConfigLoader
     >>> verifyObject(IConfigLoader, schema)
     True
 
@@ -278,10 +278,6 @@ The load() method accepts a filename.
 
     >>> local_conf = '%s/%s' % (testfiles_dir,  'local.conf')
     >>> config = schema.load(local_conf)
-
-    >>> from canonical.lazr.config import Config
-    >>> verifyObject(IConfig, config)
-    True
 
 Passing a filename to a non-existent file will raise an IOError.
 
@@ -297,7 +293,6 @@ does not have a name attribute.
     >>> import StringIO
     >>> bad_data = '\n'.join([
     ...     "[meta]",
-    ...     "extends: base.conf",
     ...     "metakey: unsupported",
     ...     "[unknown-section]",
     ...     "key1 = value1",
@@ -313,32 +308,61 @@ does not have a name attribute.
 
     >>> bad_config = schema.loadFile(
     ...     StringIO.StringIO(bad_data), 'bad conf')
-    >>> verifyObject(IConfig, bad_config)
-    True
 
 The bad_config example will be used for validation tests.
 
 
 == Config ==
 
-The config represents the local configuration of the process on system.
-It is validated with a schema. It extends the schema, or other conf
-files to define the specific differences from the extended files that
-are required to run the local processes.
+The config represents the local configuration of the process on a
+system. It is validated with a schema. It extends the schema, or other
+conf files to define the specific differences from the extended files
+that are required to run the local processes.
+
+The object returned by load() provides both the IConfigData and
+IStackableConfig interfaces. IConfigData is for read-only access to the
+configuration data. A process configuration is made up of a stack of
+different IConfigData. The IStackableConfig interface provides the
+methods used to manipulate that stack of configuration overlays.
+
+    >>> from canonical.lazr.interfaces import IConfigData, IStackableConfig
+    >>> verifyObject(IConfigData, config)
+    True
+    >>> verifyObject(IStackableConfig, config)
+    True
 
 Like the schema file, the conf file is made up of sections with keys.
 The sections may belong to a category. Unlike the schema file, it does
-not have template or optional sections.
+not have template or optional sections. The [meta] has the extends
+key that declares that this conf extends shared.conf.
 
     >>> local_file = open(local_conf, 'r')
     >>> raw_conf = local_file.read()
     >>> local_file.close()
     >>> print raw_conf
+    [meta]
+    extends: shared.conf
     # Localize a key for section-1.
     [section-1]
     key5: local value
     # Accept the default values for the optional section-5.
     [section-5]
+
+The shared.conf file derives the keys and default values from the
+schema. This config was loaded before local.conf because its sections
+and values are required to be in place before local.conf applies its
+changes.
+
+    >>> shared_conf = '%s/%s' % (testfiles_dir,  'shared.conf')
+    >>> shared_file = open(shared_conf, 'r')
+    >>> raw_conf = shared_file.read()
+    >>> shared_file.close()
+    >>> print raw_conf
+    # The schema is defined by base.conf.
+    # Localize a key for section-1.
+    [section-1]
+    key2: sharing is fun
+    key5: shared value
 
 The config that was loaded has name and filename attributes to identify
 the configuration.
@@ -348,15 +372,10 @@ the configuration.
     >>> config.filename
     '...ftests/testfiles/local.conf'
 
-A conf file may contains a meta section that is used by the config
-system. The config can access the schema via the schema property.
+The config can access the schema via the schema property.
 
-    >>> print config.extends
-    None
     >>> config.schema.name
     'base.conf'
-    >>> config.schema.filename
-    '...ftests/testfiles/base.conf'
     >>> config.schema is schema
     True
 
@@ -383,7 +402,9 @@ You can check if a section name is in a config.
 Optional SchemaSections are not inherited by the config. A config file
 must declare all optional sections. Including the section heading is
 enough to inherit the section and its keys. The config file may localize
-the keys by declaring them too.
+the keys by declaring them too. The local.conf file includes
+'section-5', but not 'section-3.app-a'
+
 
     >>> 'section-3.app-a' in config
     False
@@ -482,14 +503,17 @@ An error is raised if a non-existent key is accessed via a subscript.
       ...
     KeyError: ...
 
-The Section keys can be iterated. The section has all the keys from
-the SectionSchema, and its localized values from the config file
-took precedence over the schema values.
+The Section keys can be iterated. The section has all the keys from the
+SectionSchema. The values came form the schema's default values, then
+the values from shared.conf were applied, and lastly, the values from
+local.conf were applied. The schema provided the values of key1, key3,
+and key4, shared.conf provided the value of key2. local.conf provided
+key5. While shared.conf provided a key5, local.conf takes precedence.
 
     >>> for key in sorted(section_1):
     ...     print key, ':', section_1[key]
     key1 : foo
-    key2 : bar and baz
+    key2 : sharing is fun
     key3 : Launchpad&nbsp;rocks
     key4 : F&#028c;k yeah!
     key5 : local value
@@ -531,8 +555,219 @@ errors in the config.
     ...         print  "%s: %s" % (error.__class__.__name__, error)
     ConfigErrors: bad conf is not valid.
     UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3 in ... range(128)
-    UnknownSectionError: base.conf does not have a section-3.template section.
     UnknownKeyError: The meta section does not have a metakey key.
     UnknownKeyError: section-1 does not have a keyn key.
     UnknownSectionError: base.conf does not have a unknown-section section.
 
+
+== Config overlays ==
+
+A conf file may contains a meta section that is used by the config
+system. The config data can access the config it extended using the
+extends property. The object is just the config data; it does not
+have any config methods.
+
+    >>> config.extends.name
+    'shared.conf'
+
+    >>> verifyObject(IConfigData, config.extends)
+    True
+    >>> verifyObject(IStackableConfig, config.extends)
+    Traceback (most recent call last):
+     ...
+    DoesNotImplement: ...
+
+As Config supports inheritance through the extends key, each conf file
+produces instance of ConfigData, called an overlay. ConfigData
+represents the state of a config. The overlays property is a stack of
+ConfigData as it was constructed from the schema's config to the last
+config file that was loaded.
+
+    >>> for config_data in config.overlays:
+    ...     print config_data.name
+    local.conf
+    shared.conf
+    base.conf
+
+    >>> verifyObject(IConfigData, config.overlays[-1])
+    True
+
+
+=== push() ===
+
+Raw config data can be merged with the config to create a new overlay
+for testing. The push() method accepts a string of config data. The
+data must conform to the schema. The 'section-1' sections's keys are
+updated when the unparsed data is pushed onto the config.
+
+    >>> for key in sorted(config['section-1']):
+    ...     print key, ':', config['section-1'][key]
+    key1 : foo
+    key2 : sharing is fun
+    key3 : Launchpad&nbsp;rocks
+    key4 : F&#028c;k yeah!
+    key5 : local value
+
+    >>> test_data = '\n'.join([
+    ...     "[section-1]",
+    ...     "key1: test1",
+    ...     "key5:"])
+    >>> config.push('test config', test_data)
+
+    >>> for key in sorted(config['section-1']):
+    ...     print key, ':', config['section-1'][key]
+    key1 : test1
+    key2 : sharing is fun
+    key3 : Launchpad&nbsp;rocks
+    key4 : F&#028c;k yeah!
+    key5 :
+
+Besides updating section keys, optional sections can be enabled too.
+The 'section-3.app-a' section is enabled with the default keys from the
+schema in this example.
+
+    >>> config.schema['section-3.app-a'].optional
+    True
+    >>> 'section-3.app-a' in config
+    False
+
+    >>> app_a_data = "[section-3.app-a]"
+    >>> config.push('test app-a', app_a_data)
+
+    >>> 'section-3.app-a' in config
+    True
+    >>> for key in sorted(config['section-3.app-a']):
+    ...     print key, ':', config['section-3.app-a'][key]
+    key1 : 17
+    key2 : 3.1415
+
+    >>> for key in sorted(config.schema['section-3.app-a']):
+    ...     print key, ':', config.schema['section-3.app-a'][key]
+    key1 : 17
+    key2 : 3.1415
+
+The config's name and overlays are updated by push().
+
+    >>> config.name
+    'test app-a'
+    >>> config.filename
+    'test app-a'
+    >>> for config_data in config.overlays:
+    ...     print config_data.name
+    test app-a
+    test config
+    local.conf
+    shared.conf
+    base.conf
+
+The 'test app-a' did not declare an extends key in a meta section. Its
+extends property is None, even though it implicitly extends 'test
+config'. The extends property only provides access to configs that are
+explicitly extended.
+
+    >>> config.extends.name
+    'test config'
+
+The config's sections are updated with 'section-3.app-a' too.
+
+    >>> for section in sorted(config, key=attrgetter('name')):
+    ...     print section.name
+    section-1
+    section-2.app-b
+    section-3.app-a
+    section-3.app-b
+    section-5
+
+A config file may state that it extends its schema (to clearly connect
+the config to the schema). The schema can also be pushed to reset the
+values in the config to the schema's default values.
+
+    >>> extender_conf_name = path.normpath(path.join(
+    ...     path.dirname(__file__), '..', 'ftests', 'testfiles',
+    ...     'extender.conf'))
+    >>> extender_conf_data = '\n'.join([
+    ...     "[meta]",
+    ...     "extends: base.conf"])
+    >>> config.push(extender_conf_name, extender_conf_data)
+    >>> for config_data in config.overlays:
+    ...     print config_data.name
+    extender.conf
+    base.conf
+    test app-a
+    test config
+    local.conf
+    shared.conf
+    base.conf
+
+The 'section-1' section was restored to the schema's default values.
+
+    >>> for key in sorted(config['section-1']):
+    ...     print key, ':', config['section-1'][key]
+    key1 : foo
+    key2 : bar and baz
+    key3 : Launchpad&nbsp;rocks
+    key4 : F&#028c;k yeah!
+    key5 :
+
+
+=== pop() ===
+
+ConfigData can be removed from the stack of overlays using the pop()
+method. The methods returns the list of ConfigData that was removed--a
+slice from the specified ConfigData to the top of the stack.
+
+    >>> overlays = config.pop('test config')
+    >>> for config_data in overlays:
+    ...     config_data.name
+    'extender.conf'
+    'base.conf'
+    'test app-a'
+    'test config'
+
+    >>> for config_data in config.overlays:
+    ...     print config_data.name
+    local.conf
+    shared.conf
+    base.conf
+
+The config's state was restored to the ConfigData that is top of the
+overlay stack. Section 'section-3.app-a' was removed completely. The
+keys ('key1' and 'key5') for 'section-1' were restored.
+
+    >>> for section in sorted(config, key=attrgetter('name')):
+    ...     print section.name
+    section-1
+    section-2.app-b
+    section-3.app-b
+    section-5
+
+    >>> for key in sorted(config['section-1']):
+    ...     print key, ':', config['section-1'][key]
+    key1 : foo
+    key2 : sharing is fun
+    key3 : Launchpad&nbsp;rocks
+    key4 : F&#028c;k yeah!
+    key5 : local value
+
+Call the pop() method with an unknown conf_name raises an error
+
+    >>> overlays = config.pop('bad-name')
+    Traceback (most recent call last):
+      ...
+    NoConfigError: No config with name: bad-name.
+
+A Config must have at least one ConfigData in the overlays stack so that
+it has data. The bottom ConfigData in the overlays was made from the
+schema's required sections. It cannot be removed by the pop() method.
+
+    >>> overlays = config.pop('base.conf')
+    Traceback (most recent call last):
+      ...
+    NoConfigError: Cannot pop the schema's default config.
+
+If all but the bottom ConfigData is popped from overlays, the extends
+property returns None.
+
+    >>> overlays = config.pop('shared.conf')
+    >>> print config.extends
+    None
