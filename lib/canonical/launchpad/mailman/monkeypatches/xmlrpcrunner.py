@@ -143,11 +143,7 @@ class XMLRPCRunner(Runner):
             syslog('xmlrpc', 'Received subscription info for these lists: %s',
                    COMMASPACE.join(info.keys()))
         for list_name in info:
-            try:
-                mlist = MailList(list_name)
-            except:
-                log_exception()
-                continue
+            mlist = MailList(list_name)
             try:
                 # Create a mapping of email address to the member's real name,
                 # flags, and status.  Note that flags is currently unused.

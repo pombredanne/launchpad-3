@@ -38,18 +38,6 @@ def process(mlist, msg, msgdata):
     msg['List-Post'] = '<mailto:%s>' % list_post
     msg['List-Archive'] = '<%s>' % list_archive
     msg['List-Owner'] = '<%s>' % list_owner
-    # Add the RFC 5064 header.  In order to do so, the message must have
-    # exactly one Message-ID header.  If it has no such header, add one.  If
-    # it has multiple such headers, keep only the first.
-    message_ids = msg.get_all('message-id', [])
-    if len(message_ids) == 0:
-        msg['Message-ID'] = message_id = make_msgid()
-    elif len(message_ids) == 1:
-        message_id = message_ids[0]
-    else:
-        message_id = message_ids[0]
-        del msg['message-id']
-        msg['Message-ID'] = message_id
     # Set up message metadata for header/footer decoration interpolation in
     # the Decorate handler.
     msgdata['decoration-data'] = dict(
