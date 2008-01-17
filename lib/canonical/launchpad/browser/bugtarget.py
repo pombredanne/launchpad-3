@@ -115,7 +115,8 @@ class FileBugData:
                         content_type=part['Content-type'],
                         content=StringIO(part.get_payload(decode=True)))
                     if part.get('Content-Description'):
-                        attachment['description'] = part['Content-Description']
+                        attachment['description'] = (
+                            part['Content-Description'])
                     else:
                         attachment['description'] = attachment['filename']
                     self.attachments.append(attachment)
@@ -419,7 +420,7 @@ class FileBugViewBase(LaunchpadFormView):
                     # we'll just ignore it.
                     pass
                 else:
-                    bug.subscribe(person)
+                    bug.subscribe(person, self.user)
                     notifications.append(
                         '%s has been subscribed to this bug.' %
                         person.displayname)
@@ -452,7 +453,7 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(
                 "You are already subscribed to this bug.")
         else:
-            bug.subscribe(self.user)
+            bug.subscribe(self.user, self.user)
             self.request.response.addNotification(
                 "You have been subscribed to this bug.")
 
@@ -987,8 +988,8 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
         if IDistroSeries.providedBy(self.context):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
-        bug_counts = sorted(
-            self.context.getBugCounts(self.user, bug_statuses_to_show).items())
+        bug_counts = sorted(self.context.getBugCounts(
+            self.user, bug_statuses_to_show).items())
         self.bug_count_items = [
             BugCountDataItem(status.title, count, self.status_color[status])
             for status, count in bug_counts]

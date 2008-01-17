@@ -12,6 +12,10 @@
 
 <body>
 
+<metal:portlets fill-slot="portlets">
+  <div tal:replace="structure context/@@+portlet-latestspecs" />
+</metal:portlets>
+
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form" />
