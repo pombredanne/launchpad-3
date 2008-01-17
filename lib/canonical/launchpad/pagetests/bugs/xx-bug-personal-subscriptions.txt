@@ -1,5 +1,4 @@
-Personal Subscriptions
-======================
+= Personal Subscriptions =
 
 Users can subscribe to bugs reported in Launchpad, via the "Subscribe" link
 in the actions portlet.
@@ -42,9 +41,9 @@ this.
   You have been subscribed to this bug.
 
   >>> print_direct_subscribers(browser.contents)
-  Foo Bar
-  Sample Person
-  Steve Alexander
+  Foo Bar (Subscribed themselves)
+  Sample Person (Subscribed by Launchpad Janitor)
+  Steve Alexander (Subscribed by Launchpad Janitor)
 
 The "Subscribe" link now says "Unsubscribe".
 
@@ -89,9 +88,9 @@ first subscribing one of Foo Bar's teams.
   'http://bugs.launchpad.dev/firefox/+bug/1'
 
   >>> print_direct_subscribers(browser.contents)
-  Launchpad Developers
-  Sample Person
-  Steve Alexander
+  Launchpad Developers (Subscribed by Foo Bar)
+  Sample Person (Subscribed by Launchpad Janitor)
+  Steve Alexander (Subscribed by Launchpad Janitor)
 
 Now the subscribe link says 'Subscribe/Unsubscribe'.
 
@@ -123,8 +122,8 @@ Let's unsubscribe the Launchpad team.
   Launchpad Developers has been unsubscribed from this bug.
 
   >>> print_direct_subscribers(browser.contents)
-  Sample Person
-  Steve Alexander
+  Sample Person (Subscribed by Launchpad Janitor)
+  Steve Alexander (Subscribed by Launchpad Janitor)
 
 On the subscribe page there's a Cancel button as well, so if we go to
 that page and press the Cancel button, we will return to the bug page.
@@ -150,11 +149,11 @@ Foo Bar wasn't subscribed to the bug.
   >>> len(find_tags_by_class(browser.contents, 'informational message'))
   0
   >>> print_direct_subscribers(browser.contents)
-  Sample Person
-  Steve Alexander
+  Sample Person (Subscribed by Launchpad Janitor)
+  Steve Alexander (Subscribed by Launchpad Janitor)
 
-Subscriptions and Duplicate Bugs
---------------------------------
+
+== Subscriptions and Duplicate Bugs ==
 
 Because we auto-subscribe users that are directly subscribed to dupes of
 a bug, we give the option to unsubscribe from dupe target bugs. Behind
@@ -171,7 +170,7 @@ For example, Steve Alexander can currently subscribe to bug #3.
   >>> subscribe_link.text
   'Subscribe'
 
-Bug if bug #2, a bug that Steve is directly subscribed to, is marked as
+But if bug #2, a bug that Steve is directly subscribed to, is marked as
 a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
 is presented with the Unsubscribe link instead.
 
@@ -184,7 +183,7 @@ is presented with the Unsubscribe link instead.
   >>> stevea_browser.open("http://launchpad.dev/bugs/3")
 
   >>> print_indirect_subscribers(stevea_browser.contents)
-  Steve Alexander
+  Steve Alexander (Subscribed by Launchpad Janitor)
 
   >>> unsubscribe_link = stevea_browser.getLink("Unsubscribe")
 
@@ -231,8 +230,8 @@ previous example.)
   >>> stevea_browser.open("http://launchpad.dev/bugs/3")
 
   >>> print_indirect_subscribers(stevea_browser.contents)
-  Sample Person
-  Steve Alexander
+  Sample Person (Subscribed ...)
+  Steve Alexander (Subscribed ...)
 
   >>> stevea_browser.getLink("Unsubscribe").click()
   >>> stevea_browser.getControl("Continue").click()
@@ -266,7 +265,7 @@ include that team.
   >>> foobar_browser.open("http://launchpad.dev/bugs/3")
 
   >>> print_indirect_subscribers(foobar_browser.contents)
-  Ubuntu Team
+  Ubuntu Team (Subscribed by Foo Bar)
 
 The subscribe link for Foo Bar now says "Subscribe/Unsubscribe", because
 Foo Bar can subscribe himself directly to this bug, or unsubscribe

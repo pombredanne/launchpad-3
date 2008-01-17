@@ -2,24 +2,28 @@
 
 __metaclass__ = type
 
-__all__ = ['ProductSeriesNavigation',
-           'ProductSeriesDynMenu',
-           'ProductSeriesSOP',
-           'ProductSeriesFacets',
-           'ProductSeriesOverviewMenu',
-           'ProductSeriesBugsMenu',
-           'ProductSeriesSpecificationsMenu',
-           'ProductSeriesTranslationMenu',
-           'ProductSeriesTranslationsExportView',
-           'ProductSeriesView',
-           'ProductSeriesEditView',
-           'ProductSeriesSourceView',
-           'ProductSeriesRdfView',
-           'ProductSeriesSourceSetView',
-           'ProductSeriesReviewView',
-           'ProductSeriesShortLink',
-           'ProductSeriesFileBugRedirect',
-           'get_series_branch_error']
+__all__ = [
+    'get_series_branch_error',
+    'ProductSeriesBugsMenu',
+    'ProductSeriesDynMenu',
+    'ProductSeriesEditView',
+    'ProductSeriesFacets',
+    'ProductSeriesFileBugRedirect',
+    'ProductSeriesLinkBranchView',
+    'ProductSeriesLinkBranchFromCodeView',
+    'ProductSeriesNavigation',
+    'ProductSeriesOverviewMenu',
+    'ProductSeriesRdfView',
+    'ProductSeriesReviewView',
+    'ProductSeriesShortLink',
+    'ProductSeriesSOP',
+    'ProductSeriesSourceSetView',
+    'ProductSeriesSourceView',
+    'ProductSeriesSpecificationsMenu',
+    'ProductSeriesTranslationMenu',
+    'ProductSeriesTranslationsExportView',
+    'ProductSeriesView',
+    ]
 
 import cgi
 import os.path
@@ -55,6 +59,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.lazr.enum import EnumeratedType, Item, use_template
+from canonical.widgets import SinglePopupWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 
@@ -111,7 +116,15 @@ class ProductSeriesSOP(StructuralObjectPresentation):
 class ProductSeriesFacets(StandardLaunchpadFacets):
 
     usedfor = IProductSeries
-    enable_only = ['overview', 'bugs', 'specifications', 'translations']
+    enable_only = [
+        'overview', 'branches', 'bugs', 'specifications', 'translations']
+
+    def branches(self):
+        # Override to go to the branches for the product.
+        text = 'Code'
+        summary = 'View related branches of code'
+        link = canonical_url(self.context.product, rootsite='code')
+        return Link(link, text, summary=summary)
 
 
 class ProductSeriesOverviewMenu(ApplicationMenu):
@@ -119,8 +132,8 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     usedfor = IProductSeries
     facet = 'overview'
     links = [
-        'edit', 'driver', 'editsource', 'ubuntupkg', 'add_package',
-        'add_milestone', 'add_release', 'rdf', 'review'
+        'edit', 'driver', 'editsource', 'link_branch', 'ubuntupkg',
+        'add_package', 'add_milestone', 'add_release', 'rdf', 'review'
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -138,6 +151,11 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     def editsource(self):
         text = 'Edit source'
         return Link('+source', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def link_branch(self):
+        text = 'Link to branch'
+        return Link('+linkbranch', text, icon='edit')
 
     def ubuntupkg(self):
         text = 'Link to Ubuntu package'
@@ -540,6 +558,50 @@ class ProductSeriesEditView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+
+class ProductSeriesLinkBranchView(LaunchpadEditFormView):
+    """View to set the bazaar branch for a product series."""
+
+    schema = IProductSeries
+    field_names = ['user_branch']
+
+    custom_widget('user_branch', SinglePopupWidget, displayWidth=35)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+        # Clear out old revision control details.
+        if self.context.rcstype == RevisionControlSystems.CVS:
+            self.context.rcstype = None
+            self.context.cvsroot = None
+            self.context.cvsmodule = None
+            self.context.cvsbranch = None
+        elif self.context.rcstype == RevisionControlSystems.SVN:
+            self.context.rcstype = None
+            self.context.svnrepository = None
+        else:
+            # Nothing to clear out.
+            assert self.context.rcstype is None, "rcstype is not None"
+        self.request.response.addInfoNotification(
+            'Series code location updated.')
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the product series page."""
+
+
+class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
+    """Set the branch link from the code overview page."""
+
+    @property
+    def next_url(self):
+        """Take the user back to the code overview page."""
+        return canonical_url(self.context.product, rootsite="code")
 
 
 class UIRevisionControlSystems(EnumeratedType):

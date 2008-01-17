@@ -1118,21 +1118,21 @@ ALTER TABLE bugproductinfestation ENABLE TRIGGER ALL;
 
 ALTER TABLE bugsubscription DISABLE TRIGGER ALL;
 
-INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (1, 11, 1, '2006-10-16 18:31:43.154816');
-INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (4, 12, 1, '2006-10-16 18:31:43.156104');
-INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (5, 11, 2, '2006-10-16 18:31:43.156485');
-INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (6, 16, 7, '2006-10-16 18:31:43.156824');
-INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (7, 12, 8, '2006-10-16 18:31:43.157159');
-INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (8, 12, 4, '2006-10-16 18:31:43.157495');
-INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (9, 16, 9, '2006-10-16 18:31:43.15783');
-INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (10, 12, 9, '2006-10-16 18:31:43.158165');
-INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (11, 16, 10, '2006-10-16 18:31:43.158628');
-INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (12, 16, 11, '2007-03-15 20:33:56.67893');
-INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (13, 16, 12, '2007-03-15 20:41:18.635493');
-INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (14, 12, 13, '2007-07-27 20:00:58.299796');
-INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (15, 63, 14, '2007-08-09 11:39:16.836856');
-INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (16, 14, 14, '2007-08-09 11:39:16.836856');
-INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (17, 16, 15, '2007-12-18 16:30:19.103679');
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (1, 11, 1, '2006-10-16 18:31:43.154816', 65);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (4, 12, 1, '2006-10-16 18:31:43.156104', 65);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (5, 11, 2, '2006-10-16 18:31:43.156485', 65);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (6, 16, 7, '2006-10-16 18:31:43.156824', 65);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (7, 12, 8, '2006-10-16 18:31:43.157159', 65);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (8, 12, 4, '2006-10-16 18:31:43.157495', 65);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (9, 16, 9, '2006-10-16 18:31:43.15783', 65);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (10, 12, 9, '2006-10-16 18:31:43.158165', 65);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (11, 16, 10, '2006-10-16 18:31:43.158628', 65);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (12, 16, 11, '2007-03-15 20:33:56.67893', 65);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (13, 16, 12, '2007-03-15 20:41:18.635493', 65);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (14, 12, 13, '2007-07-27 20:00:58.299796', 65);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (15, 63, 14, '2007-08-09 11:39:16.836856', 65);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (16, 14, 14, '2007-08-09 11:39:16.836856', 65);
+INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by) VALUES (17, 16, 15, '2007-12-18 16:30:19.103679', 65);
 
 
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;

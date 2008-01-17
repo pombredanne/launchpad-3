@@ -564,7 +564,7 @@ class QuestionMakeBugView(LaunchpadFormView):
             owner=self.user, title=data['title'], comment=data['description'])
         bug = question.target.createBug(params)
         question.linkBug(bug)
-        bug.subscribe(question.owner)
+        bug.subscribe(question.owner, self.user)
         bug_added_event = SQLObjectModifiedEvent(
             question, unmodifed_question, ['bugs'])
         notify(bug_added_event)

@@ -13,7 +13,7 @@ The Application tabs should point to IProductSeries URLs.
 
   >>> print_tab_links(browser.contents)
   Overview: http://launchpad.dev/evolution/trunk/
-  Code: Unavailable
+  Code: http://code.launchpad.dev/evolution
   Bugs: http://bugs.launchpad.dev/evolution/trunk/
   Blueprints: http://blueprints.launchpad.dev/evolution/trunk/
   Translations: http://translations.launchpad.dev/evolution/trunk/

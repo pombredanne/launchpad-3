@@ -19,9 +19,9 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/team/@@+portlet-details" />
-</metal:leftportlets>
+</metal:portlets>
 
 <metal:macros fill-slot="bogus">
   <metal:macro define-macro="person">
