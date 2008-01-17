@@ -220,7 +220,7 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
 class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
     """Archive package deletion view class.
 
-    This view presents a package search slot in a POST form implementing
+    This view presents a package selection slot in a POST form implementing
     deletion action that could be performed upon a set of selected packages.
     """
 
@@ -257,8 +257,8 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         """Creates the 'selected_sources' field.
 
         'selected_sources' is a list of elements of a vocabulary based on
-        the search results presented. This way zope validation mechanisms
-        will do the job for us.
+        the source publications that will be presented. This way zope
+        infrastructure will do the validation for us.
         """
         terms = []
         for pub in self.sources[:self.max_sources_presented]:
@@ -298,10 +298,10 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         """Whether of not some sources are not displayed in the widget."""
         return self.available_sources_size > self.max_sources_presented
 
-    @action(_("Show"), name="show")
-    def action_show(self, action, data):
+    @action(_("Update"), name="update")
+    def action_update(self, action, data):
         """Simply re-issue the form with the new values."""
-        # The 'selected_sources' widget will always be refresehed
+        # The 'selected_sources' widget will always be updated
         # considering 'name_filter' input value when the page is loaded.
         pass
 

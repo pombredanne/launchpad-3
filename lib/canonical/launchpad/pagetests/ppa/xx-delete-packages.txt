@@ -68,25 +68,21 @@ sources is presented,
     iceweasel - 1.0  2007-07-09  Published  Warty           Editors
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
-The 'show' form queries sources with name matching the given text.
+The user can update the form to only list published sources with name
+matching the given text.
 
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = 'nonexistentpackage'
-    >>> admin_browser.getControl("Show").click()
+    >>> admin_browser.getControl("Update").click()
     >>> print_ppa_packages(admin_browser.contents)
     No matching package for 'nonexistentpackage'.
 
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = 'pmount'
-    >>> admin_browser.getControl("Show").click()
+    >>> admin_browser.getControl("Update").click()
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
-
-
-The main difference between this search and the one presented in
-+index is that a checkbox is rendered for each result table row and
-only considers PUBLISHED sources.
 
 Foo Bar can select one or more sources to be deleted and the
 'deletion_comment' field is mandatory.
@@ -126,7 +122,7 @@ Once the deletion is successfully requested, Foo Bar sees an
 informational message containing the summary of the action
 performed. The results presented are old.
 
-    >>> admin_browser.getControl("Show").click()
+    >>> admin_browser.getControl("Update").click()
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['27']
     >>> admin_browser.getControl("Deletion comment").value = "DO IT"
@@ -148,7 +144,7 @@ performed. The results presented are old.
 When Foo Bar refreshes the page an up-to-date list is be presented
 excluding the just-deleted packages.
 
-    >>> admin_browser.getControl("Show").click()
+    >>> admin_browser.getControl("Update").click()
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
     iceweasel - 1.0  2007-07-09  Published  Warty           Editors
@@ -181,7 +177,7 @@ will use another browser to inspect the results of our deletions.
 
 Multiple packages can be deleted in one single batch.
 
-    >>> admin_browser.getControl("Show").click()
+    >>> admin_browser.getControl("Update").click()
 
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['28', '29']
