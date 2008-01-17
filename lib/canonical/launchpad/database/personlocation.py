@@ -109,6 +109,5 @@ class PersonLocationAdapter:
                 time_zone=time_zone,
                 latitude=latitude,
                 longitude=longitude,
-                last_modified_by=user
-                )
+                last_modified_by=user)
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Remove personal details of a user from the database, leaving just a stub."""
+"""Remove personal details of a user from the database, leaving a stub."""
 
 __metaclass__ = type
 __all__ = []
@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
 
 def close_account(con, log, username):
     """Close a person's account.
-    
+
     Return True on success, or log an error message and return False
     """
     cur = con.cursor()

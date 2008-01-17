@@ -77,7 +77,6 @@ from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.packagebugcontact import PackageBugContact
-from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.shipit import (
     MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT, ShippingRequest)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -248,7 +247,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def set_time_zone(self, timezone):
         location = PersonLocation.selectOneBy(person=self)
         if location is None:
-            return PersonLocation(
+            location = PersonLocation(
                 person=self,
                 latitude=None,
                 longitude=None,
@@ -2223,6 +2222,71 @@ class PersonSet:
         return Person.select("Person.teamowner IS NOT NULL",
             orderBy=['-datecreated'], limit=limit)
 
+    def _merge_person_decoration(self, to_person, from_person, skip, cur,
+        decorator_table, person_pointer_column, additional_person_columns):
+        """Merge a table that "decorates" Person.
+
+        Because "person decoration" is becoming more frequent, we create a
+        helper function that can be used for tables that decorate person.
+
+        :to_person:       the IPerson that is "real"
+        :from_person:     the IPerson that is being merged away
+        :skip:            a list of table/column pairs that have been
+                          handled
+        :cur:             a database cursor
+        :decorator_table: the name of the table that decorated Person
+        :person_pointer_column:
+                          the column on decorator_table that UNIQUE'ly
+                          references Person.id
+        :additional_person_columns:
+                          additional columns in the decorator_table that
+                          also reference Person.id but are not UNIQUE
+
+        A Person decorator is a table that uniquely references Person,
+        so that the information in the table "extends" the Person table.
+        Because the reference to Person is unique, there can only be one
+        row in the decorator table for any given Person. This function
+        checks if there is an existing decorator for the to_person, and
+        if so, it just leaves any from_person decorator in place as
+        "noise". Otherwise, it updates any from_person decorator to
+        point to the "to_person". There can also be other columns in the
+        decorator which point to Person, these are assumed to be
+        non-unique and will be updated to point to the to_person
+        regardless.
+        """
+        cur = cursor()
+
+        # First, update the main UNIQUE pointer row which links the
+        # decorator table to Person. We do not update rows if there are
+        # already rows in the table that refer to the to_person
+        cur.execute(
+         """UPDATE %(decorator)s
+            SET %(person_pointer)s=%(to_id)d
+            WHERE %(person_pointer)s=%(from_id)d
+              AND ( SELECT count(*) FROM %(decorator)s
+                    WHERE %(person_pointer)s=%(to_id)d ) = 0
+            """ % {
+                'decorator': decorator_table,
+                'person_pointer': person_pointer_column,
+                'from_id': from_person.id,
+                'to_id': to_person.id})
+
+        # Now, update any additional columns in the table which point to
+        # Person. Since these are assumed to be NOT UNIQUE, we don't
+        # have to worry about multiple rows pointing at the to_person.
+        for additional_column in additional_person_columns:
+            cur.execute(
+             """UPDATE %(decorator)s
+                SET %(column)s=%(to_id)d
+                WHERE %(column)s=%(from_id)d
+                """ % {
+                    'decorator': decorator_table,
+                    'from_id': from_person.id,
+                    'to_id': to_person.id,
+                    'column': additional_column})
+        skip.append(
+            (decorator_table.lower(), person_pointer_column.lower()))
+
     def merge(self, from_person, to_person):
         """See `IPersonSet`."""
         # Sanity checks
@@ -2301,60 +2365,10 @@ class PersonSet:
         to_id = to_person.id
         from_id = from_person.id
 
-        # Merge a table that "decorates" Person. Because "person decoration"
-        # is becoming more frequent, we create a helper function that
-        # can be used for tables that decorate person.
-        def merge_person_decorator(
-            to_person, from_person, decorator_table, person_pointer_column,
-            additional_person_columns):
-            """This function merges tables that "decorate" Person.
-
-            A Person decorator is a table that uniquely references Person,
-            so that the information in the table "extends" the Person table.
-            Because the reference to Person is unique, there can only be one
-            row in the decorator table for any given Person. This function
-            checks if there is an existing decorator for the to_person, and
-            if so, it just leaves any from_person decorator in place as
-            "noise". Otherwise, it updates any from_person decorator to
-            point to the "to_person". There can also be other columns in the
-            decorator which point to Person, these are assumed to be
-            non-unique and will be updated to point to the to_person
-            regardless.
-            """
-            # First, update the main UNIQUE pointer row which links the
-            # decorator table to Person.
-            cur.execute(
-             """UPDATE %(decorator)s
-                SET %(person_pointer)s=%(to_id)d
-                WHERE %(person_pointer)s=%(from_id)d AND
-                      %(decorator)s.id NOT IN (
-                    SELECT id FROM %(decorator)s
-                    WHERE %(person_pointer)s=%(to_id)d)
-                """ % {
-                    'decorator': decorator_table,
-                    'person_pointer': person_pointer_column,
-                    'from_id': from_person.id,
-                    'to_id': to_person.id
-                    })
-            # Now, update any additional columns in the table which point to
-            # Person. Since these are assumed to be NOT UNIQUE, we don't
-            # have to worry about multiple rows pointing at the to_person.
-            for additional_column in additional_person_columns:
-                cur.execute(
-                 """UPDATE %(decorator)s
-                    SET %(column)s=%(to_id)d
-                    WHERE %(column)s=%(from_id)d
-                    """ % {
-                        'decorator': decorator_table,
-                        'from_id': from_person.id,
-                        'to_id': to_person.id,
-                        'column': additional_column
-                        })
         # Update PersonLocation, which is a Person-decorator table
-        merge_person_decorator(
-            to_person, from_person, 'PersonLocation', 'person',
+        self._merge_person_decoration(
+            to_person, from_person, skip, cur, 'PersonLocation', 'person',
             ['last_modified_by', ])
-        skip.append(('personlocation','person'))
 
         # Update GPGKey. It won't conflict, but our sanity checks don't
         # know that
