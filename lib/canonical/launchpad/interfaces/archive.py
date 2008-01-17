@@ -165,9 +165,9 @@ class IArchivePackageDeletionForm(Interface):
         description=_("Display packages only with name matching the given "
                       "filter."))
 
-    comment = TextLine(
-        title=_("Comment"), required=False,
-        description=_("The reason why the package is being modified."))
+    deletion_comment = TextLine(
+        title=_("Deletion comment"), required=False,
+        description=_("The reason why the package is being deleted."))
 
 
 class IArchiveSet(Interface):

@@ -68,17 +68,17 @@ sources is presented,
     iceweasel - 1.0  2007-07-09  Published  Warty           Editors
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
-The 'search' form queries sources with name matching the given text.
+The 'show' form queries sources with name matching the given text.
 
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = 'nonexistentpackage'
-    >>> admin_browser.getControl("Search").click()
+    >>> admin_browser.getControl("Show").click()
     >>> print_ppa_packages(admin_browser.contents)
     No matching package for 'nonexistentpackage'.
 
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = 'pmount'
-    >>> admin_browser.getControl("Search").click()
+    >>> admin_browser.getControl("Show").click()
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
@@ -89,9 +89,9 @@ The main difference between this search and the one presented in
 only considers PUBLISHED sources.
 
 Foo Bar can select one or more sources to be deleted and the
-'comment' field is mandatory for deletions.
+'deletion_comment' field is mandatory.
 
-    >>> admin_browser.getControl('Comment').value
+    >>> admin_browser.getControl('Deletion comment').value
     ''
 
     >>> admin_browser.getControl(
@@ -103,7 +103,7 @@ Foo Bar can select one or more sources to be deleted and the
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
-    Comment should be provided for deletions.
+    Deletion comment is required.
 
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
@@ -114,7 +114,7 @@ Foo Bar can select one or more sources to be deleted and the
 Deletion requires, at least, one selected a source, otherwise an error
 is issued.
 
-    >>> admin_browser.getControl("Comment").value = "DO IT"
+    >>> admin_browser.getControl("Deletion comment").value = "DO IT"
     >>> admin_browser.getControl("Delete").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -124,12 +124,12 @@ is issued.
 
 Once the deletion is successfully requested, Foo Bar sees an
 informational message containing the summary of the action
-performed. Search results is old.
+performed. The results presented are old.
 
-    >>> admin_browser.getControl("Search").click()
+    >>> admin_browser.getControl("Show").click()
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['27']
-    >>> admin_browser.getControl("Comment").value = "DO IT"
+    >>> admin_browser.getControl("Deletion comment").value = "DO IT"
     >>> admin_browser.getControl("Delete").click()
 
     >>> messages = get_feedback_messages(admin_browser.contents)
@@ -148,7 +148,7 @@ performed. Search results is old.
 When Foo Bar refreshes the page an up-to-date list is be presented
 excluding the just-deleted packages.
 
-    >>> admin_browser.getControl("Search").click()
+    >>> admin_browser.getControl("Show").click()
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
     iceweasel - 1.0  2007-07-09  Published  Warty           Editors
@@ -181,12 +181,12 @@ will use another browser to inspect the results of our deletions.
 
 Multiple packages can be deleted in one single batch.
 
-    >>> admin_browser.getControl("Search").click()
+    >>> admin_browser.getControl("Show").click()
 
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['28', '29']
     >>> admin_browser.getControl(
-    ...    name='field.comment').value = "DO IT AGAIN !"
+    ...    "Deletion comment").value = "DO IT AGAIN !"
     >>> admin_browser.getControl("Delete").click()
 
     >>> messages = get_feedback_messages(admin_browser.contents)

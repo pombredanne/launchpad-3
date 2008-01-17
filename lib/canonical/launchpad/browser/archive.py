@@ -229,7 +229,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
     # Maximum number of 'sources' presented.
     max_sources_presented = 10
 
-    custom_widget('comment', StrippedTextWidget, displayWidth=50)
+    custom_widget('deletion_comment', StrippedTextWidget, displayWidth=50)
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
 
     def setUpFields(self):
@@ -298,8 +298,8 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         """Whether of not some sources are not displayed in the widget."""
         return self.available_sources_size > self.max_sources_presented
 
-    @action(_("Search"), name="search")
-    def action_search(self, action, data):
+    @action(_("Show"), name="show")
+    def action_show(self, action, data):
         """Simply re-issue the form with the new values."""
         # The 'selected_sources' widget will always be refresehed
         # considering 'name_filter' input value when the page is loaded.
@@ -310,16 +310,16 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         """Perform the deletion of the selected packages.
 
         The deletion will be performed upon the 'selected_sources' contents
-        respecting the auxiliary parameter 'comment'.
+        respecting the auxiliary parameter 'deletion_comment'.
         """
-        comment = data.get('comment')
+        comment = data.get('deletion_comment')
         selected_sources = data.get('selected_sources')
 
         if len(selected_sources) == 0:
             self.addError("No sources selected.")
 
         if comment is None:
-            self.addError("Comment should be provided for deletions.")
+            self.addError("Deletion comment is required.")
 
         if len(self.errors) != 0:
             return
