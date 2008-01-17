@@ -48,7 +48,8 @@ from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
-from canonical.launchpad.browser.feeds import FeedsMixin
+from canonical.launchpad.browser.feeds import (
+    BugTargetLatestBugsFeedLink, FeedsMixin)
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
 from canonical.launchpad.browser.questiontarget import (
@@ -364,6 +365,14 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
     pass
 
 
+class ProjectBugView(ProjectView):
+    """Project view for bugs.launchpad.net.
+
+    Do not include announcement feed <link> tags on this page.
+    """
+    feed_types = (BugTargetLatestBugsFeedLink,)
+
+
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
@@ -593,9 +602,10 @@ class ProjectBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
 
-    def _branches(self, lifecycle_status):
+    def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesForProject(
-            self.context, lifecycle_status, self.user, self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
 
     @property
     def no_branch_message(self):

@@ -14,7 +14,6 @@
 
 <metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/product/@@+portlet-details" />
 </metal:portlets>
 
 <metal:heading fill-slot="pageheading">
@@ -72,7 +71,7 @@
               (<a tal:attributes="href python:view.md5URL(file.libraryfile)"
               >md5</a><tal:signature condition="file/signature">,
               <a tal:attributes="href python:view.fileURL(file.signature)">
-              pgp</a></tal:signature>)
+              sig</a></tal:signature>)
             </td>
             <td tal:content="file/description">Installer for i386</td>
           </tr>

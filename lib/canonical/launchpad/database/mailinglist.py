@@ -23,8 +23,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
-    IMailingListSet, IMailingListSubscription, MailingListStatus,
-    MAILING_LISTS_DOMAIN)
+    IMailingListSet, IMailingListSubscription, MailingListStatus)
 
 
 class MailingList(SQLBase):
@@ -60,7 +59,7 @@ class MailingList(SQLBase):
     @property
     def address(self):
         """See `IMailingList`."""
-        return '%s@%s' % (self.team.name, MAILING_LISTS_DOMAIN)
+        return '%s@%s' % (self.team.name, config.mailman.build.host_name)
 
     @property
     def archive_url(self):
@@ -258,9 +257,9 @@ class MailingList(SQLBase):
                 (person.displayname, address.email))
         subscription.email_address = address
 
-    def getAddresses(self):
-        """See `IMailingList`."""
-        subscriptions = MailingListSubscription.select(
+    def _getSubscriptions(self):
+        """Return the IMailingListSubscriptions for this mailing list."""
+        return MailingListSubscription.select(
             """mailing_list = %s AND
                TeamParticipation.team = %s AND
                MailingList.status <> %s AND
@@ -268,8 +267,60 @@ class MailingList(SQLBase):
                TeamParticipation.person = MailingListSubscription.person
             """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
             distinct=True, clauseTables=['TeamParticipation', 'MailingList'])
-        for subscription in subscriptions:
-            yield subscription.subscribed_address.email
+
+    def getSubscribedAddresses(self):
+        """See `IMailingList`."""
+        # Import here to avoid circular imports.
+        from canonical.launchpad.database.emailaddress import EmailAddress
+        # In order to handle the case where the preferred email address is
+        # used (i.e. where MailingListSubscription.email_address is NULL), we
+        # need to UNION, those using a specific address and those using the
+        # preferred address.
+        clause_tables = ('MailingList',
+                         'MailingListSubscription',
+                         'TeamParticipation')
+        preferred = EmailAddress.select("""
+            EmailAddress.person = MailingListSubscription.person AND
+            MailingList.id = MailingListSubscription.mailing_list AND
+            TeamParticipation.person = MailingListSubscription.person AND
+            MailingListSubscription.mailing_list = %s AND
+            TeamParticipation.team = %s AND
+            MailingList.status <> %s AND
+            MailingListSubscription.email_address IS NULL AND
+            EmailAddress.status = %s
+            """ % sqlvalues(self, self.team,
+                            MailingListStatus.INACTIVE,
+                            EmailAddressStatus.PREFERRED),
+            clauseTables=clause_tables)
+        specific = EmailAddress.select("""
+            EmailAddress.id = MailingListSubscription.email_address AND
+            MailingList.id = MailingListSubscription.mailing_list AND
+            TeamParticipation.person = MailingListSubscription.person AND
+            MailingListSubscription.mailing_list = %s AND
+            TeamParticipation.team = %s AND
+            MailingList.status <> %s
+            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE),
+            clauseTables=clause_tables)
+        return preferred.union(specific)
+
+    def getSenderAddresses(self):
+        """See `IMailingList`."""
+        # Import here to avoid circular imports.
+        from canonical.launchpad.database.emailaddress import EmailAddress
+        return EmailAddress.select("""
+            EmailAddress.person = MailingListSubscription.person AND
+            MailingList.id = MailingListSubscription.mailing_list AND
+            TeamParticipation.person = MailingListSubscription.person AND
+            MailingListSubscription.mailing_list = %s AND
+            TeamParticipation.team = %s AND
+            MailingList.status <> %s AND
+            EmailAddress.status IN %s
+            """ % sqlvalues(self, self.team, MailingListStatus.INACTIVE,
+                            (EmailAddressStatus.VALIDATED,
+                             EmailAddressStatus.PREFERRED)),
+            distinct=True, clauseTables=['MailingListSubscription',
+                                         'TeamParticipation',
+                                         'MailingList'])
 
 
 class MailingListSet:

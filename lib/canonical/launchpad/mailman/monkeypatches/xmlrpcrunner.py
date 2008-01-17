@@ -128,6 +128,7 @@ class XMLRPCRunner(Runner):
     def _get_subscriptions(self):
         """Get the latest subscription information."""
         # First, calculate the names of the active mailing lists.
+        # pylint: disable-msg=W0331
         active_lists = [list_name for list_name in Utils.list_names()
                         if list_name <> mm_cfg.MAILMAN_SITE_LIST]
         try:
@@ -144,9 +145,9 @@ class XMLRPCRunner(Runner):
         for list_name in info:
             mlist = MailList(list_name)
             try:
-                # Create a mapping of subscriber address to subscriber real
-                # name.  Note that currently the flags and status are unused.
-                member_map = dict((address, realname)
+                # Create a mapping of email address to the member's real name,
+                # flags, and status.  Note that flags is currently unused.
+                member_map = dict((address, (realname, flags, status))
                                   for address, realname, flags, status
                                   in info[list_name])
                 # Start by calculating two sets: one is the set of new members
@@ -160,15 +161,20 @@ class XMLRPCRunner(Runner):
                 updates = current_members & future_members
                 # Handle additions first.
                 for address in adds:
-                    mlist.addNewMember(address, realname=member_map[address])
+                    realname, flags, status = member_map[address]
+                    mlist.addNewMember(address, realname=realname)
+                    mlist.setDeliveryStatus(address, status)
                 # Handle deletions next.
                 for address in deletes:
                     mlist.removeMember(address)
                 # The members who are sticking around may have updates to
-                # their real names, so it's just as easy to set that for
-                # everyone as it is to check to see if there's a change.
+                # their real names or statuses, so it's just as easy to set
+                # that for everyone as it is to check to see if there's a
+                # change.
                 for address in updates:
-                    mlist.setMemberName(address, member_map[address])
+                    realname, flags, status = member_map[address]
+                    mlist.setMemberName(address, realname)
+                    mlist.setDeliveryStatus(address, status)
                 # We're done, so flush the changes for this mailing list.
                 mlist.Save()
             finally:
@@ -277,12 +283,14 @@ class XMLRPCRunner(Runner):
                 mlist.Create(team_name,
                              mm_cfg.SITE_LIST_OWNER,
                              ' no password ')
+                # Additional hard coded list defaults.
+                # - Personalize regular delivery so that we can VERP these.
+                mlist.personalize = 1
                 mlist.Save()
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
             except:
-                syslog('xmlrpc',
-                       'List creation error for team: %s', team_name)
+                syslog('xmlrpc', 'List creation error for team: %s', team_name)
                 log_exception()
                 return False
             else:

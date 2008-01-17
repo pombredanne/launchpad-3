@@ -34,6 +34,7 @@ __all__ = [
     'ProductSetNavigation',
     'ProductSetContextMenu',
     'ProductSetView',
+    'ProductBranchOverviewView',
     'ProductBranchesView',
     'PillarSearchItem',
     ]
@@ -189,7 +190,8 @@ class ProductLicenseMixin:
         if (License.OTHER_PROPRIETARY in self.product.licenses
                 or License.OTHER_OPEN_SOURCE in self.product.licenses):
             user = getUtility(ILaunchBag).user
-            subject = 'Project License Submitted'
+            subject = "Project License Submitted for %s by %s" % (
+                    self.product.name, user.name)
             fromaddress = format_address("Launchpad",
                                          config.noreply_from_address)
             license_titles = '\n'.join(
@@ -774,7 +776,8 @@ class ProductDownloadFilesView(LaunchpadView,
     
     @cachedproperty
     def any_download_files_with_signatures(self):
-        """Across series and releases do any download files have signatures?"""
+        """Across series and releases do any download files have signatures?
+        """
         for series in self.product.serieses:
             for release in series.releases:
                 for file in release.files:
@@ -840,6 +843,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         bugtracker = data.get('bugtracker', None)
         if bugtracker is None or IBugTracker.providedBy(bugtracker):
             data['enable_bug_expiration'] = False
+        ProductLicenseMixin.validate(self, data)
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -1260,6 +1264,35 @@ class ProductShortLink(DefaultShortLink):
         return self.context.displayname
 
 
+class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin):
+    """View for the product code overview."""
+
+    __used_for__ = IProduct
+
+    @cachedproperty
+    def recent_revision_branches(self):
+        """Branches that have the most recent revisions."""
+        branch_set = getUtility(IBranchSet)
+        return branch_set.getBranchesWithRecentRevisionsForProduct(
+            self.context, 5, self.user)
+
+    @property
+    def codebrowse_root(self):
+        """Return the link to codebrowse for this branch."""
+        return config.codehosting.codebrowse_root
+
+    @cachedproperty
+    def recent_revisions(self):
+        """The tip revision for each of the recent revision branches."""
+        return [branch.getBranchRevision(branch.revision_count)
+                for branch in self.recent_revision_branches]
+
+    @cachedproperty
+    def latest_branches(self):
+        """The lastest branches registered for the product."""
+        return self.context.getLatestBranches(visible_by_user=self.user)
+
+
 class ProductBranchesView(BranchListingView):
     """View for branch listing for a product."""
 
@@ -1267,12 +1300,19 @@ class ProductBranchesView(BranchListingView):
     no_sort_by = (BranchListingSort.PRODUCT,)
 
     @cachedproperty
+    def hide_dormant_initial_value(self):
+        """If there are more than one page of branches, hide dormant ones."""
+        page_size = config.launchpad.branchlisting_batch_size
+        return self.context.branches.count() > page_size
+
+    @cachedproperty
     def development_focus_branch(self):
         return self.context.development_focus.series_branch
 
-    def _branches(self, lifecycle_status):
+    def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, lifecycle_status, self.user, self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
 
     @property
     def no_branch_message(self):

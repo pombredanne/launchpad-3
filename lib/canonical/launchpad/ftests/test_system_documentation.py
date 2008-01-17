@@ -527,6 +527,12 @@ special = {
             tearDown=uploaderTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
+    'bugmessage.txt-checkwatches': LayeredDocFileSuite(
+            '../doc/bugmessage.txt',
+            setUp=checkwatchesSetUp,
+            tearDown=uploaderTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
     'bug-private-by-default.txt': LayeredDocFileSuite(
             '../doc/bug-private-by-default.txt',
             setUp=setUp,
@@ -687,6 +693,11 @@ special = {
             '../doc/soyuz-set-of-uploads.txt',
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags
             ),
+    'publishing.txt': LayeredDocFileSuite(
+            '../doc/publishing.txt',
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
+            ),
+
     }
 
 

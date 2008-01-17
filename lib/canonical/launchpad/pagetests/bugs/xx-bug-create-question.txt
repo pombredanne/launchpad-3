@@ -61,6 +61,23 @@ cannot be edited.
     Affects                       Status   Importance  Assigned to
     linux-source-2.6.15 (Ubuntu)  Invalid  Medium      &mdash;
 
+Nor can the bugtask be edited if No Privileges Person accesses the
+bugtask directly.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev'
+    ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10/+editstatus')
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    This bug was converted into a question. It cannot be edited.
+
+    >>> user_browser.getControl('Save Changes')
+    Traceback (most recent call last):
+    ...
+    LookupError: ...
+
+    >>> user_browser.goBack(1)
+
 He sees his comment was appended to the bug report's messages.
 
     >>> print extract_text(
