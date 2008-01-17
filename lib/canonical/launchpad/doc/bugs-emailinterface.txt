@@ -1792,29 +1792,29 @@ First, we create a new firefox bug.
 Ordinary persons always have a preferred email address, but teams can
 exist without a contact address.
 
-    >>> name19 = getUtility(IPersonSet).getByName('name19')
-    >>> print name19.preferredemail
+    >>> wartygnome = getUtility(IPersonSet).getByName('warty-gnome')
+    >>> print wartygnome.preferredemail
     None
 
 We send another email, creating a new task (for the package in ubuntu)
-and assigning the bug to `name19`.
+and assigning the bug to `warty-gnome`.
 
     >>> submit_commands(ff_bug,
-    ...     'affects ubuntu/mozilla-firefox', 'assignee name19')
+    ...     'affects ubuntu/mozilla-firefox', 'assignee warty-gnome')
 
 The email was handled correctly - A new bugtask was added and assigned
 to the specified team.
 
     >>> print ff_bug.bugtasks[-1].assignee.name
-    name19
+    warty-gnome
 
 We don't use the preffered email address to refer to the assignee in
 any email notifications. Instead, we always use the unique
 displayname - a combination of the user's display name and their unique
 Launchpad username.
 
-    >>> print name19.unique_displayname
-    Warty Gnome Team (name19)
+    >>> print wartygnome.unique_displayname
+    Warty Gnome Team (warty-gnome)
     >>> from canonical.launchpad.mailnotification import (
     ...     get_bug_edit_notification_texts)
     >>> from canonical.launchpad.components.bug import BugDelta
@@ -1826,7 +1826,7 @@ Launchpad username.
     ...     added_bugtasks=ff_bug.bugtasks[-1])
     >>> print get_bug_edit_notification_texts(bug_delta)[0]
     **...
-    ...Assignee: Warty Gnome Team (name19)...
+    ...Assignee: Warty Gnome Team (warty-gnome)...
 
 
 XXX: Add tests for non-ascii mails.
