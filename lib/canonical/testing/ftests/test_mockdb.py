@@ -24,19 +24,19 @@ class MockDbTestCase(unittest.TestCase):
     connections = None
 
     def setUp(self):
-        """Setup the test environment, defaulting to 'direct' mode."""
+        """Setup the test environment, defaulting to 'record' mode."""
         # Turn off automatic use of the infrastructure we need to test
         DatabaseLayer.uninstallMockDb()
 
         self.test_key = '_mockdb_unittest'
         self.script_filename = mockdb.script_filename(self.test_key)
         self.connections = []
-        self.recordMode()
+        self.switchToRecordMode()
 
     def tearDown(self):
         if os.path.exists(self.script_filename):
             os.unlink(self.script_filename)
-        self.directMode()
+        self.switchToDirectMode()
 
     def closeConnections(self):
         for con in self.connections:
@@ -48,17 +48,17 @@ class MockDbTestCase(unittest.TestCase):
 
     mode = None
 
-    def directMode(self):
+    def switchToDirectMode(self):
         self.closeConnections()
         self.script = None
         self.mode = 'direct'
 
-    def recordMode(self):
+    def switchToRecordMode(self):
         self.closeConnections()
         self.script = ScriptRecorder(self.test_key)
         self.mode = 'record'
 
-    def replayMode(self):
+    def switchToReplayMode(self):
         # Can't enter replay mode unless we have already recorded something.
         self.failUnless(self.mode in ('record', 'replay'))
 
@@ -76,16 +76,16 @@ class MockDbTestCase(unittest.TestCase):
         """
         # Do things three times, first in direct mode using a real
         # database connection...
-        self.directMode()
+        self.switchToDirectMode()
         yield 'direct'
 
         # Then in mock db mode, recording.
-        self.recordMode()
+        self.switchToRecordMode()
         yield 'record'
 
         # And finally, after storing the previous run, in replay mode.
         self.script.store()
-        self.replayMode()
+        self.switchToReplayMode()
         yield 'replay'
 
     def connect(self, connection_string=None):
@@ -110,12 +110,12 @@ class MockDbTestCase(unittest.TestCase):
         self.script.store()
 
         # Replay correctly.
-        self.replayMode()
+        self.switchToReplayMode()
         con = self.connect()
         con.close()
 
         # Replay incorrectly.
-        self.replayMode()
+        self.switchToReplayMode()
         con = self.connect()
         self.assertRaises(RetryTest, con.rollback)
 
@@ -130,14 +130,14 @@ class MockDbTestCase(unittest.TestCase):
         self.script.store()
 
         # Replay correctly.
-        self.replayMode()
+        self.switchToReplayMode()
         con1 = self.connect()
         con2 = self.connect()
         con1.close()
         con2.close()
 
         # Replay in the wrong order.
-        self.replayMode()
+        self.switchToReplayMode()
         con1 = self.connect()
         con2 = self.connect()
         self.assertRaises(RetryTest, con2.close)
@@ -156,7 +156,7 @@ class MockDbTestCase(unittest.TestCase):
                 self.failUnlessEqual(cur.fetchone()[0], dbuser)
 
         # Confirm that unexpected connection parameters raises a RetryTest.
-        self.replayMode()
+        self.switchToReplayMode()
         self.assertRaises(RetryTest, self.connect, "whoops")
 
     @dont_retry
@@ -296,11 +296,25 @@ class MockDbTestCase(unittest.TestCase):
             cur1.execute("SELECT displayname FROM Person WHERE name='stub'")
             self.failUnlessEqual(cur1.fetchone()[0], "Stuart Bishop")
 
-            # Update a row and rollback.
+            # Update a row and confirm the change stuck.
             cur1.execute(
                 "UPDATE Person SET displayname='Foo' WHERE name='stub'"
                 )
+            cur1.execute("SELECT displayname FROM Person WHERE name='stub'")
+            self.failUnlessEqual(cur1.fetchone()[0], "Foo")
+
+            # And confirm that the change isn't visible to another connection
+            # yet.
+            con2 = self.connect()
+            cur2 = con2.cursor()
+            cur2.execute("SELECT displayname FROM Person WHERE name='stub'")
+            self.failUnlessEqual(cur2.fetchone()[0], "Stuart Bishop")
+
+            # Rollback and confirm the change was undone.
             con1.rollback()
+            cur1 = con1.cursor()
+            cur1.execute("SELECT displayname FROM Person WHERE name='stub'")
+            self.failUnlessEqual(cur1.fetchone()[0], "Stuart Bishop")
 
             # Confirm change wasn't committed.
             con2 = self.connect()
@@ -449,25 +463,30 @@ class MockDbTestCase(unittest.TestCase):
         for mode in self.modes():
             con = self.connect()
             cur = con.cursor()
-            try:
-                row = cur.fetchone()
-                # psycopg seems to be indeterminite in this case! Let it pass.
-                # Our mock db follows the standard consistently.
-                if mode == 'direct' and row is None:
-                    pass
-                else:
-                    self.fail("%r failed in mode %s" % (cur, mode))
-            except psycopg.Error:
-                pass # No query yet. Correct to raise an exception.
-            cur.execute("UPDATE Person SET displayname='Foo' WHERE name='stub'")
-            self.assertRaises(psycopg.Error, cur.fetchone) # Not a SELECT
-            cur.execute("SELECT 1 FROM generate_series(1, 10)")
+
+            # This should raise an exception because no query has
+            # been issued yet.
+            self.failUnlessRaises(psycopg.Error, cur.fetchone)
+
+            cur.execute("""
+                UPDATE Person SET displayname='Foo' WHERE name='stub'
+                """)
+            # This should raise an exception because an UPDATE query
+            # returns no results.
+            self.assertRaises(psycopg.Error, cur.fetchone)
+
+            # Now test that a query that returns results returns the correct
+            # number of correct results in the correct order.
+            cur.execute("""
+                SELECT generate_series FROM generate_series(0, 9)
+                ORDER BY generate_series
+                """)
             for i in range(0, 10):
                 row = cur.fetchone()
                 self.failIf(row is None,
                         "Not enough results - only %d rows" % i)
                 self.failUnlessEqual(len(row), 1, "Should be a single column")
-                self.failUnlessEqual(row[0], 1, "Bad result %s" % repr(row))
+                self.failUnlessEqual(row[0], i, "Bad result %s" % repr(row))
             self.failUnless(cur.fetchone() is None, "Too many results")
 
     @dont_retry
@@ -501,14 +520,26 @@ class MockDbTestCase(unittest.TestCase):
                 # We only do this test against our mock db. psycopg1 gives
                 # a SystemError if fetchall is called before a query issued!
                 self.assertRaises(psycopg.Error, cur.fetchall) # No query yet.
+
+            # This should raise an exeption as an UPDATE query returns no
+            # results.
             cur.execute(
                     "UPDATE Person SET displayname='Foo' WHERE name='stub'"
                     )
             self.assertRaises(psycopg.Error, cur.fetchall) # Not a SELECT.
-            cur.execute("SELECT 1 FROM generate_series(1, 10)")
+
+            # Ensure that cur.fetchall() returns the correct number of
+            # correct results in the correct order.
+            cur.execute("""
+                SELECT generate_series FROM generate_series(1, 4)
+                ORDER BY generate_series
+                """)
             rows = list(cur.fetchall())
-            self.failUnlessEqual(len(rows), 10)
-            cur.fetchall()
+            self.failUnlessEqual(rows, [(1,), (2,), (3,), (4,)])
+
+            # Now the results are exhausted, fetchall() should return an
+            # empty list.
+            self.failUnlessEqual(cur.fetchall(), [])
 
  
 def test_suite():
