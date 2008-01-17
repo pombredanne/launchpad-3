@@ -811,26 +811,18 @@ there.
 
     >>> request, publication = get_request_and_publication()
     >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
-    >>> request._traversalticks_start = 1345
-    >>> request._publicationticks_start = 1346
     >>> request._orig_env['launchpad.traversalticks'] = 500
     >>> request._orig_env['launchpad.publicationticks'] = 500
     >>> from zope.publisher.interfaces import Retry
     >>> try:
-    ...     raise Retry()
+    ...     raise Retry('foo')
     ... except:
-    ...     exc_info = sys.exc_info()
+    ...     publication.handleException(
+    ...         None, request, sys.exc_info(), retry_allowed=True)
+    Traceback (most recent call last):
+    ...
+    Retry: 'foo'
 
-    # XXX: This should raise a Retry exception but instead it's raising an
-    # UnexpectedFormData exception which has been raised in a previous test
-    # and not handled.
-    >>> publication.handleException(
-    ...     None, request, exc_info, retry_allowed=True)
-
-    >>> hasattr(request, '_traversalticks_start')
-    False
-    >>> hasattr(request, '_publicationticks_start')
-    False
     >>> request._orig_env.has_key('launchpad.publicationticks')
     False
     >>> request._orig_env.has_key('launchpad.traversalticks')
@@ -838,8 +830,6 @@ there.
 
     >>> request, publication = get_request_and_publication()
     >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
-    >>> request._traversalticks_start = 1345
-    >>> request._publicationticks_start = 1346
     >>> request._orig_env['launchpad.traversalticks'] = 500
     >>> request._orig_env['launchpad.publicationticks'] = 500
     >>> import canonical.launchpad.webapp.adapter as da
@@ -854,18 +844,15 @@ there.
     Retry: (<class canonical.launchpad.webapp.adapter.DisconnectionError...
     ...
 
-    >>> hasattr(request, '_traversalticks_start')
-    False
-    >>> hasattr(request, '_publicationticks_start')
-    False
     >>> request._orig_env.has_key('launchpad.publicationticks')
     False
     >>> request._orig_env.has_key('launchpad.traversalticks')
     False
 
-(A bit of cleanup so the test can continue:)
+(A bit of cleanup so the test can continue)
 
     >>> login(ANONYMOUS)
+
 
 == Transaction Logging ==
 
