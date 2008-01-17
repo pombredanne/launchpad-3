@@ -1,3 +1,10 @@
+launchpad-buildd (41) dapper-cat; urgency=low
+
+  * sbuild: If we've already marked a package as "installed" with a
+    valid version, don't overwrite that version with PROVIDED.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Thu, 17 Jan 2008 10:39:26 -0700
+
 launchpad-buildd (40) dapper-cat; urgency=low
 
   * sbuild: Don't allow versioned build-deps to be satisfied by provided
