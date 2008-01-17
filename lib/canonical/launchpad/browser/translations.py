@@ -76,7 +76,6 @@ class RosettaApplicationView(TranslationsMixin):
         return langs
 
     def requestCountry(self):
-        import pdb; pdb.set_trace()
         return ICountry(self.request, None)
 
     def browserLanguages(self):
