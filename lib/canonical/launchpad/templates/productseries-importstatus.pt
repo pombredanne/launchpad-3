@@ -20,14 +20,18 @@
         <em><tal:series replace="context/title">evolution MAIN</tal:series></em>.
       </p>
 
-      <h3>Launchpad already knows about my Bazaar branch</h3>
-
       <p>
-        You can associate an existing branch with this series
-        using the '<a href="+linkbranch">Link to branch</a>' action.
+        If the code is already in a Bazaar branch registered with Launchpad
+        <a href="+linkbranch">link the branch to this series</a>.
       </p>
 
-      <h3>The code is already hosted in a Bazaar branch elsewhere</h3>
+      <p>
+        If the code is in a Bazaar branch not yet on Launchpad
+        you can either: have the branch mirrored from a remote location by
+        <a tal:attributes="href string:/${context/product/name}/+addbranch">
+          registering a mirrored branch</a>; or push the branch
+          directly to Launchpad.
+      </p>
 
       <tal:no-keys condition="not:view/user/sshkeys">
         <p id="ssh-key-directions">
@@ -38,25 +42,18 @@
       </tal:no-keys>
       <tal:user-can-push condition="view/user/sshkeys">
         <p>
-          If you wanted to push a branch up for this project with the name
-          <em>trunk</em> then you would use a command line like this:<br/>
+          You can push a branch to Launchpad for this project with the name
+          <em>trunk</em> using a command line like:<br/>
           <tt><strong>bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/trunk</strong></tt>
         </p>
       </tal:user-can-push>
 
       <p>
-        A branch can also be mirrored from a remote location as long as
-        it is publicly available by
-        <a tal:attributes="href string:/${context/product/name}/+addbranch">
-          registering a mirrored branch</a>.
-      </p>
-
-      <h3>The code is hosted in CVS or Subversion</h3>
-
-      <p>
-        Launchpad can import your code into a Bazaar branch.
-        The '<a href="+source">Edit source</a>' action is used
-        to specify the upstream location.
+        If the code is in CVS or Subversion you can
+        <a href="https://help.launchpad.net/VcsImports">
+          import the branch to Bazaar</a>.
+        The first step of this is to specify the
+        <a href="+source">upstream location</a>.
       </p>
 
     </tal:edit-link>
