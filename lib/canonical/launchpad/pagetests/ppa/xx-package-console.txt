@@ -44,12 +44,8 @@ PPA.
     >>> admin_browser.title
     'Package console for PPA for Celso Providelo'
 
-Once accessed the page provides:
-
- * A search form, implemented via GET
- * A empty search results section which will be only populated when
-   'Search' button is hit.
- * A deletion form, implemented via POST.
+Once accessed the page provides a way to search package search and
+optionally delete one or more matching packages via POST form.
 
     >>> def print_ppa_packages(contents):
     ...     packages = find_tags_by_class(contents, 'ppa_package_row')
@@ -87,13 +83,13 @@ The 'search' form functions similarly to the one available in the
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = ''
     >>> admin_browser.getControl(
-    ...    name='field.status_filter').value = ['superseded']
+    ...    name='field.status_filter').value = ['DELETED']
     >>> admin_browser.getControl("Search").click()
     >>> print_ppa_packages(admin_browser.contents)
     No matching package for ''.
 
     >>> admin_browser.getControl(
-    ...    name='field.status_filter').value = ['any']
+    ...    name='field.status_filter').value = ['']
     >>> admin_browser.getControl("Search").click()
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
@@ -164,7 +160,7 @@ performed. Search results is old (XXX ?)
 The deleted record is now presented accordingly.
 
     >>> admin_browser.getControl(
-    ...    name='field.status_filter').value = ['superseded']
+    ...    name='field.status_filter').value = ['DELETED']
     >>> admin_browser.getControl("Search").click()
 
     >>> print_ppa_packages(admin_browser.contents)
@@ -172,7 +168,7 @@ The deleted record is now presented accordingly.
     cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors
 
     >>> admin_browser.getControl(
-    ...    name='field.status_filter').value = ['published']
+    ...    name='field.status_filter').value = ['PUBLISHED']
     >>> admin_browser.getControl("Search").click()
 
     >>> print_ppa_packages(admin_browser.contents)
@@ -181,7 +177,7 @@ The deleted record is now presented accordingly.
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
     >>> admin_browser.getControl(
-    ...    name='field.status_filter').value = ['any']
+    ...    name='field.status_filter').value = ['']
     >>> admin_browser.getControl("Search").click()
 
     >>> print_ppa_packages(admin_browser.contents)
@@ -209,7 +205,7 @@ Multiple packages can be deleted in one single batch.
 Foo Bar can see that all packages present in Celso's PPA are deleted.
 
     >>> admin_browser.getControl(
-    ...    name='field.status_filter').value = ['any']
+    ...    name='field.status_filter').value = ['']
     >>> admin_browser.getControl("Search").click()
 
     >>> print_ppa_packages(admin_browser.contents)

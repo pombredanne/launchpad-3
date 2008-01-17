@@ -18,6 +18,8 @@ from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingStatus)
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -161,9 +163,13 @@ class IArchiveConsoleForm(Interface):
     """Schema used to manipulate packages within a archive."""
 
     name_filter = TextLine(
-        title=_("Package name"), required=False,
+        title=_("Package name"), required=False, default=None,
         description=_("Display packages only with name matching the given "
                       "filter."))
+    status_filter = Choice(
+        title=_("Package status"), required=False, default=None,
+        vocabulary=PackagePublishingStatus,
+        description=_("Display packages only in the given status."))
 
     include_binaries = Bool(
         title=_("Include binaries"), required=False, default=True,

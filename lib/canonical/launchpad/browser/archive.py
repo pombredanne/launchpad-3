@@ -24,6 +24,7 @@ from zope.formlib import form
 from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
@@ -37,7 +38,8 @@ from canonical.launchpad.webapp import (
     stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.widgets import LabeledMultiCheckBoxWidget
+from canonical.widgets import (
+    LabeledMultiCheckBoxWidget, LaunchpadDropdownWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -97,18 +99,13 @@ class ArchiveOverviewMenu(ApplicationMenu):
         return Link('+console', text, icon='edit')
 
 
-class ArchiveViewBase(LaunchpadView):
+class ArchiveViewBase:
     """Common features for Archive view classes."""
 
     @property
     def is_active(self):
         """Whether or not this PPA already have publications in it."""
         return bool(self.context.getPublishedSources())
-
-    @property
-    def search_requested(self):
-        """Whether or not the search form was used."""
-        return self.request.get('field.name_filter') is not None
 
     @property
     def source_count_text(self):
@@ -125,6 +122,25 @@ class ArchiveViewBase(LaunchpadView):
             return '%s binary package' % self.context.number_of_binaries
         else:
             return '%s binary packages' % self.context.number_of_binaries
+
+
+class ArchiveView(ArchiveViewBase, LaunchpadView):
+    """Default Archive view class.
+
+    Implements useful actions and collects useful sets for the page template.
+    """
+
+    __used_for__ = IArchive
+
+    def initialize(self):
+        """Setup infrastructure for the PPA index page.
+
+        Setup sources list entries widget, package filter widget and the
+        search result list.
+        """
+        self.setupSourcesListEntries()
+        self.setupStatusFilterWidget()
+        self.setupPackageBatchResult()
 
     def setupStatusFilterWidget(self):
         """Build a customized publishing status select widget.
@@ -180,6 +196,11 @@ class ArchiveViewBase(LaunchpadView):
         self.sources_list_entries = SourcesListEntriesView(
             entries, self.request)
 
+    @property
+    def search_requested(self):
+        """Whether or not the search form was used."""
+        return self.request.get('field.name_filter') is not None
+
     def getPublishingRecords(self):
         """Return the publishing records results.
 
@@ -197,23 +218,10 @@ class ArchiveViewBase(LaunchpadView):
         self.search_results = self.batchnav.currentBatch()
 
 
-class ArchiveView(ArchiveViewBase):
-    """Default Archive view class.
+class PublishingStatusDropdownWidget(LaunchpadDropdownWidget):
+    """Redefining 'no value' message."""
 
-    Implements useful actions and collects useful sets for the page template.
-    """
-
-    __used_for__ = IArchive
-
-    def initialize(self):
-        """Setup infrastructure for the PPA index page.
-
-        Setup sources list entries widget, package filter widget and the
-        search result list.
-        """
-        self.setupSourcesListEntries()
-        self.setupStatusFilterWidget()
-        self.setupPackageBatchResult()
+    _messageNoValue = _('Any status')
 
 
 class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
@@ -229,6 +237,7 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
     # Maximum number of 'selected_sources' options presented.
     max_options_presented = 10
 
+    custom_widget('status_filter', PublishingStatusDropdownWidget)
     custom_widget('comment', StrippedTextWidget, displayWidth=50)
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget,
                   orientation='vertical', visible=True)
@@ -236,9 +245,11 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpFields(self)
-
-        self.setupStatusFilterWidget()
-
+        # XXX cprov 20080117: we have to setup the schema widget earlier
+        # because some values (name & status) are required to setup
+        # 'selected_sources'. Ideally we could skip them in setUpWidgets
+        # but re-setup doesn't seem to hurt.
+        LaunchpadFormView.setUpWidgets(self)
         self.form_fields = (
             self.createSelectedSourcesField() + self.form_fields)
 
@@ -250,9 +261,7 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         will do the job for us.
         """
         terms = []
-        all_options = self.getPublishingRecords()
-        self.available_options_size = all_options.count()
-        for pub in all_options[:self.max_options_presented]:
+        for pub in self.sources[:self.max_options_presented]:
             terms.append(SimpleTerm(pub, str(pub.id), pub.displayname))
         return form.Fields(
             List(__name__='selected_sources',
@@ -265,9 +274,39 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
             custom_widget=self.custom_widgets['selected_sources'],
             render_context=self.render_context)
 
+    @cachedproperty
+    def sources(self):
+        """Query source publishing records.
+
+        Consider the 'name_filter' and 'status_filter' form values.
+        """
+        if self.widgets['name_filter'].hasInput():
+            name_filter = self.widgets['name_filter'].getInputValue()
+        else:
+            name_filter = None
+
+        if self.widgets['status_filter'].hasInput():
+            status_filter = self.widgets['status_filter'].getInputValue()
+        else:
+            status_filter = None
+
+        return self.context.getPublishedSources(
+            name=name_filter, status=status_filter)
+
+    @cachedproperty
+    def available_options_size(self):
+        """Number of available source options."""
+        return self.sources.count()
+
+    @property
+    def has_ignored_options(self):
+        """Whether of not some options got ignored."""
+        return self.available_options_size > self.max_options_presented
+
     @action(_("Search"), name="search")
     def action_search(self, action, data):
         """Simply re-issue the form with the new values."""
+        pass
 
     def validate_delete(self, action, data):
         """Validate deletion action."""
@@ -294,8 +333,8 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         respecting the auxiliary parameter, 'including_binaries' and
         'comment'.
         """
-        # XXX cprov 20080115: using the 'validator' property passes empty
-        # 'data'. We are calling it manually for now.
+        # XXX cprov 20080115: using the "@action(validator='validate_delete')
+        # property passes empty 'data'. We are calling it manually for now.
         self.validate_delete(action, data)
         if len(self.errors) != 0:
             return

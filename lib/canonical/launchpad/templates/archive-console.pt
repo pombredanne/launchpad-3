@@ -34,20 +34,19 @@
       </thead>
 
       <tbody>
-      <tr tal:define="widget nocall:view/widgets/name_filter">
+      <tr tal:define="name_widget nocall:view/widgets/name_filter;
+                      status_widget nocall:view/widgets/status_filter">
         <td style="white-space: nowrap">
-            <label tal:attributes="for widget/name"
-            >Name</label> <input tal:replace="structure widget"
-            /><label for="field.status_filter">Status</label
-            > <div tal:replace="structure view/plain_status_filter_widget"
-            /> <input tal:replace="structure
-           view/actions/field.actions.search/render" />
+            <label tal:attributes="for name_widget/name"
+            >Name</label> <input tal:replace="structure name_widget"
+            /><label tal:attributes="for status_widget/name">Status</label
+            > <tal:status replace="structure status_widget" /><input
+            tal:replace="structure view/actions/field.actions.search/render" />
         </td>
       </tr>
-      <tr tal:define="widget nocall:view/widgets/selected_sources|nothing;
-                      widget_size python:len(widget.vocabulary)"
+      <tr tal:define="widget nocall:view/widgets/selected_sources|nothing"
           tal:condition="widget">
-        <td tal:condition="widget_size" style="padding: 1em;">
+        <td tal:condition="view/available_options_size" style="padding: 1em;">
 
            <table class="listing">
              <thead>
@@ -66,8 +65,7 @@
                            replace="structure pub/@@+listing-ppa-detailed-selectable" />
              </tal:terms>
              </tbody>
-             <tfoot tal:condition="python: view.available_options_size >
-                                   view.max_options_presented">
+             <tfoot tal:condition="view/has_ignored_options">
                 <tr>
                    <td colspan="7" tal:condition="context/owner/isTeam">
                        <p class="informational message"
@@ -93,7 +91,7 @@
                   type="hidden" value="1" />
         </td>
         <td id="empty-result" class="message error" style="border: solid;"
-            tal:condition="not:widget_size">
+            tal:condition="not:view/available_options_size">
            <p>No matching package for '<span
               tal:replace="request/field.name_filter" />'.</p>
         </td>
@@ -141,8 +139,7 @@
    packages, then select one of more of them for deletion. A deleted
    package will disappear from the archive indexes within 20 minutes
    and the related files will be gone once they are not required in
-   the archive anymore. You can browse through deleted packages using
-   the 'Superseded' or the 'Any Status' status filters.
+   the archive anymore.
 </p>
 
 </body>
