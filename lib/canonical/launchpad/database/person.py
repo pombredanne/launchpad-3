@@ -2301,12 +2301,9 @@ class PersonSet:
         to_id = to_person.id
         from_id = from_person.id
 
-        # Update PersonLocation. If there is no PersonLocation for the
-        # to_person then we have no problem and just do an update. If there
-        # is an existing PersonLocation then we leave any data for the
-        # merged person as noise. Because "person decoration tables" are
-        # going to become more frequent, we create a helper function that
-        # can be used for other tables that decorate person.
+        # Merge a table that "decorates" Person. Because "person decoration"
+        # is becoming more frequent, we create a helper function that
+        # can be used for tables that decorate person.
         def merge_person_decorator(
             to_person, from_person, decorator_table, person_pointer_column,
             additional_person_columns):
