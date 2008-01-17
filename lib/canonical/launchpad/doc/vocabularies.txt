@@ -467,9 +467,13 @@ The vocabulary contains only visible milestones.
     u'1.0'
     >>> one_dot_o.visible = False
 
+We have set two milestones to be not visible, so there is only one left that
+is visible in all_milestones. Remember, all_milestones was defined earlier
+as the set of all milestones regardless of context:
+
     >>> for term in all_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
-    debian: 3.1
+    debian: 3.1-rc1
     >>> len(firefox_milestones)
     0
     >>> len(firefox_task_milestones)

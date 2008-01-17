@@ -26,13 +26,13 @@ class TitleWidget(StrippedTextWidget):
 class SummaryWidget(TextAreaWidget):
     """A widget to capture a summary."""
     width = 44
-    height = 5
+    height = 3
 
 
 class DescriptionWidget(TextAreaWidget):
     """A widget to capture a description."""
     width = 44
-    height = 10
+    height = 5
 
 
 class WhiteboardWidget(TextAreaWidget):

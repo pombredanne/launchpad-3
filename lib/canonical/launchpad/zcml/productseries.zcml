@@ -215,14 +215,11 @@
             class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
-    <browser:addform
+    <browser:page
       name="+addmilestone"
-      for="canonical.launchpad.interfaces.IProductSeries"
-      schema="canonical.launchpad.interfaces.IMilestone"
-      class="canonical.launchpad.browser.milestone.MilestoneAddView"
       facet="overview"
-      fields="name dateexpected description"
-      keyword_arguments="name dateexpected"
+      for="canonical.launchpad.interfaces.IProductSeries"
+      class="canonical.launchpad.browser.milestone.MilestoneAddView"
       permission="launchpad.Edit"
       template="../templates/milestone-add.pt"
       />
