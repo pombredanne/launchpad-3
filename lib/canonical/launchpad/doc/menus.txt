@@ -718,9 +718,9 @@ part of the test, we won't worry about that.
 
     >>> class MyContextMenu(ContextMenu):
     ...
-    ...     links = ['firstcontext']
+    ...     links = ['first']
     ...
-    ...     def firstcontext(self):
+    ...     def first(self):
     ...         target = '+firstcontext'
     ...         text = 'First context menu item'
     ...         return Link(target, text)
@@ -738,12 +738,12 @@ are as we expect.
     ...     print '--- link %s ---' % link.name
     ...     for attrname in sorted(ILink.names(all=True)):
     ...         print '%s: %s' % (attrname, getattr(link, attrname))
-    --- link firstcontext ---
+    --- link first ---
     enabled: True
     escapedtext: First context menu item
     icon: None
     linked: True
-    name: firstcontext
+    name: first
     site: None
     summary: None
     target: +firstcontext
@@ -1000,20 +1000,12 @@ a TraversalError exception:
     ...
     TraversalError: ..., 'broken')
 
-We get also the list of menu entries available for a given context
-and facet, one is for the application menu (first) and the other is
-for the context menu (firstcontext):
-
-    >>> test_tales(
-    ...     'CONTEXTS/menu:foo', context=house, view=view, request=request)
-    {'firstcontext': ...MenuLink..., 'first': ...MenuLink...}
-
 We can also get a context menu as menu:context.  It makes no difference
 whether the TALES code is CONTEXTS/menu:context or context/menu:context,
 because the menus system doesn't need to know anything about the view object.
 
     >>> links = test_tales('context/menu:context', context=house)
-    >>> for link in links:
+    >>> for link in links.values():
     ...     print link.url
     http://launchpad.dev/sesamestreet/number73/+firstcontext
 
