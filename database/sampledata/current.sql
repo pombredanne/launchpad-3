@@ -4054,9 +4054,7 @@ ALTER TABLE personlocation DISABLE TRIGGER ALL;
 
 INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (1, '2008-01-17 09:09:36.619926', 12, NULL, NULL, 'Australia/Perth', 12, '2008-01-17 09:09:36.619926');
 INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (2, '2008-01-17 09:09:36.619926', 16, NULL, NULL, 'Africa/Johannesburg', 16, '2008-01-17 09:09:36.619926');
-INSERT INTO personlocation (id, date_created, person, latitude, longitude,
-time_zone, last_modified_by, date_last_modified) VALUES (3, '2008-01-17
-09:09:36.619926', 55, NULL, NULL, 'America/Los_Angeles', 55, '2008-01-17 09:09:36.619926');
+INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (3, '2008-01-17 09:09:36.619926', 55, NULL, NULL, 'America/Los_Angeles', 55, '2008-01-17 09:09:36.619926');
 
 
 ALTER TABLE personlocation ENABLE TRIGGER ALL;

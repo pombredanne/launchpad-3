@@ -10,8 +10,7 @@ CREATE TABLE PersonLocation (
     time_zone text NOT NULL,
     last_modified_by integer NOT NULL REFERENCES Person(id),
     date_last_modified TIMESTAMP WITHOUT TIME ZONE NOT NULL
-                DEFAULT timezone('UTC'::text, now()),
-    CONSTRAINT personlocation__person__key UNIQUE(person)
+                DEFAULT timezone('UTC'::text, now())
     );
 
 INSERT INTO PersonLocation
