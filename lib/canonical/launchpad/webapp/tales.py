@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0613,R0911
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -104,14 +104,20 @@ class MenuAPI:
         If the facet name is not valid, we get a TraversalError exception that
         is raised outside this method.
         """
-        menu = queryAdapter(
-            self._context, IApplicationMenu, facet_name)
-        if menu is None:
+        menus = [queryAdapter(self._context, IApplicationMenu, facet_name)]
+        menus.append(IContextMenu(self._context, None))
+        if menus == [None, None]:
+            # There aren't menu entries.
             return {}
-        else:
+
+        links = []
+        for menu in menus:
+            if menu is None:
+                continue
             menu.request = self._request
-            links = menu.iterlinks(requesturi=self._requesturi())
-            return dict((link.name, link) for link in links)
+            links.extend(list(menu.iterlinks(requesturi=self._requesturi())))
+        return dict((link.name, link) for link in links)
+
 
     def _nearest_menu(self, menutype):
         try:
