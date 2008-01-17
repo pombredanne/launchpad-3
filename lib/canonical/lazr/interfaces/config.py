@@ -7,12 +7,14 @@ __metaclass__ = type
 __all__ = [
     'ConfigErrors',
     'ConfigSchemaError',
-    'IConfig',
+    'IConfigData',
+    'NoConfigError',
     'IConfigLoader',
     'IConfigSchema',
     'InvalidSectionNameError',
     'ISection',
     'ISectionSchema',
+    'IStackableConfig',
     'NoCategoryError',
     'RedefinedKeyError',
     'RedefinedSectionError',
@@ -49,6 +51,8 @@ class UnknownSectionError(ConfigSchemaError):
 class UnknownKeyError(ConfigSchemaError):
     """The section has a key that is not in the schema."""
 
+class NoConfigError(ConfigSchemaError):
+    """No config has the name."""
 
 class ConfigErrors(ConfigSchemaError):
     """The errors in a Config.
@@ -56,11 +60,11 @@ class ConfigErrors(ConfigSchemaError):
     The list of errors can be accessed via the errors attribute.
     """
 
-    def __init__(self, message, errors=[]):
+    def __init__(self, message, errors=None):
         """Initialize the error with a message and errors.
 
         :param message: a message string
-        :param errors: a list of errors in the config
+        :param errors: a list of errors in the config, or None
         """
         self.message = message
         self.errors = errors
@@ -149,17 +153,58 @@ class IConfigSchema(Interface):
         """
 
 
-class IConfig(IConfigSchema):
+class IConfigData(IConfigSchema):
     """A process configuration.
 
     See `IConfigSchema` for more information about the config file format.
     """
+
+
+class IStackableConfig(IConfigSchema):
+    """A configuration that is built from configs that extend each other.
+
+    A config may extend another config so that a configuration for a
+    process need only define the localized sections and keys. The
+    configuration is constructed from a stack of data that defines,
+    and redefines, the sections and keys in the configuration. Each config
+    overlays its data to define the final configuration.
+
+    A config file declares that is extends another using the 'extends' key
+    in the 'meta' section of the config data file:
+        [meta]
+        extends: common.conf
+
+    The push() and pop() methods can be used to test processes where the
+    test environment must be configured differently.
+    """
     schema = Attribute("The schema that defines the config.")
-    extends = Attribute("The configuration that this extends.")
+    data = Attribute("The current ConfigData. use by the config.")
+    extends = Attribute("The ConfigData that this config extends.")
+    overlays = Attribute("The stack of ConfigData that define this config.")
 
     def validate():
         """Return True if the config is valid for the schema.
 
         :raise `ConfigErrors`: if the are errors. A list of all schema
             problems can be retrieved via the errors property.
+        """
+
+    def push(conf_name, conf_data):
+        """Overlay the config with unparsed config data.
+
+        :param conf_name: the name of the config.
+        :param conf_data: a string of unparsed config data.
+
+        This method appends the parsed ConfigData to the overlays property.
+        """
+
+    def pop(conf_name):
+        """Remove conf_name from the overlays stack.
+
+        :param conf_name: the name of the ConfigData to remove.
+        :return: the tuple of ConfigData that was removed from overlays.
+        :raise NoConfigError: if no ConfigData has the conf_name.
+
+        This method removes the named ConfigData from the stack; ConfigData
+        above the named ConfigData are removed too.
         """

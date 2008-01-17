@@ -139,7 +139,9 @@ class POTemplateFacets(StandardLaunchpadFacets):
 
     def branches(self):
         branches_link = self.target_facets.branches()
-        branches_link.target = self.target
+        # XXX thumper: 2008-01-16
+        # See bug 183433 about changing the target.
+        # branches_link.target = self.target
         return branches_link
 
 
