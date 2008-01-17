@@ -11,7 +11,11 @@ responds to GET.
   ...
   Content-Type: application/json
   <BLANKLINE>
-  [{"name": "bug-importer"}, {"name": "carlos"}, ... {"name": "tsukimi"}]
+  [{"self_resource": "http:\/\/api.launchpad.dev\/people\/bug-importer",
+    "name": "bug-importer"},
+   ...
+   {"self_resource": "http:\/\/api.launchpad.dev\/people\/tsukimi",
+    "name": "tsukimi"}]
 
 The elements of a collection can be looked up by unique identifier:
 
@@ -23,4 +27,5 @@ The elements of a collection can be looked up by unique identifier:
   ...
   Content-Type: application/json
   <BLANKLINE>
-  {"name": "carlos"}
+  {"self_resource": "http:\/\/api.launchpad.dev\/people\/carlos",
+   "name": "carlos"}

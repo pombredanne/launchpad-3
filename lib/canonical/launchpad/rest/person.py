@@ -21,6 +21,11 @@ class PersonEntry(Entry):
     decorates(IPersonEntry)
     schema = IPersonEntry
 
+    parent_collection_name = 'people'
+
+    def fragment(self):
+        return self.context.name
+
 
 class PersonCollection(Collection):
     """A collection of people."""

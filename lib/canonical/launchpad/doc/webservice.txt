@@ -10,7 +10,7 @@ then publishing them as resources through a web service.
 
 Here's the interface for a simple business object that contains a
 recipe. This is the kind of business object you'd find in any Zope
-application, with know special knowledge of web services.
+application, with no special knowledge of web services.
 
     >>> # All classes defined in this test should be new-style classes.
     >>> __metaclass__ = type
@@ -170,7 +170,7 @@ Similarly, you can implement RecipeEntry to the IEntry interface, and
 expose it through the web as an EntryResource.
 
 
-== The WebServiceApplication ==
+== The Service Root ==
 
 How are these Resource objects connected to the web? Through the
 ServiceRoot. This is an object that represents the web
@@ -183,14 +183,18 @@ service itself.
     ...       rootsite = 'api'
     >>> app = MyServiceRoot()
 
+The service root can act as a resource. If you call it and pass in an
+HTTP request, it will act as though you had performed a GET on the URL
+'http://api.launchpad.net/'.
+
     >>> request = LaunchpadTestRequest()
     >>> app(request)
     'This is a web service.'
 
-The WebServiceApplication has a list of top-level collections and
-implements IPublishTraverse, so that a request to a registered
-collection is delegated to the appropriate CollectionResource. Here's
-an example.
+The ServiceRoot has a list of top-level collections and implements
+IPublishTraverse, so that a request to a registered collection is
+delegated to the appropriate CollectionResource. Here's an example,
+equivalent to requesting 'http://api.launchpad.net/recipes/'.
 
     >>> collection = app.publishTraverse(request, "recipes")
     >>> collection

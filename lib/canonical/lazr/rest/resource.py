@@ -160,7 +160,7 @@ class CollectionResource(ReadOnlyResource):
 
 class ServiceRootResource(ReadOnlyResource):
     """A resource that responds to GET by describing the service."""
-    implements(ICanonicalUrlData, IPublishTraverse)
+    implements(IPublishTraverse)
 
     @property
     def rootsite(self):
