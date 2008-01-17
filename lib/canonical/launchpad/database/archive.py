@@ -369,8 +369,10 @@ class Archive(SQLBase):
         result = LibraryFileContent.select(query, clauseTables=clauseTables,
             distinct=True)
 
-        # Unfortunately SQLObject has got a bug where it ignores DISTINCT
-        # on a .sum() operation, so resort to Python addition.
+        # XXX 2008-01-16 Julian.  Unfortunately SQLObject has got a bug
+        # where it ignores DISTINCT on a .sum() operation, so resort to
+        # Python addition.  Revert to using result.sum('filesize') when
+        # SQLObject gets dropped.
         size = sum([lfc.filesize for lfc in result])
         return size
 
