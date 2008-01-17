@@ -19,6 +19,7 @@ from zope.app.form.browser import MultiCheckBoxWidget
 from zope.app.form.browser.itemswidgets import DropdownWidget, RadioWidget
 from zope.app.form.browser.widget import renderElement
 
+from canonical.lazr.enum import IEnumeratedType
 
 class LaunchpadDropdownWidget(DropdownWidget):
     """A Choice widget that doesn't encloses itself in <div> tags."""
@@ -104,7 +105,7 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
 
     _labelWithDescriptionTemplate = (
         u'''<tr>
-              <td rowspan="2">%s</td>
+              <td rowspan="2" style="vertical-align: top">%s</td>
               <td><label for="%s">%s</label></td>
             </tr>
             <tr>
@@ -118,14 +119,18 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
             </tr>
          ''')
 
-    def _renderRow(self, text, value, id, elem):
+    def __init__(self, field, vocabulary, request):
+        """Initialize the widget."""
+        assert IEnumeratedType.providedBy(vocabulary), (
+            'The vocabulary must implement IEnumeratedType')
+        super(LaunchpadRadioWidgetWithDescription, self).__init__(
+            field, vocabulary, request)
+
+    def _renderRow(self, text, form_value, id, elem):
         """Render the table row for the widget depending on description."""
-        # Missing values are the empty string.
-        if value != '':
-            item = self.vocabulary.getTermByToken(value).value
-            # Use getattr so this widget works with vocabularies that don't
-            # specify a description.
-            description = getattr(item, 'description', None)
+        if form_value != self._missing:
+            vocab_term = self.vocabulary.getTermByToken(form_value)
+            description = vocab_term.value.description
         else:
             description = None
 
