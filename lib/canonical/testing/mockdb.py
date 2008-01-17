@@ -173,44 +173,48 @@ class ScriptRecorder:
         try:
             if connection.real_connection is not None:
                 connection.real_connection.close()
-            self.log.append(entry)
         except (psycopg.Warning, psycopg.Error), exception:
             entry.exception = exception
             self.log.append(entry)
             raise
+        else:
+            self.log.append(entry)
 
     def commit(self, connection):
         """Handle Connection.commit()."""
         entry = CommitScriptEntry(connection)
         try:
             connection.real_connection.commit()
-            self.log.append(entry)
         except (psycopg.Warning, psycopg.Error), exception:
             entry.exception = exception
             self.log.append(entry)
             raise
+        else:
+            self.log.append(entry)
 
     def rollback(self, connection):
         """Handle Connection.rollback()."""
         entry = RollbackScriptEntry(connection)
         try:
             connection.real_connection.rollback()
-            self.log.append(entry)
         except (psycopg.Warning, psycopg.Error), exception:
             entry.exception = exception
             self.log.append(entry)
             raise
+        else:
+            self.log.append(entry)
 
     def set_isolation_level(self, connection, level):
         """Handle Connection.set_isolation_level()."""
         entry = SetIsolationLevelScriptEntry(connection, level)
         try:
             connection.real_connection.set_isolation_level(level)
-            self.log.append(entry)
         except (psycopg.Warning, psycopg.Error), exception:
             entry.exception = exception
             self.log.append(entry)
             raise
+        else:
+            self.log.append(entry)
 
     def store(self):
         """Store the script for future use by a ScriptPlayer."""
@@ -465,9 +469,12 @@ class MockDbCursor:
     """A fake DB-API cursor as produced by MockDbConnection.cursor.
     
     The real work is done by the associated ScriptRecorder or ScriptPlayer
-    using the common interface, making this class independant on what
-    more the mock database is running in.
+    using the common interface, making this class independent on what
+    mode the mock database is running in.
     """
+    # The ExecuteScriptEntry for the in progress query, if there is one.
+    # It stores any unfetched results and cursor metadata such as the
+    # resultset description.
     _script_entry = None
 
     arraysize = 100 # As per DB-API.
@@ -521,8 +528,8 @@ class MockDbCursor:
         self.connection._checkClosed()
 
     # Index in our results that the next fetch will return. We don't consume
-    # the results list as if we are recording we need to serialize the results
-    # when the test is completed. 
+    # the results list: if we are recording we need to keep the results 
+    # so we can serialize at the end of the test.
     _fetch_position = 0
 
     def execute(self, query, parameters=None):
