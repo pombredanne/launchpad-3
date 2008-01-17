@@ -73,7 +73,7 @@ provide a message about why the report is a question.
 
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
-    >>> bug_subscription = bug.subscribe(sample_person)
+    >>> bug_subscription = bug.subscribe(sample_person, sample_person)
 
     >>> question = bug.convertToQuestion(
     ...     sample_person, "This is a question.")

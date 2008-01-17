@@ -309,6 +309,8 @@ class SubscribeEmailCommand(EmailCommand):
         if len(string_args) == 2:
             subscription_name = string_args.pop()
 
+        user = getUtility(ILaunchBag).user
+
         if len(string_args) == 1:
             person_name_or_email = string_args.pop()
             valid_person_vocabulary = ValidPersonOrTeamVocabulary()
@@ -323,7 +325,7 @@ class SubscribeEmailCommand(EmailCommand):
             person = person_term.value
         elif len(string_args) == 0:
             # Subscribe the sender of the email.
-            person = getUtility(ILaunchBag).user
+            person = user
         else:
             raise EmailProcessingError(
                 get_error_message('subscribe-too-many-arguments.txt'))
@@ -335,7 +337,7 @@ class SubscribeEmailCommand(EmailCommand):
                     break
 
         else:
-            bugsubscription = bug.subscribe(person)
+            bugsubscription = bug.subscribe(person, user)
             notify(SQLObjectCreatedEvent(bugsubscription))
 
         return bug, current_event

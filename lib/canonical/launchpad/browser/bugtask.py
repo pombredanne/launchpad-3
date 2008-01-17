@@ -89,8 +89,7 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
-    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
-    PersonLatestBugsFeedLink)
+    BugTargetLatestBugsFeedLink, FeedsMixin, PersonLatestBugsFeedLink)
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
@@ -510,7 +509,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
     def _handleSubscribe(self):
         """Handle a subscribe request."""
-        self.context.bug.subscribe(self.user)
+        self.context.bug.subscribe(self.user, self.user)
         self.notices.append("You have been subscribed to this bug.")
 
     def _handleUnsubscribe(self, user):
@@ -1044,7 +1043,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         bugtask = context
 
         if self.request.form.get('subscribe', False):
-            bugtask.bug.subscribe(self.user)
+            bugtask.bug.subscribe(self.user, self.user)
             self.request.response.addNotification(
                 "You have been subscribed to this bug.")
 
@@ -2584,7 +2583,7 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
         # The question.owner was implicitly unsubscribed when the bug
         # was unlinked. We resubscribe the owner if he was subscribed.
         if owner_is_subscribed is True:
-            self.context.bug.subscribe(question.owner)
+            self.context.bug.subscribe(question.owner, self.user)
         self.request.response.addNotification(
             'Removed Question #%s: <a href="%s">%s<a>.'
             % (question.id, canonical_url(question),
