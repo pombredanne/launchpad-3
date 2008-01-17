@@ -57,16 +57,6 @@ which will include an entry for each branch.
     <id>tag:launchpad.net,2007-03-16:/code/~name12/gnome-terminal/scanned</id>
     <id>tag:launchpad.net,2006-10-16:/code/~name12/+junk/junk.dev</id>
     <id>tag:launchpad.net,2006-10-16:/code/~name12/+junk/junk.contrib</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/firefox/main</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/gnome-terminal/2.6</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/gnome-terminal/main</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/gnome-terminal/klingon</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~launchpad/gnome-terminal/launchpad</id>
-    <id>tag:launchpad.net,2007-03-16:/code/~name12/gnome-terminal/mirrored</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/gnome-terminal/pushed</id>
-    <id>tag:launchpad.net,2007-03-16:/code/~name12/gnome-terminal/scanned</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/+junk/junk.dev</id>
-    <id>tag:launchpad.net,2006-10-16:/code/~name12/+junk/junk.contrib</id>
 
 The <update> field for the feed will be the most recent value for the
 updated field in all of the entries.

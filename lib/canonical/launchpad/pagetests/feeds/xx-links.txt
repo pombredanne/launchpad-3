@@ -53,11 +53,11 @@ branches.
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        href="http://feeds.launchpad.dev/~stevea/latest-bugs.atom"
-        title="Latest Bugs for Steve Alexander" />]
+       href="http://feeds.launchpad.dev/~stevea/latest-bugs.atom"
+       title="Latest Bugs for Steve Alexander" />,
     <link rel="alternate" type="application/atom+xml"
-        title="Latest Branches for Steve Alexander"
-        href="http://feeds.launchpad.dev/~stevea/branches.atom" />]
+       href="http://feeds.launchpad.dev/~stevea/branches.atom"
+       title="Latest Branches for Steve Alexander" />]
 
 On the bugs subdomain, only a link to the bugs feed will be included,
 not the branches link.
@@ -86,10 +86,10 @@ main product page.
         title="Announcements for Jokosher" />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/jokosher/latest-bugs.atom"
-        title="Latest Bugs for Jokosher" />]
+        title="Latest Bugs for Jokosher" />,
      <link rel="alternate" type="application/atom+xml"
-        title="Latest Branches for Jokosher"
-        href="http://feeds.launchpad.dev/jokosher/branches.atom" />]
+        href="http://feeds.launchpad.dev/jokosher/branches.atom"
+	title="Latest Branches for Jokosher" />]
 
 Only bug feeds should be linked to on bugs.launchpad.dev.
 
@@ -128,7 +128,10 @@ it must have quotes and html escaped.
         title="Announcements for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/bad-displayname/latest-bugs.atom"
-        title="Latest Bugs for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />]
+        title="Latest Bugs for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />,
+     <link rel="alternate" type="application/atom+xml"
+        href="http://feeds.launchpad.dev/bad-displayname/branches.atom"
+        title="Latest Branches for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />]
 
 == Latest Bugs for a Project ==
 
@@ -146,10 +149,10 @@ on the main project page.
         title="Announcements for GNOME" />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/gnome/latest-bugs.atom"
-        title="Latest Bugs for GNOME" />]
+        title="Latest Bugs for GNOME" />,
      <link rel="alternate" type="application/atom+xml"
-        title="Latest Branches for GNOME"
-        href="http://feeds.launchpad.dev/gnome/branches.atom" />]
+        href="http://feeds.launchpad.dev/gnome/branches.atom"
+	title="Latest Branches for GNOME" />]
 
 Only bug feeds should be linked to on bugs.launchpad.dev.
 
@@ -250,8 +253,8 @@ to the atom feed for that project's latest branches.
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Latest Branches for the Mozilla Project"
-        href="http://feeds.launchpad.dev/mozilla/branches.atom" />]
+        href="http://feeds.launchpad.dev/mozilla/branches.atom" 
+        title="Latest Branches for the Mozilla Project" />]
 
 
 == Latest Branches for a Product ==
@@ -263,8 +266,8 @@ to the atom feed for that product's latest branches.
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Latest Branches for Mozilla Firefox"
-        href="http://feeds.launchpad.dev/firefox/branches.atom" />]
+        href="http://feeds.launchpad.dev/firefox/branches.atom"
+	title="Latest Branches for Mozilla Firefox" />]
 
 
 == Latest Branches for a Person ==
@@ -276,8 +279,8 @@ to the atom feed for that person's latest branches.
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Latest Branches for Mark Shuttleworth"
-        href="http://feeds.launchpad.dev/~sabdfl/branches.atom" />]
+        href="http://feeds.launchpad.dev/~sabdfl/branches.atom"
+	title="Latest Branches for Mark Shuttleworth" />]
 
 
 == Latest Revisions on a Branch ==
@@ -290,5 +293,5 @@ atom feed for that branch's revisions.
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
-        title="Latest Revisions for Branch Mozilla Firefox 0.9.1"
-        href="http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom" />]
+        href="http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom"
+	title="Latest Revisions for Branch Mozilla Firefox 0.9.1" />]
