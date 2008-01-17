@@ -148,10 +148,6 @@ class FeedLinkBase:
             "Context %r does not provide interface %r"
             % (context, self.usedfor))
 
-    def render(self):
-        return ('<link rel="alternate" type="application/atom+xml"'
-                ' title="%s" href="%s"/>\n' % (self.title, self.href))
-
 
 class BugFeedLink(FeedLinkBase):
     usedfor = IBugTask
