@@ -59,6 +59,13 @@ class ICollectionResource(IHTTPResource):
 class IEntry(IJSONPublishable):
     """An entry, exposed as a resource by an IEntryResource."""
 
+    def fragment(self):
+        """Return a URI fragment that uniquely identifies this entry.
+
+        This might be the entry's unique ID or some other unique identifier.
+        It must be possible to use this fragment to find the entry again
+        in a collection of all such entries.
+        """
 
 class ICollection(Interface):
     """A collection, driven by an ICollectionResource."""

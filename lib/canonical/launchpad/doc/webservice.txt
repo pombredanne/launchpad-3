@@ -99,6 +99,10 @@ that defines a constructor.
     ...     adapts(IRecipe)
     ...     decorates(IRecipeEntry)
     ...     schema = IRecipeEntry
+    ...     def fragment(self):
+    ...         """Use the recipe's ID as its URI fragment."""
+    ...         return str(self.context.id)
+
 
 The "schema" attribute points to the interface class that defines the
 attributes exposed through the web service. In this case, it's
