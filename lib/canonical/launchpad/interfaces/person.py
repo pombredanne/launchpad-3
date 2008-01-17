@@ -11,6 +11,7 @@ __all__ = [
     'IAdminTeamMergeSchema',
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
+    'INewPersonForm',
     'IObjectReassignment',
     'IPerson',
     'IPersonChangePassword',
@@ -380,7 +381,7 @@ class IPersonChangePassword(Interface):
             )
 
     password = PasswordField(
-            title=_('New Password'), required=True, readonly=False,
+            title=_('New password'), required=True, readonly=False,
             description=_("Enter the same password in each field.")
             )
 
@@ -425,7 +426,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "here.")
             )
     password = PasswordField(
-            title=_('Password'), required=True, readonly=False)
+            title=_('Password'), required=True, readonly=False,
+            description=_("Enter the same password in each field.")
+            )
     karma = Int(
             title=_('Karma'), readonly=False,
             description=_('The cached total karma for this person.')
@@ -683,6 +686,10 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
                       "a mailto: prefix as a hexadecimal string. This is "
                       "used as a key by FOAF RDF spec"),
         readonly=True)
+
+    verbose_bugnotifications = Bool(
+        title=_("Include bug descriptions when sending me bug notifications"),
+        required=False, default=True)
 
     defaultmembershipperiod = Int(
         title=_('Subscription period'), required=False,
@@ -1244,6 +1251,17 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
         :target: An object providing `IBugTarget` to search within.
         """
+
+
+class INewPersonForm(IPerson):
+    """Interface used to create new Launchpad accounts.
+
+    The only change with `IPerson` is a customised Password field.
+    """
+
+    password = PasswordField(
+        title=_('Create password'), required=True, readonly=False,
+        description=_("Enter the same password in each field."))
 
 
 class ITeam(IPerson, IHasIcon):

@@ -11,10 +11,6 @@
 >
   <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
 <div metal:fill-slot="main">
 
       <h1>Register a bounty</h1>

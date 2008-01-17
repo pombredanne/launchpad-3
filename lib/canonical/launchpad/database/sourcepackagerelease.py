@@ -4,12 +4,11 @@
 __metaclass__ = type
 __all__ = ['SourcePackageRelease']
 
-import sets
-import tarfile
-from StringIO import StringIO
 import datetime
 import pytz
+from StringIO import StringIO
 import re
+import tarfile
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -61,9 +60,11 @@ class SourcePackageRelease(SQLBase):
     dsc = StringCol(dbName='dsc')
     copyright = StringCol(dbName='copyright', notNull=True)
     version = StringCol(dbName='version', notNull=True)
-    changelog = StringCol(dbName='changelog')
+    changelog_entry = StringCol(dbName='changelog_entry')
     builddepends = StringCol(dbName='builddepends')
     builddependsindep = StringCol(dbName='builddependsindep')
+    build_conflicts = StringCol(dbName='build_conflicts')
+    build_conflicts_indep = StringCol(dbName='build_conflicts_indep')
     architecturehintlist = StringCol(dbName='architecturehintlist')
     format = EnumCol(dbName='format', schema=SourcePackageFormat,
         default=SourcePackageFormat.DPKG, notNull=True)
@@ -75,8 +76,8 @@ class SourcePackageRelease(SQLBase):
     # XXX cprov 2006-09-26: Those fields are set as notNull and required in
     # ISourcePackageRelease, however they can't be not NULL in DB since old
     # records doesn't satisfy this condition. We will sort it before using
-    # landing 'NoMoreAptFtparchive' implementation for PRIMARY archive. For
-    # PPA (primary target) we don't need populate old records.
+    # 'NoMoreAptFtparchive' implementation for PRIMARY archive. For PPA
+    # (primary target) we don't need to populate old records.
     dsc_maintainer_rfc822 = StringCol(dbName='dsc_maintainer_rfc822')
     dsc_standards_version = StringCol(dbName='dsc_standards_version')
     dsc_format = StringCol(dbName='dsc_format')
@@ -228,30 +229,6 @@ class SourcePackageRelease(SQLBase):
         return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
                 for pub in self.publishings]
 
-    def architecturesReleased(self, distroseries):
-        # The import is here to avoid a circular import. See top of module.
-        from canonical.launchpad.database.soyuz import DistroArchSeries
-        clauseTables = ['BinaryPackagePublishingHistory',
-                        'BinaryPackageRelease',
-                        'Build']
-        # XXX cprov 2006-08-23: Will distinct=True help us here?
-        archSerieses = sets.Set(DistroArchSeries.select(
-            """
-            BinaryPackagePublishingHistory.distroarchseries =
-               DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %d AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-               BinaryPackageRelease.id AND
-            BinaryPackageRelease.build = Build.id AND
-            Build.sourcepackagerelease = %d
-            """ % (distroseries,
-                   distroseries.distribution.all_distro_archive_ids,
-                   self),
-            clauseTables=clauseTables))
-
-        return archSerieses
-
     def addFile(self, file):
         """See ISourcePackageRelease."""
         determined_filetype = None
@@ -349,9 +326,9 @@ class SourcePackageRelease(SQLBase):
         # on Build table:
         # UNIQUE(distribution, architecturetag, sourcepackagerelease, archive)
         # we should use SelectOne (and, obviously, remove the orderBy).
-        # One detail that might influence in this strategy is automatic-rebuild
-        # when we may have to consider rebuild_index in the constraint.
-        # See more information on bug #148195.
+        # One detail that might influence in this strategy is
+        # automatic-rebuild when we may have to consider rebuild_index in the
+        # constraint.  See more information on bug #148195.
         return Build.selectFirst(query, orderBy=['-datecreated'])
 
     def override(self, component=None, section=None, urgency=None):
@@ -399,7 +376,7 @@ class SourcePackageRelease(SQLBase):
         # this regex is copied from apt-listchanges.py courtesy of MDZ
         new_stanza_line = re.compile(
             '^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*')
-        logfile = StringIO(self.changelog)
+        logfile = StringIO(self.changelog_entry)
         change = ''
         top_stanza = False
         for line in logfile.readlines():
@@ -421,10 +398,10 @@ class SourcePackageRelease(SQLBase):
         tarball = tarfile.open('', 'r', StringIO(tarball_file.read()))
 
         # Get the list of files to attach.
-        filenames = [name for name in tarball.getnames()
-                     if name.startswith('source/') or name.startswith('./source/')
-                     if name.endswith('.pot') or name.endswith('.po')
-                     ]
+        filenames = [
+            name for name in tarball.getnames()
+            if name.startswith('source/') or name.startswith('./source/')
+            if name.endswith('.pot') or name.endswith('.po')]
 
         if importer is None:
             importer = getUtility(ILaunchpadCelebrities).rosetta_experts

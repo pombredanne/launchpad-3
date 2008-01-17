@@ -34,6 +34,8 @@ Trac.convertRemoteStatus() handles the conversion.
     'New'
     >>> trac.convertRemoteStatus('reopened').title
     'New'
+    >>> trac.convertRemoteStatus('accepted').title
+    'Confirmed'
     >>> trac.convertRemoteStatus('assigned').title
     'Confirmed'
     >>> trac.convertRemoteStatus('fixed').title

@@ -79,7 +79,8 @@
       teams_with_icons timezone title
       translatable_languages translation_groups translation_history
       ubuntuwiki unique_displayname unvalidatedemails
-      validateAndEnsurePreferredEmail validatedemails visibility"
+      validateAndEnsurePreferredEmail validatedemails
+      verbose_bugnotifications visibility"
       />
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IHasSpecifications"/>

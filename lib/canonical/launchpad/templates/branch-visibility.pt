@@ -12,22 +12,13 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:condition="context/project | nothing"
-       tal:replace="structure context/project/@@+portlet-details" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <h1>Branch visibility policy</h1>
 
   <p tal:condition="context/isUsingInheritedBranchVisibilityPolicy"
      id="inherited">
-    Using inherted policy from
+    Using inherited policy from
     <strong>
       <a tal:attributes="href context/project/fmt:url"
          tal:content="context/project/displayname">
