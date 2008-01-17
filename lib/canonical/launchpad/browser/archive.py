@@ -9,7 +9,7 @@ __all__ = [
     'ArchiveFacets',
     'ArchiveOverviewMenu',
     'ArchiveView',
-    'ArchiveConsoleView',
+    'ArchivePackageDeletionView',
     'ArchiveActivateView',
     'ArchiveBuildsView',
     'ArchiveEditView',
@@ -30,16 +30,15 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchive, IArchiveConsoleForm, IArchiveSet, IBuildSet,
-    IHasBuildRecords, ILaunchpadCelebrities, IPPAActivateForm,
+    ArchivePurpose, IArchive, IArchivePackageDeletionForm, IArchiveSet,
+    IBuildSet, IHasBuildRecords, ILaunchpadCelebrities, IPPAActivateForm,
     NotFoundError, PackagePublishingStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.widgets import (
-    LabeledMultiCheckBoxWidget, LaunchpadDropdownWidget)
+from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 
@@ -77,7 +76,7 @@ class ArchiveOverviewMenu(ApplicationMenu):
 
     usedfor = IArchive
     facet = 'overview'
-    links = ['admin', 'edit', 'builds', 'console']
+    links = ['admin', 'edit', 'builds', 'delete']
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -94,9 +93,9 @@ class ArchiveOverviewMenu(ApplicationMenu):
         return Link('+builds', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
-    def console(self):
-        text = 'Package console'
-        return Link('+console', text, icon='edit')
+    def delete(self):
+        text = 'Delete packages'
+        return Link('+delete-packages', text, icon='edit')
 
 
 class ArchiveViewBase:
@@ -218,26 +217,18 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         self.search_results = self.batchnav.currentBatch()
 
 
-class PublishingStatusDropdownWidget(LaunchpadDropdownWidget):
-    """Redefining 'no value' message."""
+class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
+    """Archive package deletion view class.
 
-    _messageNoValue = _('Any status')
-
-
-class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
-    """Archive console view class.
-
-    This view presents the default package-search slot associated with a
-    POST form implementing actions that could be performed upon a set of
-    selected packages.
+    This view presents a package search slot in a POST form implementing
+    deletion action that could be performed upon a set of selected packages.
     """
 
-    schema = IArchiveConsoleForm
+    schema = IArchivePackageDeletionForm
 
     # Maximum number of 'sources' presented.
-    max_sources_presented = 2
+    max_sources_presented = 10
 
-    custom_widget('status_filter', PublishingStatusDropdownWidget)
     custom_widget('comment', StrippedTextWidget, displayWidth=50)
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget,
                   orientation='vertical', visible=True)
@@ -245,11 +236,10 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpFields(self)
-        # We have to setup the 'name_filter' and  'status_filter' schema
-        # widget earlier because their values are required to setup
-        # 'selected_sources' field.
+        # We have to setup the 'name_filter' schema widget earlier
+        # because their values are required to setup 'selected_sources' field.
         self.widgets = form.setUpWidgets(
-            self.form_fields.select('name_filter', 'status_filter'),
+            self.form_fields.select('name_filter'),
             self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=False)
 
@@ -260,7 +250,7 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         """See `LaunchpadFormView`."""
         # Omitting the fields already processed in setUpFields.
         self.widgets += form.setUpWidgets(
-            self.form_fields.omit('name_filter', 'status_filter'),
+            self.form_fields.omit('name_filter'),
             self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=False)
 
@@ -289,19 +279,15 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
     def sources(self):
         """Query source publishing records.
 
-        Consider the 'name_filter' and 'status_filter' form values.
+        Consider the 'name_filter' form value.
         """
         if self.widgets['name_filter'].hasInput():
             name_filter = self.widgets['name_filter'].getInputValue()
         else:
             name_filter = None
-        if self.widgets['status_filter'].hasInput():
-            status_filter = self.widgets['status_filter'].getInputValue()
-        else:
-            status_filter = None
 
         return self.context.getPublishedSources(
-            name=name_filter, status=status_filter)
+            name=name_filter, status=PackagePublishingStatus.PUBLISHED)
 
     @cachedproperty
     def available_sources_size(self):
@@ -321,10 +307,15 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         # 'selected_sources' widget.
         pass
 
-    def validate_delete(self, action, data):
-        """Validate deletion action."""
+    @action(_("Delete"), name="delete",)
+    def action_delete(self, action, data):
+        """Perform the deletion of the selected packages.
+
+        The deletion will be performed upon the 'selected_sources' contents
+        respecting the auxiliary parameter 'comment'.
+        """
         comment = data.get('comment')
-        selected_sources = data.get('selected_sources', [])
+        selected_sources = data.get('selected_sources')
 
         if len(selected_sources) == 0:
             self.addError("No sources selected.")
@@ -332,44 +323,20 @@ class ArchiveConsoleView(ArchiveViewBase, LaunchpadFormView):
         if comment is None:
             self.addError("Comment should be provided for deletions.")
 
-        # XXX cprov 20080115: this check belongs to the content class.
-        for source in selected_sources:
-            if source.status != PackagePublishingStatus.PUBLISHED:
-                self.addError('Cannot delete non-published source (%s).'
-                              % source.displayname)
-
-    @action(_("Delete"), name="delete",)
-    def action_delete(self, action, data):
-        """Perform the deletion of the selected packages.
-
-        The deletion will be performed upon the 'selected_sources' contents
-        respecting the auxiliary parameter, 'including_binaries' and
-        'comment'.
-        """
-        self.validate_delete(action, data)
-
         if len(self.errors) != 0:
             return
 
-        include_binaries = data.get('include_binaries')
-        comment = data.get('comment')
-        selected_sources = data.get('selected_sources')
-
-        # Perform deletion.
+        # Perform deletion of the source and its binaries.
         for source in selected_sources:
             source.requestDeletion(self.user, comment)
-            if include_binaries:
-                for bin in source.getPublishedBinaries():
-                    bin.requestDeletion(self.user, comment)
+            for bin in source.getPublishedBinaries():
+                bin.requestDeletion(self.user, comment)
 
         # Present a page notification describing the action.
-        if include_binaries:
-            target = "Sources and binaries"
-        else:
-            target = "Sources"
         messages = []
         messages.append(
-            '<p>%s deleted by %s request:' % (target, self.user.displayname))
+            '<p>Source and binaries deleted by %s request:'
+            % self.user.displayname)
         for source in selected_sources:
             messages.append('<br/>%s' % source.displayname)
         messages.append('</p>')

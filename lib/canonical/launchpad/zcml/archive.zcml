@@ -92,11 +92,11 @@
   <browser:pages
     for="canonical.launchpad.interfaces.IArchive"
     permission="launchpad.Edit"
-    class="canonical.launchpad.browser.ArchiveConsoleView">
+    class="canonical.launchpad.browser.ArchivePackageDeletionView">
     <browser:page
-      template="../templates/archive-console.pt"
+      template="../templates/archive-delete-packages.pt"
       facet="overview"
-      name="+console"
+      name="+delete-packages"
       />
   </browser:pages>
 

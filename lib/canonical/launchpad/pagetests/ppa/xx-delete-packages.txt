@@ -1,51 +1,54 @@
-= PPA package console =
+= PPA package deletion =
 
-The 'Package console' view allows users to perform actions upon PPAs
-such as copy and delete. Only the owner of the PPA and Launchpad
-administrators may access the console for a user's archive.
+The PPA 'Delete packages' view allows users to delete packages form
+their PPAs via the web UI. Only the owner of the PPA and Launchpad
+administrators may access this page.
 
 Anonymous and an ordinary user cannot access Celso's PPA package
 console, even if they try the URL directly.
 
     >>> anon_browser.open('http://launchpad.dev/~cprov/+archive')
-    >>> anon_browser.getLink('Package console').click()
+    >>> anon_browser.getLink('Delete packages').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/+console')
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/+delete-packages')
     Traceback (most recent call last):
     ...
     Unauthorized: ..., 'launchpad.Edit')
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
-    >>> user_browser.getLink('Package console').click()
+    >>> user_browser.getLink('Delete packages').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-    >>> user_browser.open('http://launchpad.dev/~cprov/+archive/+console')
+    >>> user_browser.open(
+    ...    'http://launchpad.dev/~cprov/+archive/+delete-packages')
     Traceback (most recent call last):
     ...
     Unauthorized: ..., 'launchpad.Edit')
 
-Only Celso and Foo bar can access the PPA package console for Celso's
-PPA.
+Only Celso and Foo bar can access the 'Delete packages' page for
+Celso's PPA.
 
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
     >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive')
-    >>> cprov_browser.getLink('Package console').click()
+    >>> cprov_browser.getLink('Delete packages').click()
     >>> cprov_browser.title
-    'Package console for PPA for Celso Providelo'
+    'Delete packages from PPA for Celso Providelo'
 
     >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
-    >>> admin_browser.getLink('Package console').click()
+    >>> admin_browser.getLink('Delete packages').click()
     >>> admin_browser.title
-    'Package console for PPA for Celso Providelo'
+    'Delete packages from PPA for Celso Providelo'
 
-Once accessed the page provides a way to search package search and
-optionally delete one or more matching packages via POST form.
+Once accessed the page provides a way to search for published package
+sources and optionally delete one or more matching packages via POST
+form.
 
     >>> def print_ppa_packages(contents):
     ...     packages = find_tags_by_class(contents, 'ppa_package_row')
@@ -56,7 +59,8 @@ optionally delete one or more matching packages via POST form.
     ...     if empty_section is not None:
     ...         print extract_text(empty_section)
 
-When the console page is loaded a list of published search is presented,
+When the 'Delete packages' page is loaded a list of all published
+sources is presented,
 
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
@@ -64,8 +68,7 @@ When the console page is loaded a list of published search is presented,
     iceweasel - 1.0  2007-07-09  Published  Warty           Editors
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
-The 'search' form functions similarly to the one available in the
-+index page.
+The 'search' form queries sources with name matching the given text.
 
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = 'nonexistentpackage'
@@ -80,33 +83,19 @@ The 'search' form functions similarly to the one available in the
     Source           Published   Status     Series          Section
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
-    >>> admin_browser.getControl(
-    ...     name='field.name_filter').value = ''
-    >>> admin_browser.getControl(
-    ...    name='field.status_filter').value = ['DELETED']
-    >>> admin_browser.getControl("Search").click()
-    >>> print_ppa_packages(admin_browser.contents)
-    No matching package for ''.
 
-    >>> admin_browser.getControl(
-    ...    name='field.status_filter').value = ['']
-    >>> admin_browser.getControl("Search").click()
-    >>> print_ppa_packages(admin_browser.contents)
-    Source           Published   Status     Series          Section
-    cdrkit - 1.0     2007-07-09  Published  Breezy-autotest Editors
-    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
-    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+The main difference between this search and the one presented in
++index is that a checkbox is rendered for each result table row and
+only considers PUBLISHED sources.
 
-The main difference is that a checkbox is rendered for each result
-table row.
-
-Foo Bar can select one or more rows to perform an action upon.
-
-Actions with empty comments are not allowed.
+Foo Bar can select one or more sources to be deleted and the
+'comment' field is mandatory for deletions.
 
     >>> admin_browser.getControl('Comment').value
     ''
 
+    >>> admin_browser.getControl(
+    ...     name='field.name_filter').value = ''
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['27']
     >>> admin_browser.getControl("Delete").click()
@@ -122,8 +111,8 @@ Actions with empty comments are not allowed.
     iceweasel - 1.0  2007-07-09  Published  Warty           Editors
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
-If an action is requested without having selected a row, an error is
-issued.
+Deletion requires, at least, one selected a source, otherwise an error
+is issued.
 
     >>> admin_browser.getControl("Comment").value = "DO IT"
     >>> admin_browser.getControl("Delete").click()
@@ -135,7 +124,7 @@ issued.
 
 Once the deletion is successfully requested, Foo Bar sees an
 informational message containing the summary of the action
-performed. Search results is old (XXX ?)
+performed. Search results is old.
 
     >>> admin_browser.getControl("Search").click()
     >>> admin_browser.getControl(
@@ -146,7 +135,7 @@ performed. Search results is old (XXX ?)
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Sources and binaries deleted by Foo Bar request:
+    Source and binaries deleted by Foo Bar request:
     cdrkit 1.0 in breezy-autotest
     Deletion comment: DO IT
 
@@ -156,37 +145,43 @@ performed. Search results is old (XXX ?)
     iceweasel - 1.0  2007-07-09  Published  Warty           Editors
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
+When Foo Bar refreshes the page an up-to-date list is be presented
+excluding the just-deleted packages.
 
-The deleted record is now presented accordingly.
-
-    >>> admin_browser.getControl(
-    ...    name='field.status_filter').value = ['DELETED']
     >>> admin_browser.getControl("Search").click()
-
-    >>> print_ppa_packages(admin_browser.contents)
-    Source           Published   Status     Series          Section
-    cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors
-
-    >>> admin_browser.getControl(
-    ...    name='field.status_filter').value = ['PUBLISHED']
-    >>> admin_browser.getControl("Search").click()
-
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
     iceweasel - 1.0  2007-07-09  Published  Warty           Editors
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
-    >>> admin_browser.getControl(
-    ...    name='field.status_filter').value = ['']
-    >>> admin_browser.getControl("Search").click()
+The deleted record is now presented accordingly in the +index page. We
+will use another browser to inspect the results of our deletions.
 
-    >>> print_ppa_packages(admin_browser.contents)
+    >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> print_ppa_packages(cprov_browser.contents)
+    Source           Published   Status     Series          Section
+    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+
+    >>> cprov_browser.getControl(
+    ...    name='field.status_filter').value = ['superseded']
+    >>> cprov_browser.getControl("Search").click()
+    >>> print_ppa_packages(cprov_browser.contents)
+    Source           Published   Status     Series          Section
+    cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors
+
+    >>> cprov_browser.getControl(
+    ...    name='field.status_filter').value = ['any']
+    >>> cprov_browser.getControl("Search").click()
+    >>> print_ppa_packages(cprov_browser.contents)
     Source           Published   Status     Series          Section
     cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors
     iceweasel - 1.0  2007-07-09  Published  Warty           Editors
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
 Multiple packages can be deleted in one single batch.
+
+    >>> admin_browser.getControl("Search").click()
 
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['28', '29']
@@ -197,32 +192,46 @@ Multiple packages can be deleted in one single batch.
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
-    Sources and binaries deleted by Foo Bar request:
+    Source and binaries deleted by Foo Bar request:
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
     Deletion comment: DO IT AGAIN !
 
-Foo Bar can see that all packages present in Celso's PPA are deleted.
+Any user can see that all packages present in Celso's PPA are deleted.
 
-    >>> admin_browser.getControl(
-    ...    name='field.status_filter').value = ['']
-    >>> admin_browser.getControl("Search").click()
-
-    >>> print_ppa_packages(admin_browser.contents)
+    >>> cprov_browser.getControl(
+    ...    name='field.status_filter').value = ['any']
+    >>> cprov_browser.getControl("Search").click()
+    >>> print_ppa_packages(cprov_browser.contents)
     Source           Published   Status     Series          Section
     cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors
     iceweasel - 1.0  2007-07-09  Deleted    Warty           Editors
     pmount - 0.1-1   2007-07-09  Deleted    Warty           Editors
 
-Attempts to delete a already deleted package will result in an error.
+Finally, we can check for maliciously submitted forms containing
+invalid data.
+
+An already deleted source:
 
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['27']
+    Traceback (most recent call last):
+    ...
+    ItemNotFoundError: insufficient items with name '27'
+
+An nonexistent source:
+
     >>> admin_browser.getControl(
-    ...    name='field.comment').value = "DO IT"
-    >>> admin_browser.getControl("Delete").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
-    There is 1 error.
-    Cannot delete non-published source (cdrkit 1.0 in breezy-autotest).
+    ...    name='field.selected_sources').value = ['100']
+    Traceback (most recent call last):
+    ...
+    ItemNotFoundError: insufficient items with name '100'
+
+An invalid value.
+
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['blah']
+    Traceback (most recent call last):
+    ...
+    ItemNotFoundError: insufficient items with name 'blah'
+
