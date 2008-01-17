@@ -173,7 +173,7 @@ service itself.
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> class MyServiceRoot(ServiceRoot):
     ...       top_level_collections = { 'recipes' : RecipeSet }
-    ...       root_uri = 'http://test-api.launchpad.dev/'
+    ...       rootsite = 'api'
     >>> app = MyServiceRoot()
 
     >>> request = LaunchpadTestRequest()

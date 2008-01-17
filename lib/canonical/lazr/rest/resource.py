@@ -19,6 +19,7 @@ import simplejson
 from zope.interface import implements
 from zope.publisher.interfaces import IPublishTraverse, NotFound
 from zope.schema.interfaces import IField
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IHTTPResource, IJSONPublishable)
 
@@ -44,9 +45,6 @@ class HTTPResource:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
-    def uri(self):
-        return ""
 
     def __call__(self):
         """See `IHTTPResource`."""
@@ -118,9 +116,13 @@ class CollectionResource(ReadOnlyResource):
 
 class ServiceRootResource(ReadOnlyResource):
     """A resource that responds to GET by describing the service."""
+    implements(ICanonicalUrlData)
 
-    def uri(self):
-        return self.context.root_uri
+    @property
+    def rootsite(self):
+        return self.context.rootsite
+    inside = None
+    path = ''
 
     def do_GET(self):
         """Return a description of the resource."""
@@ -134,6 +136,7 @@ class Entry:
     def __init__(self, context):
         """Associate the entry with some database business object."""
         self.context = context
+
 
 class Collection:
     """A collection of entries."""
@@ -157,4 +160,4 @@ class ServiceRoot:
 
     def __call__(self, REQUEST=None):
         if REQUEST:
-            return ServiceRootResource(None, REQUEST)()
+            return ServiceRootResource(self, REQUEST)()
