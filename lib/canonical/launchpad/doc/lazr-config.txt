@@ -766,3 +766,57 @@ property returns None.
     >>> print config.extends
     None
 
+
+== Attribute access to config data ==
+
+Config provides attribute-based access to its members. So long as the
+section, category, and key names conform to Python identifier naming
+rules, they can be access as attributes. The Python code will not
+compile, or will cause a runtime error if the object being accessed has
+a bad name.
+
+Sections appear to be attributes of the config.
+
+    >>> config.section_1 is config['section_1']
+    True
+
+Accessing an unknown section, or a section who's name is not a valid
+Python identifier will raise an AttributeError.
+
+    >>> config.section-5
+    Traceback (most recent call last):
+      ...
+    AttributeError: No section or category named section.
+
+Categories may be accessed as attributes too. The ICategory interface
+provides access to its sections as members.
+
+    >>> from canonical.lazr.interfaces import ICategory
+    >>> config_category = config.section_3
+    >>> verifyObject(ICategory, config_category)
+    True
+    >>> config_category.app_b is config['section_3.app_b']
+    True
+
+Like a config, a category will raise an AttributeError if it does not
+have a section that matches the identifier name.
+
+    >>> config_category.no_such_section
+    Traceback (most recent call last):
+      ...
+    AttributeError: No section named no_such_section.
+
+Section keys can be accessed directly as members.
+
+    >>> config.section_1.key2
+    'bar and baz'
+    >>> config.section_3.app_b.key2
+    'changed'
+
+Accessing a non-existent section key as an attribute will raise an
+AttributeError.
+
+    >>> config.section_1.non_key
+    Traceback (most recent call last):
+      ...
+    AttributeError: No section key named non_key.

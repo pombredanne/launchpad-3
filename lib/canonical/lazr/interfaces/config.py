@@ -1,5 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,W0231
 """Interfaces for process configuration.."""
 
 __metaclass__ = type
@@ -9,6 +9,7 @@ __all__ = [
     'ConfigSchemaError',
     'IConfigData',
     'NoConfigError',
+    'ICategory',
     'IConfigLoader',
     'IConfigSchema',
     'InvalidSectionNameError',
@@ -95,6 +96,13 @@ class ISection(ISectionSchema):
     """Defines the values for a configuration group."""
     schema = Attribute("The ISectionSchema that defines this ISection.")
 
+    def __getattr__(name):
+        """Return the named key.
+
+        :name: a key name.
+        :return: the value of the matching key.
+        :raise: AttributeError if there is no key with the name.
+        """
 
 class IConfigLoader(Interface):
     """A configuration file loader."""
@@ -182,6 +190,16 @@ class IStackableConfig(IConfigSchema):
     extends = Attribute("The ConfigData that this config extends.")
     overlays = Attribute("The stack of ConfigData that define this config.")
 
+
+    def __getattr__(name):
+        """Return the named section.
+
+        :name: a section or category name.
+        :return: the matching ISection or ICategory.
+        :raise: AttributeError if there is no section or category with the
+            name.
+        """
+
     def validate():
         """Return True if the config is valid for the schema.
 
@@ -207,4 +225,19 @@ class IStackableConfig(IConfigSchema):
 
         This method removes the named ConfigData from the stack; ConfigData
         above the named ConfigData are removed too.
+        """
+
+
+class ICategory(Interface):
+    """A group of related sections.
+
+    The sections within a category are access as attributes of the ICategory.
+    """
+
+    def __getattr__(name):
+        """Return the named section.
+
+        :name: a section name.
+        :return: the matching ISection.
+        :raise: AttributeError if there is no section with the name.
         """
