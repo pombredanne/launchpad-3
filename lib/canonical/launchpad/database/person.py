@@ -244,8 +244,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         TeamMembershipSet().new(
             team_owner, self, TeamMembershipStatus.ADMIN, reviewer=team_owner)
 
+    @cachedproperty
+    def _location(self):
+        return PersonLocation.selectOneBy(person=self)
+
     def set_time_zone(self, timezone):
-        location = PersonLocation.selectOneBy(person=self)
+        location = self._location
         if location is None:
             location = PersonLocation(
                 person=self,
@@ -254,9 +258,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 time_zone=timezone,
                 last_modified_by=self)
         location.time_zone = timezone
+        self._location = location
 
     def get_time_zone(self):
-        location = PersonLocation.selectOneBy(person=self)
+        location = self._location
         if location is None:
             return None
         return location.time_zone
