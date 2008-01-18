@@ -122,7 +122,7 @@ class IBuilder(IHasOwner):
                       'buildd-slave, e.g.: foobar-host.ppa'))
 
     active = Bool(
-        title=_('Active builder'), required=False,
+        title=_('Active'), required=False,
         description=_('Whether to present or not the builder publicly.'))
 
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
