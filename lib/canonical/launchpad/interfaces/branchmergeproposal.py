@@ -106,6 +106,7 @@ class IBranchMergeProposal(Interface):
     target_branch = Choice(
         title=_('Target Branch'),
         vocabulary='BranchRestrictedOnProduct', required=True, readonly=True,
+        description=_(
             "The branch that the source branch will be merged into."))
 
     dependent_branch = Choice(
