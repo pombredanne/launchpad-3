@@ -740,7 +740,7 @@ entitled _Privacy and Team Awareness_):
 
     >>> ubuntu_team = personset.getByEmail('support@ubuntu.com')
     >>> subscription = bug_upstream_firefox_no_svg_support.bug.subscribe(
-    ...     ubuntu_team)
+    ...     ubuntu_team, ubuntu_team)
 
     >>> old_state = Snapshot(
     ...     bug_upstream_firefox_no_svg_support.bug, providing=IBug)

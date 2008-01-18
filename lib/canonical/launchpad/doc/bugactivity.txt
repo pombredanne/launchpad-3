@@ -278,7 +278,8 @@ are simple little functions.
     >>> from canonical.launchpad.database import BugSubscription
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-    >>> bug_subscription = BugSubscription(bug=bug, person=foo_bar)
+    >>> bug_subscription = BugSubscription(
+    ...     bug=bug, person=foo_bar, subscribed_by=foo_bar)
     >>> notify(SQLObjectCreatedEvent(bug_subscription))
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged

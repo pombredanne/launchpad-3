@@ -11,13 +11,10 @@
 >
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-countrylangs" />
   <div tal:replace="structure context/@@+portlet-browserlangs" />
-</metal:rightportlets>
+</metal:portlets>
 
 <div metal:fill-slot="main" >
  

@@ -175,7 +175,11 @@
       template="../templates/portlet-aboutcve.pt"
       />
     <browser:page
-      name="+details"
+      name="+portlet-architectures"
+      template="../templates/distroseries-portlet-architectures.pt"
+      />
+    <browser:page
+      name="+portlet-details"
       facet="overview"
       template="../templates/distroseries-details.pt"
       />
@@ -195,10 +199,6 @@
     <browser:page
       name="+portlet-latestuploads"
       template="../templates/distroseries-portlet-latestuploads.pt"
-      />
-    <browser:page
-      name="+pagelet-architectures"
-      template="../templates/distroseries-pagelet-architectures.pt"
       />
   </browser:pages>
 
@@ -316,18 +316,14 @@
     template="../templates/launchpad-editform.pt"
     />
 
-  <browser:addform
+  <browser:page
     name="+addmilestone"
     for="canonical.launchpad.interfaces.IDistroSeries"
-    schema="canonical.launchpad.interfaces.IMilestone"
     class="canonical.launchpad.browser.milestone.MilestoneAddView"
     facet="overview"
-    fields="name dateexpected description"
-    keyword_arguments="name dateexpected description"
     permission="launchpad.Edit"
     template="../templates/milestone-add.pt"
-    >
-  </browser:addform>
+    />
 
   <browser:addform
     name="+addport"

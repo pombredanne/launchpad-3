@@ -207,17 +207,18 @@
       </div>
       </div>
       </tal:recent-members>
-      <div class="section" 
+      <div class="section"
            tal:content="structure context/@@+portlet-related-projects" />
 
     </div>
 
     <div class="right">
 
-      <div class="section" 
-           tal:content="structure context/@@+pagelet-details" />
+      <div class="section"
+           tal:content="structure context/@@+portlet-details" />
 
-      <div tal:replace="structure context/@@+pagelet-contact-details" />
+      <div class="section"
+           tal:content="structure context/@@+portlet-contact-details" />
 
       <tal:not-team condition="not:context/isTeam">
       <div id="working-on"
