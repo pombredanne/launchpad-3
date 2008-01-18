@@ -6,9 +6,7 @@ __metaclass__ = type
 
 from StringIO import StringIO
 import os
-import shutil
 import sys
-import tempfile
 import thread
 import unittest
 import xmlrpclib
@@ -20,11 +18,7 @@ from bzrlib.errors import (
 from bzrlib.repofmt.weaverepo import RepositoryFormat7
 from bzrlib.repository import format_registry
 
-# bzr 0.91 uses ReadOnlyError, bzr 0.92 uses LockFailed
-try:
-    from bzrlib.errors import LockFailed as ReadOnlyFailureException
-except ImportError:
-    from bzrlib.errors import ReadOnlyError as ReadOnlyFailureException
+from bzrlib.errors import ReadOnlyError as ReadOnlyFailureException
 
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.tests import default_transport, TestCaseWithTransport
@@ -33,7 +27,7 @@ from bzrlib.workingtree import WorkingTree
 from paramiko import SSHClient, SSHException, MissingHostKeyPolicy
 
 from canonical.codehosting.tests.helpers import (
-    adapt_suite, clone_test, deferToThread, ServerTestCase)
+    adapt_suite, deferToThread, ServerTestCase)
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting import branch_id_to_path
@@ -387,12 +381,14 @@ class AcceptanceTests(SSHTestCase):
 
     @deferToThread
     def test_push_new_branch_creates_branch_in_database(self):
-        remote_url = self.getTransportURL('~testuser/+junk/totally-new-branch')
+        remote_url = self.getTransportURL(
+            '~testuser/+junk/totally-new-branch')
         self.push(self.local_branch_path, remote_url)
 
         # Retrieve the branch from the database.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch('testuser', None, 'totally-new-branch')
+        branch = self.getDatabaseBranch(
+            'testuser', None, 'totally-new-branch')
         LaunchpadZopelessTestSetup().txn.abort()
 
         self.assertEqual(

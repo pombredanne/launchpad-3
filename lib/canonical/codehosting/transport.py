@@ -171,8 +171,8 @@ class LaunchpadServer(Server):
         :param authserver: An xmlrpclib.ServerProxy that points to the
             authserver.
         :param user_id: A login ID for the user who is accessing branches.
-        :param hosting_transport: A Transport pointing to the root of where the
-            branches are actually stored.
+        :param hosting_transport: A Transport pointing to the root of where
+            the branches are actually stored.
         :param mirror_transport: A Transport pointing to the root of where
             branches are mirrored to.
         """
