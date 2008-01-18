@@ -21,6 +21,10 @@
         <allow interface='canonical.lazr.interfaces.IHTTPResource' />
     </class>
 
+    <class class="canonical.launchpad.systemhomes.WebServiceApplication">
+        <allow interface='canonical.lazr.interfaces.IServiceRoot' />
+    </class>
+
     <adapter
         for="canonical.launchpad.interfaces.IPerson"
         provides="canonical.launchpad.interfaces.IPersonEntry"

@@ -177,19 +177,25 @@ ServiceRoot. This is an object that represents the web
 service itself.
 
     >>> from canonical.lazr.rest import ServiceRoot
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.interfaces import IWebServiceApplication
     >>> class MyServiceRoot(ServiceRoot):
-    ...       top_level_collections = { 'recipes' : RecipeSet }
-    ...       rootsite = 'api'
-    >>> app = MyServiceRoot()
+    ...    implements(IWebServiceApplication)
+    ...    top_level_collections = { 'recipes' : RecipeSet }
+    ...    rootsite = 'api'
+
 
 The service root can act as a resource. If you call it and pass in an
 HTTP request, it will act as though you had performed a GET on the URL
 'http://api.launchpad.net/'.
 
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.webapp.servers import WebServicePublication
     >>> request = LaunchpadTestRequest()
-    >>> app(request)
-    'This is a web service.'
+    >>> request.setPublication(WebServicePublication(None))
+    >>> request.setApplicationServer('api.launchpad.dev')
+    >>> app = MyServiceRoot()
+    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
+    >>> getUtility(IOpenLaunchBag).add(app)
 
 The ServiceRoot has a list of top-level collections and implements
 IPublishTraverse, so that a request to a registered collection is
@@ -200,7 +206,7 @@ equivalent to requesting 'http://api.launchpad.net/recipes/'.
     >>> collection
     <canonical.lazr.rest.resource.CollectionResource object ...>
     >>> from canonical.launchpad.webapp import canonical_url
-    >>> canonical_url(collection)
+    >>> canonical_url(collection, request=request)
     u'http://api.launchpad.dev/recipes'
 
     >>> import simplejson
@@ -227,7 +233,7 @@ that (for instance) /recipes/10 is mapped to the "Raw celery" Entry.
     >>> entry = collection.publishTraverse(request, "10")
     >>> entry
     <canonical.lazr.rest.resource.EntryResource object ...>
-    >>> canonical_url(entry)
+    >>> canonical_url(entry, request=request)
     u'http://api.launchpad.dev/recipes/10'
 
     >>> simplejson.loads(entry())

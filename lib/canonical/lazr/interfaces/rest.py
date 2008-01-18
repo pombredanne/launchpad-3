@@ -10,6 +10,7 @@ __all__ = [
     'IEntryResource',
     'IHTTPResource',
     'IJSONPublishable',
+    'IServiceRoot'
     ]
 
 from zope.interface import Interface, Attribute
@@ -32,6 +33,11 @@ class IJSONPublishable(Interface):
         The representation must consist entirely of simple data
         structures and IJSONPublishable objects.
         """
+
+class IServiceRoot(Interface):
+    """A service root object that can be turned into a resource."""
+    def asResource(request):
+        """Return a top-level resource for this service."""
 
 
 class IEntryResource(IHTTPResource):
