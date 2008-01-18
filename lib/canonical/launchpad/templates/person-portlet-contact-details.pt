@@ -4,11 +4,11 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="section" condition="context/preferredemail">
+<div class="portlet" id="contact-details">
 
-  <div class="portlet" id="contact-details">
+  <h2>Contact details</h2>
 
-    <h2>Contact details</h2>
+  <div class="portletContent portletBody">
 
     <table>
       <tbody>
@@ -117,7 +117,9 @@
         </tr>
       </tbody>
     </table>
+
   </div>
+
 </div>
 
 </tal:root>

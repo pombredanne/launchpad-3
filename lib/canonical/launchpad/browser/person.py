@@ -94,6 +94,7 @@ import pytz
 import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
+from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.session.interfaces import ISession
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.event import notify
@@ -1422,6 +1423,10 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
         """Should the reporter widget be shown on the advanced search page?"""
         return False
 
+    def shouldShowTagsCombinatorWidget(self):
+        """Should the tags combinator widget show on the search page?"""
+        return False
+
 
 class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     """Bugs reported on packages for a bug contact."""
@@ -1672,6 +1677,10 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     def shouldShowAssignedToTeamPortlet(self):
         """Should the team assigned bugs portlet be shown?"""
         return True
+
+    def shouldShowTagsCombinatorWidget(self):
+        """Should the tags combinator widget show on the search page?"""
+        return False
 
     def getSearchPageHeading(self):
         """The header for the search page."""

@@ -572,6 +572,7 @@
               </td>
 	      <td>
 		<tal:combinator
+                     condition="view/shouldShowTagsCombinatorWidget"
                      replace="structure view/widgets/tags_combinator" />
 	      </td>
 	    </tr>
