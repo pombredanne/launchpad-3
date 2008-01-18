@@ -85,14 +85,14 @@ rows are not rendered.
 
     >>> from canonical.lazr import (
     ...     EnumeratedType, DBEnumeratedType, Item, DBItem, use_template)
-    >>> class Fruit(EnumeratedType):
+    >>> class SomeFruit(EnumeratedType):
     ...     "A choice of fruit."
     ...     APPLE = Item('Apple')
     ...     PEAR = Item('Pear')
     ...     ORANGE = Item('Orange')
 
     >>> radio_widget = LaunchpadRadioWidgetWithDescription(
-    ...     branch_type_field, Fruit, request)
+    ...     branch_type_field, SomeFruit, request)
     >>> print radio_widget()
     <table class="radio-button-widget"><tr>
       <td><input class="radioType" id="field.branch_type.0"
