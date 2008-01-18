@@ -1,4 +1,5 @@
-<strong style="display:none;" tal:condition="not: context/enabled">
+<strong style="display:none;" tal:condition="not: context/enabled"
+        tal:attributes="class string:menu-link-${context/name};">
   <tal:link-text replace="structure context/escapedtext">
     Disabled text
   </tal:link-text>
@@ -6,10 +7,13 @@
 </strong>
 <tal:link-enabled condition="context/enabled">
   <a tal:condition="context/linked"
-     tal:attributes="href context/url; title context/summary"
+     tal:attributes="href context/url;
+                     title context/summary;
+                     class string:menu-link-${context/name};"
      tal:content="structure context/escapedtext"
     >link text</a>
   <strong tal:condition="not: context/linked"
+          tal:attributes="class string:menu-link-${context/name};"
           tal:content="structure context/escapedtext">
     Unlinked text
   </strong>

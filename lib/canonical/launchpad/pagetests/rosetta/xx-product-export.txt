@@ -71,21 +71,20 @@ We can see its placeholder in development mode:
     >>> from canonical.config import config
     >>> config.devmode
     True
-    >>> print extract_text(find_portlet(anon_browser.contents, 'Actions'))
-    Actions
-    Change translators
-    See import queue
+    >>> for tag in find_tags_by_class(
+    ...     anon_browser.contents, 'menu-link-translationdownload'):
+    ...     print tag.renderContents()
     Download translations (disabled)
 
 But not when it's non-development mode:
 
     >>> config.devmode = False
     >>> anon_browser.open('http://translations.launchpad.dev/evolution/')
-    >>> print extract_text(find_portlet(anon_browser.contents, 'Actions'))
-    Actions
-    Change translators
-    See import queue
-    >>> # Reset global configuration...
+    >>> for tag in find_tags_by_class(
+    ...     anon_browser.contents, 'menu-link-translationdownload'):
+    ...     print tag.renderContents()
+
+    # Reset global configuration...
     >>> config.devmode = True
 
 Even "hacking the URL" to the download option will fail.
