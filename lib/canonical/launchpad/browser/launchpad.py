@@ -156,9 +156,10 @@ class MenuBox(LaunchpadView):
     def initialize(self):
         menuapi = MenuAPI(self.context)
         # We are only interested on enabled links in non development mode.
+        context_menu_links = menuapi.context
         self.contextmenuitems = [
-            link for link in menuapi.context() if (link.enabled or
-                                                   config.devmode)]
+            link for link in context_menu_links.values() if (link.enabled or
+                                                             config.devmode)]
         self.applicationmenuitems = [
             link for link in menuapi.application() if (link.enabled or
                                                        config.devmode)]
