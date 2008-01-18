@@ -94,7 +94,7 @@ Foo Bar can select one or more sources to be deleted and the
     ...     name='field.name_filter').value = ''
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['27']
-    >>> admin_browser.getControl("Delete").click()
+    >>> admin_browser.getControl("Delete Packages").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
@@ -111,7 +111,7 @@ Deletion requires, at least, one selected a source, otherwise an error
 is issued.
 
     >>> admin_browser.getControl("Deletion comment").value = "DO IT"
-    >>> admin_browser.getControl("Delete").click()
+    >>> admin_browser.getControl("Delete Packages").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
@@ -126,7 +126,7 @@ performed. The results presented are old.
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['27']
     >>> admin_browser.getControl("Deletion comment").value = "DO IT"
-    >>> admin_browser.getControl("Delete").click()
+    >>> admin_browser.getControl("Delete Packages").click()
 
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -183,7 +183,7 @@ Multiple packages can be deleted in one single batch.
     ...    name='field.selected_sources').value = ['28', '29']
     >>> admin_browser.getControl(
     ...    "Deletion comment").value = "DO IT AGAIN !"
-    >>> admin_browser.getControl("Delete").click()
+    >>> admin_browser.getControl("Delete Packages").click()
 
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:

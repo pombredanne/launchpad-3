@@ -305,24 +305,32 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         # considering 'name_filter' input value when the page is loaded.
         pass
 
-    @action(_("Delete packages"), name="delete",)
+    def validate_delete(self, action, data):
+        """Validate deletion parameters.
+
+        Ensure we have, at least, one source selected and deletion_comment
+        is given.
+        """
+        form.getWidgetsData(self.widgets, 'field', data)
+
+        if len(data.get('selected_sources')) == 0:
+            self.addError("No sources selected.")
+
+        if data.get('deletion_comment') is None:
+            self.addError("Deletion comment is required.")
+
+    @action(_("Delete Packages"), name="delete", validator="validate_delete")
     def action_delete(self, action, data):
         """Perform the deletion of the selected packages.
 
         The deletion will be performed upon the 'selected_sources' contents
-        respecting the auxiliary parameter 'deletion_comment'.
+        storing the given 'deletion_comment'.
         """
-        comment = data.get('deletion_comment')
-        selected_sources = data.get('selected_sources')
-
-        if len(selected_sources) == 0:
-            self.addError("No sources selected.")
-
-        if comment is None:
-            self.addError("Deletion comment is required.")
-
         if len(self.errors) != 0:
             return
+
+        comment = data.get('deletion_comment')
+        selected_sources = data.get('selected_sources')
 
         # Perform deletion of the source and its binaries.
         for source in selected_sources:

@@ -5,10 +5,10 @@
   omit-tag="">
 
   <tr class="ppa_package_row">
-    <td style="white-space: nowrap"><input
-           id="string:field.selected_sources.${context/id}" type="checkbox"
+    <td style="white-space: nowrap"><input type="checkbox"
            tal:condition="view/allow_selection"
-           tal:attributes="value context/id"
+           tal:attributes="value context/id;
+                           id string:field.selected_sources.${context/id}"
            name="field.selected_sources" /><a href="#"
            tal:attributes="onclick
            string:return toggleExpandableTableRow('pub${context/id}');"
