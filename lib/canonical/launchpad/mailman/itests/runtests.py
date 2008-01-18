@@ -81,6 +81,12 @@ def integrationTestCleanUp(test):
     WHERE id IN (SELECT id FROM DeathRow);
     """)
     commit()
+    # Clear out any qfiles hanging around from a previous run.  Do this first
+    # to prevent stale list references.
+    for dirpath, dirnames, filenames in os.walk(QUEUE_DIR):
+        for filename in filenames:
+            if os.path.splitext(filename)[1] == '.pck':
+                os.remove(os.path.join(dirpath, filename))
     # Now delete any mailing lists still hanging around.  We don't care if
     # this fails because it means the list doesn't exist.  While we're at it,
     # remove any related archived backup files.
@@ -89,18 +95,13 @@ def integrationTestCleanUp(test):
             itest_helper.run_mailman('./rmlist', '-a', team_name)
         except itest_helper.IntegrationTestFailure:
             pass
-        backup_file = os.path.join(VAR_PREFIX, 'backups', '%s.tgz' % team_name)
+        backup_file = os.path.join(
+            VAR_PREFIX, 'backups', '%s.tgz' % team_name)
         try:
             os.remove(backup_file)
         except OSError, error:
             if error.errno != errno.ENOENT:
                 raise
-    # Clear out any qfiles hanging around from a previous run.
-    for dirpath, dirnames, filenames in os.walk(QUEUE_DIR):
-        for filename in filenames:
-            if os.path.splitext(filename)[1] == '.pck':
-                os.remove(os.path.join(dirpath, filename))
-
 
 
 def find_tests(match_regexps):

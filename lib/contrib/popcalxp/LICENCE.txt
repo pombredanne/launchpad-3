@@ -1,0 +1,74 @@
+
+This is (alas) proprietary software. I (sabdfl) bought a license which is
+stored in licence.js. This may need updating in future so here are the
+relevant details:
+
+  PopCalXP by IdemFactor Solutions, Inc
+  http://www.calendarxp.net/
+  Enterprise licence (there are a variety, the Entrprise one allows us to
+  embed the calendar if we sell Launchpad to third parties)
+  USD 998.00
+
+The store that actually sells the software is Plimus so the download URL is:
+
+  http://www.plimus.com/jsp/my_account.jsp
+
+Username: markshuttle
+Password: N4T67KlP2
+
+Initial licence key (in licence.js)
+
+/******** start of licence.js ********/
+/* PopCalendarXP Enterprise License registered to [canonical uk] */
+popkey[popkey.length]="2107117321089799105110111110979900";
+
+== Licence Email ==
+
+Here is the email that I received after buying the licence:
+
+Dear Mark,
+
+Thank you for your purchase of:
+
+(1) - PopCalendarXP - Enterprise License
+
+Now you may download the full version from the following link - [ http://www.plimus.com/jsp/download_app.jsp?contractId=1627926 ] using your Plimus account username and password (set by whoever made the purchase). If you forgot your password please contact Plimus via the following link - [ http://www.plimus.com/jsp/escalate_issue.jsp ].
+
+Please forward the following IMPORTANT NOTES information to your developers, because they need it to set up the product correctly.
+
+======== IMPORTANT NOTES TO DEVELOPERS! ========
+
+You're encouraged to register to the online support forum [ http://www.calendarxp.net/forum/index.php ] - all future updates will be available via the forum. Please retain the order/invoice reference number (not the product ID) from whoever made the purchase, as you will need it to sign up.
+
+1st, if you were using the Lite Edition to develop your app, you need to replace the ipopeng.htm or iflateng.htm with all files located in the "engine" folder of the commercial package (PopCalXP_CE or FlatCalXP_CE).
+
+2nd, to activate the product(s) you MUST create a text file with the following contents and name it as "licence.js" (NOT "license.js"!) Also please make sure there is no hidden extension ".txt" appended to the file name.
+
+/******** start of licence.js ********/
+/* PopCalendarXP Enterprise License registered to [canonical uk] */
+popkey[popkey.length]="2107117321089799105110111110979900";
+
+/******** end of licence.js ********/
+
+If you ordered multiple licences, you could merge 2 or more licence.js files into one by simply appending the contents one after the other using any text editor.
+
+Finally, put this licence.js file into the same directory where the iflateng.htm or ipopeng.htm is located. e.g. if you want to run the HelloWorld demo, then you should copy the licence.js into "demos/HelloWorld/" dir.
+
+Check the file name on your server and make sure it's all in lower-cases, otherwise you'll get an error during runtime.
+
+If you got an alert message saying "Missing or invalid license!..." when accessing the calendar, you should check:
+1) Does the URL of your web page contain the registered domain name? (This only applies to single or domain license)
+2) Does the licence.js (NOT license.js) have a correct file name? Is it located in the right directory?
+3) Try putting the whole HelloWorld demo (from the commercial package) on your web server and copy the licence.js file over to see whether it works or not.
+
+Should you have any question about the licence or get no keys listed in the above "licence.js" section, please contact us via email at support@calendarxp.net.
+
+======== END OF NOTES ========
+
+
+Sincerely,
+
+Product Support Services
+Idemfactor Solutions Inc.
+----------------
+Experience the power and enjoy the simplicity!

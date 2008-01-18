@@ -125,7 +125,7 @@ class MentoringOfferAddView(LaunchpadFormView):
                 # have the same signature for their
                 # subscribe method.
                 if IBugTask.providedBy(self.context):
-                    self.context.subscribe(user)
+                    self.context.subscribe(user, user)
                 elif ISpecification.providedBy(self.context):
                     self.context.subscribe(user, user, False)
                 else:
