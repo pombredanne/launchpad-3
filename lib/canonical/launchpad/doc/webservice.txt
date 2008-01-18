@@ -170,32 +170,31 @@ Similarly, you can implement RecipeEntry to the IEntry interface, and
 expose it through the web as an EntryResource.
 
 
-== The Service Root Resource ==
+== The Service Root ==
 
 How are these Resource objects connected to the web? Through the
-ServiceRootResource. This is an object that represents the web service
-itself.
+ServiceRoot. This is an object that represents the web
+service itself.
 
-    >>> from canonical.lazr.rest import ServiceRootResource
+    >>> from canonical.lazr.rest import ServiceRoot
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> class MyServiceRootResource(ServiceRootResource):
+    >>> class MyServiceRoot(ServiceRoot):
     ...       top_level_collections = { 'recipes' : RecipeSet }
     ...       rootsite = 'api'
-    >>> app = MyServiceRootResource()
+    >>> app = MyServiceRoot()
 
-If you call the service root resource and pass in an HTTP request, it
-will act as though you had performed a GET on the URL
+The service root can act as a resource. If you call it and pass in an
+HTTP request, it will act as though you had performed a GET on the URL
 'http://api.launchpad.net/'.
 
     >>> request = LaunchpadTestRequest()
     >>> app(request)
     'This is a web service.'
 
-The ServiceRootResource has a list of top-level collections and
-implements IPublishTraverse, so that a request to a registered
-collection is delegated to the appropriate CollectionResource. Here's
-an example, equivalent to requesting
-'http://api.launchpad.net/recipes/'.
+The ServiceRoot has a list of top-level collections and implements
+IPublishTraverse, so that a request to a registered collection is
+delegated to the appropriate CollectionResource. Here's an example,
+equivalent to requesting 'http://api.launchpad.net/recipes/'.
 
     >>> collection = app.publishTraverse(request, "recipes")
     >>> collection

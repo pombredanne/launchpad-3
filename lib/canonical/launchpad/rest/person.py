@@ -24,7 +24,6 @@ class PersonEntry(Entry):
     parent_collection_name = 'people'
 
     def fragment(self):
-        """A person's URL fragment is their name."""
         return self.context.name
 
 

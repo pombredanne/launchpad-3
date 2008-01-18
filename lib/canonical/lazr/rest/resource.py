@@ -10,6 +10,7 @@ __all__ = [
     'EntryResource',
     'HTTPResource',
     'ReadOnlyResource',
+    'ServiceRoot',
     'ServiceRootResource'
     ]
 
@@ -43,12 +44,6 @@ class HTTPResource:
     implements(IHTTPResource, ICanonicalUrlData)
 
     def __init__(self, context, root_resource, request):
-        """Initialize a resource.
-
-        :param context: The underlying object being exposed through HTTP.
-        :param root_resource: The root of the resource tree.
-        :param request: The HTTP request.
-        """
         self.context = context
         self.root_resource = root_resource
         self.request = request
@@ -68,44 +63,6 @@ class ReadOnlyResource(HTTPResource):
         else:
             self.request.response.setStatus(405)
             self.request.response.setHeader("Allow", "GET")
-
-
-class ServiceRootResource(ReadOnlyResource):
-    """A resource that responds to GET by describing the service."""
-    implements(IPublishTraverse)
-
-    top_level_collections = {}
-
-    def __init__(self):
-        super(ServiceRootResource, self).__init__(None, self, None)
-
-    inside = None
-    path = ''
-
-    def topLevelCollectionResource(self, name):
-        """Find a top-level collection resource by name."""
-        if name in self.top_level_collections:
-            return CollectionResource(
-                self.top_level_collections[name](), self,
-                name, self.request)
-        return None
-
-    def publishTraverse(self, request, name):
-        """Navigate to one of the top-level collections."""
-        resource = self.topLevelCollectionResource(name)
-        if resource is None:
-            raise NotFound(self, name)
-        return resource
-
-    def do_GET(self):
-        """Return a description of the resource."""
-        return "This is a web service."
-
-    def __call__(self, REQUEST=None):
-        """A hack so that one of these objects can be an application."""
-        if REQUEST:
-            self.request = REQUEST
-            return super(ServiceRootResource, self).__call__()
 
 
 class EntryResource(ReadOnlyResource):
@@ -128,7 +85,7 @@ class EntryResource(ReadOnlyResource):
             self.context.parent_collection_name)
 
     def __init__(self, context, root_resource, request):
-        """Cast the context to an IEntry."""
+        """Associate this resource with a specific object and request."""
         super(EntryResource, self).__init__(IEntry(context),
                                             root_resource, request)
 
@@ -162,7 +119,6 @@ class CollectionResource(ReadOnlyResource):
     implements(ICollectionResource)
 
     def __init__(self, context, root_resource, collection_name, request):
-        """Cast the context to an ICollection."""
         super(CollectionResource, self).__init__(ICollection(context),
                                                  root_resource, request)
         self.collection_name = collection_name
@@ -183,7 +139,6 @@ class CollectionResource(ReadOnlyResource):
 
     @property
     def path(self):
-        """The provided collection name is used as the URL fragment."""
         return self.collection_name
 
     def publishTraverse(self, request, name):
@@ -203,6 +158,34 @@ class CollectionResource(ReadOnlyResource):
         return ResourceJSONEncoder().encode(entry_resources)
 
 
+class ServiceRootResource(ReadOnlyResource):
+    """A resource that responds to GET by describing the service."""
+    implements(IPublishTraverse)
+
+    @property
+    def rootsite(self):
+        return self.context.rootsite
+    inside = None
+    path = ''
+
+    def topLevelCollectionResource(self, name):
+        if name in self.context.top_level_collections:
+            return CollectionResource(
+                self.context.top_level_collections[name](), self,
+                name, self.request)
+        return None
+
+    def publishTraverse(self, request, name):
+        resource = self.topLevelCollectionResource(name)
+        if resource is None:
+            raise NotFound(self, name)
+        return resource
+
+    def do_GET(self):
+        """Return a description of the resource."""
+        return "This is a web service."
+
+
 class Entry:
     """An individual entry."""
     implements(IEntry)
@@ -219,3 +202,20 @@ class Collection:
     def __init__(self, context):
         """Associate the entry with some database business object."""
         self.context = context
+
+
+class ServiceRoot:
+    """A web service."""
+    implements(IPublishTraverse)
+
+    top_level_collections = {}
+
+    def asResource(self, request):
+        return ServiceRootResource(self, None, request)
+
+    def publishTraverse(self, request, name):
+        return self.asResource(request).publishTraverse(request, name)
+
+    def __call__(self, REQUEST=None):
+        if REQUEST:
+            return self.asResource(REQUEST)()
