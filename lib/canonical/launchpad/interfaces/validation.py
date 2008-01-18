@@ -368,7 +368,8 @@ def validate_new_distrotask(bug, distribution, sourcepackagename=None):
         # least one task already on the distribution, whether or not
         # that task also has a source package.
         distribution_tasks_for_bug = [
-            bugtask for bugtask in shortlist(bug.bugtasks, longest_expected=50)
+            bugtask for bugtask
+            in shortlist(bug.bugtasks, longest_expected=50)
             if bugtask.distribution == distribution]
 
         if len(distribution_tasks_for_bug) > 0:
