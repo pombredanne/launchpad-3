@@ -80,7 +80,8 @@ def plural_form_mapper(first_expression, second_expression):
             return identity_map
 
         # Is either result out of range?
-        if first_form not in [0, 1, 2, 3] or second_form not in [0, 1, 2, 3]:
+        valid_forms = range(0, 4)
+        if first_form not in valid_forms or second_form not in valid_forms:
             return identity_map
 
         if first_form in mapping:
@@ -200,12 +201,13 @@ class POHeader:
 
     _strftime_text = '%F %R%z'
 
+    translation_revision_date = None
+
     def __init__(self, header_content, comment=None):
         self._raw_header = header_content
         self.is_fuzzy = False
         UTC = pytz.timezone('UTC')
         self.template_creation_date = datetime.datetime.now(UTC)
-        self.translation_revision_date = datetime.datetime.now(UTC)
         self._last_translator = 'FULL NAME <EMAIL@ADDRESS>'
         self.language_team = 'LANGUAGE <LL@li.org>'
         self.has_plural_forms = False
@@ -717,10 +719,16 @@ class POParser(object):
                 # if there is any non-string data afterwards, raise an
                 # exception
                 if string and not string.isspace():
+                    message = ("extra content found after string: (%s)" %
+                        string)
                     raise TranslationFormatSyntaxError(
                         line_number=self._lineno,
+<<<<<<< TREE
                         message=("extra content found after string: (%s)" %
                                  string))
+=======
+                        message=message)
+>>>>>>> MERGE-SOURCE
                 break
             elif string[0] == '\\' and string[1] in escape_map:
                 # We got one of the special escaped chars we know about, we
